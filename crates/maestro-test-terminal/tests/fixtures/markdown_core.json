@@ -3368,7 +3368,7 @@
       ]
     }
   ],
-  "maestro_markdown_gap_between_code_block_and_para_is_one_line": [
+  "maestro_markdown_gap_between_code_block_and_paragraph_is_one_line": [
     {
       "text": "hello world\n\n```js\nconst hello = \"world\";\n```\n\nagain, hello world",
       "width": 80,

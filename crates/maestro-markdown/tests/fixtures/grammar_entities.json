@@ -14574,13 +14574,13 @@
     "expected": "again, hello world"
   },
   {
-    "id": "core:maestro_markdown_gap_between_code_block_and_para_is_one_line:0/0/0",
+    "id": "core:maestro_markdown_gap_between_code_block_and_paragraph_is_one_line:0/0/0",
     "group": "retained-text-field",
     "input": "hello world",
     "expected": "hello world"
   },
   {
-    "id": "core:maestro_markdown_gap_between_code_block_and_para_is_one_line:0/4/0",
+    "id": "core:maestro_markdown_gap_between_code_block_and_paragraph_is_one_line:0/4/0",
     "group": "retained-text-field",
     "input": "again, hello world",
     "expected": "again, hello world"

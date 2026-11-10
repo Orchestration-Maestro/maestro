@@ -274,8 +274,8 @@ fn maestro_markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output()
 }
 
 #[test]
-fn maestro_markdown_gap_between_code_block_and_para_is_one_line() {
-    markdown::cases("maestro_markdown_gap_between_code_block_and_para_is_one_line");
+fn maestro_markdown_gap_between_code_block_and_paragraph_is_one_line() {
+    markdown::cases("maestro_markdown_gap_between_code_block_and_paragraph_is_one_line");
 }
 
 #[test]
