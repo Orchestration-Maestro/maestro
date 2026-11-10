@@ -145,6 +145,13 @@ fn install(args: &[OsString]) -> io::Result<()> {
         "{}",
         words.join(" ")
     )?;
+    std::fs::write(
+        "install-toolchain",
+        std::env::var_os("RUSTUP_TOOLCHAIN")
+            .unwrap_or_default()
+            .to_string_lossy()
+            .as_bytes(),
+    )?;
     let binary = root.join("bin").join(format!(
         "{}{}",
         name.to_string_lossy(),

@@ -48,6 +48,8 @@ mod sandbox_runtime;
 mod search_tools;
 /// Reusable test-setup staging and validation.
 mod test_setup;
+/// The toolchain a workspace's Cargo children compile with.
+mod toolchain;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 /// The workspace a development command serves.
