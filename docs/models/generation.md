@@ -138,7 +138,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Fixed image fixture
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo run --quiet --locked \
+cargo run --quiet --locked \
   -p maestro-models --example generate_circle_fixture
 ```
 

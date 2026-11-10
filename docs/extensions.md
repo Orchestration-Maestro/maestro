@@ -159,7 +159,7 @@ For comparison, from the Maestro checkout you can build its unchanged greeting
 example with the registered example target:
 
 ```sh
-~/.local/bin/capped mise exec -- cargo build --locked \
+mise exec -- cargo build --locked \
   -p maestro-extensions-wasm --example hello --target wasm32-wasip2 --release
 ```
 
@@ -278,7 +278,7 @@ instead of continuing work with the old command context. See
 From a Maestro checkout, run:
 
 ```sh
-~/.local/bin/capped mise exec -- cargo test --locked \
+mise exec -- cargo test --locked \
   -p maestro-extensions-wasmtime --test integration \
   extension_guide_builds_and_loads_from_a_clean_folder -- --nocapture
 ```

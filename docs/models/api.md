@@ -33,7 +33,7 @@ secret.
 Run all eleven examples from the checkout:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo test --locked -p maestro-models --test integration model_guide_examples::
+cargo test --locked -p maestro-models --test integration model_guide_examples::
 ```
 
 Build the public rustdoc with `cargo doc --no-deps -p maestro-models`. The

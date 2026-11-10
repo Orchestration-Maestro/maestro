@@ -115,7 +115,6 @@ release-mode author test. With the build environment above, run the same consume
 commands from the checkout using the pinned toolchain and checked-in lock:
 
 ```powershell
-$env:CARGO_BUILD_JOBS = '3'
 just prepare-tests
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
@@ -141,7 +140,7 @@ mapfile -t wasm_packages < <(
 )
 wasm_args=()
 for package in "${wasm_packages[@]}"; do wasm_args+=(-p "$package"); done
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
+mise exec -- cargo build \
   --locked --target wasm32-unknown-unknown "${wasm_args[@]}" \
   --tests --examples --keep-going --message-format=json
 ```
@@ -151,7 +150,7 @@ library targets only. Lint one crate's test and example targets directly where
 they compile for the browser target:
 
 ```sh
-~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+cargo clippy --locked --target wasm32-unknown-unknown \
   --all-targets -p maestro-models -- -D warnings
 ```
 
@@ -247,7 +246,7 @@ Lint the browser library, examples and complete integration target with the
 pinned toolchain:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
+mise exec -- cargo clippy \
   -p maestro-web --lib --examples --test integration --profile test \
   --target wasm32-unknown-unknown --locked -- \
   -D warnings -D clippy::missing_docs_in_private_items
@@ -258,7 +257,7 @@ Run the retained sandbox assertions with supplied browser tools:
 ```sh
 export CHROMIUM_PATH=/absolute/path/to/chrome
 # Put wasm-bindgen CLI 0.2.129 on PATH.
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
+just browser-test
 ```
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
@@ -448,10 +447,10 @@ name, with the same supplied executable; the `browser-exports` setup runs first
 whenever an export or the report is selected:
 
 ```sh
-~/.local/bin/capped just prepare-tests
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+just prepare-tests
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(/^browser::/)'
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(=browser::exports::loading::<export>)'
 ```
 

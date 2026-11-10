@@ -63,7 +63,7 @@ constructing command returns.
 Build its component with:
 
 ```sh
-~/.local/bin/capped mise exec -- cargo build --locked -p maestro-extensions-wasm \
+mise exec -- cargo build --locked -p maestro-extensions-wasm \
   --example context_bridge --target wasm32-wasip2 --release
 ```
 
