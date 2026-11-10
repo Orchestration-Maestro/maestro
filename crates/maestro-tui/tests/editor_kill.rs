@@ -128,23 +128,23 @@ fn maestro_editor_alt_d_at_line_end_joins_the_lines() {
 }
 
 #[test]
-fn maestro_editor_undoes_ctrl_w_delete_word_backward() {
-    support::run("maestro_editor_undoes_ctrl_w_delete_word_backward");
+fn maestro_editor_one_undo_restores_text_after_ctrl_w() {
+    support::run("maestro_editor_one_undo_restores_text_after_ctrl_w");
 }
 
 #[test]
-fn maestro_editor_undoes_ctrl_k_delete_to_line_end() {
-    support::run("maestro_editor_undoes_ctrl_k_delete_to_line_end");
+fn maestro_editor_one_undo_restores_text_after_ctrl_k() {
+    support::run("maestro_editor_one_undo_restores_text_after_ctrl_k");
 }
 
 #[test]
-fn maestro_editor_undoes_ctrl_u_delete_to_line_start() {
-    support::run("maestro_editor_undoes_ctrl_u_delete_to_line_start");
+fn maestro_editor_one_undo_restores_text_after_ctrl_u() {
+    support::run("maestro_editor_one_undo_restores_text_after_ctrl_u");
 }
 
 #[test]
-fn maestro_editor_undoes_yank() {
-    support::run("maestro_editor_undoes_yank");
+fn maestro_editor_one_undo_reverts_a_yank() {
+    support::run("maestro_editor_one_undo_reverts_a_yank");
 }
 
 #[test]

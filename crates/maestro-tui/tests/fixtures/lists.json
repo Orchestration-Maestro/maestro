@@ -15,7 +15,7 @@
       "expected": {
         "frames": [
           [
-            "\u2192 test                            Item one Item two Item three"
+            "→ test                            Item one Item two Item three"
           ]
         ],
         "selected": "test",

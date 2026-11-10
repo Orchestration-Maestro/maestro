@@ -57,8 +57,8 @@ fn maestro_editor_typing_a_character_leaves_history_mode() {
 }
 
 #[test]
-fn maestro_editor_exits_history_mode_on_settext() {
-    support::run("maestro_editor_exits_history_mode_on_settext");
+fn maestro_editor_leaves_history_browsing_when_text_is_replaced() {
+    support::run("maestro_editor_leaves_history_browsing_when_text_is_replaced");
 }
 
 #[test]
@@ -82,8 +82,8 @@ fn maestro_editor_a_non_empty_editor_moves_the_cursor_not_history() {
 }
 
 #[test]
-fn maestro_editor_limits_history_to_100_entries() {
-    support::run("maestro_editor_limits_history_to_100_entries");
+fn maestro_editor_keeps_only_the_latest_100_history_entries() {
+    support::run("maestro_editor_keeps_only_the_latest_100_history_entries");
 }
 
 #[test]

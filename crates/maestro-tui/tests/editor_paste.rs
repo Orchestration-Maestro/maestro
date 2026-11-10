@@ -32,16 +32,16 @@ fn paste_filtered_empty_still_captures_undo() {
     support::run("paste_filtered_empty_still_captures_undo");
 }
 #[test]
-fn maestro_editor_undoes_single_line_paste_atomically() {
-    support::run("maestro_editor_undoes_single_line_paste_atomically");
+fn maestro_editor_one_undo_reverts_a_single_line_paste() {
+    support::run("maestro_editor_one_undo_reverts_a_single_line_paste");
 }
 #[test]
 fn maestro_editor_bracketed_paste_reads_csi_u_ctrl_letters_in_a_tmux_popup() {
     support::run("maestro_editor_bracketed_paste_reads_csi_u_ctrl_letters_in_a_tmux_popup");
 }
 #[test]
-fn maestro_editor_undoes_multi_line_paste_atomically() {
-    support::run("maestro_editor_undoes_multi_line_paste_atomically");
+fn maestro_editor_one_undo_reverts_a_multi_line_paste() {
+    support::run("maestro_editor_one_undo_reverts_a_multi_line_paste");
 }
 /// Callback observations as (text, extra) pairs.
 type Events = Rc<RefCell<Vec<(String, String)>>>;

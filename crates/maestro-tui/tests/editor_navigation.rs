@@ -106,8 +106,8 @@ fn maestro_editor_second_forward_jump_reaches_the_next_match() {
 }
 
 #[test]
-fn maestro_editor_jumps_forward_across_multiple_lines() {
-    support::run("maestro_editor_jumps_forward_across_multiple_lines");
+fn maestro_editor_jump_forward_crosses_line_breaks() {
+    support::run("maestro_editor_jump_forward_crosses_line_breaks");
 }
 
 #[test]
@@ -116,8 +116,8 @@ fn maestro_editor_backward_jump_reaches_the_nearest_match_behind() {
 }
 
 #[test]
-fn maestro_editor_jumps_backward_across_multiple_lines() {
-    support::run("maestro_editor_jumps_backward_across_multiple_lines");
+fn maestro_editor_jump_backward_crosses_line_breaks() {
+    support::run("maestro_editor_jump_backward_crosses_line_breaks");
 }
 
 #[test]
@@ -131,8 +131,8 @@ fn maestro_editor_a_missing_backward_target_keeps_the_cursor() {
 }
 
 #[test]
-fn maestro_editor_is_case_sensitive() {
-    support::run("maestro_editor_is_case_sensitive");
+fn maestro_editor_matches_search_character_case_exactly() {
+    support::run("maestro_editor_matches_search_character_case_exactly");
 }
 
 #[test]
@@ -151,18 +151,18 @@ fn maestro_editor_second_ctrl_alt_ends_backward_jump_mode() {
 }
 
 #[test]
-fn maestro_editor_searches_for_special_characters() {
-    support::run("maestro_editor_searches_for_special_characters");
+fn maestro_editor_jump_finds_punctuation_targets() {
+    support::run("maestro_editor_jump_finds_punctuation_targets");
 }
 
 #[test]
-fn maestro_editor_handles_empty_text_gracefully() {
-    support::run("maestro_editor_handles_empty_text_gracefully");
+fn maestro_editor_accepts_empty_text_without_error() {
+    support::run("maestro_editor_accepts_empty_text_without_error");
 }
 
 #[test]
-fn maestro_editor_resets_lastaction_when_jumping() {
-    support::run("maestro_editor_resets_lastaction_when_jumping");
+fn maestro_editor_clears_last_action_after_a_jump() {
+    support::run("maestro_editor_clears_last_action_after_a_jump");
 }
 
 #[test]
@@ -176,23 +176,23 @@ fn maestro_editor_moving_down_past_a_shorter_line_keeps_the_target_column() {
 }
 
 #[test]
-fn maestro_editor_resets_sticky_column_on_horizontal_movement_left_arrow() {
-    support::run("maestro_editor_resets_sticky_column_on_horizontal_movement_left_arrow");
+fn maestro_editor_drops_retained_column_after_left_arrow() {
+    support::run("maestro_editor_drops_retained_column_after_left_arrow");
 }
 
 #[test]
-fn maestro_editor_resets_sticky_column_on_horizontal_movement_right_arrow() {
-    support::run("maestro_editor_resets_sticky_column_on_horizontal_movement_right_arrow");
+fn maestro_editor_drops_retained_column_after_right_arrow() {
+    support::run("maestro_editor_drops_retained_column_after_right_arrow");
 }
 
 #[test]
-fn maestro_editor_resets_sticky_column_on_typing() {
-    support::run("maestro_editor_resets_sticky_column_on_typing");
+fn maestro_editor_drops_retained_column_after_typing() {
+    support::run("maestro_editor_drops_retained_column_after_typing");
 }
 
 #[test]
-fn maestro_editor_resets_sticky_column_on_backspace() {
-    support::run("maestro_editor_resets_sticky_column_on_backspace");
+fn maestro_editor_drops_retained_column_after_backspace() {
+    support::run("maestro_editor_drops_retained_column_after_backspace");
 }
 
 #[test]
@@ -216,8 +216,8 @@ fn maestro_editor_ctrl_right_word_move_drops_the_sticky_column() {
 }
 
 #[test]
-fn maestro_editor_resets_sticky_column_on_undo() {
-    support::run("maestro_editor_resets_sticky_column_on_undo");
+fn maestro_editor_drops_retained_column_after_undo() {
+    support::run("maestro_editor_drops_retained_column_after_undo");
 }
 
 #[test]
@@ -231,8 +231,8 @@ fn maestro_editor_wrapped_rows_advance_without_stalling() {
 }
 
 #[test]
-fn maestro_editor_handles_settext_resetting_sticky_column() {
-    support::run("maestro_editor_handles_settext_resetting_sticky_column");
+fn maestro_editor_clears_retained_column_when_text_is_replaced() {
+    support::run("maestro_editor_clears_retained_column_when_text_is_replaced");
 }
 
 #[test]

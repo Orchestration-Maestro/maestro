@@ -163,7 +163,7 @@
     }
   },
   {
-    "test": "maestro_images_enables_hyperlinks_for_iterm2",
+    "test": "maestro_images_hyperlink_wraps_text_for_iterm2",
     "rule": "{\"TERM_PROGRAM\":\"iterm.app\"}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -376,7 +376,7 @@
     }
   },
   {
-    "test": "maestro_images_cmux_keeps_the_ghostty_identifier",
+    "test": "maestro_images_cmux_keeps_ghostty_images_on",
     "rule": "{\"TERM_PROGRAM\":\"ghostty\",\"CMUX_WORKSPACE_ID\":\"workspace\"}",
     "symbol": "detectCapabilities",
     "args": [],
@@ -5387,7 +5387,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "rule": "recognition prefix boundary \"🦀\\u001b_G\"",
     "symbol": "isImageLine",
     "args": [
@@ -5427,7 +5427,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_an_iterm2_image_is_kept",
+    "test": "maestro_images_text_before_an_iterm2_image_still_marks_an_image_line",
     "rule": "recognition prefix boundary \"🦀\\u001b]1337;File=\"",
     "symbol": "isImageLine",
     "args": [
@@ -5447,7 +5447,7 @@
     "expected": false
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "rule": "recognition prefix boundary \"\\u001b[2A\\u001b_G\"",
     "symbol": "isImageLine",
     "args": [
@@ -5477,7 +5477,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5497,7 +5497,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5517,7 +5517,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5537,7 +5537,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5557,7 +5557,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5577,7 +5577,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_an_iterm2_image_is_kept",
+    "test": "maestro_images_text_before_an_iterm2_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5597,7 +5597,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_an_iterm2_image_is_kept",
+    "test": "maestro_images_text_before_an_iterm2_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5617,7 +5617,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_an_iterm2_image_is_kept",
+    "test": "maestro_images_text_before_an_iterm2_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5637,7 +5637,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_an_iterm2_image_is_kept",
+    "test": "maestro_images_text_before_an_iterm2_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5657,7 +5657,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_an_iterm2_image_is_kept",
+    "test": "maestro_images_text_before_an_iterm2_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5697,7 +5697,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_ansi_codes_before_an_image_are_kept",
+    "test": "maestro_images_ansi_codes_before_an_image_still_mark_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5717,7 +5717,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_ansi_codes_before_an_image_are_kept",
+    "test": "maestro_images_ansi_codes_before_an_image_still_mark_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5737,7 +5737,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_ansi_codes_before_an_image_are_kept",
+    "test": "maestro_images_ansi_codes_before_an_image_still_mark_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -5917,7 +5917,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_before_an_iterm2_image_is_kept",
+    "test": "maestro_images_text_before_an_iterm2_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -6020,7 +6020,7 @@
     ]
   },
   {
-    "test": "maestro_images_text_before_a_kitty_image_is_kept",
+    "test": "maestro_images_text_before_a_kitty_image_still_marks_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -6100,7 +6100,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_ansi_codes_before_an_image_are_kept",
+    "test": "maestro_images_ansi_codes_before_an_image_still_mark_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -6120,7 +6120,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_ansi_codes_after_an_image_are_kept",
+    "test": "maestro_images_ansi_codes_after_an_image_still_mark_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -6320,7 +6320,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_text_and_images_share_a_line_in_order",
+    "test": "maestro_images_text_and_images_sharing_a_line_still_mark_an_image_line",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -6426,7 +6426,7 @@
     }
   },
   {
-    "test": "maestro_images_enables_hyperlinks_for_kitty",
+    "test": "maestro_images_hyperlink_wraps_text_for_kitty",
     "symbol": "detectCapabilities",
     "environment": {
       "TERM": null,
@@ -6937,7 +6937,7 @@
     "expected": "\u001b]8;;https://example.com\u001b\\\u001b[4m\u001b[34mclick me\u001b[0m\u001b]8;;\u001b\\"
   },
   {
-    "test": "maestro_images_works_with_empty_text",
+    "test": "maestro_images_hyperlink_wraps_empty_text",
     "symbol": "hyperlink",
     "environment": {
       "TERM": "xterm-256color",
@@ -6958,7 +6958,7 @@
     "expected": "\u001b]8;;https://example.com\u001b\\\u001b]8;;\u001b\\"
   },
   {
-    "test": "maestro_images_works_with_file_uris",
+    "test": "maestro_images_hyperlink_wraps_file_uri_targets",
     "symbol": "hyperlink",
     "environment": {
       "TERM": "xterm-256color",

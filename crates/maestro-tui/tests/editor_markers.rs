@@ -118,8 +118,8 @@ fn maestro_editor_a_target_inside_the_marker_tail_skips_its_rows() {
     support::run("maestro_editor_a_target_inside_the_marker_tail_skips_its_rows");
 }
 #[test]
-fn maestro_editor_submits_large_pasted_content_literally() {
-    support::run("maestro_editor_submits_large_pasted_content_literally");
+fn maestro_editor_submit_expands_large_paste_to_full_text() {
+    support::run("maestro_editor_submit_expands_large_paste_to_full_text");
 }
 #[test]
 fn marker_snap_column_survives_resize() {
