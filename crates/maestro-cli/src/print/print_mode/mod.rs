@@ -12,9 +12,10 @@ use maestro_app::{
 };
 pub(crate) use signals::{NativeSignals, SignalPort};
 use std::{
+    borrow::Cow,
     cell::RefCell,
     future::Future,
-    io,
+    io::{self, IsTerminal},
     pin::Pin,
     rc::{Rc, Weak},
     sync::{Arc, PoisonError},
@@ -125,6 +126,8 @@ pub(crate) struct PrintEffects {
     pub(crate) kill_children: KillChildren,
     /// Delivers termination signals and ends the process.
     pub(crate) signals: Rc<dyn SignalPort>,
+    /// Whether raw standard output is a terminal, which acts on the controls in the text.
+    pub(crate) stdout_is_terminal: bool,
 }
 
 impl PrintEffects {
@@ -136,6 +139,7 @@ impl PrintEffects {
             flush_stdout: Rc::new(maestro_app::output_guard::flush_raw_stdout),
             kill_children: Rc::new(kill_tracked_detached_children),
             signals: Rc::new(NativeSignals),
+            stdout_is_terminal: io::stdout().is_terminal(),
         }
     }
 }
@@ -304,10 +308,20 @@ impl PrintRun {
         }
         for content in &assistant.content {
             if let AssistantContent::Text(text) = content {
-                self.write_stdout(&format!("{}\n", text.text))?;
+                self.write_stdout(&format!("{}\n", self.terminal_safe(&text.text)))?;
             }
         }
         Ok(0)
+    }
+
+    /// The text as standard output should receive it: cleaned of terminal controls when
+    /// standard output is a terminal, byte-exact for a pipe or a file.
+    fn terminal_safe<'a>(&self, text: &'a str) -> Cow<'a, str> {
+        if self.effects.stdout_is_terminal {
+            Cow::Owned(maestro_app::clean_controls(text))
+        } else {
+            Cow::Borrowed(text)
+        }
     }
 
     /// Registers this run's signal delivery.

@@ -80,6 +80,8 @@ struct Recorder {
     flush_failure: Cell<bool>,
     /// Whether the standard output write fails.
     stdout_failure: Cell<bool>,
+    /// Whether standard output is a terminal.
+    stdout_is_terminal: Cell<bool>,
     /// The bindings each session received.
     bindings: RefCell<Vec<ExtensionBindings>>,
     /// Whether a binding session announces an event of its own.
@@ -380,6 +382,7 @@ fn effects(recorder: &Rc<Recorder>) -> PrintEffects {
         signals: Rc::new(TestSignals {
             recorder: Rc::clone(recorder),
         }),
+        stdout_is_terminal: recorder.stdout_is_terminal.get(),
     }
 }
 
@@ -624,6 +627,41 @@ fn text_blocks_preserve_bytes_and_omit_other_content() {
             recorder.stdout.borrow().as_str(),
             "\nline\nnext\n tab\tand\u{1b}[31mred\u{1b}[0m \n"
         );
+    });
+}
+
+/// The sequences a model can write to act on a terminal: a clipboard write, a window title,
+/// a screen clear and a link whose label disguises its target.
+const HOSTILE: &str = concat!(
+    "see \u{1b}]52;c;aGk=\u{7}the \u{1b}]0;owned\u{1b}\\docs \u{1b}[2Jat ",
+    "\u{1b}]8;;https://evil.example\u{1b}\\example.org\u{1b}]8;;\u{1b}\\"
+);
+
+#[test]
+fn text_on_a_terminal_loses_its_control_sequences_and_keeps_its_words() {
+    on_task_set(async {
+        let recorder = recorder();
+        recorder.stdout_is_terminal.set(true);
+        *recorder.final_message.borrow_mut() = Some(assistant(
+            StopReason::Stop,
+            None,
+            &[HOSTILE, "tab\tand\nline"],
+        ));
+        assert_eq!(run(&recorder, text(&[])).await, Ok(0));
+        assert_eq!(
+            recorder.stdout.borrow().as_str(),
+            "see the docs at example.org\ntab\tand\nline\n"
+        );
+    });
+}
+
+#[test]
+fn text_on_a_pipe_or_file_stays_byte_exact() {
+    on_task_set(async {
+        let recorder = recorder();
+        *recorder.final_message.borrow_mut() = Some(assistant(StopReason::Stop, None, &[HOSTILE]));
+        assert_eq!(run(&recorder, text(&[])).await, Ok(0));
+        assert_eq!(recorder.stdout.borrow().as_str(), format!("{HOSTILE}\n"));
     });
 }
 

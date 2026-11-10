@@ -26,12 +26,23 @@ pub struct Provider {
 impl Provider {
     /// Listen before starting the executable; no external credentials are involved.
     pub fn new() -> Self {
+        Self::answering(None)
+    }
+
+    /// As `new`, with every answer carrying `text` instead of the default.
+    pub fn replying(text: &str) -> Self {
+        Self::answering(Some(text.to_owned()))
+    }
+
+    /// Serve `reply` when given, else the default answers.
+    fn answering(reply: Option<String>) -> Self {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
         let requests = Arc::new(Mutex::new(Vec::new()));
         let stop = Arc::new(AtomicBool::new(false));
         let (seen, stopping) = (Arc::clone(&requests), Arc::clone(&stop));
-        let worker = std::thread::spawn(move || serve(&listener, &seen, &stopping));
+        let worker =
+            std::thread::spawn(move || serve(&listener, &seen, &stopping, reply.as_deref()));
         Self {
             base: format!("http://{address}/v1"),
             address,
@@ -69,18 +80,23 @@ pub(crate) fn request(stream: &mut TcpStream) -> Value {
 }
 
 /// Answer actual requests until the owner's wake-up connection signals teardown.
-fn serve(listener: &TcpListener, seen: &Mutex<Vec<Value>>, stopping: &AtomicBool) {
+fn serve(
+    listener: &TcpListener,
+    seen: &Mutex<Vec<Value>>,
+    stopping: &AtomicBool,
+    reply: Option<&str>,
+) {
     loop {
         let (mut stream, _) = listener.accept().unwrap();
         if stopping.load(Ordering::Relaxed) {
             break;
         }
         let request = request(&mut stream);
-        let text = if request.to_string().contains("root-context-Ω") {
+        let text = reply.unwrap_or(if request.to_string().contains("root-context-Ω") {
             "root-context-Ω"
         } else {
             "test123"
-        };
+        });
         let chunk = chunk(&request, text);
         seen.lock().unwrap().push(request);
         let events = format!("data: {chunk}\n\ndata: [DONE]\n\n");
