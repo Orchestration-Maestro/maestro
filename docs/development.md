@@ -1501,8 +1501,8 @@ for their preparation and local-setup children. Their runner needs neither
 program on `PATH`; archived-export children also exclude the private directory.
 
 The tool-factory suite in `maestro-tools` and the factory-construction test in
-`maestro-extensions-wasmtime` install the pins the same way, so neither needs either
-program on `PATH`. The `author-component` filter in `.config/nextest.toml` names each
+`maestro-extensions-wasmtime` install the pins the same way, so neither needs `rg` or
+`fd` on `PATH`. The `author-component` filter in `.config/nextest.toml` covers each
 test that receives the exports: add a test to it when the test calls
 `install_search_program`. A chat startup witness that counts requests installs stub
 `fd` and `rg` programs in its binary directory first, so it never downloads a search
