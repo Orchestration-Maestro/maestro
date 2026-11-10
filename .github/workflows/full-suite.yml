@@ -2,7 +2,7 @@ name: Full suite after landing
 
 on:
   push:
-    branches: [main]
+    branches: [main, ci/458-proof]
 
 permissions:
   contents: read
@@ -13,4 +13,4 @@ jobs:
     permissions:
       contents: read
       actions: write # the shared workflow's pruning jobs delete superseded cache entries
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@f180cc85f3f6ba3b23f188727b3e73bb8f1c61ed # v0.19.30
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@bf3eaf73f5c86ff9d76e9b3bc5ff06376de40738 # proof

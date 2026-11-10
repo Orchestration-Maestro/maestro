@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
       actions: write # GitHub checks the shared workflow's pruning jobs against this grant; they skip here
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@f180cc85f3f6ba3b23f188727b3e73bb8f1c61ed # v0.19.30
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@bf3eaf73f5c86ff9d76e9b3bc5ff06376de40738 # proof
     with:
       browser-only: true
       checkout-ref: ${{ inputs.ref }}
