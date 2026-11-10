@@ -347,7 +347,7 @@ impl InteractiveMode {
         if keys != "on" && keys != "always" {
             return Some("tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.".into());
         }
-        (format.as_deref() == Some("xterm")).then(|| "tmux uses the xterm extended-keys-format, while Maestro expects csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux.".into())
+        (format.as_deref() == Some("xterm")).then(|| "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux.".into())
     }
 
     /// Starts native capture now, independently of the owned notice deadline.

@@ -7496,7 +7496,7 @@
       }
     },
     "expected": {
-      "warning": "tmux uses the xterm extended-keys-format, while Maestro expects csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7550,7 +7550,7 @@
       }
     },
     "expected": {
-      "warning": "tmux uses the xterm extended-keys-format, while Maestro expects csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7604,7 +7604,7 @@
       }
     },
     "expected": {
-      "warning": "tmux uses the xterm extended-keys-format, while Maestro expects csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7928,7 +7928,7 @@
       }
     },
     "expected": {
-      "warning": "tmux uses the xterm extended-keys-format, while Maestro expects csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7982,7 +7982,7 @@
       }
     },
     "expected": {
-      "warning": "tmux uses the xterm extended-keys-format, while Maestro expects csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8036,7 +8036,7 @@
       }
     },
     "expected": {
-      "warning": "tmux uses the xterm extended-keys-format, while Maestro expects csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {

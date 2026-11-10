@@ -16,14 +16,14 @@ impl InteractiveMode {
     pub(super) async fn handle_reload_command(self: &Rc<Self>) -> Result<(), EventError> {
         let session = self.runtime_host.session();
         if session.is_streaming() {
-            return Ok(
-                self.show_warning("A response is still running; finish it before reloading.")?
-            );
+            return Ok(self.show_warning(
+                "A response is still running; wait for it to finish before reloading.",
+            )?);
         }
         if session.is_compacting() {
-            return Ok(
-                self.show_warning("Compaction is still running; finish it before reloading.")?
-            );
+            return Ok(self.show_warning(
+                "Compaction is still running; wait for it to finish before reloading.",
+            )?);
         }
         self.reset_extension_ui()?;
         let reload_box = self.reload_box()?;

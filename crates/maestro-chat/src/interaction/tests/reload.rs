@@ -133,7 +133,9 @@ fn reload_refuses_only_streaming_and_compaction() {
                 assert!(admitted(&world.runtime).await.is_empty());
                 let rows = world.mode.chat_container.render(120).join("\n");
                 assert!(
-                    rows.contains("A response is still running; finish it before reloading."),
+                    rows.contains(
+                        "A response is still running; wait for it to finish before reloading."
+                    ),
                     "{rows}"
                 );
                 assert!(world.loader.calls.borrow().is_empty());
@@ -151,7 +153,9 @@ fn reload_refuses_only_streaming_and_compaction() {
                 ));
                 let rows = mode.chat_container.render(120).join("\n");
                 assert!(
-                    rows.contains("Compaction is still running; finish it before reloading."),
+                    rows.contains(
+                        "Compaction is still running; wait for it to finish before reloading."
+                    ),
                     "{rows}"
                 );
             })
@@ -257,7 +261,7 @@ fn reload_preparation_failure_keeps_its_catch_boundary() {
                     .terminal
                     .writes()
                     .join("")
-                    .contains("Reloading keybindings")
+                    .contains("Reloading every resource: keybindings")
             );
             assert!(!world.mode.extension_widgets_above.is_empty());
         },
