@@ -1,7 +1,7 @@
 //! Terminal screen switching and protocol-mode ordering.
 
 use super::{Flags, ResizeError, ScrollingRegion, TABSTOP_INTERVAL, Terminal};
-use crate::{Mode, page_list::IncreaseCapacityError, screen::Options, screen_set::Key};
+use crate::{Mode, page_list::IncreaseCapacityError, screen::Options, screens::Key};
 use std::num::NonZeroU16;
 
 /// Alternate-screen protocol modes.

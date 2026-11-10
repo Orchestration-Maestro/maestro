@@ -2,7 +2,7 @@
 //! failures.
 use crate::guest_calls::paints::Failure;
 use crate::widget_reads::Widget;
-use maestro_extensions::widgets::Focusable;
+use maestro_extensions::presentation::Focusable;
 use maestro_extensions::{Component, ComponentHandle, InputHandler};
 use std::rc::Rc;
 

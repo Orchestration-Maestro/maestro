@@ -118,6 +118,7 @@ fn bundle_export_installs_the_native_example() {
         browser: inputs,
         workspace_sources: None,
         components,
+        search: BTreeMap::new(),
         example: Some(digest(b"native example")),
         compiled: None,
         executable: None,

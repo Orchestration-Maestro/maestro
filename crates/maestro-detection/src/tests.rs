@@ -1,5 +1,5 @@
 //! Isolated filesystem support for manifest and catalog tests.
-use crate::{agents::Agent, manifest::ManifestCache, manifest_update::remote_manifest_path};
+use crate::{agents::Agent, definitions::ManifestCache, updates::remote_manifest_path};
 use std::path::PathBuf;
 
 pub(crate) struct Fixture {

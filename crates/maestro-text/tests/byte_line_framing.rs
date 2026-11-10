@@ -1,5 +1,5 @@
 //! Raw line separators retain bytes across arbitrary chunk boundaries.
-use maestro_text::line_decoder::ByteLineDecoder;
+use maestro_text::line_framing::ByteLineDecoder;
 
 #[test]
 fn byte_line_framing_handles_every_split_of_cr_lf_and_crlf() {

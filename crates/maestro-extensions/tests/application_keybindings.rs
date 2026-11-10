@@ -1,7 +1,7 @@
 //! Supplied application keybindings through the extension capability.
 #![cfg(test)]
 
-use maestro_extensions::widgets::ExtensionKeybindings;
+use maestro_extensions::presentation::ExtensionKeybindings;
 use maestro_tui::{
     KeybindingConflict, KeybindingDefinition, KeybindingKeys, KeybindingsConfig, KeybindingsManager,
 };

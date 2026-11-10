@@ -26,7 +26,7 @@ fn terminal_new_defaults_and_zero_dimensions() {
 #[test]
 fn terminal_reads_use_the_active_screen() {
     use maestro_terminal::{
-        Cell, Coordinate, Point, kitty::key::Flags, screen::Options, screen_set::Key,
+        Cell, Coordinate, Point, kitty::key::Flags, screen::Options, screens::Key,
         terminal::ScrollViewport,
     };
     use std::num::NonZeroU16;
@@ -191,7 +191,7 @@ fn terminal_get_active_screen() {
     let terminal = Terminal::new(80, 24, 0).unwrap();
     assert_eq!(
         terminal.active_screen(),
-        maestro_terminal::screen_set::Key::Primary
+        maestro_terminal::screens::Key::Primary
     );
 }
 
@@ -305,7 +305,7 @@ fn assert_initial_flags(terminal: &Terminal) {
 
 /// Verify viewport selection did not change either screen's retained content.
 fn assert_screen_contents(terminal: &Terminal) {
-    use maestro_terminal::{Coordinate, Point, screen_set::Key};
+    use maestro_terminal::{Coordinate, Point, screens::Key};
     for (key, expected) in [(Key::Primary, 'p'), (Key::Alternate, 'a')] {
         let screen = terminal.screens.get(key).unwrap();
         let pin = screen

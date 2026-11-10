@@ -1,7 +1,7 @@
 //! Schema checking without invocation argument conversion.
 use maestro_models::{
     Tool, ToolCall,
-    arguments::validation::{validate_schema, validate_tool_arguments},
+    parameters::validation::{validate_schema, validate_tool_arguments},
 };
 use serde_json::json;
 

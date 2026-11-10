@@ -308,8 +308,8 @@ fn history_split_preserves_hyperlinks() {
     write(&mut list, 7, "L");
     let page = list.page_mut(list.first).unwrap();
     let id = page
-        .insert_hyperlink(crate::hyperlink::Hyperlink {
-            id: crate::hyperlink::HyperlinkId::Implicit(0),
+        .insert_hyperlink(crate::links::Hyperlink {
+            id: crate::links::HyperlinkId::Implicit(0),
             uri: b"https://example.com".to_vec(),
         })
         .unwrap();

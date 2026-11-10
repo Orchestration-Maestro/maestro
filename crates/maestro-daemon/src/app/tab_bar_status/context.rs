@@ -39,7 +39,7 @@ impl<C: FnMut() -> u128> App<C> {
         let cwd = tab.terminal_id(pane).and_then(|terminal| {
             self.terminal_runtimes
                 .get(terminal)
-                .and_then(crate::pane::runtime::PaneRuntime::cwd)
+                .and_then(crate::panes::lifecycle::PaneRuntime::cwd)
                 .or_else(|| {
                     self.state
                         .terminals

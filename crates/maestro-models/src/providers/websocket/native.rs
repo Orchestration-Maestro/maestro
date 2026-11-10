@@ -1,6 +1,6 @@
 //! Shared native upgrade and complete-message adapter.
 use super::{ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture};
-use crate::providers::http::client_pairs;
+use crate::providers::transport::client_pairs;
 use futures_util::{SinkExt as _, StreamExt as _};
 use std::{fmt, io, sync::Arc};
 use tokio_tungstenite::tungstenite::{

@@ -6,7 +6,7 @@ use crate::support::session_harness::{
     retry_started, start_prompt, summary_provider,
 };
 use maestro_app::AgentSessionEvent;
-use maestro_session::messages::SendMessageOptions;
+use maestro_session::message_records::SendMessageOptions;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 
@@ -235,7 +235,7 @@ fn next_turn_refresh_chains_the_supplied_agent_hook() {
         let called = Rc::new(std::cell::Cell::new(0));
         let record = Rc::clone(&called);
         let hook: maestro_agent::PrepareNextTurn<
-            maestro_session::messages::CustomAgentMessages,
+            maestro_session::message_records::CustomAgentMessages,
             maestro_models::Local,
         > = Rc::new(
             move |turn: maestro_agent::PrepareNextTurnContext<'_, _, maestro_models::Local>,

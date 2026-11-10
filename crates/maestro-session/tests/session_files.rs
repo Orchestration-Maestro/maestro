@@ -842,7 +842,7 @@ fn jsonl_uses_compact_finite_number_spelling() {
         let directory = Directory::new();
         let mut manager = SessionManager::create("cwd", Some(directory.text()), "unused").unwrap();
         let numbers = [1.0, -0.0, 1e-7, 1e-6, 1e20, 1e21, 0.125];
-        support::value::assert_value(
+        support::assertions::assert_value(
             &serde_json::to_value(numbers).unwrap(),
             &case.input["values"],
             &case.id,

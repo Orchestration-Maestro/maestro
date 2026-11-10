@@ -708,7 +708,7 @@ fn assert_chat_framing_policy() {
 
 /// Host bytes retain split UTF-8 and binary mouse without chat duplicate filtering.
 fn assert_host_framing_policy() {
-    use maestro_tui::stdin_buffer::RawInputByteFramer;
+    use maestro_tui::input_buffer::RawInputByteFramer;
     let mut host = RawInputByteFramer::default();
     assert!(host.push(&[]).is_empty());
     assert_eq!(
@@ -734,7 +734,7 @@ fn assert_host_framing_policy() {
 
 /// Mouse validity is shared by doubled-Escape splitting and orphaned-tail disposal.
 fn assert_host_mouse_framing() {
-    use maestro_tui::stdin_buffer::RawInputByteFramer;
+    use maestro_tui::input_buffer::RawInputByteFramer;
     for report in [
         b"\x1b[<35;10;20M".as_slice(),
         b"\x1b[<35;10;20m",

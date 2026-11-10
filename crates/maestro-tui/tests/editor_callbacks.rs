@@ -1,7 +1,7 @@
 #![cfg(test)]
 //! Callback reentry and ownership through the retained editor.
 use crate::editor_host as support;
-use maestro_tui::{Editor, EditorOptions, tui::InputHandler};
+use maestro_tui::{Editor, EditorOptions, interface::InputHandler};
 use std::{cell::RefCell, rc::Rc};
 #[test]
 fn editor_change_callbacks_reenter_and_survive_replacement() {
@@ -71,7 +71,7 @@ fn editor_submit_reads_live_callback_after_change() {
         assert_eq!(target.get_text(), "");
         assert_eq!(
             target.get_cursor(),
-            maestro_tui::autocomplete::CursorPosition { line: 0, col: 0 }
+            maestro_tui::candidates::CursorPosition { line: 0, col: 0 }
         );
         log.borrow_mut().push("change-empty".to_owned());
         target.handle_input("\x1b[45;5u");

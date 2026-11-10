@@ -32,7 +32,7 @@ use maestro_resources::LoadSkillsResult;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
 use maestro_session::{
     CompactionResult, Presence, SessionManager,
-    messages::{CustomAgentMessages, CustomMessageInput},
+    message_records::{CustomAgentMessages, CustomMessageInput},
 };
 use maestro_settings::SettingsManager;
 use maestro_tools::ToolDefinitionRecord;

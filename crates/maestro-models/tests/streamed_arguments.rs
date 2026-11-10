@@ -576,7 +576,7 @@ fn parsed_arguments_preserves_object_fallback_and_public_path() {
         let input = row["input"]["text"].as_str().unwrap();
         for parse in [
             maestro_models::parsed_arguments,
-            maestro_models::arguments::parsed_arguments,
+            maestro_models::parameters::parsed_arguments,
         ] {
             let actual = parse(input);
             assert_numeric_value(&actual, &row["expected"]["value"]);
@@ -603,7 +603,7 @@ fn parsed_arguments_preserves_object_fallback_and_public_path() {
 /// Strict display parsing shares projection without model string repair.
 #[test]
 fn strict_json_projection_preserves_complete_values_without_repair() {
-    use maestro_models::arguments::json_parse::parse_json;
+    use maestro_models::parameters::json_parse::parse_json;
     use serde_json::json;
     for input in ["1e309", "-1e309"] {
         assert_eq!(parse_json(input).unwrap(), serde_json::Value::Null);
@@ -705,8 +705,8 @@ fn parsed_arguments_keeps_every_recorded_root() {
         let input = row.input.as_deref().unwrap_or_default();
         for parse in [
             maestro_models::parsed_arguments as fn(&str) -> serde_json::Value,
-            maestro_models::arguments::parsed_arguments,
-            maestro_models::arguments::json_parse::parsed_arguments,
+            maestro_models::parameters::parsed_arguments,
+            maestro_models::parameters::json_parse::parsed_arguments,
         ] {
             assert_root_row(row, &parse(input));
         }

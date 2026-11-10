@@ -5,7 +5,7 @@ use maestro_extensions::{Cancellation, ExtensionRunner, Local};
 use maestro_extensions::{
     SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeForkEvent,
     SessionBeforeForkResult, SessionBeforeSwitchEvent, SessionBeforeSwitchResult,
-    SessionBeforeTreeEvent, SessionBeforeTreeResult, runner::RunnerEmitEvent,
+    SessionBeforeTreeEvent, SessionBeforeTreeResult, execution::RunnerEmitEvent,
 };
 use serde::Serialize;
 use serde_json::{Value, json};

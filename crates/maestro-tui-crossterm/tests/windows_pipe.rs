@@ -14,7 +14,7 @@ use std::time::Duration;
 use maestro_test_process::TestProcess;
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
-use maestro_tui_crossterm::terminal::wait_for_input;
+use maestro_tui_crossterm::adapter::wait_for_input;
 
 /// Marks the copy whose standard input is the pipe under test.
 const ROLE: &str = "MAESTRO_TERMINAL_TEST_PIPE";

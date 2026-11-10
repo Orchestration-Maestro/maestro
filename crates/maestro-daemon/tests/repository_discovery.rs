@@ -382,7 +382,7 @@ fn repository_reftable_queries_use_native_process_owner() {
 #[cfg(target_os = "linux")]
 #[test]
 fn repository_discovery_preserves_non_utf8_ancestors_and_relative_links() {
-    use maestro_workspace::workspace::git::native::discover_git_paths;
+    use maestro_workspace::spaces::repository::native::discover_git_paths;
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let scratch = directory.path().to_path_buf();
@@ -431,7 +431,7 @@ fn permission_discovery_fixture() -> (maestro_test_directory::Scratch, PathBuf, 
 #[cfg(unix)]
 #[test]
 fn unreadable_git_marker_keeps_workspace_ascent_and_footer_stop() {
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     let (_directory, outer, inner) = permission_discovery_fixture();
     let marker = inner.join(".git");
     std::fs::write(&marker, "gitdir: ../.git\n").unwrap();
@@ -449,7 +449,7 @@ fn unreadable_git_marker_keeps_workspace_ascent_and_footer_stop() {
 #[cfg(unix)]
 #[test]
 fn inaccessible_git_marker_stat_climbs_for_both_callers() {
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     let (_directory, outer, inner) = permission_discovery_fixture();
     // A privileged run looks inside anyway, so there is nothing to check.
     let Some(restore) = maestro_test_directory::deny(&inner, 0o0).unwrap() else {
@@ -465,7 +465,7 @@ fn inaccessible_git_marker_stat_climbs_for_both_callers() {
 #[cfg(unix)]
 #[test]
 fn inaccessible_optional_common_metadata_falls_back_for_both_callers() {
-    use maestro_workspace::workspace::git::native::{DiscoveryPolicy, discover_git_paths_with};
+    use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     use std::os::unix::fs::symlink;
     let (directory, _outer, inner) = permission_discovery_fixture();
     let store = directory.path().join("store");

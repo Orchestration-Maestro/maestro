@@ -1,24 +1,24 @@
 //! Workspace creation through the topology allocator and shared native launch inputs.
 
-use super::{App, state::Mode};
+use super::{App, model::Mode};
 use crate::{
-    pane::{launch_env::PaneLaunchEnv, runtime::PaneRuntime, shell::PaneShellConfig},
+    panes::{commands::PaneShellConfig, launch::PaneLaunchEnv, lifecycle::PaneRuntime},
     settings::model::NewTerminalCwdConfig,
-    terminal::state::TerminalState,
+    terminal::model::TerminalState,
 };
 use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, WorkspaceCreateParams},
 };
 use maestro_workspace::{
-    layout::PaneId,
-    workspace::{public_pane_id_for_number, public_tab_id_for_number},
+    spaces::{public_pane_id_for_number, public_tab_id_for_number},
+    tiling::PaneId,
 };
 use std::{collections::HashMap, io, path::PathBuf};
 
 /// Resolves the configured cwd policy against one observed focused directory.
 fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<PathBuf>) -> PathBuf {
-    let home = crate::paths::home_directory;
+    let home = crate::locations::home_directory;
     let current = || std::env::current_dir().ok();
     match policy {
         NewTerminalCwdConfig::Follow => follow_cwd
@@ -149,7 +149,7 @@ impl<C: FnMut() -> u128> App<C> {
         let launch = &self.launch;
         let config = &self.config;
         let cwd = initial_cwd.clone();
-        let home = crate::paths::home_directory();
+        let home = crate::locations::home_directory();
         let (pane, (terminal, runtime)) =
             self.state
                 .topology
@@ -174,7 +174,10 @@ impl<C: FnMut() -> u128> App<C> {
             &mut self.state.topology.workspaces[index],
             home.as_deref(),
         );
-        crate::logging::workspace_created(&self.state.topology.workspaces[index].id, pane.raw());
+        crate::diagnostics::workspace_created(
+            &self.state.topology.workspaces[index].id,
+            pane.raw(),
+        );
         if focus || self.state.active.is_none() {
             self.state.switch_workspace(index);
             self.state.mode = Mode::Terminal;
@@ -296,7 +299,7 @@ pub(super) struct RootLaunch {
 /// Spawns the root process of a new tab with this pane's managed identity and the caller's
 /// extra environment, returning its terminal record and runtime.
 pub(super) fn spawn_root(
-    runtime_config: crate::pane::runtime::PaneRuntimeConfig,
+    runtime_config: crate::panes::lifecycle::PaneRuntimeConfig,
     config: &crate::settings::model::Config,
     root: RootLaunch,
     request: maestro_workspace::tab::SpawnRequest,
@@ -337,7 +340,7 @@ impl<C: FnMut() -> u128> App<C> {
                     .map(|terminal| (terminal.state, pane.seen))
             })
             .max_by_key(|(state, seen)| {
-                crate::workspace::aggregate::pane_attention_priority(*state, *seen)
+                crate::workspace::summary::pane_attention_priority(*state, *seen)
             })
             .unwrap_or((maestro_detection::agents::AgentState::Unknown, true));
         Some(maestro_protocol::schema::TabInfo {
@@ -357,7 +360,7 @@ impl<C: FnMut() -> u128> App<C> {
     ) -> Option<maestro_protocol::schema::WorkspaceInfo> {
         use maestro_protocol::schema::{WorkspaceInfo, WorkspaceWorktreeInfo};
         let ws = self.state.topology.workspaces.get(index)?;
-        let (state, seen) = crate::workspace::aggregate::aggregate_state(ws, &self.state.terminals);
+        let (state, seen) = crate::workspace::summary::aggregate_state(ws, &self.state.terminals);
         Some(WorkspaceInfo {
             workspace_id: ws.id.clone(),
             number: index + 1,
@@ -374,10 +377,7 @@ impl<C: FnMut() -> u128> App<C> {
                 .state
                 .public_tab_id(index, ws.active_tab)
                 .unwrap_or_else(|| {
-                    maestro_workspace::workspace::public_tab_id_for_number(
-                        &ws.id,
-                        ws.active_tab + 1,
-                    )
+                    maestro_workspace::spaces::public_tab_id_for_number(&ws.id, ws.active_tab + 1)
                 }),
             agent_status: super::actions::pane_agent_status(state, seen),
             tokens: ws.metadata_tokens.values(),

@@ -44,8 +44,12 @@ pub mod nextest_setup;
 mod nextest_wrapper;
 /// Emscripten build and link audit of the in-frame sandbox runtime.
 mod sandbox_runtime;
+/// Pinned native search program resolution.
+mod search_tools;
 /// Reusable test-setup staging and validation.
 mod test_setup;
+/// The toolchain a workspace's Cargo children compile with.
+mod toolchain;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 /// The workspace a development command serves.
@@ -299,11 +303,13 @@ fn argument<'a>(args: &'a [OsString], index: usize, name: &str) -> io::Result<&'
 }
 
 /// Convert a native child status into the development command's exit code.
+///
+/// A status without an exit code, such as a signal that ended the child, has no code to
+/// report, so it names the native status before the command fails.
 pub(crate) fn exit_code(status: std::process::ExitStatus) -> ExitCode {
-    ExitCode::from(
-        status
-            .code()
-            .and_then(|code| u8::try_from(code).ok())
-            .unwrap_or(1),
-    )
+    let Some(code) = status.code().and_then(|code| u8::try_from(code).ok()) else {
+        eprintln!("child ended by {status}");
+        return ExitCode::from(1);
+    };
+    ExitCode::from(code)
 }

@@ -4,7 +4,7 @@
 use super::attachments;
 use super::completion_native::Tree;
 use maestro_cancellation::Cancellation;
-use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
+use maestro_tui::candidates::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider};
 use std::future::Future;
 /// Run real-search assertions with absent or unusable ambient search tools.
@@ -17,11 +17,7 @@ pub(crate) fn isolated(body: impl Future<Output = ()>) {
         return;
     }
     let bin = Tree::new().unwrap();
-    let source = std::env::var_os("MAESTRO_TEST_FD").expect("nextest supplies pinned fd");
-    let fd = bin
-        .path()
-        .join(format!("fd{}", std::env::consts::EXE_SUFFIX));
-    std::fs::copy(source, &fd).unwrap();
+    let fd = maestro_test_process::install_search_program("fd", bin.path()).unwrap();
     let ambient = Tree::new().unwrap();
     for name in ["fd", "rg"] {
         maestro_test_process::install_command(

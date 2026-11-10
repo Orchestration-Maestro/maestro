@@ -1,7 +1,7 @@
 //! A graceful stop of the selected daemon through its API socket.
 
 use super::{DEFAULT_SESSION_NAME, Selection, SessionInfo};
-use crate::api::client::request_line;
+use crate::service::transport::request_line;
 use maestro_ipc::local_socket::{LocalStream, LocalStreamExt, connect_local_stream_until};
 use maestro_protocol::{
     rpc_types::{Request, RpcCommand, RpcResponse},

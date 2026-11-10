@@ -4,7 +4,7 @@ use crate::guest_calls::paints::Failure;
 use crate::guest_calls::widget_calls::{Answered, Event, Item, Truncate};
 use crate::local_resources::{Lease, Message, Registry, SignalEndpoint, effects::TuiEndpoint};
 use crate::widget_reads::{Lent, Paint, Reply, WidgetMessage};
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     Container, ExtensionLoader, ExtensionWidgets, SelectItem, SelectList, SelectListLayoutOptions,
     SelectListTheme, SelectListTruncatePrimaryContext, SettingItem, SettingsList,
     SettingsListOptions, SettingsListTheme,
@@ -518,7 +518,7 @@ fn submenu(binding: &Binding<'_>, handle: Handle) -> Rc<SubmenuFn> {
 /// The lent selection list styles in field order.
 pub(crate) fn select_roles(
     theme: &Rc<SelectListTheme>,
-) -> Vec<maestro_extensions::widgets::BorderColor> {
+) -> Vec<maestro_extensions::presentation::BorderColor> {
     vec![
         theme.selected_prefix.clone(),
         theme.selected_text.clone(),

@@ -4,7 +4,7 @@
 
 The root operations use thread-safe callables on native targets and `Rc` callables
 on browser targets. Their explicit local counterparts
-have the same names under `maestro_agent::agent_loop::local`, with
+have the same names under `maestro_agent::execution::local`, with
 `LocalAgentContext` and `LocalAgentLoopConfig`. Submitted local operations take
 `AgentLoopOptionsRecord<Local>` plus an `AgentSpawner<Local>`; provider tasks reuse
 that facility. Both namespaces keep one explicit custom-message type argument
@@ -41,7 +41,7 @@ its entry handles. It returns the prompts and generated entries.
 only generated entries. Empty history and an assistant tail are rejected before
 observations or request conversion; custom tails are converted by the caller.
 
-Local awaited operations take `agent_loop::LocalAgentLoopOptions`:
+Local awaited operations take `execution::LocalAgentLoopOptions`:
 `RegisteredDispatch { signal, spawn }` requires the caller's provider task facility;
 `ReplacementStream { signal, stream_fn }` requires no provider submission.
 Threaded awaited options and function arity are unchanged. Configuration payload

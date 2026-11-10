@@ -76,14 +76,14 @@ root forwarding functions and the provider-module simple functions differ; see
 
 | API | Owning module / options | Focused contract / runtime witness |
 |---|---|---|
-| `anthropic-messages` | `messages::anthropic` / `AnthropicOptions` | [Messages](messages.md); `bundled_dispatch::maestro_public_routes_reach_real_adapters` |
-| `openai-completions` | `chat::openai_completions` / `OpenAICompletionsOptions` | [Chat completions](chat-completions.md); same dispatch witness |
-| `mistral-conversations` | `reasoning::mistral` / `MistralOptions` | [Reasoning conversations](reasoning-conversations.md); same dispatch witness |
-| `openai-responses` | `responses::openai_responses` / `OpenAIResponsesOptions` | [Responses](responses.md); same dispatch witness |
-| `azure-openai-responses` | `responses::azure_openai_responses` / `AzureOpenAIResponsesOptions` | [Responses](responses.md); `bundled_options::maestro_azure_extras_select_target` |
-| `openai-codex-responses` | `response_sessions::openai_codex_responses` / `OpenAICodexResponsesOptions` | [Response sessions](response-sessions.md); `bundled_dispatch::maestro_response_session_cache_affinity_completes` |
-| `google-generative-ai` | `content::google` / `GoogleOptions` | [Content generation](content-generation.md); `content_generation_invocation::raw_request_projects_the_selected_payload` |
-| `google-vertex` | `content::google_vertex` / `GoogleVertexOptions` | [Cloud content generation](content-generation.md#cloud-invocation); `cloud_content_invocation::cloud_root_and_registry_entries_dispatch` |
+| `anthropic-messages` | `messages::endpoint` / `AnthropicOptions` | [Messages](messages.md); `bundled_dispatch::maestro_public_routes_reach_real_adapters` |
+| `openai-completions` | `chat::endpoint` / `OpenAICompletionsOptions` | [Chat completions](chat-completions.md); same dispatch witness |
+| `mistral-conversations` | `reasoning::endpoint` / `MistralOptions` | [Reasoning conversations](reasoning-conversations.md); same dispatch witness |
+| `openai-responses` | `responses_api::openai` / `OpenAIResponsesOptions` | [Responses](responses.md); same dispatch witness |
+| `azure-openai-responses` | `responses_api::azure_transport` / `AzureOpenAIResponsesOptions` | [Responses](responses.md); `bundled_options::maestro_azure_extras_select_target` |
+| `openai-codex-responses` | `response_sessions::codex` / `OpenAICodexResponsesOptions` | [Response sessions](response-sessions.md); `bundled_dispatch::maestro_response_session_cache_affinity_completes` |
+| `google-generative-ai` | `content::generative` / `GoogleOptions` | [Content generation](content-generation.md); `content_generation_invocation::raw_request_projects_the_selected_payload` |
+| `google-vertex` | `content::managed` / `GoogleVertexOptions` | [Cloud content generation](content-generation.md#cloud-invocation); `cloud_content_invocation::cloud_root_and_registry_entries_dispatch` |
 | `bedrock-converse-stream` | `cloud::amazon_bedrock` / `BedrockOptions` | [Cloud conversations](cloud-conversations.md); `cloud_conversation_streams::text_events_keep_shared_result_and_completion` |
 
 Each module exposes `stream_*` and `stream_simple_*` under its provider name.
@@ -388,7 +388,7 @@ Do not apply these session policies to other adapters.
 does not remove the registration. `cleanup_session_resources` invokes the live
 registered callbacks and collects their failures in order; call it for the one
 session you own or for all sessions, as the case requires. See the
-[cleanup declarations](../../crates/maestro-models/src/records/session_resources.rs),
+[cleanup declarations](../../crates/maestro-models/src/records/sessions.rs),
 `maestro_cleanup_collects_failures_in_order` in the
 [invocation tests](../../crates/maestro-models/tests/model_invocation.rs) and
 `maestro_cleanup_observes_live_changes` in the

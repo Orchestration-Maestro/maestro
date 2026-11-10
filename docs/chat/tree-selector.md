@@ -1,6 +1,6 @@
 # Session-tree navigation
 
-[`TreeList`](../../crates/maestro-chat/src/components/tree_selector/tree_list.rs)
+[`TreeList`](../../crates/maestro-chat/src/components/tree_picker/tree_list.rs)
 uses the shared [session-tree projection owner](../sessions/tree-projection.md) through
 `maestro_app::export_html::template` to retain a presentation of the supplied [session tree records](../sessions/session_format.md).
 Its selected-node getter returns a shared occurrence handle; an empty view returns `None`.
@@ -123,7 +123,7 @@ normalization and shared-whitespace trimming. Tool summaries reuse the applicati
 JSON and read-range exports; their tool-specific prefix budgets remain here.
 ## Panel and labels
 
-[`TreeSelectorComponent`](../../crates/maestro-chat/src/components/tree_selector/panel.rs)
+[`TreeSelectorComponent`](../../crates/maestro-chat/src/components/tree_picker/panel.rs)
 composes borders, title, navigation help, the live authored query and the retained
 list. `TreeSelectorOptions` supplies selection, filter, terminal height, theme,
 runtime, decorations and an optional wall clock. Pages use half the height, at

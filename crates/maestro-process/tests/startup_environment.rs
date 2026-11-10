@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::child_programs;
-use maestro_process::shell::Launch;
+use maestro_process::commands::Launch;
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use maestro_test_process::child::without_harness;
 use std::path::Path;
@@ -145,9 +145,9 @@ fn sdk_children_keep_ambient_marker() {
             .with_context(std::iter::empty::<(&str, &str)>(), None)
             .spawn_captured()
             .unwrap();
-        maestro_process::child_process::wait_for_child_process(
+        maestro_process::children::wait_for_child_process(
             &mut child,
-            maestro_process::child_process::WaitOptions::default(),
+            maestro_process::children::WaitOptions::default(),
             std::future::pending(),
             None,
         )

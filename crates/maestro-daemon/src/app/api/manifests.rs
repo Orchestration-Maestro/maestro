@@ -1,11 +1,11 @@
 //! The detection-manifest commands: the retained catalogue's status and its reload.
 
 use super::{super::App, responses::api_error};
-use crate::paths::DaemonPaths;
+use crate::locations::DaemonPaths;
 use maestro_detection::{
     agents::agent_label,
-    manifest::AgentManifestSummary,
-    manifest_update::{ManifestUpdateStatus, load_status},
+    definitions::AgentManifestSummary,
+    updates::{ManifestUpdateStatus, load_status},
 };
 use maestro_protocol::schema::{AgentManifestInfo, ErrorBody, ResponseResult};
 use std::path::Path;

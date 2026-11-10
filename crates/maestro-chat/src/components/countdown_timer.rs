@@ -1,6 +1,6 @@
 //! Whole-second countdown policy over the toolkit runtime.
 use maestro_tui::TUI;
-use maestro_tui::tui::{RepeatingTimer, TuiRuntime};
+use maestro_tui::interface::{RepeatingTimer, TuiRuntime};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;

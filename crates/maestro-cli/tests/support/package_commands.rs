@@ -13,7 +13,7 @@ use maestro_app::{
     PackageOperations, Settings, SettingsManager, SettingsScope, SettingsStorage,
     SettingsStorageError, SettingsUpdate, SpawnSyncError,
 };
-use maestro_cli::input::config_selector::ConfigPresentation;
+use maestro_cli::input::configuration::ConfigPresentation;
 use maestro_cli::packages::{PackageCommandContext, handle_config_command, handle_package_command};
 use maestro_test_directory::Scratch;
 use serde_json::Value;

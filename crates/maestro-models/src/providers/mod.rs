@@ -5,16 +5,16 @@ pub(crate) mod base64_text;
 pub mod chat;
 pub mod cloud;
 pub mod content;
-pub mod faux;
-pub mod http;
 pub(crate) mod json_text;
 pub mod messages;
 pub(crate) mod model_compat;
 pub(crate) mod nullable;
 pub(crate) mod openai_prompt_cache;
 pub mod reasoning;
-pub mod responses;
+pub mod responses_api;
+pub mod scripted;
 pub(crate) mod selected_fields;
+pub mod transport;
 
 pub mod response_sessions;
 

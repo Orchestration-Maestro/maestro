@@ -3,9 +3,9 @@
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use super::super::toolchain;
 use super::super::workspace::GUIDE;
 
 /// Distinguish concurrent resolutions in the same process.
@@ -42,8 +42,7 @@ pub(super) fn refresh(
     fs::create_dir(project.0.join("src"))?;
     fs::write(project.0.join("src/lib.rs"), "")?;
     fs::copy(checkout.join("Cargo.lock"), project.0.join("Cargo.lock"))?;
-    let output = Command::new(cargo)
-        .current_dir(&checkout)
+    let output = toolchain::command(cargo, &checkout)
         .args([
             "metadata",
             "--offline",

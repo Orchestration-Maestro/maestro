@@ -5,8 +5,8 @@ use std::rc::Rc;
 use maestro_cancellation::Cancellation;
 
 use crate::Editor;
-use crate::autocomplete::AutocompleteProvider;
-use crate::tui::{Component, InputHandler};
+use crate::candidates::AutocompleteProvider;
+use crate::interface::{Component, InputHandler};
 
 /// Receives the editor text when the user submits or changes it.
 pub type TextCallback = Rc<dyn Fn(&str)>;

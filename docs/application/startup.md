@@ -136,6 +136,6 @@ success blank line.
 the stream, resolves success/warning roles from its brand pack, preserves dim decoration
 and appends exactly one LF, including for the final plain empty line. Embedded newlines
 and decoration remain in the payload. No global output stream or palette is installed.
-Unix hosts may supply [`terminal::wait_for_input`](../terminal/native-terminal.md#one-input-wait).
+Unix hosts may supply [`adapter::wait_for_input`](../terminal/native-terminal.md#one-input-wait).
 Frontend startup invocation and manager installation remain separate operations.
 See [ordinary command metadata](commands.md) for the presentation inventory.

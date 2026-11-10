@@ -4,13 +4,13 @@ use crate::support::api::{
     TestApp, add_tab, add_workspaces, answer, daemon_with_workspaces, failure, pair, request,
     root_pane, with_live_daemon,
 };
-use maestro_daemon::app::state::Mode;
+use maestro_daemon::app::model::Mode;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{
     AgentStatus, ErrorBody, PaneDirection, PaneFocusDirectionReason, PaneInfo, PaneLayoutSnapshot,
     ResponseResult,
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 use serde_json::{Value, json};
 
 /// The pane a single-pane result reports.

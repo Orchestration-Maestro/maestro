@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use url::Url;
 
-use crate::arguments::json_parse::whitespace;
+use crate::parameters::json_parse::whitespace;
 
 /// A snapshot of the process environment taken once per request.
 pub(super) struct Environment(pub(super) HashMap<String, String>);

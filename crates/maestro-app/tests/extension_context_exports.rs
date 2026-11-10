@@ -12,7 +12,7 @@ use maestro_credentials::{AuthStorage, AuthStorageData};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_extensions::ExtensionRunner;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_extensions::runner::ExtensionRunnerSession;
+use maestro_extensions::execution::ExtensionRunnerSession;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_extensions::{Extension, ExtensionAPI, ExtensionErrorListener, ExtensionExecution};
 #[cfg(not(target_arch = "wasm32"))]

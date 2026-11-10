@@ -1301,6 +1301,11 @@ resolves that native executable. Preparation also copies, hashes and restores th
 example as `prepare_author_component.exe`. Linux and macOS keep extensionless executable
 names. Cargo's `--example prepare_author_component` target name stays the same on all hosts.
 
+Every development command that runs a child exits with that child's status. A child ended by
+a signal has no exit code, so the tool prints the native status on standard error, such as
+`child ended by signal: 9 (SIGKILL)`, then exits with status 1. That line separates a killed
+example from one that failed on its own.
+
 With `TEST_ARCHIVE` unset and no prepared bundle, local runs build the example
 automatically. Before guest-authoring tests, the `author-component` setup locates the active
 artifact directory through its documented platform library search path. It runs
@@ -1402,7 +1407,11 @@ they select every test, or none when the file is Markdown or under `docs/`.
 The conventions check names every test that reads `docs/`, `examples/` or `assets/` at
 run time, through a `../../` path, a join onto the workspace root or a call to
 `get_docs_path`, `get_examples_path` or `get_package_dir`, and fails until
-`test_inputs` routes that directory to the reading package.
+`test_inputs` routes that directory to the reading package. The
+[workspace conventions](architecture.md#workspace-architecture-checks) read every
+crate's manifests and sources, so `crates/` routes to `maestro-test-conventions`: a
+change under any crate selects the conventions suite beside the changed crate and
+its dependents.
 
 ### Test preparation in a consuming workspace
 
@@ -1419,6 +1428,13 @@ target/test-setup/development nextest-setup author-component
 Preparation keeps the running tool intact when it is already in the output
 directory. `prepare-test-setup install` does the same. Staging from another
 directory replaces the destination file instead of rewriting it.
+
+Every Cargo command that preparation and the nextest setups start, the cold
+browser seed builds included, runs on the toolchain rustup activates in the
+workspace being prepared. A dependency that ships its own `rust-toolchain` file,
+or a machine default that differs from the workspace pin, cannot change the
+compiler. A `RUSTUP_TOOLCHAIN` the tool inherited stands, because rustup ranks
+it above the workspace files. A machine without rustup runs Cargo as it is.
 
 The tool takes its checkout from the workspace root above the directory it starts
 in: the nearest `Cargo.toml` that declares a workspace. Start it anywhere inside the
@@ -1468,10 +1484,25 @@ neither holds nor locks it stages nothing.
 
 Two more steps run only where their input exists. The
 [browser graph](#browser-author-build) is built when the workspace holds
-`maestro-web`. The setup example exports `MAESTRO_TEST_RG` and `MAESTRO_TEST_FD`,
-the pinned `rg` and `fd` the native search tests copy, for each program the
-workspace's `mise.toml` pins as `ripgrep` or `fd`; a workspace that pins neither
-exports neither.
+`maestro-web`. For each search program the workspace's `mise.toml` pins as
+`ripgrep` or `fd`, preparation resolves the required version from its full `PATH`
+and copies it into `<TEST_PREPARE_OUTPUT>/search-tools/rg` or `search-tools/fd`,
+with `.exe` on Windows. Missing or wrong-version programs fail preparation.
+`mise.toml` is a bundle-cache input, so a pin change rebuilds the bundle.
+
+The `author-component` setup exports `MAESTRO_TEST_RG` and `MAESTRO_TEST_FD` as
+absolute paths to those copies. The prepared example receives these paths without
+searching `PATH`; archived tests need neither program on `PATH`. A local run
+without a prepared bundle still resolves the pins from `PATH`. A workspace that
+pins neither program exports neither variable.
+
+Native search tests call `maestro_test_process::install_search_program("fd", bin.path())`
+(or `"rg"`) to copy the exported program into their own directory. The helper keeps
+the program's permissions and returns its installed path. The caller retains the
+directory guard and controls its manager, child `PATH` or child variables.
+The tooling search-setup tests use the same exports to install private programs
+for their preparation and local-setup children. Their runner needs neither
+program on `PATH`; archived-export children also exclude the private directory.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
@@ -1555,7 +1586,7 @@ directory as their only lane.
 Cargo locks the package cache of its home while it resolves, even with
 `--offline`, so two tests that start `cargo` in one home wait for each other.
 Tooling fixtures therefore run Cargo in a private `CARGO_HOME` that
-`toolchain_support::fixture_command` creates beside the fixture. The recipe
+`compiler::fixture_command` creates beside the fixture. The recipe
 tool build, every `Workspace` command, the consumer workspaces and their hook
 runs, the standalone asset and wasm probe fixtures, and lock generation and
 metadata queries on the browser fixture manifest use one.
@@ -2092,7 +2123,7 @@ test observes.
 | `crates/maestro-credentials/tests/credential_key_selection.rs:391-396` | `!exit 1`, a missing helper, empty output and whitespace. | The same resolver, and the assertions are on its result domain. |
 | `crates/maestro-credentials/tests/config_values.rs:407-554` | Real `!printf`, `sed`, `cat` and `exec` payloads through the resolver. | The resolver's shell is the subject: pipes, multiline output, invalid UTF-8, inherited environment, cwd and the deadline all come from a real child. |
 | `crates/maestro-extensions/tests/support/action_checks.rs:1069`, `:1073-1074` | `/bin/sh -c` as the program handed to the extension `exec` operation. | `exec` is the subject: its captured streams, exit code and abort must come from a real child. |
-| `crates/maestro-daemon/src/pane/runtime/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
+| `crates/maestro-daemon/src/panes/lifecycle/tests.rs:388`, `:745`, `:791` | `/bin/sh -c` pane scripts with `trap`, background jobs and `exec`. | The pane's shell and its process-group teardown are the subject: members that ignore hangup must still be reaped after the shell. |
 | `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
 | `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
@@ -2790,7 +2821,7 @@ a hang or runaway memory as a finding.
 | `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
 | `tool-call-arguments` | `maestro_models::parsed_arguments` |
 | `sandbox-lowering` | `maestro_web::components::sandboxed_iframe::lowering::{program, provider}` for supplied bodies and provider expressions |
-| `git-worktrees` | `maestro_daemon::git::worktree::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
+| `git-worktrees` | `maestro_daemon::git::checkouts::ExistingWorktree::parse_porcelain`, retaining newline-framed checkout path bytes |
 
 The text targets skip input that is not UTF-8, because their callers only pass
 decoded text. Seeds come from the existing test fixtures and live in

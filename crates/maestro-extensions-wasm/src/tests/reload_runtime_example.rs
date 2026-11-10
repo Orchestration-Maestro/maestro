@@ -3,10 +3,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::controlled::Controlled;
-use super::example_support::{
-    Command, Observation, assert_registered_command, invoke_command_on_component,
-    invoke_tool_on_component, registered_metadata, release_all, result_value, start,
-};
+use super::example_support::{Command, Observation, assert_registered_command, invoke_command_on_component, invoke_tool_on_component, registered_metadata, release_all, result_value, start};
 use super::host::Harness;
 use super::host_family::guest::ToolCapabilities as ComponentCapabilities;
 use crate::component_adapter::{Exports, ToolCapabilities};

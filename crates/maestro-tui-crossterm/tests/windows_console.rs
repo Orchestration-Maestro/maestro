@@ -19,7 +19,7 @@ use std::time::Duration;
 use crossterm_winapi::{Console, ConsoleMode, Handle, HandleType, ScreenBuffer, WindowPositions};
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
-use maestro_tui_crossterm::terminal::wait_for_input;
+use maestro_tui_crossterm::adapter::wait_for_input;
 use tokio::task::LocalSet;
 
 /// The input modes raw mode turns off.

@@ -357,13 +357,13 @@ enum Capability {
     /// Original raw UI capability, independent of later bindings.
     Ui(ExtensionUIContext),
     /// Original footer metadata lent to a footer factory.
-    Footer(Rc<dyn maestro_extensions::footer_data_provider::ReadonlyFooterDataProvider>),
+    Footer(Rc<dyn maestro_extensions::footer::ReadonlyFooterDataProvider>),
     /// Original redraw capability of one tool row.
     Invalidate(Rc<dyn Fn()>),
     /// A host widget the extension built.
     Widget(Rc<crate::widget_reads::Widget>),
     /// A lent host style.
-    Style(maestro_extensions::widgets::BorderColor),
+    Style(maestro_extensions::presentation::BorderColor),
     /// The lent host highlighting.
     Highlighter(Rc<crate::guest_calls::paints::HighlightFn>),
     /// Shared native overlay placement and its bound error reporter.
@@ -383,9 +383,9 @@ enum Capability {
     /// Closes an open settings submenu.
     SubmenuDone(Rc<dyn Fn(Option<String>)>),
     /// A keybindings manager.
-    Keybindings(maestro_extensions::widgets::ExtensionKeybindings),
+    Keybindings(maestro_extensions::presentation::ExtensionKeybindings),
     /// A native text callback lent to an authored editor.
-    Text(maestro_extensions::widgets::TextCallback),
+    Text(maestro_extensions::presentation::TextCallback),
     /// A native completion provider lent to the guest.
     Provider(crate::guest_calls::providers::Native),
     /// An editor factory another extension set.
@@ -661,8 +661,8 @@ pub(crate) enum Identity {
         maestro_extensions::types::WeakUIHostCall<
             (
                 maestro_extensions::TUI,
-                maestro_extensions::widgets::EditorTheme,
-                maestro_extensions::widgets::ExtensionKeybindings,
+                maestro_extensions::presentation::EditorTheme,
+                maestro_extensions::presentation::ExtensionKeybindings,
             ),
             maestro_extensions::types::EditorFactoryOutcome,
         >,

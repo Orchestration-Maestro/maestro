@@ -15,8 +15,8 @@ use cases::{assert_rows, run_case};
 use chat::{TestResult, context, model, rows};
 #[cfg(not(target_arch = "wasm32"))]
 use json::canonical;
-use maestro_models::providers::chat::openai_completions::ResolvedOpenAICompletionsCompat;
-use maestro_models::providers::chat::openai_completions::messages::convert_messages;
+use maestro_models::providers::chat::endpoint::ResolvedOpenAICompletionsCompat;
+use maestro_models::providers::chat::endpoint::conversion::convert_messages;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Model, ProviderResponse, StopReason, StreamOptions, get_model};
 use maestro_models::{ModelCompat, OpenAICompletionsCompat};

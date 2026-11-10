@@ -4,7 +4,7 @@ use crate::support::api::{
     TestApp, add_tab, daemon_with_workspaces, event_names, events_after, failure, join_group,
     request, root_pane, split_pane, workspace_ids,
 };
-use maestro_daemon::app::state::{CopyModeState, Mode};
+use maestro_daemon::app::model::{CopyModeState, Mode};
 use maestro_daemon::app::terminal_targets::TerminalTargetError;
 use maestro_daemon::events::AppEvent;
 use maestro_detection::agents::Agent;

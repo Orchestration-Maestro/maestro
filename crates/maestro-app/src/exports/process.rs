@@ -7,7 +7,7 @@ pub use maestro_process::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_process::child_process::{
+pub use maestro_process::children::{
     CapturedChild, Termination, WaitOptions, wait_for_child_process,
 };
 

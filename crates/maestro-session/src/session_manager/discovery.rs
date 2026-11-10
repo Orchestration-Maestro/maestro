@@ -2,11 +2,11 @@
 #![doc = include_str!("../../../../docs/discovery.md")]
 use super::{
     SessionInfo, SessionManager,
-    context::{ecma_whitespace, observation, property},
     files::{get_default_session_dir, jsonl_path, modified_millis},
+    history::{ecma_whitespace, observation, property},
     records::{Admission, for_each_entry},
 };
-use crate::messages::{millis_number, timestamp_millis};
+use crate::message_records::{millis_number, timestamp_millis};
 use futures_util::{StreamExt, stream};
 use serde_json::Value;
 use std::{

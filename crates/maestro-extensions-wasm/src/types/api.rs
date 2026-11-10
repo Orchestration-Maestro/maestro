@@ -126,9 +126,9 @@ port! {
         /// Returns the native read-only preset in its original insertion order.
         fn create_read_only_tool_definitions(cwd: String, options: crate::ToolsOptions) -> Vec<crate::ToolDef>;
         /// Returns the native all preset in its original insertion order.
-        fn create_all_tools(cwd: String, options: crate::ToolsOptions) -> indexmap::IndexMap<crate::ToolName, crate::Tool>;
+        fn create_all_tools(cwd: String, options: crate::ToolsOptions) -> crate::IndexMap<crate::ToolName, crate::Tool>;
         /// Returns the native all preset in its original insertion order.
-        fn create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> indexmap::IndexMap<crate::ToolName, crate::ToolDef>;
+        fn create_all_tool_definitions(cwd: String, options: crate::ToolsOptions) -> crate::IndexMap<crate::ToolName, crate::ToolDef>;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
         /// Registers a custom-message renderer.
@@ -177,7 +177,7 @@ port! {
     }
     infallible {
         /// Returns independently retained native operations.
-        fn native_io() -> Rc<dyn crate::io::NativeIo>;
+        fn native_io() -> Rc<dyn crate::effects::NativeIo>;
         /// Returns the supplied host bus.
         fn events() -> crate::EventBus;
     }
@@ -231,7 +231,7 @@ impl ExtensionAPI {
         file_path: String,
         operation: impl FnOnce() -> ExtensionFuture<'static, T> + 'static,
     ) -> ExtensionFuture<'static, T> {
-        crate::tools::file_mutation_queue::run(&*self.0, file_path, operation)
+        crate::registry::file_mutation_queue::run(&*self.0, file_path, operation)
     }
 
     /// Encodes ordinary operands without introducing another native algorithm.

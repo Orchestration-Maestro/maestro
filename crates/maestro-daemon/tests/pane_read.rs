@@ -4,7 +4,7 @@
 use crate::support::api::{
     TestApp, answer, daemon_with_workspaces, failure, request, run_in_pane, with_live_daemon,
 };
-use maestro_daemon::pane::terminal::TerminalReadSnapshot;
+use maestro_daemon::panes::display::TerminalReadSnapshot;
 use maestro_protocol::schema::{
     ErrorBody, PaneInfo, PaneReadResult, ReadFormat, ReadSource, ResponseResult,
 };

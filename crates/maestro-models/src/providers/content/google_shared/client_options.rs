@@ -116,7 +116,7 @@ pub(in crate::providers::content) fn construct(
         settings.project = None;
         settings.location = None;
     }
-    let mut client = super::super::google::create_client(model, "", headers, None);
+    let mut client = super::super::generative::create_client(model, "", headers, None);
     client.base_url = endpoint.unwrap_or_else(|| default_endpoint(&settings, routing_key));
     client.api_version = settings.version.into();
     client.authentication = authentication;

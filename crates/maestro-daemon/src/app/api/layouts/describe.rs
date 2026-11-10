@@ -2,7 +2,7 @@
 
 use crate::app::App;
 use maestro_protocol::schema::{LayoutDescription, LayoutNode, LayoutPane};
-use maestro_workspace::layout::{Node, PaneId};
+use maestro_workspace::tiling::{Node, PaneId};
 use std::collections::HashMap;
 
 impl<C: FnMut() -> u128> App<C> {

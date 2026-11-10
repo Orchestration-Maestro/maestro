@@ -120,7 +120,7 @@ fn columns(operation: &str, data: &str) -> Result<String, String> {
         "strip_frontmatter" => {
             let (text,): (String,) = decode(data)?;
             encode(
-                &maestro_resources::frontmatter::strip_frontmatter(&text)
+                &maestro_resources::metadata::strip_frontmatter(&text)
                     .map_err(|error| error.to_string())?,
             )
         }
@@ -129,7 +129,7 @@ fn columns(operation: &str, data: &str) -> Result<String, String> {
 }
 
 /// Complete native metadata model, not a JSON number projection.
-pub use maestro_resources::frontmatter::{FrontmatterValue, parse_frontmatter, parse_yaml};
+pub use maestro_resources::metadata::{FrontmatterValue, parse_frontmatter, parse_yaml};
 
 /// Native size formatting over the complete floating-point argument domain.
 pub use maestro_tools::format_size;

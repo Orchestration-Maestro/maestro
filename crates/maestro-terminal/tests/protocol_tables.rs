@@ -1,8 +1,8 @@
 //! Functional key wire codes at the public encoder boundary.
 use maestro_terminal::{
     input::{
-        key::{Key, KeyEvent},
         key_encode::KeyEncoder,
+        keyboard::{Key, KeyEvent},
     },
     kitty::key::Flags,
 };

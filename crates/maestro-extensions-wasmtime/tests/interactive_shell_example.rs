@@ -308,7 +308,7 @@ impl maestro_extensions::types::ExtensionUIContextPort for Ui {
                 .take()
                 .is_some_and(|send| send.send(()).is_ok()))
         });
-        let keys = maestro_extensions::widgets::ExtensionKeybindings {
+        let keys = maestro_extensions::presentation::ExtensionKeybindings {
             manager: maestro_tui::KeybindingsManager::new(Vec::new(), Vec::new()),
             reload: None,
         };

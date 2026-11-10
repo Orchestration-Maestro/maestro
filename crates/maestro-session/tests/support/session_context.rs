@@ -129,7 +129,7 @@ pub fn group(name: &str) {
     }
 }
 
-pub use super::value::assert_value;
+pub use super::assertions::assert_value;
 
 /// Assert complete success or the reached native failure field.
 pub fn assert_result(result: Result<Value, serde_json::Error>, case: &Case) {
@@ -151,7 +151,7 @@ pub fn assert_result(result: Result<Value, serde_json::Error>, case: &Case) {
 pub fn model_messages(context: &SessionContext) -> Value {
     use maestro_agent::AgentMessage;
     use maestro_models::{Message, UserMessage};
-    use maestro_session::messages::{
+    use maestro_session::message_records::{
         BranchSummaryMessage, CompactionSummaryMessage, CustomAgentMessages, CustomMessage,
     };
     use std::sync::{Arc, RwLock};

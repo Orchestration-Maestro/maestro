@@ -7,7 +7,9 @@ use crate::support::session_harness::{
     start_prompt, transcribed, waiting_tool,
 };
 use maestro_app::{AgentSessionEvent, BashResult, agent_session::BashRunOptions};
-use maestro_session::{messages::SendMessageOptions, session_manager::ReadonlySessionManager};
+use maestro_session::{
+    message_records::SendMessageOptions, session_manager::ReadonlySessionManager,
+};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 

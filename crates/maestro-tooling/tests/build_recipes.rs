@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 #[cfg(unix)]
-use crate::toolchain_support;
+use crate::compiler;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -800,7 +800,7 @@ fn prepare_profile_writer(workspace: &Workspace) -> PathBuf {
     fs::write(&source, include_str!("fixtures/profile_writer.rs")).unwrap();
     let binary = workspace.path().join("profile_writer");
     assert!(
-        toolchain_support::command("rustc")
+        compiler::command("rustc")
             .arg("-C")
             .arg("instrument-coverage")
             .arg(source)

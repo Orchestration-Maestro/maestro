@@ -1,5 +1,5 @@
 //! Overlay placement records cross the boundary without moving toolkit layout into the adapter.
-use maestro_extensions::widgets::{
+use maestro_extensions::presentation::{
     OverlayAnchor, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
 };
 use serde::{Deserialize, Serialize};

@@ -241,7 +241,7 @@ pub fn widgets() -> std::rc::Rc<dyn maestro_app::ExtensionWidgets> {
 }
 
 /// SDK construction for compiled extension witnesses.
-pub mod session;
+pub mod sdk;
 
 /// A prepared shipped theme for loader decoration, editor styling and the example renderers.
 pub fn theme() -> maestro_theme::LiveTheme {

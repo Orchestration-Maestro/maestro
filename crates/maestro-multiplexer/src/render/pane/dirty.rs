@@ -1,7 +1,7 @@
 //! Dirty viewport rows collected as frame-record patches.
 
 use super::{clear_render_dirty, style::CellStyler};
-use crate::render::frame::color_to_u32;
+use crate::render::conversion::color_to_u32;
 use maestro_app::daemon::{PaneRenderView, PaneTerminal, render_prof};
 use maestro_app::terminal::Dirty;
 use maestro_protocol::frames::CellData;

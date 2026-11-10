@@ -1,5 +1,5 @@
 //! Image media behaviour through the owned loader.
-use maestro_terminal::kitty::graphics::{command::*, image::*};
+use maestro_terminal::kitty::graphics::{bitmap::*, command::*};
 #[cfg(target_os = "linux")]
 use std::{fs::File, sync::atomic::Ordering};
 use std::{

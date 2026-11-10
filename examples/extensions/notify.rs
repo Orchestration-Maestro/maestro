@@ -9,7 +9,7 @@
 use maestro_extensions_wasm::{
     ExtensionAPI, ExtensionEventResult, ExtensionFuture, HookResult,
     child_process::{SpawnOptions, Stdio},
-    io::NativeIo,
+    effects::NativeIo,
 };
 use std::{io::Write, rc::Rc};
 

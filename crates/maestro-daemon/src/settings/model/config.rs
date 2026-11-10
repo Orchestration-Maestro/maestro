@@ -7,7 +7,7 @@ use super::{
     UiConfig, UpdateConfig, WorktreesConfig, validated_sidebar_bounds,
 };
 use crate::settings::{
-    tab_bar::tab_bar_right_diagnostics, theme::ThemeConfig, window_title::window_title_diagnostics,
+    appearance::ThemeConfig, tabs::tab_bar_right_diagnostics, titles::window_title_diagnostics,
 };
 pub use maestro_protocol::shared::ConfigReloadStatus;
 

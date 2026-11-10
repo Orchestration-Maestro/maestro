@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 /// Reads one complete fuzzy observation.
 pub(super) fn observe(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
     match request["operation"].as_str() {
-        Some("f.fuzzyMatch") => Ok(json!(maestro_extensions_wasm::fuzzy::fuzzy_match(
+        Some("f.fuzzyMatch") => Ok(json!(maestro_extensions_wasm::matching::fuzzy_match(
             api,
             request["args"][0].as_str().ok_or("missing query")?,
             request["args"][1].as_str().ok_or("missing text")?
@@ -64,7 +64,7 @@ fn filter(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
         })
         .collect();
     let mut calls = Vec::new();
-    let selected = maestro_extensions_wasm::fuzzy::fuzzy_filter(api, &items, query, |item| {
+    let selected = maestro_extensions_wasm::matching::fuzzy_filter(api, &items, query, |item| {
         calls.push(item.id);
         item.text.borrow().clone()
     })?;
@@ -89,7 +89,7 @@ fn live(api: &ExtensionAPI, request: &Value) -> ExtensionResult<Value> {
     let edit = request["args"][0].as_str().ok_or("missing edit")?;
     let mut calls = Vec::new();
     let mut aborted = false;
-    let selected = maestro_extensions_wasm::fuzzy::fuzzy_filter(api, &items, "a", |item| {
+    let selected = maestro_extensions_wasm::matching::fuzzy_filter(api, &items, "a", |item| {
         calls.push(item.id);
         if item.id == 0 {
             if edit == "in-place" {

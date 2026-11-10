@@ -1,5 +1,5 @@
 //! Shared records describing model requests.
-pub mod auth_storage;
+pub mod credentials;
 pub mod diagnostics;
 pub mod messages;
 pub mod model_registry;

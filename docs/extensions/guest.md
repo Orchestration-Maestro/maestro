@@ -811,9 +811,9 @@ same name as `greeted` details. It keeps the name byte-for-byte, writes no
 progress updates and leaves optional metadata and termination absent.
 
 Loading it into an application requires a host that enables the component
-runtime, so the extension stays opt-in. The extension crate's tests instantiate
-the built component in a controlled host; `examples/extensions/README.md` gives
-the build and controlled-run commands.
+runtime, so the extension stays opt-in. Its tests load the built component into
+the production engine through the [test harness](testing.md);
+[`hello.md`](../../examples/extensions/hello.md) gives the controlled-run command.
 
 ### A shutdown command and two tools
 
@@ -1173,7 +1173,7 @@ See [native helpers](guest_operations.md) for synchronous terminal operations.
 
 ## Standard operating-system interfaces
 
-`tools::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
+`registry::path_utils::make_temp_dir(&api, prefix)` creates a distinct directory
 under the host's temporary root, with mode `0700` on Unix and the default
 Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
 

@@ -1,7 +1,7 @@
 //! Named-daemon deletion through real socket and filesystem owners.
 #![cfg(all(test, unix))]
 
-use maestro_daemon::{instances, paths::DaemonPaths};
+use maestro_daemon::{instances, locations::DaemonPaths};
 
 #[test]
 fn daemon_deletion_preserves_running_and_unrelated_folders() {

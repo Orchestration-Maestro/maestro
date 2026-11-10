@@ -17,16 +17,16 @@
 #[cfg(feature = "collation")]
 pub mod collation;
 pub mod css;
+pub mod decoding;
 mod flags;
 mod lexical;
-pub mod line_decoder;
+pub mod line_framing;
 pub mod markup;
 mod newlines;
 mod shell;
 pub mod terminal;
-pub mod utf8;
 mod whitespace;
-pub use utf8::{Utf8Stream, decode_utf8, lossy_string};
+pub use decoding::{Utf8Stream, decode_utf8, lossy_string};
 
 pub use flags::{is_offline_selected, is_truthy_env_flag};
 pub use lexical::{truncate_utf16, utf16_order};
@@ -37,10 +37,10 @@ pub use whitespace::{WHITESPACE, is_whitespace_scalar};
 #[cfg(any(feature = "collation", feature = "number-format"))]
 mod locale;
 #[cfg(feature = "number-format")]
-pub mod number_format;
+pub mod numbers;
 
 #[cfg(feature = "date-time-format")]
-pub mod date_time_format;
+pub mod dates;
 
 #[cfg(feature = "date-time-format")]
 mod date_time_calendar;

@@ -6,7 +6,7 @@ use std::path::Path;
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 
-use crate::toolchain_support;
+use crate::compiler;
 
 /// The crate every fixture replaces with an empty stand-in, so its sources are never copied.
 const STAND_IN: &str = "maestro-dependencies";
@@ -126,7 +126,7 @@ fn closure_follows_metadata_the_way_cargo_reads_it() {
         write_crate(root, name, "");
     }
     // The fixture command keeps the scratch workspace on a private cargo home.
-    let output = toolchain_support::fixture_command(env!("CARGO"), root, None)
+    let output = compiler::fixture_command(env!("CARGO"), root, None)
         .unwrap()
         .args([
             "metadata",

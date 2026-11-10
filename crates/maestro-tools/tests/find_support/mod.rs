@@ -14,7 +14,7 @@ use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Fetch};
 use maestro_tools::{
     FindGlobOptions, FindOperations, FindToolDetails, FindToolInput, FindToolOptions, ToolsManager,
-    create_find_tool, create_find_tool_definition, output::truncate::TruncationBy,
+    create_find_tool, create_find_tool_definition, output::limits::TruncationBy,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -45,15 +45,8 @@ pub fn manager(bin: String, counter: &Arc<AtomicUsize>) -> Arc<ToolsManager> {
 /// copy in the binary directory before any `PATH` lookup, so the runner's search `PATH` never
 /// decides which program a real search runs. The directory lives as long as the returned guard.
 pub fn pinned_manager(program: &str) -> (Scratch, Arc<ToolsManager>) {
-    let variable = format!("MAESTRO_TEST_{}", program.to_ascii_uppercase());
-    let source = std::env::var_os(&variable)
-        .unwrap_or_else(|| panic!("{program}: nextest must supply {variable}"));
     let bin = Scratch::new().unwrap();
-    let copy = bin
-        .path()
-        .join(format!("{program}{}", std::env::consts::EXE_SUFFIX));
-    std::fs::copy(source, copy)
-        .unwrap_or_else(|error| panic!("{program}: cannot copy pinned executable: {error}"));
+    maestro_test_process::install_search_program(program, bin.path()).unwrap();
     let pinned = manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
     (bin, pinned)
 }

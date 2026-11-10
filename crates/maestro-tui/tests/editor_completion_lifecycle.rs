@@ -5,7 +5,7 @@ use crate::editor_host as support;
 use maestro_cancellation::Cancellation;
 use maestro_tui::EditorComponent;
 use maestro_tui::editor_component::TextCallback;
-use maestro_tui::tui::TuiRuntime;
+use maestro_tui::interface::TuiRuntime;
 use rig::{Rig, offer};
 use std::{
     cell::{Cell, RefCell},

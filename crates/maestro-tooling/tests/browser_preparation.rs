@@ -11,7 +11,7 @@ use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use maestro_tooling as tooling;
 
-use crate::{browser_author_build::browser_support, recipe_support::scenario, toolchain_support};
+use crate::{browser_author_build::browser_support, compiler, recipe_support::scenario};
 
 /// Tests the fixture crate records, as nextest names them inside its `maestro-tooling` package.
 const BROWSER_TESTS: [&str; 2] = ["first", "second"];
@@ -107,7 +107,7 @@ fn recording_config() -> String {
 fn run_shard(root: &Path, config: &Path, shard: u32) -> Vec<String> {
     let log = root.join("events.log");
     let _ = fs::remove_file(&log);
-    let output = toolchain_support::fixture_command("cargo", root, None)
+    let output = compiler::fixture_command("cargo", root, None)
         .unwrap()
         .args([
             "nextest",

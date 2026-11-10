@@ -1,5 +1,5 @@
 //! Shared keyed ownership and live traversal.
-use maestro_extensions::footer_data_provider::live::Live;
+use maestro_extensions::footer::iteration::Live;
 use std::{cell::Cell, rc::Rc};
 
 /// A last-owner release that edits the collection being released from.

@@ -1,6 +1,6 @@
 //! Environment names consumed by pane launches, workspace actions and daemon selection.
 #![cfg(test)]
-use maestro_daemon::environment::{Consumer, NAMES};
+use maestro_daemon::variables::{Consumer, NAMES};
 
 #[test]
 fn daemon_environment_names_match_their_consumers() {

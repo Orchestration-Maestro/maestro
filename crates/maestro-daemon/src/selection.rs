@@ -1,7 +1,7 @@
 //! Absolute-row text selections within a pane.
 
-use crate::pane::terminal::ScrollMetrics;
-use maestro_workspace::layout::{PaneId, Rect};
+use crate::panes::display::ScrollMetrics;
+use maestro_workspace::tiling::{PaneId, Rect};
 
 /// Current phase of a selection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -36,18 +36,18 @@
 /// Invocation-local callback emission.
 pub mod callbacks;
 /// Ordered shared channel delivery.
-pub mod event_bus;
+pub mod events;
 /// Opt-in helpers for controlled tests.
 #[cfg(feature = "test-support")]
 pub mod test_support;
 pub use callbacks::CallbackEmitter;
-pub use event_bus::{
+pub use events::{
     ErrorReporter, EventBus, EventBusController, EventError, EventListener, EventTail,
     Subscription, TailSpawner, create_event_bus, create_event_bus_for,
 };
 
 /// The read-only footer metadata extension footers receive.
-pub mod footer_data_provider;
+pub mod footer;
 /// Native helper delegation used by component adapters.
 #[doc(hidden)]
 #[cfg(not(target_arch = "wasm32"))]
@@ -76,7 +76,7 @@ pub use maestro_models::{
     stream_simple_for, stream_simple_via_for,
 };
 pub use maestro_resources::SourceInfo;
-pub use maestro_session::messages::CustomMessageInput;
+pub use maestro_session::message_records::CustomMessageInput;
 pub use maestro_session::session_manager::{
     CompactionOptions, ForkPosition, NavigateTreeOptions, NewSessionOptions,
     ReadonlySessionManager, SessionTreeNode,
@@ -92,7 +92,7 @@ pub use maestro_theme::ThemeBg;
 /// Foreground color key, including authored names.
 pub use maestro_theme::ThemeColor;
 /// What a terminal input listener decided about one chunk of input.
-pub use maestro_tui::tui::InputListenerResult;
+pub use maestro_tui::interface::InputListenerResult;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
@@ -105,8 +105,8 @@ pub use types::{
     WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
-pub mod runner;
-pub use runner::ExtensionRunner;
+pub mod execution;
+pub use execution::ExtensionRunner;
 
 pub use loader::CatalogConstruction;
 #[cfg(not(target_arch = "wasm32"))]
@@ -160,32 +160,32 @@ pub use maestro_tools::with_file_mutation_queue;
 /// Caller-local tool definitions with their original tools-owned types.
 pub mod local {
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::edit::local::create_edit_tool_definition;
+    pub use maestro_tools::editing::local::create_edit_tool_definition;
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::process::bash::local::{
+    pub use maestro_tools::process::command::local::{
         BashSpawnHook, BashToolOptions, create_bash_tool_definition, create_local_bash_operations,
     };
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::read::local::create_read_tool_definition;
+    pub use maestro_tools::reading::local::create_read_tool_definition;
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::search::find::local::create_find_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::search::grep::local::create_grep_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::search::ls::local::create_ls_tool_definition;
-    pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::tools::local::{
+    pub use maestro_tools::registry::local::{
         ToolDef, ToolsOptions, create_all_tool_definitions, create_coding_tool_definitions,
         create_read_only_tool_definitions, create_tool_definition,
     };
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::directory::local::create_ls_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::discovery::local::create_find_tool_definition;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use maestro_tools::search::matching::local::create_grep_tool_definition;
+    pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
     pub use maestro_tools::types::local::*;
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::write::local::create_write_tool_definition;
+    pub use maestro_tools::writing::local::create_write_tool_definition;
 }
 /// Native glob constraints forwarded to replacement find operations.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::search::find::FindGlobOptions;
+pub use maestro_tools::search::discovery::FindGlobOptions;
 /// Retained native definitions accepted by the tools-owned execution wrapper.
 pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 /// Native raw shell operands and execution family used by returned extension operations.
@@ -205,23 +205,23 @@ pub use maestro_tools::{
     ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
     ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
 };
-pub use maestro_tui::tui::{Component, ComponentHandle, InputHandler};
+pub use maestro_tui::interface::{Component, ComponentHandle, InputHandler};
 /// Toolkit widgets an extension host builds, and the capability that builds the ones whose
 /// look depends on the host.
-pub mod widgets {
+pub mod presentation {
     pub use crate::types::{
         ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets,
     };
     pub use maestro_tools::key_text;
     pub use maestro_tui::{
         AutocompleteProvider, AutocompleteSuggestions,
-        autocomplete::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
+        candidates::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
     };
     pub use maestro_tui::{
         Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
         SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
         SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,
-        components::settings_list::SettingsListOptions,
+        components::preferences::SettingsListOptions,
         editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
     };
     pub use maestro_tui::{

@@ -98,7 +98,8 @@ fn catalog(
     use maestro_credentials::ProcessConfigValueOperations;
     use std::sync::Arc;
     let commands = Arc::new(ProcessConfigValueOperations::new(|| {
-        maestro_tools::utils::shell::get_shell_config(None).map(|shell| (shell.shell, shell.args))
+        maestro_tools::utils::environment::get_shell_config(None)
+            .map(|shell| (shell.shell, shell.args))
     }));
     Ok(Arc::new(ModelRegistry::create(
         auth,

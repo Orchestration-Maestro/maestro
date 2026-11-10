@@ -1,7 +1,7 @@
 //! Raw byte resources retain the captured-child owner's exit and EOF phases.
 #![cfg(all(test, unix))]
 use crate::child_programs::{self, async_command};
-use maestro_process::child_process::{RawChild, RawOutput};
+use maestro_process::children::{RawChild, RawOutput};
 use maestro_test_process::HARNESS_START;
 use maestro_test_process::child::harness;
 use maestro_test_process::executor::run;
@@ -71,6 +71,6 @@ fn raw_child_pipes_survive_control_drop_and_reap_once() {
         input.end().await.unwrap();
         assert_eq!(drain(&output).await, [0, 255, 1]);
         collector.await.unwrap();
-        assert!(!maestro_process::child_process::process_exists(pid));
+        assert!(!maestro_process::children::process_exists(pid));
     });
 }

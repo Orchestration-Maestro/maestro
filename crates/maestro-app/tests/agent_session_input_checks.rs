@@ -7,7 +7,7 @@ use crate::support::session_harness::{
 use indexmap::IndexMap;
 use maestro_app::PromptOptions;
 use maestro_session::Presence;
-use maestro_session::messages::UserMessageDelivery;
+use maestro_session::message_records::UserMessageDelivery;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;

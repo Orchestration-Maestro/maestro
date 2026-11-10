@@ -4,7 +4,7 @@ use futures_util::{
     future::{Either, select},
 };
 use maestro_extensions::native_io::{IoFuture, Readable, Response};
-use maestro_models::providers::http::{Raced, collect_body, race};
+use maestro_models::providers::transport::{Raced, collect_body, race};
 use maestro_models::{Cancellation, HttpBody, HttpResponse};
 use std::{
     cell::{Cell, RefCell},

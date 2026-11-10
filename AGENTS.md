@@ -274,7 +274,7 @@ caller-specific metadata rules within the one shared walk. Browser builds have
 no native repository; footer statuses, counts and callbacks remain available.
 
 The read-only footer contract, its live status view and the generic live map behind
-them belong to `maestro-extensions::footer_data_provider`; the application footer
+them belong to `maestro-extensions::footer`; the application footer
 owner keeps its policy and re-exports them at its existing paths.
 
 Browser page content (`maestro-web::dom`) and runtime contributions
@@ -395,7 +395,7 @@ screen channel and generated JSON Schema, with no domain dependencies.
 `maestro-app::rpc_types` owns the session records and `maestro-app::rpc_mode` the one
 connection runner; `maestro-rpc` is its standard-stream adapter. Session and workspace
 operations use one contract across stdio and daemon sockets; JSONL framing belongs to
-`maestro-json::jsonl`. Conventions keep protocol records in the application and the
+`maestro-json::lines`. Conventions keep protocol records in the application and the
 protocol crate. The connection output accepts only an `RpcLine`, which only an
 `RpcRecord` builds, so protocol output has one writer by type. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).

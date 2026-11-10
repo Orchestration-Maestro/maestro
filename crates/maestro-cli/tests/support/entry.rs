@@ -7,11 +7,11 @@ use super::presenters;
 use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, SessionListProgress, SessionSelectorFactory,
 };
-use maestro_cli::input::config_selector::ConfigPresentation;
+use maestro_cli::input::configuration::ConfigPresentation;
 use maestro_cli::input::file_processor::NativeFileArgumentOperations;
 use maestro_cli::input::session_picker::SessionPresentation;
-use maestro_cli::startup::main::presentation::MissingSessionCwdPresentation;
-use maestro_cli::startup::main::{MainExport, MainHost, MainOptions, main};
+use maestro_cli::startup::entrypoint::feedback::MissingSessionCwdPresentation;
+use maestro_cli::startup::entrypoint::{MainExport, MainHost, MainOptions, main};
 use maestro_test_process::{TestProcess, selection};
 use maestro_theme::ThemeState;
 use serde_json::{Value, json};

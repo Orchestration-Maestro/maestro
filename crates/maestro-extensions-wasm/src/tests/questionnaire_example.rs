@@ -1,8 +1,5 @@
 //! The shipped questionnaire exercised through its built component and retained UI callbacks.
-use super::{
-    example_support::{invoke_tool_on_component, result_value},
-    host::{Harness, borrow},
-};
+use super::{example_support::{invoke_tool_on_component, result_value}, host::{Harness, borrow}};
 use serde_json::{Value, json};
 
 #[path = "../../../../examples/extensions/questionnaire.rs"]

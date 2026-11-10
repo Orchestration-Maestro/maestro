@@ -46,12 +46,12 @@ The optional-field helper that keeps null apart from absence is `present` in
 
 ## JSONL framing
 
-`jsonl::serialize_json_line` uses the compact writer above and appends one LF.
-`jsonl::serialize_native_json_line` retains exact signed and unsigned integers for
+`lines::serialize_json_line` uses the compact writer above and appends one LF.
+`lines::serialize_native_json_line` retains exact signed and unsigned integers for
 native workspace requests; keys and floating-point values use the same canonical
 writer. U+2028 and U+2029 remain literal characters inside JSON strings in both modes.
 
-`jsonl::JsonlLineSplitter` accepts byte chunks and returns owned lines, splitting
+`lines::JsonlLineSplitter` accepts byte chunks and returns owned lines, splitting
 only on LF and removing one terminal CR. It retains incomplete bytes across
 chunks, including split UTF-8 scalars. Completed lines use lossy UTF-8 decoding;
 BOM characters remain intact. `finish` emits a nonempty pending byte tail once,

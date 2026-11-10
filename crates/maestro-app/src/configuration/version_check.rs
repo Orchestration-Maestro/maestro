@@ -88,7 +88,7 @@ use super::{config::service_endpoint, maestro_user_agent::get_maestro_user_agent
 use futures_util::StreamExt;
 use maestro_models::{
     Fetch, HttpRequest, default_fetch,
-    providers::http::{Raced, race},
+    providers::transport::{Raced, race},
 };
 use serde_json::value::RawValue;
 use std::{collections::BTreeMap, io, time::Duration};

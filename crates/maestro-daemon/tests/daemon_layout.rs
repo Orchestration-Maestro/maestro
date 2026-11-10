@@ -9,7 +9,7 @@ use maestro_daemon::settings::model::Config;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{PaneDirection, PaneLayoutRect, SplitDirection};
 use maestro_protocol::shared::Flag;
-use maestro_workspace::layout::{PaneId, Rect};
+use maestro_workspace::tiling::{PaneId, Rect};
 
 /// The public handle of a pane in the first workspace.
 fn public(app: &TestApp, pane: PaneId) -> String {

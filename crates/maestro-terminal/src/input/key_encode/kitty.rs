@@ -4,8 +4,8 @@ use std::fmt::Write as _;
 
 use super::KeyEncoder;
 use crate::input::function_keys::modifier_code;
-use crate::input::key::{Key, KeyAction, KeyEvent};
 use crate::input::key_mods::Mods;
+use crate::input::keyboard::{Key, KeyAction, KeyEvent};
 use crate::input::kitty::{Entry, entry};
 use crate::kitty::key::Flags;
 

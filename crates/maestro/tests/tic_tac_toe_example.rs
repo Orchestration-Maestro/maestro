@@ -23,7 +23,7 @@ fn tic_tac_toe_command_and_sequential_siblings_use_the_native_runner() {
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime, async {
         let root = super::support::Root::new();
-        let session = super::support::session::component_session(
+        let session = super::support::sdk::component_session(
             &root,
             local.clone(),
             std::env::var("MAESTRO_TIC_TAC_TOE_COMPONENT").expect("nextest author-component setup"),
@@ -238,7 +238,7 @@ fn tic_tac_toe_error_rows_do_not_require_board_snapshots() {
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime, async {
         let root = super::support::Root::new();
-        let session = super::support::session::component_session(
+        let session = super::support::sdk::component_session(
             &root,
             local.clone(),
             std::env::var("MAESTRO_TIC_TAC_TOE_COMPONENT").expect("nextest author-component setup"),

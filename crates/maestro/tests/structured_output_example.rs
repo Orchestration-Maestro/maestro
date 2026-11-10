@@ -22,7 +22,7 @@ fn structured_output_ends_the_run_without_another_completion() {
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime, async {
         let root = super::support::Root::new();
-        let session = super::support::session::component_session(
+        let session = super::support::sdk::component_session(
             &root, local.clone(),
             std::env::var("MAESTRO_STRUCTURED_OUTPUT_COMPONENT").expect("nextest component setup"),
             Some(maestro_app::NoTools::Builtin), super::support::widgets(),

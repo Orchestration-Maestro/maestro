@@ -12,7 +12,7 @@ A frame goes through three steps:
 
 1. `render::pane::render` paints a pane's viewport into an area of the frame
    buffer.
-2. `render::frame::frame_from_buffer` turns the buffer into a protocol
+2. `render::conversion::frame_from_buffer` turns the buffer into a protocol
    `FrameData` record.
 3. `render::ansi::BlitEncoder` turns that record into terminal bytes.
 

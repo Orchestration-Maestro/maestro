@@ -5,7 +5,7 @@ use crate::app::App;
 use maestro_protocol::schema::{
     ErrorBody, PaneDirection, PaneSwapParams, PaneSwapReason, PaneSwapResult, ResponseResult,
 };
-use maestro_workspace::layout::PaneId;
+use maestro_workspace::tiling::PaneId;
 
 /// What a swap request resolved to: the tab it describes and, when the panes may be
 /// exchanged, which ones.

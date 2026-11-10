@@ -10,7 +10,7 @@ use maestro_models::{
     DiagnosticErrorInfo, ImageContent, SharedAssistantMessage, ToolResultMessage, UserBlock,
     UserContent,
 };
-use maestro_session::messages::{
+use maestro_session::message_records::{
     CustomAgentMessages, CustomMessageInput, MessageDelivery, SendMessageOptions,
     SendUserMessageOptions,
 };

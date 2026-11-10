@@ -1,6 +1,6 @@
 //! Window-title template and sanitation behavior.
 
-use super::super::window_title::{
+use super::super::titles::{
     WindowTitlePart, WindowTitleTemplate, WindowTitleToken, default_window_title,
     sanitize_window_title_text, window_title_diagnostics,
 };

@@ -98,7 +98,7 @@ fn data_only_context_keeps_threaded_consumers() {
         system_prompt: None,
         messages: Vec::new(),
         tools: Some(
-            maestro_agent::agent_loop::tool_definitions::<maestro_models::Local>(&tools).unwrap(),
+            maestro_agent::execution::tool_definitions::<maestro_models::Local>(&tools).unwrap(),
         ),
     };
     assert_eq!(

@@ -2,16 +2,16 @@
 
 use super::*;
 use crate::{
-    api::event_hub::EventHub,
     app::construction::PaneLaunchInputs,
     events::AppEvent,
     git::status::git_status_snapshot_for_cwd_with_demand,
     render_signal::RenderSignal,
-    settings::{model::Config, sidebar::SpaceSidebarToken},
+    service::event_hub::EventHub,
+    settings::{model::Config, navigation::SpaceSidebarToken},
     terminal_theme::TerminalTheme,
 };
-use maestro_process::pty::{PtySetupEntry, foreground::ProcessDetectionMode};
-use maestro_workspace::workspace::{GitSpaceMetadata, WorkspaceGitStatusSnapshot};
+use maestro_process::terminal::{PtySetupEntry, jobs::ProcessDetectionMode};
+use maestro_workspace::spaces::{GitSpaceMetadata, WorkspaceGitStatusSnapshot};
 use std::{
     path::Path,
     sync::{Arc, RwLock},
@@ -48,7 +48,7 @@ fn test_app(config: &Config) -> TestApp {
         socket: "/nonexistent/maestro-git-refresh.sock".into(),
         executable: None,
         manifests: Arc::new(RwLock::new(
-            maestro_detection::manifest::ManifestCache::new(None, None).unwrap(),
+            maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
         )),
         events,
         render_notify: Arc::new(Notify::new()),
@@ -332,7 +332,7 @@ fn linked_worktrees_add_no_periodic_demand() {
         add_workspace(&mut app, Path::new("/repo-worktree"));
         let workspace = &mut app.state.topology.workspaces[0];
         workspace.custom_name = custom_name;
-        workspace.worktree_space = Some(maestro_workspace::workspace::WorktreeSpaceMembership {
+        workspace.worktree_space = Some(maestro_workspace::spaces::WorktreeSpaceMembership {
             key: "repo".into(),
             label: "repo".into(),
             repo_root: "/repo".into(),
@@ -365,7 +365,7 @@ fn scheduled_tasks_start_the_due_refresh() {
     crate::tests::block_on(async {
         let directory = maestro_test_directory::Scratch::new().unwrap();
         let paths =
-            crate::paths::DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
+            crate::locations::DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
         let mut app = app_with_rows(vec![vec![SpaceSidebarToken::Branch]]);
         add_workspace(&mut app, directory.path());
         let now = Instant::now();
@@ -499,7 +499,7 @@ fn daemon_git_status_event_marks_render_dirty_when_status_changes() {
     let _ = app.launch.render_dirty.take();
     let workspace = &app.state.topology.workspaces[0];
     let cwd = workspace.identity_cwd.clone();
-    let result = maestro_workspace::workspace::WorkspaceGitStatus {
+    let result = maestro_workspace::spaces::WorkspaceGitStatus {
         workspace_id: workspace.id.clone(),
         resolved_identity_cwd: cwd.clone(),
         status_cache_key: cwd,

@@ -6,8 +6,8 @@
 )]
 use maestro_extensions_wasm::{
     AbortSignal, CommandOptions, ExtensionAPI, ExtensionFuture, ExtensionResult,
+    effects::NativeIo,
     http::{Request, Response},
-    io::NativeIo,
     streams::Readable,
 };
 use serde::Deserialize;

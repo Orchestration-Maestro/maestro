@@ -13,7 +13,7 @@ use std::{
     time::Duration,
 };
 
-use maestro_extensions_wasm::tools::path_utils;
+use maestro_extensions_wasm::registry::path_utils;
 use maestro_extensions_wasm::utils::TruncateOptions;
 use maestro_extensions_wasm::{
     AutocompleteProvider, Background, BackgroundTask, CallbackEmitter, Component, ComponentView,

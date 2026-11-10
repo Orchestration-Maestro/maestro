@@ -2,7 +2,7 @@
 mod callbacks;
 mod editor;
 mod widgets;
-use crate::{EventError, footer_data_provider::ReadonlyFooterDataProvider};
+use crate::{EventError, footer::ReadonlyFooterDataProvider};
 pub use callbacks::{UIHostCall, WeakUIHostCall};
 pub use editor::{
     ActionHandlers, CustomEditorComponent, EditorFactoryOutcome, ExtensionShortcutCallback,
@@ -11,7 +11,7 @@ use maestro_models::{Cancellation, Execution, Local};
 use maestro_theme::{LiveTheme, Theme, ThemeInfo};
 use maestro_tui::{
     AutocompleteProvider, EditorTheme, OverlayHandle, OverlayOptions, TUI,
-    tui::{ComponentHandle, InputListenerResult},
+    interface::{ComponentHandle, InputListenerResult},
 };
 use std::{
     cell::{Cell, RefCell},

@@ -155,7 +155,7 @@ fn page_move_graphemes() {
 
 #[test]
 fn page_copy_links_at_capacity() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut source = Page::init(Capacity {
         cols: 120,
         rows: 1,
@@ -190,7 +190,7 @@ fn page_copy_links_at_capacity() {
 
 #[test]
 fn row_copy_same_page_links() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut page = Page::init(Capacity {
         cols: 10,
         rows: 10,
@@ -214,7 +214,7 @@ fn row_copy_same_page_links() {
 
 #[test]
 fn row_copy_omits_unselected_same_page_links() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut page = Page::init(Capacity {
         cols: 10,
         rows: 10,
@@ -386,14 +386,14 @@ fn exact_capacity_multi_chunk_graphemes() {
 }
 
 /// Acquire a link reference and transfer it to one cell.
-fn write_link(page: &mut Page, position: CellPosition, link: crate::hyperlink::Hyperlink) {
+fn write_link(page: &mut Page, position: CellPosition, link: crate::links::Hyperlink) {
     let id = page.insert_hyperlink(link).unwrap();
     page.set_hyperlink(position, id).unwrap();
 }
 
 #[test]
 fn exact_capacity_link_strings() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut page = Page::init(Capacity {
         cols: 10,
         rows: 10,
@@ -435,7 +435,7 @@ fn exact_capacity_link_strings() {
 
 #[test]
 fn exact_capacity_repeated_link_clones() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut page = Page::init(Capacity {
         cols: 10,
         rows: 1,
@@ -462,7 +462,7 @@ fn exact_capacity_repeated_link_clones() {
 
 #[test]
 fn exact_capacity_many_link_cells() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut page = Page::init(Capacity {
         cols: 50,
         rows: 1,
@@ -497,7 +497,7 @@ fn hyperlink_identity_lifetime_and_clone() {
 
 /// Compare every retained URI and explicit/implicit identity combination.
 fn hyperlink_identity_pairs() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let links = [
         Hyperlink {
             id: HyperlinkId::Explicit(b"id".to_vec()),
@@ -547,7 +547,7 @@ fn hyperlink_identity_pairs() {
 
 /// Keep byte identities through cross-page copy after releasing source cells.
 fn hyperlink_last_owner() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut source = Page::init(Capacity {
         cols: 10,
         rows: 1,
@@ -585,7 +585,7 @@ fn hyperlink_last_owner() {
 
 /// Roll back partial string insertion without retaining strings or an identity.
 fn hyperlink_rollback() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut failing = Page::init(Capacity {
         cols: 120,
         rows: 1,
@@ -699,7 +699,7 @@ fn style_copy_error_control() {
 /// Reach insertion and row-copy link errors at their actual table owners.
 fn link_error_controls() {
     use super::StorageError as E;
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let position = CellPosition { x: 0, y: 0 };
     let link = || Hyperlink {
         id: HyperlinkId::Implicit(3),
@@ -790,7 +790,7 @@ fn row_copy_respects_cleared_cell_link_marker() {
 
 /// Copy a cleared cell marker through foreign and local row routes.
 fn copy_cleared_link_marker_rows(rows: u16) {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     let mut source = Page::init(Capacity {
         cols: 1,
         rows,
@@ -824,7 +824,7 @@ fn copy_cleared_link_marker_rows(rows: u16) {
 
 #[test]
 fn same_page_copy_refusal_preserves_link_owners() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     for full in [true, false] {
         let mut page = Page::init(Capacity {
             cols: 120,
@@ -865,7 +865,7 @@ fn same_page_copy_refusal_preserves_link_owners() {
 
 #[test]
 fn existing_hyperlink_retains_without_allocating_strings() {
-    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    use crate::links::{Hyperlink, HyperlinkId};
     for id in [
         HyperlinkId::Implicit(7),
         HyperlinkId::Explicit(vec![b'i'; 32]),

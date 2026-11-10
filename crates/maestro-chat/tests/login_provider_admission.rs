@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_app::BUILT_IN_PROVIDER_DISPLAY_NAMES;
-use maestro_chat::interactive_mode::is_api_key_login_provider;
+use maestro_chat::interaction::is_api_key_login_provider;
 use std::collections::HashSet;
 
 /// Collects borrowed identifiers into the owned set the predicate reads.

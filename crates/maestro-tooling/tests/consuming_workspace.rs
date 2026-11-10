@@ -235,6 +235,7 @@ fn prepared_bundle(root: &Path, rev: &str) -> PathBuf {
         "tool": inputs,
         "browser": inputs,
         "components": {},
+        "search": {},
         "example": EMPTY,
         "executable": {
             "file": EMPTY,

@@ -1,7 +1,7 @@
 //! Locale capture, fallback and calendar boundaries through supplied wall fields.
 #![cfg(test)]
 #![cfg(feature = "date-time-format")]
-use maestro_text::date_time_format::LocaleDateTimeFormat;
+use maestro_text::dates::LocaleDateTimeFormat;
 use std::{cell::RefCell, collections::BTreeMap};
 
 /// Recorded environment observations and their selected presentation.

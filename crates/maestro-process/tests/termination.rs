@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use maestro_process::TerminationSignal;
-use maestro_process::termination::{register_signals, signals_for_host};
+use maestro_process::notifications::{register_signals, signals_for_host};
 use std::io;
 use std::rc::Rc;
 use tokio::sync::mpsc;

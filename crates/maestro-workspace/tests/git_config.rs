@@ -2,9 +2,9 @@
 #![cfg(test)]
 
 use maestro_test_directory::Scratch;
-use maestro_workspace::workspace::git::{
-    config::{BranchConfig, ConfigEnvironment, read_branch_config},
+use maestro_workspace::spaces::repository::{
     discovery::git_worktree_info,
+    tracking::{BranchConfig, ConfigEnvironment, read_branch_config},
 };
 use std::{
     fs,

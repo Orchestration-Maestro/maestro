@@ -110,7 +110,7 @@ fn search_editing_clamps_without_resetting_position() {
 /// Replays the complete navigation wraps and empty actions are inert observations.
 #[test]
 fn navigation_wraps_and_empty_actions_are_inert() {
-    use maestro_tui::{Component, tui::InputHandler};
+    use maestro_tui::{Component, interface::InputHandler};
     scoped_model_support::replay("navigation_wraps_and_empty_actions_are_inert");
     let _guard = keybindings::bindings_guard();
     for (count, start, previous, next) in [
@@ -271,7 +271,7 @@ fn failing_callback(
     fails: bool,
     count: std::rc::Rc<std::cell::Cell<usize>>,
     ready: std::rc::Rc<std::cell::Cell<bool>>,
-) -> std::rc::Rc<dyn Fn(Option<Vec<String>>) -> Option<maestro_tui::tui::LocalFuture>> {
+) -> std::rc::Rc<dyn Fn(Option<Vec<String>>) -> Option<maestro_tui::interface::LocalFuture>> {
     std::rc::Rc::new(move |_| {
         count.set(count.get() + 1);
         if !fails {
@@ -299,7 +299,7 @@ fn callback_failures_leave_selection_usable() {
 /// Observes one independent callback failure before and after settlement.
 fn failed_tail(persist: bool) {
     use maestro_chat::components::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
-    use maestro_tui::{Component, tui::InputHandler};
+    use maestro_tui::{Component, interface::InputHandler};
     use std::{cell::Cell, rc::Rc};
     crate::bindings::replace(&std::collections::BTreeMap::default());
     let runtime = manual_runtime::ManualRuntime::new();
@@ -363,7 +363,7 @@ use crate::recording_terminal;
 /// Frame-writer ownership retains focus and releases the component graph.
 #[test]
 fn registered_scope_component_retains_focus_and_releases_children() {
-    use maestro_tui::{Component, Focusable, TUI, TerminalImage, tui::InputHandler};
+    use maestro_tui::{Component, Focusable, TUI, TerminalImage, interface::InputHandler};
     use std::rc::Rc;
     let _guard = keybindings::bindings_guard();
     let fixture = scoped_model_support::Fixture::new(scoped_model_support::native_query());

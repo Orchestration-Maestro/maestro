@@ -6,9 +6,9 @@ use super::discovery::{
     git_space_metadata_from_info, git_symbolic_head_full, git_trimmed_stdout, git_worktree_info,
     read_text, trim,
 };
-use maestro_workspace::workspace::{
+use maestro_workspace::spaces::{
     GitSpaceMetadata, GitStatusRefreshDemand, WorkspaceGitStatusSnapshot,
-    git::config::{ConfigEnvironment, ConfigRead, read_branch_config},
+    repository::tracking::{ConfigEnvironment, ConfigRead, read_branch_config},
 };
 use std::{
     path::{Path, PathBuf},

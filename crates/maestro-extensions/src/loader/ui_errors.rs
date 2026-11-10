@@ -23,7 +23,7 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
             .clone()
             .ok_or("extension UI error reporting is not bound")?;
         Ok(Rc::new(move |event, error| {
-            report(&crate::runner::event_error(path.clone(), event, error))
+            report(&crate::execution::event_error(path.clone(), event, error))
         }))
     }
 }

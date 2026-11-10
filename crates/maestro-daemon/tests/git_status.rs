@@ -8,8 +8,8 @@ use maestro_daemon::git::{
         git_status_snapshot_for_cwd_with_demand,
     },
 };
-use maestro_workspace::workspace::{
-    GitStatusRefreshDemand, WorkspaceGitStatusSnapshot, git::config::ConfigEnvironment,
+use maestro_workspace::spaces::{
+    GitStatusRefreshDemand, WorkspaceGitStatusSnapshot, repository::tracking::ConfigEnvironment,
 };
 use std::{
     path::Path,

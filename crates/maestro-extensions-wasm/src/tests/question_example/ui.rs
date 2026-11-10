@@ -1,14 +1,7 @@
 //! Identical terminal scripts on native exports and the built component.
 use super::{Question, ask};
 use crate::component_adapter::Exports;
-use crate::tests::{
-    controlled::Controlled,
-    custom_host::Script,
-    example_support,
-    host::Harness,
-    observed::Observed,
-    theme_host::{Palette, Reply},
-};
+use crate::tests::{controlled::Controlled, custom_host::Script, example_support, host::Harness, observed::Observed, theme_host::{Palette, Reply}};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 

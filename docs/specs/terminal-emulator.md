@@ -104,16 +104,16 @@ the dependent module.
 | `size`, `point` | cell-count types, page-size bounds, point tags and coordinates |
 | `unicode` | codepoint width, grapheme break state, the cluster width effect the printer uses |
 | `page` | packed cells and rows, the page's grapheme and hyperlink stores, the byte layout model |
-| `style`, `hyperlink` | de-duplicated, reference-counted styles and hyperlink entries |
+| `style`, `links` | de-duplicated, reference-counted styles and hyperlink entries |
 | `page_list` | the page arena, growth and byte-bounded pruning, pins and tracked pins, iteration, viewport scrolling, erase, resize, reflow, prompt rows |
-| `screen`, `screen_set` | cursor, scrolling, clearing, SGR state, hyperlink state, resize, the primary and alternate screens |
+| `screen`, `screens` | cursor, scrolling, clearing, SGR state, hyperlink state, resize, the primary and alternate screens |
 | `charsets`, `tabstops`, `modes`, `color`, `x11_color`, `mouse` | character sets, tab stops, the 41 modes with defaults, colour parsing and palettes, terminal mouse modes |
 | `terminal` | `Terminal`: printing, line control, cursor, margins, erase, screen switching, resize, reset, prompts, working directory and title, the terminal dirty flags, and the workspace's reads |
 | `parser`, `sgr`, `stream`, `osc`, `apc` | the VT state machine, SGR parsing, typed dispatch, OSC commands, APC routing |
 | `stream_terminal`, `effects` | the stream handler that applies actions to a terminal, replies and effects |
 | `device_attributes`, `device_status`, `size_report` | reply encodings |
-| `selection`, `formatter`, `render` | ranges, plain and styled text, the render snapshot |
-| `kitty::key`, `kitty::color`, `kitty::graphics`, `kitty::host` | keyboard-protocol flags, the colour protocol, the image protocol, the host-side graphics cache |
+| `selection`, `formatting`, `painting` | ranges, plain and styled text, the render snapshot |
+| `kitty::key`, `kitty::color`, `kitty::graphics`, `kitty::presentation` | keyboard-protocol flags, the colour protocol, the image protocol, the host-side graphics cache |
 | `input`, `focus` | key events, modifiers, key and mouse encoders, mouse pixel geometry, focus encoding |
 
 There is one trait, `stream::Handler`, because the reference itself drives the stream with

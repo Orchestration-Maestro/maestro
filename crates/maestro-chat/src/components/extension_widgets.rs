@@ -1,7 +1,7 @@
 //! The host widgets an extension builds, over the toolkit and application widgets.
-use super::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
 use super::custom_editor::CustomEditor;
 use super::dynamic_border::DynamicBorder;
+use super::loading::{BorderedLoader, BorderedLoaderOptions};
 use maestro_app::{
     ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets, KeybindingsManager,
 };
@@ -12,7 +12,7 @@ use maestro_theme::{
 use maestro_tui::{
     Cancellation, Container, EditorTheme, KeybindingsConfig, Markdown, MarkdownOptions,
     MarkdownTheme, SelectListTheme, SettingsListTheme, TUI, TerminalImage,
-    editor_component::BorderColor, tui::ComponentHandle,
+    editor_component::BorderColor, interface::ComponentHandle,
 };
 use std::rc::Rc;
 

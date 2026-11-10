@@ -5,7 +5,7 @@ use maestro_extensions::{
     EventError, ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for,
     types::{AutocompleteProviderFactory, ExtensionUIContextPort},
 };
-use maestro_tui::autocomplete::{
+use maestro_tui::candidates::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,
 };
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation};

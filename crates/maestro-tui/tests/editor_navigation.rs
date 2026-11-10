@@ -2,7 +2,7 @@
 //! Editor navigation through public operations.
 use crate::editor_support as support;
 use maestro_tui::{
-    Component, Editor, EditorOptions, autocomplete::CursorPosition, tui::InputHandler,
+    Component, Editor, EditorOptions, candidates::CursorPosition, interface::InputHandler,
 };
 
 #[test]
@@ -285,7 +285,7 @@ fn jump_excludes_current_match_at_line_start() {
 
 #[test]
 fn navigation_width_is_saved_before_border_callback() {
-    use maestro_tui::{Component, Editor, EditorOptions, tui::InputHandler};
+    use maestro_tui::{Component, Editor, EditorOptions, interface::InputHandler};
     use std::{
         cell::{Cell, RefCell},
         rc::Rc,
@@ -324,7 +324,7 @@ fn navigation_width_is_saved_before_border_callback() {
     );
     assert_eq!(
         *observed.borrow(),
-        [maestro_tui::autocomplete::CursorPosition { line: 1, col: 6 }]
+        [maestro_tui::candidates::CursorPosition { line: 1, col: 6 }]
     );
     editor.set_border_color(Rc::new(str::to_owned));
 }

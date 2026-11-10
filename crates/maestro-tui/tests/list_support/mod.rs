@@ -1,4 +1,4 @@
-use maestro_tui::tui::InputHandler;
+use maestro_tui::interface::InputHandler;
 use maestro_tui::{Component, SelectItem, SelectList, SelectListLayoutOptions, SelectListTheme};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -251,7 +251,7 @@ pub fn select_case(case: Case) {
     assert_eq!(actual, case.expected, "{}", case.case);
 }
 
-use maestro_tui::components::settings_list::SettingsListOptions;
+use maestro_tui::components::preferences::SettingsListOptions;
 use maestro_tui::{SettingItem, SettingsList, SettingsListTheme};
 /// Selected-row theme callable.
 type RowStyle = Rc<dyn Fn(&str, bool) -> String>;
