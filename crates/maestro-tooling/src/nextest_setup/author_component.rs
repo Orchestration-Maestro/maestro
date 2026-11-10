@@ -48,9 +48,9 @@ pub(super) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     Ok(status)
 }
 
-/// Install the bundle's example, give the executables one time and run the example on the
-/// bundle's components. The staged example is as new as the archive's executables, so it is
-/// never outdated.
+/// Install the bundle's example, give the executables one time, install the compiled code for
+/// that time and run the example on the bundle's components. The staged example is as new as
+/// the archive's executables, so it is never outdated.
 fn run_prepared(
     cargo: &Path,
     checkout: &Path,
@@ -59,9 +59,13 @@ fn run_prepared(
     agent_directory: &Path,
 ) -> io::Result<ExitCode> {
     let environment = environment_file()?;
-    test_setup::install_bundle(cargo, checkout, bundle, directory, &environment)?;
+    let compiled = test_setup::install_bundle(cargo, checkout, bundle, directory, &environment)?;
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         return Ok(ExitCode::from(3));
+    }
+    // The engine names the cache namespace for the example's time, which normalization just set.
+    if let Some(compiled) = compiled {
+        compiled.install()?;
     }
     let example = directory.join("examples").join(executable_name());
     let mut command = Command::new(example);

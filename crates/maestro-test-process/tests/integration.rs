@@ -12,6 +12,7 @@ mod gate;
 mod linked_files;
 mod native_aliases;
 mod search_programs;
+mod ssh_stand_in;
 mod windows_console;
 
 use std::ffi::OsStr;

@@ -707,6 +707,32 @@ fn archived_author_setup_installs_the_prepared_compiled_code() {
     assert!(!installed.join("key.stats").exists());
 }
 
+/// A copy that keeps an older time than another executable still gets its compiled code in the
+/// namespace the example reads after normalization moves it to the newest executable time.
+#[test]
+fn archived_author_setup_installs_compiled_code_for_the_normalized_example_time() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let newest = 4_000_000_000;
+    executable(&root.join("target/debug/deps/newer"), newest);
+    assert_success(&export(root, &root.join("target/test-setup"), true));
+    let example = root.join("target/debug/examples/prepare_author_component");
+    assert_eq!(
+        fs::metadata(example).unwrap().modified().unwrap(),
+        at(newest)
+    );
+    let installed = root.join(format!(
+        "target/run-agent/component-cache/modules/wasmtime-fixture-{}",
+        newest * 1000
+    ));
+    assert_eq!(
+        fs::read_to_string(installed.join("key")).unwrap(),
+        "compiled"
+    );
+}
+
 /// The run's compiled code lives in a cache below an agent directory that only the run uses,
 /// which the tests inherit, so another process pruning a shared cache cannot evict what the setup
 /// warmed.
