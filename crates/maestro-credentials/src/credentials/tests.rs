@@ -212,6 +212,14 @@ fn helper_launch_preserves_argv_and_stream_policy() {
         );
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn native_helper_limit_defaults_to_ten_seconds() {
+    let operations = super::configuration::ProcessConfigValueOperations::new(|| unreachable!());
+    assert_eq!(operations.timeout, std::time::Duration::from_millis(10_000));
+    let short = operations.with_timeout(std::time::Duration::from_millis(5));
+    assert_eq!(short.timeout, std::time::Duration::from_millis(5));
+}
 #[test]
 fn default_shell_preserves_command_quoting() {
     let text = "echo \"one | two\" | cat";
