@@ -345,7 +345,7 @@ These citations establish requirements or source behavior, not passing replaceme
 | C04 | proven | `A/attachments_runtime_provider/runtime.js:1-31`; data owner `A/attachments_runtime_provider.rs:21-49`; app `tests/sandbox_runtime_providers.rs`. |
 | C05 | proven | `A/console_runtime_provider/runtime.js:1-93`; host owner `A/console_runtime_provider.rs:77-160`; web execution witnesses. |
 | C06 | proven | `A/file_download_runtime_provider/runtime.js:1-51`; host owner `A/file_download_runtime_provider.rs:28-78`; `I/browser/values.rs:62-98`. |
-| C07 | proven | `W/sandbox/routing.rs:4-65`; `B/{runtime,sandbox_iframe,user_script}.js`; `W/sandbox/runtime_message_router.rs:89-99,125-154`; its `browser.rs:114-140,194-269` and sender tests. |
+| C07 | proven | `W/sandbox/routing.rs:4-65`; `B/{runtime,user_script}.js`; `W/sandbox/runtime_message_router.rs:89-99,125-154`; its `browser.rs:114-140,194-269` and sender tests. |
 | C08 | proven | `I/browser/mod.rs:90-120,179-215`; `I/runtime.rs:9-33`; `I/document.rs:4-59`; `I/tests.rs`. |
 | C09 | proven | `I/navigation.js:1-34`; `I/repl-{prefix,suffix}.js`; `I/browser/frame.rs:14-104`; existing browser event-subscription owner. |
 | C10 | proven | `I/browser/messages.rs:28-89`; `I/browser/execution.rs:105-319`; `I/execution.rs:34-82`; `I/browser/host.rs:9-51`; `I/browser/values.rs`. |
