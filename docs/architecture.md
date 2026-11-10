@@ -373,6 +373,15 @@ maps whose remaining order is never observed. Ordinary maps are unaffected.
 Conventions reject a shell script directly under `.config/`: nextest's setup entries call
 the development tool in `maestro-tooling`, which has the type checker, the linter and tests.
 
+Documented commands run `cargo` or `just`, so a page may not name a program from a
+directory under the reader's home that a checkout does not provide. Conventions read
+the Markdown version control tracks, documentation test fixtures included, and
+report each file once at its first line naming a program in `.local/bin`, `~/bin`,
+`$HOME/bin`, `${HOME}/bin` or `/home/<name>/bin`. A page that names the directory
+itself still passes,
+as do agent directory paths such as `~/.maestro/agent`, and a local page that never
+ships stays out of the check.
+
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
 `timeout`/`timeout_at`, standard `recv_timeout`, `recv_deadline`, `wait_timeout`,
@@ -514,7 +523,7 @@ The 28 browser-library roots are declared in `.github/ci.toml`'s `wasm_crates`,
 including `maestro-path`. Check each declared library locally with:
 
 ```sh
-CARGO_BUILD_JOBS=3 capped mise exec -- cargo clippy --no-deps -p <crate> --target wasm32-unknown-unknown --locked -- -D warnings
+cargo clippy --no-deps -p <crate> --target wasm32-unknown-unknown --locked -- -D warnings
 ```
 
 The current shared wasm job builds these roots; it does not yet run this lint

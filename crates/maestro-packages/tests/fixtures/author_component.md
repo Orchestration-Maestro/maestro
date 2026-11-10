@@ -13,8 +13,8 @@ Discovery tests copy this one artifact; they do not compile or activate it.
 Build from the repository root, then copy the resulting example artifact here:
 
 ```sh
-CARGO_BUILD_JOBS=3 CARGO_PROFILE_RELEASE_STRIP=symbols \
-  ~/.local/bin/capped cargo build -p maestro-extensions-wasm \
+CARGO_PROFILE_RELEASE_STRIP=symbols \
+  cargo build -p maestro-extensions-wasm \
   --example author_component --target wasm32-wasip2 --release --locked
 ```
 
