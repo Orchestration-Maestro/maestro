@@ -249,7 +249,7 @@ unknown filenames do not change selection. Without a panel, clicking the pill
 activates its containing disclosure.
 The standalone `artifact_pill` helper prepares the same pill. Formatted non-string fields are display-only, never artifact identities.
 
-`diff` (also `components::diff::diff`) accepts literal old/new text, an optional title and
+`diff` (also `components::changes::diff`) accepts literal old/new text, an optional title and
 caller-supplied native CSS classes through `DiffProps`. The retained cache
 compares the normalized title, literal classes and selected lines on every
 target. An empty title is absent. LF splitting happens after differencing and

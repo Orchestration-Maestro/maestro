@@ -103,7 +103,7 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 | `maestro-tui` | `input_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
 | `maestro-tui-crossterm` | alternate screen, mouse capture and colour-scheme report modes | 32 |
 | `maestro-multiplexer` | `render`, `palette`, `ui`, `view`, `input`, `keybindings`, `surface`, `client`, `sound`, `launch`, `remote` | 26–29, 32, 34, 35 |
-| `maestro-app` | `daemon` and `terminal` re-exports, `utils::clipboard` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
+| `maestro-app` | `daemon` and `terminal` re-exports, `utils::copying` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
 | `maestro` | server, render-surface, attach, monolithic and PTY set-up wiring | 21, 29, 34 |
 
 An inherent `impl` must live in the crate that defines its type. Reference methods on topology types that

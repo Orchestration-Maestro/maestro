@@ -150,7 +150,7 @@ a collapsed `Thinking...` disclosure of its `content` attribute, and
 `thinking-block` drops its toggle listener; when it is attached again it binds
 the toggle once and keeps its expansion.
 
-`components::button::button` creates a native button whose `type` comes from
+`components::controls::button` creates a native button whose `type` comes from
 `ButtonType` (`button` by default), with `maestro-button
 maestro-button-<variant> maestro-button-<size>` classes followed by the
 caller's `class_name`, an optional title and a spinning loader while loading.

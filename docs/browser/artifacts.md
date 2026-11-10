@@ -159,7 +159,7 @@ behind it while the panel's header, tabs and content stay sharp and interactive.
 
 ## PDF artifacts
 
-`tools::artifacts::pdf_artifact::PdfArtifact` retains original filename/content
+`tools::documents::pdf_artifact::PdfArtifact` retains original filename/content
 and shares the overlay's owned page renderer and native error panel. Its header
 uses the same complete original-byte selector as generic artifacts, with fixed
 `application/pdf` MIME. Download failures propagate independently of body state.
@@ -181,7 +181,7 @@ styles page chrome and error text, not document pixels.
 
 ## Spreadsheet artifacts
 
-`tools::artifacts::excel_artifact::ExcelArtifact` shares modern workbook/table
+`tools::documents::excel_artifact::ExcelArtifact` shares modern workbook/table
 preparation with attachment previews. Sheets keep workbook order; multiple sheets
 have native tabs above selectable tables in direct DOM placement and toolkit tabs
 in retained placement. A failed sheet in a mixed XLSX
@@ -286,7 +286,7 @@ callbacks.
 
 ## Error ownership
 
-`tools::artifacts::ArtifactUiError` composes localization, shared controls, native
+`tools::documents::ArtifactUiError` composes localization, shared controls, native
 host effects, presentation preparation and local view-borrow failures. Native
 reading factories return `browser::attachment_content::AttachmentHostError`.
 Header/save failures remain independent of body-load diagnostics.
@@ -299,7 +299,7 @@ retained views and recovery remain unchanged.
 
 ## Native Word body
 
-On browser targets, `tools::artifacts::docx_artifact::DocxArtifact` implements
+On browser targets, `tools::documents::docx_artifact::DocxArtifact` implements
 `DomContent` directly. Create it with `new` or `default`, set its public `filename`
 and call `set_content` with the original base64 document. Mount its body and its
 independent `get_header_buttons(&DomView)` root separately. This direct interface
@@ -323,7 +323,7 @@ still owns document parsing and safe link output.
 
 ## Native artifact console
 
-On browser targets, `tools::artifacts::console::Console` mounts directly through
+On browser targets, `tools::documents::console::Console` mounts directly through
 `DomContent`. Create it with `new` or `default`, append `LogEntry` records to its
 shared `logs` collection, then call `append` to publish the new lines, or `update`
 after any other change.
