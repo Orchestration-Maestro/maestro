@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 /// The guest crate's own lint table: the fixture workspace table with the three lints its
 /// generated bindings need at `deny`.
@@ -136,6 +137,26 @@ impl Workspace {
 )]
 #[path = "../../src/graph/policy.rs"]
 pub mod policy;
+
+/// Run Git in `root` without any inherited repository, ignore or global configuration.
+///
+/// A test hook exports `GIT_DIR` and `GIT_INDEX_FILE`, so a fixture must clear them or
+/// its commands reach the repository that runs the suite.
+pub fn git(root: &Path) -> Command {
+    let mut command = Command::new("git");
+    command.current_dir(root);
+    for (name, _) in std::env::vars_os() {
+        if name.to_string_lossy().starts_with("GIT_") {
+            command.env_remove(name);
+        }
+    }
+    command
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("LC_ALL", "C")
+        .args(["-c", "core.excludesFile=/dev/null"]);
+    command
+}
 
 pub fn required(name: &str) -> &'static [&'static str] {
     policy::required(name)

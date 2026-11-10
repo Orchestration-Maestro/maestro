@@ -17,12 +17,8 @@ fn workspace(path: &str, contents: &str) -> (Workspace, PathBuf) {
 }
 
 /// Run one git command in `root`, failing the test when it refuses.
-fn git(root: &Path, arguments: &[&str]) {
-    let output = std::process::Command::new("git")
-        .args(arguments)
-        .current_dir(root)
-        .output()
-        .unwrap();
+fn run_git(root: &Path, arguments: &[&str]) {
+    let output = crate::support::git(root).args(arguments).output().unwrap();
     assert!(
         output.status.success(),
         "{}",
@@ -76,12 +72,12 @@ fn a_page_version_control_does_not_track_is_accepted() {
         "# Local\n\n```sh\n~/.local/bin/capped cargo build --locked\n```\n",
     );
     std::fs::write(workspace.root.path().join(".gitignore"), "plans/\n").unwrap();
-    git(workspace.root.path(), &["init", "-q"]);
-    git(workspace.root.path(), &["add", "-A"]);
+    run_git(workspace.root.path(), &["init", "-q"]);
+    run_git(workspace.root.path(), &["add", "-A"]);
 
     check_workspace(workspace.root.path()).unwrap();
 
-    git(workspace.root.path(), &["add", "-f", "plans/local.md"]);
+    run_git(workspace.root.path(), &["add", "-f", "plans/local.md"]);
     assert_eq!(
         check_workspace(workspace.root.path()),
         Err(offender(&page, 4))
