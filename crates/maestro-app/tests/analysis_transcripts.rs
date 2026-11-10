@@ -735,9 +735,11 @@ fn analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_
                 // Each release lets exactly one child finish, so the markers arrive in the
                 // order the run starts and completes its children. A child is held from its
                 // start marker until its release, and the next one starts only after its end
-                // marker: a run that starts every child at once writes a second start marker
-                // before the first end marker. The child's own output is printed only after
-                // its end, and the next header only after that output.
+                // marker: a run that starts every child at once usually writes a second start
+                // marker before the first end marker. No signal orders a late child's start
+                // marker ahead of the first end, so that run can still pass; only a launcher
+                // seam would make the check exact. The child's own output is printed only
+                // after its end, and the next header only after that output.
                 let started = || next_marker(&log, *b"ready");
                 let ended = || next_marker(&log, *b"ended");
                 printed_through(&lines, "Analyzing session-transcripts-000.txt");
