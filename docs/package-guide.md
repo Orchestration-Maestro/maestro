@@ -272,7 +272,7 @@ participate in the application's loading rules; see
 | Result | Next action |
 | --- | --- |
 | `Path does not exist: <path>` | Check the install input from the current directory; check stored paths from their settings directory. |
-| `No matching package found for <source>` | Copy the source from `maestro list`, including `npm:` or `git:`. |
+| `No package matches <source>` | Copy the source from `maestro list`, including `npm:` or `git:`. |
 | Package listed but resource missing | Check the manifest, ignored directories, filters and disabled duplicates before reinstalling. |
 | `Tool "<name>" conflicts with <path>` | Remove a duplicate extension source or disable one copy with a package filter. Different checkouts are different files. |
 | Discovered `.js` or `.ts` fails to load | Distribute a built Maestro extension component instead; see [component authoring](extensions.md). |

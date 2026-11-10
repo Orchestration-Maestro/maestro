@@ -60,7 +60,7 @@ pub(super) fn no_match_message(source: &str, configured: &[String]) -> String {
         Source::Local(_) => false,
     });
     suggestion.map_or_else(
-        || format!("No matching package found for {source}"),
-        |suggestion| format!("No matching package found for {source}. Did you mean {suggestion}?"),
+        || format!("No package matches {source}"),
+        |suggestion| format!("No package matches {source}. Did you mean {suggestion}?"),
     )
 }
