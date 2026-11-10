@@ -21,6 +21,9 @@ mod inline_polls;
 /// Single-owner rule for start-anchored recognizer sources.
 mod anchored_sources;
 
+/// Single-owner rule for terminal detection on the standard streams.
+mod terminal_detection;
+
 /// Verify declaration ownership and canonical extension interface inputs.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
@@ -56,6 +59,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     message_renderers::check(members)?;
     inline_polls::check(members)?;
     anchored_sources::check(members)?;
+    terminal_detection::check(members)?;
     wit.finish()
 }
 

@@ -71,7 +71,9 @@ styled at all. The checks run in this order:
 
 This is the only color decision for terminal text. The context-file warning, the scope
 warnings, the search-tool download lines and the transcript report all ask it, so
-`FORCE_COLOR` and `TERM=dumb` act the same everywhere.
+`FORCE_COLOR` and `TERM=dumb` act the same everywhere. The conventions check rejects an
+`is_terminal()` call in production code outside the colour decision, print-mode output cleaning
+and the executable's input routing, so a second colour decision cannot land.
 
 In 256-color mode a hex color becomes the nearest entry of the six-level cube,
 or a gray-ramp entry when its channel spread is below 10 and the gray is closer

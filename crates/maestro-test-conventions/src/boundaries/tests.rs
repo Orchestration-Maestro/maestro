@@ -1,6 +1,6 @@
 //! Identifier spellings in the declaration scan.
 
-use super::{Records, SPELLINGS, anchored_sources, application_exports};
+use super::{Records, SPELLINGS, anchored_sources, application_exports, terminal_detection};
 use crate::source::{Member, SYNTAX_PARSES};
 
 /// An ordinary production source with paths, method calls and a closure.
@@ -89,5 +89,57 @@ fn start_anchored_sources_outside_production_or_the_member_are_not_scanned() {
     let foreign = Member::with_sources("maestro-app", "app", [("app/src/rules.rs", seeded)]);
     for member in [owner, tests, foreign] {
         assert_eq!(anchored_sources::check(&[member]), Ok(()));
+    }
+}
+
+/// Production sources that decide from a stream whether it is a terminal: a function, a
+/// macro argument, a closure and an impl method.
+const TERMINAL_DECISIONS: &[&str] = &[
+    "fn a() -> bool { std::io::stderr().is_terminal() }",
+    "fn b() { let _ = format!(\"{}\", std::io::stdout().is_terminal()); }",
+    "fn c() -> impl Fn() -> bool { || std::io::stdout().is_terminal() }",
+    "impl X { fn d(&self) -> bool { self.0.is_terminal() } }",
+];
+
+#[test]
+fn a_terminal_decision_outside_its_owners_is_found_in_every_position() {
+    for source in TERMINAL_DECISIONS {
+        let member =
+            Member::with_sources("maestro-chat", "chat", [("chat/src/colour.rs", *source)]);
+        let error = terminal_detection::check(&[member]).expect_err(source);
+        assert!(
+            error.contains("chat/src/colour.rs:1: terminal detection outside its owners"),
+            "{source}: {error}"
+        );
+    }
+}
+
+#[test]
+fn owners_tests_and_other_calls_are_not_reported() {
+    let seeded = TERMINAL_DECISIONS[0];
+    let owner = Member::with_sources(
+        "maestro-theme",
+        "theme",
+        [("theme/src/palette/loading.rs", seeded)],
+    );
+    let tests = Member::with_sources("maestro-chat", "chat", [("chat/src/tests.rs", seeded)]);
+    let gated = Member::with_sources(
+        "maestro-chat",
+        "chat",
+        [(
+            "chat/src/colour.rs",
+            format!("#[cfg(test)]\nmod tests {{ {seeded} }}"),
+        )],
+    );
+    let unrelated = Member::with_sources(
+        "maestro-chat",
+        "chat",
+        [(
+            "chat/src/other.rs",
+            "fn e(x: u8) -> bool { is_terminal(x) || x.is_terminal_like() }",
+        )],
+    );
+    for member in [owner, tests, gated, unrelated] {
+        assert_eq!(terminal_detection::check(&[member]), Ok(()));
     }
 }
