@@ -69,6 +69,10 @@ styled at all. The checks run in this order:
    `linux` (in any case) gets color.
 9. Anything else gets color only when `FORCE_COLOR` asked for it.
 
+This is the only color decision for terminal text. The context-file warning, the scope
+warnings, the search-tool download lines and the transcript report all ask it, so
+`FORCE_COLOR` and `TERM=dumb` act the same everywhere.
+
 In 256-color mode a hex color becomes the nearest entry of the six-level cube,
 or a gray-ramp entry when its channel spread is below 10 and the gray is closer
 (weighted distance 0.299, 0.587, 0.114; lower index wins ties). Explicit

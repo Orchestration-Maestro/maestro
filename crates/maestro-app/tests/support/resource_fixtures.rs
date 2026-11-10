@@ -470,13 +470,27 @@ const CHILD_BASE: &str = "MAESTRO_RESOURCE_TEST_BASE";
 /// Runs `body` with a scratch base in a child whose home is `<base>/home`; in the parent,
 /// returns the base and the child's standard error once the child passed.
 pub fn child_stderr(test: &str, body: impl FnOnce(&str)) -> Option<(String, String)> {
+    child_stderr_with(test, &[], body)
+}
+
+/// As `child_stderr`, with `environment` set on the child over a clean `FORCE_COLOR`.
+pub fn child_stderr_with(
+    test: &str,
+    environment: &[(&str, &str)],
+    body: impl FnOnce(&str),
+) -> Option<(String, String)> {
     if maestro_test_process::selection().is_child() {
         body(&std::env::var(CHILD_BASE).unwrap());
         return None;
     }
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let base = scratch.path().display().to_string();
-    let output = scratch_child(test, &base).nocapture().output().unwrap();
+    let output = scratch_child(test, &base)
+        .env_remove("FORCE_COLOR")
+        .envs(environment.iter().copied())
+        .nocapture()
+        .output()
+        .unwrap();
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(output.status.success(), "{stderr}");
     Some((base, stderr))
