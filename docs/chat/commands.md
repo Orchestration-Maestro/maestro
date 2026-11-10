@@ -283,7 +283,7 @@ viewer URL. It takes no argument: `/share extra` is prompt text.
 The command runs in four steps:
 
 1. It runs `gh auth status`. A program that is missing or cannot be executed shows
-   `The GitHub CLI (gh) is missing. See https://cli.github.com/`;
+   `The GitHub CLI (gh) is missing. See https://cli.github.com/ for the install steps.`;
    a nonzero or signalled status shows `The GitHub CLI has no login. Run 'gh auth
    login' first.` Neither starts an export.
 2. It writes the session, through the same HTML export owner `/export` uses, into a

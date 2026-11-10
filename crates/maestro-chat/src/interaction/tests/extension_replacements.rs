@@ -441,7 +441,9 @@ fn built_in_expanded(world: &World) -> bool {
     let header = world.mode.built_in_header.borrow().clone().unwrap();
     let text = strip_ansi(&header.render(80).join(" ")).unwrap();
     let words: Vec<&str> = text.split_whitespace().collect();
-    !words.join(" ").contains("the full help")
+    !words
+        .join(" ")
+        .contains("for the full help and the loaded resources")
 }
 
 #[test]
