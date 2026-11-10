@@ -27,10 +27,37 @@ fn development_profile_requires_optimisation_level_one() {
         with_profile(&workspace, profile);
         let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(
-            error.contains("[profile.dev] must set opt-level = 1"),
+            error.contains("[profile.dev] must set opt-level = 1 to keep"),
             "{profile}: {error}"
         );
     }
     with_profile(&workspace, "[profile.dev]\nopt-level = 1\n");
+    check_workspace(workspace.root.path()).unwrap();
+}
+
+#[test]
+fn development_profile_rejects_optimisation_overrides() {
+    let workspace = Workspace::with_text_member();
+    for (profile, name) in [
+        ("[profile.test]\nopt-level = 0\n", "[profile.test]"),
+        (
+            "[profile.dev.package.\"*\"]\nopt-level = 0\n",
+            "[profile.dev.package.\"*\"]",
+        ),
+    ] {
+        with_profile(
+            &workspace,
+            &format!("[profile.dev]\nopt-level = 1\n{profile}"),
+        );
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(
+            error.contains(&format!("{name} must not set opt-level")),
+            "{profile}: {error}"
+        );
+    }
+    with_profile(
+        &workspace,
+        "[profile.dev]\nopt-level = 1\n[profile.dev.package.\"*\"]\ndebug = false\n[profile.dev.package.sha2]\nopt-level = 3\n",
+    );
     check_workspace(workspace.root.path()).unwrap();
 }

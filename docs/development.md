@@ -1174,8 +1174,9 @@ backtraces retain file:line for workspace code, without debugger variable views.
 Dependencies build without debug info, so their frames show function names only;
 this keeps target directories about a sixth smaller.
 The development profile sets `opt-level = 1` for workspace crates and dependencies,
-and the conventions check requires it. At level 0 nearly every function keeps its own
-unwind record, so the macOS test binaries exceed the linker's 16 MiB `__eh_frame`
+and the conventions check requires it. The check also rejects an `opt-level` in
+`[profile.test]` or `[profile.dev.package."*"]`, which would undo it. At level 0
+nearly every function keeps its own unwind record, so the macOS test binaries exceed the linker's 16 MiB `__eh_frame`
 limit; level 1 inlines small functions and drops most of those records.
 These dependencies build at level 3 instead; release builds are unchanged:
 
