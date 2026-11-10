@@ -598,7 +598,10 @@ fn maestro_raw_continue_rejects_empty_context() {
     )
     .err()
     .unwrap();
-    assert_eq!(error.message, "Cannot continue: no messages in context");
+    assert_eq!(
+        error.message,
+        "Nothing to continue from: the context holds no messages"
+    );
     assert!(tasks.0.lock().unwrap().is_empty());
 }
 /// Existing user events are not replayed, and the supplied history appends.

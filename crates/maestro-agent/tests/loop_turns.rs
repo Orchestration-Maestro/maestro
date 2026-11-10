@@ -101,10 +101,13 @@ fn continuation_rejects_invalid_tails_before_events() {
 /// Execute the controlled public scenario.
 async fn continuation_rejects_invalid_tails_before_events_case() {
     for (tail, expected) in [
-        (None, "Cannot continue: no messages in context"),
+        (
+            None,
+            "Nothing to continue from: the context holds no messages",
+        ),
         (
             Some(AgentMessage::Assistant(assistant("old"))),
-            "Cannot continue from message role: assistant",
+            "Nothing to continue from: the last message has the assistant role",
         ),
     ] {
         let context = context();

@@ -601,7 +601,7 @@ async fn continue_from_assistant_tail() {
     let refused = agent.r#continue().await.unwrap_err();
     assert_eq!(
         refused.message,
-        "Cannot continue from message role: assistant"
+        "Nothing to continue from: the last message has the assistant role"
     );
     let assistant = || AgentMessage::Assistant(support::assistant("earlier"));
     let (texts, starts) = continuation_starts(assistant(), Some("queued")).await;
@@ -729,7 +729,7 @@ async fn observable_loops() {
     );
     assert_eq!(
         refused.err().unwrap().message,
-        "Cannot continue: no messages in context"
+        "Nothing to continue from: the context holds no messages"
     );
     let options = support::responses(vec![support::assistant("a4")]);
     let stream =
