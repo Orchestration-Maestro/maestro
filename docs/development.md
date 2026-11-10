@@ -1500,6 +1500,14 @@ The tooling search-setup tests use the same exports to install private programs
 for their preparation and local-setup children. Their runner needs neither
 program on `PATH`; archived-export children also exclude the private directory.
 
+The tool-factory suite in `maestro-tools` and the factory-construction test in
+`maestro-extensions-wasmtime` install the pins the same way, so neither needs either
+program on `PATH`. The `author-component` filter in `.config/nextest.toml` names each
+test that receives the exports: add a test to it when the test calls
+`install_search_program`. A chat startup witness that counts requests installs stub
+`fd` and `rg` programs in its binary directory first, so it never downloads a search
+program or depends on one found on `PATH`.
+
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
 `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
