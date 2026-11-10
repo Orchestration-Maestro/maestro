@@ -50,13 +50,16 @@ fn tracked_pages(root: &Path) -> Result<Vec<PathBuf>, String> {
         markdown_pages(root, &mut pages)?;
         return Ok(pages);
     }
-    Ok(listing
+    listing
         .stdout
         .split(|byte| *byte == 0)
         .filter(|path| !path.is_empty())
-        .filter_map(|path| std::str::from_utf8(path).ok())
-        .map(|path| root.join(path))
-        .collect())
+        .map(|path| {
+            std::str::from_utf8(path)
+                .map(|path| root.join(path))
+                .map_err(|_| format!("{}: a tracked page name is not UTF-8", root.display()))
+        })
+        .collect::<Result<_, _>>()
 }
 
 /// Collect every Markdown file below `directory`.
@@ -89,19 +92,34 @@ fn is_skipped(path: &Path) -> bool {
 fn first_offender(text: &str) -> Option<usize> {
     text.lines()
         .position(|line| {
-            HOME_PROGRAMS
-                .iter()
-                .any(|program| names_program(line, program))
+            names_absolute_program(line)
+                || HOME_PROGRAMS
+                    .iter()
+                    .any(|program| names_program(line, program))
         })
         .map(|index| index + 1)
 }
 
+/// Whether `line` names a program in `bin` under an absolute home directory.
+fn names_absolute_program(line: &str) -> bool {
+    line.match_indices("/home/").any(|(start, _)| {
+        line[start + "/home/".len()..]
+            .split_once('/')
+            .is_some_and(|(name, rest)| {
+                !name.is_empty() && rest.strip_prefix("bin/").is_some_and(has_program_name)
+            })
+    })
+}
+
 /// Whether `line` names a program in the home directory spelled `program`.
 fn names_program(line: &str, program: &str) -> bool {
-    line.match_indices(program).any(|(start, _)| {
-        line[start + program.len()..]
-            .chars()
-            .next()
-            .is_some_and(|first| first.is_alphanumeric() || matches!(first, '_' | '.' | '-'))
-    })
+    line.match_indices(program)
+        .any(|(start, _)| has_program_name(&line[start + program.len()..]))
+}
+
+/// Whether `text` starts with the name of a program.
+fn has_program_name(text: &str) -> bool {
+    text.chars()
+        .next()
+        .is_some_and(|first| first.is_alphanumeric() || matches!(first, '_' | '.' | '-'))
 }

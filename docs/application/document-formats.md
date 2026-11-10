@@ -540,7 +540,8 @@ the tables and the inline defaults under the class namespace; the two wrapper
 rules sit inside `@media not print` when the wrapper is hidden on print. The theme
 declares `--docx-majorHAnsi-font`, `--docx-minorHAnsi-font` and one
 `--docx-<slot>-color` per colour slot, writing `null` for a missing typeface,
-`#null` for a missing colour value, and `undefined` for an absent font entry. Document styles emit their
+`#null` for a missing colour value, and `undefined` for an absent font entry.
+Document styles emit their
 own resolved substyles, then their linked style's, with the last default
 definition of a target also matching that target anywhere in the document. List styles emit a marker, a counter set per level and a
 `counter-reset` on the page wrapper, or on the document root when the pages are

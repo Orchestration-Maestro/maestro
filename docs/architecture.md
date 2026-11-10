@@ -377,7 +377,8 @@ Documented commands run `cargo` or `just`, so a page may not name a program from
 directory under the reader's home that a checkout does not provide. Conventions read
 the Markdown version control tracks, documentation test fixtures included, and
 report each file once at its first line naming a program in `.local/bin`, `~/bin`,
-`$HOME/bin` or `${HOME}/bin`. A page that names the directory itself still passes,
+`$HOME/bin`, `${HOME}/bin` or `/home/<name>/bin`. A page that names the directory
+itself still passes,
 as do agent directory paths such as `~/.maestro/agent`, and a local page that never
 ships stays out of the check.
 

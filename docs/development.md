@@ -17,6 +17,10 @@ just setup
 just build
 ```
 
+Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
+and the other pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml`
+through rustup, not mise.
+
 Tool versions stay caller-owned in `mise.toml`. Generated downloads and checksums
 in `mise.lock` must cover Linux x64 and ARM64, macOS Intel and ARM64, and Windows
 x64 hosts, independently of the compilation target. A successful `mise lock` can

@@ -7,6 +7,9 @@ just browser-build
 just browser-example-preview --port 9000
 ```
 
+Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
+and the pinned author tools are on `PATH`.
+
 This builds a real editable WebAssembly **author fixture**, not a shipped browser
 application or installable package. The standalone Cargo package is under
 `crates/maestro-tooling/tests/fixtures/browser_author/`, outside the workspace

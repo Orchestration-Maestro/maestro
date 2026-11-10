@@ -51,9 +51,14 @@ fn a_documentation_fixture_naming_a_home_directory_program_is_reported() {
 fn every_home_directory_spelling_of_a_program_is_reported() {
     for (program, contents) in [
         ("~/.local/bin", "~/.local/bin/capped cargo test\n"),
+        ("~/bin", "~/bin/capped just test\n"),
         ("$HOME", "$HOME/bin/capped just test\n"),
         ("${HOME}", "${HOME}/bin/capped just test\n"),
-        ("/home/ada", "/home/ada/.local/bin/capped just test\n"),
+        (
+            "/home/ada/.local/bin",
+            "/home/ada/.local/bin/capped just test\n",
+        ),
+        ("/home/ada/bin", "/home/ada/bin/capped just test\n"),
     ] {
         let (workspace, page) = workspace("docs/build.md", contents);
 
