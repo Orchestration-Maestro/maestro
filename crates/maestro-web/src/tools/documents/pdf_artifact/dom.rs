@@ -9,7 +9,7 @@ use crate::{
         error,
         pdf::{self, Pdf},
     },
-    page::{self as dom, DomContent, DomRoot, DomView, Getter, Link, Property, Reflected, Setter},
+    page::{self, DomContent, DomRoot, DomView, Getter, Link, Property, Reflected, Setter},
     tools::{documents::artifact_element::header, types::ToolUiError},
 };
 use std::{
@@ -192,7 +192,7 @@ impl DomContent for PdfArtifact {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let state = State::new(view, self.content.clone())?;
         *state.assignment.borrow_mut() = Some(Rc::clone(&self.assignment));
-        let node = dom::create_with(&view.document, "pdf-artifact", Rc::downgrade(&state))
+        let node = page::create_with(&view.document, "pdf-artifact", Rc::downgrade(&state))
             .map_err(|e| ToolUiError::native(&e))?;
         node.set_class_name("maestro-artifact-views");
         crate::tools::documents::artifact_element::filename(&node, &self.filename)?;
@@ -243,7 +243,7 @@ struct Element {
 }
 impl custom_element::CustomElement for Element {
     fn connected_callback(&mut self) {
-        let Some(root) = dom::live(&self.root) else {
+        let Some(root) = page::live(&self.root) else {
             return;
         };
         let _ = root.class_list().add_1("maestro-artifact-views");
@@ -275,13 +275,13 @@ impl custom_element::CustomElement for Element {
 /// Define the source-owned PDF element through the shared registration owner.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
     let view = Rc::clone(view);
-    dom::define_element(
+    page::define_element(
         "pdf-artifact",
         vec!["filename".into()],
         &[Property::Text("filename", "filename")],
         move |root, properties| {
             let state = Rc::new(RefCell::new(
-                dom::take_creating::<Weak<State>>().unwrap_or_default(),
+                page::take_creating::<Weak<State>>().unwrap_or_default(),
             ));
             let initial = state
                 .borrow()
@@ -312,7 +312,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
                     wasm_bindgen::throw_str(&error.to_string());
                 }
             });
-            let _ = dom::install(&root, "content", &get, &set);
+            let _ = page::install(&root, "content", &get, &set);
             Element {
                 root: Link::new(&root),
                 view: Rc::clone(&view),

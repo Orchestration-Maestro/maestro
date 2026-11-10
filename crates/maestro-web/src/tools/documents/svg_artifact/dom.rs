@@ -2,7 +2,7 @@
 use super::SvgArtifact;
 use crate::{
     browser::attachment_content::browser::append,
-    page::{self as dom, DomContent, DomRoot, DomView, Getter, Link, Property, Reflected, Setter},
+    page::{self, DomContent, DomRoot, DomView, Getter, Link, Property, Reflected, Setter},
     tools::{
         documents::{
             artifact_element::{
@@ -132,7 +132,7 @@ impl SvgArtifact {
 impl DomContent for SvgArtifact {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let state = State::new(self, view)?;
-        let node = dom::create_with(&view.document, "svg-artifact", Rc::downgrade(&state))
+        let node = page::create_with(&view.document, "svg-artifact", Rc::downgrade(&state))
             .map_err(|e| ToolUiError::native(&e))?;
         node.set_class_name("maestro-artifact-views");
         crate::tools::documents::artifact_element::filename(&node, self.source.filename())?;
@@ -188,7 +188,7 @@ struct Element {
 }
 impl custom_element::CustomElement for Element {
     fn connected_callback(&mut self) {
-        let Some(root) = dom::live(&self.root) else {
+        let Some(root) = page::live(&self.root) else {
             return;
         };
         let _ = root.class_list().add_1("maestro-artifact-views");
@@ -227,13 +227,13 @@ impl custom_element::CustomElement for Element {
 /// Register the source-owned SVG tag using the shared native constructor and property owners.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
     let view = Rc::clone(view);
-    dom::define_element(
+    page::define_element(
         "svg-artifact",
         vec!["filename".into()],
         &[Property::Text("filename", "filename")],
         move |root, properties| {
             let state = Rc::new(RefCell::new(
-                dom::take_creating::<Weak<State>>().unwrap_or_default(),
+                page::take_creating::<Weak<State>>().unwrap_or_default(),
             ));
             let content = Rc::new(RefCell::new(String::new()));
             let (read, write) = (Rc::clone(&content), Rc::clone(&content));
@@ -256,7 +256,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
                     let _ = state.content(value);
                 }
             });
-            let _ = dom::install(&root, "content", &get, &set);
+            let _ = page::install(&root, "content", &get, &set);
             Element {
                 root: Link::new(&root),
                 view: Rc::clone(&view),

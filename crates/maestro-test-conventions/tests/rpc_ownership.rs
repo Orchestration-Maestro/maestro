@@ -22,7 +22,7 @@ const FOREIGN_DECLARATIONS: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "maestro-app",
-        "src/rpc_mode/jsonl.rs",
+        "src/connection_runner/jsonl.rs",
         "//! Framing.\n/// Item.\npub fn serialize_json_line() {}\n",
         "serialize_json_line declaration belongs to maestro-json",
     ),
@@ -75,7 +75,7 @@ fn inline_polls_delegate_to_start_now() {
         source(&workspace, "maestro-app", file, contents);
         let error = check_workspace(workspace.root.path()).expect_err(file);
         assert!(
-            error.contains("inline poll outside utils::task::start_now"),
+            error.contains("inline poll outside utils::scheduling::start_now"),
             "{file}: {error}"
         );
     }

@@ -6,7 +6,7 @@ use crate::{
         self, AttachmentHost, AttachmentHostError, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
-    components::{copy_button::CopyButton, source as code_block},
+    components::{copy_button::CopyButton, source},
 };
 use std::{
     cell::RefCell,
@@ -173,7 +173,7 @@ impl ConsoleBlock {
             .then(|| Rc::new(Prepared::owned(&supplied)));
         let size = copy.size(ui, i18n)?;
         let layout = self.publish(ui, next, (copy.id, size), (presentation, modal))?;
-        let controls = code_block::controls(ui, &layout, [copy], (i18n, presentation))?;
+        let controls = source::controls(ui, &layout, [copy], (i18n, presentation))?;
         let gained = controls.iter().flatten().any(egui::Response::gained_focus);
         if let Some(mounted) = self.mounted.borrow().upgrade().filter(|_| gained) {
             mounted.reveal();

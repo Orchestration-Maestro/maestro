@@ -1,9 +1,7 @@
 //! Bare source tags mounting the same native format owners consumed by the panel.
 use super::NativeArtifact;
 use crate::{
-    page::{
-        self as dom, DomContent as _, DomRoot, DomView, Getter, Link, Property, Reflected, Setter,
-    },
+    page::{self, DomContent as _, DomRoot, DomView, Getter, Link, Property, Reflected, Setter},
     tools::types::ToolUiError,
 };
 use maestro_app::browser::tools::documents::FileType;
@@ -40,7 +38,7 @@ fn paint(
     mounted: &Placement,
     view: &DomView,
 ) -> Result<(), ToolUiError> {
-    let Some(root) = dom::connected(root) else {
+    let Some(root) = page::connected(root) else {
         return Ok(());
     };
     root.class_list()
@@ -115,7 +113,7 @@ struct SourceBinding {
 }
 impl Drop for SourceBinding {
     fn drop(&mut self) {
-        if let Some(root) = dom::live(&self.root) {
+        if let Some(root) = page::live(&self.root) {
             let _ = js_sys::Reflect::define_property(&root, &"content".into(), &self.descriptor);
         }
     }
@@ -157,7 +155,7 @@ pub(in crate::tools::documents) fn mount(
     }
     let mounted: Placement = Rc::default();
     let current = Rc::new(RefCell::new(view.clone()));
-    let node = dom::create_with(
+    let node = page::create_with(
         &view.document,
         controller.borrow().tag(),
         (
@@ -200,7 +198,7 @@ fn source(
             wasm_bindgen::throw_str(&error.to_string());
         }
     });
-    let _ = dom::install(root, "content", &get, &set);
+    let _ = page::install(root, "content", &get, &set);
     (get, set)
 }
 /// Define source tags whose body lifetime is managed by their native format owner.
@@ -214,12 +212,12 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
         ("docx-artifact", FileType::Docx),
     ] {
         let view = Rc::clone(view);
-        dom::define_element(
+        page::define_element(
             tag,
             vec!["filename".into()],
             &[Property::Text("filename", "filename")],
             move |root, properties| {
-                let (controller, mounted, current) = dom::take_creating::<Creating>()
+                let (controller, mounted, current) = page::take_creating::<Creating>()
                     .unwrap_or_else(|| {
                         (
                             Rc::new(RefCell::new(NativeArtifact::new(kind))),

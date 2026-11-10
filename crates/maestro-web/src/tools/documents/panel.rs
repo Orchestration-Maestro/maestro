@@ -1,7 +1,7 @@
 //! Native artifact panel backed by the existing application command and replay owner.
 use super::{ArtifactsPanel, Callback, native::NativeArtifact};
 use crate::{
-    page::{self as dom, DomContent, DomRoot, DomView, Link},
+    page::{self, DomContent, DomRoot, DomView, Link},
     tools::types::ToolUiError,
 };
 use maestro_app::{SandboxUrlProvider, browser::tools::documents::LocalArtifactsPanel};
@@ -109,8 +109,8 @@ impl State {
         self.root
             .borrow()
             .as_ref()
-            .and_then(dom::live)
-            .zip(dom::live(root))
+            .and_then(page::live)
+            .zip(page::live(root))
             .is_some_and(|(current, root)| current.is_same_node(Some(root.as_ref())))
     }
     /// Paint an application notification, retaining any reached error as literal visible text.
@@ -125,7 +125,7 @@ impl State {
                     .and_then(|name| self.entries.borrow().get(&name).cloned())
                     .and_then(|entry| entry.borrow().failure.clone())
             });
-        if let Some(root) = self.root.borrow().as_ref().and_then(dom::live)
+        if let Some(root) = self.root.borrow().as_ref().and_then(page::live)
             && let Ok(Some(status)) = root.query_selector(":scope > .maestro-artifact-panel-error")
         {
             status.set_text_content(failure.as_deref());
@@ -143,7 +143,7 @@ impl State {
                 root.node.unchecked_ref::<web_sys::Element>().remove();
             }
         }
-        if let Some(root) = self.root.borrow().as_ref().and_then(dom::live) {
+        if let Some(root) = self.root.borrow().as_ref().and_then(page::live) {
             root.replace_children_with_node_0();
         }
         drop((events, header));
@@ -213,7 +213,7 @@ impl DomContent for ArtifactsPanel {
     }
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
         let state = self.page_state(view);
-        let node = dom::create_with(&view.document, "artifacts-panel", Rc::downgrade(&state))
+        let node = page::create_with(&view.document, "artifacts-panel", Rc::downgrade(&state))
             .map_err(|error| ToolUiError::native(&error))?;
         *state.root.borrow_mut() = Some(Link::new({
             use wasm_bindgen::JsCast as _;

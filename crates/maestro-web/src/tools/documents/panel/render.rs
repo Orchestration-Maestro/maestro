@@ -6,7 +6,7 @@ use crate::{
         event_subscription::EventSubscription,
     },
     components::controls::{ButtonProps, ButtonSize, ButtonVariant, button},
-    page::{self as dom, DomRoot},
+    page::{self, DomRoot},
     tools::types::ToolUiError,
 };
 use std::rc::Rc;
@@ -86,7 +86,7 @@ impl State {
         else {
             return;
         };
-        let owner = self.root.borrow().as_ref().and_then(dom::live);
+        let owner = self.root.borrow().as_ref().and_then(page::live);
         let belongs = target
             .closest("artifacts-panel")
             .ok()
@@ -114,7 +114,7 @@ impl State {
     }
     /// Mount missing file views and update visibility without reconstructing unchanged roots.
     pub(super) fn paint(self: &Rc<Self>) -> Result<(), ToolUiError> {
-        let Some(root) = self.root.borrow().as_ref().and_then(dom::connected) else {
+        let Some(root) = self.root.borrow().as_ref().and_then(page::connected) else {
             return Ok(());
         };
         if root

@@ -28,7 +28,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
             noop_wakers(tokens, &mut lines);
             found.extend(lines.into_iter().map(|line| {
                 format!(
-                    "{}:{line}: inline poll outside utils::task::start_now",
+                    "{}:{line}: inline poll outside utils::scheduling::start_now",
                     source.path.display()
                 )
             }));

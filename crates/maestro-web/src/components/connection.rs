@@ -1,7 +1,5 @@
 //! Native connection callbacks for retained component roots.
-use crate::{
-    browser::attachment_content::browser::host_error, page as dom, tools::types::ToolUiError,
-};
+use crate::{browser::attachment_content::browser::host_error, page, tools::types::ToolUiError};
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element};
 
@@ -45,12 +43,12 @@ pub(crate) fn root(
         .default_view()
         .ok_or_else(|| ToolUiError::Presentation("Missing window".into()))?;
     if window.custom_elements().get(tag).is_undefined() {
-        dom::define_element(tag, Vec::new(), &[], |_, _| ConnectedElement {
-            connection: dom::take_creating::<Connection>(),
+        page::define_element(tag, Vec::new(), &[], |_, _| ConnectedElement {
+            connection: page::take_creating::<Connection>(),
         })
         .map_err(|error| host_error(&error))?;
     }
-    let root = dom::create_with(document, tag, Rc::clone(connection))
+    let root = page::create_with(document, tag, Rc::clone(connection))
         .map_err(|error| host_error(&error))?;
     root.set_attribute("class", class)
         .map_err(|error| host_error(&error))?;

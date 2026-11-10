@@ -3,7 +3,7 @@ use super::ToolMessageDebugView;
 use crate::{
     browser::attachment_content::browser::{append, element, set_text_if_changed},
     components::messages::tool_message_debug_view::pretty,
-    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
+    page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::{renderers::default_renderer::Listing, types::ToolUiError},
 };
 use std::cell::RefCell;
@@ -26,7 +26,7 @@ struct Mounted {
 }
 impl DomContent for ToolMessageDebugView {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let document = &view.document;
         let root = element(document, "div", "maestro-tool-debug")?;
         let call = element(document, "div", "")?;

@@ -2,7 +2,7 @@
 use super::{Console, LogEntry, LogType, Mounted, mounted};
 use crate::{
     browser::values::BrowserSandboxValue,
-    page::{self as dom, DomView, Getter, Link, Setter},
+    page::{self, DomView, Getter, Link, Setter},
     tools::types::ToolUiError,
 };
 use std::{
@@ -33,7 +33,7 @@ impl custom_element::CustomElement for Element {
         if self.body.borrow().upgrade().is_some() {
             return;
         }
-        let Some(root) = dom::live(&self.root) else {
+        let Some(root) = page::live(&self.root) else {
             return;
         };
         root.replace_children_with_node_0();
@@ -47,7 +47,7 @@ impl custom_element::CustomElement for Element {
     }
     fn disconnected_callback(&mut self) {
         if self.owned.take().is_some()
-            && let Some(root) = dom::live(&self.root)
+            && let Some(root) = page::live(&self.root)
         {
             root.replace_children_with_node_0();
         }
@@ -88,8 +88,8 @@ fn values(logs: &[LogEntry]) -> JsValue {
 /// Register the console tag using the same body and controls consumed by HTML artifacts.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
     let view = Rc::clone(view);
-    dom::define_element("artifact-console", vec![], &[], move |root, _| {
-        let body = dom::take_creating::<Body>().unwrap_or_default();
+    page::define_element("artifact-console", vec![], &[], move |root, _| {
+        let body = page::take_creating::<Body>().unwrap_or_default();
         let console = Console::new();
         let logs = Rc::clone(&console.logs);
         let (reading, writing) = (Rc::clone(&body), Rc::clone(&body));
@@ -114,7 +114,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
                 .render()
                 .unwrap_or_else(|error| wasm_bindgen::throw_str(&error.to_string()));
         });
-        let _ = dom::install(&root, "logs", &get, &set);
+        let _ = page::install(&root, "logs", &get, &set);
         Element {
             root: Link::new(&root),
             view: Rc::clone(&view),

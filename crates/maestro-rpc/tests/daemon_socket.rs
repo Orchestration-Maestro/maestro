@@ -8,7 +8,7 @@ use maestro_app::connection_runner::{
 use maestro_app::daemon_api::{
     ApiClientError, App, Config, ConnectionTarget, DaemonClient, DaemonPaths, EventHub,
     ManifestCache, NewTerminalCwdConfig, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry,
-    RenderSignal, RequestMessage, RuntimeStatus, TerminalTheme, diagnostics as logging,
+    RenderSignal, RequestMessage, RuntimeStatus, TerminalTheme, diagnostics,
 };
 use maestro_app::rpc_types::workspace::{Request, RpcResponse};
 use maestro_app::rpc_types::workspace_schema::{
@@ -326,7 +326,7 @@ fn response_outcome_uses_the_shared_success_and_code_fields() {
         return;
     };
     let paths = root_paths(&root);
-    logging::init_file_logging(&paths, "daemon", Some("maestro=debug"));
+    diagnostics::init_file_logging(&paths, "daemon", Some("maestro=debug"));
     let looks_failed = Ok(ResponseResult::Pong {
         version: r#"{"error":{"code":"timeout","message":"failed"}}"#.into(),
         protocol: PROTOCOL,

@@ -4,8 +4,7 @@ use super::server::Server;
 use maestro_app::SettingsManager;
 use maestro_app::connection_runner::DaemonWorkspaceOperations;
 use maestro_app::daemon_api::{
-    App, DaemonPaths, STARTUP_CWD_ENV, current_process_is_detached_server_daemon,
-    diagnostics as logging,
+    App, DaemonPaths, STARTUP_CWD_ENV, current_process_is_detached_server_daemon, diagnostics,
 };
 use maestro_app::diagnostics::write_stderr_line;
 use maestro_app::rpc_types::workspace_schema::ServerCapabilities;
@@ -34,7 +33,7 @@ pub async fn run_server<C: FnMut() -> u128>(
     shutdown: impl Future<Output = ()>,
 ) -> io::Result<()> {
     let filter = std::env::var("MAESTRO_LOG").ok();
-    logging::init_file_logging(paths, LOG_ROLE, filter.as_deref());
+    diagnostics::init_file_logging(paths, LOG_ROLE, filter.as_deref());
     let path = PathBuf::from(paths.api_socket_path());
     let server = Server::bind(&path).inspect_err(|error| {
         if error.kind() == io::ErrorKind::AddrInUse {
@@ -68,7 +67,7 @@ pub async fn run_server<C: FnMut() -> u128>(
         never = server.serve(operations.clone()) => match never {},
     }
     drop(server);
-    logging::shutdown(LOG_ROLE);
+    diagnostics::shutdown(LOG_ROLE);
     Ok(())
 }
 

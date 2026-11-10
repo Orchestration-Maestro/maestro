@@ -3,7 +3,7 @@ use super::UserMessage;
 use crate::{
     browser::attachment_content::browser::{append, element},
     components::{attachment_tile::AttachmentTile, markdown_block::MarkdownBlock},
-    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
+    page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use maestro_app::CustomAgentMessages;
@@ -22,7 +22,7 @@ struct Placed {
 }
 impl<C: CustomAgentMessages + 'static> DomContent for UserMessage<C> {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let node = element(&view.document, "div", "maestro-user-row")?;
         let bubble = element(&view.document, "div", "maestro-user-bubble")?;
         append(&node, &bubble)?;

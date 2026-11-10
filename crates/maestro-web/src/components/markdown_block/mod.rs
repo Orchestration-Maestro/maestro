@@ -1,5 +1,5 @@
 //! Transcript Markdown with highlighted code blocks, copy controls and math.
-use super::source::{self as code_block, CodeBlockView, Prepared as Code};
+use super::source::{self, CodeBlockView, Prepared as Code};
 use crate::components::source::ReadingUiError;
 use crate::{
     browser::attachment_content::{
@@ -211,7 +211,7 @@ impl MarkdownBlock {
             self.published = candidate;
         }
         if let Some(published) = self.published.as_mut() {
-            let responses = code_block::controls(
+            let responses = source::controls(
                 ui,
                 &layout,
                 published.buttons.iter_mut(),

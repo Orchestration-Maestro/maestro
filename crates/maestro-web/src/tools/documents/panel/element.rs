@@ -1,7 +1,7 @@
 //! Source-owned panel connection callbacks with weak typed-root ownership.
 use super::{Options, State};
 use crate::{
-    page::{self as dom, DomView, Link, Property, Reflected},
+    page::{self, DomView, Link, Property, Reflected},
     tools::types::ToolUiError,
 };
 use std::{
@@ -23,7 +23,7 @@ struct Element {
 }
 impl custom_element::CustomElement for Element {
     fn connected_callback(&mut self) {
-        if let (Some(state), Some(root)) = (self.state.upgrade(), dom::live(&self.root))
+        if let (Some(state), Some(root)) = (self.state.upgrade(), page::live(&self.root))
             && (self.owned.is_some() || state.owns(&self.root))
         {
             *state.root.borrow_mut() = Some(Link::new(&root));
@@ -51,7 +51,7 @@ impl custom_element::CustomElement for Element {
 /// Register the plain panel; the containing screen owns responsive modal composition.
 pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
     let view = Rc::clone(view);
-    dom::define_element(
+    page::define_element(
         "artifacts-panel",
         vec!["collapsed".into()],
         &[
@@ -59,7 +59,7 @@ pub(crate) fn define(view: &Rc<DomView>) -> Result<(), ToolUiError> {
             Property::Flag("overlay", "overlay"),
         ],
         move |root, properties| {
-            let provided = dom::take_creating::<Weak<State>>().and_then(|state| state.upgrade());
+            let provided = page::take_creating::<Weak<State>>().and_then(|state| state.upgrade());
             let owned = provided.is_none();
             let state = provided.unwrap_or_else(|| {
                 State::new(

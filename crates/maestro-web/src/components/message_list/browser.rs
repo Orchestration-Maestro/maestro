@@ -2,7 +2,7 @@
 use super::MessageList;
 use crate::{
     browser::attachment_content::browser::element,
-    page::{self as dom, DomContent, DomRoot, DomView, MountedContent},
+    page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
 use maestro_app::CustomAgentMessages;
@@ -13,7 +13,7 @@ type Placements = RefCell<Vec<MountedContent>>;
 
 impl<C: CustomAgentMessages + 'static> DomContent for MessageList<C> {
     fn mount(&self, view: &DomView) -> Result<DomRoot, ToolUiError> {
-        dom::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
+        page::install_styles(view).map_err(|error| ToolUiError::native(&error))?;
         let root = DomRoot {
             node: element(&view.document, "div", "maestro-message-list")?.into(),
             owner: Some(Box::new(Placements::default())),
