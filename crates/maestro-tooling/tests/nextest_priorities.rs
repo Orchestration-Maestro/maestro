@@ -194,3 +194,49 @@ fn run_nextest(root: &Path, config: &Path, partition: Option<&str>) -> Vec<Strin
     }
     completed
 }
+
+/// Every executable test module that reads the shipped component path is selected by the
+/// author-component setup, so a module added beside the others never meets an unset variable.
+#[test]
+fn author_component_setup_selects_every_executable_module_that_reads_the_component() {
+    let config: toml::Table =
+        toml::from_str(include_str!("../../../.config/nextest.toml")).unwrap();
+    let filter = config["profile"]["default"]["scripts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|rule| rule.get("setup").and_then(toml::Value::as_str) == Some("author-component"))
+        .and_then(|rule| rule["filter"].as_str())
+        .unwrap();
+    let tests = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro/tests");
+    let mut readers = Vec::new();
+    for entry in fs::read_dir(&tests).unwrap() {
+        let path = entry.unwrap().path();
+        let module = path.file_stem().unwrap().to_str().unwrap().to_owned();
+        let reads = |file: &Path| {
+            fs::read_to_string(file).is_ok_and(|text| text.contains("MAESTRO_WASI_COMPONENT"))
+        };
+        let reading = if path.is_dir() {
+            fs::read_dir(&path)
+                .unwrap()
+                .any(|child| reads(&child.unwrap().path()))
+        } else {
+            reads(&path)
+        };
+        if reading {
+            readers.push(module);
+        }
+    }
+    assert!(
+        readers
+            .iter()
+            .any(|module| module == "component_stdout_console"),
+        "found no module reading the component: {readers:?}"
+    );
+    for module in readers {
+        assert!(
+            filter.contains(&format!("test({module}::)")),
+            "{module} reads MAESTRO_WASI_COMPONENT but the author-component filter omits it"
+        );
+    }
+}
