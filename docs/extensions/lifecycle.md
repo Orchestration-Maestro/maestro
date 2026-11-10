@@ -92,9 +92,9 @@ awaits it can still read through its old context. Issue #4397 tracks the change.
 ## Actions while loading
 
 A factory that calls an action before the runtime binds it gets a catchable error:
-`Extension runtime not initialized. Action methods cannot be called during
-extension loading.` for messages, entries, session names, tool selection and
-thinking level, and `Extension runtime not initialized` for a model selection.
+`The extension runtime is not initialized yet. Do not call action methods while
+extensions are loading.` for messages, entries, session names, tool selection and
+thinking level, and `The extension runtime is not initialized yet` for a model selection.
 The call never reaches a host operation and is not queued. Catch the error and
 keep registering; the factory's other work completes.
 

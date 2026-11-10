@@ -115,8 +115,8 @@ A test drives the extension and reads its answers through the runner and the bus
 
 Nothing the test leaves unbound reports success. An application action, such as
 sending a message or reading the active tools, fails with the runtime's own
-error: `Extension runtime not initialized. Action methods cannot be called during
-extension loading.` A context or command operation, such as `abort`, `compact`,
+error: `The extension runtime is not initialized yet. Do not call action methods while
+extensions are loading.` A context or command operation, such as `abort`, `compact`,
 `get_model` or `reload`, fails with an error that names it:
 `abort is not configured in the test harness; bind it on the runner`.
 

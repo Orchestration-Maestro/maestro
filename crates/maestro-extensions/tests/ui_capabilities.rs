@@ -236,8 +236,7 @@ fn installed_ui_presence_does_not_claim_mode_support() {
         "app.interrupt".to_owned(),
         Some(KeybindingKeys::Single("ctrl+c".into())),
     )];
-    let warning =
-        "Extension shortcut 'Ctrl+C' from /reserved conflicts with built-in shortcut. Skipping.\n";
+    let warning = "Extension shortcut 'Ctrl+C' from /reserved clashes with a built-in shortcut and is skipped.\n";
     assert!(!runner.has_ui());
     assert!(runner.get_shortcuts(&bindings).is_empty());
     assert_eq!(*warnings.borrow(), [warning]);

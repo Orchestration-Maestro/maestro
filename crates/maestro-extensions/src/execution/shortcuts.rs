@@ -77,7 +77,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
             let normalized = key.to_lowercase();
             let path = read(&shortcut).extension_path.clone();
             if reserved.contains(&normalized) {
-                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut '{key}' from {path} conflicts with built-in shortcut. Skipping."), &path);
+                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut '{key}' from {path} clashes with a built-in shortcut and is skipped."), &path);
                 continue;
             }
             if let Some(action) = ordinary.get(&normalized) {

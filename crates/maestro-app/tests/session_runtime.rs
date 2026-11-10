@@ -903,7 +903,10 @@ fn completes_a_tool_turn_then_reloads_and_replaces_with_fresh_contexts() {
         assert!(sent.get(), "the fresh context sent its message");
         assert_eq!(custom_types(&runtime.session()), ["probe"]);
         let stale = before_replacement.cwd().unwrap_err().to_string();
-        assert!(stale.starts_with("This extension ctx is stale"), "{stale}");
+        assert!(
+            stale.starts_with("This extension ctx went stale"),
+            "{stale}"
+        );
         assert_eq!(probe_source(&runtime.session()), ["<probe>"]);
     });
 }

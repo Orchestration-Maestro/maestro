@@ -87,7 +87,7 @@ fn actions_select_live_runtime_when_consumed_and_keep_native_errors() {
         let reader = endpoint.clone();
         let worker = std::thread::spawn(move || reader.read(Request::ActiveTools));
         assert!(pump.answer_next().await);
-        assert_eq!(worker.join().unwrap().unwrap_err(), "Extension runtime not initialized. Action methods cannot be called during extension loading.");
+        assert_eq!(worker.join().unwrap().unwrap_err(), "The extension runtime is not initialized yet. Do not call action methods while extensions are loading.");
         runtime.actions.write().unwrap().get_active_tools = Rc::new(|| Ok(vec![" real tool ".into(), String::new()]));
         let reader = endpoint.clone();
         let worker = std::thread::spawn(move || reader.read(Request::ActiveTools));
