@@ -1,9 +1,7 @@
 //! Shipped stdout routing with a real terminal input and an unread output pipe.
 use crate::support::{
     ChildGuard, Root,
-    shipped_stdout::{
-        EXEC_STDERR, EXEC_STDOUT, FRAME_END, INIT, controls, startup_output, without_host_frames,
-    },
+    shipped_stdout::{FRAME_END, INIT, controls, startup_output, without_host_frames},
 };
 use maestro_test_process::{HARNESS_START, TestProcess, child};
 use rustix::process::{Pid, Signal, WaitOptions, kill_process, waitpid};
@@ -17,6 +15,11 @@ use std::{
     },
     process::{ChildStdout, Command, Stdio},
 };
+
+/// Bytes captured only from the native execution's standard output.
+const EXEC_STDOUT: &[u8] = b"native-out\0\x1b[32m";
+/// Bytes captured only from the native execution's standard error.
+const EXEC_STDERR: &[u8] = b"native-error\0\x1b[31m";
 
 /// Runs both output generations through executable startup, suspension and reload.
 pub(super) fn run() {

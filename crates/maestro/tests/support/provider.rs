@@ -30,6 +30,7 @@ impl Provider {
     }
 
     /// As `new`, with every answer carrying `text` instead of the default.
+    #[cfg(unix)]
     pub fn replying(text: &str) -> Self {
         Self::answering(Some(text.to_owned()))
     }

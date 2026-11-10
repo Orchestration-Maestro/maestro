@@ -1,4 +1,5 @@
 //! Print mode output as a terminal and as a pipe receive it.
+#![cfg(unix)]
 use crate::component_stdout::terminal_support::pty;
 use crate::support::{Root, provider::Provider};
 use std::{

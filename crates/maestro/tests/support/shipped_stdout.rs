@@ -5,10 +5,6 @@ use std::{fs::File, process::Command};
 
 /// Initialization output deliberately contains escape and non-text bytes.
 pub const INIT: &[u8] = b"INIT\0\xff\x1b[0m";
-/// Bytes captured only from the native execution's standard output.
-pub const EXEC_STDOUT: &[u8] = b"native-out\0\x1b[32m";
-/// Bytes captured only from the native execution's standard error.
-pub const EXEC_STDERR: &[u8] = b"native-error\0\x1b[31m";
 /// The complete-host-frame opening marker.
 pub const FRAME_START: &[u8] = b"\x1b[?2026h";
 /// The complete-host-frame closing marker.
