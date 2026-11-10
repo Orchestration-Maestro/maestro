@@ -205,9 +205,16 @@ protocol records. The ordered-output guarantee applies only while queued termina
 output runs; it does not add a second queue or writer task. Windows console output
 remains synchronous.
 
-The shipped stdout route is qualified on Linux with both output generations,
-including blocked output, reload, suspend/resume and separate native exec streams.
-Windows and macOS runtime behavior remains unqualified and is tracked in the
+The shipped stdout route runs through the executable on each native host, with both
+output generations:
+
+| Host | What runs | Suspend and resume |
+| ---- | --------- | ------------------ |
+| Linux, macOS | Initialization, blocked output, reload, separate native exec streams and the inherited-output modes, on a pseudo-terminal | `SIGTSTP` stops the executable and `SIGCONT` resumes it |
+| Windows | The inherited-output modes, and interactive startup and drain on a console | Not supported: Windows has no terminal stop signal, and the harnesses cannot type into the console |
+
+Suspend and resume, reload and the typed probes are therefore not qualified on Windows.
+The native job results are tracked in the
 [native-platform checks](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/286).
 
 ## Native file ownership

@@ -1,6 +1,10 @@
 //! Executable startup, package commands and session protocol qualification.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
+mod component_stdout;
+#[cfg(windows)]
+#[path = "component_stdout_console.rs"]
 mod component_stdout;
 mod custom_message_provider_example;
 mod entry_routes;

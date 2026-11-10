@@ -95,10 +95,8 @@ fn compose_frames() {
     });
 }
 
-#[cfg(target_os = "linux")]
 mod shipped;
 
-#[cfg(target_os = "linux")]
 #[test]
 fn shipped_component_stdout_survives_blocked_output_and_reload() {
     shipped::run();

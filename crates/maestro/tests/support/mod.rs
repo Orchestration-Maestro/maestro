@@ -142,6 +142,7 @@ impl Root {
     }
 }
 pub mod provider;
+pub mod shipped_stdout;
 
 /// Run one root protocol case against the controlled HTTP provider.
 pub fn connected(test: impl FnOnce(&Root, &mut rpc::Rpc, &provider::Provider)) {

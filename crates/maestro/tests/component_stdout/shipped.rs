@@ -1,5 +1,10 @@
 //! Shipped stdout routing with a real terminal input and an unread output pipe.
-use crate::support::{ChildGuard, Root};
+use crate::support::{
+    ChildGuard, Root,
+    shipped_stdout::{
+        EXEC_STDERR, EXEC_STDOUT, FRAME_END, INIT, controls, startup_output, without_host_frames,
+    },
+};
 use maestro_test_process::{HARNESS_START, TestProcess, child};
 use rustix::process::{Pid, Signal, WaitOptions, kill_process, waitpid};
 use serde_json::json;
@@ -12,17 +17,6 @@ use std::{
     },
     process::{ChildStdout, Command, Stdio},
 };
-
-/// Initialization output deliberately contains escape and non-text bytes.
-const INIT: &[u8] = b"INIT\0\xff\x1b[0m";
-/// Bytes captured only from the native execution's standard output.
-const EXEC_STDOUT: &[u8] = b"native-out\0\x1b[32m";
-/// Bytes captured only from the native execution's standard error.
-const EXEC_STDERR: &[u8] = b"native-error\0\x1b[31m";
-/// The complete-host-frame opening marker.
-const FRAME_START: &[u8] = b"\x1b[?2026h";
-/// The complete-host-frame closing marker.
-const FRAME_END: &[u8] = b"\x1b[?2026l";
 
 /// Runs both output generations through executable startup, suspension and reload.
 pub(super) fn run() {
@@ -45,39 +39,9 @@ pub(super) fn run() {
                 })
                 .to_string(),
             )
-            .env(
-                "MAESTRO_WASI_STARTUP_OUTPUT",
-                json!({
-                    "generation":generation,"bytes":INIT,
-                })
-                .to_string(),
-            );
+            .env("MAESTRO_WASI_STARTUP_OUTPUT", startup_output(generation));
         controls(&root, &command);
         interactive(&root, &mut command, generation);
-    }
-}
-
-/// Noninteractive modes keep inherited bytes both in pipes and in regular files.
-fn controls(root: &Root, configured: &Command) {
-    for mode in ["text", "json", "rpc"] {
-        let mut command = root.command(&[]);
-        command
-            .args(configured.get_args())
-            .args(["--print", "--mode", mode]);
-        command.envs(
-            configured
-                .get_envs()
-                .filter_map(|(key, value)| value.map(|value| (key, value))),
-        );
-        let output = command.output().unwrap();
-        assert!(output.status.success(), "{mode}: {output:?}");
-        assert!(output.stdout.starts_with(INIT), "{mode}: {output:?}");
-        assert!(!output.stderr.windows(INIT.len()).any(|bytes| bytes == INIT));
-        let path = root.path("stdout");
-        let destination = File::create(&path).unwrap();
-        let output = command.stdout(destination).output().unwrap();
-        assert!(output.status.success(), "{mode}: {output:?}");
-        assert!(std::fs::read(path).unwrap().starts_with(INIT), "{mode}");
     }
 }
 
@@ -207,41 +171,6 @@ fn occurrences(mut bytes: &[u8], payload: &[u8]) -> usize {
         bytes = &bytes[at + payload.len()..];
     }
     count
-}
-
-/// Removes complete host frames and cursor controls while keeping the guest's SGR bytes.
-fn without_host_frames(wire: &[u8]) -> Vec<u8> {
-    let mut guest = Vec::new();
-    let mut rest = wire;
-    while !rest.is_empty() {
-        if let Some(body) = rest.strip_prefix(FRAME_START) {
-            let end = body
-                .windows(FRAME_END.len())
-                .position(|bytes| bytes == FRAME_END)
-                .unwrap();
-            assert!(
-                !body[..end]
-                    .windows(b"guest\0\xff".len())
-                    .any(|bytes| bytes == b"guest\0\xff"),
-                "guest output split a host frame"
-            );
-            rest = &body[end + FRAME_END.len()..];
-        } else if let Some(control) = rest.strip_prefix(b"\x1b[") {
-            let end = control
-                .iter()
-                .position(|byte| (0x40..=0x7e).contains(byte))
-                .unwrap();
-            let sequence = &rest[..end + 3];
-            if sequence == b"\x1b[36m" || sequence == b"\x1b[0m" {
-                guest.extend_from_slice(sequence);
-            }
-            rest = &rest[end + 3..];
-        } else {
-            guest.push(rest[0]);
-            rest = &rest[1..];
-        }
-    }
-    guest
 }
 
 /// A real native execution produces distinct streams without the terminal's stdout route.

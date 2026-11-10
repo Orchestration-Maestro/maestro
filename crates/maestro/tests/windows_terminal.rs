@@ -13,7 +13,7 @@ use std::{
 };
 
 /// Gives `command` this process's console as standard input.
-fn console_input(command: &mut Command) -> &mut Command {
+pub(crate) fn console_input(command: &mut Command) -> &mut Command {
     let console = OpenOptions::new()
         .read(true)
         .write(true)
