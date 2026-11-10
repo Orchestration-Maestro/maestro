@@ -6,7 +6,7 @@
     },
     "expected": {
       "error": {
-        "message": "Theme not initialized. Call initTheme() first."
+        "message": "Theme not initialized. Call init_theme() first."
       }
     }
   },

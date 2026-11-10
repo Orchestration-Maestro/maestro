@@ -149,7 +149,7 @@ Constructing it reads nothing.
 `ThemeState::theme` returns a `LiveTheme` handle whose `get` returns the
 currently published instance; clones read the same slot, and an `Rc<Theme>` already
 returned stays what it was. Before the first publication `get` fails with
-`Theme not initialized. Call initTheme() first.`
+`Theme not initialized. Call init_theme() first.`
 `LiveTheme::from_theme` wraps a prepared instance in its own fixed slot, so a caller
 can pass that exact instance wherever a `LiveTheme` is expected; it never follows
 later publication.

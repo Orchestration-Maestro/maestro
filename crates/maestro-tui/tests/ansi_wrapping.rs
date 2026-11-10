@@ -162,15 +162,15 @@ fn long_word_escapes_precede_the_overflowing_grapheme() {
 
 #[test]
 fn underline_begins_with_its_content() {
-    let url = "https://example.com/very/long/path/that/will/wrap";
+    let url = "https://example.com/docs/note/page/over/some/rows";
     let text = format!("read this thread {UNDERLINE_ON}{url}{UNDERLINE_OFF}");
     let wrapped = wrap_text_with_ansi(&text, 40);
     assert_eq!(
         wrapped,
         [
             "read this thread".to_owned(),
-            format!("{UNDERLINE_ON}https://example.com/very/long/path/that/{UNDERLINE_OFF}"),
-            format!("{UNDERLINE_ON}will/wrap{UNDERLINE_OFF}"),
+            format!("{UNDERLINE_ON}https://example.com/docs/note/page/over/{UNDERLINE_OFF}"),
+            format!("{UNDERLINE_ON}some/rows{UNDERLINE_OFF}"),
         ]
     );
 }
@@ -189,15 +189,15 @@ fn overflow_spaces_precede_no_underline_reset() {
 
 #[test]
 fn soft_wrap_closes_underline_without_full_reset() {
-    let url = "https://example.com/very/long/path/that/will/definitely/wrap";
+    let url = "https://example.com/docs/note/page/over/some/continuous/rows";
     let text = format!("prefix {UNDERLINE_ON}{url}{UNDERLINE_OFF} suffix");
     let wrapped = wrap_text_with_ansi(&text, 30);
     assert_eq!(
         wrapped,
         [
             "prefix".to_owned(),
-            format!("{UNDERLINE_ON}https://example.com/very/long/{UNDERLINE_OFF}"),
-            format!("{UNDERLINE_ON}path/that/will/definitely/wrap{UNDERLINE_OFF}"),
+            format!("{UNDERLINE_ON}https://example.com/docs/note/{UNDERLINE_OFF}"),
+            format!("{UNDERLINE_ON}page/over/some/continuous/rows{UNDERLINE_OFF}"),
             "suffix".to_owned(),
         ]
     );

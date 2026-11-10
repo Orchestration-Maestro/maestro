@@ -7,7 +7,7 @@
           {
             "value": "test",
             "label": "test",
-            "description": "Line one\nLine two\nLine three"
+            "description": "Item one\nItem two\nItem three"
           }
         ],
         "width": 100
@@ -15,7 +15,7 @@
       "expected": {
         "frames": [
           [
-            "→ test                            Line one Line two Line three"
+            "→ test                            Item one Item two Item three"
           ]
         ],
         "selected": "test",
@@ -35,8 +35,8 @@
             "description": "short description"
           },
           {
-            "value": "very-long-command-name-that-needs-truncation",
-            "label": "very-long-command-name-that-needs-truncation",
+            "value": "long-list-command-name-that-needs-truncation",
+            "label": "long-list-command-name-that-needs-truncation",
             "description": "long description"
           }
         ],
@@ -46,7 +46,7 @@
         "frames": [
           [
             "→ short                           short description",
-            "  very-long-command-name-that-ne\u001b[0m  long description"
+            "  long-list-command-name-that-ne\u001b[0m  long description"
           ]
         ],
         "selected": "short",
@@ -96,8 +96,8 @@
       "input": {
         "items": [
           {
-            "value": "very-long-command-name-that-needs-truncation",
-            "label": "very-long-command-name-that-needs-truncation",
+            "value": "long-list-command-name-that-needs-truncation",
+            "label": "long-list-command-name-that-needs-truncation",
             "description": "first"
           },
           {
@@ -115,11 +115,11 @@
       "expected": {
         "frames": [
           [
-            "→ very-long-command-\u001b[0m  first",
+            "→ long-list-command-\u001b[0m  first",
             "  short               second"
           ]
         ],
-        "selected": "very-long-command-name-that-needs-truncation",
+        "selected": "long-list-command-name-that-needs-truncation",
         "events": [],
         "calls": []
       }
@@ -131,8 +131,8 @@
       "input": {
         "items": [
           {
-            "value": "very-long-command-name-that-needs-truncation",
-            "label": "very-long-command-name-that-needs-truncation",
+            "value": "long-list-command-name-that-needs-truncation",
+            "label": "long-list-command-name-that-needs-truncation",
             "description": "first"
           },
           {
@@ -151,16 +151,16 @@
       "expected": {
         "frames": [
           [
-            "→ very-long…  first",
+            "→ long-list…  first",
             "  short       second"
           ]
         ],
-        "selected": "very-long-command-name-that-needs-truncation",
+        "selected": "long-list-command-name-that-needs-truncation",
         "events": [],
         "calls": [
           [
             "truncate",
-            "very-long-command-name-that-needs-truncation",
+            "long-list-command-name-that-needs-truncation",
             10,
             12,
             0,
@@ -2142,7 +2142,7 @@
           ],
           [
             "hint",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -2191,7 +2191,7 @@
           ],
           [
             "hint",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -2240,7 +2240,7 @@
           ],
           [
             "hint",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -2289,7 +2289,7 @@
           ],
           [
             "hint",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -2338,7 +2338,7 @@
           ],
           [
             "hint",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -2387,7 +2387,7 @@
           ],
           [
             "hint",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -2421,7 +2421,7 @@
             "",
             "\u001b[32m  No settings available\u001b[0m",
             "",
-            "\u001b[32m  Type to search · Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Type to search · Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [
@@ -2436,7 +2436,7 @@
           ],
           [
             "hint",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -2487,7 +2487,7 @@
             "  Beta label  2",
             "  (2/4)",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> \u001b[7m \u001b[27m                                                                             ",
@@ -2500,7 +2500,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> nomatch\u001b[7m \u001b[27m          ",
@@ -2552,14 +2552,14 @@
             "",
             "  No matching settings",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> needle\u001b[7m \u001b[27m                                                                       ",
             "",
             "  No matching settings",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [
@@ -2616,7 +2616,7 @@
             "  Gamma       read only",
             "  (2/4)",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> \u001b[7m \u001b[27m                                                                             ",
@@ -2626,7 +2626,7 @@
             "  Gamma       read only",
             "  (2/4)",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> Alp\u001b[7m \u001b[27m                                                                          ",
@@ -2636,7 +2636,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> Alp\u001b[7m \u001b[27m                                                                          ",
@@ -2646,7 +2646,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [
@@ -2692,7 +2692,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ],
         "events": [],
@@ -2725,7 +2725,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ],
         "events": [],
@@ -2758,7 +2758,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ],
         "events": [],
@@ -2791,7 +2791,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ],
         "events": [],
@@ -2824,7 +2824,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ],
         "events": [],
@@ -2851,7 +2851,7 @@
             "",
             "→ Beta label  2",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ],
         "events": [],
@@ -2905,14 +2905,14 @@
             "",
             "→ Beta label  2",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> \u001b[7mB\u001b[27me                                                                            ",
             "",
             "→ Beta label  2",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [],
@@ -2960,14 +2960,14 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> Beta\u001b[7m \u001b[27m                                                                         ",
             "",
             "→ Beta label  2",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ],
           [
             "> \u001b[7m \u001b[27m                                                                             ",
@@ -2980,7 +2980,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [],
@@ -3040,7 +3040,7 @@
             "",
             "  No matching settings",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [],
@@ -3125,7 +3125,7 @@
             "→ D  x",
             "  (4/4)",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [
@@ -3183,7 +3183,7 @@
           [
             "→ A  x",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [
@@ -3245,13 +3245,13 @@
             "→ A  a",
             "  B  b",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ],
           [
             "→ A  ",
             "  B  b",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [],
@@ -3307,7 +3307,7 @@
             "→ Delta       unknown",
             "  (4/4)",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ],
           [
             "→ Alpha       off",
@@ -3318,7 +3318,7 @@
             "  first paragraph",
             "  next paragraph",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ],
           [
             "  Alpha       off",
@@ -3326,7 +3326,7 @@
             "  Gamma       read only",
             "  (2/4)",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ],
           [
             "  Alpha       off",
@@ -3334,7 +3334,7 @@
             "  Gamma       read only",
             "  (2/4)",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ],
           [
             "  Alpha       off",
@@ -3342,7 +3342,7 @@
             "  Gamma       read only",
             "  (2/4)",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [
@@ -3454,7 +3454,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -3558,7 +3558,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -3662,7 +3662,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -3766,7 +3766,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -3870,7 +3870,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -3974,7 +3974,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4008,7 +4008,7 @@
             "\u001b[32m  \u001b[31\u006done two\u001b[0m",
             "\u001b[32m  \u001b[31m界三四\u001b[0m\u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to \u001b[0m...\u001b[0m"
+            "\u001b[32m  Enter/Space set\u001b[0m...\u001b[0m"
           ]
         ],
         "events": [],
@@ -4043,7 +4043,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4077,7 +4077,7 @@
             "\u001b[32m  \u001b[31\u006done two\u001b[0m",
             "\u001b[32m  \u001b[31m界三四\u001b[0m\u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4112,7 +4112,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4146,7 +4146,7 @@
             "\u001b[32m  \u001b[31\u006done two\u001b[0m",
             "\u001b[32m  \u001b[31m界三四\u001b[0m\u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4181,7 +4181,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4205,7 +4205,7 @@
           [
             "→ \u001b[32mA\u001b[0m  \u001b[32mv\u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4222,7 +4222,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4248,7 +4248,7 @@
             "",
             "\u001b[32m     \u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4269,7 +4269,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4297,7 +4297,7 @@
             "\u001b[32m  \u001b[0m",
             "\u001b[32m  \u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4326,7 +4326,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4349,7 +4349,7 @@
           [
             "→ \u001b[32mLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\u001b[0m  \u001b[32mV\u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4366,7 +4366,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4389,7 +4389,7 @@
           [
             "→ \u001b[32mLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\u001b[0m  \u001b[32mV\u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4406,7 +4406,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4429,7 +4429,7 @@
           [
             "→ \u001b[32mLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\u001b[0m  \u001b[32mV\u001b[0m",
             "",
-            "\u001b[32m  Enter/Space to change · Esc to cancel\u001b[0m"
+            "\u001b[32m  Enter/Space sets a value · Esc closes\u001b[0m"
           ]
         ],
         "events": [],
@@ -4446,7 +4446,7 @@
           ],
           [
             "hint",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ]
       }
@@ -4485,7 +4485,7 @@
             "",
             "→ Z              one",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [],
@@ -4508,7 +4508,7 @@
             "  Gamma       read only",
             "  (2/4)",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ],
           [
             "  Alpha       off",
@@ -4516,7 +4516,7 @@
             "  Gamma       read only",
             "  (2/4)",
             "",
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [
@@ -4561,7 +4561,7 @@
               "  Gamma       read only",
               "  (2/4)",
               "",
-              "  Enter/Space to change · Esc to cancel"
+              "  Enter/Space sets a value · Esc closes"
             ]
           ]
         ],
@@ -4571,7 +4571,7 @@
           "  Gamma       read only",
           "  (2/4)",
           "",
-          "  Enter/Space to change · Esc to cancel"
+          "  Enter/Space sets a value · Esc closes"
         ]
       }
     }
@@ -4606,7 +4606,7 @@
               "  first paragraph",
               "  next paragraph",
               "",
-              "  Enter/Space to change · Esc to cancel"
+              "  Enter/Space sets a value · Esc closes"
             ]
           ]
         ],
@@ -4616,7 +4616,7 @@
           "  Gamma       read only",
           "  (2/4)",
           "",
-          "  Enter/Space to change · Esc to cancel"
+          "  Enter/Space sets a value · Esc closes"
         ]
       }
     }
@@ -4629,7 +4629,7 @@
         "lines": [
           "→ X  new",
           "",
-          "  Enter/Space to change · Esc to cancel"
+          "  Enter/Space sets a value · Esc closes"
         ],
         "events": [
           [
@@ -4654,7 +4654,7 @@
           "→ Delta       x",
           "  (4/4)",
           "",
-          "  Type to search · Enter/Space to change · Esc to cancel"
+          "  Type to search · Enter/Space sets a value · Esc closes"
         ],
         "events": [
           [
@@ -4784,7 +4784,7 @@
             "  Alpha Beta  b",
             "  Beta Alpha  c",
             "",
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
           ]
         ],
         "events": [],
@@ -4808,14 +4808,14 @@
           "  first paragraph",
           "  next paragraph",
           "",
-          "  Type to search · Enter/Space to change · Esc to cancel"
+          "  Type to search · Enter/Space sets a value · Esc closes"
         ],
         "second": [
           "> gm\u001b[7m \u001b[27m                                                                           ",
           "",
           "→ Gamma       later",
           "",
-          "  Type to search · Enter/Space to change · Esc to cancel"
+          "  Type to search · Enter/Space sets a value · Esc closes"
         ]
       }
     }
@@ -4863,7 +4863,7 @@
             "  X   a:V",
             "→ XY  a:W",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ],
         "after": [
@@ -4877,7 +4877,7 @@
             "  X   b:V",
             "→ XY  b:W",
             "",
-            "  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m"
+            "  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m"
           ]
         ]
       }
@@ -4905,7 +4905,7 @@
           "  first paragraph",
           "  next paragraph",
           "",
-          "  Type to search · Enter/Space to change · Esc to cancel"
+          "  Type to search · Enter/Space sets a value · Esc closes"
         ]
       }
     },
@@ -4945,7 +4945,7 @@
           "  first paragraph",
           "  next paragraph",
           "",
-          "  Enter/Space to change · Esc to cancel"
+          "  Enter/Space sets a value · Esc closes"
         ]
       }
     }

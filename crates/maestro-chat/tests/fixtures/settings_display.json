@@ -270,7 +270,7 @@
         "",
         "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
         "",
-        "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+        "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -570,7 +570,7 @@
         "",
         "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
         "",
-        "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+        "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -870,7 +870,7 @@
         "",
         "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
         "",
-        "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+        "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -905,7 +905,7 @@
             "",
             "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -929,7 +929,7 @@
             "",
             "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -958,7 +958,7 @@
             "",
             "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1004,7 +1004,7 @@
             "",
             "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1028,7 +1028,7 @@
             "",
             "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1057,7 +1057,7 @@
             "",
             "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1103,7 +1103,7 @@
             "",
             "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1127,7 +1127,7 @@
             "",
             "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1156,7 +1156,7 @@
             "",
             "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1202,7 +1202,7 @@
             "",
             "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1226,7 +1226,7 @@
             "",
             "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1255,7 +1255,7 @@
             "",
             "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1301,7 +1301,7 @@
             "",
             "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1325,7 +1325,7 @@
             "",
             "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1354,7 +1354,7 @@
             "",
             "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1400,7 +1400,7 @@
             "",
             "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1424,7 +1424,7 @@
             "",
             "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1453,7 +1453,7 @@
             "",
             "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1499,7 +1499,7 @@
             "",
             "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1523,7 +1523,7 @@
             "",
             "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1552,7 +1552,7 @@
             "",
             "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1598,7 +1598,7 @@
             "",
             "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1622,7 +1622,7 @@
             "",
             "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1651,7 +1651,7 @@
             "",
             "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1697,7 +1697,7 @@
             "",
             "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1721,7 +1721,7 @@
             "",
             "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1750,7 +1750,7 @@
             "",
             "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1796,7 +1796,7 @@
             "",
             "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1820,7 +1820,7 @@
             "",
             "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1849,7 +1849,7 @@
             "",
             "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1895,7 +1895,7 @@
             "",
             "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -1919,7 +1919,7 @@
             "",
             "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1948,7 +1948,7 @@
             "",
             "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -1994,7 +1994,7 @@
             "",
             "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2018,7 +2018,7 @@
             "",
             "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2047,7 +2047,7 @@
             "",
             "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2093,7 +2093,7 @@
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2117,7 +2117,7 @@
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2146,7 +2146,7 @@
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2192,7 +2192,7 @@
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2216,7 +2216,7 @@
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2245,7 +2245,7 @@
             "",
             "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2290,7 +2290,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2314,7 +2314,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2343,7 +2343,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2376,7 +2376,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2425,7 +2425,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2449,7 +2449,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2478,7 +2478,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2511,7 +2511,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2560,7 +2560,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2584,7 +2584,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2613,7 +2613,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2646,7 +2646,7 @@
             "",
             "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2695,7 +2695,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2719,7 +2719,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2748,7 +2748,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2781,7 +2781,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2818,7 +2818,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2871,7 +2871,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -2895,7 +2895,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2924,7 +2924,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2957,7 +2957,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -2994,7 +2994,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3047,7 +3047,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -3071,7 +3071,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3100,7 +3100,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3133,7 +3133,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3170,7 +3170,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3223,7 +3223,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -3247,7 +3247,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3276,7 +3276,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3309,7 +3309,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3346,7 +3346,7 @@
             "",
             "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3399,7 +3399,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -3423,7 +3423,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3452,7 +3452,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3485,7 +3485,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3522,7 +3522,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3563,7 +3563,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3608,7 +3608,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3669,7 +3669,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -3693,7 +3693,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3722,7 +3722,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3755,7 +3755,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3792,7 +3792,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3833,7 +3833,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3878,7 +3878,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3939,7 +3939,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -3963,7 +3963,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -3992,7 +3992,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4025,7 +4025,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4062,7 +4062,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4103,7 +4103,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4148,7 +4148,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4209,7 +4209,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4233,7 +4233,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4262,7 +4262,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4295,7 +4295,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4332,7 +4332,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4373,7 +4373,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4418,7 +4418,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4479,7 +4479,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4503,7 +4503,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4532,7 +4532,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4565,7 +4565,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4602,7 +4602,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4643,7 +4643,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4688,7 +4688,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4749,7 +4749,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4773,7 +4773,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4802,7 +4802,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4835,7 +4835,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4872,7 +4872,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4913,7 +4913,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -4958,7 +4958,7 @@
             "",
             "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+            "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5018,7 +5018,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5042,7 +5042,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5081,7 +5081,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5105,7 +5105,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5144,7 +5144,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5168,7 +5168,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5207,7 +5207,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5231,7 +5231,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5270,7 +5270,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5294,7 +5294,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5333,7 +5333,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5357,7 +5357,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5396,7 +5396,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5420,7 +5420,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5459,7 +5459,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5483,7 +5483,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5522,7 +5522,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5546,7 +5546,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5585,7 +5585,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5609,7 +5609,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5648,7 +5648,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5672,7 +5672,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5711,7 +5711,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5735,7 +5735,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5774,7 +5774,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5798,7 +5798,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5837,7 +5837,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5861,7 +5861,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5900,7 +5900,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5924,7 +5924,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -5963,7 +5963,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -5987,7 +5987,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6026,7 +6026,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6050,7 +6050,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6089,7 +6089,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6113,7 +6113,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6152,7 +6152,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6176,7 +6176,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6215,7 +6215,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6239,7 +6239,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6278,7 +6278,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6302,7 +6302,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6341,7 +6341,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6365,7 +6365,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6404,7 +6404,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6428,7 +6428,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6467,7 +6467,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6491,7 +6491,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6530,7 +6530,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6554,7 +6554,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6593,7 +6593,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6617,7 +6617,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6656,7 +6656,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6680,7 +6680,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6719,7 +6719,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6743,7 +6743,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6782,7 +6782,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6806,7 +6806,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6845,7 +6845,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6869,7 +6869,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6908,7 +6908,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6932,7 +6932,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -6971,7 +6971,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -6995,7 +6995,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7034,7 +7034,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7058,7 +7058,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7097,7 +7097,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7121,7 +7121,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7160,7 +7160,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7184,7 +7184,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7223,7 +7223,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7247,7 +7247,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7286,7 +7286,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7310,7 +7310,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7349,7 +7349,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7373,7 +7373,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7412,7 +7412,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7436,7 +7436,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7473,7 +7473,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7497,7 +7497,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7524,7 +7524,7 @@
               "",
               "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -7556,7 +7556,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7580,7 +7580,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7607,7 +7607,7 @@
               "",
               "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -7639,7 +7639,7 @@
           "",
           "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7663,7 +7663,7 @@
           "",
           "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7690,7 +7690,7 @@
               "",
               "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -7722,7 +7722,7 @@
           "",
           "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7746,7 +7746,7 @@
           "",
           "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7773,7 +7773,7 @@
               "",
               "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -7805,7 +7805,7 @@
           "",
           "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7829,7 +7829,7 @@
           "",
           "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7856,7 +7856,7 @@
               "",
               "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -7888,7 +7888,7 @@
           "",
           "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7912,7 +7912,7 @@
           "",
           "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -7939,7 +7939,7 @@
               "",
               "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -7971,7 +7971,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -7995,7 +7995,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -8022,7 +8022,7 @@
               "",
               "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -8054,7 +8054,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8078,7 +8078,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -8105,7 +8105,7 @@
               "",
               "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -8137,7 +8137,7 @@
           "",
           "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8161,7 +8161,7 @@
           "",
           "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -8188,7 +8188,7 @@
               "",
               "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -8220,7 +8220,7 @@
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8244,7 +8244,7 @@
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -8271,7 +8271,7 @@
               "",
               "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
               "",
-              "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m"
+              "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
             ]
           ]
         ]
@@ -8304,7 +8304,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8328,7 +8328,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8622,7 +8622,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8655,7 +8655,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8679,7 +8679,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8950,7 +8950,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -8983,7 +8983,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9007,7 +9007,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9278,7 +9278,7 @@
           "",
           "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9302,7 +9302,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9316,7 +9316,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9330,7 +9330,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9362,7 +9362,7 @@
           "",
           "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9376,7 +9376,7 @@
           "",
           "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9390,7 +9390,7 @@
           "",
           "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9422,7 +9422,7 @@
           "",
           "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9436,7 +9436,7 @@
           "",
           "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9450,7 +9450,7 @@
           "",
           "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9482,7 +9482,7 @@
           "",
           "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9496,7 +9496,7 @@
           "",
           "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9510,7 +9510,7 @@
           "",
           "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9542,7 +9542,7 @@
           "",
           "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9556,7 +9556,7 @@
           "",
           "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9570,7 +9570,7 @@
           "",
           "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9602,7 +9602,7 @@
           "",
           "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9616,7 +9616,7 @@
           "",
           "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9630,7 +9630,7 @@
           "",
           "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9662,7 +9662,7 @@
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9676,7 +9676,7 @@
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9690,7 +9690,7 @@
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9722,7 +9722,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9736,7 +9736,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9750,7 +9750,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9782,7 +9782,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9796,7 +9796,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9810,7 +9810,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9842,7 +9842,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9856,7 +9856,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9870,7 +9870,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9899,7 +9899,7 @@
           "",
           "\u001b[38;5;34m  No matching settings\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9911,7 +9911,7 @@
           "",
           "\u001b[38;5;34m  No matching settings\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -9936,7 +9936,7 @@
           "",
           "\u001b[38;5;34m  No matching settings\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9948,7 +9948,7 @@
           "",
           "\u001b[38;5;34m  No matching settings\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": [
@@ -10052,7 +10052,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10076,7 +10076,7 @@
           "",
           "\u001b[38;5;38m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10109,7 +10109,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10133,7 +10133,7 @@
           "",
           "\u001b[38;5;38m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10166,7 +10166,7 @@
           "",
           "\u001b[38;5;34m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10190,7 +10190,7 @@
           "",
           "\u001b[38;5;38m  Render images inline in terminal\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10297,7 +10297,7 @@
           "\u001b[38;5;34m  Preferred inline image width in\u001b[39m",
           "\u001b[38;5;34m  terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10322,7 +10322,7 @@
           "\u001b[38;5;38m  Preferred inline image width in\u001b[39m",
           "\u001b[38;5;38m  terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10355,7 +10355,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10379,7 +10379,7 @@
           "",
           "\u001b[38;5;38m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10412,7 +10412,7 @@
           "",
           "\u001b[38;5;34m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10436,7 +10436,7 @@
           "",
           "\u001b[38;5;38m  Preferred inline image width in terminal cells\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10551,7 +10551,7 @@
           "\u001b[38;5;34m  Resize large images to 2000x2000 max\u001b[39m",
           "\u001b[38;5;34m  for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10576,7 +10576,7 @@
           "\u001b[38;5;38m  Resize large images to 2000x2000 max\u001b[39m",
           "\u001b[38;5;38m  for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10609,7 +10609,7 @@
           "",
           "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10633,7 +10633,7 @@
           "",
           "\u001b[38;5;38m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10666,7 +10666,7 @@
           "",
           "\u001b[38;5;34m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10690,7 +10690,7 @@
           "",
           "\u001b[38;5;38m  Resize large images to 2000x2000 max for better model compatibility\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10797,7 +10797,7 @@
           "\u001b[38;5;34m  Prevent images from being sent to\u001b[39m",
           "\u001b[38;5;34m  LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10822,7 +10822,7 @@
           "\u001b[38;5;38m  Prevent images from being sent to\u001b[39m",
           "\u001b[38;5;38m  LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10855,7 +10855,7 @@
           "",
           "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10879,7 +10879,7 @@
           "",
           "\u001b[38;5;38m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10912,7 +10912,7 @@
           "",
           "\u001b[38;5;34m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -10936,7 +10936,7 @@
           "",
           "\u001b[38;5;38m  Prevent images from being sent to LLM providers\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11041,7 +11041,7 @@
           "\u001b[38;5;34m  Register skills as /skill:name\u001b[39m",
           "\u001b[38;5;34m  commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11066,7 +11066,7 @@
           "\u001b[38;5;38m  Register skills as /skill:name\u001b[39m",
           "\u001b[38;5;38m  commands\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11099,7 +11099,7 @@
           "",
           "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11123,7 +11123,7 @@
           "",
           "\u001b[38;5;38m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11156,7 +11156,7 @@
           "",
           "\u001b[38;5;34m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11180,7 +11180,7 @@
           "",
           "\u001b[38;5;38m  Register skills as /skill:name commands\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11295,7 +11295,7 @@
           "\u001b[38;5;34m  Show the terminal cursor while still\u001b[39m",
           "\u001b[38;5;34m  positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11320,7 +11320,7 @@
           "\u001b[38;5;38m  Show the terminal cursor while still\u001b[39m",
           "\u001b[38;5;38m  positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11353,7 +11353,7 @@
           "",
           "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11377,7 +11377,7 @@
           "",
           "\u001b[38;5;38m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11410,7 +11410,7 @@
           "",
           "\u001b[38;5;34m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11434,7 +11434,7 @@
           "",
           "\u001b[38;5;38m  Show the terminal cursor while still positioning it for IME support\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11537,7 +11537,7 @@
           "\u001b[38;5;34m  Horizontal padding for input editor\u001b[39m",
           "\u001b[38;5;34m  (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11562,7 +11562,7 @@
           "\u001b[38;5;38m  Horizontal padding for input editor\u001b[39m",
           "\u001b[38;5;38m  (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11595,7 +11595,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11619,7 +11619,7 @@
           "",
           "\u001b[38;5;38m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11652,7 +11652,7 @@
           "",
           "\u001b[38;5;34m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11676,7 +11676,7 @@
           "",
           "\u001b[38;5;38m  Horizontal padding for input editor (0-3)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11785,7 +11785,7 @@
           "\u001b[38;5;34m  Max visible items in autocomplete\u001b[39m",
           "\u001b[38;5;34m  dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11810,7 +11810,7 @@
           "\u001b[38;5;38m  Max visible items in autocomplete\u001b[39m",
           "\u001b[38;5;38m  dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11843,7 +11843,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11867,7 +11867,7 @@
           "",
           "\u001b[38;5;38m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11900,7 +11900,7 @@
           "",
           "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -11924,7 +11924,7 @@
           "",
           "\u001b[38;5;38m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12035,7 +12035,7 @@
           "\u001b[38;5;34m  Clear empty rows when content\u001b[39m",
           "\u001b[38;5;34m  shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12060,7 +12060,7 @@
           "\u001b[38;5;38m  Clear empty rows when content\u001b[39m",
           "\u001b[38;5;38m  shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12093,7 +12093,7 @@
           "",
           "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12117,7 +12117,7 @@
           "",
           "\u001b[38;5;38m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12150,7 +12150,7 @@
           "",
           "\u001b[38;5;34m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12174,7 +12174,7 @@
           "",
           "\u001b[38;5;38m  Clear empty rows when content shrinks (may cause flicker)\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12285,7 +12285,7 @@
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in\u001b[39m",
           "\u001b[38;5;34m  the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12310,7 +12310,7 @@
           "\u001b[38;5;38m  Show OSC 9;4 progress indicators in\u001b[39m",
           "\u001b[38;5;38m  the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to cha\u001b[0m...\u001b[0m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
           "\u001b[38;5;35m────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12343,7 +12343,7 @@
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12367,7 +12367,7 @@
           "",
           "\u001b[38;5;38m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12400,7 +12400,7 @@
           "",
           "\u001b[38;5;34m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;34m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -12424,7 +12424,7 @@
           "",
           "\u001b[38;5;38m  Show OSC 9;4 progress indicators in the terminal tab bar\u001b[39m",
           "",
-          "\u001b[38;5;38m  Type to search · Enter/Space to change · Esc to cancel\u001b[39m",
+          "\u001b[38;5;38m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
