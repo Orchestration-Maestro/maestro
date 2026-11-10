@@ -2,7 +2,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 mod component_stdout;
-mod component_stdout_console;
 mod custom_message_provider_example;
 mod entry_routes;
 mod host_operations;
