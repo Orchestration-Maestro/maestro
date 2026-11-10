@@ -15,10 +15,10 @@ other path below it. The cache is configured once per process, by the first
 component loaded. A directory the engine cannot use falls back to compilation,
 and each load creates a fresh Store.
 
-On x86-64, extension code is compiled for the baseline feature level, not for the exact CPU
-that loads it. Compiled code is therefore the same on every x86-64 host, and a cache filled
-on one machine serves the others. Code that relies on newer instructions, such as SIMD-heavy
-loops, runs slower than code tuned to the host. Other architectures keep Wasmtime's defaults.
+Extension code is compiled for the baseline feature level of the host's architecture, not for
+the exact CPU that loads it. Compiled code is therefore the same on every host of that
+architecture, and a cache filled on one machine serves the others. Code that relies on newer
+instructions, such as SIMD-heavy loops, runs slower than code tuned to the host.
 
 Each instance reads the artifact's path as the `MAESTRO_EXTENSION_PATH`
 environment variable, so a component can find files installed beside it. The
