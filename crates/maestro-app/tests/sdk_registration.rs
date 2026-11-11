@@ -1,10 +1,15 @@
 //! SDK registration phases, tool metadata and caller-selected tool policies.
-use super::super::*;
+#![cfg(not(target_arch = "wasm32"))]
+use crate::support::sdk_sample::{Error, Sample, execute};
 use maestro_app::{
     CreateAgentSessionOptions, ExtensionBindings, NoTools, PromptOptions, SessionResources,
     create_agent_session,
 };
+use maestro_extensions::{EventError, ExtensionAPI};
 use maestro_extensions::{ExtensionFactory, SessionStartEvent};
+use maestro_models::Local;
+use serde_json::{Value, json};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex, RwLock};
 
 /// Registration point relative to session construction.
@@ -101,7 +106,7 @@ fn options(
 
 /// Observe the active descriptor and the subsequent protocol invocation independently.
 fn provider_case(phase: Phase, url: &'static str) -> Result<Value, Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let created = create_agent_session(options(&sample, provider_factory(phase, url))?).await?;
         created
             .session
@@ -164,7 +169,7 @@ fn tool_factory(snippet: bool) -> ExtensionFactory<Local> {
         let registered = api.on::<SessionStartEvent, ()>(
             "session_start".into(),
             Rc::new(move |_, _| {
-                let mut definition = tool();
+                let mut definition = my_tool();
                 if snippet {
                     definition.prompt_guidelines =
                         Some(vec!["Prefer my_tool for text processing.".into()]);
@@ -183,7 +188,7 @@ fn tool_factory(snippet: bool) -> ExtensionFactory<Local> {
 /// Late registration refreshes executable tools, source metadata, snippets and guidelines.
 #[test]
 fn session_start_tools_refresh_the_live_registry_and_prompt() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let created = create_agent_session(options(&sample, tool_factory(true))?).await?;
         assert!(created.session.get_tool_definition("my_tool").is_none());
         created
@@ -224,10 +229,10 @@ fn session_start_tools_refresh_the_live_registry_and_prompt() -> Result<(), Erro
 #[test]
 fn sdk_custom_tools_keep_their_source_metadata() -> Result<(), Error> {
     use maestro_extensions::ExtensionExecution;
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let mut options = sample.options()?;
         options.custom_tools.push(Local::retain_definition(
-            maestro_extensions::RegisteredToolInput::from(tool()),
+            maestro_extensions::RegisteredToolInput::from(my_tool()),
         ));
         let created = create_agent_session(options).await?;
         let tools = created.session.get_all_tools();
@@ -257,7 +262,7 @@ fn sdk_custom_tools_keep_their_source_metadata() -> Result<(), Error> {
 /// A missing prompt snippet hides metadata from the prompt, not the executable registry.
 #[test]
 fn tools_without_snippets_stay_active_but_out_of_the_prompt() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let created = create_agent_session(options(&sample, tool_factory(false))?).await?;
         created
             .session
@@ -299,7 +304,7 @@ async fn selected_tools(
 /// An allowlist filters built-ins and extensions through the same registry.
 #[test]
 fn tool_allowlists_filter_builtins_and_extensions() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let session =
             selected_tools(&sample, None, Some(vec!["read".into(), "my_tool".into()])).await?;
         assert_eq!(session.get_active_tool_names(), ["read", "my_tool"]);
@@ -324,7 +329,7 @@ fn tool_allowlists_filter_builtins_and_extensions() -> Result<(), Error> {
 /// An explicit empty allowlist also excludes tools registered after initialization.
 #[test]
 fn empty_tool_allowlists_exclude_late_registrations() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let session = selected_tools(&sample, None, Some(Vec::new())).await?;
         assert!(session.get_active_tool_names().is_empty());
         assert!(session.get_all_tools().is_empty());
@@ -339,7 +344,7 @@ fn empty_tool_allowlists_exclude_late_registrations() -> Result<(), Error> {
 /// Disabling default built-ins does not disable extension registrations.
 #[test]
 fn disabled_builtin_defaults_keep_extension_tools_active() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let session = selected_tools(&sample, Some(NoTools::Builtin), None).await?;
         assert_eq!(session.get_active_tool_names(), ["my_tool"]);
         assert_eq!(session.get_all_tools().len(), 8);
@@ -356,7 +361,7 @@ fn disabled_builtin_defaults_keep_extension_tools_active() -> Result<(), Error> 
 /// Disabling every tool remains stronger than later extension registration.
 #[test]
 fn disabled_tools_exclude_late_extension_registrations() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let session = selected_tools(&sample, Some(NoTools::All), None).await?;
         assert!(session.get_active_tool_names().is_empty());
         assert!(session.get_all_tools().is_empty());
@@ -374,7 +379,7 @@ fn services_forward_disabled_builtin_defaults() -> Result<(), Error> {
         CreateAgentSessionFromServicesOptions, CreateAgentSessionServicesOptions,
         create_agent_session_from_services, create_agent_session_services,
     };
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let options = sample.options()?;
         let SessionResources::Default(resources) = options.resources else {
             return Err("missing default resources".into());
@@ -418,4 +423,33 @@ fn services_forward_disabled_builtin_defaults() -> Result<(), Error> {
         Ok(Value::Null)
     })?;
     Ok(())
+}
+
+/// A schema-validated tool whose execution returns no content, with a prompt snippet.
+fn my_tool()
+-> maestro_tools::local::ToolDefinition<maestro_extensions::ExtensionContext, Value, Value, ()> {
+    maestro_tools::ToolDefinitionRecord {
+        definition: maestro_models::Tool {
+            name: "my_tool".into(),
+            description: "Process supplied text".into(),
+            parameters: json!({"type": "object", "required": ["input"], "properties": {"input": {"type": "string"}}}).into(),
+        },
+        label: "My Tool".into(),
+        prompt_snippet: Some("Process text with my_tool".into()),
+        prompt_guidelines: None,
+        render_shell: None,
+        prepare_arguments: None,
+        execution_mode: None,
+        execute: Rc::new(|_, _, _, _, _| {
+            Box::pin(async {
+                Ok(maestro_agent::AgentToolResult {
+                    content: Vec::new(),
+                    details: None,
+                    terminate: None,
+                })
+            })
+        }),
+        render_call: None,
+        render_result: None,
+    }
 }
