@@ -361,7 +361,6 @@ pub fn capture_lines<R: std::io::Read>(
 
 /// Clear the prepared-bundle inputs a setup child inherits from the process that runs the tests,
 /// so it runs the setup the test supplies.
-#[cfg(unix)]
 pub fn without_prepared_bundles(command: &mut Command) {
     for name in ["TEST_PREPARE_BASE", "TEST_PREPARE_OUTPUT", "TEST_ARCHIVE"] {
         command.env_remove(name);

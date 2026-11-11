@@ -242,8 +242,8 @@ fn normalize_run(root: &Path, archived: bool) {
     command
         .args(["nextest-setup", "normalize-component-cache"])
         .arg(root.join("target/debug"))
-        .current_dir(root)
-        .env_remove("TEST_ARCHIVE");
+        .current_dir(root);
+    crate::recipe_support::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
     }
@@ -443,12 +443,7 @@ fn cache_normalization_rejects_invalid_fingerprint_records() {
             _ => unreachable!(),
         }
 
-        let result = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
-            .args(["nextest-setup", "normalize-component-cache"])
-            .arg(&profile)
-            .env_remove("TEST_ARCHIVE")
-            .output()
-            .unwrap();
+        let result = crate::tooling_commands::normalize_cache(&profile);
 
         assert!(!result.status.success(), "{failure}");
         assert!(!result.stderr.is_empty(), "{failure}");
@@ -483,12 +478,7 @@ fn cache_normalization_reads_the_record_of_an_unhashed_example() {
         );
         let binary = binary(&deps, "integration-c1", &[], 150);
 
-        let result = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
-            .args(["nextest-setup", "normalize-component-cache"])
-            .arg(&profile)
-            .env_remove("TEST_ARCHIVE")
-            .output()
-            .unwrap();
+        let result = crate::tooling_commands::normalize_cache(&profile);
 
         let stderr = String::from_utf8_lossy(&result.stderr);
         assert_eq!(
@@ -519,12 +509,7 @@ fn cache_normalization_rejects_ambiguous_uplifted_twins() {
         .unwrap()
         .set_modified(at(50))
         .unwrap();
-    let result = std::process::Command::new(env!("CARGO_BIN_EXE_development"))
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(&profile)
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap();
+    let result = crate::tooling_commands::normalize_cache(&profile);
 
     assert!(!result.status.success());
     assert!(String::from_utf8_lossy(&result.stderr).contains("ambiguous hashed twins"));

@@ -1563,10 +1563,9 @@ fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
 
 /// `command` in the environment of a shard that runs from the fixture checkout.
 fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: bool) -> Command {
+    crate::recipe_support::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
-    } else {
-        command.env_remove("TEST_ARCHIVE");
     }
     command
         .current_dir(root)
@@ -1705,9 +1704,8 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
             .args(["nextest-setup", "native-fixture"])
             .current_dir(root)
             .env("CARGO", root.join("cargo"))
-            .env("NEXTEST_ENV", &environment)
-            .env_remove("TEST_PREPARE_OUTPUT")
-            .env_remove("TEST_ARCHIVE");
+            .env("NEXTEST_ENV", &environment);
+        crate::recipe_support::without_prepared_bundles(&mut command);
         command
     };
     assert_success(&setup().output().unwrap());
