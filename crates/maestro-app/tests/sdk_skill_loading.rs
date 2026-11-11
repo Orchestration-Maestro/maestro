@@ -1,6 +1,6 @@
 //! Default, empty and caller-supplied skill results through session creation.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::sdk_sample::{Error, execute};
+use crate::support::sdk_sample::{Error, execute, supplied_skill};
 use serde_json::Value;
 
 /// Default discovery exposes the authored file on the session's resource owner.
@@ -69,24 +69,4 @@ fn sessions_keep_caller_supplied_skills() -> Result<(), Error> {
         Ok(Value::Null)
     })?;
     Ok(())
-}
-
-/// A skill an SDK caller supplies without any file on disk.
-fn supplied_skill() -> maestro_app::Skill {
-    maestro_app::Skill {
-        name: "my-skill".into(),
-        description: "Custom project instructions".into(),
-        file_path: "/virtual/SKILL.md".into(),
-        base_dir: "/virtual".into(),
-        source_info: maestro_resources::create_synthetic_source_info(
-            "/virtual/SKILL.md".into(),
-            maestro_resources::SyntheticSourceOptions {
-                source: "sdk".into(),
-                scope: None,
-                origin: None,
-                base_dir: None,
-            },
-        ),
-        disable_model_invocation: false,
-    }
 }

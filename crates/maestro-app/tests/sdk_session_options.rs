@@ -2,7 +2,7 @@
 //! prompt overrides, disabled resource kinds and caller-supplied skills and templates.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::no_commands::no_commands;
-use crate::support::sdk_sample::{Error, Sample, execute};
+use crate::support::sdk_sample::{Error, Sample, execute, sdk_source, supplied_skill};
 use maestro_app::{
     AuthStorage, CreateAgentSessionOptions, ModelRegistry, ResourceKind, SessionResources,
     create_agent_session,
@@ -15,11 +15,11 @@ use std::sync::Arc;
 /// The default loader's options inside `options`.
 fn resources(
     options: &mut CreateAgentSessionOptions,
-) -> &mut maestro_app::ResourceLoaderOptions<maestro_models::Local> {
-    let SessionResources::Default(resources) = &mut options.resources else {
-        panic!("the sample uses default resource discovery");
-    };
-    resources
+) -> Result<&mut maestro_app::ResourceLoaderOptions<maestro_models::Local>, Error> {
+    match &mut options.resources {
+        SessionResources::Default(resources) => Ok(resources),
+        SessionResources::Loader(_) => Err("the sample uses default resource discovery".into()),
+    }
 }
 
 /// The session's active tool names and working directory for `tools` rooted at `cwd`.
@@ -67,20 +67,20 @@ fn prompt_overrides_replace_or_append_and_context_files_merge() -> Result<(), Er
             "Project rule: answer briefly.",
         )?;
         let mut replaced = sample.options()?;
-        resources(&mut replaced).system_prompt_override =
+        resources(&mut replaced)?.system_prompt_override =
             Some(Box::new(|_| Some("Speak like a pirate.".into())));
-        resources(&mut replaced).append_system_prompt_override = Some(Box::new(|_| Vec::new()));
+        resources(&mut replaced)?.append_system_prompt_override = Some(Box::new(|_| Vec::new()));
         let replaced = create_agent_session(replaced).await?;
         let prompt = replaced.session.system_prompt();
         assert!(prompt.starts_with("Speak like a pirate."));
         assert!(!prompt.contains("Discovered append text"));
         replaced.session.dispose();
         let mut appended = sample.options()?;
-        resources(&mut appended).append_system_prompt_override = Some(Box::new(|mut base| {
+        resources(&mut appended)?.append_system_prompt_override = Some(Box::new(|mut base| {
             base.push("Always be concise".into());
             base
         }));
-        resources(&mut appended).agents_files_override = Some(Box::new(|mut files| {
+        resources(&mut appended)?.agents_files_override = Some(Box::new(|mut files| {
             files.push(maestro_models::system_prompt::ContextFile {
                 path: "/virtual/AGENTS.md".into(),
                 content: "Prefer immutable bindings.".into(),
@@ -117,7 +117,7 @@ fn disabled_resources_leave_only_the_supplied_configuration() -> Result<(), Erro
         let mut options = sample.options()?;
         options.tools = Some(vec!["read".into(), "bash".into()]);
         options.thinking_level = Some(ModelThinkingLevel::Off);
-        let loader = resources(&mut options);
+        let loader = resources(&mut options)?;
         loader.disabled.extend([
             ResourceKind::Extensions,
             ResourceKind::Skills,
@@ -161,7 +161,7 @@ fn supplied_skills_and_templates_merge_with_discovered_ones() -> Result<(), Erro
         std::fs::create_dir(&prompts)?;
         std::fs::write(prompts.join("review.md"), "Review the changes.")?;
         let mut options = sample.options()?;
-        let loader = resources(&mut options);
+        let loader = resources(&mut options)?;
         loader.skills_override = Some(Box::new(|mut base| {
             base.skills.retain(|skill| skill.name == "browser");
             base.skills.push(supplied_skill());
@@ -230,7 +230,7 @@ fn explicit_model_registries_are_the_ones_the_session_reports() -> Result<(), Er
             .find("faux", "faux-1")
             .ok_or("missing custom model")?;
         assert_eq!(
-            model.read().map_err(|e| e.to_string())?.name,
+            model.read().map_err(|error| error.to_string())?.name,
             "Custom location model"
         );
         created.session.dispose();
@@ -247,31 +247,6 @@ fn explicit_model_registries_are_the_ones_the_session_reports() -> Result<(), Er
         Ok(Value::Null)
     })?;
     Ok(())
-}
-
-/// A source marking an item as supplied by the SDK caller.
-fn sdk_source(path: &str) -> maestro_resources::SourceInfo {
-    maestro_resources::create_synthetic_source_info(
-        path.into(),
-        maestro_resources::SyntheticSourceOptions {
-            source: "sdk".into(),
-            scope: None,
-            origin: None,
-            base_dir: None,
-        },
-    )
-}
-
-/// A skill an SDK caller supplies without any file on disk.
-fn supplied_skill() -> maestro_app::Skill {
-    maestro_app::Skill {
-        name: "my-skill".into(),
-        description: "Custom project instructions".into(),
-        file_path: "/virtual/SKILL.md".into(),
-        base_dir: "/virtual".into(),
-        source_info: sdk_source("/virtual/SKILL.md"),
-        disable_model_invocation: false,
-    }
 }
 
 /// A template an SDK caller supplies without any file on disk.

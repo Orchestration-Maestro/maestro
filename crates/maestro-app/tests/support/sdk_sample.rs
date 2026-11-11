@@ -93,3 +93,28 @@ where
 {
     super::session_harness::on_task_set(|local| async move { body(Sample::new(local)?).await })
 }
+
+/// A source marking an item as supplied by the SDK caller.
+pub fn sdk_source(path: &str) -> maestro_resources::SourceInfo {
+    maestro_resources::create_synthetic_source_info(
+        path.into(),
+        maestro_resources::SyntheticSourceOptions {
+            source: "sdk".into(),
+            scope: None,
+            origin: None,
+            base_dir: None,
+        },
+    )
+}
+
+/// A skill an SDK caller supplies without any file on disk.
+pub fn supplied_skill() -> maestro_app::Skill {
+    maestro_app::Skill {
+        name: "my-skill".into(),
+        description: "Custom project instructions".into(),
+        file_path: "/virtual/SKILL.md".into(),
+        base_dir: "/virtual".into(),
+        source_info: sdk_source("/virtual/SKILL.md"),
+        disable_model_invocation: false,
+    }
+}

@@ -947,8 +947,9 @@ files or reports on recorded data (a generator, a report tool) in the crate's
 the same.
 
 An example with `test = true` gets its own test executable, which links the whole
-crate graph again. Leave the flag off. Cargo still builds and lints the example
-with the crate's other targets, and `cargo run --example` runs it. Test the
+crate graph again. Leave the flag off. `count_prompt_tokens` still carries it until its tests move
+into the integration program. Cargo still builds and lints the example with the
+crate's other targets, and `cargo run --example` runs it. Test the
 behaviour it shows in the crate's integration program, as the `maestro-app` SDK
 examples do with the scripted workspace in
 [`sdk_sample.rs`](../crates/maestro-app/tests/support/sdk_sample.rs).
