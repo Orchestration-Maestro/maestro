@@ -493,7 +493,7 @@ fn chat_metadata_retains_existing_option_meanings() {
         );
     }
     let help = root.render_long_help().to_string();
-    assert!(help.contains("Append text or file contents to the system prompt"));
+    assert!(help.contains("Append text or a file's contents to the system prompt"));
     assert!(help.contains("explicit -e paths still work"));
 }
 
@@ -506,7 +506,7 @@ fn package_metadata_retains_existing_descriptions() {
         ("update", "Update maestro and installed packages."),
         (
             "list",
-            "List installed packages from user and project settings.",
+            "List installed packages and the settings scope that holds each.",
         ),
         ("config", "Open TUI to enable/disable package resources"),
     ] {

@@ -6,7 +6,7 @@ use futures_util::StreamExt;
 use serde_json::value::RawValue;
 use std::io::{self, Write};
 
-/// Retrieve `OpenRouter`'s tool-capable model descriptors.
+/// Retrieve `OpenRouter`'s model descriptors with tool support.
 ///
 /// # Errors
 /// Returns an output or diagnostic writer failure. Source failures return an empty
@@ -19,7 +19,7 @@ pub async fn fetch_open_router_models(
 ) -> io::Result<Vec<Model>> {
     retrieve(fetch, output, errors, Source::Router).await
 }
-/// Retrieve Vercel AI Gateway's tool-capable model descriptors.
+/// Retrieve Vercel AI Gateway's model descriptors with tool support.
 ///
 /// # Errors
 /// Returns an output or diagnostic writer failure. Source failures return an empty
@@ -32,7 +32,7 @@ pub async fn fetch_ai_gateway_models(
 ) -> io::Result<Vec<Model>> {
     retrieve(fetch, output, errors, Source::Gateway).await
 }
-/// Retrieve models.dev's routed tool-capable model descriptors.
+/// Retrieve models.dev's routed model descriptors with tool support.
 ///
 /// # Errors
 /// Returns an output or diagnostic writer failure. Source failures return an empty
@@ -75,9 +75,9 @@ impl Source {
     /// Application-owned failure prefix.
     fn prefix(self) -> &'static str {
         match self {
-            Self::Router => "Failed to fetch OpenRouter models:",
-            Self::Gateway => "Failed to fetch Vercel AI Gateway models:",
-            Self::Dev => "Failed to load models.dev data:",
+            Self::Router => "Could not fetch models from OpenRouter:",
+            Self::Gateway => "Could not fetch models from Vercel AI Gateway:",
+            Self::Dev => "Could not load data from models.dev:",
         }
     }
 }
@@ -135,7 +135,7 @@ async fn retrieve(
     };
     writeln!(
         output,
-        "{verb} {} tool-capable models from {}",
+        "{verb} {} models with tool support from {}",
         models.len(),
         source.label()
     )?;

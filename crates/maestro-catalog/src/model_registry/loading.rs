@@ -184,7 +184,7 @@ fn validate_provider(name: &str, config: &ProviderConfig, builtin: bool) -> Resu
             && config.model_overrides.is_empty()
         {
             return Err(format!(
-                "Provider {name}: must specify \"baseUrl\", \"headers\", \"compat\", \"modelOverrides\", or \"models\"."
+                "Provider {name}: name at least one of \"models\", \"baseUrl\", \"headers\", \"compat\", or \"modelOverrides\"."
             ));
         }
     } else if !builtin {
@@ -194,7 +194,7 @@ fn validate_provider(name: &str, config: &ProviderConfig, builtin: bool) -> Resu
         ] {
             if !present {
                 return Err(format!(
-                    "Provider {name}: \"{field}\" is required when defining custom models."
+                    "Provider {name}: \"{field}\" is required for a custom model."
                 ));
             }
         }
@@ -202,7 +202,7 @@ fn validate_provider(name: &str, config: &ProviderConfig, builtin: bool) -> Resu
     for model in &config.models {
         if !builtin && config.api.is_none() && model.api.is_none() {
             return Err(format!(
-                "Provider {name}, model {}: no \"api\" specified. Set at provider or model level.",
+                "Provider {name}, model {}: \"api\" is unset. Set it at the provider or model level.",
                 model.id
             ));
         }

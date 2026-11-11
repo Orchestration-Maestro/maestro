@@ -105,14 +105,14 @@ fn decode_tokens(
     }
     let detail = compact_raw(raw).map_err(|error| json_error(&error))?;
     Ok(Err(OAuthError::message(format!(
-        "OpenAI Codex token {operation} response missing fields: {detail}"
+        "The OpenAI Codex token {operation} response is missing fields: {detail}"
     ))))
 }
 
 /// Add only the required routing account metadata after token validation.
 fn with_account(mut credentials: OAuthCredentials) -> Result<OAuthCredentials, OAuthError> {
     let account = account_id(&credentials.access)
-        .ok_or_else(|| OAuthError::message("Failed to extract accountId from token"))?;
+        .ok_or_else(|| OAuthError::message("The token carries no accountId"))?;
     credentials.extra.insert("accountId".into(), account.into());
     Ok(credentials)
 }

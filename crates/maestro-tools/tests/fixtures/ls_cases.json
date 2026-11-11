@@ -29,7 +29,7 @@
             },
             "limit": {
               "type": "number",
-              "description": "Maximum number of entries to return (default: 500)"
+              "description": "Largest number of entries returned (default: 500)"
             }
           }
         }

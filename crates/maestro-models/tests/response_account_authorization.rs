@@ -78,7 +78,7 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
     ) -> Result<(), maestro_models::OAuthError> {
         assert_eq!(
             info.instructions.as_deref(),
-            Some("A browser window should open. Complete login to finish.")
+            Some("A browser window opens next. Finish the login there.")
         );
         Ok(())
     }
@@ -88,7 +88,7 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
     ) -> maestro_models::BoxFuture<Result<String, maestro_models::OAuthError>> {
         assert_eq!(
             prompt.message,
-            "Paste the authorization code (or full redirect URL):"
+            "Paste the authorization code, or the full redirect URL:"
         );
         assert_eq!(prompt.placeholder, None);
         assert_eq!(prompt.allow_empty, None);
@@ -156,7 +156,7 @@ impl maestro_models::OAuthLoginCallbacks for Protocol {
         );
         assert_eq!(
             info.instructions.as_deref(),
-            Some("A browser window should open. Complete login to finish.")
+            Some("A browser window opens next. Finish the login there.")
         );
         self.auth.push(info);
         Ok(())
@@ -343,7 +343,7 @@ mod oauth_callback {
             if account.is_empty() {
                 assert_eq!(
                     result.unwrap_err().to_string(),
-                    "Failed to extract accountId from token"
+                    "The token carries no accountId"
                 );
             } else {
                 let credentials = result.unwrap();

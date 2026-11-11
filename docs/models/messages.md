@@ -218,7 +218,7 @@ supply; input, output, cache reads and cache writes are summed and priced at the
 other nonempty reason with `Unhandled stop reason: {reason}`.
 
 The stream is complete when `message_stop` arrives: the body is dropped there without reading
-the rest. A body that ends first fails with `Anthropic stream ended before message_stop`,
+the rest. A body that ends first fails with `The event stream ended before message_stop arrived`,
 whether or not a message started. The shared message holds only message content, never reading
 state, whether the call ends in success or failure.
 

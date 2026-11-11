@@ -563,7 +563,7 @@ async fn observed_compat(model: &Value) -> TestResult<Value> {
         "maxTokensField": if body.get("max_tokens").is_some() { "max_tokens" } else { "max_completion_tokens" },
         "requiresToolResultName": with_role("tool").any(|m| m.get("name").is_some()),
         "requiresAssistantAfterToolResult": with_role("assistant")
-            .any(|m| m["content"] == "I have processed the tool results."),
+            .any(|m| m["content"] == "The tool results arrived."),
         "requiresThinkingAsText": with_role("assistant").any(|m| m["content"].is_array()),
         "requiresReasoningContentOnAssistantMessages": with_role("assistant")
             .any(|m| m.get("reasoning_content").is_some()),

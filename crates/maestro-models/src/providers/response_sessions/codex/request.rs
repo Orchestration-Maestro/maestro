@@ -8,7 +8,7 @@ use base64::Engine as _;
 
 /// Read the account claim without signature verification.
 pub(super) fn extract_account_id(token: &str) -> Result<String, DiagnosticErrorInfo> {
-    let failure = || DiagnosticErrorInfo::error("Failed to extract accountId from token");
+    let failure = || DiagnosticErrorInfo::error("The token carries no accountId");
     let parts: Vec<_> = token.split('.').collect();
     let [_, payload, _] = parts.as_slice() else {
         return Err(failure());

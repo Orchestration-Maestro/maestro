@@ -24,7 +24,7 @@ conventional discovery.
   only when the root exists. The command is `npm` unless settings configure a
   nonempty `npmCommand` array, whose leading arguments come first (an empty array
   selects `npm`). An empty first entry fails with
-  `Invalid npmCommand: first array entry must be a non-empty command`.
+  `Invalid npmCommand: the first array entry must hold a non-empty command`.
 - **Git**: an existing target is fetched again: only the requested ref, or the
   upstream branch when none is requested. When the fetched commit differs from
   HEAD, the checkout is reset to it in place; a commit already current is left
