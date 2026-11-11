@@ -195,6 +195,38 @@ fn maestro_test_recipe_installs_the_setup_tool_before_nextest() {
     );
 }
 
+#[test]
+fn maestro_test_recipe_selects_only_the_packages_the_caller_names() {
+    for arguments in [
+        &["-p", "maestro-web"][..],
+        &["--package", "maestro-web"][..],
+        &["--package=maestro-web"][..],
+        &["-pmaestro-web"][..],
+        &[
+            "-p",
+            "maestro-web",
+            "-p",
+            "maestro-tui",
+            "selected_behavior",
+        ][..],
+        &["selected_behavior", "-p", "maestro-web"][..],
+    ] {
+        let workspace = Workspace::new();
+
+        let output = workspace.command("test").args(arguments).output().unwrap();
+
+        assert!(output.status.success(), "{arguments:?}");
+        let selection = arguments.join("|");
+        assert_eq!(
+            workspace.log(),
+            format!(
+                "cargo nextest|run|--locked|{selection}\ncargo test|--locked|--doc|{selection}\n"
+            ),
+            "{arguments:?}"
+        );
+    }
+}
+
 /// The recipe that docs name before a hand-run nextest stages the setup tool and nothing else.
 #[test]
 fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
