@@ -3,7 +3,7 @@ name: CI speed guards
 on:
   workflow_run:
     # The guards read the job names a reusable caller prefixes with its own job name, so a watched
-    # workflow this repository declares calls the shared CI. Merge groups and pull requests run
+    # workflow this repository declares must call the shared CI. Merge groups and pull requests run
     # `Rust CI`; the full suite after landing alone runs the macOS shards a landing judges.
     workflows: [Rust CI, Full suite after landing]
     types: [completed]

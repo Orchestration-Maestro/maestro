@@ -2,6 +2,10 @@
 
 use std::path::Path;
 
+/// The line prefix of a call to the shared Rust CI workflow.
+const SHARED_CI_CALL: &str =
+    "uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@";
+
 /// Merge groups search the coverage manifest that the default concurrency key names, and the
 /// full suite after landing publishes it, so no caller of the shared workflow names a key.
 #[test]
@@ -11,11 +15,9 @@ fn callers_of_shared_ci_use_the_default_concurrency_key() {
     for entry in std::fs::read_dir(workflows).unwrap() {
         let path = entry.unwrap().path();
         let text = std::fs::read_to_string(&path).unwrap();
-        let calls = text.lines().filter(|line| {
-            line.trim_start().starts_with(
-                "uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@",
-            )
-        });
+        let calls = text
+            .lines()
+            .filter(|line| line.trim_start().starts_with(SHARED_CI_CALL));
         callers += calls.count();
         assert!(
             !text.contains("concurrency-key"),
@@ -38,9 +40,7 @@ fn callers_of_shared_ci_grant_cache_pruning() {
         let text = std::fs::read_to_string(&path).unwrap();
         let lines: Vec<&str> = text.lines().map(str::trim).collect();
         for (index, line) in lines.iter().enumerate() {
-            if line.starts_with(
-                "uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@",
-            ) {
+            if line.starts_with(SHARED_CI_CALL) {
                 callers += 1;
                 let grant = lines[..index]
                     .iter()
@@ -133,6 +133,22 @@ fn pins(workflows: &Path, name: &str) -> Vec<String> {
     found
 }
 
+/// The listener condition passes completed pull-request and merge-group runs, and main pushes
+/// only on the default branch.
+fn listener_passes_every_run_event(listener: &str) {
+    let condition = listener.split_whitespace().collect::<Vec<_>>().join(" ");
+    for clause in [
+        "github.event.workflow_run.event == 'pull_request'",
+        "github.event.workflow_run.event == 'merge_group'",
+        "(github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == github.event.repository.default_branch)",
+    ] {
+        assert!(
+            condition.contains(clause),
+            "the listener passes the completed runs of {clause}"
+        );
+    }
+}
+
 /// Every watched workflow this repository declares calls the shared CI, so the guards read the job
 /// names behind the caller's prefix instead of reporting them missing.
 fn watched_workflows_call_shared_ci(workflows: &Path, watched: &[String]) {
@@ -142,9 +158,8 @@ fn watched_workflows_call_shared_ci(workflows: &Path, watched: &[String]) {
         }
         let text = std::fs::read_to_string(&file).expect("the watched workflow reads");
         assert!(
-            text.lines().any(|line| line.trim_start().starts_with(
-                "uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@"
-            )),
+            text.lines()
+                .any(|line| line.trim_start().starts_with(SHARED_CI_CALL)),
             "the listener watches {name}, which {file} declares without calling the shared CI"
         );
     }
@@ -218,12 +233,7 @@ fn the_guards_listener_judges_completed_runs_at_the_callers_pin() {
     // The pinned guards read the job names a reusable caller prefixes with its own job name, so a
     // watched workflow this repository declares must be a caller of the shared CI.
     watched_workflows_call_shared_ci(&workflows, &watched);
-    for event in ["pull_request", "merge_group", "push"] {
-        assert!(
-            listener.contains(&format!("github.event.workflow_run.event == '{event}'")),
-            "the listener passes completed {event} runs"
-        );
-    }
+    listener_passes_every_run_event(&listener);
     assert!(
         value_of(&listener, "run-id:").contains("github.event.workflow_run.id"),
         "the judged run is the completed one"

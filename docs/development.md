@@ -2866,10 +2866,11 @@ fails a check or files one issue per cause, and a breach that persists adds to
 that issue rather than filing another. A cold compile cache shows in the merge
 group first: its archive build reports the hit rate against the floor.
 
-Three kinds of run reach the guards: merge groups, main pushes, and
-pull-request runs of `Rust CI`. The selection share guard reads the pull-request
-runs, where a change selects crates to test. The macOS test shards run only in
-the full suite after landing, so its runs alone judge their balance.
+Three kinds of run reach the guards: merge-group and pull-request runs of
+`Rust CI`, and the main-push runs of `Full suite after landing`. The selection
+share guard reads the pull-request runs, where a change selects crates to test.
+The macOS test shards run only in the full suite after landing, so its runs
+alone judge their balance.
 
 A landing runs the suite through one reusable job, so its checks are named
 `suite / Test shard (macos-latest 1/4)` and so on. The guards read the job names
