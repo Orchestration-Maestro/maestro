@@ -828,6 +828,100 @@ fn author_setup_without_prepared_outputs_builds_locally() {
     }
 }
 
+/// The setup of a run without an archive or a prepared bundle, with `base` as its
+/// `TEST_PREPARE_BASE` when it names one.
+fn local_setup(root: &Path, base: Option<&Path>) -> Output {
+    let profile = root.join("target/debug");
+    fs::create_dir_all(profile.join("deps")).unwrap();
+    let mut command = setup_command();
+    command
+        .current_dir(root)
+        .env("CARGO", root.join("cargo"))
+        .env("NEXTEST_ENV", root.join("nextest-env"))
+        .env("NEXTEST_LD_LIBRARY_PATH", &profile)
+        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
+        .env_remove("TEST_ARCHIVE")
+        .env_remove("TEST_PREPARE_OUTPUT")
+        .env_remove("TEST_PREPARE_BASE");
+    if let Some(base) = base {
+        command.env("TEST_PREPARE_BASE", base);
+    }
+    command.output().unwrap()
+}
+
+/// A local run takes every component an earlier bundle supplies, as preparation does, and its
+/// setup example builds only the rest: nothing from a bundle of the same inputs, an edited
+/// example alone, and everything when the bundle's shared inputs are stale or no bundle is named.
+#[test]
+fn local_author_setup_builds_only_the_components_a_base_cannot_supply() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    marked_fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+    let built = |base: Option<&Path>| -> Vec<String> {
+        let _ = fs::remove_file(root.join("built"));
+        assert_success(&local_setup(root, base));
+        fs::read_to_string(root.join("built"))
+            .map(|built| built.lines().map(str::to_owned).collect())
+            .unwrap_or_default()
+    };
+
+    assert_eq!(built(Some(&base)), Vec::<String>::new());
+    let entries = fs::read_to_string(root.join("nextest-env")).unwrap();
+    let reused = base.join("MAESTRO_ALPHA_COMPONENT.wasm");
+    assert!(
+        entries
+            .lines()
+            .any(|line| line == format!("MAESTRO_ALPHA_COMPONENT={}", reused.display())),
+        "{entries}"
+    );
+
+    fs::write(
+        root.join("examples/extensions/alpha.rs"),
+        "// maestro-component: MAESTRO_ALPHA_COMPONENT\n// edited\n",
+    )
+    .unwrap();
+    assert_eq!(built(Some(&base)), ["MAESTRO_ALPHA_COMPONENT"]);
+
+    fs::write(
+        root.join("crates/maestro-extensions-wasm/src/lib.rs"),
+        "edited source",
+    )
+    .unwrap();
+    assert_eq!(built(Some(&base)).len(), 5);
+    assert_eq!(built(None).len(), 5);
+}
+
+/// A local run seeds the compiled code of the bundle that supplies its components, so its setup
+/// example finds them compiled.
+#[test]
+fn local_author_setup_seeds_compiled_code_from_a_base() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    prepare(root);
+    let base = root.join("target/test-setup");
+
+    assert_success(&local_setup(root, Some(&base)));
+
+    let seen = fs::read_to_string(root.join("seen")).unwrap();
+    assert_eq!(
+        seen.lines().last().unwrap(),
+        base.join("MAESTRO_AUTHOR_COMPONENT.wasm").to_str().unwrap()
+    );
+    let namespaces: Vec<PathBuf> =
+        fs::read_dir(root.join("target/run-agent/component-cache/modules"))
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect();
+    assert_eq!(namespaces.len(), 1, "{namespaces:?}");
+    assert_eq!(
+        fs::read_to_string(namespaces[0].join("key")).unwrap(),
+        "compiled"
+    );
+}
+
 /// The digest of the inputs every component shares, as the prepared bundle records it.
 fn shared_digest(root: &Path) -> String {
     let manifest: serde_json::Value =

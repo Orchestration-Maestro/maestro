@@ -92,6 +92,18 @@ fn shared(checkout: &Path, plan: &Plan) -> io::Result<Inputs> {
     )
 }
 
+/// Digest what the components of the `component` crate share in `checkout`.
+///
+/// # Errors
+/// Returns a failed metadata read, listing, read or lock parse.
+pub(super) fn shared_inputs(
+    checkout: &Path,
+    workspace: &Workspace,
+    component: &ComponentCrate,
+) -> io::Result<Inputs> {
+    shared(checkout, &plan(workspace, Some(component))?)
+}
+
 /// Whether the component build uses a dependency of a package.
 ///
 /// `cargo build` compiles the development dependencies of the packages it builds, for their

@@ -6,7 +6,8 @@
 //! manifest. The manifest records the inputs of each artifact on its own, so a change reaches
 //! only the artifacts that read it. The first earlier bundle in the path list
 //! `TEST_PREPARE_BASE` that fits supplies every component whose inputs are unchanged, and its
-//! compiled code, so only the rest are built.
+//! compiled code, so only the rest are built; a local run's `author-component` setup takes them
+//! from that list the same way.
 //! `install` stages this command alone, for runs without a bundle. The staged command's
 //! `author-component` setup validates the components and the example against the checkout,
 //! installs the example beside the extracted test executables and the compiled code in the
@@ -238,6 +239,43 @@ fn read_base(checkout: &Path, shared: &Inputs) -> Option<Base> {
             .filter(|name| !name.as_os_str().is_empty())
             .find_map(|name| Base::read(&checkout.join(name), shared))
     })
+}
+
+/// Hand the setup example `command` runs every component that the first bundle in
+/// `TEST_PREPARE_BASE` prepared from the checkout's shared inputs supplies, and seed that
+/// bundle's compiled code for `example` in the cache below `agent_directory`, as preparation
+/// does. Without such a bundle the example builds every component.
+///
+/// # Errors
+/// Returns a workspace without one component crate, a failed listing, read or cache query, or a
+/// failed copy of the compiled code.
+pub(crate) fn supply_base(
+    command: &mut Command,
+    workspace: &Workspace,
+    example: &Path,
+    agent_directory: &Path,
+) -> io::Result<()> {
+    // Digesting the shared inputs reads every file they name, so a run without a base skips it.
+    if std::env::var_os(BASE).is_none() {
+        return Ok(());
+    }
+    let checkout = workspace.root();
+    let shared = plan::shared_inputs(checkout, workspace, &workspace.component_crate()?)?;
+    let Some(base) = read_base(checkout, &shared) else {
+        return Ok(());
+    };
+    let cache_directory = compiled_code::directory(
+        Command::new(example)
+            .current_dir(checkout)
+            .env(AGENT_DIRECTORY, agent_directory),
+    )?;
+    base.seed(&cache_directory, example)?;
+    command.envs(
+        base.supplied(checkout)?
+            .into_iter()
+            .map(|component| (component.variable, component.path)),
+    );
+    Ok(())
 }
 
 /// The file the setup example writes its component paths to.

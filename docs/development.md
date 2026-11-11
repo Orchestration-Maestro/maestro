@@ -1275,6 +1275,11 @@ The base's compiled code seeds the build's cache, and is dropped again when the 
 another engine's namespace. A base that is missing, unreadable or prepared from other shared
 inputs is skipped, and when none is accepted everything is built; the base directory may be the
 output directory.
+A local run reads the same list. With `TEST_ARCHIVE` unset and no prepared bundle, the
+`author-component` setup accepts a base by the same digests, hands its setup example every
+component that base supplies and seeds the base's compiled code in the run's own cache, so
+the example builds only the other components. The tests read the supplied components from
+the base directory, so the base has to stay in place until the run ends.
 After a successful preparation, the command reports how many components came from the base
 and how many it built, for example:
 
