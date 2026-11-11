@@ -1571,7 +1571,7 @@ program or depends on one found on `PATH`.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
-`MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
+`MAESTRO_STARTUP_CONVERSION`, `MAESTRO_BROWSER_IMPORT_CHECK`, `MAESTRO_GUIDE_COMPONENT`
 and `MAESTRO_EXECUTABLE`. Declare them in the workspace's own
 `.config/nextest.toml`; Maestro's file declares the setups this repository uses.
 
@@ -1857,6 +1857,15 @@ recreating or republishing the history for each form.
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
 `maestro-test-process` and every crate the crate graph allows to depend on it, and
 the instrumented parent `MAESTRO_CHILD_TOOLCHAIN_PROBE` to `maestro-tooling`.
+It also exports the startup conversion child, `MAESTRO_STARTUP_CONVERSION`, to `maestro-app`.
+That child is the `startup_conversion` example of `maestro-app`: it runs one conversion, `auth`
+or `sessions`, as its first argument names, and prints one `PROBE` line with the outcome.
+`--file-limit-kib N` runs the conversion under a file-size limit that is lifted before it
+reports, and `--exit-write PATH` then writes 4096 bytes to `PATH`. A test starts it as a plain
+command: it needs no libtest arguments and starts in milliseconds where the whole
+`maestro-app` test program takes tens. The test sets `MAESTRO_CODING_AGENT_DIR` and its working
+directory, and passes `IsolatedSetup::environment` for effects such as continuing past the
+file-size limit. Preparation builds the child once, like the other fixtures.
 To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
 add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
 `.config/nextest.toml`. Adding fixture tests inside a declared caller needs no

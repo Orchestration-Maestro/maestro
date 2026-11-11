@@ -95,6 +95,12 @@ serde_json.workspace = true
 name = "integration"
 path = "tests/integration.rs"
 
+[[example]]
+name = "startup_conversion"
+path = "tests/support/startup_child.rs"
+harness = false
+test = false
+
 [lints]
 workspace = true
 

@@ -1458,7 +1458,8 @@ fn workspace(root: &Path) {
     .unwrap();
     fs::write(
         root.join("Cargo.lock"),
-        "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
+        "version = 4\n\n[[package]]\nname = \"maestro-app\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
          [[package]]\nname = \"maestro-extensions-wasmtime\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-models\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
@@ -1475,6 +1476,7 @@ fn workspace(root: &Path) {
     fs::write(browser.join("Cargo.toml"), "browser manifest").unwrap();
     fs::write(browser.join("Cargo.lock"), "browser lock").unwrap();
     for (name, dependency) in [
+        ("maestro-app", ""),
         (
             "maestro-extensions-wasm",
             "\n[dependencies]\nshared = { path = \"../shared\" }\n",
@@ -1726,13 +1728,7 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
             .unwrap(),
     );
     let environment_text = fs::read_to_string(&environment).unwrap();
-    for variable in ["MAESTRO_NATIVE_FIXTURE", "MAESTRO_CHILD_TOOLCHAIN_PROBE"] {
-        let path = environment_text
-            .lines()
-            .find_map(|line| line.strip_prefix(&format!("{variable}=")))
-            .unwrap();
-        assert!(Path::new(path).is_absolute() && Path::new(path).starts_with(&moved));
-    }
+    assert_fixtures_relocated(&environment_text, &moved);
     let artifact = Path::new(
         environment_text
             .lines()
@@ -1750,6 +1746,25 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
         fs::read_to_string(root.join("probe-builds")).unwrap(),
         "build\n"
     );
+    assert_eq!(
+        fs::read_to_string(root.join("conversion-builds")).unwrap(),
+        "build\n"
+    );
+}
+
+/// Every host fixture the setup exported lies below the relocated bundle.
+fn assert_fixtures_relocated(environment: &str, bundle: &Path) {
+    for variable in [
+        "MAESTRO_NATIVE_FIXTURE",
+        "MAESTRO_CHILD_TOOLCHAIN_PROBE",
+        "MAESTRO_STARTUP_CONVERSION",
+    ] {
+        let path = environment
+            .lines()
+            .find_map(|line| line.strip_prefix(&format!("{variable}=")))
+            .unwrap();
+        assert!(Path::new(path).is_absolute() && Path::new(path).starts_with(bundle));
+    }
 }
 
 /// Cargo checks retain their built artifacts after relocation without calling Cargo in a shard.

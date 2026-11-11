@@ -25,6 +25,12 @@ const PACKAGE: &str = "maestro-test-process";
 const PROBE_EXAMPLE: &str = "child_toolchain_probe";
 /// The package that owns the probe.
 const PROBE_PACKAGE: &str = "maestro-tooling";
+/// The child that runs one startup conversion, started without a test harness.
+pub(crate) const CONVERSION_VARIABLE: &str = "MAESTRO_STARTUP_CONVERSION";
+/// The example target that runs one startup conversion.
+const CONVERSION_EXAMPLE: &str = "startup_conversion";
+/// The package that owns the conversion child.
+const CONVERSION_PACKAGE: &str = "maestro-app";
 /// The fixture's record in the prepared bundle.
 const RECEIPT: &str = "native-fixture.json";
 
@@ -46,6 +52,8 @@ struct Prepared {
     fixture: Staged,
     /// The instrumented probe, in a workspace that builds its own tooling.
     probe: Option<Staged>,
+    /// The startup conversion child, in a workspace that builds the application.
+    conversion: Option<Staged>,
     /// Host identity that must match the executing setup.
     host: String,
 }
@@ -58,6 +66,11 @@ fn filename() -> String {
 /// The staged probe's platform-specific name.
 fn probe_filename() -> String {
     format!("{PROBE_EXAMPLE}{}", std::env::consts::EXE_SUFFIX)
+}
+
+/// The staged conversion child's platform-specific name.
+fn conversion_filename() -> String {
+    format!("{CONVERSION_EXAMPLE}{}", std::env::consts::EXE_SUFFIX)
 }
 
 /// The host platform this executable can run on.
@@ -95,13 +108,19 @@ pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<Vec<(String
             staged(output, probe_filename(), probe)?,
         ));
     }
+    if let Some(conversion) = &record.conversion {
+        paths.push((
+            CONVERSION_VARIABLE.to_owned(),
+            staged(output, conversion_filename(), conversion)?,
+        ));
+    }
     Ok(paths)
 }
 
 /// Reuse current fixtures or build and stage them once through the locked host dev profile.
 ///
-/// The probe is staged only where this workspace builds its own tooling, because only that
-/// workspace's tests launch it.
+/// The probe is staged only where this workspace builds its own tooling, and the conversion
+/// child only where it builds the application, because only those workspaces' tests launch them.
 pub(crate) fn prepare(
     cargo: &Path,
     checkout: &Path,
@@ -119,7 +138,7 @@ pub(crate) fn prepare(
         ))
     })?;
     let emitted = match source {
-        Source::Member => build(cargo, checkout, target)?,
+        Source::Member => build(cargo, checkout, target, PACKAGE, EXAMPLE)?,
         source @ Source::Locked { .. } => {
             let program = Program {
                 package: PACKAGE,
@@ -139,16 +158,31 @@ pub(crate) fn prepare(
     } else {
         None
     };
+    let conversion = if workspace.member(CONVERSION_PACKAGE).is_some() {
+        Some(build(
+            cargo,
+            checkout,
+            target,
+            CONVERSION_PACKAGE,
+            CONVERSION_EXAMPLE,
+        )?)
+    } else {
+        None
+    };
     inputs.verify(checkout, output)?;
     std::fs::create_dir_all(output)?;
     let fixture = stage(output, filename(), &emitted)?;
     let probe = probe
         .map(|emitted| stage(output, probe_filename(), &emitted))
         .transpose()?;
+    let conversion = conversion
+        .map(|emitted| stage(output, conversion_filename(), &emitted))
+        .transpose()?;
     let record = Prepared {
         inputs,
         fixture,
         probe,
+        conversion,
         host: host(),
     };
     std::fs::write(output.join(RECEIPT), serde_json::to_vec(&record)?)?;
@@ -161,7 +195,7 @@ pub(crate) fn prepare(
 /// # Errors
 /// Returns a failed metadata read, or a failed listing or read of the workspace files.
 fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
-    let packages = workspace.holds(&[PACKAGE, PROBE_PACKAGE]);
+    let packages = workspace.holds(&[PACKAGE, PROBE_PACKAGE, CONVERSION_PACKAGE]);
     let mut paths = closure_directories(workspace.metadata(), &packages)?;
     paths.extend(
         SHARED_INPUTS
@@ -199,15 +233,21 @@ fn stage(output: &Path, name: String, emitted: &Path) -> io::Result<Staged> {
 }
 
 /// Build the one target and accept only Cargo's reported executable, never a directory scan.
-fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
+fn build(
+    cargo: &Path,
+    checkout: &Path,
+    target: &Path,
+    package: &str,
+    example: &str,
+) -> io::Result<PathBuf> {
     let output = toolchain::command(cargo, checkout)
         .args([
             "build",
             "--locked",
             "-p",
-            PACKAGE,
+            package,
             "--example",
-            EXAMPLE,
+            example,
             "--profile",
             "dev",
             "--message-format=json-render-diagnostics",
@@ -215,7 +255,7 @@ fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
         ])
         .arg(target)
         .output()?;
-    reported(&output, EXAMPLE)
+    reported(&output, example)
 }
 
 /// Build the probe with the coverage instrumentation its counters come from.
