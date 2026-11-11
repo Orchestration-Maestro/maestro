@@ -12,6 +12,10 @@ use crate::recipe_support;
 use recipe_support::ProcessGroup;
 use recipe_support::{Workspace, executable, install_executable, write_input};
 
+/// The development command the `test` recipe runs for its doctest phase.
+const DOC_TEST: &str =
+    "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|doc-test";
+
 #[test]
 fn maestro_workspace_recipes_keep_phase_order() {
     let workspace = Workspace::new();
@@ -60,7 +64,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     fs::remove_file(workspace.path().join("log")).unwrap();
     assert!(workspace.run("ci").status.success());
     assert!(workspace.log().ends_with(
-        "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+        "cargo nextest|run|--workspace|--locked\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|doc-test\n"
     ));
 }
 
@@ -133,17 +137,22 @@ fn maestro_scoped_check_stops_on_browser_lint_failure() {
 
 /// Checks that test phases stop on failure.
 fn assert_test_phase_failures(workspace: &Workspace) {
-    for (phase, expected) in [
-        ("nextest", "cargo nextest|run|--workspace|--locked\n"),
+    for (variable, phase, expected) in [
         (
-            "test",
-            "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n",
+            "MAESTRO_FAIL",
+            "nextest",
+            "cargo nextest|run|--workspace|--locked\n",
+        ),
+        (
+            "MAESTRO_FAIL_ARG",
+            "doc-test",
+            "cargo nextest|run|--workspace|--locked\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|doc-test\n",
         ),
     ] {
         fs::remove_file(workspace.path().join("log")).unwrap();
         let output = workspace
             .command("test")
-            .env("MAESTRO_FAIL", phase)
+            .env(variable, phase)
             .output()
             .unwrap();
         assert!(!output.status.success());
@@ -191,7 +200,7 @@ fn maestro_test_recipe_installs_the_setup_tool_before_nextest() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\ncargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|prepare-test-setup|install|target/test-setup\ncargo nextest|run|--workspace|--locked\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|doc-test\n"
     );
 }
 
@@ -219,9 +228,7 @@ fn maestro_test_recipe_selects_only_the_packages_the_caller_names() {
         let selection = arguments.join("|");
         assert_eq!(
             workspace.log(),
-            format!(
-                "cargo nextest|run|--locked|{selection}\ncargo test|--locked|--doc|{selection}\n"
-            ),
+            format!("cargo nextest|run|--locked|{selection}\n{DOC_TEST}|{selection}\n"),
             "{arguments:?}"
         );
     }
@@ -338,7 +345,9 @@ fn maestro_test_recipes_forward_literal_arguments() {
         let output = workspace.command(recipe).args(&args).output().unwrap();
         assert!(output.status.success(), "{recipe}");
         let suffix = args.join("|");
-        let expected = if doctests {
+        let expected = if recipe == "test" {
+            format!("cargo nextest|run|{selection}|{suffix}\n{DOC_TEST}|{suffix}\n")
+        } else if doctests {
             format!(
                 "cargo nextest|run|{selection}|{suffix}\ncargo test|{selection}|--doc|{suffix}\n"
             )
@@ -1290,9 +1299,18 @@ fn maestro_native_tests_keep_filters_and_ignored_cases() {
     assert_model_test_selection(&workspace);
     assert_native_doctests(&workspace);
     assert_terminal_test_selection(&workspace);
+    // The doctest phase is a development command: route Cargo back through the recipe stand-in.
+    let bin = workspace.path().join("bin");
+    fs::rename(
+        bin.join(executable("cargo-proxy")),
+        bin.join(executable("cargo")),
+    )
+    .unwrap();
     let output = workspace
         .command("test")
         .arg("selected_behavior")
+        .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+        .env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"))
         .output()
         .unwrap();
     assert!(
@@ -1524,6 +1542,30 @@ fn maestro_source_recipes_preserve_invocation_directory() {
     }
 }
 
+/// A workspace with one library, which the real doctest command can run in.
+fn library_workspace(workspace: &Workspace) {
+    fs::create_dir_all(workspace.path().join("member/src")).unwrap();
+    fs::write(workspace.path().join("member/src/lib.rs"), "").unwrap();
+    fs::write(
+        workspace.path().join("member/Cargo.toml"),
+        "[package]\nname = 'member'\nversion = '0.0.0'\nedition = '2024'\n",
+    )
+    .unwrap();
+    fs::write(
+        workspace.path().join("Cargo.toml"),
+        "[workspace]\nmembers = ['member']\nresolver = '3'\n",
+    )
+    .unwrap();
+    assert!(
+        workspace
+            .toolchain_command(env!("CARGO"))
+            .arg("generate-lockfile")
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
 #[test]
 fn maestro_offline_recipe_is_explicit_only() {
     let workspace = Workspace::new();
@@ -1531,6 +1573,7 @@ fn maestro_offline_recipe_is_explicit_only() {
     fs::create_dir_all(home.join(".maestro/agent")).unwrap();
     let auth = home.join(".maestro/agent/auth.json");
     fs::write(&auth, "synthetic authentication").unwrap();
+    library_workspace(&workspace);
     for (recipe, expected) in [
         ("test-offline", "key=false auth=false flag=1\n"),
         ("test", "key=true auth=true flag=kept\n"),
@@ -1581,7 +1624,7 @@ fn maestro_offline_recipe_is_explicit_only() {
     let log = workspace.log();
     assert_eq!(log.matches("--bin|development|--|test-offline").count(), 1);
     assert!(log.contains("cargo nextest|run|--workspace|--locked"));
-    assert!(log.contains("cargo test|--workspace|--locked|--doc"));
+    assert!(log.contains("--bin|development|--|doc-test"));
     assert!(log.contains("cargo doc|--workspace|--no-deps|--locked"));
 }
 

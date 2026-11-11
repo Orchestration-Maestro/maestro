@@ -911,7 +911,8 @@ They forward literal arguments to both phases; use options accepted by both,
 such as name filters and `-- --ignored`, `-- --exact NAME` or `-- --nocapture`.
 `just test` selects the whole workspace. Name a package with `-p NAME` or
 `--package NAME` and both phases build and run that package alone, with its
-dependencies.
+dependencies. A package without a library, such as `maestro`, has no doctests:
+its selection runs nextest and passes the doctest phase without invoking Cargo.
 An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.

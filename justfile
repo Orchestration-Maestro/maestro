@@ -34,7 +34,7 @@ package_flag := "'(-p[^']*|--package(=[^']*)?)'"
 # Run the workspace tests, or only the packages named with -p or --package.
 test *args: prepare-tests sandbox-runtime
     @cargo nextest run {{ if quote(args) =~ package_flag { '' } else { '--workspace' } }} --locked {{quote(args)}}
-    @cargo test {{ if quote(args) =~ package_flag { '' } else { '--workspace' } }} --locked --doc {{quote(args)}}
+    @cargo run --quiet --locked -p maestro-tooling --bin development -- doc-test {{quote(args)}}
 
 # Run the same checks as continuous integration.
 ci: check test
