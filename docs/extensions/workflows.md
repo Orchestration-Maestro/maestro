@@ -1,7 +1,7 @@
 # Extension author workflows
 
 Choose the callback that owns the change you need. The examples live in
-maestro-packages, which `just setup` fetches into a source checkout. Start from a shipped example,
+maestro-packages. Start from a shipped example,
 keep its factory and component export, and use the [build and load
 recipe](../extensions.md#create-the-project). This page connects author tasks to
 those examples; the [event and result inventory](guest.md#events-and-results)

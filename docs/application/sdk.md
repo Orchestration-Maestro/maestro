@@ -366,8 +366,7 @@ For a child-process host, use the [RPC client](../client.md) instead of assembli
 an in-process frontend.
 
 The [SDK example index](../../examples/sdk/README.md) records what ships. The
-embedding examples live in maestro-packages, which `just setup` fetches into a
-source checkout. The controlled program in this guide runs as an application
+embedding examples live in maestro-packages. The controlled program in this guide runs as an application
 doctest.
 
 ## Creating a session

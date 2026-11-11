@@ -20,6 +20,7 @@ just build
 Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
 and the other pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml`
 through rustup, not mise.
+`just setup` also fetches the examples tree from maestro-packages into `examples/`.
 
 `build`, `test`, `check` and `ci` first build the sandbox runtime script, which needs
 Emscripten SDK 6.0.10 and the wasm-bindgen CLI 0.2.129 on `PATH`; install them as
@@ -630,8 +631,10 @@ in the shared caller contract.
 
 ## Extension guide lock
 
-Run `just example-index` after changing dependencies to regenerate the extension
-index, example targets and the standalone extension guide's `Cargo.lock`.
+This repository carries no examples tree or guide fixture, so `just example-index`
+finds nothing to refresh here. In a workspace that carries the extension guide, run
+it after changing dependencies to regenerate the extension index, example targets
+and the standalone extension guide's `Cargo.lock`.
 `just check` runs `just example-index-check`, which reports stale generated files
 without changing them and names the regeneration command.
 

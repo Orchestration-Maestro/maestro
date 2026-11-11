@@ -198,3 +198,19 @@ fn examples_command_requires_the_examples_folder() {
     assert!(error.to_string().contains("examples"), "{error}");
     assert_eq!(tree(&checkout.path().join("examples")), before);
 }
+
+/// A reference or source that looks like an option is refused before `git` runs.
+#[test]
+fn examples_command_refuses_option_like_values() {
+    let source = source();
+    let checkout = Scratch::new().unwrap();
+
+    let reference = fetch(checkout.path(), source.path(), Some("--upload-pack=x")).unwrap_err();
+    let args = [OsString::from("examples"), "--source".into(), "-x".into()];
+    let location =
+        maestro_tooling::run(&args, Path::new("unused-cargo"), checkout.path()).unwrap_err();
+
+    assert!(reference.to_string().contains("usage"), "{reference}");
+    assert!(location.to_string().contains("usage"), "{location}");
+    assert!(siblings(checkout.path()).is_empty());
+}

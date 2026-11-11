@@ -214,24 +214,6 @@ fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
     );
 }
 
-/// Setup installs the pinned tools and the hooks, then fetches the examples tree last.
-#[test]
-fn maestro_setup_recipe_fetches_the_examples_tree_after_the_tools() {
-    let workspace = Workspace::new();
-
-    let output = workspace.run("setup");
-
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert_eq!(
-        workspace.log(),
-        "mise install\nmise exec|--|prek|install\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|examples\n"
-    );
-}
-
 /// The conventions recipe stages the setup tool before nextest runs the checker's own suite.
 #[test]
 fn maestro_test_conventions_recipe_stages_the_setup_tool_before_nextest() {

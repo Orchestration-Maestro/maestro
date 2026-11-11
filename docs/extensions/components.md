@@ -55,8 +55,7 @@ A box's padding reduces the width its children receive, potentially to zero.
 The [text reference](../terminal/text.md) defines grapheme and escape handling.
 Guest text helpers take the extension API and return fallible host answers; see
 [`custom_footer.rs`](../../examples/extensions/custom_footer.rs) for measuring
-and clipping a styled row. The extension examples live in maestro-packages, which
-`just setup` fetches into a source checkout. The frame writer rejects oversized ordinary rows
+and clipping a styled row. The extension examples live in maestro-packages. The frame writer rejects oversized ordinary rows
 rather than fixing them. Test at zero width and at widths smaller than a border,
 with combining characters, wide characters and styled text.
 

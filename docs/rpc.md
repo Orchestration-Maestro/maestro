@@ -65,8 +65,7 @@ permissions you intend to grant it; do not pass untrusted shell text to `bash`.
 Use the [typed Rust client](client.md) for reusable subprocess operations. The
 [SDK examples](../examples/sdk/README.md#check-the-example) hold two terminal clients
 of this protocol: a streaming client with extension dialogs, and an interactive
-demo built on the Rust client. They live in maestro-packages, which `just setup`
-fetches into a source checkout, and their checks are Rust tests whose peers are
+demo built on the Rust client. They live in maestro-packages, and their checks are Rust tests whose peers are
 native Rust programs.
 
 ## Framing
@@ -367,8 +366,8 @@ These numbers are examples, not fixed retry settings. `abort_retry` cancels the
 retry delay. A failed assistant message can precede a retry, so do not close the
 connection on the first error message. Likewise `agent_end` closes one run;
 automatic retry or overflow recovery can start another. Keep reading the retry
-and compaction events if your client enables those policies. The Python example
-is intentionally limited to one run. See [retry and compaction](application/session-operations.md).
+and compaction events if your client enables those policies. The streaming
+client in the SDK examples reads one run. See [retry and compaction](application/session-operations.md).
 
 ### Save, fork or replace the session
 
@@ -619,7 +618,7 @@ Dismissal, timeout and abort return no value for selection, input or editor,
 and false for confirmation. Dialog responses do not get a command response.
 Dispatch them separately from the ordinary request-ID map. Handle dialogs even
 before your first command's response, because session startup can wait on one.
-The Python example cancels every answered dialog rather than blocking startup.
+The streaming client in the SDK examples cancels every answered dialog rather than blocking startup.
 
 An extension can also send notices without waiting:
 

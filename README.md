@@ -41,7 +41,7 @@ Enable mise in your shell (or prefix commands with `mise exec --`) so the
 pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml` through
 rustup, not mise. `mise.lock` records the tool downloads and checksums.
 
-- `just setup`: install the pinned tools and git hooks.
+- `just setup`: install the pinned tools and git hooks, then fetch the examples tree.
 - `just check`: formatting, Clippy with warnings denied, strict public
   documentation, and the workspace conventions on this checkout.
 - `just test`: the full workspace test suite.

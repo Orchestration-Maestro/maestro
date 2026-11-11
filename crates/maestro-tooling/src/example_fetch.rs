@@ -39,6 +39,9 @@ impl Request {
                 Some((&mut reference, argument))
             };
             let (slot, value) = slot.ok_or_else(|| io::Error::other(USAGE))?;
+            if value.as_encoded_bytes().starts_with(b"-") {
+                return Err(io::Error::other(USAGE));
+            }
             if slot.replace(value.clone()).is_some() {
                 return Err(io::Error::other(USAGE));
             }

@@ -1,8 +1,7 @@
 # Browser chat example
 
 The chat example is a complete browser-local chat built only from the published
-web components. It lives in maestro-packages, which `just setup` fetches into a
-source checkout as `examples/web`:
+web components. It lives in maestro-packages as `examples/web`:
 [`chat.rs`](../../examples/web/chat.rs) starts it,
 [`app.rs`](../../examples/web/chat/app.rs) wires it,
 [`title.rs`](../../examples/web/chat/title.rs) edits titles and
