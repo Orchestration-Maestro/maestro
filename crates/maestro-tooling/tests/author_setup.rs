@@ -841,8 +841,7 @@ fn local_setup(root: &Path, base: Option<&Path>) -> Output {
         .env("NEXTEST_LD_LIBRARY_PATH", &profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
         .env_remove("TEST_ARCHIVE")
-        .env_remove("TEST_PREPARE_OUTPUT")
-        .env_remove("TEST_PREPARE_BASE");
+        .env_remove("TEST_PREPARE_OUTPUT");
     if let Some(base) = base {
         command.env("TEST_PREPARE_BASE", base);
     }
@@ -1687,7 +1686,9 @@ fn browser_command(root: &Path, archived: bool) -> Command {
 /// The author-component setup, as nextest's setup entry runs it.
 fn setup_command() -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
-    command.args(["nextest-setup", "author-component"]);
+    command
+        .args(["nextest-setup", "author-component"])
+        .env_remove("TEST_PREPARE_BASE");
     command
 }
 
