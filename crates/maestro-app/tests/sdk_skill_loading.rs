@@ -1,10 +1,12 @@
 //! Default, empty and caller-supplied skill results through session creation.
-use super::super::*;
+#![cfg(not(target_arch = "wasm32"))]
+use crate::support::sdk_sample::{Error, execute, supplied_skill};
+use serde_json::Value;
 
 /// Default discovery exposes the authored file on the session's resource owner.
 #[test]
 fn sessions_discover_skills_by_default() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let folder = sample.root.path().join("skills/test-skill");
         std::fs::create_dir_all(&folder)?;
         std::fs::write(
@@ -23,7 +25,7 @@ fn sessions_discover_skills_by_default() -> Result<(), Error> {
 /// The SDK respects an explicitly empty loader result despite a discoverable file.
 #[test]
 fn sessions_keep_an_empty_supplied_skill_result() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let folder = sample.root.path().join("skills/test-skill");
         std::fs::create_dir_all(&folder)?;
         std::fs::write(
@@ -48,11 +50,12 @@ fn sessions_keep_an_empty_supplied_skill_result() -> Result<(), Error> {
 /// A loader-supplied skill remains intact instead of being replaced by default discovery.
 #[test]
 fn sessions_keep_caller_supplied_skills() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let mut options = sample.options()?;
         if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
-            resources.skills_override = Some(Box::new(|_| {
-                merge_skills(maestro_app::LoadSkillsResult::default())
+            resources.skills_override = Some(Box::new(|mut base| {
+                base.skills.push(supplied_skill());
+                base
             }));
         }
         let created = maestro_app::create_agent_session(options).await?;

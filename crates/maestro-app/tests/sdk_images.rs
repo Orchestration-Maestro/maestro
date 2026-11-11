@@ -1,6 +1,8 @@
 //! Image settings and real read-tool output before model-message conversion.
-use super::super::*;
+#![cfg(not(target_arch = "wasm32"))]
+use crate::support::sdk_sample::{Error, Sample, execute};
 use maestro_app::SettingsManager;
+use serde_json::{Value, json};
 
 /// An omitted image-blocking preference leaves images enabled.
 #[test]
@@ -69,7 +71,7 @@ async fn read(sample: Sample, path: &str, bytes: &[u8]) -> Result<Value, Error> 
 #[test]
 fn read_tools_keep_images_when_model_image_blocking_is_enabled() -> Result<(), Error> {
     use base64::Engine as _;
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let png = base64::engine::general_purpose::STANDARD.decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==")?;
         let result = read(sample, "image.png", &png).await?;
         assert!(
@@ -87,7 +89,7 @@ fn read_tools_keep_images_when_model_image_blocking_is_enabled() -> Result<(), E
 /// Ordinary text still comes from the same SDK-created read tool.
 #[test]
 fn read_tools_keep_text_when_model_image_blocking_is_enabled() -> Result<(), Error> {
-    support::execute(|sample| async move {
+    execute(|sample| async move {
         let result = read(sample, "hello.txt", b"Hello, world!").await?;
         assert_eq!(result["content"].as_array().unwrap().len(), 1);
         assert_eq!(result["content"][0]["type"], "text");
