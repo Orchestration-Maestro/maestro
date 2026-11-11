@@ -1034,8 +1034,8 @@ fn update_source_suggestion_preserves_settings() {
     assert_eq!(
         harness.stderr.text(),
         "error: maestro cannot self-update this installation.\n\
-         This installation is not managed by a global npm install. Update it with the \
-         package manager, wrapper, or source checkout that provides it.\n\
+         This installation is not managed by a global npm install. Update it through \
+         whichever package manager, source checkout or wrapper supplies it.\n\
          \nLocation of maestro executable: /opt/maestro/bin/maestro\n"
     );
     assert_eq!(harness.exit_code.get(), Some(1));

@@ -102,7 +102,7 @@ pub trait AutocompleteProvider {
         options: CompletionOptions<'a, Self::Signal>,
     ) -> Pin<Box<dyn Future<Output = Result<Option<AutocompleteSuggestions>, CompletionError>> + 'a>>;
 
-    /// Applies a chosen item in place of `prefix` and returns the new text and cursor.
+    /// Replaces `prefix` with the chosen item, then reports the new text and cursor.
     fn apply_completion(
         &self,
         lines: &[String],

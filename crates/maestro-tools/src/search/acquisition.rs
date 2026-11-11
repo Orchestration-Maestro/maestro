@@ -246,7 +246,8 @@ impl ToolsManager {
     ) -> Option<String> {
         let name = tool.config().name;
         if self.offline_mode_enabled() {
-            let line = format!("{name} not found. Offline mode enabled, skipping download.");
+            let line =
+                format!("{name} is missing. Offline mode is on, so the download is skipped.");
             say(&mut output, Tone::Yellow, &line);
             return None;
         }
@@ -492,11 +493,8 @@ fn locate(dir: &str, stem: &str, binary: &str) -> io::Result<PathBuf> {
     {
         return Ok(PathBuf::from(found));
     }
-    find_binary_recursively(Path::new(dir), binary)?.ok_or_else(|| {
-        io::Error::other(format!(
-            "Binary not found in archive: expected {binary} under {dir}"
-        ))
-    })
+    find_binary_recursively(Path::new(dir), binary)?
+        .ok_or_else(|| io::Error::other(format!("Archive does not hold {binary} under {dir}")))
 }
 
 /// The first regular file named `file_name` below `root`; each directory's entries are visited

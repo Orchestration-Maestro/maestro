@@ -1,6 +1,6 @@
 {
   "inMemory": {
-    "error": "Cannot export in-memory session to HTML"
+    "error": "HTML export needs a saved session; this one lives only in memory"
   },
   "returned": "$ROOT/exports/session.html",
   "dataKeys": [

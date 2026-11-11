@@ -21,7 +21,7 @@ port! {
         fn columns() -> u32;
         /// Height in rows.
         fn rows() -> u32;
-        /// Whether the Kitty keyboard protocol is active.
+        /// Whether Kitty keyboard protocol mode is on.
         fn kitty_protocol_active() -> bool;
         /// Moves the cursor up for negative and down for positive `lines`.
         fn move_by(lines: i64) -> ();

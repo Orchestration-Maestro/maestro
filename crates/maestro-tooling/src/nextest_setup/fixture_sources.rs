@@ -16,7 +16,7 @@ use sha2::{Digest, Sha256};
 
 use super::export;
 use crate::copy_assets::copy_tree;
-use crate::test_setup::hex;
+use crate::test_setup::{at, hex};
 use crate::toolchain;
 
 /// Compile and prune the registry units of the cold browser bootstrap.
@@ -88,9 +88,9 @@ fn prepare(cargo: &Path, checkout: &Path, scope: Scope) -> io::Result<PathBuf> {
     let config = directory.join("config.toml");
     if !config.is_file() {
         if directory.exists() {
-            std::fs::remove_dir_all(&directory)?;
+            std::fs::remove_dir_all(&directory).map_err(|error| at(&directory, error))?;
         }
-        std::fs::create_dir_all(&directory)?;
+        std::fs::create_dir_all(&directory).map_err(|error| at(&directory, error))?;
         vendor(cargo, checkout, &directory, scope)?;
     }
     if matches!(scope, Scope::Workspace) {
@@ -121,7 +121,9 @@ fn key(checkout: &Path, scope: Scope) -> io::Result<String> {
     for input in inputs {
         hash.update(input.as_os_str().as_encoded_bytes());
         hash.update([0]);
-        hash.update(Sha256::digest(std::fs::read(input)?));
+        hash.update(Sha256::digest(
+            std::fs::read(&input).map_err(|error| at(&input, error))?,
+        ));
     }
     Ok(hex(&hash.finalize()))
 }
@@ -130,8 +132,12 @@ fn key(checkout: &Path, scope: Scope) -> io::Result<String> {
 /// members are separate.
 fn member_manifests(checkout: &Path) -> io::Result<Vec<PathBuf>> {
     let mut manifests = Vec::new();
-    for entry in std::fs::read_dir(checkout.join("crates"))? {
-        let manifest = entry?.path().join("Cargo.toml");
+    let crates = checkout.join("crates");
+    for entry in std::fs::read_dir(&crates).map_err(|error| at(&crates, error))? {
+        let manifest = entry
+            .map_err(|error| at(&crates, error))?
+            .path()
+            .join("Cargo.toml");
         if manifest.is_file() {
             manifests.push(manifest);
         }
@@ -148,7 +154,8 @@ fn vendor(cargo: &Path, checkout: &Path, directory: &Path, scope: Scope) -> io::
         Scope::Fixtures => {
             let closure = directory.join("closure");
             copy_tree(&fixtures.join("registry_sources"), &closure)?;
-            std::fs::copy(checkout.join("Cargo.lock"), closure.join("Cargo.lock"))?;
+            let lock = closure.join("Cargo.lock");
+            std::fs::copy(checkout.join("Cargo.lock"), &lock).map_err(|error| at(&lock, error))?;
             closure.join("Cargo.toml")
         }
         Scope::Workspace => {
@@ -162,7 +169,8 @@ fn vendor(cargo: &Path, checkout: &Path, directory: &Path, scope: Scope) -> io::
         .arg("--sync")
         .arg(fixtures.join("browser_author/Cargo.toml"))
         .arg(directory.join("vendor"))
-        .output()?;
+        .output()
+        .map_err(|error| at(cargo, format!("cannot run cargo vendor: {error}")))?;
     if !vendored.status.success() {
         eprint!("{}", String::from_utf8_lossy(&vendored.stderr));
         return Err(io::Error::other(format!(
@@ -172,5 +180,6 @@ fn vendor(cargo: &Path, checkout: &Path, directory: &Path, scope: Scope) -> io::
     }
     let mut source = vendored.stdout;
     source.extend_from_slice(b"\n[net]\noffline = true\n");
-    std::fs::write(directory.join("config.toml"), source)
+    let config = directory.join("config.toml");
+    std::fs::write(&config, source).map_err(|error| at(&config, error))
 }

@@ -6,13 +6,13 @@
         "expected": {
           "name": "edit",
           "label": "edit",
-          "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
-          "promptSnippet": "Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
+          "description": "Edit one file by replacing exact text. Each edits[].oldText must match exactly one region of the original file, and no two regions may overlap. Changes within one block or on adjacent lines belong in a single edit, not in overlapping edits. Never pad an edit with large unchanged regions just to join distant changes.",
+          "promptSnippet": "Replace exact text in a file, including several disjoint edits in one call",
           "promptGuidelines": [
-            "Use edit for precise changes (edits[].oldText must match exactly)",
-            "When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
-            "Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
-            "Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions."
+            "Edit suits precise changes, and every edits[].oldText has to match the file exactly",
+            "To change several separate places in one file, make a single edit call with one edits[] entry per place rather than several edit calls",
+            "Each edits[].oldText is looked up in the original file, not in what earlier edits leave behind. Never emit overlapping or nested edits; fold nearby changes into one edit.",
+            "Make edits[].oldText as short as it can be while still occurring once in the file. Never pad it with large unchanged regions."
           ],
           "parameters": {
             "type": "object",
@@ -23,7 +23,7 @@
             "properties": {
               "path": {
                 "type": "string",
-                "description": "Path to the file to edit (relative or absolute)"
+                "description": "File to edit, as a relative or absolute path"
               },
               "edits": {
                 "type": "array",
@@ -36,16 +36,16 @@
                   "properties": {
                     "oldText": {
                       "type": "string",
-                      "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      "description": "Exact text that one targeted edit replaces. It must occur once in the original file and must not overlap any other edits[].oldText in the same call."
                     },
                     "newText": {
                       "type": "string",
-                      "description": "Replacement text for this targeted edit."
+                      "description": "Text that takes the place of oldText in this edit."
                     }
                   },
                   "additionalProperties": false
                 },
-                "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+                "description": "One or more targeted replacements. Every edit is located in the original file, never in the output of an earlier edit. Overlapping or nested edits are rejected. Changes within one block or on adjacent lines go into a single edit."
               }
             },
             "additionalProperties": false
@@ -1395,7 +1395,7 @@
           "ok": false,
           "bytes": [104, 101, 108, 108, 111],
           "errorContains": [
-            "Could not find the exact text"
+            "No exact match for the text"
           ]
         }
       },
@@ -1428,7 +1428,7 @@
           "ok": false,
           "bytes": [104, 101, 108, 108, 111, 10, 119, 111, 114, 108, 100, 10],
           "errorContains": [
-            "edits must contain"
+            "edits needs at least one entry"
           ]
         }
       },
@@ -1476,7 +1476,7 @@
           "ok": false,
           "bytes": [97, 108, 112, 104, 97, 10, 98, 101, 116, 97, 10, 103, 97, 109, 109, 97, 10],
           "errorContains": [
-            "Could not find edits[1]"
+            "No exact match for edits[1]"
           ]
         }
       },
@@ -1627,7 +1627,7 @@
           "ok": false,
           "bytes": [99, 111, 109, 112, 108, 101, 116, 101, 108, 121, 32, 100, 105, 102, 102, 101, 114, 101, 110, 116, 32, 99, 111, 110, 116, 101, 110, 116, 10],
           "errorContains": [
-            "Could not find the exact text"
+            "No exact match for the text"
           ]
         }
       },
@@ -1688,7 +1688,7 @@
           "ok": false,
           "bytes": [97, 98, 99, 32, 97, 98, 99],
           "errorContains": [
-            "Could not find edits[0]"
+            "No exact match for edits[0]"
           ]
         }
       }

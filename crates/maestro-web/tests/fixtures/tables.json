@@ -577,8 +577,8 @@
       "expected": "Proxy URL"
     },
     {
-      "key": "Format: point each request at the proxy as <proxy-url>/?url=<target-url>",
-      "expected": "Format: point each request at the proxy as <proxy-url>/?url=<target-url>"
+      "key": "Format: the proxy must accept <proxy-url>/?url=<target-url>",
+      "expected": "Format: the proxy must accept <proxy-url>/?url=<target-url>"
     },
     {
       "key": "Settings stay in this browser",
@@ -817,8 +817,8 @@
       "expected": "more"
     },
     {
-      "key": "Manual provider types gain models after saving.",
-      "expected": "Manual provider types gain models after saving."
+      "key": "Add models to a manual provider after you save it.",
+      "expected": "Add models to a manual provider after you save it."
     },
     {
       "key": "Fill in every required field",
@@ -1080,7 +1080,7 @@
     },
     {
       "key": "Open it on your computer with the download button above.",
-      "expected": "Die Download-Schaltfläche oben legt die Datei auf Ihrem Rechner ab."
+      "expected": "Öffnen Sie die Datei auf Ihrem Rechner mit der Download-Schaltfläche oben."
     },
     {
       "key": "No content available",
@@ -1196,7 +1196,7 @@
     },
     {
       "key": "Please enter your auth token.",
-      "expected": "Auth-Token hier eintragen"
+      "expected": "Bitte geben Sie Ihr Auth-Token ein."
     },
     {
       "key": "The proxy transport needs an auth token",
@@ -1427,8 +1427,8 @@
       "expected": "Proxy-URL"
     },
     {
-      "key": "Format: point each request at the proxy as <proxy-url>/?url=<target-url>",
-      "expected": "Format: der Proxy nimmt Anfragen so an: <proxy-url>/?url=<ziel-url>"
+      "key": "Format: the proxy must accept <proxy-url>/?url=<target-url>",
+      "expected": "Format: Der Proxy muss <proxy-url>/?url=<ziel-url> akzeptieren"
     },
     {
       "key": "Settings stay in this browser",
@@ -1444,7 +1444,7 @@
     },
     {
       "key": "Enter your API key for {provider}",
-      "expected": "API-Schlüssel für {provider}: hier eintragen"
+      "expected": "Geben Sie Ihren API-Schlüssel für {provider} ein"
     },
     {
       "key": "Lets a browser app call LLM providers past CORS limits. Needed with Z-AI and Anthropic OAuth tokens.",
@@ -1476,7 +1476,7 @@
     },
     {
       "key": "This app keeps your conversations only with persistent storage",
-      "expected": "Diese App behält Ihre Gespräche nur mit dauerhaftem Speicher."
+      "expected": "Diese App behält Ihre Gespräche nur mit dauerhaftem Speicher"
     },
     {
       "key": "Why is this needed?",
@@ -1484,7 +1484,7 @@
     },
     {
       "key": "Without persistent storage, the browser can drop saved conversations when disk space runs short. Granting the permission keeps your chat history.",
-      "expected": "Ohne dauerhaften Speicher verwirft der Browser gespeicherte Gespräche, sobald der Platz knapp wird. Mit der Berechtigung bleibt Ihr Chatverlauf erhalten."
+      "expected": "Ohne dauerhaften Speicher kann der Browser gespeicherte Gespräche verwerfen, wenn der Platz knapp wird. Mit der Berechtigung bleibt Ihr Chatverlauf erhalten."
     },
     {
       "key": "What this means:",
@@ -1667,8 +1667,8 @@
       "expected": "mehr"
     },
     {
-      "key": "Manual provider types gain models after saving.",
-      "expected": "Manuelle Anbietertypen erhalten Modelle nach dem Speichern."
+      "key": "Add models to a manual provider after you save it.",
+      "expected": "Fügen Sie einem manuellen Anbieter nach dem Speichern Modelle hinzu."
     },
     {
       "key": "Fill in every required field",

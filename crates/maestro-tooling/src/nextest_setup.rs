@@ -11,7 +11,7 @@ use std::process::ExitCode;
 use maestro_path::normalize_native;
 
 use super::argument;
-use crate::test_setup::{MANIFEST, cargo_checks, executable, native_fixture};
+use crate::test_setup::{MANIFEST, at, cargo_checks, executable, native_fixture};
 use crate::workspace::Workspace;
 
 /// The bundle directory a run reads when it names none.
@@ -129,10 +129,13 @@ pub fn export(entry: &OsStr) -> io::Result<()> {
     let Some(file) = std::env::var_os("NEXTEST_ENV") else {
         return Ok(());
     };
+    let path = PathBuf::from(file);
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open(file)?;
-    file.write_all(entry.as_encoded_bytes())?;
-    file.write_all(b"\n")
+        .open(&path)
+        .map_err(|error| at(&path, error))?;
+    file.write_all(entry.as_encoded_bytes())
+        .and_then(|()| file.write_all(b"\n"))
+        .map_err(|error| at(&path, error))
 }

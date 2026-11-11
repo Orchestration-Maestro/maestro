@@ -236,9 +236,9 @@ pub(super) fn serialize_raw_conversation(messages: &[Value]) -> Result<String, s
     )
 }
 /// System instruction shared by history and prefix requests.
-pub const SUMMARIZATION_SYSTEM_PROMPT: &str = r"You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.
+pub const SUMMARIZATION_SYSTEM_PROMPT: &str = r"You summarize coding sessions. Read the exchange between a person and an AI coding assistant, then write a structured summary in exactly the format you are given.
 
-Do NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.";
+Do NOT carry on the conversation. Do NOT answer any question it contains. Output ONLY the structured summary.";
 
 /// Carry built-in summary file arrays independently, ignoring hook-generated details.
 pub(super) fn carry_file_ops(

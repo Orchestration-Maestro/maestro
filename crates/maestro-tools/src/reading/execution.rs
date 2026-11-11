@@ -13,10 +13,10 @@ use maestro_models::{
 use std::sync::Arc;
 
 /// Sent in place of an image that cannot be fitted.
-const OMITTED: &str = "[Image omitted: could not be resized below the inline image size limit.]";
+const OMITTED: &str = "[Image omitted: it could not be shrunk under the inline image size limit.]";
 /// Sent beside an image when the active model cannot accept images.
 const NON_VISION: &str =
-    "[Current model does not support images. The image will be omitted from this request.]";
+    "[The active model cannot take images, so this request leaves the image out.]";
 
 /// Build the result for an image: header, optional notes and the attachment.
 ///

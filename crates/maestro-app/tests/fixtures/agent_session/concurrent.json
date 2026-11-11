@@ -5,7 +5,7 @@
       "pending": 0,
       "steering": [],
       "follow_up": [],
-      "error": "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message."
+      "error": "The agent is still processing. To queue the message, pass streamingBehavior as 'steer' or 'followUp'."
     },
     "after": {
       "streaming": false,

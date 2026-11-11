@@ -951,7 +951,7 @@ fn projected_renderers_resolve_the_live_theme_per_invocation() {
         let error = call(None, &unpublished, &row).err().unwrap();
         assert_eq!(
             error.message,
-            "Theme not initialized. Call initTheme() first."
+            "Theme not initialized. Call init_theme() first."
         );
         let prepared = result.prepare(raw(None)).unwrap();
         assert_eq!(
@@ -960,7 +960,7 @@ fn projected_renderers_resolve_the_live_theme_per_invocation() {
                 .err()
                 .unwrap()
                 .message,
-            "Theme not initialized. Call initTheme() first."
+            "Theme not initialized. Call init_theme() first."
         );
         state
             .set_theme_instance(Rc::new(

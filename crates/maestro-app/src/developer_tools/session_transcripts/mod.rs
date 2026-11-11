@@ -304,7 +304,7 @@ async fn analyze(
             paint(
                 streams.painting,
                 Tone::Warning,
-                "No summary files created. Nothing to aggregate."
+                "No summary file was written, so there is nothing to combine."
             )
         )?;
         return Ok(ExitCode::SUCCESS);
@@ -333,7 +333,7 @@ async fn analyze_one(
     )?;
     let lines = content.split('\n').count();
     let full = format!(
-        "{prompt}\n\nThe file {path} has {lines} lines. Read it in full using chunked reads, then write your analysis to {summary_path}"
+        "{prompt}\n\nThe file {path} has {lines} lines. Read all of it in chunks, then write your analysis to {summary_path}"
     );
     let success = analysis::run(
         &full,
@@ -351,7 +351,7 @@ async fn analyze_one(
             paint(streams.painting, Tone::Done, &line)
         )?;
     } else if success {
-        let line = format!("Agent finished but did not write {summary}");
+        let line = format!("The agent finished without writing {summary}");
         writeln!(
             streams.stderr,
             "{}",
@@ -410,7 +410,7 @@ async fn aggregate(
             paint(streams.painting, Tone::Done, &line)
         )?;
     } else if success {
-        let line = "Agent finished but did not write final summary";
+        let line = "The agent finished without writing the final summary";
         writeln!(
             streams.stderr,
             "{}",

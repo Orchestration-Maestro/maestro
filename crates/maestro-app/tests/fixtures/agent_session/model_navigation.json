@@ -134,7 +134,7 @@
       "cancelled": false,
       "aborted": false,
       "editor_text": "What is 2+2?",
-      "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nBranch summary"
+      "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nBranch summary"
     },
     "type": "branch_summary",
     "parent_matches": true,
@@ -145,7 +145,7 @@
       "cancelled": false,
       "aborted": false,
       "editor_text": "Message two",
-      "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nBranch summary"
+      "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nBranch summary"
     },
     "type": "branch_summary",
     "parent_matches": true,
@@ -160,7 +160,7 @@
       "cancelled": false,
       "aborted": false,
       "editor_text": null,
-      "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nBranch summary"
+      "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nBranch summary"
     },
     "type": "branch_summary",
     "parent_matches": true,
@@ -197,7 +197,7 @@
       "cancelled": false,
       "aborted": false,
       "editor_text": "What is TypeScript?",
-      "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nBranch summary MONKEY MONKEY MONKEY"
+      "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nBranch summary MONKEY MONKEY MONKEY"
     },
     "request_contains_instructions": true,
     "request_uses_additional_focus": true
@@ -207,7 +207,7 @@
       "cancelled": false,
       "aborted": false,
       "editor_text": "Main branch continue",
-      "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nBranch summary"
+      "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nBranch summary"
     },
     "request_contains_abandoned_branch": true
   },

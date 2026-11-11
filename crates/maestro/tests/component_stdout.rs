@@ -12,7 +12,7 @@ use std::{io::Read, rc::Rc};
 
 #[path = "../../maestro-tui-crossterm/tests/support/mod.rs"]
 #[allow(dead_code, reason = "Shared terminal descriptor fixture.")]
-mod terminal_support;
+pub(crate) mod terminal_support;
 
 /// Captures bytes without assuming text or an atomic descriptor write.
 fn capture(output: terminal_support::Capture, count: usize) -> std::thread::JoinHandle<Vec<u8>> {

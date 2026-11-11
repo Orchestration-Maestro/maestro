@@ -27,7 +27,7 @@ pub struct ReadToolInput {
     pub path: String,
     /// One-based line to start from.
     pub offset: Option<f64>,
-    /// Maximum number of lines to read.
+    /// Upper bound on the lines returned.
     pub limit: Option<f64>,
 }
 
@@ -93,7 +93,7 @@ pub fn create_read_tool_definition<C: ReadContext + 'static $($bound)*>(
         auto_resize,
     });
     let description = format!(
-        "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to {DEFAULT_MAX_LINES} lines or {}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "Read a file. Reads text files, plus images in jpg, png, gif or webp format that come back as attachments. Text output is cut at {DEFAULT_MAX_LINES} lines or {}KB, whichever limit is reached first. For large files, page through with offset and limit. When you need the whole file, keep continuing with offset until it is complete.",
         DEFAULT_MAX_BYTES / 1024
     );
     ToolDefinition {
@@ -104,16 +104,16 @@ pub fn create_read_tool_definition<C: ReadContext + 'static $($bound)*>(
                 "type": "object",
                 "required": ["path"],
                 "properties": {
-                    "path": {"type": "string", "description": "Path to the file to read (relative or absolute)"},
-                    "offset": {"type": "number", "description": "Line number to start reading from (1-indexed)"},
-                    "limit": {"type": "number", "description": "Maximum number of lines to read"},
+                    "path": {"type": "string", "description": "File to read, as a relative or absolute path"},
+                    "offset": {"type": "number", "description": "First line to read, counting from 1"},
+                    "limit": {"type": "number", "description": "Upper bound on the lines returned"},
                 },
             }), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/offset".to_owned(), maestro_models::SchemaKind::Number), ("/properties/limit".to_owned(), maestro_models::SchemaKind::Number)]),
         },
         label: "read".into(),
         prompt_snippet: Some("Read file contents".into()),
         prompt_guidelines: Some(vec![
-            "Use read to examine files instead of cat or sed.".into(),
+            "Inspect files with read, not cat or sed.".into(),
         ]),
         render_shell: None,
         prepare_arguments: None,

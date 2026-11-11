@@ -527,7 +527,7 @@ fn analysis_stream_keeps_text_tool_and_turn_branches() {
             assert!(plain.succeeded(), "{plain:?}");
             assert_eq!(
                 plain.stderr,
-                "controlled stderr\ncontrolled stderr\nAgent finished but did not write final summary\n"
+                "controlled stderr\ncontrolled stderr\nThe agent finished without writing the final summary\n"
             );
             let expected = "  thinking now\n  [read] literal file offset=1 limit=1000\n  tail\n  [write] out\n  [custom] \n  [read] literal file\n  turn tail\n";
             assert_eq!(plain.stdout.matches(expected).count(), 2);
@@ -585,7 +585,7 @@ fn analysis_runs_each_file_before_aggregation() {
             assert_eq!(
                 run.stderr,
                 format!(
-                    "{}Agent finished but did not write final summary\n",
+                    "{}The agent finished without writing the final summary\n",
                     "controlled stderr\n".repeat(3)
                 )
             );
@@ -661,14 +661,15 @@ fn two_files_with_summaries(base: &str) -> (String, String) {
     (project, output)
 }
 
-/// Install a `maestro` child that waits on `permit`, prints one text event and the end of its
-/// turn, then records `ended` on `ends`.
+/// Install a `maestro` child that records `ready` on `log` when it starts, waits on `permit`,
+/// prints one text event and the end of its turn, then records `ended` on `log`.
 ///
-/// Every child records on the one FIFO, so its contents are the order in which children end.
+/// Every child records on the one FIFO, so its contents are the order in which children start
+/// and end.
 #[cfg(unix)]
 fn held_child(
     base: &str,
-    ends: &maestro_test_process::gate::Gate,
+    log: &maestro_test_process::gate::Gate,
     permit: &maestro_test_process::gate::Gate,
 ) {
     let events = format!(
@@ -681,12 +682,12 @@ fn held_child(
         "maestro",
         &serde_json::json!({
             "scenario": "hold",
-            "ready": null,
+            "ready": log.path(),
             "permit": permit.path(),
             "stdout": events.as_bytes(),
             "stderr": [],
             "append": {
-                "path": ends.path(),
+                "path": log.path(),
                 "cwd": false,
                 "variable": null,
                 "bytes": b"ended",
@@ -695,13 +696,19 @@ fn held_child(
     );
 }
 
+/// Assert the next five bytes any child recorded on `log` are `marker`.
+#[cfg(unix)]
+fn next_marker(log: &maestro_test_process::gate::Gate, marker: [u8; 5]) {
+    assert_eq!(log.take(5).expect("a child records"), marker);
+}
+
 #[cfg(unix)]
 #[test]
-fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
+fn analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_last() {
     use maestro_test_process::gate::Gate;
     let path = "$BASE/bin";
     with_environment(
-        "analysis_children_end_in_file_order_with_the_aggregating_child_last",
+        "analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_last",
         &[("PATH", path)],
         |base| {
             let (project, output) = two_files_with_summaries(base);
@@ -709,9 +716,9 @@ fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
                 // The gates and the receiver belong to this closure, so a failed assertion
                 // releases every child and the command's blocked print.
                 let (sender, lines) = std::sync::mpsc::sync_channel(0);
-                let ends = Gate::new(&Path::new(base).join("ends")).expect("the ends gate");
+                let log = Gate::new(&Path::new(base).join("log")).expect("the log gate");
                 let permit = Gate::new(&Path::new(base).join("permit")).expect("the permit gate");
-                held_child(base, &ends, &permit);
+                held_child(base, &log, &permit);
                 let arguments = ["--analyze", "--output", &output, &project].map(str::to_owned);
                 let command = scope.spawn(move || {
                     let mut stdout = Lines {
@@ -725,16 +732,22 @@ fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
                         &mut Vec::new(),
                     ))
                 });
-                // Each release lets exactly one child finish, so the end markers arrive in the
-                // order the run completes its children. The child's own output is printed only
+                // Each release lets exactly one child finish, so the markers arrive in the
+                // order the run starts and completes its children. A child is held from its
+                // start marker until its release, and the next one starts only after its end
+                // marker: a run that starts every child at once usually writes a second start
+                // marker before the first end marker. No signal orders a late child's start
+                // marker ahead of the first end, so that run can still pass; only a launcher
+                // seam would make the check exact. The child's own output is printed only
                 // after its end, and the next header only after that output.
-                let ended = || {
-                    assert_eq!(ends.take(5).expect("a child ends"), b"ended");
-                };
+                let started = || next_marker(&log, *b"ready");
+                let ended = || next_marker(&log, *b"ended");
                 printed_through(&lines, "Analyzing session-transcripts-000.txt");
+                started();
                 permit.release().expect("the first child is released");
                 ended();
                 let second = printed_through(&lines, "Analyzing session-transcripts-001.txt");
+                started();
                 assert!(second.contains(&"  first".to_owned()), "{second:?}");
                 assert!(
                     second.contains(&"  -> session-transcripts-000.summary.txt".to_owned()),
@@ -743,6 +756,7 @@ fn analysis_children_end_in_file_order_with_the_aggregating_child_last() {
                 permit.release().expect("the second child is released");
                 ended();
                 let third = printed_through(&lines, "Aggregating findings");
+                started();
                 assert!(
                     third.contains(&"  -> session-transcripts-001.summary.txt".to_owned()),
                     "{third:?}"
@@ -774,25 +788,25 @@ fn assert_prompt_paths(receipt: &str, agents: &str, output: &str, summaries: &[S
     let prompt = &arguments[0][5];
     assert!(
         prompt.contains(&format!(
-            "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
+            "STEP 1: Open the existing AGENTS.md file(s) to learn which patterns they already hold:\n{agents}\n\nSTEP 2: HOW TO READ THE TRANSCRIPT:"
         )),
         "{prompt:?}"
     );
-    assert!(prompt.contains(
-        "Only after reading the ENTIRE file, perform the analysis and write the summary"
-    ));
-    assert!(prompt.contains("- Do not include any other text outside this format"));
+    assert!(
+        prompt.contains("Analyze and write the summary only once the ENTIRE file has been read")
+    );
+    assert!(prompt.contains("- Add no text outside this format"));
     assert!(prompt.contains(&format!(
         "The file {output}/session-transcripts-000.txt has "
     )));
     assert!(prompt.contains(&format!(
-        "lines. Read it in full using chunked reads, then write your analysis to {}",
+        "lines. Read all of it in chunks, then write your analysis to {}",
         summaries[0]
     )));
     let aggregation = &arguments[1][5];
     assert!(
         aggregation.contains(&format!(
-            "STEP 1: Read the existing AGENTS.md file(s) to understand what patterns are already encoded:\n{agents}\n\nSTEP 2: Read ALL of the following summary files:\n{}\n\n",
+            "STEP 1: Open the existing AGENTS.md file(s) to learn which patterns they already hold:\n{agents}\n\nSTEP 2: Read EVERY summary file listed here:\n{}\n\n",
             summaries.join("\n")
         )),
         "{aggregation:?}"
@@ -934,14 +948,14 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
             assert!(unwritten.succeeded(), "{unwritten:?}");
             assert!(
                 unwritten.stderr.contains(
-                    "Agent finished but did not write session-transcripts-000.summary.txt"
+                    "The agent finished without writing session-transcripts-000.summary.txt"
                 ),
                 "{unwritten:?}"
             );
             assert!(
                 unwritten
                     .stdout
-                    .contains("No summary files created. Nothing to aggregate."),
+                    .contains("No summary file was written, so there is nothing to combine."),
                 "{unwritten:?}"
             );
         },
@@ -979,11 +993,11 @@ fn analysis_aggregates_existing_summary_files() {
             let prompt = invocations(&receipt)
                 .into_iter()
                 .filter_map(|arguments| arguments.into_iter().nth(5))
-                .find(|prompt| prompt.contains("You are aggregating"))
+                .find(|prompt| prompt.contains("You are combining"))
                 .expect("the aggregation prompt is recorded");
             assert!(
                 prompt.contains(&format!(
-                    "STEP 2: Read ALL of the following summary files:\n{output}/session-transcripts-000.summary.txt\n{output}/stale.summary.txt"
+                    "STEP 2: Read EVERY summary file listed here:\n{output}/session-transcripts-000.summary.txt\n{output}/stale.summary.txt"
                 )),
                 "{prompt:?}"
             );

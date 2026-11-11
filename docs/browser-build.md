@@ -3,9 +3,12 @@
 Run `mise install` and `rustup target add wasm32-unknown-unknown`, then:
 
 ```sh
-mise exec -- just browser-build
-mise exec -- just browser-example-preview --port 9000
+just browser-build
+just browser-example-preview --port 9000
 ```
+
+Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
+and the pinned author tools are on `PATH`.
 
 This builds a real editable WebAssembly **author fixture**, not a shipped browser
 application or installable package. The standalone Cargo package is under
@@ -37,7 +40,7 @@ Native tool diagnostics and failures propagate through the recipes.
 Build, check and watch recipes accept positional `pack` and `mode` inputs:
 
 ```sh
-mise exec -- just browser-example-dev assets/brand/brand.json light --port 9000
+just browser-example-dev assets/brand/brand.json light --port 9000
 ```
 
 Defaults select the checkout's brand pack and dark appearance. Supply both

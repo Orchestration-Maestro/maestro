@@ -58,7 +58,7 @@ pub fn format_missing_session_cwd_error(issue: &SessionCwdIssue) -> String {
         .filter(|file| !file.is_empty())
         .map_or_else(String::new, |file| format!("\nSession file: {file}"));
     format!(
-        "Stored session working directory does not exist: {}{file}\nCurrent working directory: {}",
+        "The working directory saved in this session is missing: {}{file}\nCurrent working directory: {}",
         issue.session_cwd, issue.fallback_cwd
     )
 }
@@ -67,7 +67,7 @@ pub fn format_missing_session_cwd_error(issue: &SessionCwdIssue) -> String {
 #[must_use]
 pub fn format_missing_session_cwd_prompt(issue: &SessionCwdIssue) -> String {
     format!(
-        "cwd from session file does not exist\n{}\n\ncontinue in current cwd\n{}",
+        "The cwd saved in the session file is missing\n{}\n\nContinue in the current cwd\n{}",
         issue.session_cwd, issue.fallback_cwd
     )
 }

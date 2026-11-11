@@ -49,10 +49,10 @@
     "name": "queuing a registered command is refused",
     "results": [
       {
-        "error": "Extension command \"/hello\" cannot be queued. Use prompt() or execute the command when not streaming."
+        "error": "Command \"/hello\" comes from an extension and cannot be queued. Call prompt(), or run the command when nothing is streaming."
       },
       {
-        "error": "Extension command \"/hello\" cannot be queued. Use prompt() or execute the command when not streaming."
+        "error": "Command \"/hello\" comes from an extension and cannot be queued. Call prompt(), or run the command when nothing is streaming."
       }
     ],
     "queue": {

@@ -2,7 +2,8 @@
 //!
 //! Nextest supplies its active artifact directory in the platform library search path. A run
 //! from a prepared bundle installs the bundle's example there; any other run uses the test
-//! build's own example, or builds one.
+//! build's own example, or builds one, and hands it the components and compiled code an earlier
+//! bundle in `TEST_PREPARE_BASE` supplies.
 //!
 //! On every platform the example warms compiled code in a cache that only this run uses: it
 //! sits below an agent directory the run owns, and the run's tests inherit that directory
@@ -19,7 +20,7 @@ use super::normalize::{self, Outcome, archive_signalled};
 use super::{export, prepared_bundle};
 use crate::example_files::EXAMPLE_PACKAGE;
 use crate::exit_code;
-use crate::test_setup::{self, EXAMPLE, example_arguments, executable_name};
+use crate::test_setup::{self, EXAMPLE, at, example_arguments, executable_name};
 use crate::workspace::{FIXTURES, Workspace};
 
 /// Prepare the components with a staged or built example and run it, then export the agent
@@ -48,9 +49,9 @@ pub(super) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     Ok(status)
 }
 
-/// Install the bundle's example, give the executables one time and run the example on the
-/// bundle's components. The staged example is as new as the archive's executables, so it is
-/// never outdated.
+/// Install the bundle's example, give the executables one time, install the compiled code for
+/// that time and run the example on the bundle's components. The staged example is as new as
+/// the archive's executables, so it is never outdated.
 fn run_prepared(
     cargo: &Path,
     checkout: &Path,
@@ -59,18 +60,24 @@ fn run_prepared(
     agent_directory: &Path,
 ) -> io::Result<ExitCode> {
     let environment = environment_file()?;
-    test_setup::install_bundle(cargo, checkout, bundle, directory, &environment)?;
+    let compiled = test_setup::install_bundle(cargo, checkout, bundle, directory, &environment)?;
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
-        return Ok(ExitCode::from(3));
+        return Ok(ExitCode::from(normalize::EXAMPLE_OUTDATED));
+    }
+    // The engine names the cache namespace for the example's time, which normalization just set.
+    if let Some(compiled) = compiled {
+        compiled.install()?;
     }
     let example = directory.join("examples").join(executable_name());
-    let mut command = Command::new(example);
+    let mut command = Command::new(&example);
     command.env(test_setup::AGENT_DIRECTORY, agent_directory);
     for (variable, _, _) in crate::search_tools::PROGRAMS {
         command.env_remove(variable);
     }
     // The example takes the prepared components from its environment, so it only warms.
-    for line in std::fs::read_to_string(&environment)?.lines() {
+    let prepared =
+        std::fs::read_to_string(&environment).map_err(|error| at(&environment, error))?;
+    for line in prepared.lines() {
         if let Some((name, value)) = line.split_once('=') {
             command.env(name, value);
         }
@@ -79,7 +86,8 @@ fn run_prepared(
     command
         .args(example_arguments(&workspace)?)
         .arg("--prepared");
-    Ok(exit_code(command.current_dir(checkout).status()?))
+    let status = command.current_dir(checkout).status();
+    Ok(exit_code(status.map_err(|error| at(&example, error))?))
 }
 
 /// Run the test build's example while it is newer than its sources, else prepare one first.
@@ -114,14 +122,19 @@ fn run_local(
 }
 
 /// Run the setup example in the checkout with this process's environment and `agent_directory` as
-/// its agent directory, and the workspace it prepares as its arguments.
+/// its agent directory, the workspace it prepares as its arguments and the components an earlier
+/// bundle supplies.
 fn start(workspace: &Workspace, example: &Path, agent_directory: &Path) -> io::Result<ExitCode> {
     let mut command = Command::new(example);
     command
         .current_dir(workspace.root())
         .args(example_arguments(workspace)?)
         .env(test_setup::AGENT_DIRECTORY, agent_directory);
-    Ok(exit_code(command.status()?))
+    // The example's time is final here, so seeded code lands in the namespace the tests read.
+    test_setup::supply_base(&mut command, workspace, example, agent_directory)?;
+    Ok(exit_code(
+        command.status().map_err(|error| at(example, error))?,
+    ))
 }
 
 /// The setup example the test build left in `directory`, if any.

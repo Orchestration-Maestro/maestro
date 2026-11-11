@@ -261,7 +261,7 @@ fn clone_uses_current_leaf_at_position() {
         assert_eq!(
             client.ask(r#"{"id":"c","type":"clone"}"#).await,
             json!({"id": "c", "type": "response", "command": "clone", "success": false,
-                "error": "Cannot clone session: no current entry selected"})
+                "error": "Cannot clone the session: no entry is currently selected"})
         );
         user_entry(&runtime, "kept at the leaf");
         let leaf_messages = runtime.session().get_user_messages_for_forking().len();

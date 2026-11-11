@@ -1,4 +1,4 @@
-//! Model, thinking-level and queue-mode selection.
+//! Selection of the model, the thinking level and the queue mode.
 use super::{
     AgentSession, AgentSessionEvent, CycleDirection, ModelCycleResult, decisions::SelectionError,
     state::thrown,

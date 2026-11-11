@@ -672,7 +672,10 @@ fn dispose_invalidates_contexts_and_clears_listeners() {
         log_events(&h, "listener", &log);
         h.session.dispose();
         let stale = context.cwd().unwrap_err().to_string();
-        assert!(stale.starts_with("This extension ctx is stale"), "{stale}");
+        assert!(
+            stale.starts_with("This extension ctx went stale"),
+            "{stale}"
+        );
         h.session
             .agent()
             .prompt(maestro_agent::PromptInput::Text {

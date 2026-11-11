@@ -6,7 +6,8 @@
 //! manifest. The manifest records the inputs of each artifact on its own, so a change reaches
 //! only the artifacts that read it. The first earlier bundle in the path list
 //! `TEST_PREPARE_BASE` that fits supplies every component whose inputs are unchanged, and its
-//! compiled code, so only the rest are built.
+//! compiled code, so only the rest are built; a local run's `author-component` setup takes them
+//! from that list the same way.
 //! `install` stages this command alone, for runs without a bundle. The staged command's
 //! `author-component` setup validates the components and the example against the checkout,
 //! installs the example beside the extracted test executables and the compiled code in the
@@ -67,9 +68,11 @@ const TOOL_PACKAGES: [&str; 2] = [EXAMPLE_PACKAGE, "maestro-tooling"];
 const BROWSER_PACKAGES: [&str; 2] = [browser_graph::PACKAGE, "maestro-tooling"];
 /// The package whose cold browser bootstrap test starts from the staged seed.
 const SEED_PACKAGE: &str = "maestro-tooling";
+/// The workspace manifest, of which the components read only what a release build reads.
+const WORKSPACE_MANIFEST: &str = "Cargo.toml";
 /// What every artifact depends on besides the crates: the workspace manifest, the toolchain and
 /// the Cargo configuration.
-const SHARED_INPUTS: [&str; 3] = ["Cargo.toml", "rust-toolchain.toml", ".cargo"];
+const SHARED_INPUTS: [&str; 3] = [WORKSPACE_MANIFEST, "rust-toolchain.toml", ".cargo"];
 /// What the tool and the browser graph read besides the crates and the shared inputs: the locked
 /// dependencies and the assets.
 const LOCKED_INPUTS: [&str; 2] = ["Cargo.lock", "assets"];
@@ -236,6 +239,43 @@ fn read_base(checkout: &Path, shared: &Inputs) -> Option<Base> {
             .filter(|name| !name.as_os_str().is_empty())
             .find_map(|name| Base::read(&checkout.join(name), shared))
     })
+}
+
+/// Hand the setup example `command` runs every component that the first bundle in
+/// `TEST_PREPARE_BASE` prepared from the checkout's shared inputs supplies, and seed that
+/// bundle's compiled code for `example` in the cache below `agent_directory`, as preparation
+/// does. Without such a bundle the example builds every component.
+///
+/// # Errors
+/// Returns a workspace without one component crate, a failed listing, read or cache query, or a
+/// failed copy of the compiled code.
+pub(crate) fn supply_base(
+    command: &mut Command,
+    workspace: &Workspace,
+    example: &Path,
+    agent_directory: &Path,
+) -> io::Result<()> {
+    // Digesting the shared inputs reads every file they name, so a run without a base skips it.
+    if std::env::var_os(BASE).is_none() {
+        return Ok(());
+    }
+    let checkout = workspace.root();
+    let shared = plan::shared_inputs(checkout, workspace, &workspace.component_crate()?)?;
+    let Some(base) = read_base(checkout, &shared) else {
+        return Ok(());
+    };
+    let cache_directory = compiled_code::directory(
+        Command::new(example)
+            .current_dir(checkout)
+            .env(AGENT_DIRECTORY, agent_directory),
+    )?;
+    base.seed(&cache_directory, example)?;
+    command.envs(
+        base.supplied(checkout)?
+            .into_iter()
+            .map(|component| (component.variable, component.path)),
+    );
+    Ok(())
 }
 
 /// The file the setup example writes its component paths to.
@@ -424,9 +464,11 @@ pub(crate) fn run_agent_directory(directory: &Path) -> PathBuf {
     directory.parent().unwrap_or(directory).join(RUN_AGENT)
 }
 
-/// Validate the bundle in `output`, install its example in `directory` and its compiled code in
-/// that run's agent directory, and write the component paths to `environment`. Nothing is installed
-/// or written unless every check passes.
+/// Validate the bundle in `output`, install its example in `directory`, and write the component
+/// paths to `environment`. Nothing is installed or written unless every check passes.
+///
+/// The compiled code is returned rather than installed: the engine names its cache namespace for
+/// the example's modification time, which only the caller's time normalization settles.
 ///
 /// # Errors
 /// Returns a missing, stale or incomplete bundle, or a failed copy.
@@ -436,24 +478,12 @@ pub(crate) fn install_bundle(
     output: &Path,
     directory: &Path,
     environment: &Path,
-) -> io::Result<()> {
-    export(cargo, checkout, output, directory, environment)
-}
-
-/// Validate and install the bundle, and install its compiled code in the cache directory the
-/// installed example reports for this run's agent directory.
-fn export(
-    cargo: &Path,
-    checkout: &Path,
-    output: &Path,
-    directory: &Path,
-    environment: &Path,
-) -> io::Result<()> {
+) -> io::Result<Option<CompiledInstall>> {
     let output = maestro_realpath::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
     }
-    let manifest = read_manifest(&output)?;
+    let mut manifest = read_manifest(&output)?;
     manifest.shared.verify(checkout, &output)?;
     manifest.tool.verify(checkout, &output)?;
     let workspace = Workspace::read(cargo, checkout)?;
@@ -485,15 +515,47 @@ fn export(
     let installed = directory.join("examples").join(name);
     std::fs::create_dir_all(directory.join("examples"))?;
     copy(&staged, &installed)?;
-    if let Some(code) = &manifest.compiled {
+    std::fs::write(environment, lines.concat())?;
+    Ok(manifest.compiled.take().map(|code| CompiledInstall {
+        code,
+        staged: compiled,
+        example: installed,
+        checkout: checkout.to_path_buf(),
+        agent_directory: run_agent_directory(directory),
+    }))
+}
+
+/// The compiled code of a bundle whose setup example is installed, waiting for the example to
+/// reach its final modification time.
+pub(crate) struct CompiledInstall {
+    /// The staged compiled-code files and their namespace.
+    code: CompiledCode,
+    /// The directory that holds the staged files.
+    staged: PathBuf,
+    /// The installed setup example, whose modification time names the namespace.
+    example: PathBuf,
+    /// The checkout the example runs in.
+    checkout: PathBuf,
+    /// The agent directory of the run, below which the engine keeps its cache.
+    agent_directory: PathBuf,
+}
+
+impl CompiledInstall {
+    /// Install the code in the cache directory the example reports for the run's agent
+    /// directory, in the namespace named for the example's current modification time.
+    ///
+    /// # Errors
+    /// Returns a failed cache-directory query or copy.
+    pub(crate) fn install(&self) -> io::Result<()> {
         let cache_directory = compiled_code::directory(
-            Command::new(&installed)
-                .current_dir(checkout)
-                .env(AGENT_DIRECTORY, run_agent_directory(directory)),
+            Command::new(&self.example)
+                .current_dir(&self.checkout)
+                .env(AGENT_DIRECTORY, &self.agent_directory),
         )?;
-        code.install(&compiled, &cache_directory, &installed)?;
+        self.code
+            .install(&self.staged, &cache_directory, &self.example)
+            .map(drop)
     }
-    std::fs::write(environment, lines.concat())
 }
 
 /// Install the browser graph of the bundle in `output` at `target`.
@@ -587,6 +649,6 @@ pub(crate) fn remove_directory(path: &Path) -> io::Result<()> {
 }
 
 /// An error that names `path`, which the bare operating-system error omits.
-fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
+pub(crate) fn at(path: &Path, reason: impl std::fmt::Display) -> io::Error {
     io::Error::other(format!("{}: {reason}", path.display()))
 }

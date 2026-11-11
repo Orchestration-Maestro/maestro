@@ -839,7 +839,7 @@ fn fork_reuses_raw_loader_admission_and_exact_invalid_source_error() {
             .unwrap();
         assert_eq!(
             error.to_string(),
-            format!("Cannot fork: source session file is empty or invalid: {source}"),
+            format!("Cannot fork: the source session file has no valid entries: {source}"),
             "{name}"
         );
         assert!(!fs::exists(&target).unwrap(), "{name}");

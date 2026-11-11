@@ -219,10 +219,10 @@ fn vertical_padding_has_full_width() {
 
 #[test]
 fn long_first_line_truncates_before_padding() {
-    let text = "This is a very long piece of text that will definitely exceed the available width";
+    let text = "This is a very wide piece of text that is much wider than the given width";
     assert_eq!(
         render_text(text, 1, 0, 30),
-        [format!(" This is a very long piece{RESET}...{RESET} ")]
+        [format!(" This is a very wide piece{RESET}...{RESET} ")]
     );
 }
 
@@ -260,10 +260,10 @@ fn component_hides_later_source_lines() {
 
 #[test]
 fn long_multiline_text_only_truncates_first_line() {
-    let text = "This is a very long first line that needs truncation\nSecond line";
+    let text = "This is a very wide first row that needs shortening\nSecond line";
     assert_eq!(
         render_text(text, 1, 0, 25),
-        [format!(" This is a very long {RESET}...{RESET} ")]
+        [format!(" This is a very wide {RESET}...{RESET} ")]
     );
 }
 

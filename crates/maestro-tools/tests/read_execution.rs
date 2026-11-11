@@ -19,10 +19,10 @@ use std::sync::{
 /// A one-pixel PNG.
 const TINY_PNG: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==";
 /// The text the model sees when fitting fails.
-const OMITTED: &str = "Read image file [image/jpeg]\n[Image omitted: could not be resized below the inline image size limit.]";
+const OMITTED: &str = "Read image file [image/jpeg]\n[Image omitted: it could not be shrunk under the inline image size limit.]";
 /// The text the model sees beside images it cannot accept.
 const NON_VISION: &str =
-    "[Current model does not support images. The image will be omitted from this request.]";
+    "[The active model cannot take images, so this request leaves the image out.]";
 
 /// The expected JSON of an attached image block.
 fn image_json(data: &str, mime: &str) -> Value {
@@ -65,22 +65,20 @@ fn read_declaration_has_exact_schema_and_prompt_text() {
     assert_eq!(tool.label, "read");
     assert_eq!(
         tool.definition.description,
-        "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete."
+        "Read a file. Reads text files, plus images in jpg, png, gif or webp format that come back as attachments. Text output is cut at 2000 lines or 50KB, whichever limit is reached first. For large files, page through with offset and limit. When you need the whole file, keep continuing with offset until it is complete."
     );
     assert_eq!(tool.prompt_snippet.as_deref(), Some("Read file contents"));
     assert_eq!(
         tool.prompt_guidelines,
-        Some(vec![
-            "Use read to examine files instead of cat or sed.".to_owned()
-        ])
+        Some(vec!["Inspect files with read, not cat or sed.".to_owned()])
     );
     let expected = json!({
         "type": "object",
         "required": ["path"],
         "properties": {
-            "path": {"type": "string", "description": "Path to the file to read (relative or absolute)"},
-            "offset": {"type": "number", "description": "Line number to start reading from (1-indexed)"},
-            "limit": {"type": "number", "description": "Maximum number of lines to read"},
+            "path": {"type": "string", "description": "File to read, as a relative or absolute path"},
+            "offset": {"type": "number", "description": "First line to read, counting from 1"},
+            "limit": {"type": "number", "description": "Upper bound on the lines returned"},
         },
     });
     assert_eq!(*tool.definition.parameters, expected);
@@ -115,7 +113,7 @@ fn read_applies_offset_and_limit_before_truncation() {
     assert_eq!(
         read_text(file.as_bytes(), None, Some(10.0)).unwrap(),
         format!(
-            "{}\n\n[90 more lines in file. Use offset=11 to continue.]",
+            "{}\n\n[90 more lines remain in the file. Continue with offset=11.]",
             numbered(10)
         )
     );
@@ -125,7 +123,7 @@ fn read_applies_offset_and_limit_before_truncation() {
         .join("\n");
     assert_eq!(
         read_text(file.as_bytes(), Some(41.0), Some(20.0)).unwrap(),
-        format!("{window}\n\n[40 more lines in file. Use offset=61 to continue.]")
+        format!("{window}\n\n[40 more lines remain in the file. Continue with offset=61.]")
     );
     assert_eq!(read_text(file.as_bytes(), None, Some(100.0)).unwrap(), file);
     assert_eq!(
@@ -140,7 +138,7 @@ type Slice = (Option<f64>, Option<f64>, Result<String, String>);
 #[test]
 fn read_numeric_slices_match_finite_number_rules() {
     let more = |n: &str, next: &str| {
-        format!("\n\n[{n} more lines in file. Use offset={next} to continue.]")
+        format!("\n\n[{n} more lines remain in the file. Continue with offset={next}.]")
     };
     let all = "a\nb\nc\nd".to_owned();
     let cases: Vec<Slice> = vec![
@@ -194,7 +192,7 @@ fn read_does_not_count_a_terminating_newline_as_a_line() {
     );
     assert_eq!(
         read_text(file, None, Some(2.0)).unwrap(),
-        "one\ntwo\n\n[1 more lines in file. Use offset=3 to continue.]"
+        "one\ntwo\n\n[1 more lines remain in the file. Continue with offset=3.]"
     );
     assert_eq!(read_text(file, None, None).unwrap(), "one\ntwo\nthree\n");
     assert_eq!(
@@ -210,7 +208,7 @@ fn read_keeps_real_trailing_empty_lines() {
     assert_eq!(read_text(file, None, None).unwrap(), "a\n\n");
     assert_eq!(
         read_text(file, None, Some(1.0)).unwrap(),
-        "a\n\n[1 more lines in file. Use offset=2 to continue.]"
+        "a\n\n[1 more lines remain in the file. Continue with offset=2.]"
     );
     assert_eq!(
         read_text(file, Some(3.0), None).unwrap_err(),
@@ -247,7 +245,7 @@ fn read_reports_line_and_byte_continuations() {
     let kept = vec!["ab"; 2000].join("\n");
     assert_eq!(
         only_text(&result),
-        format!("{kept}\n\n[Showing lines 1-2000 of 2500. Use offset=2001 to continue.]")
+        format!("{kept}\n\n[Showing lines 1-2000 of 2500. Continue with offset=2001.]")
     );
     assert_eq!(
         serde_json::to_value(result.details.unwrap()).unwrap(),
@@ -263,9 +261,7 @@ fn read_reports_line_and_byte_continuations() {
     let kept = vec!["x".repeat(200); 254].join("\n");
     assert_eq!(
         only_text(&result),
-        format!(
-            "{kept}\n\n[Showing lines 1-254 of 400 (50.0KB limit). Use offset=255 to continue.]"
-        )
+        format!("{kept}\n\n[Showing lines 1-254 of 400 (50.0KB limit). Continue with offset=255.]")
     );
     assert_eq!(
         serde_json::to_value(result.details.unwrap()).unwrap(),
@@ -300,7 +296,7 @@ fn read_oversized_first_line_guidance_uses_selected_line() {
     );
     assert_eq!(
         read_text(long.as_bytes(), None, Some(0.0)).unwrap(),
-        "\n\n[1 more lines in file. Use offset=1 to continue.]"
+        "\n\n[1 more lines remain in the file. Continue with offset=1.]"
     );
     let capped = (0..2000)
         .map(|i| i.to_string())

@@ -48,4 +48,4 @@ pub fn failure(text: &str) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo::error(text)
 }
 /// The operation-specific busy diagnostic.
-pub const BUSY: &str = "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.";
+pub const BUSY: &str = "The agent is already running a prompt. Queue messages with steer() or followUp(), or wait for it to finish.";

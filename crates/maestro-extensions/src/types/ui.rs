@@ -55,7 +55,7 @@ pub struct ExtensionWidgetOptions {
 pub struct WorkingIndicatorOptions {
     /// Animation frames, rendered verbatim; an empty list hides the indicator.
     pub frames: Option<Vec<String>>,
-    /// Frame interval in milliseconds for animated indicators.
+    /// Milliseconds between the frames of an animated indicator.
     pub interval_ms: Option<f64>,
 }
 
@@ -123,7 +123,7 @@ pub enum WidgetContent {
     Factory(ComponentFactory),
 }
 
-/// Wraps the current autocomplete provider with additional behavior.
+/// Layers extra behavior over the current autocomplete provider.
 pub type AutocompleteProviderFactory = UIHostCall<
     Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
     Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
@@ -151,7 +151,7 @@ pub struct CustomUIOptions {
     pub overlay: Option<bool>,
     /// Overlay positioning and sizing.
     pub overlay_options: Option<OverlayOptionsSource>,
-    /// Called with the overlay handle after the overlay is shown.
+    /// Receives the overlay handle once the overlay is on screen.
     pub on_handle: Option<OverlayHandleCallback>,
 }
 
@@ -298,7 +298,7 @@ pub trait ExtensionUIContextPort {
     fn set_title(&self, _title: String) -> Result<(), EventError> {
         Ok(())
     }
-    /// Shows a custom component with keyboard focus; settles when it closes.
+    /// Displays a custom component that takes keyboard focus; settles when it closes.
     fn custom_component(
         &self,
         _factory: CustomComponentFactory,
@@ -335,7 +335,7 @@ pub trait ExtensionUIContextPort {
     ) -> ExtensionUIFuture<Option<String>> {
         ready(None)
     }
-    /// Stacks behavior on top of the current autocomplete provider.
+    /// Adds a layer of behavior above the current autocomplete provider.
     ///
     /// # Errors
     /// Returns the host's or factory's failure.
@@ -368,7 +368,7 @@ pub trait ExtensionUIContextPort {
     fn get_all_themes(&self) -> Result<Vec<ThemeInfo>, EventError> {
         Ok(Vec::new())
     }
-    /// Loads a theme by name without switching to it.
+    /// Fetches a theme by name and leaves the active theme unchanged.
     ///
     /// # Errors
     /// Returns the host's failure.

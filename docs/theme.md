@@ -69,6 +69,12 @@ styled at all. The checks run in this order:
    `linux` (in any case) gets color.
 9. Anything else gets color only when `FORCE_COLOR` asked for it.
 
+This is the only color decision for terminal text. The context-file warning, the scope
+warnings, the search-tool download lines and the transcript report all ask it, so
+`FORCE_COLOR` and `TERM=dumb` act the same everywhere. The conventions check rejects an
+`is_terminal()` call in production code outside the colour decision, print-mode output cleaning
+and the executable's input routing, so a second colour decision cannot land.
+
 In 256-color mode a hex color becomes the nearest entry of the six-level cube,
 or a gray-ramp entry when its channel spread is below 10 and the gray is closer
 (weighted distance 0.299, 0.587, 0.114; lower index wins ties). Explicit
@@ -149,7 +155,7 @@ Constructing it reads nothing.
 `ThemeState::theme` returns a `LiveTheme` handle whose `get` returns the
 currently published instance; clones read the same slot, and an `Rc<Theme>` already
 returned stays what it was. Before the first publication `get` fails with
-`Theme not initialized. Call initTheme() first.`
+`Theme not initialized. Call init_theme() first.`
 `LiveTheme::from_theme` wraps a prepared instance in its own fixed slot, so a caller
 can pass that exact instance wherever a `LiveTheme` is expected; it never follows
 later publication.

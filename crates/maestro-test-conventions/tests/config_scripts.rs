@@ -28,6 +28,21 @@ fn runner_configuration_rejects_a_shell_script() {
 }
 
 #[test]
+fn runner_configuration_rejects_a_shell_script_in_a_nested_directory() {
+    let workspace = workspace();
+    let nested = workspace.root.path().join(".config/setup/steps");
+    std::fs::create_dir_all(&nested).unwrap();
+    std::fs::write(nested.join("prepare.sh"), "#!/bin/sh\n").unwrap();
+
+    let error = check_workspace(workspace.root.path()).unwrap_err();
+
+    assert!(
+        error.contains(&native_path_text(".config/setup/steps/prepare.sh")),
+        "{error}"
+    );
+}
+
+#[test]
 fn runner_configuration_accepts_files_that_are_not_shell_scripts() {
     let workspace = workspace();
     let directory = workspace.root.path().join(".config");

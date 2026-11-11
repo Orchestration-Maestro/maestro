@@ -233,7 +233,7 @@ fn maestro_test_conventions_recipe_stages_the_setup_tool_before_nextest() {
     );
 }
 
-/// The check recipe stages the setup tool before any step that could start nextest.
+/// The check recipe stages the setup tool before its other steps.
 #[test]
 fn maestro_check_recipe_stages_the_setup_tool_first() {
     let workspace = Workspace::new();
@@ -253,6 +253,36 @@ fn maestro_check_recipe_stages_the_setup_tool_first() {
         "{}",
         workspace.log()
     );
+}
+
+/// Every recipe that compiles the web crate builds the runtime script it embeds before any
+/// compilation starts.
+#[test]
+fn maestro_recipes_that_compile_the_web_crate_build_the_runtime_script_first() {
+    let step =
+        "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|sandbox-runtime\n";
+    for (recipe, arguments, next) in [
+        ("_check", &["-p", "maestro-web"][..], "cargo hakari|verify"),
+        ("test", &[][..], "cargo nextest|run|--workspace"),
+        (
+            "build",
+            &[][..],
+            "cargo run|--quiet|--locked|-p|maestro-models",
+        ),
+    ] {
+        let workspace = Workspace::new();
+        fs::create_dir_all(workspace.path().join("crates/maestro-web/runtime")).unwrap();
+
+        let output = workspace.command(recipe).args(arguments).output().unwrap();
+
+        assert!(
+            output.status.success(),
+            "{recipe}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let log = workspace.log();
+        assert!(log.starts_with(&format!("{step}{next}")), "{recipe}: {log}");
+    }
 }
 
 #[test]

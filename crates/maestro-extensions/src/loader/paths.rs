@@ -108,7 +108,7 @@ pub async fn load_extensions_with_runtime<E: ExtensionExecution>(
                     .map_err(|error| format!("Failed to load extension: {error}"))
             }
             Ok(None) => Err(format!(
-                "Extension does not export a valid factory function: {path}"
+                "Extension exports no valid factory function: {path}"
             )),
             Err(error) => Err(format!("Failed to load extension: {error}")),
         };

@@ -46,7 +46,7 @@ pub(crate) enum TerminalRequest {
     /// Reads the height.
     #[component(name = "rows")]
     Rows,
-    /// Reads whether the Kitty keyboard protocol is active.
+    /// Reads whether Kitty keyboard protocol mode is on.
     #[component(name = "kitty-protocol-active")]
     KittyProtocolActive,
     /// Moves the cursor by rows.

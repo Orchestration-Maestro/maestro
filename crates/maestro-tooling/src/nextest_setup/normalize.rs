@@ -11,13 +11,21 @@ use std::process::ExitCode;
 use std::time::SystemTime;
 
 use super::nonempty;
-use crate::test_setup::EXAMPLE;
+use crate::test_setup::{EXAMPLE, at};
 
 /// The extensions of the library outputs that can outdate an executable.
 const LIBRARY_EXTENSIONS: [&str; 6] = ["rlib", "rmeta", "a", "so", "dylib", "dll"];
 
 /// The exit status that reports an outdated setup example.
-const EXAMPLE_OUTDATED: u8 = 3;
+pub(super) const EXAMPLE_OUTDATED: u8 = 3;
+
+/// The library outputs in the artifact directory.
+struct Libraries {
+    /// Every library output.
+    all: Vec<Library>,
+    /// The newest modification time among them.
+    newest: Option<SystemTime>,
+}
 
 /// A library output in the artifact directory.
 struct Library {
@@ -33,9 +41,11 @@ struct Library {
 /// # Errors
 /// Returns a failed read or write.
 pub(super) fn set_tree_time(directory: &Path, time: SystemTime) -> io::Result<()> {
-    for entry in std::fs::read_dir(directory)? {
-        let entry = entry?;
-        let kind = entry.file_type()?;
+    for entry in std::fs::read_dir(directory).map_err(|error| at(directory, error))? {
+        let entry = entry.map_err(|error| at(directory, error))?;
+        let kind = entry
+            .file_type()
+            .map_err(|error| at(&entry.path(), error))?;
         if kind.is_dir() {
             set_tree_time(&entry.path(), time)?;
         } else if kind.is_file() {
@@ -56,7 +66,10 @@ pub(super) fn set_tree_time(directory: &Path, time: SystemTime) -> io::Result<()
 fn set_modified(path: &Path, time: SystemTime) -> io::Result<()> {
     let mut options = std::fs::File::options();
     options.read(cfg!(unix)).write(!cfg!(unix));
-    options.open(path)?.set_modified(time)
+    options
+        .open(path)
+        .and_then(|file| file.set_modified(time))
+        .map_err(|error| at(path, error))
 }
 
 /// Whether nextest runs an archive, where nothing is rebuilt and every executable is current.
@@ -99,21 +112,13 @@ pub(super) fn normalize(directory: &Path, archived: bool) -> io::Result<Outcome>
         fingerprint_files(directory)?
     };
     let libraries = libraries(&directory.join("deps"))?;
-    let newest_library = libraries.iter().map(|library| library.modified).max();
     let mut found = false;
     let mut stale = false;
     let mut current: Vec<(PathBuf, SystemTime)> = Vec::new();
     for artifact in executables(directory)? {
         found = true;
-        let modified = std::fs::metadata(&artifact)?.modified()?;
-        let outdated = !archived
-            && outdated(
-                &artifact,
-                modified,
-                &fingerprints,
-                &libraries,
-                newest_library,
-            )?;
+        let modified = modified_time(&artifact)?;
+        let outdated = !archived && outdated(&artifact, modified, &fingerprints, &libraries)?;
         if outdated {
             stale |= is_example(&artifact);
         } else {
@@ -141,24 +146,32 @@ pub(super) fn normalize(directory: &Path, archived: bool) -> io::Result<Outcome>
 }
 
 /// The library outputs in `deps`.
-fn libraries(deps: &Path) -> io::Result<Vec<Library>> {
-    let mut libraries = Vec::new();
+fn libraries(deps: &Path) -> io::Result<Libraries> {
+    let mut all = Vec::new();
     let Ok(entries) = std::fs::read_dir(deps) else {
-        return Ok(libraries);
+        return Ok(Libraries { all, newest: None });
     };
     for entry in entries {
-        let path = entry?.path();
+        let path = entry.map_err(|error| at(deps, error))?.path();
         let extension = path.extension().and_then(|extension| extension.to_str());
         if path.is_file()
             && extension.is_some_and(|extension| LIBRARY_EXTENSIONS.contains(&extension))
         {
-            libraries.push(Library {
+            all.push(Library {
                 name: file_name(&path),
-                modified: std::fs::metadata(&path)?.modified()?,
+                modified: modified_time(&path)?,
             });
         }
     }
-    Ok(libraries)
+    let newest = all.iter().map(|library| library.modified).max();
+    Ok(Libraries { all, newest })
+}
+
+/// The time `path` was last modified.
+fn modified_time(path: &Path) -> io::Result<SystemTime> {
+    std::fs::metadata(path)
+        .and_then(|metadata| metadata.modified())
+        .map_err(|error| at(path, error))
 }
 
 /// The final component of `path` as text.
@@ -225,20 +238,19 @@ fn outdated(
     artifact: &Path,
     modified: SystemTime,
     fingerprints: &Fingerprints,
-    libraries: &[Library],
-    newest_library: Option<SystemTime>,
+    libraries: &Libraries,
 ) -> io::Result<bool> {
     let record = match executable_fingerprint(artifact, fingerprints)? {
         Some(record) => Some(record),
         None => named_fingerprint(artifact, fingerprints)?,
     };
     let Some(record) = record else {
-        return Ok(newest_library.is_some_and(|newest| newest > modified));
+        return Ok(libraries.newest.is_some_and(|newest| newest > modified));
     };
     let Some(linked) = linked_libraries(record, fingerprints)? else {
         return Ok(true);
     };
-    Ok(libraries.iter().any(|library| {
+    Ok(libraries.all.iter().any(|library| {
         let stem = Path::new(&library.name)
             .file_stem()
             .and_then(|stem| stem.to_str())
@@ -271,12 +283,15 @@ fn fingerprint_files(directory: &Path) -> io::Result<Fingerprints> {
     let entries = match std::fs::read_dir(directory.join(".fingerprint")) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Fingerprints::default()),
-        Err(error) => return Err(error),
+        Err(error) => return Err(at(&directory.join(".fingerprint"), error)),
     };
     let mut files = Fingerprints::default();
     for entry in entries {
-        for file in std::fs::read_dir(entry?.path())? {
-            let path = file?.path();
+        let records = entry
+            .map_err(|error| at(&directory.join(".fingerprint"), error))?
+            .path();
+        for file in std::fs::read_dir(&records).map_err(|error| at(&records, error))? {
+            let path = file.map_err(|error| at(&records, error))?.path();
             if path.extension().is_none_or(|extension| extension != "json") {
                 continue;
             }
@@ -304,7 +319,8 @@ fn fingerprint_files(directory: &Path) -> io::Result<Fingerprints> {
 
 /// Read a Cargo dependency record, refusing malformed records instead of guessing its inputs.
 fn read_fingerprint(path: &Path) -> io::Result<Fingerprint> {
-    serde_json::from_slice(&std::fs::read(path)?).map_err(|error| {
+    let bytes = std::fs::read(path).map_err(|error| at(path, error))?;
+    serde_json::from_slice(&bytes).map_err(|error| {
         io::Error::new(
             io::ErrorKind::InvalidData,
             format!("invalid Cargo fingerprint {}: {error}", path.display()),
@@ -372,13 +388,13 @@ fn executable_fingerprint(
             .unwrap_or_default()
     );
     let mut found = None;
-    let entries = match std::fs::read_dir(folder) {
+    let entries = match std::fs::read_dir(&folder) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(error),
+        Err(error) => return Err(at(&folder, error)),
     };
     for entry in entries {
-        let twin = entry?.path();
+        let twin = entry.map_err(|error| at(&folder, error))?.path();
         if !file_name(&twin).starts_with(&prefix)
             || !is_executable(&twin)
             || !same_contents(artifact, &twin)?
@@ -429,18 +445,22 @@ fn named_fingerprint(
 
 /// Compare equal-sized artifacts without retaining their executable images in memory.
 fn same_contents(left: &Path, right: &Path) -> io::Result<bool> {
-    let mut left = std::fs::File::open(left)?;
-    let mut right = std::fs::File::open(right)?;
-    let mut remaining = left.metadata()?.len();
-    if remaining != right.metadata()?.len() {
+    let open = |path: &Path| std::fs::File::open(path).map_err(|error| at(path, error));
+    let (mut first, mut second) = (open(left)?, open(right)?);
+    let mut remaining = first.metadata().map_err(|error| at(left, error))?.len();
+    if remaining != second.metadata().map_err(|error| at(right, error))?.len() {
         return Ok(false);
     }
     let mut a = [0; 8192];
     let mut b = [0; 8192];
     while remaining > 0 {
         let count = usize::try_from(remaining.min(8192)).map_err(io::Error::other)?;
-        left.read_exact(&mut a[..count])?;
-        right.read_exact(&mut b[..count])?;
+        first
+            .read_exact(&mut a[..count])
+            .map_err(|error| at(left, error))?;
+        second
+            .read_exact(&mut b[..count])
+            .map_err(|error| at(right, error))?;
         if a[..count] != b[..count] {
             return Ok(false);
         }
@@ -484,7 +504,7 @@ fn linked_libraries(
 
 /// Decode Cargo's little-endian hexadecimal hash, or `None` for an invalidated build.
 fn fingerprint_hash(path: &Path) -> io::Result<Option<u64>> {
-    let text = std::fs::read_to_string(path)?;
+    let text = std::fs::read_to_string(path).map_err(|error| at(path, error))?;
     // Cargo truncates the hash before rebuilding and fills it only after success.
     if text.is_empty() {
         return Ok(None);

@@ -258,7 +258,7 @@ fn custom_summary_focus_reaches_the_summary_request() {
             &h,
             vec![answer("Branch summary MONKEY MONKEY MONKEY", None, None)],
         );
-        let instructions = "After the summary, you MUST end with exactly: MONKEY MONKEY MONKEY. This is of utmost importance.";
+        let instructions = "Finish the summary with exactly this closing line: MONKEY MONKEY MONKEY. Nothing matters more.";
         let result = h
             .session
             .navigate_tree(

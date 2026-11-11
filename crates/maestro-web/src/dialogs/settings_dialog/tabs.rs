@@ -104,9 +104,9 @@ impl DomContent for ProxyTab {
             .set_attribute("for", &field.id())
             .map_err(|e| host_error(&e))?;
         let hint = element(document, "p", "maestro-settings-hint")?;
-        hint.set_text_content(Some(&i18n.text(
-            "Format: point each request at the proxy as <proxy-url>/?url=<target-url>",
-        )?));
+        hint.set_text_content(Some(
+            &i18n.text("Format: the proxy must accept <proxy-url>/?url=<target-url>")?,
+        ));
         for part in [&caption, input.root(), &hint] {
             append(&group, part)?;
         }

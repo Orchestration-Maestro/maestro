@@ -25,6 +25,8 @@ mod rpc;
 #[cfg(unix)]
 mod search;
 #[cfg(unix)]
+mod ssh;
+#[cfg(unix)]
 mod termination;
 mod tooling_command;
 mod tooling_sources;
@@ -70,6 +72,9 @@ enum Request {
     Exec(exec::Record, Vec<OsString>),
     /// Exchange raw application RPC records.
     Rpc(rpc::Record),
+    /// Stand in for the remote client an extension's operations launch.
+    #[cfg(unix)]
+    Ssh(ssh::Record, Vec<OsString>),
     /// Produce controlled search bytes without interpreting native operands.
     #[cfg(unix)]
     Search(search::Record, Vec<OsString>),
@@ -152,6 +157,8 @@ impl Request {
             Some("rpc-peer") => Ok(Self::Rpc(rpc::Record::parse(&text)?)),
             #[cfg(unix)]
             Some("search") => Ok(Self::Search(search::Record::parse(&text)?, operands)),
+            #[cfg(unix)]
+            Some("ssh") => Ok(Self::Ssh(ssh::Record::parse(&text)?, operands)),
             Some("tooling-command") => Ok(Self::ToolingCommand(
                 tooling_command::Record::parse(&text)?,
                 operands,
@@ -195,6 +202,8 @@ pub(super) fn run() -> io::Result<()> {
         Request::Rpc(record) => rpc::run(&record),
         #[cfg(unix)]
         Request::Search(record, operands) => search::run(&record, &operands),
+        #[cfg(unix)]
+        Request::Ssh(record, operands) => ssh::run(&record, &operands),
         Request::ToolingCommand(record, operands) => tooling_command::run(&record, &operands),
         Request::ToolingSources(record, operands) => tooling_sources::run(&record, &operands),
         Request::ToolingWrapper(record, operands) => tooling_wrapper::run(&record, &operands),

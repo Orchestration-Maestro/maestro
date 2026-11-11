@@ -359,7 +359,7 @@ fn edit_returned_arguments_reject_obsolete_generation() {
         }
         row.call(&a, None);
         assert!(plain(&call).contains("newest A"));
-        assert!(!plain(&call).contains("Could not find"));
+        assert!(!plain(&call).contains("No exact match"));
         assert_eq!(row.invalidations.get(), 1);
     });
 }
@@ -488,7 +488,7 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
         assert!(Rc::ptr_eq(call, &row.call(&case.input, None)));
         assert_eq!(call.render(80), case.expected.rows);
     } else if let Some(error) = case.expected.preview.get("error") {
-        assert!(plain(call).contains(error.as_str().unwrap().split(" including").next().unwrap()));
+        assert!(plain(call).contains(error.as_str().unwrap().split(" character,").next().unwrap()));
     } else {
         let details: Details = serde_json::from_value(case.expected.preview.clone()).unwrap();
         let expected = maestro_tools::render_diff(

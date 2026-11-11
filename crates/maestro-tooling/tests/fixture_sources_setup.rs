@@ -178,6 +178,25 @@ fn fixture_sources_setup_reports_a_failed_vendor_run() {
     assert!(!root.join("nextest-env").exists());
 }
 
+/// A missing input fails the setup with the path of the file that is missing.
+#[test]
+fn fixture_sources_setup_names_a_missing_input() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    checkout(root);
+    let lock = root.join(FIXTURES).join("browser_author/Cargo.lock");
+    fs::remove_file(&lock).unwrap();
+
+    let output = setup(root, Failure::None).output().unwrap();
+
+    assert!(!output.status.success());
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains(&lock.display().to_string()),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
 /// Dependency declarations, locks and the toolchain refresh the complete workspace source
 /// configuration, which also keys the compiled seed.
 #[test]
