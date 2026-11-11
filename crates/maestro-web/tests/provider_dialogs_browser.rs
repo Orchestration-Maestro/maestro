@@ -599,7 +599,7 @@ async fn edit_keeps_identity(
     let dialog = CustomProviderDialog::open(view, Some(original.clone()), None, None).unwrap();
     let shown = panel();
     assert_eq!(text(&find(&shown, "h2")), "Edit Provider");
-    assert!(text(&shown).contains("Manual provider types gain models after saving."));
+    assert!(text(&shown).contains("Add models to a manual provider after you save it."));
     assert!(
         !has(&shown, ".maestro-button-outline"),
         "no test for manual types"

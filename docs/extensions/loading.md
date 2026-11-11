@@ -49,7 +49,7 @@ path as its resolved path, without this final normalization. Its source is
 The result records a failed path with its supplied spelling, and loading
 continues with the next path. The error is one of two messages:
 
-- `Extension does not export a valid factory function: <path>` when the loader
+- `Extension exports no valid factory function: <path>` when the loader
   finds no factory. The path is the supplied spelling.
 - `Failed to load extension: <message>` when the loader or the factory fails.
 

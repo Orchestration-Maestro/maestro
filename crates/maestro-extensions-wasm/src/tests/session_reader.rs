@@ -369,7 +369,7 @@ fn maestro_reader_getters_resolve_at_call_time() -> Result<(), String> {
 }
 
 /// Forwarded stale-acquisition default with the product's public identity.
-const STALE_READER: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
+const STALE_READER: &str = "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns.";
 /// Stale contexts reject new acquisition without revoking extracted resources.
 async fn retained(driver: &mut impl Driver) -> Result<(), String> {
     install(driver).await?;

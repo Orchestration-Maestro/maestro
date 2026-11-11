@@ -332,8 +332,8 @@ state.
 
 An empty original list shows `  No settings available`; an empty search result shows
 `  No matching settings`. The main-list hint is
-`  Enter/Space to change · Esc to cancel`, or, with search enabled,
-`  Type to search · Enter/Space to change · Esc to cancel`. The scroll counter is
+`  Enter/Space sets a value · Esc closes`, or, with search enabled,
+`  Type to search · Enter/Space sets a value · Esc closes`. The scroll counter is
 `  ({selected + 1}/{count})`.
 
 Original-empty messages use no-ellipsis clipping; matching-result messages, composed

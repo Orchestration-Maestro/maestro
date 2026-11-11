@@ -129,7 +129,7 @@ and attachment runtime descriptions, followed by the JavaScript REPL and artifac
 tool descriptions with empty runtime-provider lists:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo run -p maestro-app --locked --example count_prompt_tokens
+cargo run -p maestro-app --locked --example count_prompt_tokens
 ```
 
 Set `ANTHROPIC_API_KEY` in the environment through your usual secret-management

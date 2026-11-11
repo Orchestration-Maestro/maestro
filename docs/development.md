@@ -13,9 +13,17 @@ counter checks. When using another toolchain, install it with
 git clone https://github.com/Orchestration-Maestro/maestro.git
 cd maestro
 mise install
-mise exec -- just setup
-mise exec -- just build
+just setup
+just build
 ```
+
+Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
+and the other pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml`
+through rustup, not mise.
+
+`build`, `test`, `check` and `ci` first build the sandbox runtime script, which needs
+Emscripten SDK 6.0.10 and the wasm-bindgen CLI 0.2.129 on `PATH`; install them as
+described in [Sandbox runtime bundle](#sandbox-runtime-bundle) before the first run.
 
 Tool versions stay caller-owned in `mise.toml`. Generated downloads and checksums
 in `mise.lock` must cover Linux x64 and ARM64, macOS Intel and ARM64, and Windows
@@ -30,6 +38,11 @@ files that remain on disk, announces `Selected crates: ...`, then runs
 use repeated `-p` arguments. Formatting failures and Clippy warnings block the
 commit. Files changed by formatting but absent from the captured index stay
 unstaged.
+
+A staged `maestro-web` is linted through `just _check -p <package>` instead, because
+its build script embeds the generated sandbox runtime script, which that recipe builds
+first (see [Sandbox runtime bundle](#sandbox-runtime-bundle)). This adds minutes to
+commits that touch the crate.
 
 Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
 no crates. They never widen a mixed change's selection. With no staged crate, the
@@ -115,7 +128,6 @@ release-mode author test. With the build environment above, run the same consume
 commands from the checkout using the pinned toolchain and checked-in lock:
 
 ```powershell
-$env:CARGO_BUILD_JOBS = '3'
 just prepare-tests
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
@@ -141,7 +153,7 @@ mapfile -t wasm_packages < <(
 )
 wasm_args=()
 for package in "${wasm_packages[@]}"; do wasm_args+=(-p "$package"); done
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
+cargo build \
   --locked --target wasm32-unknown-unknown "${wasm_args[@]}" \
   --tests --examples --keep-going --message-format=json
 ```
@@ -151,7 +163,7 @@ library targets only. Lint one crate's test and example targets directly where
 they compile for the browser target:
 
 ```sh
-~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+cargo clippy --locked --target wasm32-unknown-unknown \
   --all-targets -p maestro-models -- -D warnings
 ```
 
@@ -205,29 +217,33 @@ generated filenames are unchanged.
 ## Sandbox runtime bundle
 
 The in-frame sandbox runtime is a Rust program in `crates/maestro-web/runtime`, built for
-`wasm32-unknown-emscripten` into one classic script that the web crate embeds from
-`crates/maestro-web/assets/maestro-sandbox-runtime.js`. The package has its own manifest and
-lock, outside the workspace, so the chat application never builds for the frame.
+`wasm32-unknown-emscripten` into one classic script. The script is a build output:
+`just sandbox-runtime` writes it to `target/sandbox-runtime/maestro-sandbox-runtime.js`,
+which Git ignores, and the `maestro-web` build script points the crate at that file. The
+package has its own manifest and lock, outside the workspace, so the chat application never
+builds for the frame.
 
 Install Emscripten SDK 6.0.10 and the Rust standard library for the target, then put
 `emcc` and the wasm-bindgen CLI 0.2.129 on `PATH`:
 
 ```sh
 rustup target add wasm32-unknown-emscripten
-CARGO_BUILD_JOBS=3 just sandbox-runtime          # regenerate the asset
-CARGO_BUILD_JOBS=3 just sandbox-runtime --check  # fail when the asset is stale
+CARGO_BUILD_JOBS=3 just sandbox-runtime
 ```
 
-Change the runtime package, regenerate, and commit the asset with the source. Never edit
-the asset. The command refuses a missing or unpinned compiler (naming the tool and its
-release), a library outside the audited list and script text that an inline script cannot
-carry. It wraps the script in a function so no glue name reaches the frame's global scope,
-and passes the compiler flags in Cargo's encoded form so a checkout path with spaces
-builds.
+Run the step before anything that builds `maestro-web`. `just check`, `just _check`,
+`just test`, `just build`, `just native-dev`, `just browser-chat-example` and
+`just browser-test` run it first. A plain `cargo` build without the file fails in the
+`maestro-web` build script with one message that names the step. The command refuses a
+missing or unpinned compiler (naming the tool and its release), a library outside the audited
+list and script text that an inline script cannot carry. It wraps the script in a function so
+no glue name reaches the frame's global scope, and passes the compiler flags in Cargo's
+encoded form so a checkout path with spaces builds. It writes the file only when the bytes
+change, so an unchanged build does not rebuild `maestro-web`.
 
 The command records the checkout as `/checkout` and each dependency's sources as
-`<name>-<version>`. These stable names keep the asset the same on every machine: no Cargo
-home or checkout path reaches the embedded module. A web crate test fails when the asset
+`<name>-<version>`. These stable names keep the script the same on every machine: no Cargo
+home or checkout path reaches the embedded module. A web crate test fails when the script
 names any other absolute source path.
 
 A plain Cargo build for the target links the runtime with the package's own settings.
@@ -235,11 +251,16 @@ Its build script passes the Emscripten link settings to the binary; its manifest
 `panic = "abort"` in the dev and release profiles. The generator command adds only compiler
 flags, source path names and the linker map for the audit. The package repeats the
 workspace lint table in its manifest. Browser linting checks it for
-`wasm32-unknown-emscripten`. `just browser-test` checks the bundle after the browser cases.
+`wasm32-unknown-emscripten`.
 
 The build box's saved setup carries the SDK. Shared CI installs the same release because
 `.github/ci.toml` lists the package in `emscripten_crates`: merge groups build it with a
-plain `cargo build`, and the browser job runs the check.
+plain `cargo build`. Every CI job that compiles `maestro-web` must run the step first.
+
+The workspace conventions check fails when Git tracks a `.js`, `.mjs`, `.cjs`, `.jsx`,
+`.ts`, `.tsx`, `.py`, `.sh` or `.ps1` file. Generated browser code comes out of the build
+under `target/` and is never committed. `examples/sdk/rpc.py` is the one named exception;
+it leaves with the examples move.
 
 ## Browser integration qualification
 
@@ -247,7 +268,7 @@ Lint the browser library, examples and complete integration target with the
 pinned toolchain:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
+cargo clippy \
   -p maestro-web --lib --examples --test integration --profile test \
   --target wasm32-unknown-unknown --locked -- \
   -D warnings -D clippy::missing_docs_in_private_items
@@ -258,13 +279,13 @@ Run the retained sandbox assertions with supplied browser tools:
 ```sh
 export CHROMIUM_PATH=/absolute/path/to/chrome
 # Put wasm-bindgen CLI 0.2.129 on PATH.
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
+just browser-test
 ```
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
 (supplier revision 1248) and wasm-bindgen CLI 0.2.129, matching the locked Rust
-binding. It also rebuilds the sandbox runtime and compares it with the checked-in
-bundle, which needs Emscripten SDK 6.0.10 on `PATH` (see
+binding. It also builds the sandbox runtime script before the cases run, which needs
+Emscripten SDK 6.0.10 on `PATH` (see
 [Sandbox runtime bundle](#sandbox-runtime-bundle)). The browser executable must be an absolute path. The shared workflow owns
 tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
@@ -309,7 +330,7 @@ package to `browser-exports` under Cargo's target directory, replacing the
 previous run's copy. If setup fails, nextest prints its output and stops before
 any browser test runs. The crate's build script generates one test per name in
 `exports.json`, `browser::exports::<family>::<export>`: 27 execution exports,
-69 loading exports, 196 contribution exports and 165 canvas exports. Each test
+70 loading exports, 196 contribution exports and 165 canvas exports. Each test
 serves only the packaged output on an ephemeral loopback port, launches its own
 browser and runs its export in a fresh page, with a disposable browser context,
 page lifecycle and policy-error accounting. Nextest runs these tests in
@@ -448,10 +469,10 @@ name, with the same supplied executable; the `browser-exports` setup runs first
 whenever an export or the report is selected:
 
 ```sh
-~/.local/bin/capped just prepare-tests
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+just prepare-tests
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(/^browser::/)'
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(=browser::exports::loading::<export>)'
 ```
 
@@ -649,8 +670,8 @@ fallback fonts. See [browser libraries](libraries/browser-frontend.md).
 Regenerate after changing a dependency, its features or `Cargo.lock`:
 
 ```sh
-mise exec -- cargo hakari generate
-mise exec -- cargo hakari manage-deps
+cargo hakari generate
+cargo hakari manage-deps
 ```
 
 After adding a member, first add `maestro-dependencies.workspace = true` to its
@@ -663,7 +684,7 @@ generated section is current or that every member declares the dependency; confi
 ## Extension components
 
 ```sh
-mise exec -- just extension-author-component
+just extension-author-component
 ```
 
 Builds the example extension as a `wasm32-wasip2` component and adds that target
@@ -672,9 +693,9 @@ with `rustup` when it is missing. See [writing an extension](extensions/guest.md
 ## Source invocation
 
 ```sh
-mise exec -- just --justfile /path/to/maestro/justfile run-source --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source --no-env --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
+just --justfile /path/to/maestro/justfile run-source --help
+just --justfile /path/to/maestro/justfile run-source --no-env --help
+just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
 ```
 
 The caller's working directory and literal arguments reach the application.
@@ -688,8 +709,8 @@ The separate `maestro-model-account` binary runs the standalone account command.
 ## Compile watches
 
 ```sh
-mise exec -- just dev
-mise exec -- just models-dev-compile
+just dev
+just models-dev-compile
 ```
 
 The pinned external watcher compiles initially and queues a rebuild when input
@@ -797,7 +818,7 @@ changing shipped files. Run this from the checkout root:
 
 ```sh
 scratch=$(mktemp -d)
-mise exec -- cargo run --locked -p maestro-theme --example brand_themes -- \
+cargo run --locked -p maestro-theme --example brand_themes -- \
   assets/brand/packs/signal.json "$scratch"
 test -s "$scratch/dark.json" && test -s "$scratch/light.json"
 ```
@@ -880,9 +901,9 @@ behavior; development commands do not create a replacement logger.
 ## Tests
 
 ```sh
-mise exec -- just test
-mise exec -- just test-offline
-mise exec -- just test -p maestro-tooling maestro_source_without_switch_preserves_environment
+just test
+just test-offline
+just test -p maestro-tooling maestro_source_without_switch_preserves_environment
 ```
 
 The broad test recipes run cargo-nextest, then Cargo doctests only after success.
@@ -1221,11 +1242,11 @@ platform, because the engine keeps its cache below the agent directory. Shared C
 these files separately from the native test archive, so a shard does not need the
 tool in its archive. Nextest runs the staged tool's
 `nextest-setup author-component`, which checks source and artifact hashes, including every
-compiled-code file, installs the staged example beside the extracted executables and
-installs the compiled code in the engine-reported cache under the modification time that
-copy of the example has, and writes the component paths to
-`NEXTEST_ENV`. The setup then gives the executables that same modification time, as
-below, so they share a compile-cache namespace with the installed code. It runs the example
+compiled-code file, installs the staged example beside the extracted executables and writes
+the component paths to `NEXTEST_ENV`. The setup then gives the executables one modification
+time, as below, and installs the compiled code in the engine-reported cache under that time.
+A copy that keeps an older file time than another executable therefore still lands in the
+namespace the example and the tests read. It runs the example
 on the prepared components, which finds every component compiled and starts no Cargo build
 or compile pass. On every platform that cache belongs to the run alone: the setup uses
 `run-agent` beside the profile directory as the run's agent directory, queries and fills
@@ -1288,9 +1309,9 @@ TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maest
 The development tool's `nextest-setup` command runs every nextest setup entry:
 `author-component`, `fixture-sources`, `browser-author` and
 `normalize-component-cache`. `.config/nextest.toml` names only these commands, and the
-conventions check rejects a shell script under `.config/`. The `author-component` entry
-runs the tool from `target/test-setup/development`: a shard receives it in the downloaded
-bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
+conventions check rejects a shell script anywhere under `.config/`. The
+`author-component` entry runs the tool from `target/test-setup/development`: a shard
+receives it in the downloaded bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
 When you start nextest by hand on a package the entry serves and the tool is missing,
 nextest prints the missing path `target/test-setup/development`; run `just prepare-tests`
 once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest
@@ -2589,6 +2610,43 @@ fn main() -> std::io::Result<()> {
 A recording notifier names its file in `args` instead, and a Git alias names the
 checkout every query must carry. Point `PATH` at the directory holding either
 alias, so the product finds it by its own program name.
+
+#### Remote client aliases
+
+On Unix, install the same artifact as `ssh` when a test exercises an extension's
+remote operations. Write `ssh` on the first line of `<alias>.fixture`, followed by
+one JSON object. The fixture parses the whole record before any effect and rejects
+an unknown field.
+
+| Field | Behavior |
+| --- | --- |
+| `refusal` | `destination`, `code` and `stderr`. A launch naming that destination writes `stderr` and ends with `code`, so the extension's own failure path runs. |
+| `write` | `command`, `code` and `stderr`. A launch whose remote command contains `command` writes `stderr` and ends with `code` without reading standard input, so the body a caller streams is never consumed. The value is a substring, because an extension quotes and resolves the path its command writes. |
+| `directory` | The remote session's working directory. Every other command runs there, through `/bin/sh -c`, with the operands after the destination joined by spaces, so remote `pwd`, `cat`, `test`, `mkdir` and `file` behave as the extension expects. |
+
+A lone leading option is skipped; an option taking a separate value is not read,
+so pass the destination first. A launch left with no destination ends with status
+2 and writes nothing.
+
+```rust,no_run
+fn main() -> std::io::Result<()> {
+    let directory = maestro_test_directory::Scratch::new()?;
+    let session = directory.path().join("session");
+    std::fs::create_dir(&session)?;
+    let record = serde_json::json!({
+        "refusal": {"destination": "unreachable.invalid", "code": 255, "stderr": "refused\n"},
+        "write": {"command": "early-write.txt", "code": 38, "stderr": "refused\n"},
+        "directory": session,
+    });
+    maestro_test_process::install_family(
+        &directory.path().join("ssh"),
+        "ssh",
+        &record.to_string(),
+    )?;
+    // Put that directory first on the child's PATH, then run the extension operation.
+    Ok(())
+}
+```
 
 #### Checked reruns
 

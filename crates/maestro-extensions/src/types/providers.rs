@@ -4,7 +4,7 @@ use super::ExtensionExecution;
 pub use maestro_catalog::ProviderCallbacks;
 /// Configuration for registering a provider.
 pub use maestro_catalog::ProviderConfigInput as ProviderConfig;
-/// Configuration for a model within a provider.
+/// Settings for one model inside a provider.
 pub use maestro_catalog::ProviderModelInput as ProviderModelConfig;
 use maestro_models::{Execution, SharedHandle, Threaded};
 use std::sync::RwLock;

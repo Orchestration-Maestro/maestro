@@ -69,13 +69,13 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Agent<C, E> {
     fn continue_start(agent: &E::Shared<Self>) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
         let mut active = lock(&agent.active);
         let error = if active.is_some() {
-            Some("Agent is already processing. Wait for completion before continuing.")
+            Some("The agent is already running. Wait for it to finish before continuing.")
         } else {
             let state = read(&agent.state);
             match read(state.messages()).last() {
                 None => Some("No messages to continue from"),
                 Some(AgentMessage::Assistant(_)) if !agent.has_queued_messages() => {
-                    Some("Cannot continue from message role: assistant")
+                    Some("Nothing to continue from: the last message has the assistant role")
                 }
                 _ => None,
             }
@@ -119,7 +119,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Agent<C, E> {
         let mut active = lock(&agent.active);
         if active.is_some() {
             return Box::pin(std::future::ready(Err(failure(
-                "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
+                "The agent is already running a prompt. Queue messages with steer() or followUp(), or wait for it to finish.",
             ))));
         }
         let Some(spawn) = read(&agent.spawn).clone() else {

@@ -4426,7 +4426,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>"
+            "text": "Summary of a branch this conversation returned from:\n\n<summary>\nbranch</summary>"
           }
         ],
         "timestamp": 5.0
@@ -4436,7 +4436,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+            "text": "Earlier conversation history was condensed into the summary below:\n\n<summary>\ncompact\n</summary>"
           }
         ],
         "timestamp": 6.0
@@ -4557,7 +4557,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Ran `false`\n```\nx\n```\n\n[Output truncated. Full output: /fixture/output]"
+            "text": "Ran `false`\n```\nx\n```\n\n[Output truncated; the complete output is at: /fixture/output]"
           }
         ],
         "timestamp": 0.0
@@ -4672,7 +4672,7 @@
           "content": [
             {
               "type": "text",
-              "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>"
+              "text": "Summary of a branch this conversation returned from:\n\n<summary>\nbranch</summary>"
             }
           ],
           "timestamp": 5.0
@@ -4682,7 +4682,7 @@
           "content": [
             {
               "type": "text",
-              "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+              "text": "Earlier conversation history was condensed into the summary below:\n\n<summary>\ncompact\n</summary>"
             }
           ],
           "timestamp": 6.0
@@ -4690,7 +4690,7 @@
       ]
     ],
     "context": {},
-    "ok": "[User]: hi\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch</summary>\n\n[User]: The conversation history before this point was compacted into the following summary:\n\n<summary>\ncompact\n</summary>"
+    "ok": "[User]: hi\n\n[Assistant]: hello\n\n[Assistant tool calls]: read(path=\"a\")\n\n[Tool result]: ok\n\n[User]: Ran `echo hi`\n```\nhi\n```\n\n[User]: custom\n\n[User]: Summary of a branch this conversation returned from:\n\n<summary>\nbranch</summary>\n\n[User]: Earlier conversation history was condensed into the summary below:\n\n<summary>\ncompact\n</summary>"
   },
   {
     "test": "helper_conversation_serialization_keeps_text_and_tools",

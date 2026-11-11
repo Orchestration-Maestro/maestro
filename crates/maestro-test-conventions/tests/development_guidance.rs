@@ -5,25 +5,7 @@ use crate::support;
 
 use std::fs;
 use std::path::Path;
-use std::process::Command;
-use support::Workspace;
-
-/// Run Git without inherited repository or ignore configuration.
-fn git(root: &Path) -> Command {
-    let mut command = Command::new("git");
-    command.current_dir(root);
-    for (name, _) in std::env::vars_os() {
-        if name.to_string_lossy().starts_with("GIT_") {
-            command.env_remove(name);
-        }
-    }
-    command
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .env("LC_ALL", "C")
-        .args(["-c", "core.excludesFile=/dev/null"]);
-    command
-}
+use support::{Workspace, git};
 
 #[test]
 fn maestro_local_caches_keep_ignore_files_trackable() {

@@ -20,7 +20,7 @@
 				"oneOf": [
 					{
 						"type": "string",
-						"description": "Hex color (#RRGGBB), variable reference, or empty string for terminal default"
+						"description": "A hex color in #RRGGBB form, a reference to a variable, or empty for the terminal default"
 					},
 					{
 						"type": "integer",
@@ -174,7 +174,7 @@
 				},
 				"toolOutput": {
 					"$ref": "#/$defs/colorValue",
-					"description": "Tool execution box output text color"
+					"description": "Text color of the output inside a tool execution box"
 				},
 				"mdHeading": {
 					"$ref": "#/$defs/colorValue",
@@ -290,14 +290,14 @@
 				},
 				"bashMode": {
 					"$ref": "#/$defs/colorValue",
-					"description": "Editor border color in bash mode"
+					"description": "Border color of the editor in bash mode"
 				}
 			},
 			"additionalProperties": false
 		},
 		"export": {
 			"type": "object",
-			"description": "Optional colors for HTML export (defaults derived from userMessageBg if not specified)",
+			"description": "Optional HTML export colors; each defaults to a value derived from userMessageBg",
 			"properties": {
 				"pageBg": {
 					"$ref": "#/$defs/colorValue",
@@ -321,7 +321,7 @@
 			"oneOf": [
 				{
 					"type": "string",
-					"description": "Hex color (#RRGGBB), variable reference, or empty string for terminal default"
+					"description": "A hex color in #RRGGBB form, a reference to a variable, or empty for the terminal default"
 				},
 				{
 					"type": "integer",

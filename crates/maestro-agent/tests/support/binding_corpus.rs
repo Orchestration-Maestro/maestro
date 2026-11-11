@@ -143,7 +143,7 @@ async fn control_case(name: &str, case: Case) {
         let immediate = apply_control(&agent, case.input.action.as_deref().unwrap());
         assert_eq!(
             agent.r#continue().await.unwrap_err().message,
-            "Agent is already processing. Wait for completion before continuing."
+            "The agent is already running. Wait for it to finish before continuing."
         );
         release.send(()).unwrap();
         joined.await.unwrap();

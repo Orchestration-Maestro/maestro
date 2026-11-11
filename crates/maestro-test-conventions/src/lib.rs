@@ -14,6 +14,8 @@ mod child_tests;
 mod comments;
 /// Shell scripts in the runner configuration directory.
 mod config_scripts;
+/// Home-directory programs in documented commands.
+mod documented_commands;
 /// Exact production function-body ownership.
 mod duplicates;
 /// Shared-helper ownership in the extension example tests.
@@ -25,7 +27,6 @@ mod generated;
 /// Workspace membership and dependency graph checks.
 mod graph;
 /// Handwritten JavaScript in crate sources.
-mod handwritten_scripts;
 /// Single-target integration-test packaging checks.
 mod integration_tests;
 /// Native platform viewer ownership.
@@ -52,6 +53,7 @@ mod test_budget;
 mod test_input_routes;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
+mod tracked_scripts;
 
 /// Checks names, membership, dependencies and bounded source/build ownership.
 ///
@@ -101,6 +103,13 @@ mod time_limits;
 /// are outside member inheritance enforcement and cannot supply the required
 /// workspace feature; test feature unification can hide missing normal precision.
 /// The unifier's own direct `serde_json` entries are exempt from member inheritance.
+///
+/// Documented commands run `cargo` or `just`. No tracked Markdown page, documentation
+/// test fixtures included, may name a program under a reader's home directory
+/// (`~/.local/bin`, `~/bin`, `$HOME/bin` or `${HOME}/bin`): each offending file is
+/// reported once, at its first such line, in name order. A page version control does
+/// not track never ships, so it stays out of the check, and `.maestro` settings paths
+/// stay accepted.
 ///
 /// Token-identical function bodies with at least 30 interior tokens are
 /// rejected, with every file/signature-line site reported. Production code and
@@ -153,7 +162,8 @@ mod time_limits;
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     test_budget::check(root)?;
     config_scripts::check(root)?;
-    handwritten_scripts::check(root)?;
+    documented_commands::check(root)?;
+    tracked_scripts::check(root)?;
     let (metadata, packages) = graph::check(root)?;
     fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;

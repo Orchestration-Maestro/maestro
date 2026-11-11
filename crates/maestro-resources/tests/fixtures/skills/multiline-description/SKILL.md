@@ -1,11 +1,11 @@
 ---
 name: multiline-description
 description: |
-  This is a multiline description.
-  It spans multiple lines.
-  And should be normalized.
+  The description starts on this line.
+  It continues on a second line.
+  A third line closes it.
 ---
 
 # Multiline Description Skill
 
-This skill tests that multiline YAML descriptions retain their authored newlines.
+Exercises a block-scalar description that keeps its newlines.

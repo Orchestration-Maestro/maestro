@@ -119,7 +119,7 @@ fn theme_export_source_precedence_differs_from_instance_lookup() {
         let error = state.get_resolved_theme_colors(Some(name)).unwrap_err();
         assert_eq!(
             error.to_string(),
-            format!("Theme \"{name}\" does not have a source path for export")
+            format!("Theme \"{name}\" has no source path to export")
         );
     }
     let missing = state.get_resolved_theme_colors(Some("ghost")).unwrap_err();

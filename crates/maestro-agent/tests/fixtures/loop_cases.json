@@ -1580,7 +1580,7 @@
       "trace": [],
       "requests": [],
       "history": [],
-      "error": "Cannot continue: no messages in context"
+      "error": "Nothing to continue from: the context holds no messages"
     }
   },
   {
@@ -1617,7 +1617,7 @@
           "stopReason": "stop"
         }
       ],
-      "error": "Cannot continue from message role: assistant"
+      "error": "Nothing to continue from: the last message has the assistant role"
     }
   },
   {

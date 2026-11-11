@@ -202,8 +202,8 @@ library neither parses nor enforces the requested Markdown structure.
 On success, a branch summary starts with this prefix before the generated text:
 
 ```text
-The user explored a different conversation branch before returning here.
-Summary of that exploration:
+The user went down another branch of this conversation and then came back to this point.
+Summary of that branch:
 
 ```
 

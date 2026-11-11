@@ -7,16 +7,11 @@ use maestro_resources::{
     paths::{CONFIG_DIR_NAME, resolve},
     read_text,
 };
-use std::{
-    collections::HashSet,
-    io::{self, IsTerminal},
-    path::Path,
-    rc::Rc,
-};
+use std::{collections::HashSet, io, path::Path, rc::Rc};
 
-/// Writes `text` to standard error, in yellow when standard error is a terminal.
+/// Writes `text` to standard error, in yellow when the shared colour decision allows it.
 fn warn(text: &str) {
-    if io::stderr().is_terminal() {
+    if maestro_theme::supports_color() {
         write_stderr_line(&format!("\u{1b}[33m{text}\u{1b}[39m"));
     } else {
         write_stderr_line(text);

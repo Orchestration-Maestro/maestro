@@ -32,9 +32,9 @@ winning line. The example writes no file directly and adds no built-in tool.
 ## Controlled runs
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-extensions-wasm --lib -- tic_tac_toe_
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro --test integration -- tic_tac_toe_
 ```

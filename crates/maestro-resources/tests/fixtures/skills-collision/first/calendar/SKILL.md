@@ -1,8 +1,8 @@
 ---
 name: calendar
-description: First calendar skill.
+description: Calendar entry that loads first.
 ---
 
 # Calendar (First)
 
-This is the first calendar skill.
+This copy is discovered first.

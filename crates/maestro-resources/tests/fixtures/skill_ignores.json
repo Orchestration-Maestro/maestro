@@ -3152,12 +3152,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -3264,12 +3264,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -3390,12 +3390,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -3516,12 +3516,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -3628,12 +3628,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -3740,12 +3740,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -3852,7 +3852,7 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -3959,12 +3959,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -4071,7 +4071,7 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           }
         ]
@@ -4192,12 +4192,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -4318,12 +4318,12 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md /SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/drop.md/SKILL.md"
           }
         ]
@@ -4690,17 +4690,17 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/nested/Σ/SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/nested/ς/SKILL.md"
           },
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/sibling/Σ/SKILL.md"
           }
         ]
@@ -5170,7 +5170,7 @@
         "diagnostics": [
           {
             "type": "warning",
-            "message": "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
+            "message": "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
             "path": "$ROOT/sibling/!literal/SKILL.md"
           }
         ]

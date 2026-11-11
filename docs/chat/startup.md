@@ -41,6 +41,19 @@ caller still owns the text.
 `get_changelog_path` re-exports the configuration owner's path for a supplied
 package directory; it adds no policy of its own.
 
+## Startup resource listing
+
+Startup appends the resources the session loaded to the transcript before the
+first prompt. The listing is covered in full under
+[loaded resources](interactive-mode.md#loaded-resources): one section per kind of
+loaded resource that has entries, in the order `[Context]`, `[Skills]`,
+`[Prompts]`, `[Extensions]` and `[Themes]`.
+
+With `quietStartup` set and verbose off, startup shows no section, though the
+resource diagnostics still appear. Sections start expanded in verbose mode or
+when tool output is expanded, and compact otherwise; expanding or collapsing one
+later repaints only its heading.
+
 ## Startup history
 
 Before starting the terminal, a fresh session reads the packaged changelog. A

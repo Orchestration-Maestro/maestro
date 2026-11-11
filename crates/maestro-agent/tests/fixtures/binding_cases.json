@@ -221,7 +221,7 @@
       "resetHistory": false
     },
     "expected": {
-      "error": "Agent is already processing. Wait for completion before continuing.",
+      "error": "The agent is already running. Wait for it to finish before continuing.",
       "queuedWhileBusy": true,
       "events": [
         "agent_start",
@@ -253,7 +253,7 @@
       "resetHistory": true
     },
     "expected": {
-      "error": "Agent is already processing. Wait for completion before continuing.",
+      "error": "The agent is already running. Wait for it to finish before continuing.",
       "queuedWhileBusy": true,
       "events": [
         "agent_start",
