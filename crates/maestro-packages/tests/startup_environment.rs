@@ -47,7 +47,7 @@ fn startup_selection_preserves_update_selection_order() {
     let error = support::drive(&effects, manager.update(Some("npm:absent")))
         .unwrap_err()
         .to_string();
-    assert_eq!(error, "No matching package found for npm:absent");
+    assert_eq!(error, "No package matches npm:absent");
     assert!(effects.calls.borrow().is_empty());
     assert_eq!(effects.spawns.get(), 0);
 

@@ -139,7 +139,7 @@ errors keep the text of the operation that owns them:
 - `Azure OpenAI API key is required. Set AZURE_OPENAI_API_KEY environment variable or pass it as an argument.`
 - `No API key for provider: {provider}`
 - `Invalid Azure OpenAI base URL: {baseUrl}`
-- `Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl.`
+- `Azure OpenAI needs a base URL. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl.`
 - `Request was aborted`
 - `An unknown error occurred`
 

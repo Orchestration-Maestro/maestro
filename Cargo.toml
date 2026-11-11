@@ -67,7 +67,7 @@ panic = "forbid"
 [profile.dev]
 debug = "line-tables-only"
 
-# Backtraces need file:line for workspace code only; dependency line tables take target space.
+# Dev backtraces need file:line for workspace code only; dependency line tables take target space.
 [profile.dev.package."*"]
 debug = false
 
@@ -103,5 +103,6 @@ opt-level = 3
 [profile.dev.package.sha2]
 opt-level = 3
 
+# Test binaries skip line tables, which cost about 17% of a large test unit's compile CPU; panic messages keep file:line.
 [profile.test]
-debug = "line-tables-only"
+debug = false

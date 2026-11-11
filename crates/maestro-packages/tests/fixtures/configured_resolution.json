@@ -7694,7 +7694,7 @@
     "recipe": {
       "files": {
         "shared/extensions/shared.ts": "export default function() {}",
-        "shared/skills/shared-skill/SKILL.md": "---\nname: shared-skill\ndescription: Shared skill\n---\nContent",
+        "shared/skills/shared-skill/SKILL.md": "---\nname: shared-skill\ndescription: Skill behind the shared directories\n---\nContent",
         "shared/prompts/shared.md": "Shared prompt",
         "shared/themes/shared.json": "{\"name\":\"shared-theme\"}"
       },

@@ -135,12 +135,12 @@ fn print_statistics(catalog: &Catalog, output: &mut dyn std::io::Write) -> std::
     writeln!(output, "\nModel Statistics:")?;
     writeln!(
         output,
-        "  Total tool-capable models: {}",
+        "  Models with tool support: {}",
         catalog.values().map(IndexMap::len).sum::<usize>()
     )?;
     writeln!(
         output,
-        "  Reasoning-capable models: {}",
+        "  Models with reasoning: {}",
         catalog
             .values()
             .flat_map(IndexMap::values)

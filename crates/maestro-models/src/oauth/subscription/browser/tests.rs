@@ -716,7 +716,7 @@ impl crate::OAuthLoginCallbacks for Interaction {
     ) -> crate::BoxFuture<Result<String, OAuthError>> {
         assert_eq!(
             prompt.message,
-            "Paste the authorization code or full redirect URL:"
+            "Paste the authorization code or the full redirect URL:"
         );
         assert_eq!(
             prompt.placeholder.as_deref(),

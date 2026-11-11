@@ -369,7 +369,7 @@ fn feed_counts_wait_for_complete_body() {
             assert_eq!(awaited_feed_completion.len(), 1);
             assert_eq!(awaited_feed_completion[0].name, "雪");
             assert!(String::from_utf8(output.bytes).unwrap().ends_with(&format!(
-                "1 tool-capable models from {}\n",
+                "1 models with tool support from {}\n",
                 match source {
                     "router" => "OpenRouter",
                     "gateway" => "Vercel AI Gateway",
@@ -481,7 +481,7 @@ fn invalid_ids_are_diagnosed_without_recursive_conversion() {
         };
         assert_eq!(
             String::from_utf8(errors).unwrap(),
-            format!("Failed to fetch {label} models: skipping model {id}: invalid metadata\n")
+            format!("Could not fetch models from {label}: skipping model {id}: invalid metadata\n")
         );
     }
 }
@@ -784,7 +784,7 @@ fn invalid_id_diagnostics_retain_original_escape_spelling() {
         };
         assert_eq!(
             String::from_utf8(errors).unwrap(),
-            format!("Failed to fetch {label} models: skipping model {id}: invalid metadata\n")
+            format!("Could not fetch models from {label}: skipping model {id}: invalid metadata\n")
         );
     }
 }

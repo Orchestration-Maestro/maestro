@@ -155,7 +155,7 @@ async fn maestro_device_login_uses_remaining_lifetime_scenario() {
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "Device flow timed out after one or more slow_down responses. This is often caused by clock drift in WSL or VM environments. Please sync or restart the VM clock and try again."
+        "The sign-in poll timed out after one or more slow_down responses. Clock drift in a WSL or VM environment usually causes this. Sync or restart the VM clock, then try again."
     );
     assert_eq!(
         exercise(
@@ -336,7 +336,7 @@ async fn device_timeouts_depend_on_observed_slow_down_scenario() {
         .await
         .unwrap_err()
         .to_string()
-        .starts_with("Device flow timed out after one or more slow_down responses.")
+        .starts_with("The sign-in poll timed out after one or more slow_down responses.")
     );
     assert_eq!(
         exercise(

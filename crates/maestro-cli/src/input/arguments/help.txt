@@ -1,4 +1,4 @@
-%APP_BOLD% - AI coding assistant with read, bash, edit, write tools
+%APP_BOLD% - AI coding assistant for reading, running bash, and editing or writing files
 
 ~Usage:
   %APP% [options] [@files...] [messages...]
@@ -139,7 +139,7 @@ Extensions can register additional flags (e.g., --plan from plan-mode extension)
 Hosted-service origin: empty by default (hosted services disabled).
 
 ~Built-in Tool Names:
-  read   - Read file contents
+  read   - Read the text of a file
   bash   - Execute bash commands
   edit   - Edit files with find/replace
   write  - Write files (creates/overwrites)

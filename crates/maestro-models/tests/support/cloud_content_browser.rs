@@ -173,7 +173,7 @@ mod browser {
                     == Some(if scope {
                         "An API Key must be set when running in a browser"
                     } else {
-                        "Vertex AI requires a project ID. Set GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT or pass project in options."
+                        "Vertex AI needs a project. Pass project in options, or set GOOGLE_CLOUD_PROJECT or GCLOUD_PROJECT."
                     }),
                 "browser setup diagnostic must match",
             )?;

@@ -46,7 +46,9 @@ pub(super) fn normalize(raw: &RawValue, errors: &mut dyn Write) -> io::Result<Ve
             match projected {
                 Ok(Some(model)) => models.push(model),
                 Ok(None) => {}
-                Err(_) => super::feeds::skipped(errors, "Failed to load models.dev data:", &id)?,
+                Err(_) => {
+                    super::feeds::skipped(errors, "Could not load data from models.dev:", &id)?;
+                }
             }
         }
         if provider == "cloudflare-ai-gateway" {
@@ -77,7 +79,7 @@ fn derive_workers_models(
         match project(input::descriptor(id.clone(), api, provider, url), raw) {
             Ok(Some(model)) => models.push(model),
             Ok(None) => {}
-            Err(_) => super::feeds::skipped(errors, "Failed to load models.dev data:", &id)?,
+            Err(_) => super::feeds::skipped(errors, "Could not load data from models.dev:", &id)?,
         }
     }
     Ok(())

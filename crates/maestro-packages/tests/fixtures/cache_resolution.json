@@ -8933,7 +8933,7 @@
     "expected": {
       "result": null,
       "error": {
-        "message": "Invalid npmCommand: first array entry must be a non-empty command"
+        "message": "Invalid npmCommand: the first array entry must hold a non-empty command"
       },
       "secondResult": null,
       "commands": [],

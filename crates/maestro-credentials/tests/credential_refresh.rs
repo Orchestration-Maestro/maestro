@@ -387,7 +387,7 @@ mod tests {
             ("read", "read failed"),
             ("parse", ""),
             ("write", "write failed"),
-            ("provider", "Failed to refresh OAuth token for openai"),
+            ("provider", "Could not refresh the OAuth token for openai"),
             ("extract", "extract failed"),
         ];
         for (kind, message) in expected {
@@ -473,7 +473,7 @@ mod tests {
                 assert_eq!(errors.len(), 1, "{name}");
                 assert_eq!(
                     errors[0].to_string(),
-                    format!("Failed to refresh OAuth token for {id}")
+                    format!("Could not refresh the OAuth token for {id}")
                 );
             }
             let (probe, storage) = setup(&json!({"r5-missing": record("old", 1000.0)}));

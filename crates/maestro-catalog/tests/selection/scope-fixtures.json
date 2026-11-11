@@ -14486,7 +14486,7 @@
       "model_index": null,
       "thinking_level": null,
       "fallback_message": null,
-      "error": "Unknown provider \"missing\". Use --list-models to see available providers/models."
+      "error": "Unknown provider \"missing\". See --list-models for the available providers and models."
     }
   },
   {
@@ -14510,7 +14510,7 @@
       "model_index": null,
       "thinking_level": null,
       "fallback_message": null,
-      "error": "No models available. Check your installation or add models to models.json."
+      "error": "No models loaded. Check the installation, or add them to models.json."
     }
   },
   {

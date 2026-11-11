@@ -84,7 +84,7 @@ fn auth_info(pkce: &Pkce, state: &str, originator: &str) -> OAuthAuthInfo {
         .finish();
     OAuthAuthInfo {
         url: format!("https://auth.openai.com/oauth/authorize?{query}"),
-        instructions: Some("A browser window should open. Complete login to finish.".into()),
+        instructions: Some("A browser window opens next. Finish the login there.".into()),
     }
 }
 /// Obtain entropy before binding and retain callback ownership through processing.
@@ -125,7 +125,7 @@ async fn select_code(
     if code.as_deref().unwrap_or_default().is_empty() {
         let input = callbacks
             .on_prompt(OAuthPrompt {
-                message: "Paste the authorization code (or full redirect URL):".into(),
+                message: "Paste the authorization code, or the full redirect URL:".into(),
                 placeholder: None,
                 allow_empty: None,
             })

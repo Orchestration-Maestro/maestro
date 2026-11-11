@@ -230,7 +230,7 @@ fn parse_startup(
         return Ok(ControlFlow::Break(export(source, &parsed, host)?));
     }
     if app_mode == AppMode::Rpc && !parsed.file_args.is_empty() {
-        let message = "Error: @file arguments are not supported in RPC mode";
+        let message = "Error: RPC mode does not accept @file arguments";
         line(stderr, &Theme::red(message, styles))?;
         return Ok(ControlFlow::Break(1));
     }

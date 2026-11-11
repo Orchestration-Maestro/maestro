@@ -29,7 +29,7 @@
   },
   {
     "operation": "args_source",
-    "case": "--version takes precedence over other args",
+    "case": "--version wins over the other args",
     "input": [
       "--version",
       "--help",
@@ -104,7 +104,7 @@
   },
   {
     "operation": "args_source",
-    "case": "parses prompt after -p even when it starts with YAML frontmatter",
+    "case": "parses a prompt after -p that starts with YAML frontmatter",
     "input": [
       "-p",
       "---\ntitle: hello\n---\nSay hi."
@@ -384,7 +384,7 @@
   },
   {
     "operation": "args_source",
-    "case": "parses --models as comma-separated list",
+    "case": "parses --models as a comma-separated list",
     "input": [
       "--models",
       "gpt-4o,claude-sonnet,gemini-pro"
@@ -882,7 +882,7 @@
   },
   {
     "operation": "args_source",
-    "case": "parses mixed messages and file args",
+    "case": "parses messages and file args interleaved",
     "input": [
       "@file.txt",
       "explain this",
@@ -902,7 +902,7 @@
   },
   {
     "operation": "args_source",
-    "case": "captures unknown long flags with string values",
+    "case": "captures unknown long flags that carry string values",
     "input": [
       "--unknown-flag",
       "message"
@@ -939,7 +939,7 @@
   },
   {
     "operation": "args_source",
-    "case": "captures unknown long flags with equals syntax",
+    "case": "captures unknown long flags in equals syntax",
     "input": [
       "--unknown-flag=value"
     ],

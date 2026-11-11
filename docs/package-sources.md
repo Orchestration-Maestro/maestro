@@ -50,7 +50,7 @@ keep their input spelling; local paths are normalized relative to their scope.
 User npm lookup runs the configured command with its leading arguments and
 reuses only a nonempty root from the same complete command vector. Only exact
 `bun` uses global-bin lookup. An empty first command fails with
-`Invalid npmCommand: first array entry must be a non-empty command`. Capture
+`Invalid npmCommand: the first array entry must hold a non-empty command`. Capture
 failures use `Failed to run {command} {arguments}: {error}` and propagate to the
 caller rather than reporting missing contents.
 
