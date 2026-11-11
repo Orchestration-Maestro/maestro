@@ -233,13 +233,13 @@ CARGO_BUILD_JOBS=3 just sandbox-runtime
 
 Run the step before anything that builds `maestro-web`. `just check`, `just _check`,
 `just test`, `just build`, `just native-dev` and `just browser-chat-example` run it first.
-A plain `cargo` build without the file fails in the
-`maestro-web` build script with one message that names the step. The command refuses a
-missing or unpinned compiler (naming the tool and its release), a library outside the audited
-list and script text that an inline script cannot carry. It wraps the script in a function so
-no glue name reaches the frame's global scope, and passes the compiler flags in Cargo's
-encoded form so a checkout path with spaces builds. It writes the file only when the bytes
-change, so an unchanged build does not rebuild `maestro-web`.
+A plain `cargo` build without the file fails in the `maestro-web` build script with one
+message that names the step. The command refuses a missing or unpinned compiler (naming the
+tool and its release), a library outside the audited list and script text that an inline
+script cannot carry. It wraps the script in a function so no glue name reaches the frame's
+global scope, and passes the compiler flags in Cargo's encoded form so a checkout path with
+spaces builds. It writes the file only when the bytes change, so an unchanged build does
+not rebuild `maestro-web`.
 
 The command records the checkout as `/checkout` and each dependency's sources as
 `<name>-<version>`. These stable names keep the script the same on every machine: no Cargo
@@ -284,12 +284,12 @@ just browser-test
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
 (supplier revision 1248) and wasm-bindgen CLI 0.2.129, matching the locked Rust
-binding. It also builds the sandbox runtime script when the checkout lacks one, so after
-changing the runtime crate, run `just sandbox-runtime` (or `just test`) before
-`just browser-test`. A script already under `target/sandbox-runtime/` is used as it is, the
-same file the `maestro-web` build embeds, and a job that downloaded it needs no Emscripten
-on `PATH` (see [Sandbox runtime bundle](#sandbox-runtime-bundle)). The browser executable
-must be an absolute path. The shared workflow owns
+binding. It also builds the sandbox runtime script, but only when the checkout lacks one.
+A script already under `target/sandbox-runtime/` is used as it is, the same file the
+`maestro-web` build embeds, and a job that downloaded it needs no Emscripten on `PATH`
+(see [Sandbox runtime bundle](#sandbox-runtime-bundle)). After changing the runtime crate,
+run `just sandbox-runtime` (or `just test`) before `just browser-test`. The browser
+executable must be an absolute path. The shared workflow owns
 tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
 downloader. Observed versions, checkout SHA and Cargo's emitted artifact paths are

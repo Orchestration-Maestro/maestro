@@ -945,9 +945,9 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
     );
 }
 
-/// The sandbox runtime script is built first, then every real-browser case, the driver
-/// regressions, each export and the report run in one nextest invocation under its hang limit,
-/// and that run's status is the command's.
+/// A checkout without the sandbox runtime script builds it first, then every real-browser
+/// case, the driver regressions, each export and the report run in one nextest invocation
+/// under its hang limit, and that run's status is the command's.
 #[test]
 fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_run() {
     drive();
