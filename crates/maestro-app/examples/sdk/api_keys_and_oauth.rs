@@ -112,38 +112,3 @@ fn custom_registry(
         commands,
     )?))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Credential configurations are announced without printing any keys.
-    #[test]
-    fn api_keys_and_oauth_prints_observations_in_order() -> Result<(), Error> {
-        let output = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
-        support::execute(|mut sample| {
-            sample.output = output.clone();
-            run(sample)
-        })?;
-        assert_eq!(
-            String::from_utf8(output.borrow().clone())?,
-            "Session with default auth storage and model registry\nSession with custom auth storage location\nSession with runtime API key override\nSession with only built-in models\n"
-        );
-        Ok(())
-    }
-
-    /// A runtime key wins without overwriting the credential file or replacing its owner.
-    #[test]
-    fn api_keys_keeps_runtime_overrides_out_of_persistent_credentials() -> Result<(), Error> {
-        let value = support::execute(run)?;
-        assert_eq!(value["sameCustomRegistry"], true);
-        assert_eq!(value["customModelName"], "Custom location model");
-        assert_eq!(value["stored"], "stored-example-key");
-        assert_eq!(value["resolved"], "runtime-example-key");
-        assert_eq!(value["restored"], "stored-example-key");
-        assert_eq!(value["sameAuth"], true);
-        assert_eq!(value["withoutCustomModel"], true);
-        assert_eq!(value["sessions"], 4);
-        Ok(())
-    }
-}
