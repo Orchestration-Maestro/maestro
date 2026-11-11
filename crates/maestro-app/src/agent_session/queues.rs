@@ -18,7 +18,7 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 impl<E: ExtensionExecution> AgentSession<E> {
-    /// Queues a steering message, delivered after the running turn's tool calls and before
+    /// Adds a steering message, which arrives once the running turn's tool calls finish and before
     /// the next model call. Skill commands and templates expand.
     ///
     /// # Errors
@@ -30,7 +30,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
         Ok(())
     }
 
-    /// Queues a follow-up message, delivered once the agent has no tool calls or steering
+    /// Adds a follow-up message, held back until no tool calls or steering
     /// messages left. Skill commands and templates expand.
     ///
     /// # Errors
@@ -274,8 +274,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
             return Ok(());
         }
         Err(DiagnosticErrorInfo::error(format!(
-            "Extension command \"/{name}\" cannot be queued. Use prompt() or execute the command \
-             when not streaming."
+            "Command \"/{name}\" comes from an extension and cannot be queued. Call prompt(), or run the command \
+             when nothing is streaming."
         )))
     }
 }

@@ -587,7 +587,7 @@ fn artifact_schema_routes_prepare_before_typed_execution() {
                     serde_json::from_value(value.clone()).unwrap();
                 assert_eq!(
                     call(&tool, value).await,
-                    json!({"content":[{"type":"text", "text": format!("Error: File {} not found. No files have been created yet.", params.filename)}]})
+                    json!({"content":[{"type":"text", "text": format!("Error: File {} does not exist; no file has been created so far.", params.filename)}]})
                 );
             } else {
                 assert!(
@@ -835,7 +835,7 @@ fn artifact_tool_declares_six_commands_and_plain_results() {
         assert!(result.details.is_none() && result.terminate.is_none());
         assert_eq!(
             serde_json::to_value(result).unwrap(),
-            json!({"content":[{"type":"text", "text":"Error: File missing not found. No files have been created yet."}]})
+            json!({"content":[{"type":"text", "text":"Error: File missing does not exist; no file has been created so far."}]})
         );
     });
 }

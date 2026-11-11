@@ -1877,12 +1877,12 @@ fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
                 world.terminal.set_pending_output_bytes(pending);
                 world.terminal.clear_writes();
                 world.mode.report_fatal_runtime_error(
-                    "Failed to create session",
+                    "Cannot create the session",
                     &io::Error::other("boom"),
                 );
                 let theme = world.themes.theme().get().unwrap();
                 let notice = theme
-                    .fg(&ThemeColor::Error, "Error: Failed to create session: boom")
+                    .fg(&ThemeColor::Error, "Error: Cannot create the session: boom")
                     .unwrap();
                 let rows = world.mode.chat_container.render(100);
                 assert!(
@@ -1895,7 +1895,7 @@ fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
                     .position(|write| {
                         strip_ansi(write)
                             .unwrap()
-                            .contains("Error: Failed to create session: boom")
+                            .contains("Error: Cannot create the session: boom")
                     })
                     .unwrap_or_else(|| {
                         panic!("the failure notice reached the terminal at {pending}: {writes:?}")
@@ -1926,7 +1926,7 @@ fn fatal_runtime_error_ends_the_process_with_failure_status() {
             println!("\nPROBE fatal body started");
             world
                 .mode
-                .handle_fatal_runtime_error("Failed to create session", &io::Error::other("boom"));
+                .handle_fatal_runtime_error("Cannot create the session", &io::Error::other("boom"));
         }
         return;
     }

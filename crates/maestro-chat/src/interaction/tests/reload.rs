@@ -36,7 +36,7 @@ fn reload_applies_http_idle_limit_to_next_request() {
                 serde_json::from_value(json!({"httpIdleTimeoutMs": 60_000})).unwrap(),
             );
             reload(&world).await;
-            assert!(shows(&world.mode.chat_container, "Reloaded keybindings"));
+            assert!(shows(&world.mode.chat_container, "Reloaded every resource"));
             super::settings::next_http_request_uses_idle_limit(Some(60_000)).await;
             drop(world.runtime.settle());
         },
@@ -57,7 +57,10 @@ fn reload_reports_invalid_http_idle_timeout() {
                 &world.mode.chat_container,
                 "Reload failed: Invalid httpIdleTimeoutMs setting: -5"
             ));
-            assert!(!shows(&world.mode.chat_container, "Reloaded keybindings"));
+            assert!(!shows(
+                &world.mode.chat_container,
+                "Reloaded every resource"
+            ));
             drop(world.runtime.settle());
         },
     );
@@ -89,7 +92,7 @@ fn reload_submit_routes_exact_command() {
                     .chat_container
                     .render(120)
                     .join("\n")
-                    .contains("Reloaded keybindings")
+                    .contains("Reloaded every resource")
             );
         }
     });
@@ -130,7 +133,9 @@ fn reload_refuses_only_streaming_and_compaction() {
                 assert!(admitted(&world.runtime).await.is_empty());
                 let rows = world.mode.chat_container.render(120).join("\n");
                 assert!(
-                    rows.contains("Wait for the current response to finish before reloading."),
+                    rows.contains(
+                        "A response is still running; wait for it to finish before reloading."
+                    ),
                     "{rows}"
                 );
                 assert!(world.loader.calls.borrow().is_empty());
@@ -148,7 +153,9 @@ fn reload_refuses_only_streaming_and_compaction() {
                 ));
                 let rows = mode.chat_container.render(120).join("\n");
                 assert!(
-                    rows.contains("Wait for compaction to finish before reloading."),
+                    rows.contains(
+                        "Compaction is still running; wait for it to finish before reloading."
+                    ),
                     "{rows}"
                 );
             })
@@ -190,7 +197,7 @@ fn reload_failure_restores_post_reset_editor() {
             assert!(!old.focus_flag().get());
             let rows = world.mode.chat_container.render(120).join("\n");
             assert!(rows.contains("Reload failed: application failed"), "{rows}");
-            assert!(!rows.contains("Reloaded keybindings"));
+            assert!(!rows.contains("Reloaded every resource"));
         },
     );
 }
@@ -214,10 +221,13 @@ fn reload_initial_draw_failure_restores_captured_editor() {
             assert!(errors.is_empty(), "{errors:?}");
             assert!(!world.loader.calls.borrow().contains(&"reload"));
             let output = world.terminal.writes().join("");
-            assert!(output.contains("Reloading keybindings"), "{output}");
+            assert!(
+                output.contains("Reloading every resource: keybindings"),
+                "{output}"
+            );
             let rows = world.mode.chat_container.render(160).join("\n");
             assert!(rows.contains("Reload failed: cursor failure"), "{rows}");
-            assert!(!rows.contains("Reloaded keybindings"), "{rows}");
+            assert!(!rows.contains("Reloaded every resource"), "{rows}");
             world.terminal.send_input("resumed draft");
             assert_eq!(world.mode.editor.get_text(), "resumed draft");
         },
@@ -251,7 +261,7 @@ fn reload_preparation_failure_keeps_its_catch_boundary() {
                     .terminal
                     .writes()
                     .join("")
-                    .contains("Reloading keybindings")
+                    .contains("Reloading every resource: keybindings")
             );
             assert!(!world.mode.extension_widgets_above.is_empty());
         },
@@ -375,7 +385,9 @@ async fn painted_reload(directory: &Path, pending: usize) {
     );
     let output = maestro_app::strip_ansi(&world.terminal.writes().join("")).unwrap();
     assert!(
-        output.contains("Reloading keybindings, extensions, skills, prompts, themes..."),
+        output.contains(
+            "Reloading every resource: keybindings, extensions, skills, prompts, themes..."
+        ),
         "{output}"
     );
     assert!(!Focusable::focus_flag(world.mode.editor.as_ref()).get());
@@ -453,7 +465,7 @@ async fn quiet_reload(directory: &Path, broken: bool) {
     assert_eq!(rows.contains("models.json error:"), broken, "{rows}");
     assert!(!rows.contains("[Prompts]"), "{rows}");
     assert!(!rows.contains("[Skills]"), "{rows}");
-    let success = rows.find("Reloaded keybindings").unwrap();
+    let success = rows.find("Reloaded every resource").unwrap();
     if broken {
         assert!(
             rows.find("[Prompt conflicts]").unwrap() < rows.find("models.json error:").unwrap()
@@ -515,7 +527,7 @@ async fn failed_reload(directory: &Path, stage: &'static str) {
     }
     let rows = world.mode.chat_container.render(160).join("\n");
     assert!(rows.contains(failure_notice(stage)), "{stage}: {rows}");
-    assert!(!rows.contains("Reloaded keybindings"), "{stage}: {rows}");
+    assert!(!rows.contains("Reloaded every resource"), "{stage}: {rows}");
     assert_eq!(
         world
             .loader
@@ -564,7 +576,7 @@ async fn configured_reload(
     );
     let rows = world.mode.chat_container.render(160).join("\n");
     assert!(rows.contains("replayed user"), "{rows}");
-    assert!(rows.contains("Reloaded keybindings"), "{rows}");
+    assert!(rows.contains("Reloaded every resource"), "{rows}");
     assert!(knobs.calls.borrow().ends_with(&[
         "padding".into(),
         "height".into(),
@@ -865,7 +877,7 @@ fn command_actions_use_live_idle_resume_and_reload_owners() {
             world.mode.editor.set_text("retained draft");
             context(&world).reload().await.unwrap();
             assert_eq!(world.mode.editor.get_text(), "retained draft");
-            assert!(shows(&world.mode.chat_container, "Reloaded keybindings"));
+            assert!(shows(&world.mode.chat_container, "Reloaded every resource"));
             super::with_held_response(&world, async |_| {
                 let mut idle = context(&world).wait_for_idle();
                 assert!(
@@ -877,7 +889,7 @@ fn command_actions_use_live_idle_resume_and_reload_owners() {
                 context(&world).reload().await.unwrap();
                 assert!(shows(
                     &world.mode.chat_container,
-                    "Wait for the current response"
+                    "A response is still running"
                 ));
                 assert!(!world.loader.calls.borrow().contains(&"reload"));
             })
@@ -995,7 +1007,9 @@ async fn quiet_bound_reload(directory: &std::path::Path) {
     context(&world).reload().await.unwrap();
     let rows = world.mode.chat_container.render(160).join("\n");
     assert!(rows.find("[Prompt conflicts]").unwrap() < rows.find("models.json error:").unwrap());
-    assert!(rows.find("models.json error:").unwrap() < rows.find("Reloaded keybindings").unwrap());
+    assert!(
+        rows.find("models.json error:").unwrap() < rows.find("Reloaded every resource").unwrap()
+    );
     assert!(!rows.contains("[Prompts]"));
     assert!(!rows.contains("[Skills]"));
 }
@@ -1594,7 +1608,7 @@ fn command_actions_read_current_session_when_invoked() {
         async |directory| {
             let world = started(directory).await;
             context(&world).reload().await.unwrap();
-            assert!(shows(&world.mode.chat_container, "Reloaded keybindings"));
+            assert!(shows(&world.mode.chat_container, "Reloaded every resource"));
             let actions = world.mode.command_context_actions();
             let old = context(&world);
             world

@@ -615,7 +615,7 @@ fn edit_empty_list_fails_before_path_or_queue() {
     let error = run(start(&tool(&ops, "."), args, Some(signal.clone())))
         .err()
         .unwrap();
-    assert!(error.message.contains("edits must contain"));
+    assert!(error.message.contains("edits needs at least one entry"));
     let wrapped = agent_tool(&ops, ".");
     let error = run((wrapped.execute)(
         "id".into(),
@@ -625,7 +625,7 @@ fn edit_empty_list_fails_before_path_or_queue() {
     ))
     .err()
     .unwrap();
-    assert!(error.message.contains("edits must contain"));
+    assert!(error.message.contains("edits needs at least one entry"));
     assert!(ops.script.calls().is_empty());
     std::env::set_current_dir(maestro_test_directory::temporary_root()).unwrap();
 }

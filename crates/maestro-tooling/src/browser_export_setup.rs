@@ -1,6 +1,6 @@
 //! Prepare the temporary browser export library from the checkout's current manifests.
 
-use std::{ffi::OsString, fs, io, path::Path, process::ExitCode};
+use std::{collections::HashSet, ffi::OsString, fs, io, path::Path, process::ExitCode};
 
 use toml::{Table, Value};
 
@@ -89,7 +89,7 @@ fn manifest(root: &str) -> io::Result<String> {
     own.as_table_mut()
         .ok_or_else(|| io::Error::other("invalid maestro-web dependency"))?
         .insert("path".into(), member_root.clone().into());
-    let mut result: Table = toml::from_str("[package]\nname='maestro-browser-test'\nversion='0.0.0'\nedition='2024'\npublish=false\n[workspace]\n[lib]\ncrate-type=['cdylib']\n[profile.dev]\ndebug='line-tables-only'\n[profile.dev.package.'*']\ndebug=false\n").map_err(io::Error::other)?;
+    let mut result: Table = toml::from_str("[package]\nname='maestro-browser-test'\nversion='0.0.0'\nedition='2024'\npublish=false\n[workspace]\n[lib]\ncrate-type=['cdylib']\n").map_err(io::Error::other)?;
     result
         .get_mut("lib")
         .and_then(Value::as_table_mut)
@@ -99,10 +99,45 @@ fn manifest(root: &str) -> io::Result<String> {
             maestro_path::join(&[&member_root, "tests/integration.rs"]).into(),
         );
     result.insert("dependencies".into(), dependencies.into());
+    if let Some(profile) = profile(&workspace, root)? {
+        result.insert("profile".into(), profile.into());
+    }
     if let Some(patches) = workspace.get("patch") {
         result.insert("patch".into(), absolute_patches(patches, root)?.into());
     }
     toml::to_string(&result).map_err(io::Error::other)
+}
+
+/// Copy the root profiles so the library's dependencies compile exactly as the checkout's do.
+///
+/// A package override that names nothing the library builds is dropped: Cargo warns about it.
+fn profile(workspace: &Table, root: &str) -> io::Result<Option<Table>> {
+    let Some(mut profile) = workspace.get("profile").map(table).transpose()?.cloned() else {
+        return Ok(None);
+    };
+    let lock = Lock::read(Path::new(root))?;
+    let built: HashSet<&str> = lock
+        .graph(|_| true)
+        .closure(["maestro-web"])
+        .into_iter()
+        .map(|package| package.name.as_str())
+        .collect();
+    for (_, settings) in &mut profile {
+        let Some(settings) = settings.as_table_mut() else {
+            continue;
+        };
+        if let Some(packages) = settings.get_mut("package").and_then(Value::as_table_mut) {
+            let unused: Vec<String> = packages
+                .keys()
+                .filter(|name| *name != "*" && !built.contains(name.as_str()))
+                .cloned()
+                .collect();
+            for name in unused {
+                packages.remove(&name);
+            }
+        }
+    }
+    Ok(Some(profile))
 }
 
 /// Anchor every registry's replacement dependencies to the root manifest.

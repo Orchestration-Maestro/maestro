@@ -171,7 +171,7 @@ fn probe(
             through(
                 output,
                 wire,
-                b"Reloaded keybindings, extensions, skills, prompts, themes",
+                b"Reloaded every resource: keybindings, extensions, skills, prompts, themes",
             );
             through(output, wire, FRAME_END);
             assert_eq!(

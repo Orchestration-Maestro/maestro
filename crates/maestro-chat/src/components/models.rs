@@ -327,7 +327,7 @@ impl ModelSelectorComponent {
             container.add_child(Rc::new(Text::new(
                 state.paint(
                     &ThemeColor::Warning,
-                    "Only showing models from configured providers. Use /login to add providers.",
+                    "Showing only models of configured providers. Run /login to add a provider.",
                 ),
                 0,
                 0,

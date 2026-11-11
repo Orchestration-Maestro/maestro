@@ -138,7 +138,7 @@ fn wrapped_read_runs_through_raw_agent_loop() {
     assert_eq!(
         wire[2]["content"],
         json!([text_json(&format!(
-            "{kept}\n\n[Showing lines 1-2000 of 2500. Use offset=2001 to continue.]"
+            "{kept}\n\n[Showing lines 1-2000 of 2500. Continue with offset=2001.]"
         ))])
     );
     assert_eq!(wire[2]["details"]["truncation"]["truncatedBy"], "lines");

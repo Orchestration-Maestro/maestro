@@ -9,7 +9,7 @@ fn follow_up_description_names_the_configured_key() {
         assert_eq!(
             follow_up_description(key),
             format!(
-                "{key} queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once."
+                "{key} queues follow-up messages until the agent stops. 'one-at-a-time': one message at a time, each waiting for its response. 'all': everything at once."
             )
         );
     }

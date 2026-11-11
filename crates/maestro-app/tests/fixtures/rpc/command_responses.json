@@ -204,7 +204,7 @@
       "id": "request-a",
       "type": "clone"
     },
-    "raw": "{\"id\":\"request-a\",\"type\":\"response\",\"command\":\"clone\",\"success\":false,\"error\":\"Cannot clone session: no current entry selected\"}\n"
+    "raw": "{\"id\":\"request-a\",\"type\":\"response\",\"command\":\"clone\",\"success\":false,\"error\":\"Cannot clone the session: no entry is currently selected\"}\n"
   },
   {
     "name": "get_fork_messages",

@@ -50,7 +50,7 @@ pub struct RpcSessionState {
     pub auto_compaction_enabled: bool,
     /// The messages in the session.
     pub message_count: usize,
-    /// The queued steering and follow-up messages.
+    /// Steering and follow-up messages waiting in the queues.
     pub pending_message_count: usize,
 }
 

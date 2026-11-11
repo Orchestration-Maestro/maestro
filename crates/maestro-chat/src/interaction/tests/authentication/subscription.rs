@@ -105,7 +105,7 @@ async fn authorization_case(
     if let Some(text) = instructions.filter(|text| !text.is_empty()) {
         assert!(rows.contains(text), "{id}: instructions are shown");
     }
-    let paste = "Paste redirect URL below, or complete login in browser:";
+    let paste = "Paste the redirect URL below, or finish the sign-in in your browser:";
     assert_eq!(rows.contains(paste), pasted, "{id} {server:?}");
     let waiting = "Waiting for browser authentication...";
     assert_eq!(rows.contains(waiting), polls, "{id}");

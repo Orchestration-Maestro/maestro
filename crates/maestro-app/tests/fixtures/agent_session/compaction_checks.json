@@ -250,7 +250,7 @@
           "reason": "overflow",
           "aborted": false,
           "willRetry": false,
-          "errorMessage": "Context overflow recovery failed after one compact-and-retry attempt. Try reducing context or switching to a larger-context model.",
+          "errorMessage": "Context overflow was not resolved by one compact-and-retry attempt. Shrink the context or switch to a model with a larger context window.",
           "result": null
         }
       ],
@@ -1057,7 +1057,7 @@
         "reason": "overflow",
         "aborted": false,
         "willRetry": false,
-        "errorMessage": "Context overflow recovery failed: Summarization failed: No more faux responses queued",
+        "errorMessage": "Recovery from the context overflow failed: Summarization failed: No more faux responses queued",
         "result": null
       },
       {

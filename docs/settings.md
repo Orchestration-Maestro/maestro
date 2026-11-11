@@ -514,6 +514,12 @@ every event as before.
 | `sessionDir` | string | unset | A leading `~` reads as [Home directory in paths](#home-directory-in-paths); bytes of the home directory that are not valid UTF-8 read as U+FFFD; any text while the home directory is unknown is returned as written, including the empty string |
 | `enabledModels` | string[] | unset | Model patterns for cycling |
 
+### Adapters
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `adapters.<port>` | string | The port's default adapter | Name of the adapter that serves the port; a value that is not a string is refused; see [ports](ports.md) |
+
 ### Resources
 
 | Setting | Type | Default | Description |

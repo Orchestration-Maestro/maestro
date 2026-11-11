@@ -88,7 +88,7 @@
       ]
     },
     "expected": {
-      "value": "This installation is not managed by a global npm install. Update it with the package manager, wrapper, or source checkout that provides it."
+      "value": "This installation is not managed by a global npm install. Update it through whichever package manager, source checkout or wrapper supplies it."
     },
     "trace": [
       [

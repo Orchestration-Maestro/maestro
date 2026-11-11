@@ -25033,7 +25033,7 @@
       "test": "app_storage_reports_uninitialized_access",
       "input": {},
       "expected": {
-        "error": "AppStorage not initialized. Call setAppStorage() first."
+        "error": "AppStorage has not been initialized; call setAppStorage() first."
       }
     },
     {

@@ -13,7 +13,7 @@ impl InteractiveMode {
     pub(super) async fn handle_clear_command(self: Rc<Self>) -> Result<(), Box<dyn Error>> {
         self.clear_status_indicator(None);
         if let Err(error) = self.start_new_session().await {
-            self.handle_fatal_runtime_error("Failed to create session", error.as_ref());
+            self.handle_fatal_runtime_error("Cannot create the session", error.as_ref());
         }
         Ok(())
     }

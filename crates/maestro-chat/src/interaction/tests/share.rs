@@ -491,7 +491,7 @@ fn copy_refuses_when_no_assistant_text() {
             assert_notice(
                 &world,
                 &ThemeColor::Error,
-                "Error: No agent messages to copy yet.",
+                "Error: No agent message to copy yet.",
             );
         }
     }) else {
@@ -516,7 +516,7 @@ fn copy_uses_current_last_assistant_and_reports_result() {
             assert_notice(
                 &world,
                 &ThemeColor::Dim,
-                "Copied last agent message to clipboard",
+                "Last agent message copied to the clipboard",
             );
         }
         // The command reads the current session, including one replaced between calls.
@@ -527,7 +527,7 @@ fn copy_uses_current_last_assistant_and_reports_result() {
         assert_notice(
             &world,
             &ThemeColor::Dim,
-            "Copied last agent message to clipboard",
+            "Last agent message copied to the clipboard",
         );
     }) else {
         return;
@@ -577,7 +577,7 @@ fn share_reports_missing_cli_before_auth_failure() {
         assert_notice(
             &world,
             &ThemeColor::Error,
-            "Error: GitHub CLI (gh) is not installed. Install it from https://cli.github.com/",
+            "Error: The GitHub CLI (gh) is missing. See https://cli.github.com/ for the install steps.",
         );
         assert!(artifacts().is_empty(), "no export was started");
         assert!(arguments().is_empty(), "no program ran");
@@ -590,7 +590,7 @@ fn share_reports_missing_cli_before_auth_failure() {
         assert_notice(
             &world,
             &ThemeColor::Error,
-            "Error: GitHub CLI (gh) is not installed. Install it from https://cli.github.com/",
+            "Error: The GitHub CLI (gh) is missing. See https://cli.github.com/ for the install steps.",
         );
         assert!(artifacts().is_empty(), "no export was started");
         assert!(arguments().is_empty(), "no program ran");
@@ -613,7 +613,7 @@ fn share_auth_failure_does_not_export() {
             assert_notice(
                 &world,
                 &ThemeColor::Error,
-                "Error: GitHub CLI is not logged in. Run 'gh auth login' first.",
+                "Error: The GitHub CLI has no login. Run 'gh auth login' first.",
             );
             assert_eq!(arguments(), [vec!["auth".to_owned(), "status".to_owned()]]);
             assert!(artifacts().is_empty(), "no export was started");

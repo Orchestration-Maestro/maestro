@@ -188,7 +188,7 @@ impl UserMessageSelectorComponent {
             paint(
                 theme.get().ok().as_deref(),
                 &ThemeColor::Muted,
-                "Select a user message to copy the active path up to that point into a new session",
+                "Pick a user message; everything up to it becomes the active path of a new session",
             ),
             1,
             0,

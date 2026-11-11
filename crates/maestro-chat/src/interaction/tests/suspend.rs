@@ -133,7 +133,7 @@ fn suspend_windows_reports_without_native_effects() {
             let world = started(directory).await;
             world.mode.show_suspend_unsupported().unwrap();
             let shown = world.mode.chat_container.render(80).concat();
-            assert!(shown.contains("Suspend to background is not supported on Windows"));
+            assert!(shown.contains("Windows has no suspend to background"));
             assert_eq!(world.terminal.events(), ["start"]);
             assert_eq!(world.runtime.futures(), 0);
         },

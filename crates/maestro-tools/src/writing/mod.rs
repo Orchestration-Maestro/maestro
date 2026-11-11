@@ -65,12 +65,12 @@ pub fn create_write_tool_definition<C: 'static>(
     ToolDefinition {
         definition: Tool {
             name: "write".into(),
-            description: "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.".into(),
+            description: "Write content to a file, creating it when missing and overwriting it when present. Parent directories are created automatically.".into(),
             parameters: maestro_models::ParameterSchema::authored(json!({
                 "type": "object",
                 "required": ["path", "content"],
                 "properties": {
-                    "path": {"type": "string", "description": "Path to the file to write (relative or absolute)"},
+                    "path": {"type": "string", "description": "File to write, as a relative or absolute path"},
                     "content": {"type": "string", "description": "Content to write to the file"},
                 },
             }), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/content".to_owned(), maestro_models::SchemaKind::String)]),
@@ -78,7 +78,7 @@ pub fn create_write_tool_definition<C: 'static>(
         label: "write".into(),
         prompt_snippet: Some("Create or overwrite files".into()),
         prompt_guidelines: Some(vec![
-            "Use write only for new files or complete rewrites.".into(),
+            "Reserve write for new files and complete rewrites.".into(),
         ]),
         render_shell: None,
         prepare_arguments: None,

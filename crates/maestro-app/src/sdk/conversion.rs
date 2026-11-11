@@ -6,8 +6,8 @@ use maestro_session::message_records::{CustomAgentMessages, convert_to_llm};
 /// The text that stands in for a withheld image.
 const IMAGE_PLACEHOLDER: &str = "Image reading is disabled.";
 
-/// Converts `messages` for the model; when `block_images` is set, every image of a user or
-/// tool-result message becomes the placeholder text and a run of placeholders becomes one.
+/// Converts `messages` for the model; when `block_images` is set, every image in a user message
+/// or a tool result becomes the placeholder text and a run of placeholders becomes one.
 #[must_use]
 pub fn convert_to_llm_with_block_images<C: maestro_agent::CustomAgentMessages>(
     messages: &[AgentMessage<CustomAgentMessages<serde_json::Value, C>>],

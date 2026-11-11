@@ -240,7 +240,7 @@ fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
             assert!(matches!(idle, RpcClientError::IdleTimeout { .. }));
             assert_eq!(
                 idle.to_string(),
-                "Timeout waiting for agent to become idle. Stderr: "
+                "Timed out while waiting for the agent to become idle. Stderr: "
             );
             let collect = collect.await.unwrap_err();
             assert!(matches!(collect, RpcClientError::CollectionTimeout { .. }));
@@ -382,7 +382,7 @@ fn work_expired_before_the_child_ends_keeps_its_timeout() {
         };
         assert_eq!(
             error.to_string(),
-            "Timeout waiting for agent to become idle. Stderr: "
+            "Timed out while waiting for the agent to become idle. Stderr: "
         );
         release.send(()).unwrap();
         hold.await.unwrap();

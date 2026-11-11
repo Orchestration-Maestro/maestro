@@ -308,7 +308,7 @@ fn deprecated_extension_dirs(root: &str, label: &str) -> Vec<String> {
     let mut warnings = Vec::new();
     if Path::new(&join(&[root, "hooks"])).exists() {
         warnings.push(format!(
-            "{label} hooks/ directory found. Hooks have been renamed to extensions."
+            "{label} hooks/ directory found. Hooks are now called extensions."
         ));
     }
     if let Ok(entries) = fs::read_dir(join(&[root, "tools"]))
@@ -321,7 +321,9 @@ fn deprecated_extension_dirs(root: &str, label: &str) -> Vec<String> {
                     .any(|binary| name.eq_ignore_ascii_case(binary))
         })
     {
-        warnings.push(format!("{label} tools/ directory contains custom tools. Custom tools have been merged into extensions."));
+        warnings.push(format!(
+            "{label} tools/ directory holds custom tools. Custom tools now live in extensions."
+        ));
     }
     warnings
 }
