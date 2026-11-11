@@ -698,7 +698,7 @@ fn assert_preparation(
     let hook_error = matches!(failure, PreparationFailure::Hook);
     let output = output.read().unwrap();
     let expected = if invalid_key {
-        "Failed to extract accountId from token"
+        "The token carries no accountId"
     } else if hook_error {
         "hook failed first"
     } else {

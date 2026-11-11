@@ -18,7 +18,7 @@ pub(crate) enum OpenAICompletionsCapability {
     SupportsUsageInStreaming,
     /// Tool results must carry the tool name.
     RequiresToolResultName,
-    /// An assistant message must separate tool results from the next user message.
+    /// An assistant message separates the tool results from the user message that follows.
     RequiresAssistantAfterToolResult,
     /// Replayed reasoning is sent as assistant text.
     RequiresThinkingAsText,

@@ -119,7 +119,7 @@ fn catalog_command_fetches_sequentially_and_reports_after_writes() {
     );
     assert_eq!(
         String::from_utf8(output.bytes).unwrap(),
-        "Fetching models from models.dev API...\nLoaded 0 tool-capable models from models.dev\nFetching models from OpenRouter API...\nFetched 0 tool-capable models from OpenRouter\nFetching models from Vercel AI Gateway API...\nFetched 0 tool-capable models from Vercel AI Gateway\nGenerated src/catalog/models_generated/\n\nModel Statistics:\n  Total tool-capable models: 45\n  Reasoning-capable models: 36\n  amazon-bedrock: 1 models\n  anthropic: 3 models\n  google: 1 models\n  openai: 5 models\n  deepseek: 2 models\n  openai-codex: 10 models\n  xai: 3 models\n  mistral: 1 models\n  openrouter: 1 models\n  google-vertex: 13 models\n  azure-openai-responses: 5 models\n"
+        "Fetching models from models.dev API...\nLoaded 0 models with tool support from models.dev\nFetching models from OpenRouter API...\nFetched 0 models with tool support from OpenRouter\nFetching models from Vercel AI Gateway API...\nFetched 0 models with tool support from Vercel AI Gateway\nGenerated src/catalog/models_generated/\n\nModel Statistics:\n  Models with tool support: 45\n  Models with reasoning: 36\n  amazon-bedrock: 1 models\n  anthropic: 3 models\n  google: 1 models\n  openai: 5 models\n  deepseek: 2 models\n  openai-codex: 10 models\n  xai: 3 models\n  mistral: 1 models\n  openrouter: 1 models\n  google-vertex: 13 models\n  azure-openai-responses: 5 models\n"
     );
 }
 
@@ -175,7 +175,7 @@ fn catalog_command_preserves_feed_failure_fallbacks() {
         assert!(
             String::from_utf8(output)
                 .unwrap()
-                .contains("Total tool-capable models: 45\n")
+                .contains("Models with tool support: 45\n")
         );
     }
 }
@@ -192,13 +192,13 @@ fn catalog_command_returns_write_and_output_errors() {
         "Fetching models from models.dev",
         "Loaded 0",
         "Fetching models from OpenRouter",
-        "Fetched 0 tool-capable models from OpenRouter",
+        "Fetched 0 models with tool support from OpenRouter",
         "Fetching models from Vercel",
-        "Fetched 0 tool-capable models from Vercel",
+        "Fetched 0 models with tool support from Vercel",
         "Generated ",
         "Model Statistics:",
-        "  Total ",
-        "  Reasoning-",
+        "  Models with tool support:",
+        "  Models with reasoning:",
         "  anthropic:",
     ] {
         let limit = text.find(phase).unwrap();

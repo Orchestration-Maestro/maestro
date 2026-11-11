@@ -80,14 +80,14 @@
     "scenario": "usage429",
     "attempts": 4,
     "hooks": 4,
-    "error": "You have hit your ChatGPT usage limit.",
+    "error": "Your ChatGPT usage limit is reached.",
     "reason": "stop"
   },
   {
     "scenario": "usage400",
     "attempts": 1,
     "hooks": 1,
-    "error": "You have hit your ChatGPT usage limit.",
+    "error": "Your ChatGPT usage limit is reached.",
     "reason": "stop"
   },
   {

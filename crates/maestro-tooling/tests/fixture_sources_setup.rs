@@ -7,7 +7,7 @@ use std::process::{Command, Output};
 
 use maestro_test_directory::Scratch;
 
-use crate::recipe_support::{installed, write_input};
+use crate::recipe_support::{installed, without_prepared_bundles, write_input};
 
 /// The fixture checkout's directory that holds the registry closure and the browser fixture.
 const FIXTURES: &str = "crates/maestro-tooling/tests/fixtures";
@@ -64,6 +64,7 @@ fn setup(root: &Path, failure: Failure) -> Command {
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
         .env("NEXTEST_ENV", root.join("nextest-env"));
+    without_prepared_bundles(&mut command);
     command
 }
 

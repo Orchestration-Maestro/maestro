@@ -3928,11 +3928,11 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -4051,7 +4051,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -4064,7 +4064,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -4157,11 +4157,11 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -4280,7 +4280,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -4293,7 +4293,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -4386,11 +4386,11 @@
         "maxTokens": 256000
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -4509,7 +4509,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -4522,7 +4522,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -4624,11 +4624,11 @@
         "maxTokens": 32000
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -4754,7 +4754,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -4767,7 +4767,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -4862,11 +4862,11 @@
         "maxTokens": 32768
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -4986,7 +4986,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -4999,7 +4999,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -5091,11 +5091,11 @@
         "maxTokens": 131072
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -5214,7 +5214,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -5227,7 +5227,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -5319,11 +5319,11 @@
         "maxTokens": 131072
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -5442,7 +5442,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -5455,7 +5455,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -5548,11 +5548,11 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -5671,7 +5671,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -5684,7 +5684,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -5777,11 +5777,11 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -5900,7 +5900,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -5913,7 +5913,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -6009,11 +6009,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -6137,7 +6137,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -6150,7 +6150,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -6246,11 +6246,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -6374,7 +6374,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -6387,7 +6387,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -6483,11 +6483,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -6611,7 +6611,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -6624,7 +6624,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -6727,11 +6727,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -6861,7 +6861,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -6874,7 +6874,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -6973,11 +6973,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -7102,7 +7102,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -7115,7 +7115,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -7210,11 +7210,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -7338,7 +7338,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -7351,7 +7351,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -7446,11 +7446,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -7574,7 +7574,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -7587,7 +7587,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -7683,11 +7683,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -7811,7 +7811,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -7824,7 +7824,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -7920,11 +7920,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a concise assistant. Use tools when useful.",
+        "systemPrompt": "You are a concise assistant. Call tools when they help.",
         "messages": [
           {
             "role": "user",
-            "content": "Call echo_value with value set to eager-input-streaming-compat.",
+            "content": "Call echo_value, setting its value to eager-input-streaming-compat.",
             "timestamp": 0
           }
         ],
@@ -8048,7 +8048,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Call echo_value with value set to eager-input-streaming-compat.",
+                    "text": "Call echo_value, setting its value to eager-input-streaming-compat.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -8061,7 +8061,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a concise assistant. Use tools when useful.",
+                "text": "You are a concise assistant. Call tools when they help.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -8161,7 +8161,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -8264,7 +8264,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -8353,7 +8353,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -8456,7 +8456,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -8545,7 +8545,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -8648,7 +8648,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -8744,7 +8744,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -8853,7 +8853,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -8945,7 +8945,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -9049,7 +9049,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -9137,7 +9137,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -9240,7 +9240,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -9328,7 +9328,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -9431,7 +9431,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -9520,7 +9520,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -9623,7 +9623,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -9712,7 +9712,7 @@
         "messages": [
           {
             "role": "user",
-            "content": "Reply with exactly: long cache retention accepted",
+            "content": "Reply with exactly: cache retention accepted for long",
             "timestamp": 0
           }
         ]
@@ -9815,7 +9815,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Reply with exactly: long cache retention accepted",
+                    "text": "Reply with exactly: cache retention accepted for long",
                     "cache_control": {
                       "type": "ephemeral",
                       "ttl": "1h"
@@ -19076,11 +19076,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
+        "systemPrompt": "You are a precise assistant. Treat the user's instructions as exact.",
         "messages": [
           {
             "role": "user",
-            "content": "Compute 48291 * 7317 and 90844 - 17729, add the results, and determine whether the sum is divisible by 11. Reply with exactly this format and nothing else: sum=<sum>; divisibleBy11=<yes|no>",
+            "content": "Multiply 48291 by 7317, subtract 17729 from 90844, add both results, and tell whether the sum divides evenly by 11. Reply with only this format: sum=<sum>; divisibleBy11=<yes|no>",
             "timestamp": 1700000000000
           }
         ]
@@ -19215,7 +19215,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Compute 48291 * 7317 and 90844 - 17729, add the results, and determine whether the sum is divisible by 11. Reply with exactly this format and nothing else: sum=<sum>; divisibleBy11=<yes|no>",
+                    "text": "Multiply 48291 by 7317, subtract 17729 from 90844, add both results, and tell whether the sum divides evenly by 11. Reply with only this format: sum=<sum>; divisibleBy11=<yes|no>",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -19228,7 +19228,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a precise assistant. Follow the user's instructions exactly.",
+                "text": "You are a precise assistant. Treat the user's instructions as exact.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -19348,11 +19348,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
+        "systemPrompt": "You are a precise assistant. Treat the user's instructions as exact.",
         "messages": [
           {
             "role": "user",
-            "content": "Compute 48291 * 7317 and 90844 - 17729, add the results, and determine whether the sum is divisible by 11. Reply with exactly this format and nothing else: sum=<sum>; divisibleBy11=<yes|no>",
+            "content": "Multiply 48291 by 7317, subtract 17729 from 90844, add both results, and tell whether the sum divides evenly by 11. Reply with only this format: sum=<sum>; divisibleBy11=<yes|no>",
             "timestamp": 1700000000000
           }
         ]
@@ -19487,7 +19487,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Compute 48291 * 7317 and 90844 - 17729, add the results, and determine whether the sum is divisible by 11. Reply with exactly this format and nothing else: sum=<sum>; divisibleBy11=<yes|no>",
+                    "text": "Multiply 48291 by 7317, subtract 17729 from 90844, add both results, and tell whether the sum divides evenly by 11. Reply with only this format: sum=<sum>; divisibleBy11=<yes|no>",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -19500,7 +19500,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a precise assistant. Follow the user's instructions exactly.",
+                "text": "You are a precise assistant. Treat the user's instructions as exact.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -19620,11 +19620,11 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a precise assistant. Follow the user's instructions exactly.",
+        "systemPrompt": "You are a precise assistant. Treat the user's instructions as exact.",
         "messages": [
           {
             "role": "user",
-            "content": "Compute 48291 * 7317 and 90844 - 17729, add the results, and determine whether the sum is divisible by 11. Reply with exactly this format and nothing else: sum=<sum>; divisibleBy11=<yes|no>",
+            "content": "Multiply 48291 by 7317, subtract 17729 from 90844, add both results, and tell whether the sum divides evenly by 11. Reply with only this format: sum=<sum>; divisibleBy11=<yes|no>",
             "timestamp": 1700000000000
           }
         ]
@@ -19759,7 +19759,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Compute 48291 * 7317 and 90844 - 17729, add the results, and determine whether the sum is divisible by 11. Reply with exactly this format and nothing else: sum=<sum>; divisibleBy11=<yes|no>",
+                    "text": "Multiply 48291 by 7317, subtract 17729 from 90844, add both results, and tell whether the sum divides evenly by 11. Reply with only this format: sum=<sum>; divisibleBy11=<yes|no>",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -19772,7 +19772,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a precise assistant. Follow the user's instructions exactly.",
+                "text": "You are a precise assistant. Treat the user's instructions as exact.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -19886,11 +19886,11 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a precise assistant. Follow the requested output format exactly.",
+        "systemPrompt": "You are a precise assistant. Match the requested output format exactly.",
         "messages": [
           {
             "role": "user",
-            "content": "Before replying, carefully solve 36863 * 5279 internally. Then reply with the word pong repeated exactly 40 times, separated by single spaces. Do not add any other text.",
+            "content": "Before replying, work out 36863 * 5279 to yourself. Then reply with the word pong 40 times, one space apart. Add no other text.",
             "timestamp": 1700000000000
           }
         ]
@@ -19988,7 +19988,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Before replying, carefully solve 36863 * 5279 internally. Then reply with the word pong repeated exactly 40 times, separated by single spaces. Do not add any other text.",
+                    "text": "Before replying, work out 36863 * 5279 to yourself. Then reply with the word pong 40 times, one space apart. Add no other text.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -20001,7 +20001,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a precise assistant. Follow the requested output format exactly.",
+                "text": "You are a precise assistant. Match the requested output format exactly.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -20093,11 +20093,11 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a precise assistant. Follow the requested output format exactly.",
+        "systemPrompt": "You are a precise assistant. Match the requested output format exactly.",
         "messages": [
           {
             "role": "user",
-            "content": "Before replying, carefully solve 36863 * 5279 internally. Then reply with the word pong repeated exactly 40 times, separated by single spaces. Do not add any other text.",
+            "content": "Before replying, work out 36863 * 5279 to yourself. Then reply with the word pong 40 times, one space apart. Add no other text.",
             "timestamp": 1700000000000
           }
         ]
@@ -20195,7 +20195,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Before replying, carefully solve 36863 * 5279 internally. Then reply with the word pong repeated exactly 40 times, separated by single spaces. Do not add any other text.",
+                    "text": "Before replying, work out 36863 * 5279 to yourself. Then reply with the word pong 40 times, one space apart. Add no other text.",
                     "cache_control": {
                       "type": "ephemeral"
                     }
@@ -20208,7 +20208,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a precise assistant. Follow the requested output format exactly.",
+                "text": "You are a precise assistant. Match the requested output format exactly.",
                 "cache_control": {
                   "type": "ephemeral"
                 }

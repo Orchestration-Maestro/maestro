@@ -1,6 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+mod adapters;
 mod agent_session_auto_compaction_queue_checks;
 mod agent_session_bash_persistence_checks;
 mod agent_session_branch_summary_checks;
@@ -149,7 +150,11 @@ mod rpc_client_transport;
 mod rpc_peer;
 mod runtime_agent;
 mod sandbox_runtime_providers;
+mod sdk_images;
+mod sdk_registration;
 mod sdk_root_exports;
+mod sdk_session_options;
+mod sdk_skill_loading;
 mod self_update_native;
 mod self_update_selection;
 mod server_commands;
@@ -229,6 +234,8 @@ mod support {
     pub mod rpc_connection;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod runtime_fixtures;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod sdk_sample;
     pub mod session_harness;
     #[cfg(not(target_arch = "wasm32"))]
     mod shared_operands;

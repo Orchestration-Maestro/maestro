@@ -7,8 +7,8 @@ pub use settings_manager::FileSettingsStorage;
 pub use settings_manager::{
     BaseSettingsLayer, BranchSummarySettings, CompactionSettings, DecisionRequest,
     DoubleEscapeAction, FilteredPackage, ImageSettings, InMemorySettingsStorage,
-    InvalidHttpIdleTimeout, MarkdownSettings, MessageDeliveryMode, PackageSource,
-    PreparedSettingsEdit, ProviderRetrySettings, ResolvedBranchSummarySettings,
+    InvalidAdapterSetting, InvalidHttpIdleTimeout, MarkdownSettings, MessageDeliveryMode,
+    PackageSource, PreparedSettingsEdit, ProviderRetrySettings, ResolvedBranchSummarySettings,
     ResolvedCompactionSettings, ResolvedProviderRetrySettings, ResolvedRetrySettings,
     RetrySettings, Settings, SettingsChange, SettingsDecider, SettingsDeciderHandle, SettingsEdit,
     SettingsError, SettingsErrorKind, SettingsListEntry, SettingsManager, SettingsScope,

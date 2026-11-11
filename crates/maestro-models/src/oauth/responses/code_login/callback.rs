@@ -50,7 +50,11 @@ pub(super) fn unavailable(
 pub(super) fn route(target: &str, state: &str) -> CallbackResponse {
     let url = url::Url::parse("http://localhost").and_then(|base| base.join(target));
     let (status, message, accepted) = match url {
-        Err(_) => (500, "Internal error while processing OAuth callback.", None),
+        Err(_) => (
+            500,
+            "The OAuth callback failed with an internal error.",
+            None,
+        ),
         Ok(url) if url.path() != "/auth/callback" => (404, "Callback route not found.", None),
         Ok(url) => {
             let fields = query_fields(url.query().unwrap_or_default());
@@ -61,7 +65,7 @@ pub(super) fn route(target: &str, state: &str) -> CallbackResponse {
             } else {
                 (
                     200,
-                    "OpenAI authentication completed. You can close this window.",
+                    "OpenAI sign-in is complete. You can close this window.",
                     Some(fields),
                 )
             }

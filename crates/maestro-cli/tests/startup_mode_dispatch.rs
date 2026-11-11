@@ -25,7 +25,7 @@ fn benchmark_flags_reject_only_selected_noninteractive_modes() {
                     assert_eq!(
                         h.recorder.events(),
                         [
-                            "stderr:\u{1b}[31mError: MAESTRO_STARTUP_BENCHMARK only supports interactive mode\u{1b}[39m\n"
+                            "stderr:\u{1b}[31mError: MAESTRO_STARTUP_BENCHMARK requires interactive mode\u{1b}[39m\n"
                         ]
                     );
                 } else {

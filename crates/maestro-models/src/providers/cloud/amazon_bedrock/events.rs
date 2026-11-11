@@ -19,7 +19,7 @@ use maestro_request::presence::Presence;
 
 /// Failure of a message that opens with a turn other than the assistant's.
 const USER_START_TEXT: &str =
-    "Unexpected assistant message start but got user message start instead";
+    "Expected an assistant message start, but the stream began a user message";
 
 /// Private state of an open content block.
 enum Block {

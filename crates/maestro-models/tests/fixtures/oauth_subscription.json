@@ -256,31 +256,31 @@
       "path": "/callback?error=&code=a&code=b&state=good",
       "status": 200,
       "contentType": "text/html; charset=utf-8",
-      "message": "Anthropic authentication completed. You can close this window."
+      "message": "Anthropic sign-in is complete. You can close this window."
     },
     {
       "path": "/callback?code=second&state=good",
       "status": 200,
       "contentType": "text/html; charset=utf-8",
-      "message": "Anthropic authentication completed. You can close this window."
+      "message": "Anthropic sign-in is complete. You can close this window."
     },
     {
       "path": "/x/../callback?code=c&state=good",
       "status": 200,
       "contentType": "text/html; charset=utf-8",
-      "message": "Anthropic authentication completed. You can close this window."
+      "message": "Anthropic sign-in is complete. You can close this window."
     },
     {
       "path": "http://elsewhere/callback?code=c&state=good",
       "status": 200,
       "contentType": "text/html; charset=utf-8",
-      "message": "Anthropic authentication completed. You can close this window."
+      "message": "Anthropic sign-in is complete. You can close this window."
     },
     {
       "path": "//elsewhere/callback?code=c&state=good",
       "status": 200,
       "contentType": "text/html; charset=utf-8",
-      "message": "Anthropic authentication completed. You can close this window."
+      "message": "Anthropic sign-in is complete. You can close this window."
     },
     {
       "path": "/call%62ack?code=c&state=good",
@@ -292,13 +292,13 @@
       "path": "/callback?code=c&state=good&state=bad",
       "status": 200,
       "contentType": "text/html; charset=utf-8",
-      "message": "Anthropic authentication completed. You can close this window."
+      "message": "Anthropic sign-in is complete. You can close this window."
     },
     {
       "path": "/callback?code=%00&state=good",
       "status": 200,
       "contentType": "text/html; charset=utf-8",
-      "message": "Anthropic authentication completed. You can close this window."
+      "message": "Anthropic sign-in is complete. You can close this window."
     }
   ],
   "tokens": [

@@ -122,7 +122,7 @@ async fn remove(
     {
         return presentation::succeeded(&format!("Removed {source}"), context);
     }
-    presentation::failed(&format!("No matching package found for {source}"), context)?;
+    presentation::failed(&format!("No package matches {source}"), context)?;
     context.exit_code.set(Some(1));
     Ok(())
 }

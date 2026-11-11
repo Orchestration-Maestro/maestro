@@ -152,7 +152,7 @@ async fn confirm_fork(
     let notice = format!("Session found in different project: {cwd}");
     line(&effects.stdout, &Theme::yellow(&notice, effects.styles))?;
     let mut stdout = SharedWriter(Rc::clone(&effects.stdout));
-    let question = "Fork this session into current directory?";
+    let question = "Fork this session into the current directory?";
     match prompt_confirm(question, effects.stdin, &mut stdout).await? {
         Some(true) => session_or_report(
             fork_session(

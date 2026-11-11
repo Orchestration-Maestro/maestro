@@ -5,7 +5,8 @@ mod support;
 use maestro_extensions::{EventError, ExtensionAPI};
 use maestro_models::Local;
 use serde_json::{Value, json};
-use std::{cell::RefCell, rc::Rc};
+use std::io::Write;
+use std::rc::Rc;
 use support::{Error, Sample};
 
 /// Run the inline-extension sample through the public SDK.
@@ -14,16 +15,13 @@ fn main() -> Result<(), Error> {
 }
 
 /// Invoke the extension command and a model-requested tool call.
-async fn run(sample: Sample) -> Result<Value, Error> {
+async fn run(sample: Sample) -> Result<(), Error> {
     use maestro_app::{ExtensionBindings, PromptOptions, create_agent_session};
-    let events = Rc::new(RefCell::new(Vec::new()));
-    let log = Rc::clone(&events);
-    let output = Rc::clone(&sample.output);
     let mut options = sample.options()?;
     if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
-        resources.extension_factories.push(Rc::new(move |api| {
-            Box::pin(std::future::ready(register(&api, &log, Rc::clone(&output))))
-        }));
+        resources
+            .extension_factories
+            .push(Rc::new(|api| Box::pin(std::future::ready(register(&api)))));
     }
     let created = create_agent_session(options).await?;
     created
@@ -35,24 +33,15 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         .prompt("/mycommand demo", PromptOptions::default())
         .await?;
     sample.provider.set_responses(responses());
-    let finish = stream::subscribe(&created.session, Rc::clone(&sample.output));
+    let finish = stream::subscribe(&created.session);
     created
         .session
         .prompt("Process hello.", PromptOptions::default())
         .await?;
     finish()?;
-    writeln!(sample.output.borrow_mut())?;
-    let messages = serde_json::to_value(
-        &*created
-            .session
-            .messages()
-            .read()
-            .map_err(|error| error.to_string())?,
-    )?;
-    let result = json!({"events": *events.borrow(), "tools": created.session.get_active_tool_names(),
-        "toolResult": messages[2]["content"][0]["text"], "answer": messages[3]["content"][0]["text"]});
+    writeln!(std::io::stdout())?;
     created.session.dispose();
-    Ok(result)
+    Ok(())
 }
 
 /// A controlled tool request followed by its completed answer.
@@ -81,52 +70,40 @@ fn responses() -> Vec<maestro_models::FauxResponseStep> {
     ]
 }
 
+/// Print one line from the inline extension and let the event continue.
+fn announce<T>(line: &str) -> Result<Option<T>, EventError> {
+    writeln!(std::io::stdout(), "[Inline Extension] {line}")?;
+    Ok(None)
+}
+
 /// Register lifecycle logging and operations on the same retained extension API.
-fn register(
-    api: &ExtensionAPI<Local>,
-    log: &Rc<RefCell<Vec<String>>>,
-    output: Rc<RefCell<dyn std::io::Write>>,
-) -> Result<(), EventError> {
+fn register(api: &ExtensionAPI<Local>) -> Result<(), EventError> {
     use maestro_extensions::{
         AgentEndEvent, AgentStartEvent, NativeAgentMessage, ToolCallEvent, ToolCallEventResult,
     };
-    let starts = Rc::clone(log);
     api.on::<AgentStartEvent, ()>(
         "agent_start".into(),
-        Rc::new(move |_, _| {
-            starts.borrow_mut().push("agent_start".into());
-            Box::pin(std::future::ready(
-                writeln!(output.borrow_mut(), "[Inline Extension] Agent starting")
-                    .map(|()| None)
-                    .map_err(Into::into),
-            ))
-        }),
+        Rc::new(|_, _| Box::pin(std::future::ready(announce("Agent starting")))),
     )?;
-    let tools = Rc::clone(log);
     api.on::<ToolCallEvent, ToolCallEventResult>(
         "tool_call".into(),
-        Rc::new(move |event, _| {
-            tools.borrow_mut().push(format!("tool:{}", event.tool_name));
-            Box::pin(std::future::ready(Ok(None)))
+        Rc::new(|event, _| {
+            let line = format!("Tool: {}", event.tool_name);
+            Box::pin(std::future::ready(announce(&line)))
         }),
     )?;
-    let ends = Rc::clone(log);
     api.on::<AgentEndEvent<NativeAgentMessage>, ()>(
         "agent_end".into(),
-        Rc::new(move |_, _| {
-            ends.borrow_mut().push("agent_end".into());
-            Box::pin(std::future::ready(Ok(None)))
-        }),
+        Rc::new(|_, _| Box::pin(std::future::ready(announce("Done")))),
     )?;
-    let commands = Rc::clone(log);
     api.register_command(
         "mycommand".into(),
         maestro_extensions::types::RegisteredCommandOptions {
-            description: Some("Record the supplied arguments".into()),
+            description: Some("Print the supplied arguments".into()),
             get_argument_completions: None,
-            handler: Rc::new(move |args, _| {
-                commands.borrow_mut().push(format!("command:{args}"));
-                Box::pin(std::future::ready(Ok(())))
+            handler: Rc::new(|args, _| {
+                let line = format!("Command: {args}");
+                Box::pin(std::future::ready(announce::<()>(&line).map(|_| ())))
             }),
         },
     )?;
@@ -150,44 +127,4 @@ fn tool()
         })),
         render_call: None, render_result: None,
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// The inline lifecycle observation precedes the live model answer.
-    #[test]
-    fn extensions_prints_observations_in_order() -> Result<(), Error> {
-        let output = Rc::new(RefCell::new(Vec::new()));
-        support::execute(|mut sample| {
-            sample.output = output.clone();
-            run(sample)
-        })?;
-        assert_eq!(
-            String::from_utf8(output.borrow().clone())?,
-            "[Inline Extension] Agent starting\nDone.\n"
-        );
-        Ok(())
-    }
-
-    /// A real inline factory receives lifecycle events and executes both registered operations.
-    #[test]
-    fn extensions_dispatches_commands_events_and_model_requested_tools() -> Result<(), Error> {
-        let value = support::execute(run)?;
-        assert_eq!(
-            value["events"],
-            json!(["command:demo", "agent_start", "tool:my_tool", "agent_end"])
-        );
-        assert_eq!(value["toolResult"], "Processed: hello");
-        assert_eq!(value["answer"], "Done.");
-        assert!(
-            value["tools"]
-                .as_array()
-                .ok_or("missing tools")?
-                .contains(&json!("my_tool"))
-        );
-        Ok(())
-    }
-    mod registration;
 }

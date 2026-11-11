@@ -27,9 +27,10 @@ just ci
 workspace conventions on this checkout; the conventions checker's own suite runs
 with the workspace tests.
 `just test` runs workspace tests with cargo-nextest, then Cargo doctests after
-success. `just ci` runs checks and both test phases. Development and test builds
+success. `just ci` runs checks and both test phases. Development builds
 use line-table debug information: backtraces retain file:line, but debugger
-variable views are unavailable.
+variable views are unavailable. Test builds carry no debug information: a panic
+message still names its file and line, and backtrace frames show function names.
 Rust is pinned in `rust-toolchain.toml` and installed by rustup, never mise.
 Run `cargo hakari generate` after changing dependencies, their features or
 `Cargo.lock`, and `cargo hakari manage-deps` after adding a member (see

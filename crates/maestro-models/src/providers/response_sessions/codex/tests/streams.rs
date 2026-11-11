@@ -1320,7 +1320,7 @@ async fn assert_preparation_stage(stage: &str) {
     let (expected, calls) = match stage {
         "preaborted" => ("Request was aborted", 1),
         "missing-key" => ("No API key for provider: fixture-no-environment-key", 0),
-        "invalid-token" => ("Failed to extract accountId from token", 0),
+        "invalid-token" => ("The token carries no accountId", 0),
         _ => ("payload failed", 1),
     };
     assert_eq!(error.diagnostic().message, expected);

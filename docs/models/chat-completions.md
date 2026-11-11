@@ -238,7 +238,7 @@ while the signal is unset is a failure (`Request was aborted.`), not a normal en
 After a normal end, the shared message decides the result: the stop reasons `stop`,
 `length` and `toolUse` complete, an aborted stop reason fails with
 `Request was aborted`, and an error stop reason fails with its own text, or
-`Provider returned an error stop reason` when that text is empty.
+`The provider ended the turn with an error stop reason` when that text is empty.
 
 ## Transport
 

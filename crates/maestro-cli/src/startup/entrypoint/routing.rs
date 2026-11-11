@@ -70,7 +70,7 @@ pub async fn dispatch_mode(
     let benchmark = is_truthy_env_flag(request.startup_benchmark.as_deref());
     if benchmark && !request.app_mode.is_interactive() {
         let line = Theme::red(
-            "Error: MAESTRO_STARTUP_BENCHMARK only supports interactive mode",
+            "Error: MAESTRO_STARTUP_BENCHMARK requires interactive mode",
             output.styles_enabled,
         );
         writeln!(output.stderr, "{line}")?;

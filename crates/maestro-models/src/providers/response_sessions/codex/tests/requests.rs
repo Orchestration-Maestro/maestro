@@ -23,7 +23,7 @@ fn maestro_response_sessions_extract_account_claim() {
             Some(account) => assert_eq!(extract_account_id(&token).unwrap(), account),
             None => assert_eq!(
                 extract_account_id(&token).unwrap_err().message,
-                "Failed to extract accountId from token"
+                "The token carries no accountId"
             ),
         }
     }
@@ -714,6 +714,6 @@ fn assert_conditional_clock() {
     assert_eq!(reads.get(), 1);
     assert_eq!(
         result.friendly_message.as_deref(),
-        Some("You have hit your ChatGPT usage limit. Try again in ~1 min.")
+        Some("Your ChatGPT usage limit is reached. Try again in ~1 min.")
     );
 }

@@ -20,7 +20,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if executable.is_empty() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "Invalid npmCommand: first array entry must be a non-empty command",
+                "Invalid npmCommand: the first array entry must hold a non-empty command",
             ));
         }
         let args = entries.map(command_member).collect::<io::Result<_>>()?;

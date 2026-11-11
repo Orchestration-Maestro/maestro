@@ -80,7 +80,7 @@ pub fn create_grep_tool_definition<C: 'static $($bound)*>(
             "ignoreCase":{"type":"boolean","description":"Case-insensitive search (default: false)"},
             "literal":{"type":"boolean","description":"Treat pattern as literal string instead of regex (default: false)"},
             "context":{"type":"number","description":"Number of lines to show before and after each match (default: 0)"},
-            "limit":{"type":"number","description":"Maximum number of matches to return (default: 100)"}
+            "limit":{"type":"number","description":"Largest number of matches returned (default: 100)"}
         }}), [("".to_owned(), maestro_models::SchemaKind::Object), ("/properties/pattern".to_owned(), maestro_models::SchemaKind::String), ("/properties/path".to_owned(), maestro_models::SchemaKind::String), ("/properties/glob".to_owned(), maestro_models::SchemaKind::String), ("/properties/ignoreCase".to_owned(), maestro_models::SchemaKind::Boolean), ("/properties/literal".to_owned(), maestro_models::SchemaKind::Boolean), ("/properties/context".to_owned(), maestro_models::SchemaKind::Number), ("/properties/limit".to_owned(), maestro_models::SchemaKind::Number)]) }, label: "grep".into(), prompt_snippet: Some("Search file contents for patterns (respects .gitignore)".into()), prompt_guidelines: None, render_shell: None, prepare_arguments: None, execution_mode: None,
         execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let searcher = Arc::clone(&searcher);

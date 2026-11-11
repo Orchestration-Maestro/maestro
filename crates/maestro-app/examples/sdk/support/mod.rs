@@ -7,8 +7,8 @@ use maestro_models::{
     FauxProviderRegistration, RegisterFauxProviderOptions, register_faux_provider,
 };
 use maestro_test_directory::Scratch;
-use serde_json::{Value, json};
-use std::{cell::RefCell, future::Future, rc::Rc, sync::Arc};
+use serde_json::json;
+use std::{cell::RefCell, future::Future, io::Write, rc::Rc, sync::Arc};
 use tokio::task::LocalSet;
 
 /// Errors returned by sample setup or public SDK operations.
@@ -22,8 +22,6 @@ pub struct Sample {
     pub provider: FauxProviderRegistration,
     /// The local executor that owns session background work.
     pub local: Rc<LocalSet>,
-    /// Console destination shared with live session listeners.
-    pub output: Rc<RefCell<dyn std::io::Write>>,
 }
 
 impl Sample {
@@ -45,7 +43,6 @@ impl Sample {
             root,
             provider,
             local,
-            output: Rc::new(RefCell::new(std::io::stdout())),
         })
     }
 
@@ -88,29 +85,18 @@ impl Sample {
     }
 }
 
-/// Run a sample on its caller-owned local executor with live console observations.
+/// Run a sample on its caller-owned local executor, printing to the console.
 pub fn launch<F, Fut>(run: F) -> Result<(), Error>
 where
     F: FnOnce(Sample) -> Fut,
-    Fut: Future<Output = Result<Value, Error>>,
-{
-    execute(run)?;
-    Ok(())
-}
-
-/// Run a sample with the same executor and disposable inputs as its executable entry.
-pub fn execute<F, Fut>(run: F) -> Result<Value, Error>
-where
-    F: FnOnce(Sample) -> Fut,
-    Fut: Future<Output = Result<Value, Error>>,
+    Fut: Future<Output = Result<(), Error>>,
 {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
     let local = Rc::new(LocalSet::new());
     let sample = Sample::new(Rc::clone(&local))?;
-    let output = Rc::clone(&sample.output);
-    let result = runtime.block_on(local.run_until(run(sample)))?;
-    output.borrow_mut().flush()?;
-    Ok(result)
+    runtime.block_on(local.run_until(run(sample)))?;
+    std::io::stdout().flush()?;
+    Ok(())
 }
