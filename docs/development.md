@@ -1337,8 +1337,8 @@ resolves that native executable. Preparation also copies, hashes and restores th
 example as `prepare_author_component.exe`. Linux and macOS keep extensionless executable
 names. Cargo's `--example prepare_author_component` target name stays the same on all hosts.
 
-A test that starts a setup child clears the prepared-bundle inputs it does not supply
-(`TEST_PREPARE_BASE`, `TEST_PREPARE_OUTPUT` and `TEST_ARCHIVE`) through
+A test that starts a setup child which reads a prepared-bundle input the test does not supply
+clears it (`TEST_PREPARE_BASE`, `TEST_PREPARE_OUTPUT` and `TEST_ARCHIVE`) through
 `recipe_support::without_prepared_bundles`, so a bundle a machine exports for CI cannot change
 what the test reads.
 

@@ -443,7 +443,7 @@ fn cache_normalization_rejects_invalid_fingerprint_records() {
             _ => unreachable!(),
         }
 
-        let result = crate::tooling_commands::normalize_cache(&profile);
+        let result = crate::recipe_support::normalize_cache(&profile);
 
         assert!(!result.status.success(), "{failure}");
         assert!(!result.stderr.is_empty(), "{failure}");
@@ -478,7 +478,7 @@ fn cache_normalization_reads_the_record_of_an_unhashed_example() {
         );
         let binary = binary(&deps, "integration-c1", &[], 150);
 
-        let result = crate::tooling_commands::normalize_cache(&profile);
+        let result = crate::recipe_support::normalize_cache(&profile);
 
         let stderr = String::from_utf8_lossy(&result.stderr);
         assert_eq!(
@@ -509,7 +509,7 @@ fn cache_normalization_rejects_ambiguous_uplifted_twins() {
         .unwrap()
         .set_modified(at(50))
         .unwrap();
-    let result = crate::tooling_commands::normalize_cache(&profile);
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert!(!result.status.success());
     assert!(String::from_utf8_lossy(&result.stderr).contains("ambiguous hashed twins"));

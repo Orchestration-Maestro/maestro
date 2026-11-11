@@ -3965,16 +3965,6 @@ fn age_cache_outputs(profile: &Path) {
     }
 }
 
-/// Run the cache normalization over `profile`, which a fresh build recomputes.
-pub(super) fn normalize_cache(profile: &Path) -> Output {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
-    command
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(profile);
-    crate::recipe_support::without_prepared_bundles(&mut command);
-    command.output().unwrap()
-}
-
 /// The pinned Cargo layout identifies exact transitive builds after another package selection.
 #[test]
 fn cache_normalization_reads_the_pinned_cargo_builds() {
@@ -4008,7 +3998,7 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
         .set_modified(expected)
         .unwrap();
 
-    let result = normalize_cache(&profile);
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert!(
         result.status.success(),
@@ -4043,7 +4033,7 @@ fn cache_normalization_skips_build_scripts_named_after_their_file() {
         .set_modified(UNIX_EPOCH + Duration::from_secs(200))
         .unwrap();
 
-    let result = normalize_cache(&profile);
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert!(
         result.status.success(),
@@ -4076,7 +4066,7 @@ fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
     fs::write(&source, fs::read(&source).unwrap()).unwrap();
     cache_cargo(root, &["build", "--offline", "--locked", "-p", "leaf"]);
 
-    let result = normalize_cache(&profile);
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert_eq!(
         result.status.code(),
@@ -4132,7 +4122,7 @@ fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
     ));
     let fresh = fs::metadata(example).unwrap().modified().unwrap();
 
-    let result = normalize_cache(&profile);
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert!(
         result.status.success(),

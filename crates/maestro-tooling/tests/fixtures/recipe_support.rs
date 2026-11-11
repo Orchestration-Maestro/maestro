@@ -367,6 +367,17 @@ pub fn without_prepared_bundles(command: &mut Command) {
     }
 }
 
+/// Run the `normalize-component-cache` setup over `profile` without any inherited prepared bundle
+/// and return its output.
+pub fn normalize_cache(profile: &Path) -> Output {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command
+        .args(["nextest-setup", "normalize-component-cache"])
+        .arg(profile);
+    without_prepared_bundles(&mut command);
+    command.output().unwrap()
+}
+
 /// Run setup with both streams delivered through the shared capture owner.
 #[cfg(unix)]
 pub fn setup_status(command: &mut Command) -> std::process::ExitStatus {
