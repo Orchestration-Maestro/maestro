@@ -57,7 +57,7 @@ pub(super) fn inventory(text: &str) -> io::Result<Inventory> {
         expected_error: raw.expected_error,
     };
     let mut names = HashSet::new();
-    for ((family, selected), count) in value.families.iter().zip([27, 69, 196, 165]) {
+    for ((family, selected), count) in value.families.iter().zip([27, 70, 196, 165]) {
         if selected.len() != count {
             return Err(io::Error::other(format!("{family} inventory count")));
         }
