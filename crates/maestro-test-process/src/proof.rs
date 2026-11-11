@@ -154,8 +154,8 @@ impl CheckedChild {
     /// Close every pipe to the direct child, then reap it once it ends on its own, for a
     /// failed start.
     ///
-    /// The child reads the end of its input and gets broken pipes for its output, so it exits
-    /// by itself. It is never signalled: a coverage build writes the child's profile as it
+    /// A child that reads its input or writes its output gets the end of input or a broken
+    /// pipe, so it exits by itself. It is never signalled: a coverage build writes the child's profile as it
     /// exits, and a signal landing during that write would cut the profile.
     fn reap(test: &str, mut child: Child, seen: &[u8], message: &str) -> TestProcessError {
         drop((child.stdin.take(), child.stdout.take(), child.stderr.take()));
