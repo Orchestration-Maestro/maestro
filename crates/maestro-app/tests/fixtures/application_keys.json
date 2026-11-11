@@ -243,14 +243,14 @@
               "ctrl+left",
               "alt+left"
             ],
-            "description": "Fold tree branch or move up"
+            "description": "Collapse a tree branch, or move up"
           },
           "app.tree.unfoldOrDown": {
             "defaultKeys": [
               "ctrl+right",
               "alt+right"
             ],
-            "description": "Unfold tree branch or move down"
+            "description": "Expand a tree branch, or move down"
           },
           "app.tree.editLabel": {
             "defaultKeys": "shift+l",
@@ -278,7 +278,7 @@
           },
           "app.session.deleteNoninvasive": {
             "defaultKeys": "ctrl+backspace",
-            "description": "Delete session when query is empty"
+            "description": "Delete the session when the query is empty"
           },
           "app.models.save": {
             "defaultKeys": "ctrl+s",
@@ -652,14 +652,14 @@
               "ctrl+left",
               "alt+left"
             ],
-            "description": "Fold tree branch or move up"
+            "description": "Collapse a tree branch, or move up"
           },
           "app.tree.unfoldOrDown": {
             "defaultKeys": [
               "ctrl+right",
               "alt+right"
             ],
-            "description": "Unfold tree branch or move down"
+            "description": "Expand a tree branch, or move down"
           },
           "app.tree.editLabel": {
             "defaultKeys": "shift+l",
@@ -687,7 +687,7 @@
           },
           "app.session.deleteNoninvasive": {
             "defaultKeys": "ctrl+backspace",
-            "description": "Delete session when query is empty"
+            "description": "Delete the session when the query is empty"
           },
           "app.models.save": {
             "defaultKeys": "ctrl+s",

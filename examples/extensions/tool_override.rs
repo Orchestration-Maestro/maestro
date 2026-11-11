@@ -131,9 +131,9 @@ fn read_tool(api: ExtensionAPI, log: String) -> ExtensionResult<ToolDefinition> 
             name: "read".into(), label: "read (audited)".into(),
             description: "Read the contents of a file with access logging. Some sensitive paths (.env, secrets, credentials) are blocked.".into(),
             parameters: json!({"type":"object","required":["path"],"properties":{
-                "path":{"type":"string","description":"Path to the file to read (relative or absolute)"},
-                "offset":{"type":"number","description":"Line number to start reading from (1-indexed)"},
-                "limit":{"type":"number","description":"Maximum number of lines to read"}
+                "path":{"type":"string","description":"File to read, as a relative or absolute path"},
+                "offset":{"type":"number","description":"First line to read, counting from 1"},
+                "limit":{"type":"number","description":"Upper bound on the lines returned"}
             }}).into(),
             prompt_snippet: Presence::Missing, prompt_guidelines: Presence::Missing,
             render_shell: Presence::Missing, execution_mode: Presence::Missing,

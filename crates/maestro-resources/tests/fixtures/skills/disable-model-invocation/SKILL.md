@@ -1,9 +1,9 @@
 ---
 name: disable-model-invocation
-description: A skill that cannot be invoked by the model.
+description: Fixture hidden from the model prompt.
 disable-model-invocation: true
 ---
 
 # Manual Only Skill
 
-This skill can only be invoked via /skill:disable-model-invocation.
+Only the /skill:disable-model-invocation command runs it.

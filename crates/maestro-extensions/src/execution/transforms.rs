@@ -104,7 +104,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 self.emit_error(&crate::ExtensionError {
                     extension_path,
                     event: "message_end".into(),
-                    error: "message_end handlers must return a message with the same role".into(),
+                    error: "A message_end handler has to return a message of the same role".into(),
                     stack: None,
                 })?;
             }

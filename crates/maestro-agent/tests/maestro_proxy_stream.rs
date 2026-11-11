@@ -622,27 +622,27 @@ async fn proxy_mismatched_content_reports_authored_errors_case() {
         (
             r#"{"type":"text_delta","contentIndex":0,"delta":"x"}"#,
             thinking_lines,
-            "Received text_delta for non-text content",
+            "text_delta targets a block that is not text",
         ),
         (
             r#"{"type":"text_end","contentIndex":0}"#,
             thinking_lines,
-            "Received text_end for non-text content",
+            "text_end targets a block that is not text",
         ),
         (
             r#"{"type":"thinking_delta","contentIndex":0,"delta":"x"}"#,
             text,
-            "Received thinking_delta for non-thinking content",
+            "thinking_delta targets a block that is not thinking",
         ),
         (
             r#"{"type":"thinking_end","contentIndex":0}"#,
             text,
-            "Received thinking_end for non-thinking content",
+            "thinking_end targets a block that is not thinking",
         ),
         (
             r#"{"type":"toolcall_delta","contentIndex":0,"delta":"x"}"#,
             text,
-            "Received toolcall_delta for non-toolCall content",
+            "toolcall_delta targets a block that is not toolCall",
         ),
     ];
     for (payload, wrong_kind, expected) in cases {

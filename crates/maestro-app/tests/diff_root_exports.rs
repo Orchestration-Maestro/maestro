@@ -10,7 +10,7 @@ fn application_diff_exports_preserve_theme_errors() {
     let error = maestro_app::render_diff("-1 old\n+1 new", &options, &theme).unwrap_err();
     assert_eq!(
         error.to_string(),
-        "Theme not initialized. Call initTheme() first."
+        "Theme not initialized. Call init_theme() first."
     );
 }
 

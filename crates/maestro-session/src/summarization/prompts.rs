@@ -1,88 +1,88 @@
 //! Instructions used by the summary completion requests.
 /// Structured summary instruction.
-pub(super) const SUMMARIZATION_PROMPT: &str = r#"The messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.
+pub(super) const SUMMARIZATION_PROMPT: &str = r#"The messages above are a conversation to summarize. Write a structured context checkpoint that lets another LLM pick the work back up.
 
-Use this EXACT format:
+Follow this format EXACTLY:
 
 ## Goal
-[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]
+[What the user wants to get done. List several items when the session covers more than one job.]
 
 ## Constraints & Preferences
-- [Any constraints, preferences, or requirements mentioned by user]
-- [Or "(none)" if none were mentioned]
+- [Limits, wishes or requirements the user stated]
+- [Or "(none)" when the user stated none]
 
 ## Progress
 ### Done
-- [x] [Completed tasks/changes]
+- [x] [Tasks and changes already finished]
 
 ### In Progress
-- [ ] [Current work]
+- [ ] [Work underway now]
 
 ### Blocked
-- [Issues preventing progress, if any]
+- [Anything stopping progress, if present]
 
 ## Key Decisions
-- **[Decision]**: [Brief rationale]
+- **[Decision]**: [Short reason]
 
 ## Next Steps
-1. [Ordered list of what should happen next]
+1. [What should happen next, in order]
 
 ## Critical Context
-- [Any data, examples, or references needed to continue]
-- [Or "(none)" if not applicable]
+- [Facts, samples or pointers needed to carry on]
+- [Or "(none)" when nothing applies]
 
-Keep each section concise. Preserve exact file paths, function names, and error messages."#;
+Keep every section short. Quote error messages, function names and file paths exactly as they appear."#;
 /// Structured summary instruction.
-pub(super) const UPDATE_SUMMARIZATION_PROMPT: &str = r#"The messages above are NEW conversation messages to incorporate into the existing summary provided in <previous-summary> tags.
+pub(super) const UPDATE_SUMMARIZATION_PROMPT: &str = r#"The messages above are NEW conversation messages. Fold them into the existing summary given in <previous-summary> tags.
 
-Update the existing structured summary with new information. RULES:
-- PRESERVE all existing information from the previous summary
-- ADD new progress, decisions, and context from the new messages
-- UPDATE the Progress section: move items from "In Progress" to "Done" when completed
-- UPDATE "Next Steps" based on what was accomplished
-- PRESERVE exact file paths, function names, and error messages
-- If something is no longer relevant, you may remove it
+Revise the existing structured summary with what the new messages add. RULES:
+- KEEP everything the previous summary already says
+- ADD whatever the new messages contribute: progress, decisions, context
+- REVISE the Progress section: move an item from "In Progress" to "Done" once it is finished
+- REVISE "Next Steps" to reflect what was achieved
+- KEEP error messages, function names and file paths exactly as they appear
+- You may drop anything that no longer matters
 
-Use this EXACT format:
+Follow this format EXACTLY:
 
 ## Goal
-[Preserve existing goals, add new ones if the task expanded]
+[Keep the existing goals and add more if the task widened]
 
 ## Constraints & Preferences
-- [Preserve existing, add new ones discovered]
+- [Keep the existing entries and add any newly found]
 
 ## Progress
 ### Done
-- [x] [Include previously done items AND newly completed items]
+- [x] [List the items finished before AND those finished now]
 
 ### In Progress
-- [ ] [Current work - update based on progress]
+- [ ] [Work underway now - revise from the latest progress]
 
 ### Blocked
-- [Current blockers - remove if resolved]
+- [Blockers that remain - drop any that are resolved]
 
 ## Key Decisions
-- **[Decision]**: [Brief rationale] (preserve all previous, add new)
+- **[Decision]**: [Short reason] (keep every earlier one, add the new)
 
 ## Next Steps
-1. [Update based on current state]
+1. [Revise from the current state]
 
 ## Critical Context
-- [Preserve important context, add new if needed]
+- [Keep the important context and add more where needed]
 
-Keep each section concise. Preserve exact file paths, function names, and error messages."#;
+Keep every section short. Quote error messages, function names and file paths exactly as they appear."#;
 /// Structured summary instruction.
-pub(super) const TURN_PREFIX_SUMMARIZATION_PROMPT: &str = r"This is the PREFIX of a turn that was too large to keep. The SUFFIX (recent work) is retained.
+pub(super) const TURN_PREFIX_SUMMARIZATION_PROMPT: &str = r"This is the PREFIX of a turn that grew too large to keep whole. The SUFFIX, the most recent work, stays in context.
 
-Summarize the prefix to provide context for the retained suffix:
+Summarize the prefix so the retained suffix makes sense:
 
 ## Original Request
-[What did the user ask for in this turn?]
+[What the user asked for in this turn]
 
 ## Early Progress
-- [Key decisions and work done in the prefix]
+- [Main decisions and work completed in the prefix]
 
 ## Context for Suffix
-- [Information needed to understand the retained recent work]
+- [What a reader needs to follow the retained recent work]
 
-Be concise. Focus on what's needed to understand the kept suffix.";
+Be brief. Cover only what explains the retained suffix.";

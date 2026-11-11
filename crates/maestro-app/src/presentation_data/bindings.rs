@@ -83,13 +83,13 @@ const APP_KEYBINDINGS: &[(&str, &[&str], bool, &str)] = &[
         "app.tree.foldOrUp",
         &["ctrl+left", "alt+left"],
         false,
-        "Fold tree branch or move up",
+        "Collapse a tree branch, or move up",
     ),
     (
         "app.tree.unfoldOrDown",
         &["ctrl+right", "alt+right"],
         false,
-        "Unfold tree branch or move down",
+        "Expand a tree branch, or move down",
     ),
     ("app.tree.editLabel", &["shift+l"], true, "Edit tree label"),
     (
@@ -116,7 +116,7 @@ const APP_KEYBINDINGS: &[(&str, &[&str], bool, &str)] = &[
         "app.session.deleteNoninvasive",
         &["ctrl+backspace"],
         true,
-        "Delete session when query is empty",
+        "Delete the session when the query is empty",
     ),
     ("app.models.save", &["ctrl+s"], true, "Save model selection"),
     (

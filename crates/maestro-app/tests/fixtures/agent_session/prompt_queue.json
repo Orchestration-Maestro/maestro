@@ -377,7 +377,7 @@
       "steering": [],
       "followUp": []
     },
-    "error": "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.",
+    "error": "The agent is still processing. To queue the message, pass streamingBehavior as 'steer' or 'followUp'.",
     "preflight": [
       false
     ]
@@ -1227,7 +1227,7 @@
     "assistants": [
       "",
       "first turn complete",
-      "queued follow-up handled by model"
+      "follow-up from the queue answered by the model"
     ],
     "messages": [
       {
@@ -1253,7 +1253,7 @@
       },
       {
         "role": "assistant",
-        "text": "queued follow-up handled by model"
+        "text": "follow-up from the queue answered by the model"
       }
     ],
     "pending": 0,
@@ -1386,7 +1386,7 @@
     "pending": 0,
     "steering": [],
     "followUp": [],
-    "error": "Extension command \"/testcmd\" cannot be queued. Use prompt() or execute the command when not streaming.",
+    "error": "Command \"/testcmd\" comes from an extension and cannot be queued. Call prompt(), or run the command when nothing is streaming.",
     "calls": 0
   },
   "registered_command_cannot_be_followed_up": {
@@ -1396,7 +1396,7 @@
     "pending": 0,
     "steering": [],
     "followUp": [],
-    "error": "Extension command \"/testcmd\" cannot be queued. Use prompt() or execute the command when not streaming.",
+    "error": "Command \"/testcmd\" comes from an extension and cannot be queued. Call prompt(), or run the command when nothing is streaming.",
     "calls": 0
   }
 }

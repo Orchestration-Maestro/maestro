@@ -425,7 +425,7 @@ change the original editor's flag, rather than keeping a second guest flag.
 
 `theme()` retains the live theme used by the host's widgets, without acquiring a UI.
 Call it after the extension host starts. Its methods report
-`Theme not initialized. Call initTheme() first.` until the host publishes a palette.
+`Theme not initialized. Call init_theme() first.` until the host publishes a palette.
 Retained aliases read later name, path, provenance, palette and color-mode changes.
 Dropping an alias releases that resource, not the host's palette.
 

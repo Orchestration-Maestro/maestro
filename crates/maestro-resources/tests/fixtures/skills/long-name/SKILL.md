@@ -1,8 +1,8 @@
 ---
-name: this-is-a-very-long-skill-name-that-exceeds-the-sixty-four-character-limit-set-by-the-standard
-description: A skill with a name that exceeds 64 characters.
+name: this-skill-name-is-padded-with-extra-words-until-it-passes-the-sixty-four-character-cap
+description: Fixture whose name is longer than 64 characters.
 ---
 
 # Long Name
 
-This skill's name is too long.
+The name runs past the length cap.

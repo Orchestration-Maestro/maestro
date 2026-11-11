@@ -264,7 +264,7 @@ fn text<'a>(
 ) -> Result<&'a mut TextContent, String> {
     match message.content.get_mut(index) {
         Some(AssistantContent::Text(content)) => Ok(content),
-        _ => Err(format!("Received {operation} for non-text content")),
+        _ => Err(format!("{operation} targets a block that is not text")),
     }
 }
 /// Borrow a thinking block or return its authored mismatch diagnostic.
@@ -275,7 +275,7 @@ fn thinking<'a>(
 ) -> Result<&'a mut ThinkingContent, String> {
     match message.content.get_mut(index) {
         Some(AssistantContent::Thinking(content)) => Ok(content),
-        _ => Err(format!("Received {operation} for non-thinking content")),
+        _ => Err(format!("{operation} targets a block that is not thinking")),
     }
 }
 /// Replace the block at a dense index or append the next one.
@@ -413,7 +413,7 @@ fn tool_delta(
     partial: SharedAssistantMessage,
 ) -> Result<Event, String> {
     let Some(AssistantContent::ToolCall(block)) = message.content.get_mut(content_index) else {
-        return Err("Received toolcall_delta for non-toolCall content".into());
+        return Err("toolcall_delta targets a block that is not toolCall".into());
     };
     // A falsy reconstructed root falls back to an empty object.
     let parsed = parsed_arguments(arguments);

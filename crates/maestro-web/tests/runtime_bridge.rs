@@ -14,8 +14,6 @@ struct BridgeCase {
     context: String,
     /// Unmodified caller identifier.
     sandbox_id: String,
-    /// Complete injectable source of the channel that keeps its own script.
-    expected: Option<String>,
 }
 
 #[test]
@@ -24,9 +22,9 @@ fn bridge_sources_quote_sandbox_identifiers() {
         serde_json::from_str(include_str!("fixtures/runtime_bridges.json")).unwrap();
     assert_eq!(cases.len(), 26);
     for (index, case) in cases.into_iter().enumerate() {
-        let context = match case.context.as_str() {
-            "sandbox-iframe" => RuntimeMessageContext::SandboxIframe,
-            "user-script" => RuntimeMessageContext::UserScript,
+        let (context, role) = match case.context.as_str() {
+            "sandbox-iframe" => (RuntimeMessageContext::SandboxIframe, "frame-bridge"),
+            "user-script" => (RuntimeMessageContext::UserScript, "user-script"),
             _ => panic!("unknown fixture context at row {index}"),
         };
         let actual = RuntimeMessageBridge::generate_bridge_code(RuntimeMessageBridgeOptions {
@@ -34,10 +32,6 @@ fn bridge_sources_quote_sandbox_identifiers() {
             sandbox_id: &case.sandbox_id,
         })
         .unwrap();
-        if let Some(expected) = case.expected {
-            assert_eq!(actual, expected, "source row {index}");
-            continue;
-        }
         let rest = actual
             .strip_prefix("var Module={arguments:")
             .unwrap_or_else(|| panic!("arguments prefix at row {index}"));
@@ -45,7 +39,7 @@ fn bridge_sources_quote_sandbox_identifiers() {
         let arguments = values.next().unwrap().unwrap();
         assert_eq!(
             arguments,
-            serde_json::json!(["frame-bridge", case.sandbox_id]),
+            serde_json::json!([role, case.sandbox_id]),
             "arguments row {index}"
         );
         let remainder = &rest[values.byte_offset()..];

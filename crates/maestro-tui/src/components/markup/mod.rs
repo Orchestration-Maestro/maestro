@@ -235,9 +235,7 @@ impl Renderer<'_> {
     /// Filters only authored values, never renderer-generated styles or hyperlinks.
     fn clean<'a>(&self, text: &'a str) -> std::borrow::Cow<'a, str> {
         if self.clean_content {
-            let plain =
-                maestro_text::terminal::strip_ansi(text).unwrap_or_else(|_| text.to_owned());
-            maestro_text::terminal::sanitize_binary_output(&plain).into()
+            maestro_text::terminal::clean_controls(text).into()
         } else {
             text.into()
         }

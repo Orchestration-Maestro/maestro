@@ -122,13 +122,13 @@ fn missing_directory_selector_opens_on_a_console() {
             );
             let error = String::from_utf8_lossy(&preflight.stderr);
             assert!(
-                error.contains("Stored session working directory does not exist"),
+                error.contains("The working directory saved in this session is missing"),
                 "{error}"
             );
             presents(
                 &root,
                 &["--session", session.to_str().unwrap()],
-                "cwd from session file does not exist",
+                "The cwd saved in the session file is missing",
             );
         },
     )

@@ -160,7 +160,7 @@ is the one response.
 
 `set_session_name` trims leading and trailing whitespace, U+FEFF included and U+0085 and
 U+200B kept, and refuses an empty result with `Session name cannot be empty`. `clone`
-without a current entry fails with `Cannot clone session: no current entry selected`.
+without a current entry fails with `Cannot clone the session: no entry is currently selected`.
 
 The session state has `model`, `thinkingLevel`, `isStreaming`, `isCompacting`,
 `steeringMode`, `followUpMode`, `sessionFile`, `sessionId`, `sessionName`,
@@ -660,7 +660,7 @@ Editor text reads as an empty string, tool expansion as false, theme listings as
 an empty list and named theme lookup as no result. Pasting forwards to
 `set_editor_text`; it has no terminal paste/collapse behavior. The live theme
 remains available to extensions, but theme selection answers
-`Theme switching not supported in RPC mode`.
+`RPC mode does not support switching themes`.
 
 ## Ending
 

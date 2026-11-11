@@ -12,15 +12,14 @@ pub(super) fn name_warnings(name: &str) -> Vec<String> {
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
     {
-        warnings.push(
-            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)".into(),
-        );
+        warnings
+            .push("name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)".into());
     }
     if name.starts_with('-') || name.ends_with('-') {
-        warnings.push("name must not start or end with a hyphen".into());
+        warnings.push("name cannot begin or end with a hyphen".into());
     }
     if name.contains("--") {
-        warnings.push("name must not contain consecutive hyphens".into());
+        warnings.push("name cannot contain two hyphens in a row".into());
     }
     warnings
 }

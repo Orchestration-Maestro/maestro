@@ -2,7 +2,8 @@
 //!
 //! Nextest supplies its active artifact directory in the platform library search path. A run
 //! from a prepared bundle installs the bundle's example there; any other run uses the test
-//! build's own example, or builds one.
+//! build's own example, or builds one, and hands it the components and compiled code an earlier
+//! bundle in `TEST_PREPARE_BASE` supplies.
 //!
 //! On every platform the example warms compiled code in a cache that only this run uses: it
 //! sits below an agent directory the run owns, and the run's tests inherit that directory
@@ -121,13 +122,16 @@ fn run_local(
 }
 
 /// Run the setup example in the checkout with this process's environment and `agent_directory` as
-/// its agent directory, and the workspace it prepares as its arguments.
+/// its agent directory, the workspace it prepares as its arguments and the components an earlier
+/// bundle supplies.
 fn start(workspace: &Workspace, example: &Path, agent_directory: &Path) -> io::Result<ExitCode> {
     let mut command = Command::new(example);
     command
         .current_dir(workspace.root())
         .args(example_arguments(workspace)?)
         .env(test_setup::AGENT_DIRECTORY, agent_directory);
+    // The example's time is final here, so seeded code lands in the namespace the tests read.
+    test_setup::supply_base(&mut command, workspace, example, agent_directory)?;
     Ok(exit_code(
         command.status().map_err(|error| at(example, error))?,
     ))

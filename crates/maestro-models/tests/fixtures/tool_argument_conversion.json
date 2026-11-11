@@ -17868,7 +17868,7 @@
         },
         "limit": {
           "type": "number",
-          "description": "Largest number of lines to return"
+          "description": "Upper bound on the lines returned"
         }
       }
     },
@@ -17948,16 +17948,16 @@
             "properties": {
               "oldText": {
                 "type": "string",
-                "description": "Text this replacement matches in the original file. It must appear once and must not overlap another edits[].oldText in the same call."
+                "description": "Exact text that one targeted edit replaces. It must occur once in the original file and must not overlap any other edits[].oldText in the same call."
               },
               "newText": {
                 "type": "string",
-                "description": "Text written in place of oldText."
+                "description": "Text that takes the place of oldText in this edit."
               }
             },
             "additionalProperties": false
           },
-          "description": "One or more replacements. Each edit matches the original file rather than the result of an earlier edit in the call. Edits must not overlap or nest; merge changes that touch one block or neighbouring lines into a single edit."
+          "description": "One or more targeted replacements. Every edit is located in the original file, never in the output of an earlier edit. Overlapping or nested edits are rejected. Changes within one block or on adjacent lines go into a single edit."
         }
       },
       "additionalProperties": false
@@ -18161,7 +18161,7 @@
       "properties": {
         "url": {
           "type": "string",
-          "description": "Document to pull text from (PDF, DOCX, XLSX, or PPTX)"
+          "description": "URL of the PDF, DOCX, XLSX or PPTX document to read text from"
         }
       }
     },
@@ -18190,7 +18190,7 @@
       "properties": {
         "title": {
           "type": "string",
-          "description": "Short title in active voice naming what the snippet achieves, e.g. 'Calculating sum'"
+          "description": "Short title, in active form, saying what the snippet sets out to do, e.g. 'Calculating sum'"
         },
         "code": {
           "type": "string",

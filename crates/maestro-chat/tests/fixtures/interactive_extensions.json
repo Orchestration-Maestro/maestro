@@ -1816,7 +1816,7 @@
           {
             "value": "scoped-models",
             "label": "scoped-models",
-            "description": "Enable/disable models for Ctrl+P cycling"
+            "description": "Turn models on or off for Ctrl+P cycling"
           },
           {
             "value": "export",
@@ -1826,17 +1826,17 @@
           {
             "value": "import",
             "label": "import",
-            "description": "Import and resume a session from a JSONL file"
+            "description": "Load a session from a JSONL file and resume it"
           },
           {
             "value": "share",
             "label": "share",
-            "description": "Share session as a secret GitHub gist"
+            "description": "Publish the session as a secret gist on GitHub"
           },
           {
             "value": "copy",
             "label": "copy",
-            "description": "Copy last agent message to clipboard"
+            "description": "Put the last agent message on the clipboard"
           },
           {
             "value": "name",
@@ -1861,12 +1861,12 @@
           {
             "value": "fork",
             "label": "fork",
-            "description": "Create a new fork from a previous user message"
+            "description": "Open a new session that forks off an earlier user turn"
           },
           {
             "value": "clone",
             "label": "clone",
-            "description": "Duplicate the current session at the current position"
+            "description": "Clone the current session at its present position"
           },
           {
             "value": "tree",
@@ -1901,7 +1901,7 @@
           {
             "value": "reload",
             "label": "reload",
-            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+            "description": "Refresh themes, prompts, skills, extensions and keybindings"
           },
           {
             "value": "quit",
@@ -2007,7 +2007,7 @@
           {
             "value": "scoped-models",
             "label": "scoped-models",
-            "description": "Enable/disable models for Ctrl+P cycling"
+            "description": "Turn models on or off for Ctrl+P cycling"
           },
           {
             "value": "export",
@@ -2017,17 +2017,17 @@
           {
             "value": "import",
             "label": "import",
-            "description": "Import and resume a session from a JSONL file"
+            "description": "Load a session from a JSONL file and resume it"
           },
           {
             "value": "share",
             "label": "share",
-            "description": "Share session as a secret GitHub gist"
+            "description": "Publish the session as a secret gist on GitHub"
           },
           {
             "value": "copy",
             "label": "copy",
-            "description": "Copy last agent message to clipboard"
+            "description": "Put the last agent message on the clipboard"
           },
           {
             "value": "name",
@@ -2052,12 +2052,12 @@
           {
             "value": "fork",
             "label": "fork",
-            "description": "Create a new fork from a previous user message"
+            "description": "Open a new session that forks off an earlier user turn"
           },
           {
             "value": "clone",
             "label": "clone",
-            "description": "Duplicate the current session at the current position"
+            "description": "Clone the current session at its present position"
           },
           {
             "value": "tree",
@@ -2092,7 +2092,7 @@
           {
             "value": "reload",
             "label": "reload",
-            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+            "description": "Refresh themes, prompts, skills, extensions and keybindings"
           },
           {
             "value": "quit",
@@ -2158,7 +2158,7 @@
           {
             "value": "scoped-models",
             "label": "scoped-models",
-            "description": "Enable/disable models for Ctrl+P cycling"
+            "description": "Turn models on or off for Ctrl+P cycling"
           },
           {
             "value": "export",
@@ -2168,17 +2168,17 @@
           {
             "value": "import",
             "label": "import",
-            "description": "Import and resume a session from a JSONL file"
+            "description": "Load a session from a JSONL file and resume it"
           },
           {
             "value": "share",
             "label": "share",
-            "description": "Share session as a secret GitHub gist"
+            "description": "Publish the session as a secret gist on GitHub"
           },
           {
             "value": "copy",
             "label": "copy",
-            "description": "Copy last agent message to clipboard"
+            "description": "Put the last agent message on the clipboard"
           },
           {
             "value": "name",
@@ -2203,12 +2203,12 @@
           {
             "value": "fork",
             "label": "fork",
-            "description": "Create a new fork from a previous user message"
+            "description": "Open a new session that forks off an earlier user turn"
           },
           {
             "value": "clone",
             "label": "clone",
-            "description": "Duplicate the current session at the current position"
+            "description": "Clone the current session at its present position"
           },
           {
             "value": "tree",
@@ -2243,7 +2243,7 @@
           {
             "value": "reload",
             "label": "reload",
-            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+            "description": "Refresh themes, prompts, skills, extensions and keybindings"
           },
           {
             "value": "quit",
@@ -2305,7 +2305,7 @@
           {
             "value": "scoped-models",
             "label": "scoped-models",
-            "description": "Enable/disable models for Ctrl+P cycling"
+            "description": "Turn models on or off for Ctrl+P cycling"
           },
           {
             "value": "export",
@@ -2315,17 +2315,17 @@
           {
             "value": "import",
             "label": "import",
-            "description": "Import and resume a session from a JSONL file"
+            "description": "Load a session from a JSONL file and resume it"
           },
           {
             "value": "share",
             "label": "share",
-            "description": "Share session as a secret GitHub gist"
+            "description": "Publish the session as a secret gist on GitHub"
           },
           {
             "value": "copy",
             "label": "copy",
-            "description": "Copy last agent message to clipboard"
+            "description": "Put the last agent message on the clipboard"
           },
           {
             "value": "name",
@@ -2350,12 +2350,12 @@
           {
             "value": "fork",
             "label": "fork",
-            "description": "Create a new fork from a previous user message"
+            "description": "Open a new session that forks off an earlier user turn"
           },
           {
             "value": "clone",
             "label": "clone",
-            "description": "Duplicate the current session at the current position"
+            "description": "Clone the current session at its present position"
           },
           {
             "value": "tree",
@@ -2390,7 +2390,7 @@
           {
             "value": "reload",
             "label": "reload",
-            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+            "description": "Refresh themes, prompts, skills, extensions and keybindings"
           },
           {
             "value": "quit",
@@ -2439,7 +2439,7 @@
           {
             "value": "scoped-models",
             "label": "scoped-models",
-            "description": "Enable/disable models for Ctrl+P cycling"
+            "description": "Turn models on or off for Ctrl+P cycling"
           },
           {
             "value": "export",
@@ -2449,17 +2449,17 @@
           {
             "value": "import",
             "label": "import",
-            "description": "Import and resume a session from a JSONL file"
+            "description": "Load a session from a JSONL file and resume it"
           },
           {
             "value": "share",
             "label": "share",
-            "description": "Share session as a secret GitHub gist"
+            "description": "Publish the session as a secret gist on GitHub"
           },
           {
             "value": "copy",
             "label": "copy",
-            "description": "Copy last agent message to clipboard"
+            "description": "Put the last agent message on the clipboard"
           },
           {
             "value": "name",
@@ -2484,12 +2484,12 @@
           {
             "value": "fork",
             "label": "fork",
-            "description": "Create a new fork from a previous user message"
+            "description": "Open a new session that forks off an earlier user turn"
           },
           {
             "value": "clone",
             "label": "clone",
-            "description": "Duplicate the current session at the current position"
+            "description": "Clone the current session at its present position"
           },
           {
             "value": "tree",
@@ -2524,7 +2524,7 @@
           {
             "value": "reload",
             "label": "reload",
-            "description": "Reload keybindings, extensions, skills, prompts, and themes"
+            "description": "Refresh themes, prompts, skills, extensions and keybindings"
           },
           {
             "value": "quit",

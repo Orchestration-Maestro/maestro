@@ -24,7 +24,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -42,7 +42,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -60,7 +60,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -78,7 +78,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -96,7 +96,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -114,7 +114,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -132,7 +132,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -150,7 +150,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -195,7 +195,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -213,7 +213,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -231,7 +231,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -249,7 +249,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -267,7 +267,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -285,7 +285,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -303,7 +303,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -321,7 +321,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -366,7 +366,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -387,7 +387,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -408,7 +408,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -429,7 +429,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -450,7 +450,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -471,7 +471,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -492,7 +492,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -513,7 +513,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -561,7 +561,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -582,7 +582,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -603,7 +603,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -624,7 +624,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -645,7 +645,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -666,7 +666,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -687,7 +687,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -708,7 +708,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -756,7 +756,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -774,7 +774,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -792,7 +792,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -810,7 +810,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -828,7 +828,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7m \u001b[27m                                                                                                 ",
             "",
@@ -846,7 +846,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -864,7 +864,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -882,7 +882,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7m \u001b[27m                                                                                                ",
             "",
@@ -927,7 +927,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -945,7 +945,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -963,7 +963,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -981,7 +981,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -999,7 +999,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> \u001b[7mm\u001b[27missing                                                                                           ",
             "",
@@ -1017,7 +1017,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -1035,7 +1035,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",
@@ -1053,7 +1053,7 @@
           "lines": [
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "",
-            "\u001b[38;5;36mOnly showing models from configured providers. Use /login to add providers.\u001b[39m                         ",
+            "\u001b[38;5;36mShowing only models of configured providers. Run /login to add a provider.\u001b[39m                          ",
             "",
             "> a\u001b[7mm\u001b[27missing                                                                                          ",
             "",

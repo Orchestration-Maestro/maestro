@@ -18,10 +18,9 @@ use std::sync::Weak;
 use std::{collections::BTreeMap, sync::RwLock};
 
 /// Failure of an action called before a runner binds the runtime.
-pub(crate) const NOT_INITIALIZED: &str =
-    "Extension runtime not initialized. Action methods cannot be called during extension loading.";
+pub(crate) const NOT_INITIALIZED: &str = "The extension runtime is not initialized yet. Do not call action methods while extensions are loading.";
 /// Failure of a model selection requested before a runner binds the runtime.
-pub(crate) const SET_MODEL_NOT_INITIALIZED: &str = "Extension runtime not initialized";
+pub(crate) const SET_MODEL_NOT_INITIALIZED: &str = "The extension runtime is not initialized yet";
 /// Attribution of a queued registration that named no extension.
 const UNKNOWN_EXTENSION_PATH: &str = "<unknown>";
 

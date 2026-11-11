@@ -117,20 +117,17 @@ pub async fn generic_guidance_is_literal_selectable_and_localized() {
         js("document.querySelector('.maestro-generic-artifact p').textContent")
             .as_string()
             .unwrap(),
-        "Preview not available for this file type. Click the download button above to view it on your computer."
+        "No preview for this file type. Open it on your computer with the download button above."
     );
-    assert!(js("(()=>{const r=document.createRange();r.selectNodeContents(document.querySelector('.maestro-generic-artifact p'));getSelection().removeAllRanges();getSelection().addRange(r);return getSelection().toString().includes('Preview not available');})()").as_bool().unwrap());
+    assert!(js("(()=>{const r=document.createRange();r.selectNodeContents(document.querySelector('.maestro-generic-artifact p'));getSelection().removeAllRanges();getSelection().addRange(r);return getSelection().toString().includes('No preview');})()").as_bool().unwrap());
     assert!(js("(()=>{const r=document.querySelector('.maestro-generic-artifact').getBoundingClientRect();const s=document.querySelector('.maestro-generic-artifact svg').getBoundingClientRect();return r.width>0 && r.height>0 && s.width===64 && s.height===64;})()").as_bool().unwrap());
     support::reading_paint::observe("neighbors-generic").await;
     let translations = view.i18n.get_translations();
     for (key, value) in [
         ("Download", "Télécharger"),
+        ("No preview for this file type.", "Aperçu indisponible."),
         (
-            "Preview not available for this file type.",
-            "Aperçu indisponible.",
-        ),
-        (
-            "Click the download button above to view it on your computer.",
+            "Open it on your computer with the download button above.",
             "Téléchargez le fichier.",
         ),
     ] {
@@ -186,7 +183,7 @@ pub fn generic_reading_root_survives_field_edits() {
     );
     let translations = view.i18n.get_translations();
     translations.borrow()["en"].borrow_mut().insert(
-        "Preview not available for this file type.".into(),
+        "No preview for this file type.".into(),
         maestro_web::TranslationValue::Text("Aperçu indisponible.".into()),
     );
     view.i18n.set_translations(translations);

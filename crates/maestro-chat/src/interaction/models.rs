@@ -20,7 +20,7 @@ use std::{
 };
 
 /// The notice shown once when a provider subscription pays for usage.
-const ANTHROPIC_SUBSCRIPTION_AUTH_WARNING: &str = "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage.";
+const ANTHROPIC_SUBSCRIPTION_AUTH_WARNING: &str = "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage.";
 
 /// Whether `api_key` is a subscription token.
 fn is_anthropic_subscription_auth_key(api_key: Option<&str>) -> bool {

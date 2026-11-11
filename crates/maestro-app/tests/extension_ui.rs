@@ -502,7 +502,7 @@ fn ui_theme_follows_live_replacement() {
             assert!(!result.success);
             assert_eq!(
                 result.error.as_deref(),
-                Some("Theme switching not supported in RPC mode")
+                Some("RPC mode does not support switching themes")
             );
         }
         assert!(Rc::ptr_eq(&ui.theme().get().unwrap(), &second));

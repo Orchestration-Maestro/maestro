@@ -1,8 +1,8 @@
 ---
 name: valid-skill
-description: A valid skill for testing purposes.
+description: Well-formed fixture entry.
 ---
 
 # Valid Skill
 
-This is a valid skill that follows the Agent Skills standard.
+Every field here meets the standard's rules.

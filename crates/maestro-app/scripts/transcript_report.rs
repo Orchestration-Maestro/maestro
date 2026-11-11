@@ -2,7 +2,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_app::developer_tools::session_transcripts;
 #[cfg(not(target_arch = "wasm32"))]
-use std::io::{self, IsTerminal, Write as _};
+use std::io::{self, Write as _};
 #[cfg(not(target_arch = "wasm32"))]
 use std::process::ExitCode;
 
@@ -17,7 +17,7 @@ fn main() -> io::Result<ExitCode> {
         .enable_all()
         .build()?;
     let mut stdout = io::stdout().lock();
-    let color = stdout.is_terminal();
+    let color = maestro_theme::supports_color();
     let outcome = runtime.block_on(async {
         let mut errors = io::stderr().lock();
         session_transcripts::main(&args, color, &mut stdout, &mut errors).await

@@ -355,7 +355,7 @@ pub(crate) enum TerminalRequest<'a> {
     Columns,
     /// Reads the height.
     Rows,
-    /// Reads whether the Kitty keyboard protocol is active.
+    /// Reads whether Kitty keyboard protocol mode is on.
     KittyProtocolActive,
     /// Moves the cursor by rows.
     MoveBy(i64),

@@ -183,7 +183,7 @@ async fn settled_submission(world: &World, shell: bool) -> Vec<Box<dyn Error>> {
 }
 
 /// The busy command's exact warning.
-const BUSY: &str = "A bash command is already running. Press Esc to cancel it first.";
+const BUSY: &str = "A bash command is still running. Press Esc to cancel it.";
 
 #[test]
 fn busy_shell_restores_selected_input_without_history() {

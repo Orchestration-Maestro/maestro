@@ -169,7 +169,11 @@ fn completion_view(c: &AutocompleteItem) -> Value {
 }
 fn assert_error(error: &EventError, expected: Option<&str>) {
     match expected {
-        Some("default") => assert!(error.to_string().starts_with("This extension ctx is stale")),
+        Some("default") => assert!(
+            error
+                .to_string()
+                .starts_with("This extension ctx went stale")
+        ),
         Some(expected) => assert_eq!(error.to_string(), expected),
         None => (),
     }

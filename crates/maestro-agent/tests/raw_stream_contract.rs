@@ -310,7 +310,7 @@ fn maestro_raw_continue_rejects_assistant_before_submission() {
     .unwrap();
     assert_eq!(
         error.message,
-        "Cannot continue from message role: assistant"
+        "Nothing to continue from: the last message has the assistant role"
     );
     assert!(tasks.0.lock().unwrap().is_empty());
 }

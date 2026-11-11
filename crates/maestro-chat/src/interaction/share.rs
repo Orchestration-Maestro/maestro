@@ -86,11 +86,11 @@ impl InteractiveMode {
     /// Returns the failure of showing the notice.
     pub(super) async fn handle_copy_command(&self) -> CommandResult {
         let Some(text) = self.runtime_host.session().get_last_assistant_text() else {
-            return Ok(self.show_error("No agent messages to copy yet.")?);
+            return Ok(self.show_error("No agent message to copy yet.")?);
         };
         match maestro_app::copy_to_clipboard(&text).await {
             Ok(()) => self
-                .show_status("Copied last agent message to clipboard")
+                .show_status("Last agent message copied to the clipboard")
                 .map_err(Into::into),
             Err(error) => Ok(self.show_error(&error.to_string())?),
         }
@@ -139,10 +139,10 @@ impl InteractiveMode {
         };
         match spawn_sync(Command::new("gh").args(["auth", "status"]), options) {
             Ok(output) if output.status.success() => Ok(()),
-            Ok(_) => Err("GitHub CLI is not logged in. Run 'gh auth login' first."),
-            Err(_) => {
-                Err("GitHub CLI (gh) is not installed. Install it from https://cli.github.com/")
-            }
+            Ok(_) => Err("The GitHub CLI has no login. Run 'gh auth login' first."),
+            Err(_) => Err(
+                "The GitHub CLI (gh) is missing. See https://cli.github.com/ for the install steps.",
+            ),
         }
     }
 
@@ -250,7 +250,7 @@ impl InteractiveMode {
         let gist = stdout.trim_matches(is_whitespace_scalar);
         let id = gist.rsplit('/').next().filter(|id| !id.is_empty());
         let Some(id) = id else {
-            return Ok(self.show_error("Failed to parse gist ID from gh output")?);
+            return Ok(self.show_error("Cannot read a gist ID from the gh output")?);
         };
         let message = get_share_viewer_url(id, service_origin).map_or_else(
             || format!("Gist: {gist}"),

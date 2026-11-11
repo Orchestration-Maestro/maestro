@@ -29,7 +29,7 @@ impl SessionManager {
     /// authored as parent metadata.
     ///
     /// # Errors
-    /// Fails with `Cannot fork: source session file is empty or invalid: {source_path}`
+    /// Fails with `Cannot fork: the source session file has no valid entries: {source_path}`
     /// before creating anything; later directory, write and reopen errors are propagated
     /// and leave records already written in place. Empty JSON values are skipped.
     pub fn fork_from(
@@ -52,7 +52,7 @@ impl SessionManager {
         let mut entries = super::storage::read(source_path)?.entries;
         if entries.is_empty() {
             return Err(invalid(&format!(
-                "Cannot fork: source session file is empty or invalid: {source_path}"
+                "Cannot fork: the source session file has no valid entries: {source_path}"
             )));
         }
         super::conversions::migrate(&mut entries, uuid::Uuid::new_v4)?;

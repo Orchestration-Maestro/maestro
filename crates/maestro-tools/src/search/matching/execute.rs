@@ -193,7 +193,7 @@ impl Body {
             .collect();
         let trailing = self
             .clipped
-            .then_some("Some lines truncated to 500 chars. Use read tool to see full lines");
+            .then_some("Lines over 500 chars were cut. Use the read tool for the full lines");
         let (text, truncation) = select_listing(&self.rows.join("\n"), notices, trailing);
         let details =
             (limit.is_some() || truncation.is_some() || self.clipped).then_some(GrepToolDetails {

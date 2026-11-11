@@ -7,7 +7,7 @@
 use super::scenario::{Decision, Driver, transformed};
 use serde_json::{Value, json};
 /// Exact default stale-context diagnostic supplied by the host.
-const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
+const STALE: &str = "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns.";
 /// Install the author probes without changing the other scenarios.
 async fn install(driver: &mut impl Driver) -> Result<(), String> {
     driver.run_plain_command("capture", "catalog").await

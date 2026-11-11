@@ -67,7 +67,7 @@ async fn prompt_observation_drop_does_not_cancel_case() {
     let busy = agent.prompt(input("busy")).await.unwrap_err();
     assert_eq!(
         busy.message,
-        "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion."
+        "The agent is already running a prompt. Queue messages with steer() or followUp(), or wait for it to finish."
     );
     let idle = agent.wait_for_idle();
     agent.abort();

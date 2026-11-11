@@ -192,7 +192,7 @@
   "missing_cwd": {
     "called": 0,
     "name": "MissingSessionCwdError",
-    "message": "Stored session working directory does not exist: $ROOT/missing-cwd\nSession file: $ROOT/missing.jsonl\nCurrent working directory: $ROOT"
+    "message": "The working directory saved in this session is missing: $ROOT/missing-cwd\nSession file: $ROOT/missing.jsonl\nCurrent working directory: $ROOT"
   },
   "lifecycle": {
     "startup": [
@@ -274,7 +274,7 @@
       "before_invalidate",
       "rebind"
     ],
-    "error": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload()."
+    "error": "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns."
   },
   "fork_events": {
     "result": {
@@ -330,7 +330,7 @@
       "before_invalidate",
       "factory_failure"
     ],
-    "stale": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload()."
+    "stale": "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns."
   },
   "with_new": {
     "order": [
@@ -341,7 +341,7 @@
     ],
     "staleCtx": true,
     "staleApi": true,
-    "after": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+    "after": "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns.",
     "messages": [
       {
         "role": "user",
@@ -363,7 +363,7 @@
     ],
     "staleCtx": true,
     "staleApi": true,
-    "after": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+    "after": "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns.",
     "messages": [
       {
         "role": "user",
@@ -392,7 +392,7 @@
     ],
     "staleCtx": true,
     "staleApi": true,
-    "after": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+    "after": "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns.",
     "messages": [
       {
         "role": "user",

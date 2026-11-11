@@ -24,7 +24,7 @@ pub(super) struct WorkingState {
     pub(super) working_visible: Cell<bool>,
     /// The extension's working indicator, the toolkit's own when absent.
     pub(super) working_indicator_options: RefCell<Option<WorkingIndicatorOptions>>,
-    /// The label shown for hidden thinking.
+    /// The label a hidden thinking block shows.
     pub(super) hidden_thinking_label: RefCell<String>,
 }
 

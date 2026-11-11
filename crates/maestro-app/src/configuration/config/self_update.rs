@@ -431,16 +431,16 @@ pub fn get_self_update_unavailable_instruction(
         };
         if managed(context, package_name, npm_command)? && !writable(context) {
             return Ok(format!(
-                "This installation is managed by a global {method} install, but the install path is not writable. Update it yourself with: {}",
+                "This installation is managed by a global {method} install, yet its install path cannot be written. Update it yourself with: {}",
                 command.display
             ));
         }
         return Ok(format!(
-            "This installation is not managed by a global {method} install. Update it with the package manager, wrapper, or source checkout that provides it."
+            "This installation is not managed by a global {method} install. Update it through whichever package manager, source checkout or wrapper supplies it."
         ));
     }
     Ok(format!(
-        "Update {update} using the package manager, wrapper, or source checkout that provides this installation."
+        "Update {update} through whichever package manager, source checkout or wrapper supplies this installation."
     ))
 }
 /// Describe a manual command without probing ownership or write access.

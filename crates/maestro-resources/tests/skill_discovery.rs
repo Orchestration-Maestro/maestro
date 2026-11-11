@@ -79,9 +79,9 @@ fn maestro_skills_keep_name_warning_order() {
             .collect::<Vec<_>>(),
         vec![
             "name exceeds 64 characters (65)",
-            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)",
-            "name must not start or end with a hyphen",
-            "name must not contain consecutive hyphens",
+            "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)",
+            "name cannot begin or end with a hyphen",
+            "name cannot contain two hyphens in a row",
         ]
     );
     for (name, expected) in [
@@ -139,7 +139,7 @@ fn maestro_skills_validate_description_before_name() {
                     .collect::<Vec<_>>(),
                 vec![
                     "description is required",
-                    "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)"
+                    "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)"
                 ]
             );
         }
@@ -474,7 +474,7 @@ fn maestro_skills_render_exact_prompt_instructions() {
         source: "path",
     });
     let expected = format!(
-        "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>parent</name>\n    <description>Useful</description>\n    <location>{}</location>\n  </skill>\n</available_skills>",
+        "\n\nThese skills hold specialized instructions for particular tasks.\nWhen a task fits a skill's description, load that skill's file with the read tool.\nIf a skill file mentions a relative path, resolve it from the skill's directory (the parent of SKILL.md, i.e. the dirname of its path) and pass the resulting absolute path to tool commands.\n\n<available_skills>\n  <skill>\n    <name>parent</name>\n    <description>Useful</description>\n    <location>{}</location>\n  </skill>\n</available_skills>",
         file.display()
     );
     assert_eq!(
@@ -615,10 +615,10 @@ fn maestro_skills_report_explicit_path_failures() {
     assert!(result.skills.is_empty());
     let expected = [
         ("skill path does not exist", missing),
-        ("skill path is not a markdown file", upper),
+        ("skill path does not point to a markdown file", upper),
         #[cfg(unix)]
         (
-            "skill path is not a markdown file",
+            "skill path does not point to a markdown file",
             dir.0.path().join("other.md"),
         ),
     ];
@@ -732,7 +732,7 @@ fn maestro_skills_load_the_complete_fixture_tree() {
         "unknown-field",
         "valid-skill",
         "root-skill-preferred",
-        "this-is-a-very-long-skill-name-that-exceeds-the-sixty-four-character-limit-set-by-the-standard",
+        "this-skill-name-is-padded-with-extra-words-until-it-passes-the-sixty-four-character-cap",
     ];
     expected.sort_unstable();
     assert_eq!(names, expected);
@@ -1321,7 +1321,7 @@ fn maestro_skills_use_literal_dot_root_names() {
         assert_eq!(result.diagnostics.len(), 1);
         assert_eq!(
             result.diagnostics[0].message,
-            "name contains invalid characters (must be lowercase a-z, 0-9, hyphens only)"
+            "name has invalid characters (allowed: lowercase a-z, 0-9 and hyphens)"
         );
     }
 }

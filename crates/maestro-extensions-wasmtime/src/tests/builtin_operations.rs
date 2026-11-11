@@ -688,7 +688,7 @@ async fn observe_image_case(
         assert_eq!(observed["result"], expected, "{resize:?}, {vision:?}");
         let text = expected["content"][0]["text"].as_str().unwrap();
         assert_eq!(
-            text.contains("Current model does not support images"),
+            text.contains("The active model cannot take images"),
             vision == Some(false)
         );
         assert_eq!(

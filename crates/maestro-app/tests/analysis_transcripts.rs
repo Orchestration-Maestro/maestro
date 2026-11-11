@@ -527,7 +527,7 @@ fn analysis_stream_keeps_text_tool_and_turn_branches() {
             assert!(plain.succeeded(), "{plain:?}");
             assert_eq!(
                 plain.stderr,
-                "controlled stderr\ncontrolled stderr\nAgent finished but did not write final summary\n"
+                "controlled stderr\ncontrolled stderr\nThe agent finished without writing the final summary\n"
             );
             let expected = "  thinking now\n  [read] literal file offset=1 limit=1000\n  tail\n  [write] out\n  [custom] \n  [read] literal file\n  turn tail\n";
             assert_eq!(plain.stdout.matches(expected).count(), 2);
@@ -585,7 +585,7 @@ fn analysis_runs_each_file_before_aggregation() {
             assert_eq!(
                 run.stderr,
                 format!(
-                    "{}Agent finished but did not write final summary\n",
+                    "{}The agent finished without writing the final summary\n",
                     "controlled stderr\n".repeat(3)
                 )
             );
@@ -788,25 +788,25 @@ fn assert_prompt_paths(receipt: &str, agents: &str, output: &str, summaries: &[S
     let prompt = &arguments[0][5];
     assert!(
         prompt.contains(&format!(
-            "STEP 1: Read the existing AGENTS.md file(s) to see what's already encoded:\n{agents}\n\nSTEP 2: READING THE TRANSCRIPT:"
+            "STEP 1: Open the existing AGENTS.md file(s) to learn which patterns they already hold:\n{agents}\n\nSTEP 2: HOW TO READ THE TRANSCRIPT:"
         )),
         "{prompt:?}"
     );
-    assert!(prompt.contains(
-        "Only after reading the ENTIRE file, perform the analysis and write the summary"
-    ));
-    assert!(prompt.contains("- Do not include any other text outside this format"));
+    assert!(
+        prompt.contains("Analyze and write the summary only once the ENTIRE file has been read")
+    );
+    assert!(prompt.contains("- Add no text outside this format"));
     assert!(prompt.contains(&format!(
         "The file {output}/session-transcripts-000.txt has "
     )));
     assert!(prompt.contains(&format!(
-        "lines. Read it in full using chunked reads, then write your analysis to {}",
+        "lines. Read all of it in chunks, then write your analysis to {}",
         summaries[0]
     )));
     let aggregation = &arguments[1][5];
     assert!(
         aggregation.contains(&format!(
-            "STEP 1: Read the existing AGENTS.md file(s) to understand what patterns are already encoded:\n{agents}\n\nSTEP 2: Read ALL of the following summary files:\n{}\n\n",
+            "STEP 1: Open the existing AGENTS.md file(s) to learn which patterns they already hold:\n{agents}\n\nSTEP 2: Read EVERY summary file listed here:\n{}\n\n",
             summaries.join("\n")
         )),
         "{aggregation:?}"
@@ -948,14 +948,14 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
             assert!(unwritten.succeeded(), "{unwritten:?}");
             assert!(
                 unwritten.stderr.contains(
-                    "Agent finished but did not write session-transcripts-000.summary.txt"
+                    "The agent finished without writing session-transcripts-000.summary.txt"
                 ),
                 "{unwritten:?}"
             );
             assert!(
                 unwritten
                     .stdout
-                    .contains("No summary files created. Nothing to aggregate."),
+                    .contains("No summary file was written, so there is nothing to combine."),
                 "{unwritten:?}"
             );
         },
@@ -993,11 +993,11 @@ fn analysis_aggregates_existing_summary_files() {
             let prompt = invocations(&receipt)
                 .into_iter()
                 .filter_map(|arguments| arguments.into_iter().nth(5))
-                .find(|prompt| prompt.contains("You are aggregating"))
+                .find(|prompt| prompt.contains("You are combining"))
                 .expect("the aggregation prompt is recorded");
             assert!(
                 prompt.contains(&format!(
-                    "STEP 2: Read ALL of the following summary files:\n{output}/session-transcripts-000.summary.txt\n{output}/stale.summary.txt"
+                    "STEP 2: Read EVERY summary file listed here:\n{output}/session-transcripts-000.summary.txt\n{output}/stale.summary.txt"
                 )),
                 "{prompt:?}"
             );
