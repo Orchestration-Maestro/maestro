@@ -308,7 +308,10 @@ require network access on a cold cache. Rust repository tooling prepares the
 scratch manifest and compares its resolved lock with the checkout lock. It resolves
 workspace dependency aliases, combines
 normal, WebAssembly and development features, anchors dependency and patch paths
-to the checkout, and retains the library source and development profile. Native-only
+to the checkout, and retains the library source. It copies the checkout's profile tables,
+leaving out package overrides for crates the library never builds, so the library's
+registry dependencies compile with the same settings as the registered integration target
+and the second build reuses them. Native-only
 dependencies stay outside the browser library. Preparation copies `Cargo.lock`
 and `rust-toolchain.toml` and links the authored test directory.
 
