@@ -359,25 +359,6 @@ pub fn capture_lines<R: std::io::Read>(
         .unwrap()
 }
 
-/// Clear the prepared-bundle inputs a setup child inherits from the process that runs the tests,
-/// so it runs the setup the test supplies.
-pub fn without_prepared_bundles(command: &mut Command) {
-    for name in ["TEST_PREPARE_BASE", "TEST_PREPARE_OUTPUT", "TEST_ARCHIVE"] {
-        command.env_remove(name);
-    }
-}
-
-/// Run the `normalize-component-cache` setup over `profile` without any inherited prepared bundle
-/// and return its output.
-pub fn normalize_cache(profile: &Path) -> Output {
-    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
-    command
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(profile);
-    without_prepared_bundles(&mut command);
-    command.output().unwrap()
-}
-
 /// Run setup with both streams delivered through the shared capture owner.
 #[cfg(unix)]
 pub fn setup_status(command: &mut Command) -> std::process::ExitStatus {

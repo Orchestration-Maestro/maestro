@@ -815,7 +815,9 @@ fn author_setup_without_prepared_outputs_builds_locally() {
             .env("CARGO", root.join("cargo"))
             .env("NEXTEST_ENV", root.join("nextest-env"))
             .env("NEXTEST_LD_LIBRARY_PATH", &profile)
-            .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile);
+            .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
+            .env_remove("TEST_ARCHIVE")
+            .env_remove("TEST_PREPARE_OUTPUT");
         if names_output {
             command.env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"));
         }
@@ -837,7 +839,9 @@ fn local_setup(root: &Path, base: Option<&Path>) -> Output {
         .env("CARGO", root.join("cargo"))
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", &profile)
-        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile);
+        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
+        .env_remove("TEST_ARCHIVE")
+        .env_remove("TEST_PREPARE_OUTPUT");
     if let Some(base) = base {
         command.env("TEST_PREPARE_BASE", base);
     }
@@ -1563,9 +1567,10 @@ fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
 
 /// `command` in the environment of a shard that runs from the fixture checkout.
 fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: bool) -> Command {
-    crate::recipe_support::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
+    } else {
+        command.env_remove("TEST_ARCHIVE");
     }
     command
         .current_dir(root)
@@ -1681,8 +1686,9 @@ fn browser_command(root: &Path, archived: bool) -> Command {
 /// The author-component setup, as nextest's setup entry runs it.
 fn setup_command() -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
-    command.args(["nextest-setup", "author-component"]);
-    crate::recipe_support::without_prepared_bundles(&mut command);
+    command
+        .args(["nextest-setup", "author-component"])
+        .env_remove("TEST_PREPARE_BASE");
     command
 }
 
@@ -1704,8 +1710,9 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
             .args(["nextest-setup", "native-fixture"])
             .current_dir(root)
             .env("CARGO", root.join("cargo"))
-            .env("NEXTEST_ENV", &environment);
-        crate::recipe_support::without_prepared_bundles(&mut command);
+            .env("NEXTEST_ENV", &environment)
+            .env_remove("TEST_PREPARE_OUTPUT")
+            .env_remove("TEST_ARCHIVE");
         command
     };
     assert_success(&setup().output().unwrap());
