@@ -67,9 +67,11 @@ const TOOL_PACKAGES: [&str; 2] = [EXAMPLE_PACKAGE, "maestro-tooling"];
 const BROWSER_PACKAGES: [&str; 2] = [browser_graph::PACKAGE, "maestro-tooling"];
 /// The package whose cold browser bootstrap test starts from the staged seed.
 const SEED_PACKAGE: &str = "maestro-tooling";
+/// The workspace manifest, of which the components read only what a release build reads.
+const WORKSPACE_MANIFEST: &str = "Cargo.toml";
 /// What every artifact depends on besides the crates: the workspace manifest, the toolchain and
 /// the Cargo configuration.
-const SHARED_INPUTS: [&str; 3] = ["Cargo.toml", "rust-toolchain.toml", ".cargo"];
+const SHARED_INPUTS: [&str; 3] = [WORKSPACE_MANIFEST, "rust-toolchain.toml", ".cargo"];
 /// What the tool and the browser graph read besides the crates and the shared inputs: the locked
 /// dependencies and the assets.
 const LOCKED_INPUTS: [&str; 2] = ["Cargo.lock", "assets"];

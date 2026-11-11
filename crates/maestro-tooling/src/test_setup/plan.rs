@@ -15,7 +15,7 @@ use cargo_metadata::{Dependency, DependencyKind, Metadata, Package};
 use super::inputs::{Inputs, locked_closure};
 use super::{
     BROWSER_PACKAGES, EXAMPLE_INPUTS, FIXED_COMPONENTS, LOCKED_INPUTS, SHARED_INPUTS,
-    TOOL_PACKAGES, at,
+    TOOL_PACKAGES, WORKSPACE_MANIFEST, at,
 };
 use crate::dep_info;
 use crate::member_graph::{closure, dependency_edges_where, member_roots, members};
@@ -33,6 +33,8 @@ pub(super) struct Plan {
     pub(super) manifests: BTreeSet<String>,
     /// The registry packages the components depend on directly.
     pub(super) dependencies: BTreeSet<String>,
+    /// The `[workspace.dependencies]` entries the manifests among them can inherit.
+    pub(super) workspace_dependencies: BTreeSet<String>,
     /// What the setup example and the development tool read.
     pub(super) tool: BTreeSet<String>,
     /// What the browser graph reads.
@@ -61,9 +63,8 @@ impl Artifacts {
         component: Option<&ComponentCrate>,
     ) -> io::Result<Self> {
         let plan = plan(workspace, component)?;
-        let locked = locked_closure(checkout, &plan.dependencies)?;
         Ok(Self {
-            shared: Inputs::new(checkout, plan.shared, locked, plan.manifests)?,
+            shared: shared(checkout, &plan)?,
             tool: Inputs::new(checkout, plan.tool, BTreeSet::new(), BTreeSet::new())?,
             browser: Inputs::new(checkout, plan.browser, BTreeSet::new(), BTreeSet::new())?,
         })
@@ -78,6 +79,17 @@ impl Artifacts {
             && self.tool.is_current(checkout)?
             && self.browser.is_current(checkout)?)
     }
+}
+
+/// Digest what every component shares in `checkout`, as `plan` names it.
+fn shared(checkout: &Path, plan: &Plan) -> io::Result<Inputs> {
+    Inputs::release(
+        checkout,
+        plan.shared.clone(),
+        locked_closure(checkout, &plan.dependencies)?,
+        plan.manifests.clone(),
+        plan.workspace_dependencies.clone(),
+    )
 }
 
 /// Whether the component build uses a dependency of a package.
@@ -209,6 +221,29 @@ fn component_paths(
     (shared, manifests)
 }
 
+/// The names under which the manifests of `components` give their dependencies, which are the
+/// keys of the `[workspace.dependencies]` entries they can inherit: every entry but the
+/// development dependencies of a package `built` does not name, whose manifest is digested
+/// without them.
+fn inherited(components: &[&Package], built: impl Fn(&Package) -> bool) -> BTreeSet<String> {
+    components
+        .iter()
+        .flat_map(|package| {
+            let built = built(package);
+            package
+                .dependencies
+                .iter()
+                .filter(move |dependency| built || dependency.kind != DependencyKind::Development)
+        })
+        .map(|dependency| {
+            dependency
+                .rename
+                .clone()
+                .unwrap_or_else(|| dependency.name.clone())
+        })
+        .collect()
+}
+
 /// What each artifact hashes, from the workspace metadata. Without a component crate the
 /// components are the fixed ones the workspace builds, if any.
 ///
@@ -238,9 +273,15 @@ pub(super) fn plan(workspace: &Workspace, component: Option<&ComponentCrate>) ->
         })
         .map(|dependency| dependency.name.clone())
         .collect();
-    // The examples are hashed one by one, beside the shared inputs.
+    let workspace_dependencies = inherited(&components, built);
+    // The examples are hashed one by one, and the workspace manifest only in part.
     let (mut shared, manifests) = component_paths(metadata, &components, built);
-    shared.extend(SHARED_INPUTS.map(str::to_owned));
+    shared.extend(
+        SHARED_INPUTS
+            .into_iter()
+            .filter(|input| *input != WORKSPACE_MANIFEST)
+            .map(str::to_owned),
+    );
     if let Some(component) = component {
         shared.insert(format!(
             ":(exclude){}/{FIXTURES}",
@@ -252,6 +293,7 @@ pub(super) fn plan(workspace: &Workspace, component: Option<&ComponentCrate>) ->
         shared,
         manifests,
         dependencies,
+        workspace_dependencies,
         tool: crate_paths(
             metadata,
             &workspace.holds(&TOOL_PACKAGES),
