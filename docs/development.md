@@ -1261,14 +1261,20 @@ requires the shared CI release that supplies `TEST_ARCHIVE=1`. The manifest reco
 digest per artifact instead of one for the whole bundle. All components share one digest over
 the WebAssembly closure of `maestro-extensions-wasm` (its dependencies, without the edges
 gated to native targets), the lock entries of the registry packages that closure uses, the
-workspace manifest, Cargo configuration and the toolchain. `cargo build` compiles the
+part of the workspace manifest a release build reads, the Cargo configuration and the
+toolchain. `cargo build` compiles the
 development dependencies of the crates it builds and of no crate they depend on, so the
 digest follows development dependencies for the built crates only. For every crate in the
 closure it leaves out `tests/` and the unit test files (`src/**/tests.rs` and
 `src/**/tests/`); for every crate it does not build, it also leaves out the
 `[dev-dependencies]` tables of the manifest. A test-only change in a crate the components
 only depend on keeps every component, while a change to its source or to another manifest
-entry rebuilds them all. A change to the workspace manifest rebuilds them all as well.
+entry rebuilds them all. The digest reads the workspace manifest as `cargo build --release`
+does: it keeps the resolver, `[workspace.package]`, `[workspace.lints]`, `[profile.release]`
+with its package overrides, `[patch]` and any other table, and the `[workspace.dependencies]`
+entries the digested closure manifests name. A change to the member lists,
+`[workspace.metadata]`, another profile or an entry no such manifest names keeps every
+component; any other change to the workspace manifest rebuilds them all.
 Each component adds a digest of the example files Cargo reports it read, so a helper module
 that several components share is part of each of them. The setup example and the development
 tool, and the browser graph, each hash the closure of their own packages with the examples,
@@ -1287,6 +1293,11 @@ The base's compiled code seeds the build's cache, and is dropped again when the 
 another engine's namespace. A base that is missing, unreadable or prepared from other shared
 inputs is skipped, and when none is accepted everything is built; the base directory may be the
 output directory.
+A local run reads the same list. With `TEST_ARCHIVE` unset and no prepared bundle, the
+`author-component` setup accepts a base by the same digests, hands its setup example every
+component that base supplies and seeds the base's compiled code in the run's own cache, so
+the example builds only the other components. The tests read the supplied components from
+the base directory, so the base has to stay in place until the run ends.
 After a successful preparation, the command reports how many components came from the base
 and how many it built, for example:
 
