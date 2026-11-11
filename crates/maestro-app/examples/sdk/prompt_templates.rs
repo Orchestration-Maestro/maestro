@@ -1,6 +1,6 @@
 //! Merge discovered prompt templates with a caller-authored deployment command.
 mod support;
-use serde_json::{Value, json};
+use std::io::Write;
 use support::{Error, Sample};
 
 /// Run the prompt-template sample.
@@ -8,8 +8,8 @@ fn main() -> Result<(), Error> {
     support::launch(run)
 }
 
-/// Return merged templates and their expanded deployment command.
-async fn run(sample: Sample) -> Result<Value, Error> {
+/// Print the merged templates.
+async fn run(sample: Sample) -> Result<(), Error> {
     let folder = sample.root.path().join("prompts");
     std::fs::create_dir(&folder)?;
     std::fs::write(folder.join("review.md"), "Review the changes.")?;
@@ -19,35 +19,22 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     }
     let created = maestro_app::create_agent_session(options).await?;
     let templates = created.session.prompt_templates();
-    writeln!(sample.output.borrow_mut(), "Discovered prompt templates:")?;
+    writeln!(std::io::stdout(), "Discovered prompt templates:")?;
     for template in &templates.prompts {
         writeln!(
-            sample.output.borrow_mut(),
+            std::io::stdout(),
             "  /{}: {}",
             template.name,
             template.description
         )?;
     }
     writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "Session created with {} prompt templates",
         templates.prompts.len()
     )?;
-    let expanded =
-        maestro_resources::prompts::expand_prompt_template("/deploy", &templates.prompts);
-    let records: Vec<Value> = templates
-        .prompts
-        .iter()
-        .map(|template| {
-            json!({
-                "name": template.name, "sourceInfo": template.source_info,
-                "filePath": template.file_path,
-            })
-        })
-        .collect();
-    let result = json!({"templates": records, "expanded": expanded});
     created.session.dispose();
-    Ok(result)
+    Ok(())
 }
 
 /// Append a synthetic template without discarding discovered diagnostics.

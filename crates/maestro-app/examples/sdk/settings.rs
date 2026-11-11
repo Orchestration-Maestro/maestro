@@ -1,6 +1,7 @@
 //! Override session preferences and flush a persistent settings change.
 mod support;
-use serde_json::{Value, json};
+use serde_json::json;
+use std::io::Write;
 use support::{Error, Sample};
 
 /// Run the settings sample without touching user preferences.
@@ -8,23 +9,13 @@ fn main() -> Result<(), Error> {
     support::launch(run)
 }
 
-/// Return live overrides, durable preferences and in-memory session preferences.
-async fn run(sample: Sample) -> Result<Value, Error> {
+/// Print the live overrides, flush a durable preference and use in-memory preferences.
+async fn run(sample: Sample) -> Result<(), Error> {
     use maestro_app::SettingsManager;
     use std::{cell::RefCell, rc::Rc};
     let options = configured_options(&sample).await?;
     let created = maestro_app::create_agent_session(options).await?;
-    writeln!(
-        sample.output.borrow_mut(),
-        "Session created with custom settings"
-    )?;
-    let mut result = {
-        let settings = created.session.settings_manager().borrow();
-        json!({
-            "retry": settings.get_retry_enabled(), "maxRetries": settings.get_retry_settings().max_retries,
-            "compaction": settings.get_compaction_enabled(),
-        })
-    };
+    writeln!(std::io::stdout(), "Session created with custom settings")?;
     let manager = created.session.settings_manager();
     manager
         .borrow_mut()
@@ -34,16 +25,11 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     let errors = manager.borrow_mut().drain_errors();
     for error in &errors {
         writeln!(
-            sample.output.borrow_mut(),
+            std::io::stdout(),
             "Warning ({} settings): {}",
             error.scope.label(),
             error.error
         )?;
-    }
-    result["errors"] = json!(errors.len());
-    if errors.is_empty() {
-        result["saved"] =
-            serde_json::from_slice(&std::fs::read(sample.root.path().join("settings.json"))?)?;
     }
     created.session.dispose();
     let mut options = sample.options()?;
@@ -53,19 +39,12 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         )?,
     ))));
     let memory = maestro_app::create_agent_session(options).await?;
-    result["memoryRetry"] = json!(
-        memory
-            .session
-            .settings_manager()
-            .borrow()
-            .get_retry_enabled()
-    );
     writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "Test session created with in-memory settings"
     )?;
     memory.session.dispose();
-    Ok(result)
+    Ok(())
 }
 
 /// Reload resources before applying runtime settings overrides.
@@ -93,7 +72,7 @@ async fn configured_options(
     }));
     loader.reload().await?;
     writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "Current settings: {}",
         serde_json::to_string_pretty(&settings.borrow().get_global_settings())?
     )?;

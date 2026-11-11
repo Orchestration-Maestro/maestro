@@ -2,7 +2,7 @@
 #[path = "support/stream.rs"]
 mod stream;
 mod support;
-use serde_json::{Value, json};
+use std::io::Write;
 use support::{Error, Sample};
 
 /// Run the model-selection sample with the scripted protocol.
@@ -11,7 +11,7 @@ fn main() -> Result<(), Error> {
 }
 
 /// Resolve a model from the catalog and invoke it through the created session.
-async fn run(sample: Sample) -> Result<Value, Error> {
+async fn run(sample: Sample) -> Result<(), Error> {
     use maestro_app::{PromptOptions, create_agent_session};
     use maestro_models::{
         FauxAssistantMessageOptions, FauxResponseStep, ModelThinkingLevel, faux_assistant_message,
@@ -20,7 +20,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     let mut options = sample.options()?;
     let auth = Arc::clone(options.auth_storage.as_ref().ok_or("missing credentials")?);
     let registry = catalog(&sample, auth)?;
-    let (built_in, available) = observe_models(&sample, &registry)?;
+    observe_models(&registry)?;
     options.model = Some(
         registry
             .find("faux", "faux-1")
@@ -34,34 +34,19 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         .set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message("Hello.", FauxAssistantMessageOptions::default()),
         ))]);
-    let finish = stream::subscribe(&created.session, std::rc::Rc::clone(&sample.output));
+    let finish = stream::subscribe(&created.session);
     created
         .session
         .prompt("Say hello in one sentence.", PromptOptions::default())
         .await?;
     finish()?;
-    writeln!(sample.output.borrow_mut())?;
-    let model = created.session.model();
-    let model = model.read().map_err(|error| error.to_string())?;
-    let messages = serde_json::to_value(
-        &*created
-            .session
-            .messages()
-            .read()
-            .map_err(|error| error.to_string())?,
-    )?;
-    let result = json!({"selected": format!("{}/{}", model.provider, model.id),
-        "thinking": created.session.thinking_level(), "sameCatalog": Arc::ptr_eq(created.session.model_registry(), &registry),
-        "builtInFound": built_in, "available": available, "answer": messages[1]["content"][0]["text"]});
+    writeln!(std::io::stdout())?;
     created.session.dispose();
-    Ok(result)
+    Ok(())
 }
 
 /// Print each model-selection observation before invoking the selected model.
-fn observe_models(
-    sample: &Sample,
-    registry: &maestro_app::ModelRegistry,
-) -> Result<(bool, Vec<String>), Error> {
+fn observe_models(registry: &maestro_app::ModelRegistry) -> Result<(), Error> {
     let built_in = registry.find("anthropic", "claude-opus-4-5").is_some();
     let available: Vec<String> = registry
         .get_available()?
@@ -72,21 +57,15 @@ fn observe_models(
         })
         .collect::<Result<_, Error>>()?;
     if built_in {
-        writeln!(
-            sample.output.borrow_mut(),
-            "Found model: anthropic/claude-opus-4-5"
-        )?;
+        writeln!(std::io::stdout(), "Found model: anthropic/claude-opus-4-5")?;
     }
+    writeln!(std::io::stdout(), "Found custom model: faux/faux-1")?;
     writeln!(
-        sample.output.borrow_mut(),
-        "Found custom model: faux/faux-1"
-    )?;
-    writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "Available models: {}",
         available.join(", ")
     )?;
-    Ok((built_in, available))
+    Ok(())
 }
 
 /// Load the isolated custom catalog beside the built-in descriptors.

@@ -2,7 +2,7 @@
 #[path = "support/stream.rs"]
 mod stream;
 mod support;
-use serde_json::{Value, json};
+use std::io::Write;
 use support::{Error, Sample};
 
 /// Run both system-prompt configurations.
@@ -10,21 +10,18 @@ fn main() -> Result<(), Error> {
     support::launch(run)
 }
 
-/// Return the assembled replacement and appended prompts.
-async fn run(sample: Sample) -> Result<Value, Error> {
+/// Prompt a session with each system-prompt configuration.
+async fn run(sample: Sample) -> Result<(), Error> {
     std::fs::write(
         sample.root.path().join("APPEND_SYSTEM.md"),
         "Discovered append text",
     )?;
-    let mut prompts = Vec::new();
-    let mut messages = Vec::new();
     for replace in [true, false] {
         let mut options = sample.options()?;
         if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
             configure_prompt(resources, replace);
         }
         let created = maestro_app::create_agent_session(options).await?;
-        prompts.push(created.session.system_prompt());
         let (question, answer) = if replace {
             ("What is 2 + 2?", "Four, Arrr!")
         } else {
@@ -39,31 +36,20 @@ async fn run(sample: Sample) -> Result<Value, Error> {
                 ),
             ))]);
         writeln!(
-            sample.output.borrow_mut(),
+            std::io::stdout(),
             "=== {} prompt ===",
             if replace { "Replace" } else { "Modify" }
         )?;
-        let finish = stream::subscribe(&created.session, std::rc::Rc::clone(&sample.output));
+        let finish = stream::subscribe(&created.session);
         created
             .session
             .prompt(question, maestro_app::PromptOptions::default())
             .await?;
         finish()?;
-        writeln!(
-            sample.output.borrow_mut(),
-            "{}",
-            if replace { "\n" } else { "" }
-        )?;
-        messages.push(serde_json::to_value(
-            &*created
-                .session
-                .messages()
-                .read()
-                .map_err(|error| error.to_string())?,
-        )?);
+        writeln!(std::io::stdout(), "{}", if replace { "\n" } else { "" })?;
         created.session.dispose();
     }
-    Ok(json!({"prompts": prompts, "messages": messages}))
+    Ok(())
 }
 
 /// Select replacement or appended instructions on the real resource loader.

@@ -1,12 +1,16 @@
 //! Session creation options reach the live session: tool selection, working directory,
 //! prompt overrides, disabled resource kinds and caller-supplied skills and templates.
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::no_commands::no_commands;
 use crate::support::sdk_sample::{Error, Sample, execute};
 use maestro_app::{
-    CreateAgentSessionOptions, ResourceKind, SessionResources, create_agent_session,
+    AuthStorage, CreateAgentSessionOptions, ModelRegistry, ResourceKind, SessionResources,
+    create_agent_session,
 };
+use maestro_credentials::AuthStorageData;
 use maestro_models::ModelThinkingLevel;
 use serde_json::{Value, json};
+use std::sync::Arc;
 
 /// The default loader's options inside `options`.
 fn resources(
@@ -187,10 +191,58 @@ fn supplied_skills_and_templates_merge_with_discovered_ones() -> Result<(), Erro
             .map(|template| template.name.as_str())
             .collect();
         assert_eq!(names, ["review", "deploy"]);
+        assert_eq!(templates.prompts[1].source_info.source, "sdk");
         assert_eq!(
             maestro_resources::prompts::expand_prompt_template("/deploy", &templates.prompts),
             "# Deploy Instructions"
         );
+        created.session.dispose();
+        Ok(Value::Null)
+    })?;
+    Ok(())
+}
+
+/// A catalog read from another directory, and a built-in-only catalog, are the registries the
+/// session reports for the models they describe.
+#[test]
+fn explicit_model_registries_are_the_ones_the_session_reports() -> Result<(), Error> {
+    execute(|sample| async move {
+        let custom_dir = sample.root.path().join("custom");
+        std::fs::create_dir(&custom_dir)?;
+        let mut catalog: Value =
+            serde_json::from_slice(&std::fs::read(sample.root.path().join("models.json"))?)?;
+        catalog["providers"]["faux"]["models"][0]["name"] = json!("Custom location model");
+        let catalog_path = custom_dir.join("models.json");
+        std::fs::write(&catalog_path, serde_json::to_vec(&catalog)?)?;
+        let custom = Arc::new(ModelRegistry::create(
+            Arc::new(AuthStorage::create(
+                &custom_dir.join("auth.json").display().to_string(),
+            )),
+            catalog_path.display().to_string(),
+            no_commands(),
+        )?);
+        let mut options = sample.options()?;
+        options.auth_storage = Some(Arc::clone(custom.auth_storage()));
+        options.model_registry = Some(Arc::clone(&custom));
+        let created = create_agent_session(options).await?;
+        assert!(Arc::ptr_eq(created.session.model_registry(), &custom));
+        let model = custom
+            .find("faux", "faux-1")
+            .ok_or("missing custom model")?;
+        assert_eq!(
+            model.read().map_err(|e| e.to_string())?.name,
+            "Custom location model"
+        );
+        created.session.dispose();
+        let builtin = Arc::new(ModelRegistry::in_memory(
+            Arc::new(AuthStorage::in_memory(AuthStorageData::default())),
+            no_commands(),
+        )?);
+        let mut options = sample.options()?;
+        options.model_registry = Some(Arc::clone(&builtin));
+        let created = create_agent_session(options).await?;
+        assert!(Arc::ptr_eq(created.session.model_registry(), &builtin));
+        assert!(builtin.find("faux", "faux-1").is_none());
         created.session.dispose();
         Ok(Value::Null)
     })?;

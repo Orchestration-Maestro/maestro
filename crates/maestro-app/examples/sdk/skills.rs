@@ -1,6 +1,6 @@
 //! Filter discovered skills and append an explicitly attributed SDK skill.
 mod support;
-use serde_json::{Value, json};
+use std::io::Write;
 use support::{Error, Sample};
 
 /// Run the skill-selection sample.
@@ -9,7 +9,7 @@ fn main() -> Result<(), Error> {
 }
 
 /// Load, filter and merge skills into the session prompt.
-async fn run(sample: Sample) -> Result<Value, Error> {
+async fn run(sample: Sample) -> Result<(), Error> {
     for name in ["browser", "unrelated-skill"] {
         let folder = sample.root.path().join("skills").join(name);
         std::fs::create_dir_all(&folder)?;
@@ -27,7 +27,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     let created = maestro_app::create_agent_session(options).await?;
     let skills = created.session.resource_loader().get_skills();
     writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "Discovered skills: {}",
         skills
             .skills
@@ -37,19 +37,11 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             .join(", ")
     )?;
     for diagnostic in &skills.diagnostics {
-        writeln!(
-            sample.output.borrow_mut(),
-            "Warning: {}",
-            diagnostic.message
-        )?;
+        writeln!(std::io::stdout(), "Warning: {}", diagnostic.message)?;
     }
-    writeln!(
-        sample.output.borrow_mut(),
-        "Session created with filtered skills"
-    )?;
-    let result = json!({"skills": skills.skills, "prompt": created.session.system_prompt()});
+    writeln!(std::io::stdout(), "Session created with filtered skills")?;
     created.session.dispose();
-    Ok(result)
+    Ok(())
 }
 
 /// Preserve selected discovered records and attach source metadata to the custom skill.

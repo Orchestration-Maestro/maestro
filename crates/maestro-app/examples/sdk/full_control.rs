@@ -2,7 +2,8 @@
 #[path = "support/stream.rs"]
 mod stream;
 mod support;
-use serde_json::{Value, json};
+use serde_json::json;
+use std::io::Write;
 use support::{Error, Sample};
 
 /// Run the explicit-configuration sample with no resource discovery.
@@ -11,7 +12,7 @@ fn main() -> Result<(), Error> {
 }
 
 /// Invoke a session built entirely from caller-selected inputs.
-async fn run(sample: Sample) -> Result<Value, Error> {
+async fn run(sample: Sample) -> Result<(), Error> {
     use maestro_app::{PromptOptions, create_agent_session};
     use maestro_models::{FauxAssistantMessageOptions, FauxResponseStep, faux_assistant_message};
     std::fs::write(
@@ -28,7 +29,7 @@ async fn run(sample: Sample) -> Result<Value, Error> {
                 FauxAssistantMessageOptions::default(),
             ),
         ))]);
-    let finish = stream::subscribe(&created.session, std::rc::Rc::clone(&sample.output));
+    let finish = stream::subscribe(&created.session);
     created
         .session
         .prompt(
@@ -37,21 +38,9 @@ async fn run(sample: Sample) -> Result<Value, Error> {
         )
         .await?;
     finish()?;
-    writeln!(sample.output.borrow_mut())?;
-    let loader = created.session.resource_loader();
-    let messages = serde_json::to_value(
-        &*created
-            .session
-            .messages()
-            .read()
-            .map_err(|error| error.to_string())?,
-    )?;
-    let result = json!({"tools": created.session.get_active_tool_names(),
-        "skills": loader.get_skills().skills.len(), "templates": loader.get_prompts().prompts.len(),
-        "contextFiles": loader.get_agents_files().len(), "thinking": created.session.thinking_level(),
-        "prompt": created.session.system_prompt(), "answer": messages[1]["content"][0]["text"]});
+    writeln!(std::io::stdout())?;
     created.session.dispose();
-    Ok(result)
+    Ok(())
 }
 
 /// Disable resource discovery while retaining the existing loader's public contract.

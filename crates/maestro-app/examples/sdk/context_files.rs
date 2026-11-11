@@ -1,6 +1,6 @@
 //! Discover project instructions and add a caller-supplied context file.
 mod support;
-use serde_json::{Value, json};
+use std::io::Write;
 use support::{Error, Sample};
 
 /// Run the context-file sample in a disposable project.
@@ -8,8 +8,8 @@ fn main() -> Result<(), Error> {
     support::launch(run)
 }
 
-/// Return context files and the assembled session prompt.
-async fn run(sample: Sample) -> Result<Value, Error> {
+/// Print the discovered and supplied context files.
+async fn run(sample: Sample) -> Result<(), Error> {
     std::fs::write(
         sample.root.path().join("AGENTS.md"),
         "Project rule: answer briefly.",
@@ -26,21 +26,20 @@ async fn run(sample: Sample) -> Result<Value, Error> {
     }
     let created = maestro_app::create_agent_session(options).await?;
     let files = created.session.resource_loader().get_agents_files();
-    writeln!(sample.output.borrow_mut(), "Discovered context files:")?;
+    writeln!(std::io::stdout(), "Discovered context files:")?;
     for file in files.iter() {
         writeln!(
-            sample.output.borrow_mut(),
+            std::io::stdout(),
             "  - {} ({} chars)",
             file.path,
             file.content.chars().count()
         )?;
     }
     writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "Session created with {} context files",
         files.len()
     )?;
-    let result = json!({"files": *files, "prompt": created.session.system_prompt()});
     created.session.dispose();
-    Ok(result)
+    Ok(())
 }
