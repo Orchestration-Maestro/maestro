@@ -3,7 +3,7 @@
 On every non-browser target, `maestro-tui-crossterm` uses Tokio `=1.53.3` (defaults off; `rt`,
 `time`) for its caller-driven local task set, `chrono =0.4.45` (defaults off; `clock`) for log
 file names and the runtime host's UTC time, and `rand =0.10.3` (defaults) for the host's log
-nonce. On Unix it adds rustix `=1.1.5` (defaults off; `std`, `event`, `fs`, `stdio`,
+nonce. On Unix it adds rustix `=1.1.6` (defaults off; `std`, `event`, `fs`, `stdio`,
 `termios`) on the actual standard descriptors and Tokio's `net`, `signal` and `macros`.
 Rustix is Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT, Tokio is MIT and chrono and rand
 are MIT OR Apache-2.0. The crate does not use crossterm on Unix, because crossterm prefers the
