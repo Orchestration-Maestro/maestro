@@ -69,6 +69,13 @@ pub(super) struct Changes {
     pub(super) append_start: bool,
 }
 
+impl Changes {
+    /// The rows of a frame of `lines` rows that a differential update writes.
+    pub(super) fn drawn_rows(&self, lines: usize) -> Range<usize> {
+        self.first..self.last.min(lines.saturating_sub(1)) + 1
+    }
+}
+
 /// How the terminal is brought up to date with a frame.
 pub(super) enum Plan {
     /// Draw every line, after clearing the screen and scrollback unless this is the first
@@ -98,12 +105,10 @@ pub(super) enum Plan {
 impl Plan {
     /// The rows of a frame of `lines` rows this plan writes content to; every other row
     /// keeps what the terminal already shows.
-    fn drawn_rows(&self, lines: usize) -> Range<usize> {
+    pub(super) fn drawn_rows(&self, lines: usize) -> Range<usize> {
         match self {
             Self::Full(_) => 0..lines,
-            Self::Differential { changes, .. } => {
-                changes.first..changes.last.min(lines.saturating_sub(1)) + 1
-            }
+            Self::Differential { changes, .. } => changes.drawn_rows(lines),
             Self::DeleteTail { .. } | Self::Unchanged { .. } => 0..0,
         }
     }
@@ -288,7 +293,7 @@ impl TUI {
             mobile: environment("TERMUX_VERSION").is_some_and(|version| !version.is_empty()),
         };
         let plan = self.shared.screen.borrow().plan(&frame, &policy);
-        self.reject_overflow(&frame, plan.drawn_rows(frame.lines.len()))?;
+        self.reject_overflow(&frame, &plan)?;
         match plan {
             Plan::Full(reason) => self.full_render(frame, &reason),
             Plan::DeleteTail {
@@ -460,7 +465,7 @@ mod tests {
     fn measured(screen: &Screen, frame: &Frame) -> (Plan, usize) {
         let plan = plan_of(screen, frame);
         forget_measured_lines();
-        let oversized = oversized_row(frame, plan.drawn_rows(frame.lines.len()));
+        let oversized = oversized_row(frame, &plan);
         let lines = measured_lines();
         assert_eq!(oversized, None, "no line of this fixture is oversized");
         (plan, lines)
@@ -510,9 +515,6 @@ mod tests {
         let screen = drawn(&TRANSCRIPT);
         let frame = frame(&["one", "two", "01234567890", "four", "five"]);
         let plan = plan_of(&screen, &frame);
-        assert_eq!(
-            oversized_row(&frame, plan.drawn_rows(frame.lines.len())),
-            Some((2, 11))
-        );
+        assert_eq!(oversized_row(&frame, &plan), Some((2, 11)));
     }
 }

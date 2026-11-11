@@ -3,7 +3,6 @@
 
 use std::fmt::{self, Write as _};
 use std::io::{self, Write as _};
-use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use crate::images::terminal_image::is_image_line;
@@ -12,7 +11,7 @@ use crate::text::utils::visible_width;
 use super::TUI;
 use super::drawing::Update;
 use super::runtime::{LogContext, is_enabled};
-use super::screen::{Changes, Frame};
+use super::screen::{Changes, Frame, Plan};
 
 /// Variable that logs every full redraw when set to `1`.
 const DEBUG_REDRAW: &str = "MAESTRO_DEBUG_REDRAW";
@@ -66,9 +65,9 @@ fn crash_report(context: &LogContext, frame: &Frame, row: usize, measured: usize
     report
 }
 
-// Measures of the width check on this thread, which tests count.
 #[cfg(test)]
 thread_local! {
+    /// Lines the width check measured on this thread, which tests count.
     static MEASURED_LINES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
@@ -80,7 +79,7 @@ fn measured_width(line: &str) -> usize {
     visible_width(line)
 }
 
-/// Measures the lines on a frame's `rows` so far in tests.
+/// How many lines the width check has measured on this thread.
 #[cfg(test)]
 pub(super) fn measured_lines() -> usize {
     MEASURED_LINES.with(std::cell::Cell::get)
@@ -92,8 +91,9 @@ pub(super) fn forget_measured_lines() {
     MEASURED_LINES.with(|measured| measured.set(0));
 }
 
-/// The row of the first line in `rows` that is wider than `frame.width`, with its width.
-pub(super) fn oversized_row(frame: &Frame, rows: Range<usize>) -> Option<(usize, usize)> {
+/// The row of the first line `plan` draws that is wider than `frame.width`, with its width.
+pub(super) fn oversized_row(frame: &Frame, plan: &Plan) -> Option<(usize, usize)> {
+    let rows = plan.drawn_rows(frame.lines.len());
     let drawn = frame.lines.get(rows.start..rows.end).unwrap_or_default();
     drawn
         .iter()
@@ -136,7 +136,7 @@ impl TUI {
         append_log(&path, &message)
     }
 
-    /// Fails with a crash report when a line the plan draws on `rows` is wider than the
+    /// Fails with a crash report when a line `plan` draws is wider than the
     /// terminal: the report is written, the terminal is restored and nothing of the frame
     /// is drawn.
     ///
@@ -146,8 +146,8 @@ impl TUI {
     /// # Errors
     ///
     /// Returns the width error, or the host's or terminal's error if cleanup fails.
-    pub(super) fn reject_overflow(&self, frame: &Frame, rows: Range<usize>) -> io::Result<()> {
-        let Some((row, measured)) = oversized_row(frame, rows) else {
+    pub(super) fn reject_overflow(&self, frame: &Frame, plan: &Plan) -> io::Result<()> {
+        let Some((row, measured)) = oversized_row(frame, plan) else {
             return Ok(());
         };
         let context = self.shared.runtime.log_context();
