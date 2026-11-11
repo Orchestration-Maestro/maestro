@@ -549,7 +549,8 @@ mod tests {
         }
         let root = TempDir::new("timeout");
         let ready = root.root().join("ready");
-        let operations = ProcessConfigValueOperations::new(|| unreachable!());
+        let operations = ProcessConfigValueOperations::new(|| unreachable!())
+            .with_timeout(std::time::Duration::from_millis(500));
         let command = format!(
             "!printf ready > '{}'; printf secret; exec sleep 11",
             ready.display()
