@@ -26,7 +26,7 @@ use conversion::{convert, parse_document};
 use maestro_json::pretty_object;
 use persistence::Queue;
 
-pub use accessors::InvalidHttpIdleTimeout;
+pub use accessors::{InvalidAdapterSetting, InvalidHttpIdleTimeout};
 pub use base_layer::BaseSettingsLayer;
 pub use decision::{
     DecisionRequest, PreparedSettingsEdit, SettingsChange, SettingsDecider, SettingsDeciderHandle,
