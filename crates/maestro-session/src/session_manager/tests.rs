@@ -201,6 +201,36 @@ fn append_failure_keeps_memory_and_partial_bytes() {
     assert_eq!(super::parse_session_entries(&bytes).len(), 2);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn first_save_writes_every_record_in_one_append() {
+    let scratch = Scratch::new().unwrap();
+    let directory = scratch.path().join("sessions");
+    let mut manager =
+        super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
+    let path = manager.get_session_file().unwrap().to_owned();
+    std::fs::create_dir(&path).unwrap();
+    manager
+        .append_message(serde_json::json!({"role":"user","content":"hi"}))
+        .unwrap();
+    assert!(
+        manager
+            .append_message(serde_json::json!({"role":"assistant","content":"hello"}))
+            .is_err()
+    );
+    std::fs::remove_dir(&path).unwrap();
+    let mut appends = Vec::new();
+    manager
+        .publish(|_, bytes| {
+            appends.push(bytes.to_vec());
+            Ok(())
+        })
+        .unwrap();
+    assert_eq!(appends.len(), 1);
+    let text = String::from_utf8(appends.remove(0)).unwrap();
+    assert_eq!(super::parse_session_entries(&text).len(), 3);
+}
+
 #[test]
 fn new_session_clears_resolved_labels_and_timestamps() {
     let mut manager = super::SessionManager::in_memory(Some("cwd")).unwrap();
@@ -429,25 +459,22 @@ fn fork_preserves_write_and_returned_owner_failure_order() {
     assert_eq!(ForkRig::only_file(&first), "{\"type\"");
 
     let later = rig.path("later");
-    let mut calls = 0;
-    let third = |path: &str, bytes: &[u8]| {
-        calls += 1;
-        if calls < 3 {
-            return real(path, bytes);
-        }
-        partial_append(path, bytes)
+    let after_write = |path: &str, bytes: &[u8]| {
+        real(path, bytes)?;
+        Err(std::io::Error::from_raw_os_error(5))
     };
-    assert!(rig.fork(&later, third).is_err());
+    let error = rig.fork(&later, after_write).err().unwrap();
+    assert_eq!(error.raw_os_error(), Some(5));
     let written = ForkRig::only_file(&later);
-    assert!(written.ends_with(&format!("{}\n{{\"type\"", rig.records[0])));
-    assert_eq!(super::parse_session_entries(&written).len(), 2);
+    assert!(written.ends_with(&format!("{}\n", rig.records[1])));
+    assert_eq!(super::parse_session_entries(&written).len(), 3);
 
     let reopen = rig.path("reopen");
     let (mut calls, mut snapshot) = (0, Vec::new());
     let last = |path: &str, bytes: &[u8]| {
         calls += 1;
         real(path, bytes)?;
-        if calls == 3 {
+        if calls == 1 {
             snapshot = std::fs::read(path)?;
             std::fs::remove_file(path)?;
             std::fs::create_dir(path)?;
@@ -455,10 +482,27 @@ fn fork_preserves_write_and_returned_owner_failure_order() {
         Ok(())
     };
     assert!(rig.fork(&reopen, last).is_err());
-    assert_eq!(calls, 3);
+    assert_eq!(calls, 1);
     let snapshot = String::from_utf8(snapshot).unwrap();
     assert_eq!(super::parse_session_entries(&snapshot).len(), 3);
     invalid_later_id_fails_after_all_writes(&rig);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn fork_writes_the_header_and_every_record_in_one_append() {
+    let rig = ForkRig::new();
+    let dir = rig.path("once");
+    let mut appends = Vec::new();
+    let forked = rig
+        .fork(&dir, |path, bytes| {
+            appends.push(bytes.to_vec());
+            super::persistence::append(path, bytes)
+        })
+        .unwrap();
+    assert_eq!(appends.len(), 1);
+    assert_eq!(ForkRig::only_file(&dir).lines().count(), 3);
+    assert_eq!(forked.get_entries().len(), 2);
 }
 
 #[cfg(not(target_arch = "wasm32"))]

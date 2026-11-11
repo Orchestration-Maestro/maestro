@@ -31,7 +31,7 @@ impl SessionManager {
     /// # Errors
     /// Fails with `Cannot fork: the source session file has no valid entries: {source_path}`
     /// before creating anything; later directory, write and reopen errors are propagated
-    /// and leave records already written in place. Empty JSON values are skipped.
+    /// and leave bytes already written in place. Empty JSON values are skipped.
     pub fn fork_from(
         source_path: &str,
         target_cwd: &str,
@@ -41,7 +41,7 @@ impl SessionManager {
         Self::fork_with(source_path, target_cwd, session_dir, agent_dir, append)
     }
 
-    /// Fork with a replaceable append effect, applied to the header and every record.
+    /// Fork with a replaceable append effect, applied once to the header and every record.
     pub(super) fn fork_with(
         source_path: &str,
         target_cwd: &str,
@@ -71,9 +71,10 @@ impl SessionManager {
             session_header(&id, target_cwd, Presence::Present(source_path.to_owned()));
         let path = maestro_path::join(&[&dir, &file]);
         let records = entries.iter().filter(|entry| entry["type"] != "session");
-        for entry in std::iter::once(&header).chain(records) {
-            write(&path, &encode(entry)?)?;
-        }
+        write(
+            &path,
+            &encode_entries(std::iter::once(&header).chain(records))?,
+        )?;
         Self::open(&path, Some(&dir), Some(target_cwd))
     }
 
@@ -240,9 +241,7 @@ impl SessionManager {
             if !has_assistant(&self.file_entries)? {
                 return Ok(());
             }
-            for entry in &self.file_entries {
-                append(path, &encode(entry)?)?;
-            }
+            append(path, &encode_entries(&self.file_entries)?)?;
             self.flushed = true;
         } else if let Some(entry) = self.file_entries.last() {
             append(path, &encode(entry)?)?;
@@ -294,7 +293,7 @@ pub(super) fn rewrite(path: &str, entries: &[FileEntry]) -> io::Result<()> {
 }
 
 /// Encodes retained records in their publication order.
-fn encode_entries(entries: &[FileEntry]) -> io::Result<Vec<u8>> {
+fn encode_entries<'a>(entries: impl IntoIterator<Item = &'a FileEntry>) -> io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
     for entry in entries {
         bytes.extend(encode(entry)?);
