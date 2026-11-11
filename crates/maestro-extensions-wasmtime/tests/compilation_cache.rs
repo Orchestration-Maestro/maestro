@@ -128,15 +128,8 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
 }
 
 /// The workspace preparation resolves at the fixture root: its only member is the component
-/// crate, whose manifest holds the generated example region that marks it. Preparation lists
-/// the workspace's files through Git, so the root is a repository of its own.
+/// crate, whose manifest holds the generated example region that marks it.
 fn component_workspace(root: &Path) {
-    let init = Command::new("git")
-        .args(["init", "--quiet"])
-        .current_dir(root)
-        .status()
-        .unwrap();
-    assert!(init.success(), "git init failed in the fixture root");
     for (manifest, text) in [
         (
             root.join("Cargo.toml"),
@@ -258,7 +251,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             }
             ("prime", true) => {
                 reported(
-                    started(&configured, &setup)
+                    prepared_setup(&configured, &setup)
                         .args(["nextest-setup", "normalize-component-cache"])
                         .arg(&profile),
                     None,
@@ -267,7 +260,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             }
             _ => {
                 reported(
-                    started(&configured, &setup).args(["nextest-setup", "author-component"]),
+                    prepared_setup(&configured, &setup).args(["nextest-setup", "author-component"]),
                     Some(&name),
                 );
             }
@@ -284,6 +277,21 @@ fn rerun_in(example: &Path, binary: &Path, test: &str) {
 /// `binary` run in `configured`'s environment and directory, without its harness arguments.
 fn started(configured: &Command, binary: &Path) -> Command {
     let mut command = Command::new(binary);
+    copied_into(&mut command, configured);
+    command
+}
+
+/// `binary` run as a setup child: the prepared bundle the run exports is cleared before the
+/// test's own bundle variables and archive signal reach the command.
+fn prepared_setup(configured: &Command, binary: &Path) -> Command {
+    let mut command = Command::new(binary);
+    maestro_test_process::without_prepared_bundles(&mut command);
+    copied_into(&mut command, configured);
+    command
+}
+
+/// Give `command` the variables and the directory of `configured`.
+fn copied_into(command: &mut Command, configured: &Command) {
     for (key, value) in configured.get_envs() {
         match value {
             Some(value) => command.env(key, value),
@@ -293,7 +301,6 @@ fn started(configured: &Command, binary: &Path) -> Command {
     if let Some(directory) = configured.get_current_dir() {
         command.current_dir(directory);
     }
-    command
 }
 
 /// `binary` run as the selected test: the copied executable must be the process that

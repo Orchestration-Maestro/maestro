@@ -1359,8 +1359,11 @@ names. Cargo's `--example prepare_author_component` target name stays the same o
 
 A test that starts a setup child which reads a prepared-bundle input the test does not supply
 clears it (`TEST_PREPARE_BASE`, `TEST_PREPARE_OUTPUT` and `TEST_ARCHIVE`) through
-`recipe_support::without_prepared_bundles`, so a bundle a machine exports for CI cannot change
-what the test reads.
+`maestro_test_process::without_prepared_bundles` from the test-support owner, so a bundle a
+machine exports for CI cannot change what the test reads, in this crate or in any other. The
+conventions check reads every test source that spells `nextest-setup`, so a setup child added
+without that helper fails the conventions run. The check follows the helper directly or through
+a function of the same source, reading the written syntax without expanding macros.
 
 Every development command that runs a child exits with that child's status. A child ended by
 a signal has no exit code, so the tool prints the native status on standard error, such as

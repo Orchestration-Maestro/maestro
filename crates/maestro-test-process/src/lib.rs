@@ -33,6 +33,9 @@
 //! caller-owned directory, so native search tests never depend on the runner's search PATH.
 //! A child that only needs to start without a search program gets [`install_stub_search_programs`],
 //! and a [`SearchGuard`] on its command path fails the test when it ran a host copy instead.
+//!
+//! A test that starts a development setup child clears the prepared bundle its run exports
+//! with [`without_prepared_bundles`], so the child runs the setup the test supplies.
 
 mod agent_directory;
 mod alone;
@@ -47,6 +50,7 @@ mod executable;
 #[cfg(unix)]
 pub mod gate;
 pub mod git_command;
+mod prepared_bundles;
 mod proof;
 pub mod rpc_peer;
 mod search_guard;
@@ -63,6 +67,7 @@ pub use console::on_console;
 pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
 pub use executable::{install_command, install_executable, install_family, install_search_program};
+pub use prepared_bundles::without_prepared_bundles;
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
 pub use search_guard::{SearchGuard, install_stub_search_programs};
 pub use selection::test_name;
