@@ -35,13 +35,13 @@ pub use title::{generate_title, should_save_session};
 pub type Session = BrowserSession<SystemNotificationMessage>;
 
 /// The instructions every session of the example starts with.
-const SYSTEM_PROMPT: &str = "You are a helpful AI assistant with access to various tools.
+const SYSTEM_PROMPT: &str = "You are a helpful AI assistant. You have the tools below.
 
-Available tools:
-- JavaScript REPL: Execute JavaScript code in a sandboxed browser environment (can do calculations, get time, process data, create visualizations, etc.)
-- Artifacts: Create interactive HTML, SVG, Markdown, and text artifacts
+Tools:
+- JavaScript REPL: runs JavaScript inside a sandboxed page in the browser. It handles calculations, the current time, data processing and visualizations.
+- Artifacts: creates interactive artifacts as HTML, SVG, Markdown or text.
 
-Feel free to use these tools when needed to provide accurate and helpful responses.";
+Use a tool when it makes the answer accurate and helpful; answer directly when it does not.";
 /// The header text before a session has a title.
 const NAME: &str = "Maestro Web UI Example";
 /// The demonstration notification's text.
