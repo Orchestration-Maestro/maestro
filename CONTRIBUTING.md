@@ -51,8 +51,9 @@ Native Windows and macOS test runs must be restored before the first release.
 A test that binds the fixed OAuth callback port goes in a module named
 `oauth_callback`, which nextest runs one at a time.
 Shared Linux CI reserves ports 53692 and 1455 from automatic allocation so OAuth callback tests can bind their required ports.
-Development and test builds retain file:line debug information, not debugger
-variable views.
+Development builds retain file:line debug information, not debugger variable
+views. Test builds carry no debug information: a panic message still names its
+file and line, and backtrace frames show function names.
 
 After changing a dependency, its features or `Cargo.lock`, run `cargo hakari generate`
 (and `cargo hakari manage-deps` after adding a crate) and commit the result;
