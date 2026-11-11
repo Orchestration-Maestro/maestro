@@ -216,26 +216,28 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Build the sandbox runtime script the browser cases embed, then run every real-browser case,
-/// the driver regressions, each export and the report, as one nextest run, so the hang limit
-/// bounds and names each case and one run reports them all.
+/// Build the sandbox runtime script the browser cases embed unless the checkout already holds
+/// one, then run every real-browser case, the driver regressions, each export and the report, as
+/// one nextest run, so the hang limit bounds and names each case and one run reports them all.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    let generated = Command::new(cargo)
-        .current_dir(checkout)
-        .args([
-            "run",
-            "--quiet",
-            "--locked",
-            "-p",
-            "maestro-tooling",
-            "--bin",
-            "development",
-            "--",
-            "sandbox-runtime",
-        ])
-        .status()?;
-    if !generated.success() {
-        return Ok(exit_code(generated));
+    if !checkout.join(sandbox_runtime::ASSET).is_file() {
+        let generated = Command::new(cargo)
+            .current_dir(checkout)
+            .args([
+                "run",
+                "--quiet",
+                "--locked",
+                "-p",
+                "maestro-tooling",
+                "--bin",
+                "development",
+                "--",
+                "sandbox-runtime",
+            ])
+            .status()?;
+        if !generated.success() {
+            return Ok(exit_code(generated));
+        }
     }
     let regressed = Command::new(cargo)
         .current_dir(checkout)

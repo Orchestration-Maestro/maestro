@@ -982,6 +982,37 @@ fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_ru
     }
 }
 
+/// A script the checkout already holds, whether an earlier sandbox-runtime run or a job
+/// artifact, is used as is, so the cases run without Emscripten on the path.
+#[test]
+fn browser_test_reuses_a_present_runtime_script() {
+    drive();
+    let fixture = Fixture::new();
+    let script = fixture
+        .root
+        .path()
+        .join("target/sandbox-runtime/maestro-sandbox-runtime.js");
+    fs::create_dir_all(script.parent().unwrap()).unwrap();
+    fs::write(&script, "script").unwrap();
+
+    let output = fixture
+        .invoke(
+            "browser_test_reuses_a_present_runtime_script",
+            "browser-test",
+            &[],
+        )
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert_eq!(
+        invocations(&fixture),
+        [
+            "nextest|run|--locked|-p|maestro-test-browser|--run-ignored|only|--no-fail-fast|-E|test(/^browser::/)",
+        ]
+    );
+}
+
 /// A failed script build stops the run before any browser case starts.
 #[test]
 fn browser_test_stops_when_the_runtime_script_cannot_be_built() {
