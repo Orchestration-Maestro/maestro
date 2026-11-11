@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use maestro_app::adapters::{AdapterError, Installed, Port, Registry};
-use maestro_settings::{BaseSettingsLayer, Settings, SettingsManager, SettingsScope};
+use maestro_settings::{Settings, SettingsManager};
 use serde_json::json;
 
 /// The operations a test port needs of its adapters.
@@ -85,11 +85,11 @@ fn an_unknown_name_is_refused_with_the_installed_names() {
 
 #[test]
 fn a_port_without_a_setting_selects_its_default_adapter() {
-    let registry = registry();
-    let adapter = registry
-        .select(&GREETER, &selecting(&json!({ "other": "second" })))
+    let port: Port<dyn Greeter> = Port::new("greeter", "second");
+    let adapter = registry()
+        .select(&port, &selecting(&json!({ "other": "first" })))
         .expect("the default is selected");
-    assert_eq!(adapter.greet(), "first");
+    assert_eq!(adapter.greet(), "second");
 }
 
 #[test]
@@ -132,6 +132,9 @@ fn registering_the_same_name_twice_is_refused_and_keeps_the_first() {
     assert_eq!(adapter.greet(), "first");
 }
 
+/// A second port.
+const OTHER: Port<dyn Greeter> = Port::new("other", "only");
+
 #[test]
 fn installed_reports_every_registration_in_order() {
     let mut registry = registry();
@@ -153,23 +156,4 @@ fn installed_reports_every_registration_in_order() {
             ("other", "only")
         ]
     );
-}
-
-/// A second port.
-const OTHER: Port<dyn Greeter> = Port::new("other", "only");
-
-#[test]
-fn a_locked_adapter_key_selects_the_base_name() {
-    let mut settings = selecting(&json!({ "greeter": "second" }));
-    settings.publish_base_layer(
-        SettingsScope::Global,
-        Some(BaseSettingsLayer {
-            settings: document(&json!({ "greeter": "first" })),
-            locked: ["adapters.greeter".to_owned()].into(),
-            source: "git:example/config#v1".into(),
-            recorded_at: "2026-10-27T12:00:00Z".into(),
-        }),
-    );
-    let adapter = registry().select(&GREETER, &settings).expect("selected");
-    assert_eq!(adapter.greet(), "first");
 }

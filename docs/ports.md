@@ -20,7 +20,7 @@ technology replaces an adapter, never a caller.
    assert_eq!(STORE.id(), "store");
    ```
 
-2. Register an adapter under a name:
+2. Register each adapter under a name:
 
    ```rust
    use std::sync::Arc;
@@ -29,16 +29,22 @@ technology replaces an adapter, never a caller.
    trait Store: Send + Sync {}
    struct Embedded;
    impl Store for Embedded {}
+   struct Server;
+   impl Store for Server {}
    const STORE: Port<dyn Store> = Port::new("store", "embedded");
 
    let mut registry = Registry::default();
    registry.register(&STORE, "embedded", || {
        Arc::new(Embedded) as Arc<dyn Store>
    })?;
+   registry.register(&STORE, "server", || {
+       Arc::new(Server) as Arc<dyn Store>
+   })?;
    # Ok::<(), maestro_app::adapters::AdapterError>(())
    ```
 
-3. Pick another adapter in `settings.json`. Leave the key out to run the default:
+3. Pick a registered adapter in `settings.json`. Leave the key out to run the
+   default:
 
    ```json
    { "adapters": { "store": "server" } }
@@ -85,7 +91,7 @@ adapter.
 | The key names a registered adapter | The adapter |
 | The key is unset | The port's default adapter |
 | The key is not a string, or `adapters` is not an object | `AdapterError::Setting`, naming the key and the value |
-| The key names an unregistered adapter | `AdapterError::Unknown`, listing the installed names |
+| The key, or the default when the key is unset, names an unregistered adapter | `AdapterError::Unknown`, listing the installed names |
 
 A refusal reads, for example:
 
@@ -106,7 +112,8 @@ The setting is the `adapters` object, with one string key per port.
 
 `SettingsManager::get_adapter(port)` reads the effective name. A project value
 overrides a global one. A value that is not a string is refused, never
-replaced by the default. Write the name with `set_key_path(scope, "adapters", &[port], Some(name))`.
+replaced by the default. Write the name with
+`set_key_path(scope, "adapters", &[port], Some(name))`.
 
 A base layer locks an adapter key like any other. Lock `adapters.<port>` to fix
 one port, or `adapters` to fix them all; a locked key keeps the base name and

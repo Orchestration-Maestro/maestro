@@ -12,14 +12,20 @@ fn adapter(manager: &SettingsManager, port: &str) -> Option<String> {
         .expect("a well-formed adapter setting")
 }
 
-/// A project value overrides the global one and ports are independent.
+/// A project value overrides the global one.
 #[test]
-fn adapter_reads_the_effective_name_for_each_port() {
-    let (mut manager, _storage) = manager_with_both(
+fn project_adapter_overrides_the_global_adapter() {
+    let (manager, _storage) = manager_with_both(
         json!({"adapters": {"vector-store": "embedded"}}),
         json!({"adapters": {"vector-store": "server"}}),
     );
     assert_eq!(adapter(&manager, "vector-store").as_deref(), Some("server"));
+}
+
+/// Ports are independent: setting one leaves the others as they were.
+#[test]
+fn adapter_setting_for_one_port_leaves_the_others_unchanged() {
+    let (mut manager, _storage) = manager_with(json!({"adapters": {"vector-store": "server"}}));
     assert_eq!(adapter(&manager, "graph-store"), None);
     manager.set_key_path(
         SettingsScope::Project,
@@ -39,30 +45,31 @@ fn adapter_is_unset_without_the_adapters_object() {
     assert_eq!(adapter(&manager, "vector-store"), None);
 }
 
-/// A value that is not a name, or an `adapters` entry that is not an object, is refused.
+/// A value that is not a name is refused with its key and value.
 #[test]
-fn malformed_adapter_setting_is_refused_with_its_key_and_value() {
-    for (document, message) in [
-        (
-            json!({"adapters": {"embedder": 7}}),
-            "Invalid adapters.embedder setting: 7",
-        ),
-        (
-            json!({"adapters": "embedded"}),
-            "Invalid adapters setting: \"embedded\"",
-        ),
-    ] {
-        let (manager, _storage) = manager_with(document);
-        let refusal = manager
-            .get_adapter("embedder")
-            .expect_err("a malformed setting is refused");
-        assert_eq!(refusal.to_string(), message);
-    }
+fn adapter_value_that_is_not_a_name_is_refused_with_its_key_and_value() {
+    let (manager, _storage) = manager_with(json!({"adapters": {"embedder": 7}}));
+    let refusal = manager
+        .get_adapter("embedder")
+        .expect_err("a malformed setting is refused");
+    assert_eq!(refusal.to_string(), "Invalid adapters.embedder setting: 7");
 }
 
-/// A lock on one adapter key keeps the base name and leaves other ports editable.
+/// An `adapters` entry that is not an object is refused with its value.
 #[test]
-fn locked_adapter_key_keeps_the_base_name_and_refuses_edits() {
+fn adapters_entry_that_is_not_an_object_is_refused_with_its_value() {
+    let (manager, _storage) = manager_with(json!({"adapters": "embedded"}));
+    let refusal = manager
+        .get_adapter("embedder")
+        .expect_err("a malformed setting is refused");
+    assert_eq!(
+        refusal.to_string(),
+        "Invalid adapters setting: \"embedded\""
+    );
+}
+
+/// A manager whose global base layer locks `adapters.vector-store` to `embedded`.
+fn locked_manager() -> SettingsManager {
     let (mut manager, _storage) = manager_with(json!({"adapters": {"vector-store": "server"}}));
     manager.publish_base_layer(
         SettingsScope::Global,
@@ -73,11 +80,24 @@ fn locked_adapter_key_keeps_the_base_name_and_refuses_edits() {
             recorded_at: "2026-10-27T12:00:00Z".into(),
         }),
     );
+    manager.drain_errors();
+    manager
+}
+
+/// A lock on one adapter key keeps the base name.
+#[test]
+fn locked_adapter_key_keeps_the_base_name() {
+    let manager = locked_manager();
     assert_eq!(
         adapter(&manager, "vector-store").as_deref(),
         Some("embedded")
     );
-    manager.drain_errors();
+}
+
+/// An edit of a locked adapter key is refused and changes nothing.
+#[test]
+fn locked_adapter_key_refuses_edits() {
+    let mut manager = locked_manager();
     manager.set_key_path(
         SettingsScope::Project,
         "adapters",
@@ -96,6 +116,12 @@ fn locked_adapter_key_keeps_the_base_name_and_refuses_edits() {
         adapter(&manager, "vector-store").as_deref(),
         Some("embedded")
     );
+}
+
+/// A lock on one adapter key leaves the other ports editable.
+#[test]
+fn locked_adapter_key_leaves_other_ports_editable() {
+    let mut manager = locked_manager();
     manager.set_key_path(
         SettingsScope::Project,
         "adapters",
