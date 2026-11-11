@@ -261,7 +261,7 @@ fn canonical_standalone_theme_keeps_live_palette_without_ui() {
             .collect();
         assert_eq!(
             views[0].0.try_render(80).unwrap_err().to_string(),
-            "Theme not initialized. Call initTheme() first."
+            "Theme not initialized. Call init_theme() first."
         );
         state.set_theme_instance(prepared()).unwrap();
         for (view, first, _) in &views {

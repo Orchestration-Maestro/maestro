@@ -94,7 +94,7 @@ fn diff_live_theme_publication_and_failures_follow_the_shared_theme() {
         render_diff(diff, &options, &maestro_theme::LiveTheme::default())
             .unwrap_err()
             .to_string(),
-        "Theme not initialized. Call initTheme() first."
+        "Theme not initialized. Call init_theme() first."
     );
     let keys = ["toolDiffContext", "toolDiffRemoved", "toolDiffAdded"].map(str::to_owned);
     let env = Env::with(Rc::new(palette_of(&keys, 0).unwrap()), Rc::new(NoLanguages)).unwrap();
