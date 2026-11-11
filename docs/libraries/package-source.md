@@ -7,7 +7,7 @@ no package. Outside browser targets it also uses Tokio `=1.53.3` (MIT; defaults
 off, `rt`, `process` and `time`) to launch package commands and run capture
 deadlines; captured children come from `maestro-process`.
 All targets enable `sync` for worker results.
-Unix adds rustix `=1.1.5`, defaults off, `std` and `process`, for signal names. Native tests enable Tokio `test-util`. The native constructor takes
+Unix adds rustix `=1.1.6`, defaults off, `std` and `process`, for signal names. Native tests enable Tokio `test-util`. The native constructor takes
 a caller-owned `Rc<tokio::task::LocalSet>` and retains it weakly. Serde derive is test-only
 here, as is Tokio's runtime builder. Internal dependencies are settings, resources,
 the shared path utility and, on native targets, `maestro-process`. File-system and
