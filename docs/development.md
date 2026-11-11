@@ -2766,10 +2766,13 @@ override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
 the selected child; it proves the same prologue and reaps a failed start. It never
-signals that child: it closes the child's pipes and waits for the child to exit by
-itself. Settings helpers select supplied complete nested identities with `named`
-and request a process-count limit through `setup`, keeping reports separate from
-exit status checks.
+signals that child: it closes the child's input and standard output and waits for
+it to exit by itself. The child's standard error stays open until it ends, and the
+failure then carries what the child wrote there, so it says why the selected test
+did not start; a platform that reads a pipe only by waiting for it keeps no
+standard error. Settings helpers select supplied complete nested identities with
+`named` and request a process-count limit through `setup`, keeping reports separate
+from exit status checks.
 
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
