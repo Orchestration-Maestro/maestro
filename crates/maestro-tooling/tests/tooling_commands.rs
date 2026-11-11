@@ -4160,17 +4160,15 @@ fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
 /// Run the author setup from `root` with `profile` as nextest's artifact directory.
 #[cfg(unix)]
 fn author_setup(root: &Path, profile: &Path) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_development"))
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command
         .args(["nextest-setup", "author-component"])
         .current_dir(root)
-        .env_remove("TEST_PREPARE_OUTPUT")
-        .env_remove("TEST_ARCHIVE")
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
-        .env("CARGO", root.join("cargo"))
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap()
+        .env("CARGO", root.join("cargo"));
+    crate::recipe_support::without_prepared_bundles(&mut command);
+    command.output().unwrap()
 }
 
 /// Run the author setup, which must succeed, and return what it printed.

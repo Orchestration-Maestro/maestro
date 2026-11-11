@@ -815,9 +815,7 @@ fn author_setup_without_prepared_outputs_builds_locally() {
             .env("CARGO", root.join("cargo"))
             .env("NEXTEST_ENV", root.join("nextest-env"))
             .env("NEXTEST_LD_LIBRARY_PATH", &profile)
-            .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
-            .env_remove("TEST_ARCHIVE")
-            .env_remove("TEST_PREPARE_OUTPUT");
+            .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile);
         if names_output {
             command.env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"));
         }
@@ -839,9 +837,7 @@ fn local_setup(root: &Path, base: Option<&Path>) -> Output {
         .env("CARGO", root.join("cargo"))
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", &profile)
-        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile)
-        .env_remove("TEST_ARCHIVE")
-        .env_remove("TEST_PREPARE_OUTPUT");
+        .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", &profile);
     if let Some(base) = base {
         command.env("TEST_PREPARE_BASE", base);
     }
@@ -1686,9 +1682,8 @@ fn browser_command(root: &Path, archived: bool) -> Command {
 /// The author-component setup, as nextest's setup entry runs it.
 fn setup_command() -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
-    command
-        .args(["nextest-setup", "author-component"])
-        .env_remove("TEST_PREPARE_BASE");
+    command.args(["nextest-setup", "author-component"]);
+    crate::recipe_support::without_prepared_bundles(&mut command);
     command
 }
 
