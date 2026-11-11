@@ -563,7 +563,7 @@ mod entry {
                     assert_eq!(e.run(&local, &args, options(&log)).await.unwrap(), 1);
                 }
                 let message = format!(
-                    "Stored session working directory does not exist: /maestro-missing-directory\n\
+                    "The working directory saved in this session is missing: /maestro-missing-directory\n\
                      Session file: {path}\nCurrent working directory: {}\n",
                     e.commands.cwd
                 );

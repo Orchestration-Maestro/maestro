@@ -529,14 +529,14 @@ pub fn loading(api: &ExtensionAPI<Local>, runtime: &ExtensionRuntime<Local>) {
             .block_on(direct_model)
             .unwrap_err()
             .to_string(),
-        "Extension runtime not initialized"
+        "The extension runtime is not initialized yet"
     );
     assert_eq!(
         runtime_support::runtime()
             .block_on(facade_model)
             .unwrap_err()
             .to_string(),
-        "Extension runtime not initialized"
+        "The extension runtime is not initialized yet"
     );
 }
 

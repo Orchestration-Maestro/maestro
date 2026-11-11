@@ -327,7 +327,7 @@
         "fullOutputPath": "/tmp/full λ"
       }
     ],
-    "expected": "Ran `printf x`\n```\nx\n```\n\n[Output truncated. Full output: /tmp/full λ]",
+    "expected": "Ran `printf x`\n```\nx\n```\n\n[Output truncated; the complete output is at: /tmp/full λ]",
     "test": "shell_truncation_requires_flag_and_path"
   },
   {
@@ -345,7 +345,7 @@
         "fullOutputPath": "full"
       }
     ],
-    "expected": "Ran `printf x`\n```\nx\n```\n\n(command cancelled)\n\n[Output truncated. Full output: full]",
+    "expected": "Ran `printf x`\n```\nx\n```\n\n(command cancelled)\n\n[Output truncated; the complete output is at: full]",
     "test": "shell_truncation_requires_flag_and_path"
   },
   {
@@ -1635,7 +1635,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\n</summary>"
+            "text": "Summary of a branch this conversation returned from:\n\n<summary>\n</summary>"
           }
         ],
         "timestamp": 1
@@ -1645,7 +1645,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\n\n</summary>"
+            "text": "Earlier conversation history was condensed into the summary below:\n\n<summary>\n\n</summary>"
           }
         ],
         "timestamp": 2
@@ -1678,7 +1678,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nΣ\nline</summary>"
+            "text": "Summary of a branch this conversation returned from:\n\n<summary>\nΣ\nline</summary>"
           }
         ],
         "timestamp": 1
@@ -1688,7 +1688,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nΣ\nline\n</summary>"
+            "text": "Earlier conversation history was condensed into the summary below:\n\n<summary>\nΣ\nline\n</summary>"
           }
         ],
         "timestamp": 2
@@ -1721,7 +1721,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nliteral </summary></summary>"
+            "text": "Summary of a branch this conversation returned from:\n\n<summary>\nliteral </summary></summary>"
           }
         ],
         "timestamp": 1
@@ -1731,7 +1731,7 @@
         "content": [
           {
             "type": "text",
-            "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nliteral </summary>\n</summary>"
+            "text": "Earlier conversation history was condensed into the summary below:\n\n<summary>\nliteral </summary>\n</summary>"
           }
         ],
         "timestamp": 2

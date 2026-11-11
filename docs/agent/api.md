@@ -875,7 +875,7 @@ while let Some(event) = stream.next().await {
 assert_eq!(observed, prompt_run);
 
 let refused = agent_loop_continue(context(vec![]), Arc::clone(&config), AgentLoopOptions::default(), Arc::clone(&spawn));
-assert_eq!(refused.err().unwrap().message, "Cannot continue: no messages in context");
+assert_eq!(refused.err().unwrap().message, "Nothing to continue from: the context holds no messages");
 let stream = agent_loop_continue(context(vec![entry("question")]), config, AgentLoopOptions::default(), spawn).unwrap();
 assert_eq!(said(&stream.result().await), ["assistant:a4"]);
 let mut observed = Vec::new();

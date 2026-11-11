@@ -1,8 +1,8 @@
 ---
 name: different-name
-description: A skill with a name that doesn't match the directory.
+description: Fixture whose name differs from its directory.
 ---
 
 # Name Mismatch
 
-This skill's name doesn't match its parent directory.
+The declared name and the folder name disagree.

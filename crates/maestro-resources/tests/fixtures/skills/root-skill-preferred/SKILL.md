@@ -1,3 +1,3 @@
 ---
-description: Root skill should win.
+description: Root entry that shadows its children.
 ---
