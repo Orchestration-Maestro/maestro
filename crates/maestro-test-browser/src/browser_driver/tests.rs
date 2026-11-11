@@ -499,6 +499,21 @@ fn export_requires_the_bundle_to_keep_the_recorded_digest() {
     assert!(error.to_string().contains("host bundle changed"), "{error}");
 }
 
+/// An export run without the setup's recorded digest names the missing variable.
+#[test]
+fn export_names_the_missing_recorded_digest() {
+    let root = Scratch::new().unwrap();
+    let error = block_on(run_export(
+        &root.path().join("absent-chromium"),
+        &root.path().join("profile"),
+        root.path(),
+        "family",
+        "name",
+    ))
+    .unwrap_err();
+    assert!(error.to_string().contains(DIGEST_VARIABLE), "{error}");
+}
+
 /// A missing executable is diagnosed without the pinned browser environment.
 #[test]
 fn launch_failures_are_reported() {
