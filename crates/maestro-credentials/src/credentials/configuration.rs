@@ -152,7 +152,8 @@ pub(in crate::credentials) mod native {
                 timeout: HELPER_TIMEOUT,
             }
         }
-        /// Replace the helper time limit, which defaults to ten seconds.
+        /// Replace the helper time limit so a test need not wait out the default.
+        #[cfg(feature = "test-support")]
         #[must_use]
         pub fn with_timeout(mut self, timeout: Duration) -> Self {
             self.timeout = timeout;
@@ -161,13 +162,18 @@ pub(in crate::credentials) mod native {
     }
     impl ConfigValueOperations for ProcessConfigValueOperations {
         fn execute(&self, command: &str) -> Option<Vec<u8>> {
-            let run = |launch| run(launch, self.timeout);
-            routed(cfg!(windows), command, &*self.shell_config, &run, || {
-                let comspec = cfg!(windows)
-                    .then(|| std::env::var("COMSPEC").ok())
-                    .flatten();
-                default_shell(command, Platform::current(), comspec.as_deref())
-            })
+            routed(
+                cfg!(windows),
+                command,
+                &*self.shell_config,
+                &|launch| run(launch, self.timeout),
+                || {
+                    let comspec = cfg!(windows)
+                        .then(|| std::env::var("COMSPEC").ok())
+                        .flatten();
+                    default_shell(command, Platform::current(), comspec.as_deref())
+                },
+            )
         }
     }
     pub(in crate::credentials) use maestro_process::Launch;
