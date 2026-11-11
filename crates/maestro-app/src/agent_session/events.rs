@@ -1,5 +1,6 @@
 //! The agent-event dispatch: one ordered queue that tells the extensions, then the session
 //! listeners and persists finished messages.
+use super::extensions::report_runtime_failure;
 use super::held::heard_while_held;
 use super::state::{Gate, SharedAgentEvent, thrown};
 use super::{AgentSession, AgentSessionEvent};
@@ -55,7 +56,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
 
 impl AgentSession<Local> {
     /// Appends `event` to the queue and starts processing it when nothing is being
-    /// processed; a failing event is dropped and the rest still run.
+    /// processed; a failing event is reported to the extensions' error listeners and the rest
+    /// still run.
     fn enqueue_agent_event(self: &Rc<Self>, event: SharedAgentEvent) {
         let mut state = self.state.borrow_mut();
         state.agent_events.push_back(event);
@@ -68,10 +70,17 @@ impl AgentSession<Local> {
         let session = Rc::clone(self);
         drop(self.start_operation(async move {
             while let Some(event) = session.next_agent_event() {
-                drop(session.process_agent_event(&event).await);
+                session.process_reporting_failure(&event).await;
             }
             drop(open);
         }));
+    }
+
+    /// Processes `event`; a failure goes once to the extensions' error listeners.
+    async fn process_reporting_failure(self: &Rc<Self>, event: &SharedAgentEvent) {
+        if let Err(error) = self.process_agent_event(event).await {
+            report_runtime_failure(&self.extension_runner(), "agent_event", error);
+        }
     }
 
     /// The next queued event; when none is left, the queue is marked processed.
