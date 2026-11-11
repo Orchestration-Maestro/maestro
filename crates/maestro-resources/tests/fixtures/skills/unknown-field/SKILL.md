@@ -1,10 +1,10 @@
 ---
 name: unknown-field
-description: A skill with an unknown frontmatter field.
+description: Fixture carrying extra frontmatter keys.
 author: someone
 version: 1.0
 ---
 
 # Unknown Field
 
-This skill has non-standard frontmatter fields.
+The frontmatter holds keys outside the standard set.

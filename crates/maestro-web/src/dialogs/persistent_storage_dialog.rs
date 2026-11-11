@@ -28,10 +28,10 @@ use web_sys::{Document, Element};
 const WIDTH: &str = "min(500px, 90vw)";
 /// Consequences of granting, in shown order.
 const MEANINGS: [&str; 4] = [
-    "Your conversations will be saved locally in your browser",
-    "Data will not be deleted automatically to free up space",
-    "You can still manually clear data at any time",
-    "No data is sent to external servers",
+    "Conversations are saved in this browser",
+    "The browser will not delete data to free space",
+    "You can clear data yourself at any time",
+    "Nothing is sent to external servers",
 ];
 /// Native click listener retained with the dialog.
 type Click = EventSubscription<Closure<dyn Fn()>>;
@@ -71,7 +71,7 @@ impl PersistentStorageDialog {
         let approved = Self::show(view)?.await.unwrap_or(false);
         if !approved {
             web_sys::console::warn_1(
-                &"⚠ User declined persistent storage - sessions may be lost".into(),
+                &"⚠ Persistent storage declined: saved sessions may be lost".into(),
             );
             return Ok(false);
         }
@@ -86,12 +86,15 @@ impl PersistentStorageDialog {
         Ok(match granted {
             Ok(true) => {
                 web_sys::console::log_1(
-                    &"✓ Persistent storage granted - sessions will be preserved".into(),
+                    &"✓ Persistent storage granted: saved sessions are kept".into(),
                 );
                 true
             }
             Ok(false) => {
-                web_sys::console::warn_1(&"⚠ Browser denied persistent storage - sessions may be lost under storage pressure".into());
+                web_sys::console::warn_1(
+                    &"⚠ Browser refused persistent storage: saved sessions may be lost when space runs short"
+                        .into(),
+                );
                 false
             }
             Err(error) => {
@@ -112,7 +115,7 @@ impl PersistentStorageDialog {
                 title: view.i18n.text("Storage Permission Required")?,
                 description: Some(
                     view.i18n
-                        .text("This app needs persistent storage to save your conversations")?,
+                        .text("This app keeps your conversations only with persistent storage")?,
                 ),
                 class_name: String::new(),
             },
@@ -166,7 +169,7 @@ fn explanation(view: &DomView) -> Result<Element, ToolUiError> {
     let why = element(document, "p", "maestro-storage-why")?;
     why.set_text_content(Some(&i18n.text("Why is this needed?")?));
     let reason = element(document, "p", "maestro-settings-muted")?;
-    reason.set_text_content(Some(&i18n.text("Without persistent storage, your browser may delete saved conversations when it needs disk space. Granting this permission ensures your chat history is preserved.")?));
+    reason.set_text_content(Some(&i18n.text("Without persistent storage, the browser can drop saved conversations when disk space runs short. Granting the permission keeps your chat history.")?));
     append(&text, &why)?;
     append(&text, &reason)?;
     append(&notice, &sign)?;

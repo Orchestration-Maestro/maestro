@@ -2233,7 +2233,7 @@
     "expected": {
       "observations": [
         {
-          "error": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload()."
+          "error": "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns."
         }
       ]
     }
@@ -2471,12 +2471,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2520,12 +2520,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2569,12 +2569,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2618,12 +2618,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2667,12 +2667,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2716,12 +2716,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2765,12 +2765,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2814,12 +2814,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2863,12 +2863,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2912,12 +2912,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -2961,12 +2961,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3010,12 +3010,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3059,12 +3059,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3108,12 +3108,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3157,12 +3157,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3206,12 +3206,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3255,12 +3255,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3315,12 +3315,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+n' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+n' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+n' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+n' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3365,12 +3365,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3415,12 +3415,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3483,18 +3483,18 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         },
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+y' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+y' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
-        "Extension shortcut 'ctrl+y' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
+        "Extension shortcut 'ctrl+y' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -3880,7 +3880,7 @@
           "diagnostics": [
             {
               "type": "warning",
-              "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+              "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
               "path": "/extensions/zeta.wasm"
             }
           ]
@@ -3894,7 +3894,7 @@
         [
           {
             "type": "warning",
-            "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+            "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
             "path": "/extensions/zeta.wasm"
           }
         ]
@@ -3961,7 +3961,7 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         },
         {
@@ -4021,12 +4021,12 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/extensions/zeta.wasm"
         }
       ],
       "warnings": [
-        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm clashes with a built-in shortcut and is skipped."
       ]
     }
   },
@@ -4146,7 +4146,7 @@
       "diagnostics": [
         {
           "type": "warning",
-          "message": "Extension shortcut 'CTRL+X' from /a\nquoted' path.wasm conflicts with built-in shortcut. Skipping.",
+          "message": "Extension shortcut 'CTRL+X' from /a\nquoted' path.wasm clashes with a built-in shortcut and is skipped.",
           "path": "/a\nquoted' path.wasm"
         },
         {
@@ -4166,7 +4166,7 @@
         }
       ],
       "warnings": [
-        "Extension shortcut 'CTRL+X' from /a\nquoted' path.wasm conflicts with built-in shortcut. Skipping.",
+        "Extension shortcut 'CTRL+X' from /a\nquoted' path.wasm clashes with a built-in shortcut and is skipped.",
         "Extension shortcut conflict: 'CTRL+Y' is built-in shortcut for app.nonreserved and /a\nquoted' path.wasm. Using /a\nquoted' path.wasm.",
         "Extension shortcut conflict: 'CTRL+Y' is built-in shortcut for app.nonreserved and /extensions/alpha.wasm. Using /extensions/alpha.wasm.",
         "Extension shortcut conflict: 'CTRL+Y' registered by both /a\nquoted' path.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm."

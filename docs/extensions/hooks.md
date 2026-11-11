@@ -53,7 +53,7 @@ of the `DiagnosticErrorInfo` it keeps. Either way the runner reports the event i
 was invoked for, the extension path and the supplied message and stack; a stack
 the author did not supply stays absent, and engine stack text is never
 manufactured. A changed-role replacement reports exactly
-`message_end handlers must return a message with the same role`.
+`A message_end handler has to return a message of the same role`.
 
 Artifact discovery and loading are not supplied by this hook runner. They are a
 separate [delivery](https://github.com/Orchestration-Maestro/maestro/issues/206).

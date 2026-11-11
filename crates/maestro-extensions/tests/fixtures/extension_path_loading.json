@@ -208,7 +208,7 @@
           "errors": [
             {
               "path": "ext/none.ts",
-              "error": "Extension does not export a valid factory function: ext/none.ts"
+              "error": "Extension exports no valid factory function: ext/none.ts"
             }
           ],
           "flagValues": {}

@@ -82,7 +82,7 @@ impl Form {
         append(&discovery, &test)?;
         let manual = element(document, "div", "maestro-provider-dialog-muted")?;
         manual.set_text_content(Some(
-            &i18n.text("For manual provider types, add models after saving the provider.")?,
+            &i18n.text("Add models to a manual provider after you save it.")?,
         ));
         let footer = element(document, "div", "maestro-provider-dialog-footer")?;
         let cancel = action(editor, ButtonVariant::Ghost)?;

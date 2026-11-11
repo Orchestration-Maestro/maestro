@@ -637,7 +637,7 @@
           "type": "branch_summary",
           "parentId": "a1",
           "fromId": "a1",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -652,7 +652,7 @@
         "type": "branch_summary",
         "parentId": "a1",
         "fromId": "a1",
-        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
         "details": {
           "readFiles": [],
           "modifiedFiles": []
@@ -677,7 +677,7 @@
       },
       {
         "role": "branchSummary",
-        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+        "text": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated"
       }
     ],
     "prompts": [
@@ -707,7 +707,7 @@
           "type": "branch_summary",
           "parentId": "a1",
           "fromId": "a1",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -733,7 +733,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -748,7 +748,7 @@
         "type": "branch_summary",
         "parentId": "a2",
         "fromId": "a2",
-        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
         "details": {
           "readFiles": [],
           "modifiedFiles": []
@@ -775,11 +775,11 @@
       },
       {
         "role": "branchSummary",
-        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+        "text": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated"
       }
     ],
     "prompts": [
-      "<conversation>\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      "<conversation>\n[Assistant]: answer alt\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
     ],
     "extensionEvents": [
       {
@@ -805,7 +805,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -855,7 +855,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -870,7 +870,7 @@
         "type": "branch_summary",
         "parentId": "a2",
         "fromId": "a2",
-        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
         "details": {
           "readFiles": [],
           "modifiedFiles": []
@@ -897,11 +897,11 @@
       },
       {
         "role": "branchSummary",
-        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+        "text": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated"
       }
     ],
     "prompts": [
-      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
     ],
     "extensionEvents": [
       {
@@ -927,7 +927,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -1014,7 +1014,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -1029,7 +1029,7 @@
         "type": "branch_summary",
         "parentId": "a2",
         "fromId": "a2",
-        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
         "details": {
           "readFiles": [],
           "modifiedFiles": []
@@ -1062,11 +1062,11 @@
       },
       {
         "role": "branchSummary",
-        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+        "text": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated"
       }
     ],
     "prompts": [
-      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
     ],
     "extensionEvents": [
       {
@@ -1092,7 +1092,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -1119,7 +1119,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -1134,7 +1134,7 @@
         "type": "branch_summary",
         "parentId": "a2",
         "fromId": "a2",
-        "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+        "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
         "details": {
           "readFiles": [],
           "modifiedFiles": []
@@ -1161,11 +1161,11 @@
       },
       {
         "role": "branchSummary",
-        "text": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated"
+        "text": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated"
       }
     ],
     "prompts": [
-      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: Mention tests"
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear.\n\nAdditional focus: Mention tests"
     ],
     "extensionEvents": [
       {
@@ -1191,7 +1191,7 @@
           "type": "branch_summary",
           "parentId": "a2",
           "fromId": "a2",
-          "summary": "The user explored a different conversation branch before returning here.\nSummary of that exploration:\n\nGenerated",
+          "summary": "The user went down another branch of this conversation and then came back to this point.\nSummary of that branch:\n\nGenerated",
           "details": {
             "readFiles": [],
             "modifiedFiles": []
@@ -1286,7 +1286,7 @@
       }
     ],
     "prompts": [
-      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
     ],
     "extensionEvents": [
       {
@@ -1336,7 +1336,7 @@
       }
     ],
     "prompts": [
-      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nCreate a structured summary of this conversation branch for context when returning later.\n\nUse this EXACT format:\n\n## Goal\n[What was the user trying to accomplish in this branch?]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Work that was started but not finished]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [What should happen next to continue this work]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+      "<conversation>\n[User]: alt\n\n[Assistant]: answer alt\n</conversation>\n\nWrite a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.\n\nFollow this format EXACTLY:\n\n## Goal\n[What the user was trying to get done on this branch]\n\n## Constraints & Preferences\n- [Limits, wishes or requirements the user stated]\n- [Or \"(none)\" when the user stated none]\n\n## Progress\n### Done\n- [x] [Tasks and changes already finished]\n\n### In Progress\n- [ ] [Work that was begun but is not finished]\n\n### Blocked\n- [Anything stopping progress, if present]\n\n## Key Decisions\n- **[Decision]**: [Short reason]\n\n## Next Steps\n1. [What should happen next to carry this work on]\n\nKeep every section short. Quote error messages, function names and file paths exactly as they appear."
     ],
     "extensionEvents": [
       {

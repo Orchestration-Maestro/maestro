@@ -35,9 +35,11 @@ impl DomContent for ApiKeysTab {
         let document = &view.document;
         let root = element(document, "div", "maestro-settings-keys")?;
         let intro = element(document, "p", "maestro-settings-muted")?;
-        intro.set_text_content(Some(&view.i18n.text(
-            "Configure API keys for LLM providers. Keys are stored locally in your browser.",
-        )?));
+        intro.set_text_content(Some(
+            &view
+                .i18n
+                .text("Set provider API keys here. They stay in this browser.")?,
+        ));
         append(&root, &intro)?;
         let mut entries = Vec::new();
         for provider in get_providers() {
@@ -85,7 +87,7 @@ impl DomContent for ProxyTab {
         let i18n = &view.i18n;
         let root = element(document, "div", "maestro-settings-proxy")?;
         let intro = element(document, "p", "maestro-settings-muted")?;
-        intro.set_text_content(Some(&i18n.text("Allows browser-based apps to bypass CORS restrictions when calling LLM providers. Required for Z-AI and Anthropic with OAuth token.")?));
+        intro.set_text_content(Some(&i18n.text("Lets a browser app call LLM providers past CORS limits. Needed with Z-AI and Anthropic OAuth tokens.")?));
         let row = element(document, "div", "maestro-settings-row")?;
         let label = element(document, "span", "maestro-input-label")?;
         label.set_text_content(Some(&i18n.text("Use CORS Proxy")?));
@@ -102,9 +104,9 @@ impl DomContent for ProxyTab {
             .set_attribute("for", &field.id())
             .map_err(|e| host_error(&e))?;
         let hint = element(document, "p", "maestro-settings-hint")?;
-        hint.set_text_content(Some(&i18n.text(
-            "Format: The proxy must accept requests as <proxy-url>/?url=<target-url>",
-        )?));
+        hint.set_text_content(Some(
+            &i18n.text("Format: the proxy must accept <proxy-url>/?url=<target-url>")?,
+        ));
         for part in [&caption, input.root(), &hint] {
             append(&group, part)?;
         }

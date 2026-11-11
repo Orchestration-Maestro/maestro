@@ -1247,7 +1247,7 @@
         {
           "extensionPath": "<extension:0>",
           "event": "message_end",
-          "error": "message_end handlers must return a message with the same role",
+          "error": "A message_end handler has to return a message of the same role",
           "stack": false
         }
       ]

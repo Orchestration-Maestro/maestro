@@ -93,7 +93,8 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
             return ask(provider.to_owned()).await;
         }
         web_sys::console::error_1(
-            &"No API key configured and no onApiKeyRequired handler set".into(),
+            &"No API key for this provider, and no onApiKeyRequired handler answers the request"
+                .into(),
         );
         false
     }

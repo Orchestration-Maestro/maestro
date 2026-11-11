@@ -15,9 +15,10 @@ and share the same operation bodies.
 owned prompt operation through the caller's `AgentSpawner` and returns an
 `EventStream<AgentEvent, Vec<AgentMessage>>` immediately.
 `agent_loop_continue(context, config, options, spawn)` returns that stream in a
-`Result`: empty history yields `Cannot continue: no messages in context`, and an
-assistant tail yields `Cannot continue from message role: assistant`, before
-submission. Custom tails are not converted for admission.
+`Result`: empty history yields
+`Nothing to continue from: the context holds no messages`, and an assistant tail
+yields `Nothing to continue from: the last message has the assistant role`,
+before submission. Custom tails are not converted for admission.
 
 Observing, pausing or dropping the stream does not delay or cancel submitted work.
 Events are queued without reader acknowledgements. `AgentEnd` publishes its

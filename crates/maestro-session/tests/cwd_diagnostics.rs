@@ -117,7 +117,7 @@ fn cwd_formatting_keeps_exact_messages_and_optional_file() {
         session_cwd: "/gone\n/dir é".to_owned(),
         fallback_cwd: "/here\n".to_owned(),
     };
-    let head = "Stored session working directory does not exist: /gone\n/dir é";
+    let head = "The working directory saved in this session is missing: /gone\n/dir é";
     let tail = "\nCurrent working directory: /here\n";
     assert_eq!(
         format_missing_session_cwd_error(&issue(Some("/s/a.jsonl"))),
@@ -131,7 +131,7 @@ fn cwd_formatting_keeps_exact_messages_and_optional_file() {
     }
     assert_eq!(
         format_missing_session_cwd_prompt(&issue(Some("/s/a.jsonl"))),
-        "cwd from session file does not exist\n/gone\n/dir é\n\ncontinue in current cwd\n/here\n"
+        "The cwd saved in the session file is missing\n/gone\n/dir é\n\nContinue in the current cwd\n/here\n"
     );
 }
 
