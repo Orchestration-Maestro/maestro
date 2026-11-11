@@ -2674,7 +2674,9 @@ full name, `TestProcess::named(identity)` selects a sibling by its complete name
 run it. The owner appends the exact filter and harness flags, confirms the test
 is listed and eligible (an ignored test runs only after `.ignored()`), and checks
 that the child's standard output begins with the one-test start prologue. A stale
-or misspelled name therefore fails instead of passing with zero tests. A checked
+or misspelled name therefore fails instead of passing with zero tests. The listing
+behind that check is read once per executable and reused, so a test that starts
+many children asks the harness once, not once per child. A checked
 outcome proves the test started, not that it passed: keep exit, signal and product
 assertions in the test.
 
