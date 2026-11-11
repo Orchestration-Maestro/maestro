@@ -529,6 +529,19 @@ fn context_rewrite_does_not_overwrite_saved_user_input() {
 }
 
 #[test]
+fn context_transform_without_handlers_returns_the_shared_messages() {
+    on_task_set(|_| async {
+        let h = harness(HarnessOptions::default()).await;
+        let runner_ref: maestro_app::agent_session::ExtensionRunnerRef<Local> =
+            Rc::new(RefCell::new(Some(h.runner())));
+        let transform = maestro_app::sdk::transform_context(&runner_ref);
+        let messages = h.session.messages();
+        let transformed = transform(Arc::clone(&messages), None).await.unwrap();
+        assert!(Arc::ptr_eq(&messages, &transformed));
+    });
+}
+
+#[test]
 fn input_transform_and_handled_paths_are_distinct() {
     let expected = recorded(
         "model_navigation",
