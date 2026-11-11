@@ -2726,15 +2726,17 @@ agent directory the run's setup exports, and later caller edits can
 override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
-the selected child; it proves the same prologue and reaps a failed start. Settings
-helpers select supplied complete nested identities with `named` and request a
-process-count limit through `setup`, keeping reports separate from exit status
-checks.
+the selected child; it proves the same prologue and reaps a failed start. It never
+signals that child: it closes the child's pipes and waits for the child to exit by
+itself. Settings helpers select supplied complete nested identities with `named`
+and request a process-count limit through `setup`, keeping reports separate from
+exit status checks.
 
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
-as the process exits. A stop that arrives during that write cuts the profile, and
-the coverage merge then refuses the whole shard. The process tests' children use
+as the process exits. A stop that arrives during that write leaves the profile
+empty or cut. The coverage merge skips an empty profile without a warning, but a
+cut one makes it refuse the whole shard. The process tests' children use
 `wait_for_signal` in `crates/maestro-process/tests/child_programs.rs`. A child that
 ends normally in other cases waits only when a variable asks for it: the bounded
 capture child does so for the rows that overflow, so the capture stops a waiting

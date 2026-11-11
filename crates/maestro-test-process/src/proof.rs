@@ -101,21 +101,18 @@ impl CheckedChild {
     /// Read only the prologue from the child's standard output and prove it.
     ///
     /// Callers use this when they launch the selected test through their own command.
-    /// On failure the direct child is closed and reaped.
+    /// On failure the direct child is closed and reaped once it ends on its own.
     ///
     /// # Errors
     ///
     /// Fails when standard output is not piped, cannot be read, or does not begin with the
     /// one-test prologue.
     pub fn start(test: &str, mut child: Child) -> Result<Self, TestProcessError> {
-        let stdin = child.stdin.take();
-        let stderr = child.stderr.take();
         let mut seen = Vec::new();
         let Some(mut pipe) = child.stdout.take() else {
             return Err(Self::reap(
                 test,
                 child,
-                stdin,
                 &seen,
                 "standard output is not piped",
             ));
@@ -127,7 +124,8 @@ impl CheckedChild {
                 Ok(_) => break,
                 Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
                 Err(error) => {
-                    let failure = Self::reap(test, child, stdin, &seen, "cannot read the start");
+                    child.stdout = Some(pipe);
+                    let failure = Self::reap(test, child, &seen, "cannot read the start");
                     return Err(failure.caused_by(error));
                 }
             }
@@ -136,32 +134,31 @@ impl CheckedChild {
             }
         }
         if !seen.starts_with(HARNESS_START) {
+            child.stdout = Some(pipe);
             let message = "the child did not start exactly this test";
-            return Err(Self::reap(test, child, stdin, &seen, message));
+            return Err(Self::reap(test, child, &seen, message));
         }
         let stdout = Some(CheckedStdout {
             replayed: 0,
             inner: pipe,
         });
         Ok(Self {
-            stdin,
+            stdin: child.stdin.take(),
             stdout,
-            stderr,
+            stderr: child.stderr.take(),
             child,
             test: test.to_owned(),
         })
     }
 
-    /// Close the child's input, stop the direct child and reap it for a failed start.
-    fn reap(
-        test: &str,
-        mut child: Child,
-        stdin: Option<ChildStdin>,
-        seen: &[u8],
-        message: &str,
-    ) -> TestProcessError {
-        drop(stdin);
-        let _ = child.kill();
+    /// Close every pipe to the direct child, then reap it once it ends on its own, for a
+    /// failed start.
+    ///
+    /// The child reads the end of its input and gets broken pipes for its output, so it exits
+    /// by itself. It is never signalled: a coverage build writes the child's profile as it
+    /// exits, and a signal landing during that write would cut the profile.
+    fn reap(test: &str, mut child: Child, seen: &[u8], message: &str) -> TestProcessError {
+        drop((child.stdin.take(), child.stdout.take(), child.stderr.take()));
         match child.wait() {
             Ok(status) => {
                 TestProcessError::new(test, format!("{message} ({status})")).with_streams(seen, &[])
@@ -225,19 +222,25 @@ mod tests {
     }
 
     #[test]
-    fn a_child_that_does_not_start_the_test_is_closed_and_reaped() {
-        // A listing run prints test names where the one-test prologue belongs.
+    fn a_child_that_does_not_start_the_test_ends_on_its_own_and_is_reaped() {
+        // A listing run prints test names where the one-test prologue belongs, then exits.
         let mut command = Command::new(std::env::current_exe().unwrap());
         command
             .arg("--list")
             .stdin(Stdio::piped())
-            .stdout(Stdio::piped());
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
         let child = command.spawn().unwrap();
         let pid = child.id();
-        let error = CheckedChild::start("proof::tests::listed", child).unwrap_err();
+
+        let error = CheckedChild::start("proof::tests::listed", child)
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("did not start exactly"), "{error}");
         assert!(
-            error.to_string().contains("did not start exactly"),
-            "{error}"
+            error.contains("(exit status: "),
+            "child {pid} did not end on its own: {error}"
         );
         assert!(!alive(pid), "child {pid} was not reaped");
     }
