@@ -1674,6 +1674,7 @@ fn tmux_capture_uses_raw_status_and_two_second_settlement() {
 fn notice_background_work_releases_mode_after_completion() {
     const TEST: &str = "notice_background_work_releases_mode_after_completion";
     super::isolated_case(TEST, "child", &[], async |root| {
+        super::controlled_search_programs(root);
         let release = std::sync::Arc::new(tokio::sync::Notify::new());
         let fetch = held_release_fetch(release.clone());
         let world = Setup {
