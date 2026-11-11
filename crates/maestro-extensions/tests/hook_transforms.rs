@@ -468,7 +468,7 @@ async fn message_end_reports_changed_role_without_losing_prior_message_case() {
         [(
             "message".into(),
             "message_end".into(),
-            "message_end handlers must return a message with the same role".into()
+            "A message_end handler has to return a message of the same role".into()
         )]
     );
     bus.settle().await;

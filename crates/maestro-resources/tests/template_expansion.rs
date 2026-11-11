@@ -592,14 +592,14 @@ fn parsed_arguments_expand_original_marker_forms() {
 const PARSED_ARGUMENTS_EXPAND_ORIGINAL_MARKER_FORMS_CASES_SUBSTITUTION: &[(&str, &[&str], &str)] =
     &[
         (
-            "Create component $1 with features: $ARGUMENTS",
+            "Make component $1 with traits: $ARGUMENTS",
             &["Button", "onClick handler", "disabled support"],
-            "Create component Button with features: Button onClick handler disabled support",
+            "Make component Button with traits: Button onClick handler disabled support",
         ),
         (
-            "Create a React component named $1 with features: $ARGUMENTS",
+            "Build a React widget called $1 with traits: $ARGUMENTS",
             &["Button", "onClick handler", "disabled support"],
-            "Create a React component named Button with features: Button onClick handler disabled support",
+            "Build a React widget called Button with traits: Button onClick handler disabled support",
         ),
         (
             "Implement: $@",

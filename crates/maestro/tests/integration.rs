@@ -7,6 +7,7 @@ mod entry_routes;
 mod host_operations;
 mod model_streams;
 mod native_io;
+mod print_terminal;
 mod provider_payload_example;
 mod qna_example;
 mod rpc_demo_example;

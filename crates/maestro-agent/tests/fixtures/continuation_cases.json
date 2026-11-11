@@ -1323,7 +1323,7 @@
       "queued": false,
       "streaming": false,
       "signalAbsent": true,
-      "failure": "Cannot continue from message role: assistant"
+      "failure": "Nothing to continue from: the last message has the assistant role"
     }
   },
   {
@@ -1350,7 +1350,7 @@
       "queued": false,
       "streaming": false,
       "signalAbsent": true,
-      "failure": "Cannot continue from message role: assistant"
+      "failure": "Nothing to continue from: the last message has the assistant role"
     }
   },
   {

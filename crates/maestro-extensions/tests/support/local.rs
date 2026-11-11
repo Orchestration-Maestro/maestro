@@ -20,7 +20,7 @@ use tokio::task::JoinHandle;
 pub(crate) use crate::session;
 
 /// The complete default stale-context guidance.
-pub const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
+pub const STALE: &str = "This extension ctx went stale when the session was replaced or reloaded. Do not keep using a maestro or command ctx captured before ctx.reload(), ctx.newSession(), ctx.fork() or ctx.switchSession(). After newSession, fork or switchSession, run the remaining work inside withSession, with the ctx that withSession supplies. After reload, stop using the old ctx once await ctx.reload() returns.";
 
 /// A local single-thread trace.
 pub type Trace = Rc<RefCell<Vec<String>>>;

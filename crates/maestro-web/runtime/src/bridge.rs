@@ -1,8 +1,10 @@
-//! Completion registration and the frame-to-parent message transport of the sandbox.
-use crate::js::{call, error, get, invoke, set};
+//! Completion registration and the message transports of the sandbox: the frame-to-parent
+//! channel and the extension user-script channel.
+use crate::js::{call, error, get, invoke, set, wait};
 use js_sys::{Array, Date, Math, Object, Promise};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
+use wasm_bindgen_futures::future_to_promise;
 use web_sys::{MessageEvent, Window};
 
 /// Milliseconds a frame request waits for its reply.
@@ -25,6 +27,30 @@ pub(crate) fn install_frame(window: &Window, sandbox_id: &JsValue) -> Result<(),
         request(&target, &id, &message)
     });
     set(window, "sendRuntimeMessage", &send.into_js_value())
+}
+
+/// Shared completion registration plus the extension transport of a user script.
+///
+/// # Errors
+/// Returns the native failure of any assignment.
+pub(crate) fn install_user_script(window: &Window, sandbox_id: &JsValue) -> Result<(), JsValue> {
+    completion(window)?;
+    let id = sandbox_id.clone();
+    let send = Closure::<dyn FnMut(JsValue) -> Promise>::new(move |message: JsValue| {
+        extension_request(id.clone(), message)
+    });
+    set(window, "sendRuntimeMessage", &send.into_js_value())
+}
+
+/// One request to the extension runtime, settled with its native reply: the message is copied
+/// with the sandbox identifier last, so the identifier always wins.
+fn extension_request(id: JsValue, message: JsValue) -> Promise {
+    future_to_promise(async move {
+        let payload = Object::assign(&Object::new(), message.unchecked_ref::<Object>());
+        set(&payload, "sandboxId", &id)?;
+        let runtime = get(&get(&js_sys::global(), "chrome")?, "runtime")?;
+        wait(call(&runtime, "sendMessage", &Array::of1(&payload))?).await
+    })
 }
 
 /// Reset the public callback list and install `onCompleted` as an append to its current value.

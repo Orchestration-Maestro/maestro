@@ -1,3 +1,3 @@
 # No Frontmatter
 
-This skill has no YAML frontmatter at all.
+The file starts with a heading, not frontmatter.

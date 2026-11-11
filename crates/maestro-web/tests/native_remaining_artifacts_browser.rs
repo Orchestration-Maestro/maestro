@@ -1038,7 +1038,7 @@ pub async fn artifacts_panel_dom_instances_keep_their_own_operands(import: js_sy
             .node
             .text_content()
             .unwrap()
-            .contains("Vorschau für diesen Dateityp nicht verfügbar."),
+            .contains("Für diesen Dateityp gibt es keine Vorschau."),
         "a new source body must use its creating panel's localization, not the registry's first view"
     );
     inner.update(&inner_root, &english).unwrap();
@@ -1054,7 +1054,7 @@ pub async fn artifacts_panel_dom_instances_keep_their_own_operands(import: js_sy
         generic
             .text_content()
             .unwrap()
-            .contains("Preview not available for this file type."),
+            .contains("No preview for this file type."),
         "source property updates must use the latest bound page operands"
     );
     select(&inner_root.node, ".maestro-artifact-tabs button")

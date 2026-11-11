@@ -23,7 +23,15 @@ its supplied message to standard error, or `Request error` and `Request aborted`
 when the message is empty, and returns 1. Any other ending writes each text block
 with one added newline and omits thinking and tool-call blocks; an empty history
 or a final entry that is not an assistant response writes nothing. Blocks are
-written as they are, without trimming, cleaning or coalescing.
+written without trimming or coalescing.
+
+A model can write terminal controls: a clipboard write, a window title, a screen
+clear or a link whose label names a different site than its target. When standard
+output is a terminal, text mode removes them with the same
+[shared cleaner](text.md) the interactive views use, and the words around them
+stay. When standard output is a pipe or a file, the text stays byte-exact, so
+scripts get what the model wrote. JSON mode needs no cleaning: its records are
+serialized JSON, where control characters are escaped.
 
 JSON mode writes the session's existing header once before the extensions are
 bound, then one compact record for every subscribed session event through the

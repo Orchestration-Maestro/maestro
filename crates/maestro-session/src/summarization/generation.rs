@@ -206,7 +206,7 @@ pub fn compact(
         ));
         if id.is_empty() {
             return Err(DiagnosticErrorInfo::error(
-                "First kept entry has no UUID - session may need migration",
+                "The first retained entry has no UUID; the session file may need migrating",
             ));
         }
         Ok(super::CompactionResult {

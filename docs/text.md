@@ -12,7 +12,9 @@ stable sorting and comparator lifetime.
   escape expression; `terminal::sanitize_binary_output` drops C0 controls except TAB,
   LF and CR, plus U+FFF9 to U+FFFB. Tools and opt-in Markdown content emission share
   these functions. `terminal::ansi_regex` exposes the same compiled grammar for
-  streamed tool-output boundary detection.
+  streamed tool-output boundary detection. `terminal::clean_controls` applies both in
+  order to text a model wrote; Markdown content emission and text print mode on a
+  terminal call it.
 - **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
   and holds an incomplete suffix until `push` or `finish`. It retains BOMs;
   terminal input, tool output and message framing keep their own BOM policy.

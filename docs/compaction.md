@@ -137,7 +137,7 @@ or `Turn prefix summarization failed: ...`, with `Unknown error` when the messag
 is absent or empty. Any other outcome, abort included, returns the available text
 blocks joined with newlines. A failed split observation does not cancel a sibling
 the producer owns. After generation, an empty retained ID fails with
-`First kept entry has no UUID - session may need migration`. Application compaction
+`The first retained entry has no UUID; the session file may need migrating`. Application compaction
 events, persistence and retry policy are separate operations.
 
 This controlled adapter sends no network request:

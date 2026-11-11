@@ -250,7 +250,7 @@ path exactly as supplied. An omitted directory is the default for `target_cwd`
 beneath `agent_dir`. Once the source is loaded and converted, an empty
 `session_dir` path fails with a not-found error before the destination is created.
 A source that is empty or has no valid header fails with
-`Cannot fork: source session file is empty or invalid: {source}` before anything is
+`Cannot fork: the source session file has no valid entries: {source}` before anything is
 created. A null source record and later write errors leave the records already
 written.
 

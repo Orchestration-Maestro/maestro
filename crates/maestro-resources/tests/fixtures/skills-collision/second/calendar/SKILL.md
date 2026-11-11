@@ -1,8 +1,8 @@
 ---
 name: calendar
-description: Second calendar skill.
+description: Calendar entry that loads second.
 ---
 
 # Calendar (Second)
 
-This is the second calendar skill.
+This copy is discovered second.

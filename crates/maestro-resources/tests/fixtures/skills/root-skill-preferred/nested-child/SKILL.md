@@ -1,3 +1,3 @@
 ---
-description: Nested skill should be ignored.
+description: Child entry that the root entry shadows.
 ---

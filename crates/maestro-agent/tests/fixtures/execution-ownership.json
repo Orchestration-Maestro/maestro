@@ -5,7 +5,7 @@
       "streaming": true,
       "effect": false
     },
-    "busy": "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
+    "busy": "The agent is already running a prompt. Queue messages with steer() or followUp(), or wait for it to finish.",
     "aborted": true,
     "after": {
       "streaming": false,

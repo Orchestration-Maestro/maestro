@@ -261,7 +261,7 @@ async fn maestro_unqueued_assistant_tail_reports_error_case() {
     let error = agent.r#continue().await.unwrap_err();
     assert_eq!(
         error.message,
-        "Cannot continue from message role: assistant"
+        "Nothing to continue from: the last message has the assistant role"
     );
     assert_eq!(faux.state.call_count(), 0);
 }

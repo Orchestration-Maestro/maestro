@@ -65,7 +65,7 @@ first terminal event); received content and usage are kept.
 | --- | --- |
 | Status outside 200–299 | `Proxy error: <status> <status text>`, or `Proxy error: <error>` when the JSON body holds a nonempty string `error` |
 | Abort | `Request aborted by user` |
-| Content update for the wrong block kind | `Received text_delta for non-text content`, `text_end`, `thinking_delta`, `thinking_end` (`non-thinking`) or `toolcall_delta` (`non-toolCall`) |
+| Content update for the wrong block kind | `<event> targets a block that is not <kind>`, for `text_delta` and `text_end` (kind `text`), `thinking_delta` and `thinking_end` (kind `thinking`), and `toolcall_delta` (kind `toolCall`) |
 | Body ends before `done` or `error` | `Proxy stream ended before a terminal event` |
 | Anything else | the transport, JSON or decoding diagnostic |
 
