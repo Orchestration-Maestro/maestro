@@ -1546,9 +1546,9 @@ The chat crate's isolated test children get stub `fd` and `rg` programs in their
 binary directory. A child that starts the interactive mode then neither downloads a
 search program nor runs one found on `PATH`. A test that supplies the child's `PATH`
 skips the stubs and installs whatever programs it needs. Every child's `PATH` also
-carries a guard `fd` and `rg` ahead of its first directory outside the child's root.
-If the child runs one, its test fails and names the program, whether or not the
-machine has `fd` or `rg` installed.
+carries a guard `fd` and `rg` ahead of its first directory outside the child's root,
+unless its `PATH` names no such directory. If the child runs one, its test fails and
+names the program, whether or not the machine has `fd` or `rg` installed.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,

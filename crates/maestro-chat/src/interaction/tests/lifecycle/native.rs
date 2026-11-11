@@ -179,7 +179,8 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     let directory = scratch.path();
     let gate = install_tracked(directory);
     super::super::controlled_search_programs(directory);
-    let guard = super::super::SearchGuard::new(directory, &std::env::var_os("PATH").unwrap());
+    let guard =
+        super::super::SearchGuard::new(directory, &std::env::var_os("PATH").unwrap_or_default());
     let mut child = TestProcess::current(test)
         .unwrap()
         .env_clear()
