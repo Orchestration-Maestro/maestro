@@ -1,7 +1,9 @@
 //! Test identity resolution and the eligibility check.
 
-use std::path::Path;
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 
 use crate::TestProcessError;
 
@@ -41,13 +43,14 @@ pub(crate) fn require_eligible(
     test: &str,
     ignored: bool,
 ) -> Result<(), TestProcessError> {
-    if !lists(executable, test, false)? {
+    let listing = listing(executable, test)?;
+    if !listing.tests.contains(test) {
         return Err(TestProcessError::new(
             test,
             "the harness lists no test with this exact identity",
         ));
     }
-    match (lists(executable, test, true)?, ignored) {
+    match (listing.ignored.contains(test), ignored) {
         (true, false) => Err(TestProcessError::new(
             test,
             "the selected test is ignored and was not explicitly selected",
@@ -60,10 +63,52 @@ pub(crate) fn require_eligible(
     }
 }
 
-/// Ask the harness whether it lists the exact identity, among ignored tests only if asked.
-fn lists(executable: &Path, test: &str, ignored: bool) -> Result<bool, TestProcessError> {
+/// The identities one executable's harness lists.
+struct Listing {
+    /// Every identity the harness lists.
+    tests: BTreeSet<String>,
+    /// The listed identities the harness runs only when ignored runs are asked for.
+    ignored: BTreeSet<String>,
+}
+
+/// The listing of `executable`, read on the first launch that needs it.
+///
+/// One launch asks the harness twice before it starts its child, and a test may start
+/// hundreds of children of one executable. The harness of a running executable cannot
+/// change its listing, so one read answers every later launch from this process.
+static LISTINGS: LazyLock<Mutex<BTreeMap<PathBuf, Arc<Listing>>>> =
+    LazyLock::new(|| Mutex::new(BTreeMap::new()));
+
+/// The listing of `executable`, read now or reused from the first launch that needed it.
+fn listing(executable: &Path, test: &str) -> Result<Arc<Listing>, TestProcessError> {
+    if let Some(listing) = cached_listings().get(executable).cloned() {
+        return Ok(listing);
+    }
+    let listing = Arc::new(Listing {
+        tests: lists(executable, test, false)?,
+        ignored: lists(executable, test, true)?,
+    });
+    let mut cached = cached_listings();
+    let _previous = cached.insert(executable.to_owned(), Arc::clone(&listing));
+    Ok(listing)
+}
+
+/// The listings this process has read, waiting while another test's launch holds them.
+fn cached_listings() -> MutexGuard<'static, BTreeMap<PathBuf, Arc<Listing>>> {
+    // A launch that panicked while holding the listings says nothing about the harness.
+    LISTINGS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// The identities the harness of `executable` lists, among ignored tests only if asked.
+fn lists(
+    executable: &Path,
+    test: &str,
+    ignored: bool,
+) -> Result<BTreeSet<String>, TestProcessError> {
     let mut command = Command::new(executable);
-    command.args(["--list", "--format", "terse", "--exact", test]);
+    command.args(["--list", "--format", "terse"]);
     if ignored {
         command.arg("--ignored");
     }
@@ -74,10 +119,10 @@ fn lists(executable: &Path, test: &str, ignored: bool) -> Result<bool, TestProce
         return Err(TestProcessError::new(test, "the test listing failed")
             .with_streams(&output.stdout, &output.stderr));
     }
-    let wanted = format!("{test}: test");
     Ok(String::from_utf8_lossy(&output.stdout)
         .lines()
-        .any(|line| line == wanted))
+        .filter_map(|line| line.strip_suffix(": test").map(str::to_owned))
+        .collect())
 }
 
 /// Whether a full test identity matches a full name or its leaf at a module boundary.
@@ -109,5 +154,21 @@ mod tests {
             error.to_string().contains("the test listing failed"),
             "{error}"
         );
+    }
+
+    /// One executable answers the harness listing once, so every later launch reuses it.
+    ///
+    /// The witness removes the executable between two launches: a launch that asked the
+    /// harness again would fail on the missing program, and the reused answer still stands.
+    #[cfg(unix)]
+    #[test]
+    fn the_harness_is_listed_once_per_executable() {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let alias = scratch.path().join("test-binary");
+        std::os::unix::fs::symlink(std::env::current_exe().unwrap(), &alias).unwrap();
+        let test = super::test_name(the_harness_is_listed_once_per_executable).unwrap();
+        require_eligible(&alias, &test, false).unwrap();
+        std::fs::remove_file(&alias).unwrap();
+        require_eligible(&alias, &test, false).unwrap();
     }
 }

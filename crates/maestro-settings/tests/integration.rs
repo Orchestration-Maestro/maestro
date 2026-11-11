@@ -13,3 +13,5 @@ mod settings_paths;
 mod settings_base_layer;
 
 mod settings_decisions;
+
+mod settings_adapters;
