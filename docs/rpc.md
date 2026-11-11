@@ -62,27 +62,12 @@ paths are relative to the child's working directory where applicable. See
 RPC does not sandbox tools or shell commands. Run the child with the filesystem
 permissions you intend to grant it; do not pass untrusted shell text to `bash`.
 
-The [Python subprocess example](../examples/sdk/rpc.py) uses only Python's standard
-library. From the repository root, inspect a session without making a model call:
-
-```sh
-python3 examples/sdk/rpc.py -- maestro --mode rpc --no-session --no-tools --offline --no-extensions --no-skills --no-prompt-templates --no-context-files
-```
-
-It sends `get_state`, prints incoming records, cancels extension dialogs and closes
-stdin after the correlated response. To run a prompt, add `--prompt TEXT` before
-`--`; that operation can incur provider charges. Select your configured provider
-and model in the child arguments. The example waits for both prompt acceptance
-and `agent_end`, not just the successful response. It leaves stderr separate and
-checks the child's exit status. It writes UTF-8 with LF line ends on every
-host, whatever the console code page, so a reader parses the same records
-everywhere. Use plain prompt text: an extension slash
-command handled without a run does not produce `agent_end`. The example does
-not track automatic retries or overflow recovery after the first run. Use the
-[typed Rust client](client.md) for reusable subprocess operations. The
-[SDK example index](../examples/sdk/README.md#check-the-example) gives the command
-that runs the example's checks; those checks are Rust tests whose peers are native
-Rust programs, so only the example itself runs under Python 3.
+Use the [typed Rust client](client.md) for reusable subprocess operations. The
+[SDK examples](../examples/sdk/README.md#check-the-example) hold two terminal clients
+of this protocol: a streaming client with extension dialogs, and an interactive
+demo built on the Rust client. They live in maestro-packages, which `just setup`
+fetches into a source checkout, and their checks are Rust tests whose peers are
+native Rust programs.
 
 ## Framing
 

@@ -55,7 +55,8 @@ A box's padding reduces the width its children receive, potentially to zero.
 The [text reference](../terminal/text.md) defines grapheme and escape handling.
 Guest text helpers take the extension API and return fallible host answers; see
 [`custom_footer.rs`](../../examples/extensions/custom_footer.rs) for measuring
-and clipping a styled row. The frame writer rejects oversized ordinary rows
+and clipping a styled row. The extension examples live in maestro-packages, which
+`just setup` fetches into a source checkout. The frame writer rejects oversized ordinary rows
 rather than fixing them. Test at zero width and at widths smaller than a border,
 with combining characters, wide characters and styled text.
 
@@ -259,16 +260,13 @@ tracked in [the modal editor example issue](https://github.com/Orchestration-Mae
 Run these commands from a Maestro checkout with its pinned toolchain and tools
 installed. They execute existing tests, not an installed extension. The guest
 suite covers both in-process and built-component adapters, including the
-recipes and editor/focus/overlay contracts. The native command covers question
-extraction with controlled provider and terminal inputs. No live keys or paid
-calls are required.
+recipes and editor/focus/overlay contracts. No live keys or paid calls are
+required. The tests of the shipped example extensions run in maestro-packages.
 
 ```sh
 just prepare-tests
 cargo nextest run --locked \
   -p maestro-extensions-wasm --lib
-cargo nextest run --locked \
-  -p maestro --test integration -- qna_
 cargo test --locked \
   -p maestro-tui --doc
 ```

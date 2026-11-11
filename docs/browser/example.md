@@ -1,20 +1,14 @@
 # Browser chat example
 
 The chat example is a complete browser-local chat built only from the published
-web components. Its source is the `chat` example of `maestro-web`:
-[`chat.rs`](../../crates/maestro-web/examples/chat.rs) starts it,
-[`app.rs`](../../crates/maestro-web/examples/chat/app.rs) wires it,
-[`title.rs`](../../crates/maestro-web/examples/chat/title.rs) edits titles and
-[`custom_messages.rs`](../../crates/maestro-web/examples/chat/custom_messages.rs)
-adds its own message type.
-
-```sh
-just browser-chat-example --port 9000
-```
-
-The recipe builds the example for `wasm32-unknown-unknown`, binds it with
-`wasm-bindgen` into `target/maestro-browser/chat` next to its page, and serves that
-directory on loopback with `miniserve`. Extra arguments go to `miniserve`.
+web components. It lives in maestro-packages, which `just setup` fetches into a
+source checkout as `examples/web`:
+[`chat.rs`](../../examples/web/chat.rs) starts it,
+[`app.rs`](../../examples/web/chat/app.rs) wires it,
+[`title.rs`](../../examples/web/chat/title.rs) edits titles and
+[`custom_messages.rs`](../../examples/web/chat/custom_messages.rs)
+adds its own message type. Build, serve and test it from a maestro-packages
+checkout; its [README](../../examples/web/README.md) gives the commands.
 
 ## What it shows
 
@@ -57,7 +51,6 @@ instructions, and a stored summary sums the assistant usage.
 
 ## Tests
 
-The browser exports in
-[`chat_example_browser.rs`](../../crates/maestro-web/tests/chat_example_browser.rs)
-compile the example's own modules into the browser test program. They drive the
-example through its controls, with a recorded fetch and real browser storage.
+The browser tests in maestro-packages compile the example's own modules into a
+browser test program. They drive the example through its controls, with a recorded
+fetch and real browser storage.

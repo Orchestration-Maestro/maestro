@@ -366,10 +366,9 @@ For a child-process host, use the [RPC client](../client.md) instead of assembli
 an in-process frontend.
 
 The [SDK example index](../../examples/sdk/README.md) records what ships. The
-thirteen standalone embedding examples are owned by
-[the executable SDK examples issue](https://github.com/Orchestration-Maestro/maestro/issues/227);
-they are not runnable files in that folder yet. The controlled program in this
-guide runs as an application doctest.
+embedding examples live in maestro-packages, which `just setup` fetches into a
+source checkout. The controlled program in this guide runs as an application
+doctest.
 
 ## Creating a session
 
