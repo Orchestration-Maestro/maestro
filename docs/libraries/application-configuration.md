@@ -1,6 +1,6 @@
 # Application configuration libraries
 
-The native self-update selector uses Unix-only `rustix =1.1.5`, with default
+The native self-update selector uses Unix-only `rustix =1.1.6`, with default
 features disabled and `std,fs` enabled, for `fs::access` with `WRITE_OK`.
 It checks package and parent access without creating or truncating a probe file.
 The dependency is already locked in the workspace and is used under MIT or

@@ -24,7 +24,7 @@ Apache-2.0, plus Unicode-3.0 where applicable. Agent/model/request dependencies
 retain their existing dependency closure.
 
 Unix publication tests in `maestro-lock` use the already locked
-`rustix =1.1.5`, defaults off, with `std`, `process` and `fs` (Apache-2.0 OR MIT).
+`rustix =1.1.6`, defaults off, with `std`, `process` and `fs` (Apache-2.0 OR MIT).
 Checked Rust children set their own umask through its safe process API before
 observing native creation permissions. No shell child or new package version is
 needed. These features already exist in the application dependency closure.
