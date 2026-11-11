@@ -77,7 +77,7 @@ fn leaf(kind: &Kind) -> String {
 
 /// One line per node, indented by depth, naming kind, extent, authored spelling and leaves,
 /// followed by one line per retained inline scope.
-fn recorded(document: &Document) -> String {
+pub(super) fn recorded(document: &Document) -> String {
     let mut lines = Vec::new();
     let mut pending: Vec<(usize, &Node)> =
         document.nodes.iter().rev().map(|node| (0, node)).collect();
@@ -383,6 +383,16 @@ fn deep_item_framing_stays_proportional_to_the_source() {
     assert!(
         stays_proportional(measured),
         "item line framing bytes per authored byte {measured:?}"
+    );
+}
+
+#[test]
+fn deep_item_line_admissions_stay_linear_in_the_line_count() {
+    let measured =
+        [75, 300].map(|levels| (item_text_charge(levels, |work| work.list_lines).0, levels));
+    assert!(
+        stays_proportional(measured),
+        "item line admissions per source line {measured:?}"
     );
 }
 
