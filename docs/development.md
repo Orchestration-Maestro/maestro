@@ -13,9 +13,13 @@ counter checks. When using another toolchain, install it with
 git clone https://github.com/Orchestration-Maestro/maestro.git
 cd maestro
 mise install
-mise exec -- just setup
-mise exec -- just build
+just setup
+just build
 ```
+
+Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
+and the other pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml`
+through rustup, not mise.
 
 `build`, `test`, `check` and `ci` first build the sandbox runtime script, which needs
 Emscripten SDK 6.0.10 and the wasm-bindgen CLI 0.2.129 on `PATH`; install them as
@@ -124,7 +128,6 @@ release-mode author test. With the build environment above, run the same consume
 commands from the checkout using the pinned toolchain and checked-in lock:
 
 ```powershell
-$env:CARGO_BUILD_JOBS = '3'
 just prepare-tests
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
@@ -150,7 +153,7 @@ mapfile -t wasm_packages < <(
 )
 wasm_args=()
 for package in "${wasm_packages[@]}"; do wasm_args+=(-p "$package"); done
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo build \
+cargo build \
   --locked --target wasm32-unknown-unknown "${wasm_args[@]}" \
   --tests --examples --keep-going --message-format=json
 ```
@@ -160,7 +163,7 @@ library targets only. Lint one crate's test and example targets directly where
 they compile for the browser target:
 
 ```sh
-~/.local/bin/capped cargo clippy --locked --target wasm32-unknown-unknown \
+cargo clippy --locked --target wasm32-unknown-unknown \
   --all-targets -p maestro-models -- -D warnings
 ```
 
@@ -265,7 +268,7 @@ Lint the browser library, examples and complete integration target with the
 pinned toolchain:
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo clippy \
+cargo clippy \
   -p maestro-web --lib --examples --test integration --profile test \
   --target wasm32-unknown-unknown --locked -- \
   -D warnings -D clippy::missing_docs_in_private_items
@@ -276,7 +279,7 @@ Run the retained sandbox assertions with supplied browser tools:
 ```sh
 export CHROMIUM_PATH=/absolute/path/to/chrome
 # Put wasm-bindgen CLI 0.2.129 on PATH.
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped just browser-test
+just browser-test
 ```
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
@@ -466,10 +469,10 @@ name, with the same supplied executable; the `browser-exports` setup runs first
 whenever an export or the report is selected:
 
 ```sh
-~/.local/bin/capped just prepare-tests
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+just prepare-tests
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(/^browser::/)'
-~/.local/bin/capped cargo nextest run --locked -p maestro-test-browser \
+cargo nextest run --locked -p maestro-test-browser \
   --run-ignored only -E 'test(=browser::exports::loading::<export>)'
 ```
 
@@ -667,8 +670,8 @@ fallback fonts. See [browser libraries](libraries/browser-frontend.md).
 Regenerate after changing a dependency, its features or `Cargo.lock`:
 
 ```sh
-mise exec -- cargo hakari generate
-mise exec -- cargo hakari manage-deps
+cargo hakari generate
+cargo hakari manage-deps
 ```
 
 After adding a member, first add `maestro-dependencies.workspace = true` to its
@@ -681,7 +684,7 @@ generated section is current or that every member declares the dependency; confi
 ## Extension components
 
 ```sh
-mise exec -- just extension-author-component
+just extension-author-component
 ```
 
 Builds the example extension as a `wasm32-wasip2` component and adds that target
@@ -690,9 +693,9 @@ with `rustup` when it is missing. See [writing an extension](extensions/guest.md
 ## Source invocation
 
 ```sh
-mise exec -- just --justfile /path/to/maestro/justfile run-source --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source --no-env --help
-mise exec -- just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
+just --justfile /path/to/maestro/justfile run-source --help
+just --justfile /path/to/maestro/justfile run-source --no-env --help
+just --justfile /path/to/maestro/justfile run-source-windows --NO-ENV --help
 ```
 
 The caller's working directory and literal arguments reach the application.
@@ -706,8 +709,8 @@ The separate `maestro-model-account` binary runs the standalone account command.
 ## Compile watches
 
 ```sh
-mise exec -- just dev
-mise exec -- just models-dev-compile
+just dev
+just models-dev-compile
 ```
 
 The pinned external watcher compiles initially and queues a rebuild when input
@@ -815,7 +818,7 @@ changing shipped files. Run this from the checkout root:
 
 ```sh
 scratch=$(mktemp -d)
-mise exec -- cargo run --locked -p maestro-theme --example brand_themes -- \
+cargo run --locked -p maestro-theme --example brand_themes -- \
   assets/brand/packs/signal.json "$scratch"
 test -s "$scratch/dark.json" && test -s "$scratch/light.json"
 ```
@@ -898,9 +901,9 @@ behavior; development commands do not create a replacement logger.
 ## Tests
 
 ```sh
-mise exec -- just test
-mise exec -- just test-offline
-mise exec -- just test -p maestro-tooling maestro_source_without_switch_preserves_environment
+just test
+just test-offline
+just test -p maestro-tooling maestro_source_without_switch_preserves_environment
 ```
 
 The broad test recipes run cargo-nextest, then Cargo doctests only after success.
@@ -1306,9 +1309,9 @@ TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maest
 The development tool's `nextest-setup` command runs every nextest setup entry:
 `author-component`, `fixture-sources`, `browser-author` and
 `normalize-component-cache`. `.config/nextest.toml` names only these commands, and the
-conventions check rejects a shell script under `.config/`. The `author-component` entry
-runs the tool from `target/test-setup/development`: a shard receives it in the downloaded
-bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
+conventions check rejects a shell script anywhere under `.config/`. The
+`author-component` entry runs the tool from `target/test-setup/development`: a shard
+receives it in the downloaded bundle, and `just prepare-tests` installs it. `just test` and `just check` run that recipe first.
 When you start nextest by hand on a package the entry serves and the tool is missing,
 nextest prints the missing path `target/test-setup/development`; run `just prepare-tests`
 once and start nextest again. Run it again after a change to `maestro-tooling`, as nextest

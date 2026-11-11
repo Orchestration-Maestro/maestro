@@ -58,7 +58,7 @@ pub trait Terminal {
     /// Height in rows.
     fn rows(&self) -> usize;
 
-    /// Whether the Kitty keyboard protocol is active.
+    /// Whether the terminal runs the Kitty keyboard protocol.
     fn kitty_protocol_active(&self) -> bool;
 
     /// Moves the cursor up for negative and down for positive `lines`.

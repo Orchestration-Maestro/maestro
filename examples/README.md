@@ -27,10 +27,10 @@ shipped companion before running the client:
 
 ```sh
 rustup target add wasm32-wasip2
-CARGO_TARGET_DIR=target CARGO_BUILD_JOBS=3 cargo build --locked -p maestro
-CARGO_TARGET_DIR=target CARGO_BUILD_JOBS=3 cargo build --locked \
+CARGO_TARGET_DIR=target cargo build --locked -p maestro
+CARGO_TARGET_DIR=target cargo build --locked \
   -p maestro-extensions-wasm --example rpc_demo --target wasm32-wasip2 --release
-CARGO_TARGET_DIR=target CARGO_BUILD_JOBS=3 cargo run --locked \
+CARGO_TARGET_DIR=target cargo run --locked \
   -p maestro-chat --example rpc_extension_ui
 ```
 
@@ -62,10 +62,10 @@ shipped `rpc.py` example under Python 3; the component case also needs the targe
 installed above.
 
 ```sh
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- just prepare-tests
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+just prepare-tests
+cargo nextest run --locked \
   -p maestro-chat --example rpc_extension_ui
-CARGO_BUILD_JOBS=3 ~/.local/bin/capped mise exec -- cargo nextest run --locked \
+cargo nextest run --locked \
   -p maestro --test integration -- rpc_demo_companion_
 ```
 
