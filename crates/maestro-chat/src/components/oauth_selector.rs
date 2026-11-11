@@ -260,7 +260,7 @@ impl OAuthSelectorComponent {
             let message = if self.selection.providers.is_empty() {
                 match self.options.mode {
                     OAuthSelectorMode::Login => "No providers available",
-                    OAuthSelectorMode::Logout => "No providers logged in. Use /login first.",
+                    OAuthSelectorMode::Logout => "No provider holds a login. Run /login first.",
                 }
             } else {
                 "No matching providers"

@@ -193,7 +193,7 @@
           }
         ],
         "expected": {
-          "error": "Could not find the exact text in missing.txt. The old text must match exactly including all whitespace and newlines."
+          "error": "No exact match for the text in missing.txt. The old text must match character for character, whitespace and newlines included."
         }
       },
       {
@@ -219,7 +219,7 @@
           }
         ],
         "expected": {
-          "error": "Found 2 occurrences of the text in duplicate.txt. The text must be unique. Please provide more context to make it unique."
+          "error": "Found 2 occurrences of the text in duplicate.txt. The text must occur once. Add surrounding context so only one place matches."
         }
       },
       {
@@ -236,7 +236,7 @@
           }
         ],
         "expected": {
-          "error": "edits[0] and edits[1] overlap in overlap.txt. Merge them into one edit or target disjoint regions."
+          "error": "edits[0] and edits[1] overlap in overlap.txt. Combine them into one edit, or aim each at a separate region."
         }
       },
       {
@@ -249,7 +249,7 @@
           }
         ],
         "expected": {
-          "error": "No changes made to same.txt. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected."
+          "error": "No changes made to same.txt. The replacement left the content identical. Check for special characters, or for text that is not present as expected."
         }
       },
       {
@@ -257,7 +257,7 @@
         "content": "abc\n",
         "edits": [],
         "expected": {
-          "error": "No changes made to empty-list.txt. The replacements produced identical content."
+          "error": "No changes made to empty-list.txt. The replacements left the content identical."
         }
       },
       {
@@ -291,7 +291,7 @@
           }
         ],
         "expected": {
-          "error": "Could not find edits[0] in multi-missing.txt. The oldText must match exactly including all whitespace and newlines."
+          "error": "No exact match for edits[0] in multi-missing.txt. That oldText must match character for character, whitespace and newlines included."
         }
       },
       {
@@ -308,7 +308,7 @@
           }
         ],
         "expected": {
-          "error": "Found 2 occurrences of edits[0] in multi-duplicate.txt. Each oldText must be unique. Please provide more context to make it unique."
+          "error": "Found 2 occurrences of edits[0] in multi-duplicate.txt. Each oldText must occur once. Add surrounding context so only one place matches."
         }
       },
       {
@@ -325,7 +325,7 @@
           }
         ],
         "expected": {
-          "error": "No changes made to multi-same.txt. The replacements produced identical content."
+          "error": "No changes made to multi-same.txt. The replacements left the content identical."
         }
       }
     ],
@@ -501,7 +501,7 @@
           }
         ],
         "expected": {
-          "error": "Found 2 occurrences of the text in correct-overlap.txt. The text must be unique. Please provide more context to make it unique."
+          "error": "Found 2 occurrences of the text in correct-overlap.txt. The text must occur once. Add surrounding context so only one place matches."
         }
       },
       {
@@ -514,7 +514,7 @@
           }
         ],
         "expected": {
-          "error": "Could not find the exact text in correct-empty.txt. The old text must match exactly including all whitespace and newlines."
+          "error": "No exact match for the text in correct-empty.txt. The old text must match character for character, whitespace and newlines included."
         }
       },
       {

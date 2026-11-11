@@ -800,7 +800,7 @@ fn concurrent_installs_stage_in_separate_directories() {
         );
         assert_eq!(results, (None, None));
         let prefix = format!(
-            "Failed to download fd: Binary not found in archive: expected fd under {bin}{}extract_tmp_fd_{}_",
+            "Failed to download fd: Archive does not hold fd under {bin}{}extract_tmp_fd_{}_",
             std::path::MAIN_SEPARATOR,
             std::process::id()
         );

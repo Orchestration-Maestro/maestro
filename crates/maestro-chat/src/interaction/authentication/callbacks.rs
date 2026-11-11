@@ -152,7 +152,9 @@ impl LoginPresentation {
         if self.uses_callback_server {
             let entered = self
                 .dialog
-                .show_manual_input("Paste redirect URL below, or complete login in browser:")
+                .show_manual_input(
+                    "Paste the redirect URL below, or finish the sign-in in your browser:",
+                )
                 .map_err(login_presentation_error)?;
             let (manual, signal) = (Rc::clone(&self.manual), self.dialog.signal().clone());
             self.spawn(publish_manual_input(entered, signal, manual));

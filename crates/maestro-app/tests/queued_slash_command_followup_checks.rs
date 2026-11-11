@@ -48,7 +48,7 @@ async fn held_session(
                 ..Scripted::default()
             },
             Scripted::text("first turn complete"),
-            Scripted::text("queued follow-up handled by model"),
+            Scripted::text("follow-up from the queue answered by the model"),
         ]),
         ..HarnessOptions::default()
     })

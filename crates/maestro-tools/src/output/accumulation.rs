@@ -106,7 +106,7 @@ impl OutputAccumulator {
     pub fn append(&mut self, data: &[u8]) -> io::Result<()> {
         if self.finished {
             return Err(io::Error::other(
-                "Cannot append to a finished output accumulator",
+                "The output accumulator is finished and accepts no more data",
             ));
         }
         if self.path.is_some() && self.writer.is_none() {

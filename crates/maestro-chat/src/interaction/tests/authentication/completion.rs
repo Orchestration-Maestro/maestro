@@ -141,7 +141,7 @@ fn authentication_completion_reports_missing_provider_default() {
                         .unwrap();
                     assert!(notes(&world, &saved(label)));
                     let error = format!(
-                        "Error: {label}, but no default model is configured for provider \"custom\". Use /model to select a model."
+                        "Error: {label}, but provider \"custom\" has no default model. Run /model to select one."
                     );
                     assert!(notes(&world, &error), "{models:?}");
                 }
@@ -164,7 +164,7 @@ fn authentication_completion_reports_no_available_provider_models() {
                     .await
                     .unwrap();
                 let error = format!(
-                    "Error: {label}, but no models are available for that provider. Use /model to select a model."
+                    "Error: {label}, but that provider offers no models. Run /model to select one."
                 );
                 assert!(notes(&world, &error));
                 assert_eq!(
@@ -191,7 +191,7 @@ fn authentication_completion_reports_unavailable_default_model() {
                     .await
                     .unwrap();
                 let error = format!(
-                    "Error: {label}, but its default model \"{default}\" is not available. Use /model to select a model."
+                    "Error: {label}, but its default model \"{default}\" is missing from the catalog. Run /model to select one."
                 );
                 assert!(notes(&world, &error));
                 assert_eq!(current(&world), before, "no other model is chosen");
@@ -219,8 +219,8 @@ fn authentication_completion_reports_default_selection_failure() {
                     .await
                     .unwrap();
                 let reported = format!(
-                    "Error: {label}, but selecting its default model failed: \
-                     {cause}. Use /model to select a model."
+                    "Error: {label}, but its default model could not be selected: \
+                     {cause}. Run /model to select one."
                 );
                 assert!(notes(&world, &reported), "the setter's failure is reported");
                 assert!(notes(&world, &saved(label)));
@@ -426,7 +426,7 @@ fn authentication_completion_delegates_subscription_warning_on_the_reached_branc
                 .await
                 .unwrap();
             settle(&world);
-            assert!(notes(&world, "but no default model is configured"));
+            assert!(notes(&world, "has no default model"));
             assert!(
                 !notes(&world, WARNING),
                 "a selection failure shows no notice"

@@ -175,7 +175,11 @@ async fn idle_user_message_case(name: &str, content: UserContent) {
 fn user_message_always_starts_a_turn() {
     on_task_set(|_| async {
         let content = UserContent::Text("hello".into());
-        idle_user_message_case("a user message always triggers a turn", content).await;
+        idle_user_message_case(
+            "an idle session always starts a turn for a user message",
+            content,
+        )
+        .await;
     });
 }
 

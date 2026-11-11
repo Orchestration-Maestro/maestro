@@ -121,7 +121,7 @@ fn select_windows(
         .collect::<Vec<_>>()
         .join("\n");
     Err(io::Error::other(format!(
-        "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n{searched}"
+        "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n{searched}"
     )))
 }
 

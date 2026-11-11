@@ -137,8 +137,8 @@ impl AgentSession<Local> {
         self.extend_resources_from_extensions(reason).await
     }
 
-    /// Hands the skill, prompt and theme paths the extensions discover to the resource
-    /// loader and rebuilds the base system prompt.
+    /// Passes the skill, prompt and theme paths that extensions discover on to the
+    /// resource loader, then rebuilds the base system prompt.
     async fn extend_resources_from_extensions(
         &self,
         reason: ResourcesDiscoverReason,

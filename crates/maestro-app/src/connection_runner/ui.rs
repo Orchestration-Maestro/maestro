@@ -279,7 +279,7 @@ impl ExtensionUIContextPort for RpcUi {
     fn set_theme(&self, _theme: ThemeSelection) -> Result<ThemeSetResult, EventError> {
         Ok(ThemeSetResult {
             success: false,
-            error: Some("Theme switching not supported in RPC mode".into()),
+            error: Some("RPC mode does not support switching themes".into()),
         })
     }
 }

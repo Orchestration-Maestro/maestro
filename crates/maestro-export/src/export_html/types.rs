@@ -123,9 +123,11 @@ pub enum ExportError {
 impl fmt::Display for ExportError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InMemorySession => f.write_str("Cannot export in-memory session to HTML"),
+            Self::InMemorySession => {
+                f.write_str("HTML export needs a saved session; this one lives only in memory")
+            }
             Self::UnpublishedSession => {
-                f.write_str("Nothing to export yet - start a conversation first")
+                f.write_str("The session is empty; send a message before exporting")
             }
             Self::MissingFile(path) => write!(f, "File not found: {path}"),
             Self::Io(error) => error.fmt(f),

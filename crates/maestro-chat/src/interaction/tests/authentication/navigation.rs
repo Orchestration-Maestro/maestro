@@ -293,11 +293,11 @@ fn bedrock_setup_keeps_guidance_and_restores_editor_on_close() {
             for (color, text) in [
                 (
                     ThemeColor::Text,
-                    "Amazon Bedrock uses AWS credentials instead of a single API key.",
+                    "Amazon Bedrock reads AWS credentials, not a single API key.",
                 ),
                 (
                     ThemeColor::Text,
-                    "Configure an AWS profile, IAM keys, bearer token, or role-based credentials.",
+                    "Set an AWS profile, IAM keys, a bearer token, or credentials from a role.",
                 ),
                 (ThemeColor::Muted, "See:"),
                 (ThemeColor::Accent, &format!("  {}", guide.display())),
@@ -408,7 +408,7 @@ fn api_key_save_restores_editor_before_catalog_completion() {
             ));
             assert!(notes(
                 &world,
-                "Error: Saved API key for Custom, but no default model is configured for provider \"custom-key\". Use /model to select a model."
+                "Error: Saved API key for Custom, but provider \"custom-key\" has no default model. Run /model to select one."
             ));
 
             let world = started_with(directory, None).await;

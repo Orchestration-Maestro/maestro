@@ -77,7 +77,7 @@ impl InteractiveMode {
         match result {
             Ok(result) => Ok(result),
             Err(error) => {
-                self.handle_fatal_runtime_error("Failed to create session", error.as_ref())
+                self.handle_fatal_runtime_error("Cannot create the session", error.as_ref())
             }
         }
     }

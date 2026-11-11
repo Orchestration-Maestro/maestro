@@ -14,7 +14,7 @@
         ],
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -36,7 +36,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -198,7 +198,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -217,7 +217,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -278,7 +278,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -297,7 +297,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -330,7 +330,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -349,7 +349,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -368,7 +368,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -387,7 +387,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -406,7 +406,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -426,7 +426,7 @@
         ],
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -460,7 +460,7 @@
         ],
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -503,7 +503,7 @@
       "events": [
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],
@@ -2156,7 +2156,7 @@
         ],
         [
           "warning",
-          "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
+          "Anthropic subscription auth is active. Usage from a third-party harness draws on extra usage, billed per token rather than against your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."
         ]
       ],
       "scope": [],

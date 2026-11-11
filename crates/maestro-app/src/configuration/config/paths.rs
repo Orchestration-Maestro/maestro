@@ -107,7 +107,7 @@ pub fn get_export_template_dir(
         exists,
     )
 }
-/// Get the built-in interactive assets directory.
+/// Returns the directory of the interactive assets bundled with the build.
 pub fn get_interactive_assets_dir(
     package_dir: &str,
     layout: PackageLayout,
