@@ -308,7 +308,10 @@ require network access on a cold cache. Rust repository tooling prepares the
 scratch manifest and compares its resolved lock with the checkout lock. It resolves
 workspace dependency aliases, combines
 normal, WebAssembly and development features, anchors dependency and patch paths
-to the checkout, and retains the library source and development profile. Native-only
+to the checkout, and retains the library source. It copies the checkout's profile tables,
+leaving out package overrides for crates the library never builds, so the library's
+registry dependencies compile with the same settings as the registered integration target
+and the second build reuses them. Native-only
 dependencies stay outside the browser library. Preparation copies `Cargo.lock`
 and `rust-toolchain.toml` and links the authored test directory.
 
@@ -350,9 +353,10 @@ exports run on a page served under a content security policy without
 Canvas exports run on a page that holds only an 800 by 600 `#canvas` at the page
 origin, with no body margin, because they compare canvas points with page
 coordinates.
-Each export test checks that the host bundle's digest is the same after the export
-as before it. Nextest prints each export's `PASS`, `FAIL` or `TIMEOUT` under its
-test name, and its summary counts every case. `PHASE` records identify loaded
+The setup hashes the host bundle once and exports the digest as
+`MAESTRO_BROWSER_EXPORTS_DIGEST`. Each export test hashes the bundle again after
+the export and fails when the two differ. Nextest prints each export's `PASS`,
+`FAIL` or `TIMEOUT` under its test name, and its summary counts every case. `PHASE` records identify loaded
 pages, resolved exports, pointer dispatch and pointer acknowledgments. Nextest
 shows them for a failing or timed-out export, so an interrupted export keeps its
 last observed browser phase.
