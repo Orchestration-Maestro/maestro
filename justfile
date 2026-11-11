@@ -28,10 +28,13 @@ _check *selection: sandbox-runtime
 prepare-tests:
     @if [ -d crates/maestro-tooling ]; then cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup install target/test-setup; fi
 
-# Run all workspace tests.
+# One quoted argument that names a Cargo package: -p NAME, -pNAME, --package NAME or --package=NAME.
+package_flag := "'(-p[^']*|--package(=[^']*)?)'"
+
+# Run the workspace tests, or only the packages named with -p or --package.
 test *args: prepare-tests sandbox-runtime
-    @cargo nextest run --workspace --locked {{quote(args)}}
-    @cargo test --workspace --locked --doc {{quote(args)}}
+    @cargo nextest run {{ if quote(args) =~ package_flag { '' } else { '--workspace' } }} --locked {{quote(args)}}
+    @cargo run --quiet --locked -p maestro-tooling --bin development -- doc-test {{quote(args)}}
 
 # Run the same checks as continuous integration.
 ci: check test

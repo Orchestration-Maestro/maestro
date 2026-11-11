@@ -31,6 +31,8 @@ mod cargo_lock;
 mod date_time_data;
 /// The source files a dependency file names.
 mod dep_info;
+/// The doctest phase of `just test`, skipped for a selection without a library.
+mod doc_test;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 
@@ -139,6 +141,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         )),
         Some("check-browser-smoke") => check_browser_build::witnesses(cargo, checkout),
         Some("browser-clippy") => browser_clippy::run(args, cargo, checkout),
+        Some("doc-test") => doc_test::run(args, cargo, checkout),
         Some("browser-test") => browser_test(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {
