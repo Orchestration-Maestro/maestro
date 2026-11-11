@@ -35,13 +35,16 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
     let mut child = Command::new(cargo);
     child.current_dir(checkout).args(arguments(&packages));
     let status = child.status()?;
-    if !status.success() || !packages.contains(&sandbox_runtime::OWNER) {
+    if !status.success() || !packages.contains(&RUNTIME_OWNER) {
         return Ok(exit_code(status));
     }
     let mut runtime = Command::new(cargo);
     runtime.current_dir(checkout).args(runtime_arguments());
     Ok(exit_code(runtime.status()?))
 }
+
+/// The workspace member whose in-frame runtime package the lint also covers.
+const RUNTIME_OWNER: &str = "maestro-web";
 
 /// The lint command for the in-frame runtime package, which sits outside the workspace.
 ///

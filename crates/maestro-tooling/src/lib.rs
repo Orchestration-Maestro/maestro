@@ -216,27 +216,10 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Build the sandbox runtime script the browser cases embed, then run every real-browser case,
-/// the driver regressions, each export and the report, as one nextest run, so the hang limit
-/// bounds and names each case and one run reports them all.
+/// Run every real-browser case, the driver regressions, each export and the report, as one
+/// nextest run, so the hang limit bounds and names each case and one run reports them all. A
+/// stale generated sandbox runtime fails the run after it.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    let generated = Command::new(cargo)
-        .current_dir(checkout)
-        .args([
-            "run",
-            "--quiet",
-            "--locked",
-            "-p",
-            "maestro-tooling",
-            "--bin",
-            "development",
-            "--",
-            "sandbox-runtime",
-        ])
-        .status()?;
-    if !generated.success() {
-        return Ok(exit_code(generated));
-    }
     let regressed = Command::new(cargo)
         .current_dir(checkout)
         .args([
@@ -252,7 +235,26 @@ fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
             "test(/^browser::/)",
         ])
         .status()?;
-    Ok(exit_code(regressed))
+    let generated = Command::new(cargo)
+        .current_dir(checkout)
+        .args([
+            "run",
+            "--quiet",
+            "--locked",
+            "-p",
+            "maestro-tooling",
+            "--bin",
+            "development",
+            "--",
+            "sandbox-runtime",
+            "--check",
+        ])
+        .status()?;
+    Ok(exit_code(if regressed.success() {
+        generated
+    } else {
+        regressed
+    }))
 }
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.

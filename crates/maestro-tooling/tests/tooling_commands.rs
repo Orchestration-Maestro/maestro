@@ -945,11 +945,10 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
     );
 }
 
-/// The sandbox runtime script is built first, then every real-browser case, the driver
-/// regressions, each export and the report run in one nextest invocation under its hang limit,
-/// and that run's status is the command's.
+/// Every real-browser case, the driver regressions, each export and the report, runs in one
+/// nextest invocation under its hang limit, and that run's status is the command's.
 #[test]
-fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_run() {
+fn browser_test_runs_every_case_in_one_nextest_run() {
     drive();
     let fixture = Fixture::new();
     for (failing, code) in [("none", 0), ("nextest=18", 18)] {
@@ -959,7 +958,7 @@ fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_ru
         }
         let output = fixture
             .invoke(
-                "browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_run",
+                "browser_test_runs_every_case_in_one_nextest_run",
                 "browser-test",
                 &[],
             )
@@ -970,8 +969,8 @@ fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_ru
         assert_eq!(
             invocations(&fixture),
             [
-                "run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|sandbox-runtime",
                 "nextest|run|--locked|-p|maestro-test-browser|--run-ignored|only|--no-fail-fast|-E|test(/^browser::/)",
+                "run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|sandbox-runtime|--check",
             ],
             "{failing}"
         );
@@ -980,27 +979,6 @@ fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_ru
             fixture.root.path().as_os_str().as_encoded_bytes()
         );
     }
-}
-
-/// A failed script build stops the run before any browser case starts.
-#[test]
-fn browser_test_stops_when_the_runtime_script_cannot_be_built() {
-    drive();
-    let fixture = Fixture::new();
-    let output = fixture
-        .invoke(
-            "browser_test_stops_when_the_runtime_script_cannot_be_built",
-            "browser-test",
-            &[],
-        )
-        .env("MAESTRO_FAIL_PHASE", "run=19")
-        .output()
-        .unwrap();
-    assert_eq!(output.status.code(), Some(19));
-    assert_eq!(
-        invocations(&fixture),
-        ["run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|sandbox-runtime"]
-    );
 }
 
 #[test]
@@ -3111,45 +3089,6 @@ fn maestro_hook_scoped_failures_stop_later_phases() {
             "format|-p|a"
         ]
     );
-}
-
-/// The web crate's build script embeds the generated runtime script, so a staged web crate is
-/// linted through the shared check recipe, which builds that script first; other crates keep
-/// the direct Clippy run.
-#[test]
-fn maestro_hook_lints_the_staged_web_crate_through_the_check_recipe() {
-    drive();
-    for (path, expected) in [
-        (
-            "crates/maestro-web/src/lib.rs",
-            ["format|-p|maestro-web", "_check|-p|maestro-web"],
-        ),
-        (
-            "crates/maestro-models/src/lib.rs",
-            [
-                "format|-p|maestro-models",
-                "clippy|-p|maestro-models|--all-targets|--locked|--|-D|warnings",
-            ],
-        ),
-    ] {
-        let fixture = Fixture::new();
-        git(fixture.root.path(), &["init", "--quiet"]);
-        stage_paths(fixture.root.path(), &[path]);
-        let output = run_hook(
-            &fixture,
-            "maestro_hook_lints_the_staged_web_crate_through_the_check_recipe",
-        )
-        .env("MAESTRO_ACTIVE_SMOKE", "false")
-        .output()
-        .unwrap();
-        assert!(output.status.success(), "{path}");
-        let ran: Vec<String> = invocations(&fixture)
-            .into_iter()
-            .filter(|line| !line.starts_with("metadata|"))
-            .filter(|line| !line.starts_with("smoke") && !line.starts_with("check-browser-smoke"))
-            .collect();
-        assert_eq!(ran, expected, "{path}");
-    }
 }
 
 #[test]

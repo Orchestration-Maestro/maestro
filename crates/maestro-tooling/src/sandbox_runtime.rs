@@ -1,10 +1,10 @@
 //! Build the in-frame sandbox runtime with Emscripten and audit what it links.
 //!
-//! The runtime package builds as one self-starting classic script. The command
-//! writes that script under `target/`, where the web crate's build script finds
-//! and embeds it; the script is never committed. It refuses output that the audit
-//! rejects: a linked library outside the audited list, or script text an HTML
-//! document cannot carry verbatim.
+//! The runtime package builds as one self-starting classic script. `generate`
+//! writes that script to the asset the web crate embeds, and `--check` compares
+//! it byte for byte. Both refuse output that the audit rejects: a linked
+//! library outside the audited list, or script text an HTML document cannot
+//! carry verbatim.
 
 use std::{
     ffi::OsString,
@@ -21,21 +21,21 @@ const BINDGEN: &str = "0.2.129";
 pub(crate) const MANIFEST: &str = "crates/maestro-web/runtime/Cargo.toml";
 /// The runtime binary the package builds.
 const BINARY: &str = "maestro-sandbox-runtime";
-/// The generated script, relative to the checkout. The web crate's build script names the same file.
-pub(crate) const ASSET: &str = "target/sandbox-runtime/maestro-sandbox-runtime.js";
-/// The workspace member whose build script embeds the generated script.
-pub(crate) const OWNER: &str = "maestro-web";
+/// The generated script, relative to the checkout.
+pub(crate) const ASSET: &str = "crates/maestro-web/assets/maestro-sandbox-runtime.js";
 /// Rust target the runtime is compiled for.
 pub(crate) const TARGET: &str = "wasm32-unknown-emscripten";
 
-/// Generate the asset for the web crate to embed.
+/// Generate the asset, or with `--check` compare it with a fresh build.
 ///
 /// # Errors
-/// Returns a missing or wrong tool, a failed build or a rejected audit.
+/// Returns a missing or wrong tool, a failed build, a rejected audit or a stale asset.
 pub(super) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    if !args.is_empty() {
-        return Err(io::Error::other("usage: sandbox-runtime"));
-    }
+    let check = match args {
+        [] => false,
+        [flag] if flag == "--check" => true,
+        _ => return Err(io::Error::other("usage: sandbox-runtime [--check]")),
+    };
     tool("emcc", EMSCRIPTEN)?;
     tool("wasm-bindgen", BINDGEN)?;
     let directory = checkout.join("target/sandbox-runtime");
@@ -45,20 +45,15 @@ pub(super) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
     audit::script(&bytes).map_err(io::Error::other)?;
     let libraries = audit::libraries(&fs::read_to_string(&map)?).map_err(io::Error::other)?;
     println!("LINKED {}", libraries.join(" "));
-    publish(&checkout.join(ASSET), &bytes)?;
+    let asset = checkout.join(ASSET);
+    if check {
+        if fs::read(&asset)? != bytes {
+            return Err(io::Error::other(format!("{} is stale", asset.display())));
+        }
+    } else {
+        fs::write(&asset, &bytes)?;
+    }
     Ok(ExitCode::SUCCESS)
-}
-
-/// Write the script unless the file already holds these bytes, so an unchanged build leaves the
-/// web crate's embedded input alone.
-fn publish(asset: &Path, bytes: &[u8]) -> io::Result<()> {
-    if fs::read(asset).is_ok_and(|current| current == bytes) {
-        return Ok(());
-    }
-    if let Some(parent) = asset.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::write(asset, bytes)
 }
 
 /// Require a tool on the path to report exactly the pinned release.

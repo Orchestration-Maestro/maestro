@@ -5,8 +5,6 @@ use std::process::{Command, ExitCode};
 
 use selection::Scope;
 
-use crate::sandbox_runtime;
-
 mod selection;
 
 /// Failure message printed when formatting or verification fails.
@@ -79,23 +77,8 @@ fn selected(root: &Path, cargo: &Path, paths: &[OsString]) -> Option<Scope> {
         .ok()
 }
 
-/// Build the lint for the staged owners without the workspace-wide check recipe.
-///
-/// The sandbox runtime's owner embeds a generated script that the shared check recipe builds
-/// first, so a staged owner is linted through that recipe; every other owner gets Clippy alone.
+/// Build Clippy for the staged owners without the workspace-wide check recipe.
 fn check(root: &Path, cargo: &Path, scope: &Scope) -> Command {
-    if scope
-        .names()
-        .iter()
-        .any(|name| name == sandbox_runtime::OWNER)
-    {
-        let mut command = Command::new("just");
-        command.current_dir(root).arg("_check");
-        for name in scope.names() {
-            command.args(["-p", name]);
-        }
-        return command;
-    }
     let mut command = Command::new(cargo);
     command.current_dir(root).arg("clippy");
     for name in scope.names() {

@@ -33,7 +33,6 @@ pub(crate) fn install_role(role: &str, id: &str) -> Result<(), JsValue> {
     let window = web_sys::window().ok_or("no window")?;
     match role {
         "frame-bridge" => bridge::install_frame(&window, &id.into()),
-        "user-script" => bridge::install_user_script(&window, &id.into()),
         _ => Err(format!("unknown bridge role: {role}").into()),
     }
 }

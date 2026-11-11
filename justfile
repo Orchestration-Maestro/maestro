@@ -16,7 +16,7 @@ check: prepare-tests
 
 # Shared checks for explicit Cargo package-selection arguments.
 [private]
-_check *selection: sandbox-runtime
+_check *selection:
     cargo hakari verify
     @cargo clippy {{quote(selection)}} --all-targets --locked -- -D warnings
     @cargo clippy {{quote(selection)}} --all-targets --locked --target x86_64-pc-windows-gnu -- -D warnings
@@ -29,7 +29,7 @@ prepare-tests:
     @if [ -d crates/maestro-tooling ]; then cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup install target/test-setup; fi
 
 # Run all workspace tests.
-test *args: prepare-tests sandbox-runtime
+test *args: prepare-tests
     @cargo nextest run --workspace --locked {{quote(args)}}
     @cargo test --workspace --locked --doc {{quote(args)}}
 
@@ -41,7 +41,7 @@ clean:
     cargo clean
 
 # Compile all delivered workspace members.
-build: sandbox-runtime
+build:
     just models-generate
     cargo build --workspace --locked
 
@@ -148,7 +148,7 @@ app-test *args: prepare-tests
 app-prepublish: app-clean app-build
 
 # Watch existing Rust owners through the native Cargo watch graph.
-native-dev: sandbox-runtime
+native-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build --workspace --locked
 
 # Watch every delivered owner through the existing native graphs.
@@ -267,7 +267,7 @@ _browser-watch command pack mode *args:
     @cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{command}} {{quote(pack)}} {{quote(mode)}} {{quote(args)}}
 
 # Build the runnable browser chat example, then serve it on loopback.
-browser-chat-example *args: sandbox-runtime
+browser-chat-example *args:
     cargo build --locked -p maestro-web --example chat --target wasm32-unknown-unknown --release
     wasm-bindgen {{quote(justfile_directory() / "target/wasm32-unknown-unknown/release/examples/chat.wasm")}} --target web --out-dir {{quote(justfile_directory() / "target/maestro-browser/chat")}} --out-name chat
     cp {{quote(justfile_directory() / "crates/maestro-web/examples/chat/index.html")}} {{quote(justfile_directory() / "target/maestro-browser/chat/index.html")}}
@@ -277,9 +277,9 @@ browser-chat-example *args: sandbox-runtime
 browser-test: prepare-tests
     cargo run --quiet --locked -p maestro-tooling --bin development -- browser-test
 
-# Build the in-frame sandbox runtime script under target/ with the pinned Emscripten SDK; maestro-web embeds it.
-sandbox-runtime:
-    @if [ -d crates/maestro-web/runtime ]; then cargo run --quiet --locked -p maestro-tooling --bin development -- sandbox-runtime; fi
+# Rebuild the generated in-frame sandbox runtime with the pinned Emscripten SDK; pass --check to compare.
+sandbox-runtime *args:
+    cargo run --quiet --locked -p maestro-tooling --bin development -- sandbox-runtime {{args}}
 
 # Generate the extension index, example targets and workspace-derived guide lock.
 example-index:

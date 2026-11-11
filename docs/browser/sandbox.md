@@ -59,13 +59,12 @@ but keep every selected helper.
 ## Runtime bundle and script policy
 
 The runtime bundle is one classic script built by `just sandbox-runtime` with
-Emscripten 6.0.10 from `crates/maestro-web/runtime`. The command writes
-`target/sandbox-runtime/maestro-sandbox-runtime.js`, an ignored build output that is never
-committed, and `maestro-web` embeds that file. A build of `maestro-web` without it stops at
-once with one message that names `just sandbox-runtime`. The command refuses a linked library
-outside the audited list and text that is not safe inside an inline script. The audited list
-is the Rust crate object, `libc.a`, `libdlmalloc.a`, `libclang_rt.builtins*.a` and the
-compiler builtins. `just browser-test` runs the command first.
+Emscripten 6.0.10 from `crates/maestro-web/runtime`. The generated file is
+`crates/maestro-web/assets/maestro-sandbox-runtime.js`; `just sandbox-runtime --check`
+rebuilds it and fails when the checked-in bytes differ, when the linker map names a library
+outside the audited list, or when the text is not safe inside an inline script. The audited
+list is the Rust crate object, `libc.a`, `libdlmalloc.a`, `libclang_rt.builtins*.a` and the
+compiler builtins. The browser integration command runs the same check.
 
 The runtime package's build script sets the Emscripten link settings, including the
 dlmalloc allocator. The package aborts on panic in every profile. The generator adds only
@@ -295,10 +294,10 @@ assert!(source.ends_with(BUNDLE));
 ```
 
 The frame script is the runtime bundle preceded by the channel and identifier as program
-arguments. The extension user-script script is the same bundle with the `user-script` role,
-so it needs the `'wasm-unsafe-eval'` policy in the user-script world; a browser case runs it
-against a stand-in extension runtime, and no run covers a real extension ([#4455](https://github.com/Orchestration-Maestro/maestro/issues/4455)). Running either
-installs `sendRuntimeMessage` and ordered `onCompleted` callbacks. `__completionCallbacks` is reset to a new public array,
+arguments. The extension user-script script is the one it has always been, kept until that
+world is qualified for the bundle and its `'wasm-unsafe-eval'` policy; the browser
+integration command does not exercise it. Running either installs `sendRuntimeMessage` and
+ordered `onCompleted` callbacks. `__completionCallbacks` is reset to a new public array,
 and `onCompleted` appends to its current value, so replacing the array stays visible.
 Iframe requests correlate replies by message id, listen before posting and reject after
 30,000 ms; user scripts await the extension's native reply with the identifier last.

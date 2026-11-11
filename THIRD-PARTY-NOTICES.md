@@ -1389,7 +1389,7 @@ runtime dependencies use MIT OR Apache-2.0 as well.
 
 ## Sandbox runtime bundle
 
-The generated sandbox runtime script (`target/sandbox-runtime/maestro-sandbox-runtime.js`)
+The generated sandbox runtime script (`crates/maestro-web/assets/maestro-sandbox-runtime.js`)
 is built with Emscripten 6.0.10 from the runtime package. Its JavaScript glue and
 the following archives it links are third-party code. The build tooling refuses any
 other linked library.

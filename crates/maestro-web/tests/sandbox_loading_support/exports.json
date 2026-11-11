@@ -97,8 +97,7 @@
     "bootstrap_completion_follows_trailing_source",
     "bootstrap_removal_during_startup_settles_once",
     "bootstrap_outcomes_release_host_registrations",
-    "bootstrap_url_handshake_settles_once",
-    "bootstrap_user_script_role_sends_through_the_extension_runtime"
+    "bootstrap_url_handshake_settles_once"
   ],
   "contributions": [
     "native_optional_tools_artifacts_and_diff_replay_existing_corpus",
