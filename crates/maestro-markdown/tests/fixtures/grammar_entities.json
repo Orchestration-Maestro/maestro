@@ -14514,265 +14514,265 @@
     "expected": "©𝔄≂̸"
   },
   {
-    "id": "core:maestro_markdown_apply_consistent_styling_to_all_lines_in_lazy_continuation_blockquote:0/0/0/0",
+    "id": "core:maestro_markdown_style_every_line_of_a_lazy_continuation_blockquote:0/0/0/0",
     "group": "retained-text-field",
     "input": "Foo",
     "expected": "Foo"
   },
   {
-    "id": "core:maestro_markdown_apply_consistent_styling_to_all_lines_in_lazy_continuation_blockquote:0/0/0/1",
+    "id": "core:maestro_markdown_style_every_line_of_a_lazy_continuation_blockquote:0/0/0/1",
     "group": "retained-text-field",
     "input": "\n",
     "expected": "\n"
   },
   {
-    "id": "core:maestro_markdown_apply_consistent_styling_to_all_lines_in_lazy_continuation_blockquote:0/0/0/2",
+    "id": "core:maestro_markdown_style_every_line_of_a_lazy_continuation_blockquote:0/0/0/2",
     "group": "retained-text-field",
     "input": "bar",
     "expected": "bar"
   },
   {
-    "id": "core:maestro_markdown_apply_consistent_styling_to_explicit_multiline_blockquote:0/0/0/0",
+    "id": "core:maestro_markdown_style_every_line_of_an_explicit_multiline_blockquote:0/0/0/0",
     "group": "retained-text-field",
     "input": "Foo",
     "expected": "Foo"
   },
   {
-    "id": "core:maestro_markdown_apply_consistent_styling_to_explicit_multiline_blockquote:0/0/0/1",
+    "id": "core:maestro_markdown_style_every_line_of_an_explicit_multiline_blockquote:0/0/0/1",
     "group": "retained-text-field",
     "input": "\n",
     "expected": "\n"
   },
   {
-    "id": "core:maestro_markdown_apply_consistent_styling_to_explicit_multiline_blockquote:0/0/0/2",
+    "id": "core:maestro_markdown_style_every_line_of_an_explicit_multiline_blockquote:0/0/0/2",
     "group": "retained-text-field",
     "input": "bar",
     "expected": "bar"
   },
   {
-    "id": "core:maestro_markdown_emit_osc_8_hyperlink_sequence_when_terminal_supports_hyperlinks:0/0/0/0",
+    "id": "core:maestro_markdown_emit_the_osc_8_hyperlink_sequence_when_the_terminal_has_hyperlinks:0/0/0/0",
     "group": "retained-text-field",
     "input": "click here",
     "expected": "click here"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_blockquote_and_following_paragraph:0/0/0",
+    "id": "core:maestro_markdown_gap_between_quote_and_para_is_one_line:0/0/0",
     "group": "retained-text-field",
     "input": "hello world",
     "expected": "hello world"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_blockquote_and_following_paragraph:0/2/0/0",
+    "id": "core:maestro_markdown_gap_between_quote_and_para_is_one_line:0/2/0/0",
     "group": "retained-text-field",
     "input": "This is a quote",
     "expected": "This is a quote"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_blockquote_and_following_paragraph:0/4/0",
+    "id": "core:maestro_markdown_gap_between_quote_and_para_is_one_line:0/4/0",
     "group": "retained-text-field",
     "input": "again, hello world",
     "expected": "again, hello world"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_code_block_and_following_paragraph:0/0/0",
+    "id": "core:maestro_markdown_gap_between_code_block_and_paragraph_is_one_line:0/0/0",
     "group": "retained-text-field",
     "input": "hello world",
     "expected": "hello world"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_code_block_and_following_paragraph:0/4/0",
+    "id": "core:maestro_markdown_gap_between_code_block_and_paragraph_is_one_line:0/4/0",
     "group": "retained-text-field",
     "input": "again, hello world",
     "expected": "again, hello world"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_divider_and_following_paragraph:0/0/0",
+    "id": "core:maestro_markdown_gap_between_divider_and_para_is_one_line:0/0/0",
     "group": "retained-text-field",
     "input": "hello world",
     "expected": "hello world"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_divider_and_following_paragraph:0/4/0",
+    "id": "core:maestro_markdown_gap_between_divider_and_para_is_one_line:0/4/0",
     "group": "retained-text-field",
     "input": "again, hello world",
     "expected": "again, hello world"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_heading_and_following_paragraph:0/0/0",
+    "id": "core:maestro_markdown_gap_between_heading_and_para_is_one_line:0/0/0",
     "group": "retained-text-field",
     "input": "Hello",
     "expected": "Hello"
   },
   {
-    "id": "core:maestro_markdown_have_only_one_blank_line_between_heading_and_following_paragraph:0/2/0",
+    "id": "core:maestro_markdown_gap_between_heading_and_para_is_one_line:0/2/0",
     "group": "retained-text-field",
     "input": "This is a paragraph",
     "expected": "This is a paragraph"
   },
   {
-    "id": "core:maestro_markdown_maintain_numbering_when_code_blocks_are_not_indented_llm_output:0/0/0/0/0",
+    "id": "core:maestro_markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output:0/0/0/0/0",
     "group": "retained-text-field",
     "input": "First item",
     "expected": "First item"
   },
   {
-    "id": "core:maestro_markdown_maintain_numbering_when_code_blocks_are_not_indented_llm_output:0/4/0/0/0",
+    "id": "core:maestro_markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output:0/4/0/0/0",
     "group": "retained-text-field",
     "input": "Second item",
     "expected": "Second item"
   },
   {
-    "id": "core:maestro_markdown_maintain_numbering_when_code_blocks_are_not_indented_llm_output:0/8/0/0/0",
+    "id": "core:maestro_markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output:0/8/0/0/0",
     "group": "retained-text-field",
     "input": "Third item",
     "expected": "Third item"
   },
   {
-    "id": "core:maestro_markdown_normalize_paragraph_and_code_block_spacing_to_one_blank_line:0/0/0",
+    "id": "core:maestro_markdown_collapse_block_spacing_to_a_single_gap:0/0/0",
     "group": "retained-text-field",
     "input": "hello this is text",
     "expected": "hello this is text"
   },
   {
-    "id": "core:maestro_markdown_normalize_paragraph_and_code_block_spacing_to_one_blank_line:0/3/0",
+    "id": "core:maestro_markdown_collapse_block_spacing_to_a_single_gap:0/3/0",
     "group": "retained-text-field",
     "input": "more text",
     "expected": "more text"
   },
   {
-    "id": "core:maestro_markdown_normalize_paragraph_and_code_block_spacing_to_one_blank_line:1/0/0",
+    "id": "core:maestro_markdown_collapse_block_spacing_to_a_single_gap:1/0/0",
     "group": "retained-text-field",
     "input": "hello this is text",
     "expected": "hello this is text"
   },
   {
-    "id": "core:maestro_markdown_normalize_paragraph_and_code_block_spacing_to_one_blank_line:1/4/0",
+    "id": "core:maestro_markdown_collapse_block_spacing_to_a_single_gap:1/4/0",
     "group": "retained-text-field",
     "input": "more text",
     "expected": "more text"
   },
   {
-    "id": "core:maestro_markdown_not_add_a_trailing_blank_line_when_blockquote_is_the_last_rendered_block:0/0/0/0",
+    "id": "core:maestro_markdown_no_trailing_blank_line_after_a_final_quote:0/0/0/0",
     "group": "retained-text-field",
     "input": "This is a quote",
     "expected": "This is a quote"
   },
   {
-    "id": "core:maestro_markdown_not_add_a_trailing_blank_line_when_code_block_is_the_last_rendered_block:1/0/0",
+    "id": "core:maestro_markdown_no_trailing_blank_line_after_a_final_code_block:1/0/0",
     "group": "retained-text-field",
     "input": "hello world",
     "expected": "hello world"
   },
   {
-    "id": "core:maestro_markdown_not_add_a_trailing_blank_line_when_heading_is_the_last_rendered_block:0/0/0",
+    "id": "core:maestro_markdown_no_trailing_blank_line_after_a_final_heading:0/0/0",
     "group": "retained-text-field",
     "input": "Hello",
     "expected": "Hello"
   },
   {
-    "id": "core:maestro_markdown_not_duplicate_url_for_autolinked_emails:0/0/0",
+    "id": "core:maestro_markdown_show_no_duplicate_url_for_autolinked_emails:0/0/0",
     "group": "retained-text-field",
     "input": "Contact user@example.com for help",
     "expected": "Contact user@example.com for help"
   },
   {
-    "id": "core:maestro_markdown_not_duplicate_url_for_bare_urls:0/0/0",
+    "id": "core:maestro_markdown_show_no_duplicate_url_for_bare_urls:0/0/0",
     "group": "retained-text-field",
     "input": "Visit https://example.com for more",
     "expected": "Visit https://example.com for more"
   },
   {
-    "id": "core:maestro_markdown_preserve_gray_italic_styling_after_bold_text:0/0/0",
+    "id": "core:maestro_markdown_italic_gray_styling_survives_bold_text:0/0/0",
     "group": "retained-text-field",
     "input": "This is thinking with ",
     "expected": "This is thinking with "
   },
   {
-    "id": "core:maestro_markdown_preserve_gray_italic_styling_after_bold_text:0/0/1/0",
+    "id": "core:maestro_markdown_italic_gray_styling_survives_bold_text:0/0/1/0",
     "group": "retained-text-field",
     "input": "bold text",
     "expected": "bold text"
   },
   {
-    "id": "core:maestro_markdown_preserve_gray_italic_styling_after_bold_text:0/0/2",
+    "id": "core:maestro_markdown_italic_gray_styling_survives_bold_text:0/0/2",
     "group": "retained-text-field",
     "input": " and more after",
     "expected": " and more after"
   },
   {
-    "id": "core:maestro_markdown_preserve_gray_italic_styling_after_inline_code:0/0/0",
+    "id": "core:maestro_markdown_italic_gray_styling_survives_inline_code:0/0/0",
     "group": "retained-text-field",
     "input": "This is thinking with ",
     "expected": "This is thinking with "
   },
   {
-    "id": "core:maestro_markdown_preserve_gray_italic_styling_after_inline_code:0/0/2",
+    "id": "core:maestro_markdown_italic_gray_styling_survives_inline_code:0/0/2",
     "group": "retained-text-field",
     "input": " and more text after",
     "expected": " and more text after"
   },
   {
-    "id": "core:maestro_markdown_preserve_heading_styling_after_bold_text:0/0/0",
+    "id": "core:maestro_markdown_heading_style_survives_bold_text:0/0/0",
     "group": "retained-text-field",
     "input": "Heading with ",
     "expected": "Heading with "
   },
   {
-    "id": "core:maestro_markdown_preserve_heading_styling_after_bold_text:0/0/1/0",
+    "id": "core:maestro_markdown_heading_style_survives_bold_text:0/0/1/0",
     "group": "retained-text-field",
     "input": "bold",
     "expected": "bold"
   },
   {
-    "id": "core:maestro_markdown_preserve_heading_styling_after_bold_text:0/0/2",
+    "id": "core:maestro_markdown_heading_style_survives_bold_text:0/0/2",
     "group": "retained-text-field",
     "input": " and more",
     "expected": " and more"
   },
   {
-    "id": "core:maestro_markdown_preserve_heading_styling_after_inline_code:0/0/0",
+    "id": "core:maestro_markdown_heading_style_survives_inline_code:0/0/0",
     "group": "retained-text-field",
     "input": "Why ",
     "expected": "Why "
   },
   {
-    "id": "core:maestro_markdown_preserve_heading_styling_after_inline_code:0/0/2",
+    "id": "core:maestro_markdown_heading_style_survives_inline_code:0/0/2",
     "group": "retained-text-field",
     "input": " should not be optional",
     "expected": " should not be optional"
   },
   {
-    "id": "core:maestro_markdown_preserve_heading_styling_after_inline_code_for_h1:0/0/0",
+    "id": "core:maestro_markdown_heading_style_survives_inline_code_at_h1:0/0/0",
     "group": "retained-text-field",
     "input": "Title with ",
     "expected": "Title with "
   },
   {
-    "id": "core:maestro_markdown_preserve_heading_styling_after_inline_code_for_h1:0/0/2",
+    "id": "core:maestro_markdown_heading_style_survives_inline_code_at_h1:0/0/2",
     "group": "retained-text-field",
     "input": " inside",
     "expected": " inside"
   },
   {
-    "id": "core:maestro_markdown_properly_indent_wrapped_blockquote_lines_with_styling:0/0/0/0",
+    "id": "core:maestro_markdown_hanging_indent_on_wrapped_quote_lines:0/0/0/0",
     "group": "retained-text-field",
-    "input": "This is styled text that is long enough to wrap",
-    "expected": "This is styled text that is long enough to wrap"
+    "input": "Styled text that runs on long enough to wrap across lines",
+    "expected": "Styled text that runs on long enough to wrap across lines"
   },
   {
-    "id": "core:maestro_markdown_render_content_with_html_like_tags_as_text:0/0/0",
+    "id": "core:maestro_markdown_render_markup_tags_as_literal_text:0/0/0",
     "group": "retained-text-field",
     "input": "This is text with ",
     "expected": "This is text with "
   },
   {
-    "id": "core:maestro_markdown_render_content_with_html_like_tags_as_text:0/0/2",
+    "id": "core:maestro_markdown_render_markup_tags_as_literal_text:0/0/2",
     "group": "retained-text-field",
     "input": "hidden content",
     "expected": "hidden content"
   },
   {
-    "id": "core:maestro_markdown_render_content_with_html_like_tags_as_text:0/0/4",
+    "id": "core:maestro_markdown_render_markup_tags_as_literal_text:0/0/4",
     "group": "retained-text-field",
     "input": " that should be visible",
     "expected": " that should be visible"
@@ -14802,19 +14802,19 @@
     "expected": "Level 4"
   },
   {
-    "id": "core:maestro_markdown_render_inline_formatting_inside_blockquotes_and_reapply_quote_styling_after:0/0/0/0",
+    "id": "core:maestro_markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after:0/0/0/0",
     "group": "retained-text-field",
     "input": "Quote with ",
     "expected": "Quote with "
   },
   {
-    "id": "core:maestro_markdown_render_inline_formatting_inside_blockquotes_and_reapply_quote_styling_after:0/0/0/1/0",
+    "id": "core:maestro_markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after:0/0/0/1/0",
     "group": "retained-text-field",
     "input": "bold",
     "expected": "bold"
   },
   {
-    "id": "core:maestro_markdown_render_inline_formatting_inside_blockquotes_and_reapply_quote_styling_after:0/0/0/2",
+    "id": "core:maestro_markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after:0/0/0/2",
     "group": "retained-text-field",
     "input": " and ",
     "expected": " and "
@@ -14832,31 +14832,31 @@
     "expected": "nested bullet"
   },
   {
-    "id": "core:maestro_markdown_render_mixed_ordered_and_unordered_nested_lists:0/0/0/0/0",
+    "id": "core:maestro_markdown_render_nested_ordered_and_unordered_lists_together:0/0/0/0/0",
     "group": "retained-text-field",
     "input": "Ordered item",
     "expected": "Ordered item"
   },
   {
-    "id": "core:maestro_markdown_render_mixed_ordered_and_unordered_nested_lists:0/0/0/1/0/0/0",
+    "id": "core:maestro_markdown_render_nested_ordered_and_unordered_lists_together:0/0/0/1/0/0/0",
     "group": "retained-text-field",
     "input": "Unordered nested",
     "expected": "Unordered nested"
   },
   {
-    "id": "core:maestro_markdown_render_mixed_ordered_and_unordered_nested_lists:0/0/0/1/1/0/0",
+    "id": "core:maestro_markdown_render_nested_ordered_and_unordered_lists_together:0/0/0/1/1/0/0",
     "group": "retained-text-field",
     "input": "Another nested",
     "expected": "Another nested"
   },
   {
-    "id": "core:maestro_markdown_render_mixed_ordered_and_unordered_nested_lists:0/0/1/0/0",
+    "id": "core:maestro_markdown_render_nested_ordered_and_unordered_lists_together:0/0/1/0/0",
     "group": "retained-text-field",
     "input": "Second ordered",
     "expected": "Second ordered"
   },
   {
-    "id": "core:maestro_markdown_render_mixed_ordered_and_unordered_nested_lists:0/0/1/1/0/0/0",
+    "id": "core:maestro_markdown_render_nested_ordered_and_unordered_lists_together:0/0/1/1/0/0/0",
     "group": "retained-text-field",
     "input": "More nested",
     "expected": "More nested"
@@ -14928,34 +14928,34 @@
     "expected": " here"
   },
   {
-    "id": "core:maestro_markdown_show_mailto_url_in_parentheses_when_hyperlinks_are_not_supported:0/0/0/0",
+    "id": "core:maestro_markdown_show_a_mailto_url_in_parentheses_without_hyperlink_support:0/0/0/0",
     "group": "retained-text-field",
     "input": "Email me",
     "expected": "Email me"
   },
   {
-    "id": "core:maestro_markdown_show_url_in_parentheses_when_hyperlinks_are_not_supported:0/0/0/0",
+    "id": "core:maestro_markdown_show_a_url_in_parentheses_without_hyperlink_support:0/0/0/0",
     "group": "retained-text-field",
     "input": "click here",
     "expected": "click here"
   },
   {
-    "id": "core:maestro_markdown_use_osc_8_for_bare_urls_when_terminal_supports_hyperlinks:0/0/0",
+    "id": "core:maestro_markdown_use_osc_8_for_a_bare_url_when_the_terminal_has_hyperlinks:0/0/0",
     "group": "retained-text-field",
     "input": "Visit https://example.com for more",
     "expected": "Visit https://example.com for more"
   },
   {
-    "id": "core:maestro_markdown_use_osc_8_for_mailto_links_when_terminal_supports_hyperlinks:0/0/0/0",
+    "id": "core:maestro_markdown_use_osc_8_for_a_mailto_link_when_the_terminal_has_hyperlinks:0/0/0/0",
     "group": "retained-text-field",
     "input": "Email me",
     "expected": "Email me"
   },
   {
-    "id": "core:maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line:0/0/0/0",
+    "id": "core:maestro_markdown_wrap_long_blockquote_lines_and_border_every_wrapped_line:0/0/0/0",
     "group": "retained-text-field",
-    "input": "This is a very long blockquote line that should wrap to multiple lines when rendered",
-    "expected": "This is a very long blockquote line that should wrap to multiple lines when rendered"
+    "input": "A single blockquote line this long has to wrap across several rendered lines at a narrow width",
+    "expected": "A single blockquote line this long has to wrap across several rendered lines at a narrow width"
   },
   {
     "id": "core:markdown_authored_label_ranges_keep_markup:0/0/0/0",

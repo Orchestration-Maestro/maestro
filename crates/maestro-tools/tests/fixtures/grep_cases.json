@@ -51,7 +51,7 @@
             },
             "limit": {
               "type": "number",
-              "description": "Maximum number of matches to return (default: 100)"
+              "description": "Largest number of matches returned (default: 100)"
             }
           }
         }

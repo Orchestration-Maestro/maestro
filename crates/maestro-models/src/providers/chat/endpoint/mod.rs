@@ -301,7 +301,7 @@ fn completion_error(message: &crate::AssistantMessage) -> &str {
             .error_message
             .as_deref()
             .filter(|text| !text.is_empty())
-            .unwrap_or("Provider returned an error stop reason")
+            .unwrap_or("The provider ended the turn with an error stop reason")
     }
 }
 

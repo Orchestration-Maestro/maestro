@@ -201,7 +201,7 @@ pub(super) fn manual_command(display: &str, context: &PackageCommandContext<'_>)
     line(
         &context.stderr,
         &Theme::dim(
-            &format!("If this keeps failing, run this command yourself: {display}"),
+            &format!("If the failure repeats, run this command yourself: {display}"),
             context.styles_enabled,
         ),
     )

@@ -177,7 +177,7 @@
       "errorMessage": null
     },
     "expected": {
-      "error": "Provider returned an error stop reason",
+      "error": "The provider ended the turn with an error stop reason",
       "events": [],
       "ended": false
     }
@@ -191,7 +191,7 @@
       "errorMessage": ""
     },
     "expected": {
-      "error": "Provider returned an error stop reason",
+      "error": "The provider ended the turn with an error stop reason",
       "events": [],
       "ended": false
     }

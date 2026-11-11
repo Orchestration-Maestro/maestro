@@ -78,7 +78,7 @@ Options:
   --self                  Update {APP_NAME} only
   --extensions            Update installed packages only
   --extension <source>    Update one package only
-  --force                 Reinstall {APP_NAME} even if the current version is latest
+  --force                 Reinstall {APP_NAME} even when this version is the newest
 
 Short forms:
   {APP_NAME} update                Update {APP_NAME} and all extensions
@@ -126,7 +126,7 @@ pub(crate) fn description(command: PackageCommand) -> String {
         PackageCommand::Remove => "Remove a package and its source from settings.".to_owned(),
         PackageCommand::Update => format!("Update {APP_NAME} and installed packages."),
         PackageCommand::List => {
-            "List installed packages from user and project settings.".to_owned()
+            "List installed packages and the settings scope that holds each.".to_owned()
         }
     }
 }

@@ -285,7 +285,7 @@ fn terminal_reasons_keep_success_and_error_outcomes() -> TestResult {
         assert_eq!(labels, ["error"]);
         assert_eq!(
             message.error_message.as_deref(),
-            Some("Unexpected assistant message start but got user message start instead")
+            Some("Expected an assistant message start, but the stream began a user message")
         );
         Ok(())
     })

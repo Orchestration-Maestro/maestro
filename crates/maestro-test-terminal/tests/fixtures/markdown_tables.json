@@ -18,7 +18,7 @@
       ]
     }
   ],
-  "maestro_markdown_render_row_dividers_between_data_rows": [
+  "maestro_markdown_draw_a_divider_between_data_rows": [
     {
       "text": "| Name | Age |\n| --- | --- |",
       "width": 80,
@@ -68,7 +68,7 @@
       ]
     }
   ],
-  "maestro_markdown_keep_column_width_at_least_the_longest_word": [
+  "maestro_markdown_size_a_column_to_at_least_its_longest_word": [
     {
       "text": "| Column One | Column Two |\n| --- | --- |\n| superlongword short | otherword |\n| small | tiny |",
       "width": 32,
@@ -108,26 +108,26 @@
       ]
     }
   ],
-  "maestro_markdown_handle_tables_with_varying_column_widths": [
+  "maestro_markdown_render_tables_whose_columns_have_different_widths": [
     {
-      "text": "| Short | Very long column header |\n| --- | --- |\n| A | This is a much longer cell content |\n| B | Short |",
+      "text": "| Short | Very long column header |\n| --- | --- |\n| A | This cell holds a much longer run of words |\n| B | Short |",
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
       "profile": "ansi",
       "hyperlinks": false,
       "lines": [
-        "┌───────┬────────────────────────────────────┐                                  ",
-        "│ \u001b[1mShort\u001b[22m │ \u001b[1mVery long column header           \u001b[22m │                                  ",
-        "├───────┼────────────────────────────────────┤                                  ",
-        "│ A     │ This is a much longer cell content │                                  ",
-        "├───────┼────────────────────────────────────┤                                  ",
-        "│ B     │ Short                              │                                  ",
-        "└───────┴────────────────────────────────────┘                                  "
+        "\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510                          ",
+        "\u2502 \u001b[1mShort\u001b[22m \u2502 \u001b[1mVery long column header                   \u001b[22m \u2502                          ",
+        "\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524                          ",
+        "\u2502 A     \u2502 This cell holds a much longer run of words \u2502                          ",
+        "\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524                          ",
+        "\u2502 B     \u2502 Short                                      \u2502                          ",
+        "\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518                          "
       ]
     }
   ],
-  "maestro_markdown_wrap_table_cells_when_table_exceeds_available_width": [
+  "maestro_markdown_wrap_cells_when_the_table_is_wider_than_the_viewport": [
     {
       "text": "| Command | Description | Example |\n| --- | --- | --- |\n| npm install | Install all dependencies | npm install |\n| npm run build | Build the project | npm run build |",
       "width": 50,
@@ -148,7 +148,7 @@
       ]
     }
   ],
-  "maestro_markdown_wrap_long_cell_content_to_multiple_lines": [
+  "maestro_markdown_wrap_long_cell_content_across_several_lines": [
     {
       "text": "| Header |\n| --- |\n| This is a very long cell content that should wrap |",
       "width": 25,
@@ -167,7 +167,7 @@
       ]
     }
   ],
-  "maestro_markdown_wrap_long_unbroken_tokens_inside_table_cells_not_only_at_line_start": [
+  "maestro_markdown_break_long_unbroken_tokens_inside_cells_anywhere": [
     {
       "text": "| Value |\n| --- |\n| prefix https://example.com/this/is/a/very/long/url/that/should/wrap |",
       "width": 30,
@@ -187,7 +187,7 @@
       ]
     }
   ],
-  "maestro_markdown_wrap_styled_inline_code_inside_table_cells_without_breaking_borders": [
+  "maestro_markdown_wrap_styled_inline_code_in_a_cell_keeping_the_borders": [
     {
       "text": "| Code |\n| --- |\n| `averyveryveryverylongidentifier` |",
       "width": 20,
@@ -222,7 +222,7 @@
       ]
     }
   ],
-  "maestro_markdown_render_table_correctly_when_it_fits_naturally": [
+  "maestro_markdown_render_a_table_that_fits_without_wrapping": [
     {
       "text": "| A | B |\n| --- | --- |\n| 1 | 2 |",
       "width": 80,
@@ -239,7 +239,7 @@
       ]
     }
   ],
-  "maestro_markdown_respect_paddingx_when_calculating_table_width": [
+  "maestro_markdown_count_paddingx_when_calculating_table_width": [
     {
       "text": "| Column One | Column Two |\n| --- | --- |\n| Data 1 | Data 2 |",
       "width": 40,
@@ -256,7 +256,7 @@
       ]
     }
   ],
-  "maestro_markdown_not_add_a_trailing_blank_line_when_table_is_the_last_rendered_block": [
+  "maestro_markdown_no_trailing_blank_line_after_a_final_table": [
     {
       "text": "| Name |\n| --- |\n| Alice |",
       "width": 80,

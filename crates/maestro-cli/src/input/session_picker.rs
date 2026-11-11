@@ -36,7 +36,7 @@ pub struct SessionPresentation {
     pub presenter: SessionSelectorFactory,
 }
 
-/// Show the session selector and return the selected path, or `None` when cancelled.
+/// Present the session selector, then return the chosen path, or `None` when cancelled.
 ///
 /// The configured bindings are installed before the presentation, so the search
 /// field and the list dispatch the same configured controls.

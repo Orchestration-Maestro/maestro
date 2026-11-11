@@ -11,7 +11,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for git@github.com:acme/tool.git"
+      "error": "No package matches git@github.com:acme/tool.git"
     }
   },
   {
@@ -26,7 +26,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for npm:missing"
+      "error": "No package matches npm:missing"
     }
   },
   {
@@ -43,7 +43,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for a. Did you mean npm:a@1?"
+      "error": "No package matches a. Did you mean npm:a@1?"
     }
   },
   {
@@ -59,7 +59,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for a@next. Did you mean npm:a@next?"
+      "error": "No package matches a@next. Did you mean npm:a@next?"
     }
   },
   {
@@ -74,7 +74,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for @org/a. Did you mean npm:@org/a@next?"
+      "error": "No package matches @org/a. Did you mean npm:@org/a@next?"
     }
   },
   {
@@ -90,7 +90,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for github.com/acme/tool. Did you mean git:github.com/acme/tool@v1?"
+      "error": "No package matches github.com/acme/tool. Did you mean git:github.com/acme/tool@v1?"
     }
   },
   {
@@ -106,7 +106,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for github.com/acme/tool@v1. Did you mean git:github.com/acme/tool@v1?"
+      "error": "No package matches github.com/acme/tool@v1. Did you mean git:github.com/acme/tool@v1?"
     }
   },
   {
@@ -121,7 +121,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for ﻿a﻿. Did you mean npm:a?"
+      "error": "No package matches ﻿a﻿. Did you mean npm:a?"
     }
   },
   {
@@ -136,7 +136,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for a"
+      "error": "No package matches a"
     }
   },
   {
@@ -151,7 +151,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for A"
+      "error": "No package matches A"
     }
   },
   {
@@ -166,7 +166,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for folder"
+      "error": "No package matches folder"
     }
   },
   {
@@ -182,7 +182,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for missing"
+      "error": "No package matches missing"
     }
   },
   {
@@ -198,7 +198,7 @@
     },
     "expected": {
       "commands": [],
-      "error": "No matching package found for npm:missing"
+      "error": "No package matches npm:missing"
     }
   },
   {

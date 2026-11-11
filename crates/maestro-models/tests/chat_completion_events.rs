@@ -1097,7 +1097,7 @@ fn maestro_chat_shares_partial_observations() -> TestResult {
         assert!(matches!(message.stop_reason, StopReason::Error));
         assert_eq!(
             message.error_message.as_deref(),
-            Some("Provider returned an error stop reason"),
+            Some("The provider ended the turn with an error stop reason"),
             "a stop reason the reader set is honored when the stream is finalized"
         );
         Ok(())
@@ -1147,7 +1147,7 @@ fn maestro_chat_reports_supplied_stop_reasons() -> TestResult {
             (
                 StopReason::Error,
                 "",
-                "Provider returned an error stop reason",
+                "The provider ended the turn with an error stop reason",
             ),
         ] {
             let (labels, message) = finish_after_edit(stop_reason, supplied).await?;

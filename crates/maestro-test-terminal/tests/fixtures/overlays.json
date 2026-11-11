@@ -5448,9 +5448,9 @@
       }
     }
   ],
-  "maestro_overlays_truncate_overlay_lines_that_exceed_declared_width": [
+  "maestro_overlays_truncate_overlay_lines_past_the_declared_width": [
     {
-      "case": "truncate_overlay_lines_that_exceed_declared_width",
+      "case": "truncate_overlay_lines_past_the_declared_width",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -5473,9 +5473,9 @@
       }
     }
   ],
-  "maestro_overlays_handle_overlay_with_complex_ansi_sequences_without_crashing": [
+  "maestro_overlays_compose_an_overlay_over_complex_ansi_sequences": [
     {
-      "case": "handle_overlay_with_complex_ansi_sequences_without_crashing",
+      "case": "compose_an_overlay_over_complex_ansi_sequences",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -5500,9 +5500,9 @@
       }
     }
   ],
-  "maestro_overlays_handle_overlay_composited_on_styled_base_content": [
+  "maestro_overlays_compose_an_overlay_over_styled_base_content": [
     {
-      "case": "handle_overlay_composited_on_styled_base_content",
+      "case": "compose_an_overlay_over_styled_base_content",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -5530,9 +5530,9 @@
       }
     }
   ],
-  "maestro_overlays_handle_wide_characters_at_overlay_boundary": [
+  "maestro_overlays_place_wide_characters_at_the_overlay_boundary": [
     {
-      "case": "handle_wide_characters_at_overlay_boundary",
+      "case": "place_wide_characters_at_the_overlay_boundary",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -5555,9 +5555,9 @@
       }
     }
   ],
-  "maestro_overlays_handle_overlay_positioned_at_terminal_edge": [
+  "maestro_overlays_place_an_overlay_at_the_terminal_edge": [
     {
-      "case": "handle_overlay_positioned_at_terminal_edge",
+      "case": "place_an_overlay_at_the_terminal_edge",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -5581,9 +5581,9 @@
       }
     }
   ],
-  "maestro_overlays_handle_overlay_on_base_content_with_osc_sequences": [
+  "maestro_overlays_compose_an_overlay_over_osc_sequences": [
     {
-      "case": "handle_overlay_on_base_content_with_osc_sequences",
+      "case": "compose_an_overlay_over_osc_sequences",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -5611,9 +5611,9 @@
       }
     }
   ],
-  "maestro_overlays_render_overlay_at_percentage_of_terminal_width": [
+  "maestro_overlays_size_an_overlay_by_percentage_of_terminal_width": [
     {
-      "case": "render_overlay_at_percentage_of_terminal_width",
+      "case": "size_an_overlay_by_percentage_of_terminal_width",
       "input": {
         "columns": 100,
         "rows": 24,
@@ -5636,9 +5636,9 @@
       }
     }
   ],
-  "maestro_overlays_respect_minwidth_when_widthpercent_results_in_smaller_width": [
+  "maestro_overlays_keep_minwidth_when_widthpercent_gives_less": [
     {
-      "case": "respect_minwidth_when_widthpercent_results_in_smaller_width",
+      "case": "keep_minwidth_when_widthpercent_gives_less",
       "input": {
         "columns": 100,
         "rows": 24,
@@ -5831,9 +5831,9 @@
       }
     }
   ],
-  "maestro_overlays_apply_offsetx_and_offsety_from_anchor_position": [
+  "maestro_overlays_offset_the_overlay_from_its_anchor": [
     {
-      "case": "apply_offsetx_and_offsety_from_anchor_position",
+      "case": "offset_the_overlay_from_its_anchor",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -6001,9 +6001,9 @@
       }
     }
   ],
-  "maestro_overlays_row_and_col_should_override_anchor": [
+  "maestro_overlays_row_and_col_override_the_anchor": [
     {
-      "case": "row_and_col_should_override_anchor",
+      "case": "row_and_col_override_the_anchor",
       "input": {
         "columns": 80,
         "rows": 24,
@@ -6029,7 +6029,7 @@
       }
     }
   ],
-  "maestro_frames_render_overlay_when_content_is_shorter_than_terminal_height": [
+  "maestro_frames_draw_an_overlay_over_short_content": [
     {
       "case": "short_original",
       "input": {

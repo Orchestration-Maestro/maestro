@@ -8,8 +8,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 #[test]
-fn maestro_frames_render_overlay_when_content_is_shorter_than_terminal_height() {
-    corpus("maestro_frames_render_overlay_when_content_is_shorter_than_terminal_height").unwrap();
+fn maestro_frames_draw_an_overlay_over_short_content() {
+    corpus("maestro_frames_draw_an_overlay_over_short_content").unwrap();
 }
 
 /// One raw public query and its recorded terminal effects.
@@ -263,43 +263,43 @@ fn overlay_height_and_viewport_padding_keep_screen_positions() {
 }
 
 #[test]
-fn maestro_overlays_truncate_overlay_lines_that_exceed_declared_width() {
-    corpus("maestro_overlays_truncate_overlay_lines_that_exceed_declared_width").unwrap();
+fn maestro_overlays_truncate_overlay_lines_past_the_declared_width() {
+    corpus("maestro_overlays_truncate_overlay_lines_past_the_declared_width").unwrap();
 }
 
 #[test]
-fn maestro_overlays_handle_overlay_with_complex_ansi_sequences_without_crashing() {
-    corpus("maestro_overlays_handle_overlay_with_complex_ansi_sequences_without_crashing").unwrap();
+fn maestro_overlays_compose_an_overlay_over_complex_ansi_sequences() {
+    corpus("maestro_overlays_compose_an_overlay_over_complex_ansi_sequences").unwrap();
 }
 
 #[test]
-fn maestro_overlays_handle_overlay_composited_on_styled_base_content() {
-    corpus("maestro_overlays_handle_overlay_composited_on_styled_base_content").unwrap();
+fn maestro_overlays_compose_an_overlay_over_styled_base_content() {
+    corpus("maestro_overlays_compose_an_overlay_over_styled_base_content").unwrap();
 }
 
 #[test]
-fn maestro_overlays_handle_wide_characters_at_overlay_boundary() {
-    corpus("maestro_overlays_handle_wide_characters_at_overlay_boundary").unwrap();
+fn maestro_overlays_place_wide_characters_at_the_overlay_boundary() {
+    corpus("maestro_overlays_place_wide_characters_at_the_overlay_boundary").unwrap();
 }
 
 #[test]
-fn maestro_overlays_handle_overlay_positioned_at_terminal_edge() {
-    corpus("maestro_overlays_handle_overlay_positioned_at_terminal_edge").unwrap();
+fn maestro_overlays_place_an_overlay_at_the_terminal_edge() {
+    corpus("maestro_overlays_place_an_overlay_at_the_terminal_edge").unwrap();
 }
 
 #[test]
-fn maestro_overlays_handle_overlay_on_base_content_with_osc_sequences() {
-    corpus("maestro_overlays_handle_overlay_on_base_content_with_osc_sequences").unwrap();
+fn maestro_overlays_compose_an_overlay_over_osc_sequences() {
+    corpus("maestro_overlays_compose_an_overlay_over_osc_sequences").unwrap();
 }
 
 #[test]
-fn maestro_overlays_render_overlay_at_percentage_of_terminal_width() {
-    corpus("maestro_overlays_render_overlay_at_percentage_of_terminal_width").unwrap();
+fn maestro_overlays_size_an_overlay_by_percentage_of_terminal_width() {
+    corpus("maestro_overlays_size_an_overlay_by_percentage_of_terminal_width").unwrap();
 }
 
 #[test]
-fn maestro_overlays_respect_minwidth_when_widthpercent_results_in_smaller_width() {
-    corpus("maestro_overlays_respect_minwidth_when_widthpercent_results_in_smaller_width").unwrap();
+fn maestro_overlays_keep_minwidth_when_widthpercent_gives_less() {
+    corpus("maestro_overlays_keep_minwidth_when_widthpercent_gives_less").unwrap();
 }
 
 #[test]
@@ -333,8 +333,8 @@ fn maestro_overlays_respect_margin_object() {
 }
 
 #[test]
-fn maestro_overlays_apply_offsetx_and_offsety_from_anchor_position() {
-    corpus("maestro_overlays_apply_offsetx_and_offsety_from_anchor_position").unwrap();
+fn maestro_overlays_offset_the_overlay_from_its_anchor() {
+    corpus("maestro_overlays_offset_the_overlay_from_its_anchor").unwrap();
 }
 
 #[test]
@@ -363,8 +363,8 @@ fn maestro_overlays_truncate_overlay_to_maxheightpercent() {
 }
 
 #[test]
-fn maestro_overlays_row_and_col_should_override_anchor() {
-    corpus("maestro_overlays_row_and_col_should_override_anchor").unwrap();
+fn maestro_overlays_row_and_col_override_the_anchor() {
+    corpus("maestro_overlays_row_and_col_override_the_anchor").unwrap();
 }
 
 #[test]

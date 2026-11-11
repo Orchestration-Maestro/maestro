@@ -7,10 +7,10 @@
       "error": null,
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
-      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/providers.md\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/models.md\n",
+      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /opt/maestro/docs/providers.md\n  /opt/maestro/docs/models.md\n",
       "stderr": ""
     }
   },
@@ -22,10 +22,10 @@
       "error": "bad models",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
-      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/providers.md\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/models.md\n",
+      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /opt/maestro/docs/providers.md\n  /opt/maestro/docs/models.md\n",
       "stderr": "\u001b[33mWarning: errors loading models.json:\u001b[39m\n\u001b[33mFailed to load models.json: bad models\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mFile: models.json\u001b[39m\n"
     }
   },
@@ -38,10 +38,10 @@
       "search": "unmatched",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
-      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/providers.md\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/models.md\n",
+      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /opt/maestro/docs/providers.md\n  /opt/maestro/docs/models.md\n",
       "stderr": ""
     }
   },
@@ -64,7 +64,7 @@
       "search": "unmatched",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "No models matching \"unmatched\"\n",
@@ -90,7 +90,7 @@
       "search": "",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\np         one    1K       1K       no        no    \n",
@@ -136,7 +136,7 @@
       "error": "partial",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\na         a      1K       1K       no        no    \na         z      1K       1K       no        no    \nz         a      1K       1K       no        no    \n",
@@ -202,7 +202,7 @@
       "search": "p",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model    context  max-out  thinking  images\np         a        1K       1K       no        no    \np         á        1K       1K       no        no    \np         Alpha    1K       1K       no        no    \np         alpha10  1K       1K       no        no    \np         alpha2   1K       1K       no        no    \n",
@@ -258,7 +258,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model    context  max-out  thinking  images\np         image    999      1K       yes       yes   \np         large    16.4K    128K     no        no    \np         million  1.0M     1.3M     no        no    \np         text     1.1K     8.2K     no        no    \n",
@@ -293,7 +293,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider     model       context  max-out  thinking  images\nabcdefghij   abcdefghij  1K       1K       no        no    \nprovider-😀  model-😀    1K       1K       no        no    \n",
@@ -328,7 +328,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model    context  max-out  thinking  images\np         rounded  1M       1000.0K  no        no    \np         small    0        1        no        no    \n",
@@ -375,7 +375,7 @@
       "search": "target",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider   model      context  max-out  thinking  images\ndifferent  target     1K       1K       no        no    \ntarget     different  1K       1K       no        no    \n",
@@ -430,7 +430,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\np         á     5K       6K       no        no    \np         á      7K       8K       no        no    \np         same   2K       3K       no        no    \np         same   1K       4K       no        no    \n",
@@ -475,7 +475,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model       context  max-out  thinking  images\np         rounding-a  2.5K     1.3K     no        no    \np         rounding-b  1.1M     1.3M     no        no    \np         rounding-c  1000.0K  1M       no        no    \n",
@@ -530,7 +530,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\np         a      1K       1K       no        no    \np         å      1K       1K       no        no    \np         ä      1K       1K       no        no    \np         z      1K       1K       no        no    \n",
@@ -565,7 +565,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\npá       a      1K       1K       no        no    \npá        z      1K       1K       no        no    \n",
@@ -588,7 +588,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model              context  max-out  thinking  images\np         zero-and-fraction  0        0.5      no        no    \n",
@@ -613,7 +613,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model          context  max-out  thinking  images\np         negative-zero  0        0        no        no    \n",
@@ -669,7 +669,7 @@
       ],
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model          context  max-out  thinking  images\np         both           1K       1K       yes       yes   \np         image-only     1K       1K       no        yes   \np         neither        1K       1K       no        no    \np         thinking-only  1K       1K       yes       no    \n",
@@ -715,7 +715,7 @@
       "error": "partial",
       "locale": "en-US",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\na         a      1K       1K       no        no    \na         z      1K       1K       no        no    \nz         a      1K       1K       no        no    \n",
@@ -730,10 +730,10 @@
       "error": null,
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
-      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/providers.md\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/models.md\n",
+      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /opt/maestro/docs/providers.md\n  /opt/maestro/docs/models.md\n",
       "stderr": ""
     }
   },
@@ -745,10 +745,10 @@
       "error": "bad models",
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
-      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/providers.md\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/models.md\n",
+      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /opt/maestro/docs/providers.md\n  /opt/maestro/docs/models.md\n",
       "stderr": "\u001b[33mWarning: errors loading models.json:\u001b[39m\n\u001b[33mFailed to load models.json: bad models\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mFile: models.json\u001b[39m\n"
     }
   },
@@ -761,10 +761,10 @@
       "search": "unmatched",
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
-      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/providers.md\n  /home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs/models.md\n",
+      "stdout": "No models available. Use /login to log into a provider via OAuth or API key. See:\n  /opt/maestro/docs/providers.md\n  /opt/maestro/docs/models.md\n",
       "stderr": ""
     }
   },
@@ -787,7 +787,7 @@
       "search": "unmatched",
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "No models matching \"unmatched\"\n",
@@ -813,7 +813,7 @@
       "search": "",
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\np         one    1K       1K       no        no    \n",
@@ -859,7 +859,7 @@
       "error": "partial",
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\na         a      1K       1K       no        no    \na         z      1K       1K       no        no    \nz         a      1K       1K       no        no    \n",
@@ -925,7 +925,7 @@
       "search": "p",
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model    context  max-out  thinking  images\np         a        1K       1K       no        no    \np         á        1K       1K       no        no    \np         Alpha    1K       1K       no        no    \np         alpha10  1K       1K       no        no    \np         alpha2   1K       1K       no        no    \n",
@@ -981,7 +981,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model    context  max-out  thinking  images\np         image    999      1K       yes       yes   \np         large    16.4K    128K     no        no    \np         million  1.0M     1.3M     no        no    \np         text     1.1K     8.2K     no        no    \n",
@@ -1016,7 +1016,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider     model       context  max-out  thinking  images\nabcdefghij   abcdefghij  1K       1K       no        no    \nprovider-😀  model-😀    1K       1K       no        no    \n",
@@ -1051,7 +1051,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model    context  max-out  thinking  images\np         rounded  1M       1000.0K  no        no    \np         small    0        1        no        no    \n",
@@ -1098,7 +1098,7 @@
       "search": "target",
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider   model      context  max-out  thinking  images\ndifferent  target     1K       1K       no        no    \ntarget     different  1K       1K       no        no    \n",
@@ -1153,7 +1153,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\np         á     5K       6K       no        no    \np         á      7K       8K       no        no    \np         same   2K       3K       no        no    \np         same   1K       4K       no        no    \n",
@@ -1198,7 +1198,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model       context  max-out  thinking  images\np         rounding-a  2.5K     1.3K     no        no    \np         rounding-b  1.1M     1.3M     no        no    \np         rounding-c  1000.0K  1M       no        no    \n",
@@ -1253,7 +1253,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\np         a      1K       1K       no        no    \np         z      1K       1K       no        no    \np         å      1K       1K       no        no    \np         ä      1K       1K       no        no    \n",
@@ -1288,7 +1288,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model  context  max-out  thinking  images\npá       a      1K       1K       no        no    \npá        z      1K       1K       no        no    \n",
@@ -1311,7 +1311,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model              context  max-out  thinking  images\np         zero-and-fraction  0        0.5      no        no    \n",
@@ -1336,7 +1336,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model          context  max-out  thinking  images\np         negative-zero  0        0        no        no    \n",
@@ -1392,7 +1392,7 @@
       ],
       "locale": "sv-SE",
       "styles_enabled": true,
-      "docs_path": "/home/franc/.nvm/versions/node/v24.20.0/lib/node_modules/@earendil-works/pi-coding-agent/docs"
+      "docs_path": "/opt/maestro/docs"
     },
     "expected": {
       "stdout": "provider  model          context  max-out  thinking  images\np         both           1K       1K       yes       yes   \np         image-only     1K       1K       no        yes   \np         neither        1K       1K       no        no    \np         thinking-only  1K       1K       yes       no    \n",

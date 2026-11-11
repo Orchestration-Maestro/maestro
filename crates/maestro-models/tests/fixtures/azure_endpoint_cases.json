@@ -5138,7 +5138,7 @@
           }
         },
         "stopReason": "error",
-        "errorMessage": "Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl."
+        "errorMessage": "Azure OpenAI needs a base URL. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl."
       },
       "hooks": []
     }
@@ -5596,7 +5596,7 @@
           }
         },
         "stopReason": "error",
-        "errorMessage": "Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl."
+        "errorMessage": "Azure OpenAI needs a base URL. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl."
       },
       "hooks": []
     }

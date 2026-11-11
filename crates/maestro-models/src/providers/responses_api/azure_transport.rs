@@ -69,7 +69,7 @@ fn resolve_azure_config<E: ProviderExecution>(
         .or_else(|| environment("AZURE_OPENAI_BASE_URL").map(|s| s.trim_matches(whitespace).to_owned()).filter(|s| !s.is_empty()).map(Cow::Owned))
         .or_else(|| options.azure_resource_name.as_deref().filter(|s| !s.is_empty()).map(Cow::Borrowed).or_else(|| environment("AZURE_OPENAI_RESOURCE_NAME").map(Cow::Owned)).map(|s| Cow::Owned(format!("https://{s}.openai.azure.com/openai/v1"))))
         .or_else(|| (!model.base_url.is_empty()).then_some(Cow::Borrowed(model.base_url.as_str())))
-        .ok_or_else(|| RequestFailure::new("Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl."))?;
+        .ok_or_else(|| RequestFailure::new("Azure OpenAI needs a base URL. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or pass azureBaseUrl, azureResourceName, or model.baseUrl."))?;
     let mut url = normalize_azure_base_url(&base)?;
     let version = options
         .azure_api_version

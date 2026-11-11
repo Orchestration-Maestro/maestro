@@ -8,7 +8,7 @@
     },
     "expected": {
       "exit": 0,
-      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n",
       "stderr": "",
       "trace": {
         "opened": 0,
@@ -33,7 +33,7 @@
     },
     "expected": {
       "exit": 0,
-      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n",
       "stderr": "",
       "trace": {
         "opened": 0,
@@ -58,7 +58,7 @@
     },
     "expected": {
       "exit": 0,
-      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n",
       "stderr": "",
       "trace": {
         "opened": 0,
@@ -83,7 +83,7 @@
     },
     "expected": {
       "exit": 0,
-      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n",
       "stderr": "",
       "trace": {
         "opened": 0,
@@ -108,7 +108,7 @@
     },
     "expected": {
       "exit": 0,
-      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n",
       "stderr": "",
       "trace": {
         "opened": 0,
@@ -235,7 +235,7 @@
     },
     "expected": {
       "exit": 0,
-      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n",
+      "stdout": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  anthropic            Anthropic (Claude Pro/Max)\n  github-copilot       GitHub Copilot\n  openai-codex         ChatGPT Plus/Pro (Codex Subscription)\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n",
       "stderr": "",
       "trace": {
         "opened": 0,
@@ -2752,7 +2752,7 @@
     "input": [],
     "expected": {
       "rows": "",
-      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n"
+      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n"
     }
   },
   {
@@ -2770,7 +2770,7 @@
     ],
     "expected": {
       "rows": "  x                    One\n                       Empty ID",
-      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  x                    One\n                       Empty ID\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n"
+      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  x                    One\n                       Empty ID\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n"
     }
   },
   {
@@ -2796,7 +2796,7 @@
     ],
     "expected": {
       "rows": "  1234567890123456789  Nineteen\n  12345678901234567890 Twenty\n  123456789012345678901 Twenty-one\n  😀                   Unicode",
-      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Login to an OAuth provider\n  list              List available providers\n\nProviders:\n  1234567890123456789  Nineteen\n  12345678901234567890 Twenty\n  123456789012345678901 Twenty-one\n  😀                   Unicode\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # login to specific provider\n  maestro-model-account list               # list providers\n\n"
+      "help": "Usage: maestro-model-account <command> [provider]\n\nCommands:\n  login [provider]  Log in to an OAuth provider\n  list              List available providers\n\nProviders:\n  1234567890123456789  Nineteen\n  12345678901234567890 Twenty\n  123456789012345678901 Twenty-one\n  😀                   Unicode\n\nExamples:\n  maestro-model-account login              # interactive provider selection\n  maestro-model-account login anthropic    # log in to one provider\n  maestro-model-account list               # list providers\n\n"
     }
   }
 ]

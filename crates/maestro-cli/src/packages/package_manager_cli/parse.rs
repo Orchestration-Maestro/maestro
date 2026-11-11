@@ -240,7 +240,7 @@ impl Scan {
             {
                 first(
                     &mut self.conflicting_options,
-                    "--extension cannot be combined with a positional source",
+                    "--extension takes no positional source",
                 );
             }
             return UpdateTarget::Extensions(Some(extension));
@@ -252,7 +252,7 @@ impl Scan {
             if self.flags.contains(&Flag::Extensions) || self.flags.contains(&Flag::SelfOnly) {
                 first(
                     &mut self.conflicting_options,
-                    "positional update targets cannot be combined with --self or --extensions",
+                    "--self and --extensions take no positional update target",
                 );
             }
             return UpdateTarget::Extensions(Some(source.to_owned()));

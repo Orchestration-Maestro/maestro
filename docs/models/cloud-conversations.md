@@ -386,7 +386,7 @@ the one shared message:
 - `metadata` sets the usage counts, with the reported total unless it is zero.
 
 A message that starts with a user turn ends with
-`Unexpected assistant message start but got user message start instead`. An aborted signal
+`Expected an assistant message start, but the stream began a user message`. An aborted signal
 ends the call with `Request was aborted` while the call waits for the response or an event,
 keeping the content received so far. A callback failure that happened first keeps its own
 message and only takes the aborted stop reason.
