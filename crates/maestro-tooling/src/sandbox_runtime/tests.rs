@@ -1,6 +1,6 @@
 //! Audit decisions over generated script text and linker maps.
 use super::audit::{libraries, script};
-use super::{rustflags, tool};
+use super::{ASSET, publish, rustflags, tool};
 use std::path::Path;
 
 /// Linker map lines of the audited runtime build.
@@ -103,4 +103,72 @@ fn a_missing_tool_is_named_with_its_release() {
     let refusal = tool(name, "6.0.10").unwrap_err().to_string();
     assert!(refusal.contains(name), "{refusal}");
     assert!(refusal.contains("6.0.10"), "{refusal}");
+}
+
+#[test]
+fn the_script_is_written_only_when_its_bytes_change() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let asset = scratch.path().join(ASSET);
+    publish(&asset, b"one").unwrap();
+    let old = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
+    std::fs::File::options()
+        .write(true)
+        .open(&asset)
+        .unwrap()
+        .set_modified(old)
+        .unwrap();
+
+    publish(&asset, b"one").unwrap();
+    assert_eq!(std::fs::metadata(&asset).unwrap().modified().unwrap(), old);
+
+    publish(&asset, b"two").unwrap();
+    assert_eq!(std::fs::read(&asset).unwrap(), b"two");
+    assert_ne!(std::fs::metadata(&asset).unwrap().modified().unwrap(), old);
+}
+
+/// Run the web crate's build script as Cargo would, with the crate directory it is given.
+fn web_build_script(scratch: &Path) -> String {
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-web/build.rs");
+    let program = scratch.join("web-build-script");
+    let compiled = maestro_test_process::compiler::command("rustc")
+        .arg("--edition=2024")
+        .arg(source)
+        .arg("-o")
+        .arg(&program)
+        .status()
+        .unwrap();
+    assert!(compiled.success());
+    let manifest = scratch.join("crates/maestro-web");
+    std::fs::create_dir_all(&manifest).unwrap();
+    let output = std::process::Command::new(program)
+        .env("CARGO_MANIFEST_DIR", manifest)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    String::from_utf8(output.stdout).unwrap()
+}
+
+/// The web crate embeds the file this step writes, and a build without the step stops with one
+/// message that names it.
+#[test]
+fn the_web_build_script_embeds_the_written_script_or_names_this_step() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let asset = scratch.path().join(ASSET);
+
+    let missing = web_build_script(scratch.path());
+    assert_eq!(missing.matches("cargo::error=").count(), 1, "{missing}");
+    assert!(missing.contains("just sandbox-runtime"), "{missing}");
+    assert!(missing.contains(&asset.display().to_string()), "{missing}");
+    assert!(!missing.contains("rustc-env"), "{missing}");
+
+    publish(&asset, b"script").unwrap();
+    let present = web_build_script(scratch.path());
+    assert!(!present.contains("cargo::error"), "{present}");
+    assert!(
+        present.contains(&format!(
+            "cargo::rustc-env=MAESTRO_SANDBOX_RUNTIME={}",
+            asset.display()
+        )),
+        "{present}"
+    );
 }

@@ -4,6 +4,10 @@ use crate::sandbox_bootstrap_support::{
     Boot, Bundle, Mount, OBSERVER, Runtime, cases, digests, encode, loads_only_from_parent,
     observe, program, receipt, wrap,
 };
+use maestro_web::RuntimeMessageBridge;
+use maestro_web::components::sandbox::routing::{
+    RuntimeMessageBridgeOptions, RuntimeMessageContext,
+};
 use serde_json::{Value, json};
 
 /// Sandbox identifier carried through configuration and provider invocations.
@@ -713,4 +717,33 @@ pub async fn bootstrap_leaves_authored_global_names_free() {
         json!({"names":"1,2,3,4,5", "helper":"function", "leaked":[]})
     );
     assert_eq!(state["errors"], json!([]));
+}
+
+/// Stand-in for the extension runtime, installed before the generated script.
+const EXTENSION: &str = "window.S={started:true,sent:[]};window.chrome={runtime:{sendMessage:async m=>{S.sent.push(m);return{received:m.type}}}}";
+/// Uses the two globals the user-script script installs.
+const USER_SCRIPT_PROBE: &str = "window.done=(async()=>{S.reply=await sendRuntimeMessage({type:'custom',n:1,sandboxId:'caller'});onCompleted(()=>0);S.shape=[typeof sendRuntimeMessage,typeof onCompleted,__completionCallbacks.length]})()";
+
+/// The user-script script sends through the extension runtime with its identifier last and
+/// registers completion callbacks, from the same generated bundle as the frame channel.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn bootstrap_user_script_role_sends_through_the_extension_runtime() {
+    let script = RuntimeMessageBridge::generate_bridge_code(RuntimeMessageBridgeOptions {
+        context: RuntimeMessageContext::UserScript,
+        sandbox_id: ID,
+    })
+    .unwrap();
+    let html = format!(
+        "<!DOCTYPE html><html><head><script>{EXTENSION}</script><script>{script}</script></head><body><script>{USER_SCRIPT_PROBE}</script></body></html>"
+    );
+    let (state, _) = observe(&html, Mount::default()).await;
+    receipt(&format!("user-script state={state}"));
+    assert_eq!(
+        fields(&state, &["sent", "reply", "shape"]),
+        json!({
+            "sent": [{"type":"custom","n":1,"sandboxId":ID}],
+            "reply": {"received":"custom"},
+            "shape": ["function","function",1],
+        })
+    );
 }
