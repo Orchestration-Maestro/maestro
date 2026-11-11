@@ -1,17 +1,25 @@
 #![cfg(test)]
 
 use crate::support::Workspace;
-use crate::tracked_scripts::git;
+use crate::support::git;
 use maestro_test_conventions::check_workspace;
 
 /// The largest tracked file the check accepts, in bytes.
 const LIMIT: u64 = 10 * 1024 * 1024;
 
+/// Run `git` in the fixture root and require success.
+fn run(root: &std::path::Path, args: &[&str]) {
+    assert!(
+        git(root).args(args).status().unwrap().success(),
+        "git {args:?}"
+    );
+}
+
 /// Write a sparse file of `length` bytes under the fixture root; `tracked` adds it to a fresh index.
 fn sized(workspace: &Workspace, path: &str, length: u64, tracked: bool) {
     let root = workspace.root.path();
     if !root.join(".git").exists() {
-        git(root, &["init", "-q"]);
+        run(root, &["init", "-q"]);
     }
     let file = root.join(path);
     std::fs::create_dir_all(file.parent().unwrap()).unwrap();
@@ -20,7 +28,7 @@ fn sized(workspace: &Workspace, path: &str, length: u64, tracked: bool) {
         .set_len(length)
         .unwrap();
     if tracked {
-        git(root, &["add", "--", path]);
+        run(root, &["add", "--", path]);
     }
 }
 

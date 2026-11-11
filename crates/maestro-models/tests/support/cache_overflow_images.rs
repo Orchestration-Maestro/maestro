@@ -3,10 +3,13 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::{chat::TestResult, response_qualification::assert_corpus_rows};
 
+/// The recorded cache, overflow and tool-image rows.
+pub const CORPUS: &str = include_str!("../fixtures/cache_overflow_images.json");
+
 /// Execute only the named test's recorded invocations.
 pub fn assert_rows(test: &str) -> TestResult {
     assert_corpus_rows(
-        include_str!("../fixtures/cache_overflow_images.json"),
+        CORPUS,
         &[
             (
                 "crates/maestro-models/tests/provider_overflow/cases.rs::maestro_overflow_errors_keep_provider_routes",

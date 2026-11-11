@@ -303,7 +303,7 @@ enum Policy {
 }
 
 /// An indented list source at `levels` nesting levels.
-fn indented(levels: usize, prefix: &str) -> String {
+pub(super) fn indented(levels: usize, prefix: &str) -> String {
     let mut source = format!("{prefix}- a\n");
     for level in 1..levels {
         source.push_str(prefix);
@@ -387,12 +387,12 @@ fn deep_item_framing_stays_proportional_to_the_source() {
 }
 
 #[test]
-fn deep_item_line_admissions_stay_linear_in_the_line_count() {
+fn deep_item_line_decisions_stay_linear_in_the_line_count() {
     let measured =
         [75, 300].map(|levels| (item_text_charge(levels, |work| work.list_lines).0, levels));
     assert!(
         stays_proportional(measured),
-        "item line admissions per source line {measured:?}"
+        "item line decisions per source line {measured:?}"
     );
 }
 

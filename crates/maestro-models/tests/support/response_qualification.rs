@@ -674,7 +674,7 @@ mod tests {
     #[test]
     fn overflow_rows_expand_to_the_recorded_paragraph() {
         let mut rows: Vec<Value> =
-            serde_json::from_str(include_str!("../fixtures/cache_overflow_images.json")).unwrap();
+            serde_json::from_str(crate::cache_overflow_images::CORPUS).unwrap();
         let mut leaves = 0;
         for row in &mut rows {
             if !(18..=21).any(|n| row["id"] == format!("overflow_{n}_0")) {

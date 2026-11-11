@@ -6,7 +6,7 @@ use std::path::Path;
 use std::process::Command;
 
 /// Run `git` in the fixture root and require success.
-pub(crate) fn git(root: &Path, args: &[&str]) {
+fn git(root: &Path, args: &[&str]) {
     let status = Command::new("git")
         .args(args)
         .current_dir(root)

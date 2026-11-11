@@ -102,7 +102,7 @@ pub(crate) struct Work {
     pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.
     pub(crate) quote_lines: usize,
-    /// Actual list continuation line visits.
+    /// Continuation lines decided one at a time.
     pub(crate) list_lines: usize,
     /// Continuation lines an item took from the line records its enclosing item kept.
     pub(crate) list_adopted: usize,

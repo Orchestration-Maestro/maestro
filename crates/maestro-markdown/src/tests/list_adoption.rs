@@ -1,6 +1,9 @@
 //! Items that take the aligned lines their enclosing item recorded admit exactly what
 //! line-by-line admission admits.
-use super::{container_depth::recorded, line_by_line};
+use super::{
+    container_depth::{indented, recorded},
+    line_by_line,
+};
 use crate::{MarkedOptions, parse_with_options};
 
 /// Physical lines the generated documents are made of: list markers at several
@@ -39,6 +42,17 @@ fn documents(count: usize) -> Vec<String> {
         .collect()
 }
 
+/// Require run adoption and line-by-line admission to record the same tree for `source`,
+/// returning the lines the run adoption took.
+fn assert_fast_matches_slow(source: &str, options: MarkedOptions) -> usize {
+    super::WORK.with_borrow_mut(|work| *work = super::Work::default());
+    let fast = recorded(&parse_with_options(source.to_owned(), options));
+    let adopted = super::WORK.with_borrow(|work| work.list_adopted);
+    let slow = line_by_line(|| recorded(&parse_with_options(source.to_owned(), options)));
+    assert_eq!(fast, slow, "{source:?} {options:?}");
+    adopted
+}
+
 #[test]
 fn adopted_continuation_lines_match_line_by_line_admission() {
     let mut adopted = 0;
@@ -47,11 +61,7 @@ fn adopted_continuation_lines_match_line_by_line_admission() {
         MarkedOptions::Browser { escape_html: true },
     ] {
         for source in documents(1_500) {
-            super::WORK.with_borrow_mut(|work| *work = super::Work::default());
-            let fast = recorded(&parse_with_options(source.clone(), options));
-            adopted += super::WORK.with_borrow(|work| work.list_adopted);
-            let slow = line_by_line(|| recorded(&parse_with_options(source.clone(), options)));
-            assert_eq!(fast, slow, "{source:?} {options:?}");
+            adopted += assert_fast_matches_slow(&source, options);
         }
     }
     assert!(adopted > 0, "no generated document adopted a run");
@@ -69,17 +79,7 @@ fn adopted_lines_keep_the_blank_state_and_the_enclosing_boundaries() {
         "- a\n  - b\n\t- c\n  - d\n",
         "-\n  - b\n    - c\n",
     ] {
-        let fast = recorded(&parse_with_options(
-            source.to_owned(),
-            MarkedOptions::Terminal,
-        ));
-        let slow = line_by_line(|| {
-            recorded(&parse_with_options(
-                source.to_owned(),
-                MarkedOptions::Terminal,
-            ))
-        });
-        assert_eq!(fast, slow, "{source:?}");
+        assert_fast_matches_slow(source, MarkedOptions::Terminal);
     }
 }
 
@@ -90,19 +90,9 @@ fn admissions(source: &str) -> (usize, usize) {
     super::WORK.with_borrow(|work| (work.list_lines, work.list_adopted))
 }
 
-/// `levels` list items, each indented one level deeper than the one before.
-fn indented_chain(levels: usize) -> String {
-    let mut source = String::new();
-    for level in 0..levels {
-        source.push_str(&"  ".repeat(level));
-        source.push_str("- a\n");
-    }
-    source
-}
-
 #[test]
 fn every_continuation_line_is_decided_or_adopted_once() {
-    let source = indented_chain(40);
+    let source = indented(40, "");
     let (decided, adopted) = admissions(&source);
     let (every, none) = line_by_line(|| admissions(&source));
     assert_eq!(none, 0);
