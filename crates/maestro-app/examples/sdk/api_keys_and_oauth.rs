@@ -56,17 +56,6 @@ async fn run(sample: Sample) -> Result<(), Error> {
         writeln!(std::io::stdout(), "Session with {label}")?;
         created.session.dispose();
     }
-    writeln!(
-        std::io::stdout(),
-        "Resolved key: {:?}",
-        auth.get_api_key("faux", false, &*commands).await?
-    )?;
-    auth.remove_runtime_api_key("faux");
-    writeln!(
-        std::io::stdout(),
-        "Key after removing the override: {:?}",
-        auth.get_api_key("faux", false, &*commands).await?
-    )?;
     Ok(())
 }
 

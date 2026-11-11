@@ -4,10 +4,8 @@ use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_models::AssistantMessageEvent;
 use std::{cell::RefCell, io::Write, rc::Rc};
 
-/// Subscribe until the caller finishes its prompt, retaining text and any console error.
-pub fn subscribe(session: &AgentSession) -> impl FnOnce() -> Result<String, crate::support::Error> {
-    let text = Rc::new(RefCell::new(String::new()));
-    let streamed = Rc::clone(&text);
+/// Subscribe until the caller finishes its prompt, retaining any console error.
+pub fn subscribe(session: &AgentSession) -> impl FnOnce() -> Result<(), crate::support::Error> {
     let error = Rc::new(RefCell::new(None));
     let failed = Rc::clone(&error);
     let unsubscribe = session.subscribe(Rc::new(move |event| {
@@ -17,15 +15,13 @@ pub fn subscribe(session: &AgentSession) -> impl FnOnce() -> Result<String, crat
                 assistant_message_event: AssistantMessageEvent::TextDelta { delta, .. },
                 ..
             } = &*event
+            && failed.borrow().is_none()
         {
-            streamed.borrow_mut().push_str(delta);
-            if failed.borrow().is_none() {
-                let mut output = std::io::stdout();
-                *failed.borrow_mut() = output
-                    .write_all(delta.as_bytes())
-                    .and_then(|()| output.flush())
-                    .err();
-            }
+            let mut output = std::io::stdout();
+            *failed.borrow_mut() = output
+                .write_all(delta.as_bytes())
+                .and_then(|()| output.flush())
+                .err();
         }
     }));
     move || {
@@ -33,6 +29,6 @@ pub fn subscribe(session: &AgentSession) -> impl FnOnce() -> Result<String, crat
         if let Some(error) = error.borrow_mut().take() {
             return Err(error.into());
         }
-        Ok(text.borrow().clone())
+        Ok(())
     }
 }
