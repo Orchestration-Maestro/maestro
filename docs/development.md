@@ -1202,11 +1202,15 @@ the linked issue is still open. The change fixing the slowness must delete its
 override as well as close the issue. Each existing exception has its own issue,
 and #3589 tracks them together.
 
-Development and test profiles use `debug = "line-tables-only"` for workspace crates:
+The development profile uses `debug = "line-tables-only"` for workspace crates:
 backtraces retain file:line for workspace code, without debugger variable views.
-Dependencies build without debug info, so their frames show function names only;
-this keeps target directories about a sixth smaller.
-They also build these dependencies optimised; release builds are unchanged:
+The test profile uses `debug = false`: line tables cost about 17% of the compile CPU
+of a large test unit. Backtrace frames inside test binaries show function names only,
+while a panic message still names its file and line. To read file:line in a test
+backtrace, build that test with `CARGO_PROFILE_TEST_DEBUG=line-tables-only`.
+Dependencies build without debug info in both profiles, so their frames show function
+names only; this keeps target directories about a sixth smaller.
+Both profiles also build these dependencies optimised; release builds are unchanged:
 
 - `cranelift-codegen` and `regalloc2`: tests compile extension components, and an
   unoptimised code generator makes each compile about five times slower.
