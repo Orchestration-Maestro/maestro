@@ -106,7 +106,7 @@ impl InteractiveMode {
     pub(super) fn cycle_thinking_level(&self) -> Result<(), Box<dyn Error>> {
         let Some(level) = self.runtime_host.session().cycle_thinking_level()? else {
             return self
-                .show_status("Current model does not support thinking")
+                .show_status("The model in use does not support thinking")
                 .map_err(Into::into);
         };
         self.footer.invalidate();
@@ -186,9 +186,7 @@ impl InteractiveMode {
     /// terminal or process failure.
     pub(super) fn open_external_editor(&self) -> Result<(), Box<dyn Error>> {
         let Some(command) = external_command() else {
-            return Ok(self.show_warning(
-                "No editor configured. Set $VISUAL or $EDITOR environment variable.",
-            )?);
+            return Ok(self.show_warning("No editor is set. Set $VISUAL or $EDITOR.")?);
         };
         let path = std::env::temp_dir().join(format!(
             "maestro-editor-{}.maestro.md",
@@ -253,7 +251,7 @@ impl InteractiveMode {
     /// Returns the published theme's failure.
     #[cfg(any(windows, all(test, target_os = "linux")))]
     pub(super) fn show_suspend_unsupported(&self) -> Result<(), Box<dyn Error>> {
-        self.show_status("Suspend to background is not supported on Windows")
+        self.show_status("Windows has no suspend to background")
             .map_err(Into::into)
     }
 

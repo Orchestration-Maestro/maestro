@@ -439,8 +439,11 @@ fn custom_footer_retains_the_live_status_provider() {
 /// Whether the built-in header shows its expanded help.
 fn built_in_expanded(world: &World) -> bool {
     let header = world.mode.built_in_header.borrow().clone().unwrap();
-    let text = strip_ansi(&header.render(80).join("\n")).unwrap();
-    !text.contains("to show full startup help")
+    let text = strip_ansi(&header.render(80).join(" ")).unwrap();
+    let words: Vec<&str> = text.split_whitespace().collect();
+    !words
+        .join(" ")
+        .contains("for the full help and the loaded resources")
 }
 
 #[test]

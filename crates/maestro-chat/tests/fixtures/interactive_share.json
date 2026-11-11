@@ -152,7 +152,7 @@
     },
     "expected": {
       "kind": "error",
-      "text": "Failed to parse gist ID from gh output"
+      "text": "Cannot read a gist ID from the gh output"
     }
   },
   {
@@ -164,7 +164,7 @@
     },
     "expected": {
       "kind": "error",
-      "text": "Failed to parse gist ID from gh output"
+      "text": "Cannot read a gist ID from the gh output"
     }
   },
   {
@@ -176,7 +176,7 @@
     },
     "expected": {
       "kind": "error",
-      "text": "Failed to parse gist ID from gh output"
+      "text": "Cannot read a gist ID from the gh output"
     }
   },
   {

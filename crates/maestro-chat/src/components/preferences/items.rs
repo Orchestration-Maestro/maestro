@@ -20,7 +20,7 @@ fn row(text: (&str, &str, &str), current: String, values: &[&str]) -> SettingIte
 /// The follow-up mode description, naming the key bound to queue a follow-up.
 fn follow_up_description(key: &str) -> String {
     format!(
-        "{key} queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once."
+        "{key} queues follow-up messages until the agent stops. 'one-at-a-time': one message at a time, each waiting for its response. 'all': everything at once."
     )
 }
 
@@ -77,7 +77,7 @@ fn inline_image_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "image-width-cells",
                 "Image width",
-                "Preferred inline image width in terminal cells",
+                "Width of inline images, in terminal cells",
             ),
             ryu_js::Buffer::new()
                 .format(config.image_width_cells)
@@ -93,7 +93,7 @@ fn image_policy_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "auto-resize-images",
                 "Auto-resize images",
-                "Resize large images to 2000x2000 max for better model compatibility",
+                "Scale images above 2000x2000 down to that bound, for model compatibility",
             ),
             config.auto_resize_images.to_string(),
             &["true", "false"],
@@ -102,7 +102,7 @@ fn image_policy_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "block-images",
                 "Block images",
-                "Prevent images from being sent to LLM providers",
+                "Keep images out of LLM provider requests",
             ),
             config.block_images.to_string(),
             &["true", "false"],
@@ -111,7 +111,7 @@ fn image_policy_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "skill-commands",
                 "Skill commands",
-                "Register skills as /skill:name commands",
+                "Expose skills as /skill:name commands",
             ),
             config.session.enable_skill_commands.to_string(),
             &["true", "false"],
@@ -125,7 +125,7 @@ fn terminal_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "show-hardware-cursor",
                 "Show hardware cursor",
-                "Show the terminal cursor while still positioning it for IME support",
+                "Keep the terminal cursor visible, still positioned for IME support",
             ),
             config.terminal.show_hardware_cursor.to_string(),
             &["true", "false"],
@@ -143,7 +143,7 @@ fn terminal_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "autocomplete-max-visible",
                 "Autocomplete max items",
-                "Max visible items in autocomplete dropdown (3-20)",
+                "Autocomplete rows shown at once (3-20)",
             ),
             ryu_js::Buffer::new()
                 .format(config.autocomplete_max_visible)
@@ -154,7 +154,7 @@ fn terminal_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "clear-on-shrink",
                 "Clear on shrink",
-                "Clear empty rows when content shrinks (may cause flicker)",
+                "Clear rows the content leaves behind; may flicker",
             ),
             config.terminal.clear_on_shrink.to_string(),
             &["true", "false"],
@@ -163,7 +163,7 @@ fn terminal_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "terminal-progress",
                 "Terminal progress",
-                "Show OSC 9;4 progress indicators in the terminal tab bar",
+                "Show OSC 9;4 progress in the terminal tab bar",
             ),
             config.terminal.show_terminal_progress.to_string(),
             &["true", "false"],
@@ -177,7 +177,7 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "autocompact",
                 "Auto-compact",
-                "Automatically compact context when it gets too large",
+                "Compact the context automatically once it grows too large",
             ),
             config.session.auto_compact.to_string(),
             &["true", "false"],
@@ -186,7 +186,7 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "steering-mode",
                 "Steering mode",
-                "Enter while streaming queues steering messages. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.",
+                "Enter mid-stream queues steering messages. 'one-at-a-time': one message at a time, each waiting for its response. 'all': everything at once.",
             ),
             config.steering_mode.as_str().into(),
             &["one-at-a-time", "all"],
@@ -204,7 +204,7 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "transport",
                 "Transport",
-                "Preferred transport for providers that support multiple transports",
+                "Transport to prefer when a provider offers several",
             ),
             config.transport.as_str().into(),
             &["sse", "websocket", "websocket-cached", "auto"],
@@ -250,7 +250,7 @@ fn behavior_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "hide-thinking",
                 "Hide thinking",
-                "Hide thinking blocks in assistant responses",
+                "Hide thinking blocks in responses",
             ),
             config.behavior.hide_thinking_block.to_string(),
             &["true", "false"],
@@ -277,7 +277,7 @@ fn behavior_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "install-telemetry",
                 "Install telemetry",
-                "Send an anonymous version/update ping after changelog-detected updates",
+                "Send an anonymous version ping once the changelog shows an update",
             ),
             config.behavior.enable_install_telemetry.to_string(),
             &["true", "false"],
@@ -286,7 +286,7 @@ fn behavior_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "double-escape-action",
                 "Double-escape action",
-                "Action when pressing Escape twice with empty editor",
+                "What Escape twice does with an empty editor",
             ),
             config.double_escape_action.as_str().into(),
             &["tree", "fork", "none"],
@@ -349,7 +349,7 @@ fn thinking(
         (
             "thinking",
             "Thinking level",
-            "Reasoning depth for thinking-capable models",
+            "Reasoning depth for models that think",
         ),
         thinking_text(current).0.into(),
         &[],
@@ -360,7 +360,7 @@ fn thinking(
         Rc::new(submenus::SelectSubmenu::new(
             submenus::Selection {
                 title: "Thinking Level",
-                description: "Select reasoning depth for thinking-capable models",
+                description: "Choose the reasoning depth for models that think",
                 options: levels.iter().map(thinking_item).collect(),
                 current,
             },

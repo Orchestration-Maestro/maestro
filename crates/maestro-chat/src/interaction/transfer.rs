@@ -107,7 +107,7 @@ impl InteractiveMode {
         match self.runtime_host.import_from_jsonl(path, None).await {
             Ok(result) => {
                 if let Err(error) = self.show_import_result(path, result) {
-                    self.handle_fatal_runtime_error("Failed to import session", error.as_ref());
+                    self.handle_fatal_runtime_error("Cannot import the session", error.as_ref());
                 }
                 Ok(())
             }
@@ -127,9 +127,9 @@ impl InteractiveMode {
                 self.show_import_result(path, result)
             }
             Err(maestro_app::AgentSessionRuntimeError::SessionImportFileNotFound(error)) => {
-                Ok(self.show_error(&format!("Failed to import session: {error}"))?)
+                Ok(self.show_error(&format!("Cannot import the session: {error}"))?)
             }
-            Err(error) => self.handle_fatal_runtime_error("Failed to import session", &error),
+            Err(error) => self.handle_fatal_runtime_error("Cannot import the session", &error),
         }
     }
 

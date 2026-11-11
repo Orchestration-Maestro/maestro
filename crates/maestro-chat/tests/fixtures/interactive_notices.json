@@ -7442,7 +7442,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7460,7 +7460,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7478,7 +7478,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7496,7 +7496,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7550,7 +7550,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7604,7 +7604,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7658,7 +7658,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7676,7 +7676,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7694,7 +7694,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7712,7 +7712,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7730,7 +7730,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7748,7 +7748,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7874,7 +7874,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7892,7 +7892,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7910,7 +7910,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7928,7 +7928,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -7982,7 +7982,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8036,7 +8036,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8090,7 +8090,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8108,7 +8108,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8126,7 +8126,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8144,7 +8144,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8162,7 +8162,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {
@@ -8180,7 +8180,7 @@
       }
     },
     "expected": {
-      "warning": "tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
+      "warning": "tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux."
     }
   },
   {

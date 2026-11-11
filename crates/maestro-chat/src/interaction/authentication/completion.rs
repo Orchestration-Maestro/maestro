@@ -108,7 +108,7 @@ impl InteractiveMode {
             .cloned();
         let Some(default_id) = default_id else {
             return Ok(AuthenticationSelection::Unavailable(format!(
-                ", but no default model is configured for provider \"{provider_id}\". Use /model to select a model."
+                ", but provider \"{provider_id}\" has no default model. Run /model to select one."
             )));
         };
         let provider_models: Vec<_> = available
@@ -123,8 +123,7 @@ impl InteractiveMode {
             .collect();
         if provider_models.is_empty() {
             return Ok(AuthenticationSelection::Unavailable(
-                ", but no models are available for that provider. Use /model to select a model."
-                    .to_owned(),
+                ", but that provider offers no models. Run /model to select one.".to_owned(),
             ));
         }
         let default = provider_models
@@ -132,13 +131,13 @@ impl InteractiveMode {
             .find(|model| model.read().unwrap_or_else(PoisonError::into_inner).id == default_id);
         let Some(model) = default else {
             return Ok(AuthenticationSelection::Unavailable(format!(
-                ", but its default model \"{default_id}\" is not available. Use /model to select a model."
+                ", but its default model \"{default_id}\" is missing from the catalog. Run /model to select one."
             )));
         };
         Ok(match session.set_model(Arc::clone(&model)).await {
             Ok(()) => AuthenticationSelection::Selected(model),
             Err(error) => AuthenticationSelection::Unavailable(format!(
-                ", but selecting its default model failed: {}. Use /model to select a model.",
+                ", but its default model could not be selected: {}. Run /model to select one.",
                 error.message
             )),
         })

@@ -290,7 +290,7 @@ group and restores the shell's terminal. Run `fg` in that shell to resume and
 redraw. See the [suspend lifecycle](chat/interactive-mode.md#suspend).
 
 Native Windows has no default suspend key. A manually assigned `app.suspend` shows
-`Suspend to background is not supported on Windows` and does not emulate Unix job
+`Windows has no suspend to background` and does not emulate Unix job
 control. The registered Windows defaults above do not imply that the
 executable can open interactive mode there: native Windows startup is blocked by
 [#2844](https://github.com/Orchestration-Maestro/maestro/issues/2844).

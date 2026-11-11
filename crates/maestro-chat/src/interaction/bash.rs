@@ -216,10 +216,8 @@ impl InteractiveMode {
                 return self.report(Err(error));
             }
             self.report(
-                self.show_warning(
-                    "A bash command is already running. Press Esc to cancel it first.",
-                )
-                .map_err(Into::into),
+                self.show_warning("A bash command is still running. Press Esc to cancel it.")
+                    .map_err(Into::into),
             );
             return;
         }
