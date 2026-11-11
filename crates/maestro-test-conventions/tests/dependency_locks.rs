@@ -56,6 +56,42 @@ fn maestro_locked_resolution_keeps_checkout_clean() {
     }
 }
 
+/// The shipped binary's production and build graph never enables tokio's test clock.
+#[test]
+fn shipped_binary_tokio_has_no_test_util() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+    let tree = Command::new(cargo)
+        .args([
+            "tree",
+            "--locked",
+            "--offline",
+            "-p",
+            "maestro",
+            "-e",
+            "features,normal,build",
+            "-i",
+            "tokio",
+        ])
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(tree.status.success());
+    let tree = String::from_utf8(tree.stdout).unwrap();
+    assert!(
+        tree.lines()
+            .any(|line| line.contains("tokio feature \"rt\""))
+    );
+    let leaked: Vec<_> = tree
+        .lines()
+        .filter(|line| line.contains("tokio feature \"test-util\""))
+        .collect();
+    assert!(
+        leaked.is_empty(),
+        "tokio test-util reaches production: {leaked:?}"
+    );
+}
+
 /// A local-only resolver workspace with child-owned Cargo state.
 struct ResolverFixture {
     /// Owns cleanup after every child exits.

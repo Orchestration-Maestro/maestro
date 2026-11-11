@@ -674,6 +674,12 @@ The same traversal exclusion also leaves egui out, so the web library's dev-only
 Production egui remains defaults-off; native attachment tests use genuine
 fallback fonts. See [browser libraries](libraries/browser-frontend.md).
 
+It leaves tokio out for the same reason: members request its `test-util` feature
+in their dev-dependencies only, and the unifier would otherwise carry the paused
+clock into every production build. Each member declares the tokio features it
+uses. A conventions test runs `cargo tree -e features,normal,build -i tokio` for
+the `maestro` binary and fails if `test-util` appears.
+
 Regenerate after changing a dependency, its features or `Cargo.lock`:
 
 ```sh
