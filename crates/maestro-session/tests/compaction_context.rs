@@ -1,9 +1,11 @@
 //! Context estimates, retained cuts and summary input through the public compaction interface.
 #![cfg(test)]
+use maestro_agent::AgentMessage;
+use maestro_session::message_records::CustomAgentMessages;
 use maestro_session::{
-    CompactionSettings, DEFAULT_COMPACTION_SETTINGS, estimate_context_tokens, estimate_tokens,
-    find_cut_point, find_turn_start_index, get_last_assistant_usage, prepare_branch_entries,
-    prepare_compaction, serialize_conversation,
+    CompactionSettings, DEFAULT_COMPACTION_SETTINGS, estimate_context_tokens,
+    estimate_message_context_tokens, estimate_tokens, find_cut_point, find_turn_start_index,
+    get_last_assistant_usage, prepare_branch_entries, prepare_compaction, serialize_conversation,
 };
 use serde_json::{Value, json};
 
@@ -299,4 +301,68 @@ fn conversation_serialization_leaves_thinking_out() {
         serialize_conversation(&messages).unwrap(),
         "[User]: go\n\n[Assistant]: visible\n\n[Assistant tool calls]: read(path=\"a\")"
     );
+}
+
+/// The same answer, finished for `reason`.
+fn stopped(mut message: Value, reason: &str) -> Value {
+    message["stopReason"] = json!(reason);
+    message
+}
+
+#[test]
+fn typed_estimate_matches_the_record_estimate() {
+    let summary = json!({"role": "compactionSummary", "summary": "abcdefgh", "tokensBefore": 9000,
+        "timestamp": 100});
+    let shell = json!({"role": "bashExecution", "command": "ls", "output": "a\nb",
+        "cancelled": false, "truncated": false, "timestamp": 6});
+    let returned = json!({"role": "toolResult", "toolCallId": "t", "toolName": "read",
+        "content": [image()], "isError": false, "timestamp": 3});
+    let attached = json!({"role": "user", "content": [image()], "timestamp": 4});
+    let transcripts = [
+        vec![],
+        vec![user("only", 1)],
+        vec![user("a", 1), assistant("b", &usage(0), 2)],
+        vec![
+            attached.clone(),
+            assistant("answer", &usage(900), 2),
+            returned.clone(),
+            attached,
+            shell,
+        ],
+        vec![
+            user("a", 1),
+            assistant("answer", &usage(900), 2),
+            user("again", 3),
+            stopped(assistant("cut off", &usage(5000), 4), "aborted"),
+            stopped(assistant("failed", &usage(7000), 5), "error"),
+        ],
+        vec![
+            summary.clone(),
+            user("kept question", 40),
+            assistant("kept", &usage(9000), 50),
+        ],
+        vec![
+            summary,
+            user("kept question", 40),
+            assistant("kept", &usage(9000), 50),
+            assistant("fresh", &usage(700), 120),
+            returned,
+        ],
+    ];
+    for records in transcripts {
+        let typed: Vec<AgentMessage<CustomAgentMessages>> = records
+            .into_iter()
+            .map(|record| serde_json::from_value(record).unwrap())
+            .collect();
+        let converted: Vec<Value> = typed
+            .iter()
+            .map(|message| serde_json::to_value(message).unwrap())
+            .collect();
+        let old = estimate_context_tokens(&converted).unwrap();
+        let new = estimate_message_context_tokens(&typed).unwrap();
+        assert_eq!(new.last_usage_index, old.last_usage_index);
+        assert_tokens(new.usage_tokens, old.usage_tokens);
+        assert_tokens(new.trailing_tokens, old.trailing_tokens);
+        assert_tokens(new.tokens, old.tokens);
+    }
 }
