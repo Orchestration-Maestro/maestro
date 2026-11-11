@@ -14,8 +14,8 @@ use std::process::Output;
 
 /// Guidance for an installation no evidenced global root holds.
 #[cfg(unix)]
-const UNMANAGED: &str = "This installation is not managed by a global npm install. Update it with \
-    the package manager, wrapper, or source checkout that provides it.";
+const UNMANAGED: &str = "This installation is not managed by a global npm install. Update it through \
+    whichever package manager, source checkout or wrapper supplies it.";
 
 #[cfg(unix)]
 #[test]
@@ -121,8 +121,8 @@ fn native_update_access_matches_system_decision() {
     let command = command.expect("a writable install selects an update");
     assert_eq!(guidance, UNMANAGED);
     let unwritable = format!(
-        "This installation is managed by a global npm install, but the install path is not \
-         writable. Update it yourself with: {}",
+        "This installation is managed by a global npm install, yet its install path cannot be \
+         written. Update it yourself with: {}",
         command.display
     );
     // Each refused write withholds the command on its own, beside the other permitted one.

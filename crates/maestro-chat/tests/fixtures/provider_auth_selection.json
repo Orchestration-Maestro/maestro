@@ -527,7 +527,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            " \u001b[38;5;34m  No providers logged in. Use /login first.\u001b[39m                                    ",
+            " \u001b[38;5;34m  No provider holds a login. Run /login first.\u001b[39m                                 ",
             "",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -542,7 +542,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            " \u001b[38;5;34m  No providers logged in. Use /login first.\u001b[39m                                    ",
+            " \u001b[38;5;34m  No provider holds a login. Run /login first.\u001b[39m                                 ",
             "",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -557,7 +557,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            " \u001b[38;5;34m  No providers logged in. Use /login first.\u001b[39m                                    ",
+            " \u001b[38;5;34m  No provider holds a login. Run /login first.\u001b[39m                                 ",
             "",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -572,7 +572,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            " \u001b[38;5;34m  No providers logged in. Use /login first.\u001b[39m                                    ",
+            " \u001b[38;5;34m  No provider holds a login. Run /login first.\u001b[39m                                 ",
             "",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],

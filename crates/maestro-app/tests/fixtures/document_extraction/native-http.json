@@ -34,7 +34,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to download the document (403 Controlled denial). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be downloaded (403 Controlled denial). The site probably blocks automated downloads.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         }
       }
     }

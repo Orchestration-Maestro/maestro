@@ -87,7 +87,7 @@ changes nothing, and dropping it keeps the registration.
 arrived earlier does not count. `wait_for_idle` completes at the next
 `agent_end`, and `collect_events` returns every event through it. Both wait 60
 seconds unless given a timeout, counted from the call. They fail with
-`Timeout waiting for agent to become idle. Stderr: <text>` or
+`Timed out while waiting for the agent to become idle. Stderr: <text>` or
 `Timeout collecting events. Stderr: <text>`, and with `Client stopped` when the
 child is stopped or exits first. A wait registered while the client is stopping
 fails this way when the stop ends. Nothing that arrives after the deadline counts,

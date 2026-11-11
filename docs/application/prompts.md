@@ -32,8 +32,8 @@ ends the prompt:
 4. While a response streams, the session queues the prompt instead, as a steering
    message or a follow-up, whichever `streaming_behavior` asks for. Without a choice
    it refuses the prompt with
-   `Agent is already processing. Specify streamingBehavior ('steer' or 'followUp')
-   to queue the message.`
+   `The agent is still processing. To queue the message, pass streamingBehavior as
+   'steer' or 'followUp'.`
 5. Shell results recorded during the previous response are appended.
 6. A model without configured credentials is refused with the login help for its
    provider.
@@ -70,7 +70,7 @@ The line tells the model to resolve documentation and example paths in the
 directories that section names, never in the session's working directory.
 
 With `bash` selected and none of `grep`, `find` or `ls`, the exploration guideline
-is `- Use bash for file operations like ls, rg, find`. When any of those search
+is `- Use bash to explore files, for example ls, rg or find`. When any of those search
 tools is selected, or `bash` is absent, the prompt carries no exploration
 guideline.
 
@@ -78,8 +78,9 @@ guideline.
 
 `steer` and `follow_up` queue a user message on the agent after skill and template
 expansion. A registered command's text cannot be queued:
-`Extension command "/<name>" cannot be queued. Use prompt() or execute the command
-when not streaming.` Slash text that names no command is queued unchanged.
+`Command "/<name>" comes from an extension and cannot be queued. Call prompt(),
+or run the command when nothing is streaming.` Slash text that names no command is
+queued unchanged.
 
 The session mirrors the queued texts. Each change emits a `QueueUpdate` event that
 carries both lists. `get_steering_messages`,

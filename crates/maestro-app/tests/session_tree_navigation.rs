@@ -268,7 +268,10 @@ fn user_target_moves_to_parent_with_editor_text() {
 
 #[test]
 fn root_user_target_resets_leaf() {
-    check("a root user message resets the leaf", Scenario::default());
+    check(
+        "navigating to a root user message clears the leaf",
+        Scenario::default(),
+    );
 }
 
 #[test]

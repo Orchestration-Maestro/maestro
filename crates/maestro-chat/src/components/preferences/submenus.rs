@@ -34,7 +34,7 @@ impl WarningSettingsSubmenu {
             id: "anthropic-extra-usage".into(),
             label: "Anthropic extra usage".into(),
             description: Some(
-                "Warn when Anthropic subscription auth may use paid extra usage".into(),
+                "Warn when Anthropic subscription auth can bill paid extra usage".into(),
             ),
             current_value: enabled.to_string(),
             values: Some(vec!["true".into(), "false".into()]),
@@ -151,7 +151,7 @@ impl SelectSubmenu {
             paint(
                 palette.as_deref(),
                 &ThemeColor::Dim,
-                "  Enter to select · Esc to go back",
+                "  Enter selects · Esc goes back",
             ),
             0,
             0,

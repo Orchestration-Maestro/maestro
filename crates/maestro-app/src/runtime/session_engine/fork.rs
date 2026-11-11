@@ -26,7 +26,7 @@ impl AgentSessionRuntime {
     /// if another operation replaces it while a callback is suspended.
     ///
     /// # Errors
-    /// Returns `Invalid entry ID for forking`, `Persisted session is missing a session file`,
+    /// Returns `Invalid entry ID for forking`, `The persisted session has no session file`,
     /// `Failed to create forked session`, a history failure, an extension error listener's
     /// failure or the factory's failure.
     pub async fn fork(
@@ -92,7 +92,7 @@ impl AgentSessionRuntime {
     ) -> Result<Rc<RefCell<SessionManager>>, DiagnosticErrorInfo> {
         let session = self.session();
         let current_file = session.session_file().ok_or_else(|| {
-            DiagnosticErrorInfo::error("Persisted session is missing a session file")
+            DiagnosticErrorInfo::error("The persisted session has no session file")
         })?;
         let session_dir = session
             .session_manager()

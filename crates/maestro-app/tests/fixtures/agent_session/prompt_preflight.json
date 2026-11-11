@@ -1017,7 +1017,7 @@
     "name": "a streaming prompt without a behaviour is refused",
     "results": [
       {
-        "error": "Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message."
+        "error": "The agent is still processing. To queue the message, pass streamingBehavior as 'steer' or 'followUp'."
       },
       {
         "label": "preflight",

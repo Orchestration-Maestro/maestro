@@ -5,8 +5,14 @@ use std::{fs, path::Path, process::ExitCode};
 use maestro_test_directory::Scratch;
 use maestro_tooling as tooling;
 
-/// A registry package whose identity must remain unchanged by scratch resolution.
-const LOCK: &str = "version=4\n[[package]]\nname='wasm-bindgen'\nversion='0.2.129'\nsource='registry+https://example.invalid/index'\nchecksum='original'\n";
+/// A registry package whose identity must remain unchanged by scratch resolution, beside the
+/// workspace crates and a second registry package that the browser library builds on, and one
+/// workspace crate it never reaches.
+const LOCK: &str = "version=4\n[[package]]\nname='wasm-bindgen'\nversion='0.2.129'\nsource='registry+https://example.invalid/index'\nchecksum='original'\n[[package]]\nname='sha2'\nversion='0.11.0'\nsource='registry+https://example.invalid/index'\nchecksum='digest'\n[[package]]\nname='maestro-web'\nversion='0.0.0'\ndependencies=['maestro-leaf','wasm-bindgen']\n[[package]]\nname='maestro-leaf'\nversion='0.0.0'\ndependencies=['sha2']\n[[package]]\nname='maestro-native'\nversion='0.0.0'\n";
+
+/// The root profile: debug levels, overrides for a reached registry package and workspace crate,
+/// and overrides for packages the browser library never builds.
+const PROFILE: &str = "[profile.dev]\ndebug='line-tables-only'\n[profile.dev.package.'*']\ndebug=false\n[profile.dev.package.sha2]\nopt-level=3\n[profile.dev.package.maestro-leaf]\nopt-level=1\n[profile.dev.package.maestro-native]\nopt-level=2\n[profile.dev.package.cranelift-codegen]\nopt-level=3\n[profile.test]\ndebug='line-tables-only'\n";
 
 /// Write the actual preparation inputs inside a disposable checkout.
 fn checkout(root: &Path) {
@@ -22,7 +28,7 @@ fn checkout(root: &Path) {
         "pub fn witness() {}\n",
     )
     .unwrap();
-    fs::write(root.join("Cargo.toml"), "[workspace.dependencies]\nalias={package='actual',version='=1.2.3',features=['base','base'],default-features=false}\nlocal={path='crates/local'}\n[patch.crates-io]\npatched={path='patches/patched'}\n").unwrap();
+    fs::write(root.join("Cargo.toml"), "[workspace.dependencies]\nalias={package='actual',version='=1.2.3',features=['base','base'],default-features=false}\nlocal={path='crates/local'}\n[patch.crates-io]\npatched={path='patches/patched'}\n".to_owned() + PROFILE).unwrap();
     fs::write(root.join("crates/maestro-web/Cargo.toml"), "[dependencies]\nalias={workspace=true,features=['normal']}\nlocal.workspace=true\nplain='=2.0.0'\n[target.'cfg(target_arch = \"wasm32\")'.dependencies]\nalias={workspace=true,features=['wasm','base']}\n[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\nnative-only='=9.0.0'\n[dev-dependencies]\nalias={workspace=true,features=['dev','wasm']}\nmaestro-web={path='.',features=['test-support']}\n").unwrap();
 }
 
@@ -152,14 +158,14 @@ fn assert_library(manifest: &toml::Value, root: &Path) {
         root.join("crates/maestro-web/tests/integration.rs")
     );
     assert_eq!(manifest["lib"]["crate-type"][0].as_str(), Some("cdylib"));
-    assert_eq!(
-        manifest["profile"]["dev"]["debug"].as_str(),
-        Some("line-tables-only")
-    );
-    assert_eq!(
-        manifest["profile"]["dev"]["package"]["*"]["debug"].as_bool(),
-        Some(false)
-    );
+    let root_manifest: toml::Value =
+        toml::from_str(&fs::read_to_string(root.join("Cargo.toml")).unwrap()).unwrap();
+    let mut profile = root_manifest["profile"].clone();
+    // Overrides for packages outside the library's dependency closure would only warn.
+    let packages = profile["dev"]["package"].as_table_mut().unwrap();
+    packages.remove("maestro-native");
+    packages.remove("cranelift-codegen");
+    assert_eq!(manifest["profile"], profile);
 }
 
 /// Bad manifest values fail instead of silently omitting dependencies or their features.

@@ -246,7 +246,7 @@ pub(super) fn get_built_in_command_conflict_diagnostics(
             ResourceDiagnostic {
                 r#type: DiagnosticType::Warning,
                 message: format!(
-                    "Extension command '/{name}' conflicts with built-in interactive command. {reached}"
+                    "Extension command '/{name}' collides with a built-in interactive command. {reached}"
                 ),
                 path: Some(read(&resolved.command.source_info).path.clone()),
                 collision: None,

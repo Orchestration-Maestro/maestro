@@ -2489,11 +2489,11 @@
   "descriptions": [
     {
       "read_write": true,
-      "description": "\n### Artifacts Storage\n\nCreate, read, update, and delete files in artifacts storage.\n\n#### When to Use\n- Store intermediate results between tool calls\n- Save generated files (images, CSVs, processed data) for user to view and download\n\n#### Do NOT Use For\n- Content you author directly, like summaries of content you read (use artifacts tool instead)\n\n#### Functions\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\n- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType\n- deleteArtifact(filename) - Delete artifact, returns Promise<void>\n\n#### Example\nJSON workflow:\n```javascript\n// Fetch and save\nconst response = await fetch('https://api.example.com/products');\nconst products = await response.json();\nawait createOrUpdateArtifact('products.json', products);\n\n// Later: read and filter\nconst all = await getArtifact('products.json');\nconst cheap = all.filter(p => p.price < 100);\nawait createOrUpdateArtifact('cheap.json', cheap);\n```\n\nBinary file (image):\n```javascript\nconst canvas = document.createElement('canvas');\ncanvas.width = 800; canvas.height = 600;\nconst ctx = canvas.getContext('2d');\nctx.fillStyle = 'blue';\nctx.fillRect(0, 0, 800, 600);\n// Remove data:image/png;base64, prefix\nconst base64 = canvas.toDataURL().split(',')[1];\nawait createOrUpdateArtifact('chart.png', base64, 'image/png');\n```\n"
+      "description": "\n### Artifacts Storage\n\nCreate, read, update, and delete files in artifacts storage.\n\n#### When to Use\n- Store intermediate results between tool calls\n- Save generated files (images, CSVs, processed data) for user to view and download\n\n#### Do NOT Use For\n- Content you author directly, like summaries of content you read (use artifacts tool instead)\n\n#### Functions\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\n- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType\n- deleteArtifact(filename) - Delete artifact, returns Promise<void>\n\n#### Example\nJSON workflow:\n```javascript\n// Fetch and save\nconst response = await fetch('https://api.example.com/products');\nconst products = await response.json();\nawait createOrUpdateArtifact('products.json', products);\n\n// Later: read and filter\nconst all = await getArtifact('products.json');\nconst cheap = all.filter(p => p.price < 100);\nawait createOrUpdateArtifact('cheap.json', cheap);\n```\n\nBinary file (image):\n```javascript\nconst canvas = document.createElement('canvas');\ncanvas.width = 800; canvas.height = 600;\nconst ctx = canvas.getContext('2d');\nctx.fillStyle = 'blue';\nctx.fillRect(0, 0, 800, 600);\n// Strip the data:image/png;base64, prefix\nconst base64 = canvas.toDataURL().split(',')[1];\nawait createOrUpdateArtifact('chart.png', base64, 'image/png');\n```\n"
     },
     {
       "read_write": true,
-      "description": "\n### Artifacts Storage\n\nCreate, read, update, and delete files in artifacts storage.\n\n#### When to Use\n- Store intermediate results between tool calls\n- Save generated files (images, CSVs, processed data) for user to view and download\n\n#### Do NOT Use For\n- Content you author directly, like summaries of content you read (use artifacts tool instead)\n\n#### Functions\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\n- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType\n- deleteArtifact(filename) - Delete artifact, returns Promise<void>\n\n#### Example\nJSON workflow:\n```javascript\n// Fetch and save\nconst response = await fetch('https://api.example.com/products');\nconst products = await response.json();\nawait createOrUpdateArtifact('products.json', products);\n\n// Later: read and filter\nconst all = await getArtifact('products.json');\nconst cheap = all.filter(p => p.price < 100);\nawait createOrUpdateArtifact('cheap.json', cheap);\n```\n\nBinary file (image):\n```javascript\nconst canvas = document.createElement('canvas');\ncanvas.width = 800; canvas.height = 600;\nconst ctx = canvas.getContext('2d');\nctx.fillStyle = 'blue';\nctx.fillRect(0, 0, 800, 600);\n// Remove data:image/png;base64, prefix\nconst base64 = canvas.toDataURL().split(',')[1];\nawait createOrUpdateArtifact('chart.png', base64, 'image/png');\n```\n"
+      "description": "\n### Artifacts Storage\n\nCreate, read, update, and delete files in artifacts storage.\n\n#### When to Use\n- Store intermediate results between tool calls\n- Save generated files (images, CSVs, processed data) for user to view and download\n\n#### Do NOT Use For\n- Content you author directly, like summaries of content you read (use artifacts tool instead)\n\n#### Functions\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\n- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType\n- deleteArtifact(filename) - Delete artifact, returns Promise<void>\n\n#### Example\nJSON workflow:\n```javascript\n// Fetch and save\nconst response = await fetch('https://api.example.com/products');\nconst products = await response.json();\nawait createOrUpdateArtifact('products.json', products);\n\n// Later: read and filter\nconst all = await getArtifact('products.json');\nconst cheap = all.filter(p => p.price < 100);\nawait createOrUpdateArtifact('cheap.json', cheap);\n```\n\nBinary file (image):\n```javascript\nconst canvas = document.createElement('canvas');\ncanvas.width = 800; canvas.height = 600;\nconst ctx = canvas.getContext('2d');\nctx.fillStyle = 'blue';\nctx.fillRect(0, 0, 800, 600);\n// Strip the data:image/png;base64, prefix\nconst base64 = canvas.toDataURL().split(',')[1];\nawait createOrUpdateArtifact('chart.png', base64, 'image/png');\n```\n"
     },
     {
       "read_write": false,
@@ -2798,7 +2798,7 @@
       "replies": [
         {
           "success": false,
-          "error": "Error: create command requires filename and content"
+          "error": "Error: the create command needs both filename and content"
         }
       ],
       "history": [],
@@ -3087,7 +3087,7 @@
       "replies": [
         {
           "success": false,
-          "error": "Error: create command requires filename and content"
+          "error": "Error: the create command needs both filename and content"
         }
       ],
       "history": [],
@@ -3113,7 +3113,7 @@
       "replies": [
         {
           "success": false,
-          "error": "Error: create command requires filename and content"
+          "error": "Error: the create command needs both filename and content"
         }
       ],
       "history": [],

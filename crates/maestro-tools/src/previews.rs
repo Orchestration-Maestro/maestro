@@ -260,11 +260,11 @@ struct Matched<'a> {
 fn not_found(path: &str, edit: usize, total: usize) -> DiagnosticErrorInfo {
     failure(&if total == 1 {
         format!(
-            "Could not find the exact text in {path}. The old text must match exactly including all whitespace and newlines."
+            "No exact match for the text in {path}. The old text must match character for character, whitespace and newlines included."
         )
     } else {
         format!(
-            "Could not find edits[{edit}] in {path}. The oldText must match exactly including all whitespace and newlines."
+            "No exact match for edits[{edit}] in {path}. That oldText must match character for character, whitespace and newlines included."
         )
     })
 }
@@ -273,11 +273,11 @@ fn not_found(path: &str, edit: usize, total: usize) -> DiagnosticErrorInfo {
 fn duplicate(path: &str, edit: usize, total: usize, count: usize) -> DiagnosticErrorInfo {
     failure(&if total == 1 {
         format!(
-            "Found {count} occurrences of the text in {path}. The text must be unique. Please provide more context to make it unique."
+            "Found {count} occurrences of the text in {path}. The text must occur once. Add surrounding context so only one place matches."
         )
     } else {
         format!(
-            "Found {count} occurrences of edits[{edit}] in {path}. Each oldText must be unique. Please provide more context to make it unique."
+            "Found {count} occurrences of edits[{edit}] in {path}. Each oldText must occur once. Add surrounding context so only one place matches."
         )
     })
 }
@@ -295,10 +295,10 @@ fn empty_old_text(path: &str, edit: usize, total: usize) -> DiagnosticErrorInfo 
 fn no_change(path: &str, total: usize) -> DiagnosticErrorInfo {
     failure(&if total == 1 {
         format!(
-            "No changes made to {path}. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected."
+            "No changes made to {path}. The replacement left the content identical. Check for special characters, or for text that is not present as expected."
         )
     } else {
-        format!("No changes made to {path}. The replacements produced identical content.")
+        format!("No changes made to {path}. The replacements left the content identical.")
     })
 }
 
@@ -328,7 +328,7 @@ fn locate<'a>(
     for pair in matched.windows(2) {
         if pair[0].index + pair[0].length > pair[1].index {
             return Err(failure(&format!(
-                "edits[{}] and edits[{}] overlap in {path}. Merge them into one edit or target disjoint regions.",
+                "edits[{}] and edits[{}] overlap in {path}. Combine them into one edit, or aim each at a separate region.",
                 pair[0].edit, pair[1].edit
             )));
         }
@@ -338,8 +338,8 @@ fn locate<'a>(
 
 /// Apply edits to LF-normalized content, all matched against the same original snapshot.
 ///
-/// `normalized_content` must already use LF endings; it is not converted here. If any
-/// edit needs fuzzy matching, every edit is matched against the fuzzy-normalized content,
+/// `normalized_content` must already use LF endings; it is not converted here. When
+/// one edit relies on fuzzy matching, every edit is matched against the fuzzy-normalized content,
 /// which is returned as the base. Each `new_text` is converted to LF, then inserted as is.
 ///
 /// # Errors

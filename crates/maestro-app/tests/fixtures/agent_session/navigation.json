@@ -115,7 +115,7 @@
     ]
   },
   {
-    "name": "a root user message resets the leaf",
+    "name": "navigating to a root user message clears the leaf",
     "target": "u1",
     "navigateOptions": {},
     "result": {
@@ -1622,7 +1622,7 @@
       "summarize": true
     },
     "result": {
-      "error": "Authentication failed for \"faux\". Credentials may have expired or network is unavailable. Run '/login faux' to re-authenticate."
+      "error": "Authentication failed for \"faux\". The credentials may have expired, or the network may be down. Run '/login faux' to authenticate again."
     },
     "leaf": "a3",
     "appended": [],

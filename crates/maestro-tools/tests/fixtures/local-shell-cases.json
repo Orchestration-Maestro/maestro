@@ -565,7 +565,7 @@
         ]
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
         "trace": [
           [
             "probe",
@@ -595,7 +595,7 @@
         }
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
         "trace": [
           [
             "probe",
@@ -621,7 +621,7 @@
         }
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n  C:\\PF\\Git\\bin\\bash.exe\n  C:\\PF86\\Git\\bin\\bash.exe",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n  C:\\PF\\Git\\bin\\bash.exe\n  C:\\PF86\\Git\\bin\\bash.exe",
         "trace": [
           [
             "exists",
@@ -654,7 +654,7 @@
         }
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n  C:\\PF\\Git\\bin\\bash.exe",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n  C:\\PF\\Git\\bin\\bash.exe",
         "trace": [
           [
             "exists",
@@ -684,7 +684,7 @@
         }
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n  C:\\PF\\Git\\bin\\bash.exe\n  C:\\PF\\Git\\bin\\bash.exe",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n  C:\\PF\\Git\\bin\\bash.exe\n  C:\\PF\\Git\\bin\\bash.exe",
         "trace": [
           [
             "exists",
@@ -721,7 +721,7 @@
         ]
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
         "trace": [
           [
             "probe",
@@ -747,7 +747,7 @@
         }
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
         "trace": [
           [
             "probe",
@@ -770,7 +770,7 @@
         "probeThrow": true
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
         "trace": [
           [
             "probe",
@@ -796,7 +796,7 @@
         }
       },
       "expected": {
-        "error": "No bash shell found. Options:\n  1. Install Git for Windows: https://git-scm.com/download/win\n  2. Add your bash to PATH (Cygwin, MSYS2, etc.)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
+        "error": "No bash shell found. Options:\n  1. Get Git for Windows from https://git-scm.com/download/win\n  2. Point PATH at another bash (Cygwin, MSYS2 and others)\n  3. Set shellPath in settings.json\n\nSearched Git Bash in:\n",
         "trace": [
           [
             "probe",

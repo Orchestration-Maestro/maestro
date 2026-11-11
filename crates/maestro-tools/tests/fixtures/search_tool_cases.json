@@ -1431,7 +1431,7 @@
       "lines": [
         "fd not found. Downloading..."
       ],
-      "last_line_prefix": "Failed to download fd: Binary not found in archive: expected fd under <BIN>/extract_tmp_fd_<PID>_",
+      "last_line_prefix": "Failed to download fd: Archive does not hold fd under <BIN>/extract_tmp_fd_<PID>_",
       "requests": [
         {
           "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
@@ -1527,7 +1527,7 @@
       "lines": [
         "fd not found. Downloading..."
       ],
-      "last_line_prefix": "Failed to download fd: Binary not found in archive: expected fd.exe under <BIN>/extract_tmp_fd_<PID>_",
+      "last_line_prefix": "Failed to download fd: Archive does not hold fd.exe under <BIN>/extract_tmp_fd_<PID>_",
       "requests": [
         {
           "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
