@@ -170,9 +170,9 @@ pub enum ChatCompletionMessageParam {
 }
 
 /// Text sent between tool results and the next user message when an endpoint requires it.
-const BRIDGE_TEXT: &str = "I have processed the tool results.";
+const BRIDGE_TEXT: &str = "The tool results arrived.";
 /// Lead-in for images lifted out of tool results.
-const IMAGE_INTRODUCTION: &str = "Attached image(s) from tool result:";
+const IMAGE_INTRODUCTION: &str = "Images attached from the tool result:";
 /// Longest tool-call identifier the protocol accepts, in UTF-16 units.
 const ID_LIMIT: usize = 40;
 

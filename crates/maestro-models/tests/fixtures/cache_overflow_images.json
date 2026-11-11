@@ -3780,7 +3780,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -3856,7 +3856,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -3897,7 +3897,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -3983,7 +3983,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -4093,7 +4093,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -4123,7 +4123,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -4168,7 +4168,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -4198,7 +4198,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -4286,7 +4286,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -4362,7 +4362,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -4403,7 +4403,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -4489,7 +4489,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -4603,7 +4603,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -4633,7 +4633,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -4678,7 +4678,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -4708,7 +4708,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -4799,7 +4799,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -4929,7 +4929,7 @@
           "input": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -4970,7 +4970,7 @@
             "input": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -5059,7 +5059,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -5255,7 +5255,7 @@
           "input": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -5314,7 +5314,7 @@
             "input": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -5420,7 +5420,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -5550,7 +5550,7 @@
           "input": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -5591,7 +5591,7 @@
             "input": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -5680,7 +5680,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -5880,7 +5880,7 @@
           "input": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -5943,7 +5943,7 @@
             "input": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -6050,7 +6050,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -6184,7 +6184,7 @@
           "input": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -6225,7 +6225,7 @@
             "input": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -6311,7 +6311,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -6511,7 +6511,7 @@
           "input": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -6570,7 +6570,7 @@
             "input": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -6673,7 +6673,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -6807,7 +6807,7 @@
           "input": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -6848,7 +6848,7 @@
             "input": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -6934,7 +6934,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -7138,7 +7138,7 @@
           "input": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -7201,7 +7201,7 @@
             "input": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -7308,7 +7308,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -7425,7 +7425,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -7478,7 +7478,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -7559,7 +7559,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -7745,7 +7745,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -7828,7 +7828,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -7907,7 +7907,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -8024,7 +8024,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -8077,7 +8077,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -8158,7 +8158,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -8348,7 +8348,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -8431,7 +8431,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -8510,7 +8510,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -8586,7 +8586,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -8630,7 +8630,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -8719,7 +8719,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -8829,7 +8829,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -8859,7 +8859,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -8907,7 +8907,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -8937,7 +8937,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -9028,7 +9028,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -9104,7 +9104,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -9148,7 +9148,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -9237,7 +9237,7 @@
         "maxTokens": 16384
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -9351,7 +9351,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -9381,7 +9381,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -9429,7 +9429,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -9459,7 +9459,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -9550,7 +9550,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -9627,7 +9627,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -9664,7 +9664,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -9745,7 +9745,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -9856,7 +9856,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -9921,7 +9921,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -10030,7 +10030,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -10107,7 +10107,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -10144,7 +10144,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -10225,7 +10225,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -10340,7 +10340,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -10405,7 +10405,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -10518,7 +10518,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -10617,7 +10617,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -10661,7 +10661,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -10754,7 +10754,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -10864,7 +10864,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -10895,7 +10895,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -10943,7 +10943,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -10974,7 +10974,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -11069,7 +11069,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -11168,7 +11168,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -11212,7 +11212,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -11305,7 +11305,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -11419,7 +11419,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -11450,7 +11450,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -11498,7 +11498,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -11529,7 +11529,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -11624,7 +11624,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -11723,7 +11723,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -11767,7 +11767,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -11860,7 +11860,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -11970,7 +11970,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -12001,7 +12001,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -12049,7 +12049,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -12080,7 +12080,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -12175,7 +12175,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -12274,7 +12274,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -12318,7 +12318,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -12411,7 +12411,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -12525,7 +12525,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -12556,7 +12556,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -12604,7 +12604,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -12635,7 +12635,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -12730,7 +12730,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -12829,7 +12829,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -12873,7 +12873,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -12966,7 +12966,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -13076,7 +13076,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -13107,7 +13107,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -13155,7 +13155,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -13186,7 +13186,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -13281,7 +13281,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -13380,7 +13380,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -13424,7 +13424,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -13517,7 +13517,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -13631,7 +13631,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -13662,7 +13662,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -13710,7 +13710,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -13741,7 +13741,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -13836,7 +13836,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -13935,7 +13935,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -13979,7 +13979,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -14072,7 +14072,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -14182,7 +14182,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -14213,7 +14213,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -14261,7 +14261,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -14292,7 +14292,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -14387,7 +14387,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -14486,7 +14486,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -14530,7 +14530,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -14623,7 +14623,7 @@
         }
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -14737,7 +14737,7 @@
           "messages": [
             {
               "role": "developer",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -14768,7 +14768,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -14816,7 +14816,7 @@
             "messages": [
               {
                 "role": "developer",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -14847,7 +14847,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -14941,7 +14941,7 @@
         "maxTokens": 32768
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -15058,7 +15058,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -15112,7 +15112,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -15196,7 +15196,7 @@
         "maxTokens": 32768
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -15382,7 +15382,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -15466,7 +15466,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -15548,7 +15548,7 @@
         "maxTokens": 32768
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -15665,7 +15665,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -15719,7 +15719,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -15803,7 +15803,7 @@
         "maxTokens": 32768
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -15993,7 +15993,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -16077,7 +16077,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -16156,7 +16156,7 @@
         "maxTokens": 65536
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -16273,7 +16273,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -16326,7 +16326,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -16407,7 +16407,7 @@
         "maxTokens": 65536
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -16593,7 +16593,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -16676,7 +16676,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -16755,7 +16755,7 @@
         "maxTokens": 65536
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -16872,7 +16872,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -16925,7 +16925,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -17006,7 +17006,7 @@
         "maxTokens": 65536
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -17196,7 +17196,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -17279,7 +17279,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -17358,7 +17358,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -17486,7 +17486,7 @@
             },
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -17551,7 +17551,7 @@
               },
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -17632,7 +17632,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -17829,7 +17829,7 @@
             },
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -17924,7 +17924,7 @@
               },
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -18003,7 +18003,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -18131,7 +18131,7 @@
             },
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -18196,7 +18196,7 @@
               },
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -18277,7 +18277,7 @@
         "maxTokens": 64000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -18478,7 +18478,7 @@
             },
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -18573,7 +18573,7 @@
               },
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -18663,7 +18663,7 @@
         "maxTokens": 4096
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -18739,7 +18739,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -18784,7 +18784,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -18880,7 +18880,7 @@
         "maxTokens": 4096
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -18990,7 +18990,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -19020,7 +19020,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -19069,7 +19069,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -19099,7 +19099,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -19197,7 +19197,7 @@
         "maxTokens": 4096
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -19273,7 +19273,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -19318,7 +19318,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -19414,7 +19414,7 @@
         "maxTokens": 4096
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -19528,7 +19528,7 @@
           "messages": [
             {
               "role": "system",
-              "content": "You are a helpful assistant that uses tools when asked."
+              "content": "You are a careful assistant that calls tools when the work needs them."
             },
             {
               "role": "user",
@@ -19558,7 +19558,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -19607,7 +19607,7 @@
             "messages": [
               {
                 "role": "system",
-                "content": "You are a helpful assistant that uses tools when asked."
+                "content": "You are a careful assistant that calls tools when the work needs them."
               },
               {
                 "role": "user",
@@ -19637,7 +19637,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -19733,7 +19733,7 @@
         "maxTokens": 16000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -19853,7 +19853,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -19913,7 +19913,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -20002,7 +20002,7 @@
         "maxTokens": 16000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -20191,7 +20191,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -20281,7 +20281,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -20368,7 +20368,7 @@
         "maxTokens": 16000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -20488,7 +20488,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -20548,7 +20548,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -20637,7 +20637,7 @@
         "maxTokens": 16000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -20830,7 +20830,7 @@
           "system": [
             {
               "type": "text",
-              "text": "You are a helpful assistant that uses tools when asked.",
+              "text": "You are a careful assistant that calls tools when the work needs them.",
               "cache_control": {
                 "type": "ephemeral"
               }
@@ -20920,7 +20920,7 @@
             "system": [
               {
                 "type": "text",
-                "text": "You are a helpful assistant that uses tools when asked.",
+                "text": "You are a careful assistant that calls tools when the work needs them.",
                 "cache_control": {
                   "type": "ephemeral"
                 }
@@ -21002,7 +21002,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -21132,7 +21132,7 @@
           "model": "gpt-5.2-codex",
           "store": false,
           "stream": true,
-          "instructions": "You are a helpful assistant that uses tools when asked.",
+          "instructions": "You are a careful assistant that calls tools when the work needs them.",
           "input": [
             {
               "role": "user",
@@ -21181,7 +21181,7 @@
             "model": "gpt-5.2-codex",
             "store": false,
             "stream": true,
-            "instructions": "You are a helpful assistant that uses tools when asked.",
+            "instructions": "You are a careful assistant that calls tools when the work needs them.",
             "input": [
               {
                 "role": "user",
@@ -21277,7 +21277,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -21473,7 +21473,7 @@
           "model": "gpt-5.2-codex",
           "store": false,
           "stream": true,
-          "instructions": "You are a helpful assistant that uses tools when asked.",
+          "instructions": "You are a careful assistant that calls tools when the work needs them.",
           "input": [
             {
               "role": "user",
@@ -21540,7 +21540,7 @@
             "model": "gpt-5.2-codex",
             "store": false,
             "stream": true,
-            "instructions": "You are a helpful assistant that uses tools when asked.",
+            "instructions": "You are a careful assistant that calls tools when the work needs them.",
             "input": [
               {
                 "role": "user",
@@ -21653,7 +21653,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -21783,7 +21783,7 @@
           "model": "gpt-5.2-codex",
           "store": false,
           "stream": true,
-          "instructions": "You are a helpful assistant that uses tools when asked.",
+          "instructions": "You are a careful assistant that calls tools when the work needs them.",
           "input": [
             {
               "role": "user",
@@ -21832,7 +21832,7 @@
             "model": "gpt-5.2-codex",
             "store": false,
             "stream": true,
-            "instructions": "You are a helpful assistant that uses tools when asked.",
+            "instructions": "You are a careful assistant that calls tools when the work needs them.",
             "input": [
               {
                 "role": "user",
@@ -21928,7 +21928,7 @@
         "maxTokens": 128000
       },
       "context": {
-        "systemPrompt": "You are a helpful assistant that uses tools when asked.",
+        "systemPrompt": "You are a careful assistant that calls tools when the work needs them.",
         "messages": [
           {
             "role": "user",
@@ -22128,7 +22128,7 @@
           "model": "gpt-5.2-codex",
           "store": false,
           "stream": true,
-          "instructions": "You are a helpful assistant that uses tools when asked.",
+          "instructions": "You are a careful assistant that calls tools when the work needs them.",
           "input": [
             {
               "role": "user",
@@ -22199,7 +22199,7 @@
             "model": "gpt-5.2-codex",
             "store": false,
             "stream": true,
-            "instructions": "You are a helpful assistant that uses tools when asked.",
+            "instructions": "You are a careful assistant that calls tools when the work needs them.",
             "input": [
               {
                 "role": "user",
@@ -78537,7 +78537,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -78612,7 +78612,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -78847,7 +78847,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -78922,7 +78922,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -79153,7 +79153,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -79228,7 +79228,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -79459,7 +79459,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -79534,7 +79534,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -80027,7 +80027,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -80102,7 +80102,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -80337,7 +80337,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -80412,7 +80412,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -80643,7 +80643,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -80718,7 +80718,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -80949,7 +80949,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -81024,7 +81024,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",
@@ -111840,7 +111840,7 @@
               "content": [
                 {
                   "type": "text",
-                  "text": "Attached image(s) from tool result:"
+                  "text": "Images attached from the tool result:"
                 },
                 {
                   "type": "image_url",
@@ -111921,7 +111921,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "Attached image(s) from tool result:"
+                    "text": "Images attached from the tool result:"
                   },
                   {
                     "type": "image_url",

@@ -143,6 +143,10 @@ fn listen(
 /// Bind the configured host, enabling address reuse on Unix.
 #[cfg(not(target_arch = "wasm32"))]
 async fn bind_host(host: &str, port: u16) -> Result<tokio::net::TcpListener, OAuthError> {
+    if host.trim().is_empty() {
+        // A blank name names no address, and some resolvers answer it only after a fixed wait.
+        return Err(OAuthError::message("No callback host address"));
+    }
     let address = tokio::net::lookup_host((host, port))
         .await
         .map_err(|error| io_error(&error))?
@@ -215,4 +219,40 @@ fn serve(
         connection.as_mut().graceful_shutdown();
         connection.await.ok();
     });
+}
+
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+mod tests {
+    use super::*;
+    use crate::tests::runtime::run;
+
+    /// Answer no callback; a blank host never binds a listener.
+    fn route(_: &str, _: &str) -> CallbackResponse {
+        CallbackResponse {
+            status: 500,
+            content_type: "text/plain",
+            body: "no listener".into(),
+            accepted: None,
+        }
+    }
+
+    #[test]
+    fn blank_callback_host_is_refused_without_a_name_lookup() {
+        run(async {
+            for host in [" ", "\t", "   "] {
+                let bound = bind_with(
+                    "verifier".into(),
+                    0,
+                    route,
+                    |_| Some(host.to_owned()),
+                    |listener| Box::pin(listener.accept()),
+                )
+                .await;
+
+                let error = bound.err().expect("a blank host binds no listener");
+                assert_eq!(error.to_string(), "No callback host address");
+            }
+        });
+    }
 }

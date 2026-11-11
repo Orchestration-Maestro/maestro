@@ -2,9 +2,10 @@ name: CI speed guards
 
 on:
   workflow_run:
-    # The guards compare the shared workflow's job names exactly, and a reusable caller prefixes every
-    # job with the calling job's name, so merge-group runs are the ones this listener watches.
-    workflows: [Rust CI]
+    # The guards read the job names a reusable caller prefixes with its own job name, so a watched
+    # workflow this repository declares must call the shared CI. Merge groups and pull requests run
+    # `Rust CI`; the full suite after landing alone runs the macOS shards a landing judges.
+    workflows: [Rust CI, Full suite after landing]
     types: [completed]
   pull_request:
 
@@ -14,6 +15,7 @@ jobs:
     # before this condition, so the call grants them on both events.
     if: >-
       github.event_name == 'pull_request' ||
+      github.event.workflow_run.event == 'pull_request' ||
       github.event.workflow_run.event == 'merge_group' ||
       (github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_branch == github.event.repository.default_branch)
@@ -21,6 +23,6 @@ jobs:
       contents: read
       actions: read
       issues: write
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci-guards.yml@cc6d33d084db3a23dc9fd4d0fa1ed2bf1954d77a # v0.19.32
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci-guards.yml@cd4d94131f052f449bf08f1de7a9f5848351ac86 # v0.19.33
     with:
       run-id: ${{ format('{0}', github.event.workflow_run.id) }}

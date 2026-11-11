@@ -7022,7 +7022,7 @@
               },
               "limit": {
                 "type": "number",
-                "description": "Maximum number of matches to return (default: 100)"
+                "description": "Largest number of matches returned (default: 100)"
               }
             }
           }
@@ -7079,7 +7079,7 @@
               },
               "limit": {
                 "type": "number",
-                "description": "Maximum number of matches to return (default: 100)"
+                "description": "Largest number of matches returned (default: 100)"
               }
             }
           }
@@ -7121,7 +7121,7 @@
               },
               "limit": {
                 "type": "number",
-                "description": "Maximum number of results (default: 1000)"
+                "description": "Largest number of results returned (default: 1000)"
               }
             }
           }
@@ -7162,7 +7162,7 @@
               },
               "limit": {
                 "type": "number",
-                "description": "Maximum number of results (default: 1000)"
+                "description": "Largest number of results returned (default: 1000)"
               }
             }
           }
@@ -7197,7 +7197,7 @@
               },
               "limit": {
                 "type": "number",
-                "description": "Maximum number of entries to return (default: 500)"
+                "description": "Largest number of entries returned (default: 500)"
               }
             }
           }
@@ -7231,7 +7231,7 @@
               },
               "limit": {
                 "type": "number",
-                "description": "Maximum number of entries to return (default: 500)"
+                "description": "Largest number of entries returned (default: 500)"
               }
             }
           }

@@ -1210,11 +1210,15 @@ the linked issue is still open. The change fixing the slowness must delete its
 override as well as close the issue. Each existing exception has its own issue,
 and #3589 tracks them together.
 
-Development and test profiles use `debug = "line-tables-only"` for workspace crates:
+The development profile uses `debug = "line-tables-only"` for workspace crates:
 backtraces retain file:line for workspace code, without debugger variable views.
-Dependencies build without debug info, so their frames show function names only;
-this keeps target directories about a sixth smaller.
-They also build these dependencies optimised; release builds are unchanged:
+The test profile uses `debug = false`: line tables cost about 17% of the compile CPU
+of a large test unit. Backtrace frames inside test binaries show function names only,
+while a panic message still names its file and line. To read file:line in a test
+backtrace, build that test with `CARGO_PROFILE_TEST_DEBUG=line-tables-only`.
+Dependencies build without debug info in both profiles, so their frames show function
+names only; this keeps target directories about a sixth smaller.
+Both profiles also build these dependencies optimised; release builds are unchanged:
 
 - `cranelift-codegen` and `regalloc2`: tests compile extension components, and an
   unoptimised code generator makes each compile about five times slower.
@@ -1565,9 +1569,15 @@ The tool-factory suite in `maestro-tools` and the factory-construction test in
 `maestro-extensions-wasmtime` install the pins the same way, so neither needs `rg` or
 `fd` on `PATH`. The `author-component` filter in `.config/nextest.toml` covers each
 test that receives the exports: add a test to it when the test calls
-`install_search_program`. A chat startup witness that counts requests installs stub
-`fd` and `rg` programs in its binary directory first, so it never downloads a search
-program or depends on one found on `PATH`.
+`install_search_program`.
+
+The chat crate's isolated test children get stub `fd` and `rg` programs in their
+binary directory. A child that starts the interactive mode then neither downloads a
+search program nor runs one found on `PATH`. A test that supplies the child's `PATH`
+skips the stubs and installs whatever programs it needs. Every child's `PATH` also
+carries a guard `fd` and `rg` ahead of its first directory outside the child's root,
+unless its `PATH` names no such directory. If the child runs one, its test fails and
+names the program, whether or not the machine has `fd` or `rg` installed.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
@@ -2904,30 +2914,35 @@ the default branch.
 
 ## CI speed guards
 
-`CI speed guards` hands each finished merge-group run of `Rust CI` to the shared
-guards, with that run's id. The guards hold time per unit of work against a
-ratchet, the compile-cache hit rate, the test selection share, shard balance,
-tests over 30 seconds and the pinned required checks; each one fails a check or
-files one issue per cause, and a breach that persists adds to that issue rather
-than filing another. A cold compile cache shows in the merge group first: its
-archive build reports the hit rate against the floor.
+`CI speed guards` hands each finished `Rust CI` and `Full suite after landing`
+run to the shared guards with that run's id. The guards hold time per unit of
+work against a ratchet, the compile-cache hit rate, the test selection share,
+shard balance, tests over 30 seconds and the pinned required checks; each one
+fails a check or files one issue per cause, and a breach that persists adds to
+that issue rather than filing another. A cold compile cache shows in the merge
+group first: its archive build reports the hit rate against the floor.
 
-A default-branch push is not judged yet. The only workflow that runs the suite on
-a push is `Full suite after landing`, which calls it through one reusable job, so
-its checks are named `suite / Caller declaration` and so on. The guards compare
-the pinned names exactly, so every landing would report all pinned checks as
-missing and open an issue for it. Until the shared guards read that prefix
-([issue 354](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/354)),
-this caller stops at the merge groups.
+Three kinds of run reach the guards: merge-group and pull-request runs of
+`Rust CI`, and the main-push runs of `Full suite after landing`. The selection
+share guard reads the pull-request runs, where a change selects crates to test.
+The macOS test shards run only in the full suite after landing, so its runs
+alone judge their balance.
 
-On pull requests the same caller passes no run id, so only the shared test-time
-exception check runs. It fails when a nextest override allows more than the hang
-limit and the comment above it names no open issue. The caller reads Actions runs
-and contents, and writes issues with the automatic job token; GitHub reads a
-called workflow's own permissions when the run loads, so one caller job covers
-both events. It is declared in `privileged_trigger_workflows` beside the
-reporter, so the trigger audit exempts only these two files. Like the reporter,
-it becomes active after it lands on the default branch.
+A landing runs the suite through one reusable job, so its checks are named
+`suite / Test shard (macos-latest 1/4)` and so on. The guards read the job names
+behind that prefix, so a landing judges the checks it runs instead of reporting
+every pinned one missing. A watched workflow this repository declares therefore
+has to call the shared CI.
+
+On the caller's own `pull_request` trigger no run id is passed, so only the
+shared test-time exception check runs. It fails when a nextest override allows
+more than the hang limit and the comment above it names no open issue. The
+caller reads Actions runs and contents, and writes issues with the automatic job
+token; GitHub reads a called workflow's own permissions when the run loads, so
+one caller job covers every event. It is declared in
+`privileged_trigger_workflows` beside the reporter, so the trigger audit exempts
+only these two files. Like the reporter, it becomes active after it lands on the
+default branch.
 
 ## Fuzzing
 

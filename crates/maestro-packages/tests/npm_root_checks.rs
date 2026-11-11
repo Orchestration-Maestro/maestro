@@ -60,7 +60,7 @@ fn npm_command_selection_keeps_defaults_and_exact_bun() {
             .get_installed_path("npm:pkg", User)
             .unwrap_err()
             .to_string(),
-        "Invalid npmCommand: first array entry must be a non-empty command"
+        "Invalid npmCommand: the first array entry must hold a non-empty command"
     );
 }
 #[test]

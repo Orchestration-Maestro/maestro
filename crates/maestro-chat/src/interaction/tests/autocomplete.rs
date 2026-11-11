@@ -811,6 +811,7 @@ fn interactive_initialization_prepares_search_tools_before_first_completion() {
             let managed = directory.join("bin");
             std::fs::create_dir_all(&managed).unwrap();
             install_output(&managed, "fd", b"", 0);
+            install_output(&managed, "rg", b"", 0);
             let elsewhere = directory.join("elsewhere");
             std::fs::create_dir(&elsewhere).unwrap();
             std::fs::create_dir(elsewhere.join("bin")).unwrap();
@@ -879,6 +880,7 @@ fn file_completion_consumes_the_search_owner_fd_path() {
             let managed = directory.join("bin");
             std::fs::create_dir_all(&managed).unwrap();
             install_output(&managed, "fd", b"target-unique.rs\0", 0);
+            install_output(&managed, "rg", b"", 0);
             let world = Setup::default().build(directory);
             start(&world).await;
             assert!(

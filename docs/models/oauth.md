@@ -72,7 +72,7 @@ credentials; saving returned credentials belongs to the caller.
 
 Both operations reject unknown IDs with `Unknown OAuth provider: {id}`.
 Key resolution replaces only refresh failures with
-`Failed to refresh OAuth token for {id}`; extraction failures and direct-refresh
+`Could not refresh the OAuth token for {id}`; extraction failures and direct-refresh
 failures retain their provider errors. Account-specific behavior is documented
 in the owning flow sections below.
 
@@ -140,7 +140,9 @@ Login binds a native listener at `127.0.0.1:53692`; a nonempty
 `MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. When port 53692
 cannot be bound, login binds any free port on the same host instead. If that
 also fails, login continues without a listener: the wait for a callback is already
-cancelled, so the manual-input callback or the prompt supplies the code. The redirect
+cancelled, so the manual-input callback or the prompt supplies the code. A
+whitespace-only host names no address, so login refuses it before any name lookup
+and takes that same manual path at once. The redirect
 address is `http://localhost:` followed by the bound port, or `53692` when no port is
 bound, and `/callback`; the authorization address, the prompt placeholder and the token
 exchange all name that address. A browser binding attempt returns
@@ -218,7 +220,7 @@ duration and expiry. Expiry is the completion clock plus `expires_in * 1000`,
 without a buffer. Successful credentials carry only the selected tokens,
 expiry and `extra["accountId"]`: a nonempty string extracted from the access
 payload, not signature or issuer verification. Missing account metadata fails
-with `Failed to extract accountId from token`. Refresh transport/decoding
+with `The token carries no accountId`. Refresh transport/decoding
 failures receive one refresh-error context; authored token failures and account
 extraction failures retain their own messages. Refresh writes no token-failure
 messages to stderr.

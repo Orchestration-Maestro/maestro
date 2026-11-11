@@ -228,7 +228,7 @@ fn cross_scope_suggestions_prefer_the_user_registration() {
             update(manager, &effects, Some("a"))
                 .unwrap_err()
                 .to_string(),
-            format!("No matching package found for a. Did you mean {expected}?")
+            format!("No package matches a. Did you mean {expected}?")
         );
     }
 }
@@ -326,53 +326,45 @@ const SUGGESTIONS: &[(&str, &[&str], &str)] = &[
     (
         "a",
         &["npm:a@1", "npm:a"],
-        "No matching package found for a. Did you mean npm:a@1?",
+        "No package matches a. Did you mean npm:a@1?",
     ),
     (
         "a@next",
         &["npm:a@1", "npm:a@next"],
-        "No matching package found for a@next. Did you mean npm:a@next?",
+        "No package matches a@next. Did you mean npm:a@next?",
     ),
     (
         "@org/a",
         &["npm:@org/a@next"],
-        "No matching package found for @org/a. Did you mean npm:@org/a@next?",
+        "No package matches @org/a. Did you mean npm:@org/a@next?",
     ),
     (
         "github.com/acme/tool",
         &["git:github.com/acme/tool@v1"],
-        "No matching package found for github.com/acme/tool. Did you mean git:github.com/acme/tool@v1?",
+        "No package matches github.com/acme/tool. Did you mean git:github.com/acme/tool@v1?",
     ),
     (
         "github.com/acme/tool@v1",
         &["git:github.com/acme/tool@v2", "git:github.com/acme/tool@v1"],
-        "No matching package found for github.com/acme/tool@v1. Did you mean git:github.com/acme/tool@v1?",
+        "No package matches github.com/acme/tool@v1. Did you mean git:github.com/acme/tool@v1?",
     ),
     (
         "\u{feff}a\u{feff}",
         &["npm:a"],
-        "No matching package found for \u{feff}a\u{feff}. Did you mean npm:a?",
+        "No package matches \u{feff}a\u{feff}. Did you mean npm:a?",
     ),
     (
         "\u{85}a\u{85}",
         &["npm:a"],
-        "No matching package found for \u{85}a\u{85}",
+        "No package matches \u{85}a\u{85}",
     ),
-    ("A", &["npm:a"], "No matching package found for A"),
-    (
-        "folder",
-        &["./folder"],
-        "No matching package found for folder",
-    ),
-    (
-        "npm:missing",
-        &[],
-        "No matching package found for npm:missing",
-    ),
+    ("A", &["npm:a"], "No package matches A"),
+    ("folder", &["./folder"], "No package matches folder"),
+    ("npm:missing", &[], "No package matches npm:missing"),
     (
         "git@github.com:acme/tool.git",
         &["git:github.com/acme/tool"],
-        "No matching package found for git@github.com:acme/tool.git",
+        "No package matches git@github.com:acme/tool.git",
     ),
 ];
 

@@ -3296,9 +3296,9 @@
       ]
     }
   ],
-  "maestro_markdown_render_mixed_ordered_and_unordered_nested_lists": [
+  "maestro_markdown_render_nested_ordered_and_unordered_lists_together": [
     {
-      "text": "1. Ordered item\n   - Unordered nested\n   - Another nested\n2. Second ordered\n   - More nested",
+      "text": "1. First ordered\n   - Nested bullet\n   - Second bullet\n2. Second ordered\n   - Deeper bullet",
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
@@ -3306,15 +3306,15 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[36m1. \u001b[39mOrdered item                                                                 ",
-        "  \u001b[36m- \u001b[39mUnordered nested                                                            ",
-        "  \u001b[36m- \u001b[39mAnother nested                                                              ",
+        "\u001b[36m1. \u001b[39mFirst ordered                                                                ",
+        "  \u001b[36m- \u001b[39mNested bullet                                                               ",
+        "  \u001b[36m- \u001b[39mSecond bullet                                                               ",
         "\u001b[36m2. \u001b[39mSecond ordered                                                               ",
-        "  \u001b[36m- \u001b[39mMore nested                                                                 "
+        "  \u001b[36m- \u001b[39mDeeper bullet                                                               "
       ]
     }
   ],
-  "maestro_markdown_maintain_numbering_when_code_blocks_are_not_indented_llm_output": [
+  "maestro_markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output": [
     {
       "text": "1. First item\n\n```typescript\n// code block\n```\n\n2. Second item\n\n```typescript\n// another code block\n```\n\n3. Third item",
       "width": 80,
@@ -3340,7 +3340,7 @@
       ]
     }
   ],
-  "maestro_markdown_preserve_gray_italic_styling_after_inline_code": [
+  "maestro_markdown_italic_gray_styling_survives_inline_code": [
     {
       "text": "This is thinking with `inline code` and more text after",
       "width": 80,
@@ -3354,7 +3354,7 @@
       ]
     }
   ],
-  "maestro_markdown_preserve_gray_italic_styling_after_bold_text": [
+  "maestro_markdown_italic_gray_styling_survives_bold_text": [
     {
       "text": "This is thinking with **bold text** and more after",
       "width": 80,
@@ -3368,7 +3368,7 @@
       ]
     }
   ],
-  "maestro_markdown_have_only_one_blank_line_between_code_block_and_following_paragraph": [
+  "maestro_markdown_gap_between_code_block_and_paragraph_is_one_line": [
     {
       "text": "hello world\n\n```js\nconst hello = \"world\";\n```\n\nagain, hello world",
       "width": 80,
@@ -3388,7 +3388,7 @@
       ]
     }
   ],
-  "maestro_markdown_normalize_paragraph_and_code_block_spacing_to_one_blank_line": [
+  "maestro_markdown_collapse_block_spacing_to_a_single_gap": [
     {
       "text": "hello this is text\n```\ncode block\n```\nmore text",
       "width": 80,
@@ -3426,7 +3426,7 @@
       ]
     }
   ],
-  "maestro_markdown_not_add_a_trailing_blank_line_when_code_block_is_the_last_rendered_block": [
+  "maestro_markdown_no_trailing_blank_line_after_a_final_code_block": [
     {
       "text": "```js\nconst hello = 'world';\n```",
       "width": 80,
@@ -3458,7 +3458,7 @@
       ]
     }
   ],
-  "maestro_markdown_have_only_one_blank_line_between_divider_and_following_paragraph": [
+  "maestro_markdown_gap_between_divider_and_para_is_one_line": [
     {
       "text": "hello world\n\n---\n\nagain, hello world",
       "width": 80,
@@ -3476,7 +3476,7 @@
       ]
     }
   ],
-  "maestro_markdown_not_add_a_trailing_blank_line_when_divider_is_the_last_rendered_block": [
+  "maestro_markdown_no_trailing_blank_line_after_a_final_divider": [
     {
       "text": "---",
       "width": 80,
@@ -3490,7 +3490,7 @@
       ]
     }
   ],
-  "maestro_markdown_have_only_one_blank_line_between_heading_and_following_paragraph": [
+  "maestro_markdown_gap_between_heading_and_para_is_one_line": [
     {
       "text": "# Hello\n\nThis is a paragraph",
       "width": 80,
@@ -3506,7 +3506,7 @@
       ]
     }
   ],
-  "maestro_markdown_not_add_a_trailing_blank_line_when_heading_is_the_last_rendered_block": [
+  "maestro_markdown_no_trailing_blank_line_after_a_final_heading": [
     {
       "text": "# Hello",
       "width": 80,
@@ -3520,7 +3520,7 @@
       ]
     }
   ],
-  "maestro_markdown_have_only_one_blank_line_between_blockquote_and_following_paragraph": [
+  "maestro_markdown_gap_between_quote_and_para_is_one_line": [
     {
       "text": "hello world\n\n> This is a quote\n\nagain, hello world",
       "width": 80,
@@ -3538,7 +3538,7 @@
       ]
     }
   ],
-  "maestro_markdown_not_add_a_trailing_blank_line_when_blockquote_is_the_last_rendered_block": [
+  "maestro_markdown_no_trailing_blank_line_after_a_final_quote": [
     {
       "text": "> This is a quote",
       "width": 80,
@@ -3552,7 +3552,7 @@
       ]
     }
   ],
-  "maestro_markdown_apply_consistent_styling_to_all_lines_in_lazy_continuation_blockquote": [
+  "maestro_markdown_style_every_line_of_a_lazy_continuation_blockquote": [
     {
       "text": ">Foo\nbar",
       "width": 80,
@@ -3567,7 +3567,7 @@
       ]
     }
   ],
-  "maestro_markdown_apply_consistent_styling_to_explicit_multiline_blockquote": [
+  "maestro_markdown_style_every_line_of_an_explicit_multiline_blockquote": [
     {
       "text": ">Foo\n>bar",
       "width": 80,
@@ -3597,9 +3597,9 @@
       ]
     }
   ],
-  "maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line": [
+  "maestro_markdown_wrap_long_blockquote_lines_and_border_every_wrapped_line": [
     {
-      "text": "> This is a very long blockquote line that should wrap to multiple lines when rendered",
+      "text": "> A single blockquote line this long has to wrap across several rendered lines at a narrow width",
       "width": 30,
       "padding_x": 0,
       "padding_y": 0,
@@ -3607,16 +3607,16 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mThis is a very long         ",
-        "\u001b[2m│ \u001b[22m\u001b[3mblockquote line that should ",
-        "\u001b[2m│ \u001b[22m\u001b[3mwrap to multiple lines when ",
-        "\u001b[2m│ \u001b[22m\u001b[3mrendered\u001b[23m\u001b[3m\u001b[23m                    "
+        "\u001b[2m\u2502 \u001b[22m\u001b[3m\u001b[3mA single blockquote line    ",
+        "\u001b[2m\u2502 \u001b[22m\u001b[3mthis long has to wrap across",
+        "\u001b[2m\u2502 \u001b[22m\u001b[3mseveral rendered lines at a ",
+        "\u001b[2m\u2502 \u001b[22m\u001b[3mnarrow width\u001b[23m\u001b[3m\u001b[23m                "
       ]
     }
   ],
-  "maestro_markdown_properly_indent_wrapped_blockquote_lines_with_styling": [
+  "maestro_markdown_hanging_indent_on_wrapped_quote_lines": [
     {
-      "text": "> This is styled text that is long enough to wrap",
+      "text": "> Styled text that runs on long enough to wrap across lines",
       "width": 25,
       "padding_x": 0,
       "padding_y": 0,
@@ -3624,13 +3624,13 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mThis is styled text    ",
-        "\u001b[2m│ \u001b[22m\u001b[3mthat is long enough to ",
-        "\u001b[2m│ \u001b[22m\u001b[3mwrap\u001b[23m\u001b[3m\u001b[23m                   "
+        "\u001b[2m\u2502 \u001b[22m\u001b[3m\u001b[3mStyled text that runs  ",
+        "\u001b[2m\u2502 \u001b[22m\u001b[3mon long enough to wrap ",
+        "\u001b[2m\u2502 \u001b[22m\u001b[3macross lines\u001b[23m\u001b[3m\u001b[23m           "
       ]
     }
   ],
-  "maestro_markdown_render_inline_formatting_inside_blockquotes_and_reapply_quote_styling_after": [
+  "maestro_markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after": [
     {
       "text": "> Quote with **bold** and `code`",
       "width": 80,
@@ -3644,7 +3644,7 @@
       ]
     }
   ],
-  "maestro_markdown_preserve_heading_styling_after_inline_code": [
+  "maestro_markdown_heading_style_survives_inline_code": [
     {
       "text": "### Why `sourceInfo` should not be optional",
       "width": 80,
@@ -3658,7 +3658,7 @@
       ]
     }
   ],
-  "maestro_markdown_preserve_heading_styling_after_inline_code_for_h1": [
+  "maestro_markdown_heading_style_survives_inline_code_at_h1": [
     {
       "text": "# Title with `code` inside",
       "width": 80,
@@ -3672,7 +3672,7 @@
       ]
     }
   ],
-  "maestro_markdown_preserve_heading_styling_after_bold_text": [
+  "maestro_markdown_heading_style_survives_bold_text": [
     {
       "text": "## Heading with **bold** and more",
       "width": 80,
@@ -3700,9 +3700,9 @@
       ]
     }
   ],
-  "maestro_markdown_not_duplicate_url_for_autolinked_emails": [
+  "maestro_markdown_show_no_duplicate_url_for_autolinked_emails": [
     {
-      "text": "Contact user@example.com for help",
+      "text": "Write to user@example.com with questions",
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
@@ -3710,11 +3710,11 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "Contact \u001b[34m\u001b[4muser@example.com\u001b[24m\u001b[39m for help                                               "
+        "Write to \u001b[34m\u001b[4muser@example.com\u001b[24m\u001b[39m with questions                                        "
       ]
     }
   ],
-  "maestro_markdown_not_duplicate_url_for_bare_urls": [
+  "maestro_markdown_show_no_duplicate_url_for_bare_urls": [
     {
       "text": "Visit https://example.com for more",
       "width": 80,
@@ -3728,7 +3728,7 @@
       ]
     }
   ],
-  "maestro_markdown_show_url_in_parentheses_when_hyperlinks_are_not_supported": [
+  "maestro_markdown_show_a_url_in_parentheses_without_hyperlink_support": [
     {
       "text": "[click here](https://example.com)",
       "width": 80,
@@ -3742,9 +3742,9 @@
       ]
     }
   ],
-  "maestro_markdown_show_mailto_url_in_parentheses_when_hyperlinks_are_not_supported": [
+  "maestro_markdown_show_a_mailto_url_in_parentheses_without_hyperlink_support": [
     {
-      "text": "[Email me](mailto:test@example.com)",
+      "text": "[Write to me](mailto:test@example.com)",
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
@@ -3752,11 +3752,11 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[34m\u001b[4mEmail me\u001b[24m\u001b[39m\u001b[2m (mailto:test@example.com)\u001b[22m                                              "
+        "\u001b[34m\u001b[4mWrite to me\u001b[24m\u001b[39m\u001b[2m (mailto:test@example.com)\u001b[22m                                           "
       ]
     }
   ],
-  "maestro_markdown_emit_osc_8_hyperlink_sequence_when_terminal_supports_hyperlinks": [
+  "maestro_markdown_emit_the_osc_8_hyperlink_sequence_when_the_terminal_has_hyperlinks": [
     {
       "text": "[click here](https://example.com)",
       "width": 80,
@@ -3770,9 +3770,9 @@
       ]
     }
   ],
-  "maestro_markdown_use_osc_8_for_mailto_links_when_terminal_supports_hyperlinks": [
+  "maestro_markdown_use_osc_8_for_a_mailto_link_when_the_terminal_has_hyperlinks": [
     {
-      "text": "[Email me](mailto:test@example.com)",
+      "text": "[Write to me](mailto:test@example.com)",
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
@@ -3780,11 +3780,11 @@
       "hyperlinks": true,
       "indent": null,
       "lines": [
-        "\u001b]8;;mailto:test@example.com\u001b\\\u001b[34m\u001b[4mEmail me\u001b[24m\u001b[39m\u001b]8;;\u001b\\                                                                        "
+        "\u001b]8;;mailto:test@example.com\u001b\\\u001b[34m\u001b[4mWrite to me\u001b[24m\u001b[39m\u001b]8;;\u001b\\                                                                     "
       ]
     }
   ],
-  "maestro_markdown_use_osc_8_for_bare_urls_when_terminal_supports_hyperlinks": [
+  "maestro_markdown_use_osc_8_for_a_bare_url_when_the_terminal_has_hyperlinks": [
     {
       "text": "Visit https://example.com for more",
       "width": 80,
@@ -3798,9 +3798,9 @@
       ]
     }
   ],
-  "maestro_markdown_render_content_with_html_like_tags_as_text": [
+  "maestro_markdown_render_markup_tags_as_literal_text": [
     {
-      "text": "This is text with <thinking>hidden content</thinking> that should be visible",
+      "text": "Text with <thinking>inner content</thinking> stays visible",
       "width": 80,
       "padding_x": 0,
       "padding_y": 0,
@@ -3808,11 +3808,11 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "This is text with <thinking>hidden content</thinking> that should be visible    "
+        "Text with <thinking>inner content</thinking> stays visible                      "
       ]
     }
   ],
-  "maestro_markdown_render_html_tags_in_code_blocks_correctly": [
+  "maestro_markdown_render_html_tags_inside_code_blocks": [
     {
       "text": "```html\n<div>Some HTML</div>\n```",
       "width": 80,

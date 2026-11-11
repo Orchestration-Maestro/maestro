@@ -46,7 +46,7 @@ fn route_result(target: &str, expected_state: &str) -> Result<CallbackResponse, 
     Ok(CallbackResponse {
         status: 200,
         content_type: "text/html; charset=utf-8",
-        body: oauth_success_html("Anthropic authentication completed. You can close this window.")?,
+        body: oauth_success_html("Anthropic sign-in is complete. You can close this window.")?,
         accepted: Some(fields),
     })
 }

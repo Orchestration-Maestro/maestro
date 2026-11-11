@@ -123,12 +123,12 @@ async fn check_callback_pages(address: std::net::SocketAddr, state: &str) {
         (
             "//[".into(),
             500,
-            "Internal error while processing OAuth callback.",
+            "The OAuth callback failed with an internal error.",
         ),
         (
             format!("/auth/callback?state={state}&code=browser"),
             200,
-            "OpenAI authentication completed. You can close this window.",
+            "OpenAI sign-in is complete. You can close this window.",
         ),
     ] {
         check_page(address, &target, status, message).await;

@@ -91,7 +91,8 @@ pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive
 /// Runs `body` in a fresh single-test child whose working directory is a disposable root
 /// and whose package directory is `package` inside it, returning its standard error. The
 /// child never inherits the runner's offline or telemetry choice, so the reporting
-/// requests it makes depend only on its own settings.
+/// requests it makes depend only on its own settings. Its binary directory supplies both
+/// search programs, and a [`SearchGuard`] fails the run if the child ran a host copy.
 pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path)) -> Vec<u8> {
     if maestro_test_process::selection().is_child() {
         let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
@@ -103,6 +104,8 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
     let directory = scratch.path();
     let package = directory.join("package");
     std::fs::create_dir(&package).unwrap();
+    controlled_search_programs(directory);
+    let guard = SearchGuard::new(directory, &std::env::var_os("PATH").unwrap_or_default());
     let output = TestProcess::current(test)
         .unwrap()
         .case("child")
@@ -115,30 +118,27 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
             (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
             (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
         ])
+        .env("PATH", &guard.path)
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
+    guard.assert_unreached();
     output.stderr
 }
 
-/// Runs `body` in a fresh single-test child whose agent directory is a disposable root,
-/// so the constructor reads its key bindings from there rather than the developer's. The
-/// child is offline and its binary directory supplies both search programs, so an
-/// ordinary startup witness neither downloads a program nor runs a host one.
+/// Runs `body` in a fresh offline single-test child whose agent directory is a disposable
+/// root, so the constructor reads its key bindings from there rather than the developer's.
 fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
     isolated_case(
         test,
         "child",
         &[(OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1"))],
-        async |directory| {
-            controlled_search_programs(directory);
-            body(directory).await;
-        },
+        body,
     );
 }
 
-/// Installs stub `fd` and `rg` in the binary directory, which is searched before the
-/// command path.
+/// Installs stub `fd` and `rg`, which answer at once with nothing, in the binary directory,
+/// which is searched before the command path.
 fn controlled_search_programs(directory: &Path) {
     let bin = directory.join("bin");
     for name in ["fd", "rg"] {
@@ -146,12 +146,79 @@ fn controlled_search_programs(directory: &Path) {
     }
 }
 
+/// A guard `fd` and `rg` on a child's command path, ahead of its first directory outside the
+/// child's root, so a child that finds neither its own nor its root's search programs runs a
+/// guard copy rather than a host one; every run is recorded.
+struct SearchGuard {
+    /// The disposable directory holding the guard programs and their record.
+    directory: maestro_test_directory::Scratch,
+    /// The child's command path with the guard directory in place.
+    path: std::ffi::OsString,
+}
+
+impl SearchGuard {
+    /// Guards `path`, the command path of a child over `root`. A path naming no directory
+    /// outside `root` keeps its directories as they are.
+    fn new(root: &Path, path: &OsStr) -> Self {
+        let directory = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+        let mut directories: Vec<_> = std::env::split_paths(path).collect();
+        let outside = directories
+            .iter()
+            .position(|entry| entry.is_absolute() && !entry.starts_with(root));
+        if let Some(outside) = outside {
+            for name in ["fd", "rg"] {
+                let record = json!({
+                    "path": directory.path().join("reached"),
+                    "cwd": false,
+                    "bytes": format!("{name}\n").into_bytes(),
+                });
+                let scenario = json!({
+                    "scenario": "output", "stdout": [], "stderr": [], "code": 0, "append": record
+                });
+                install(directory.path(), name, "command", &scenario);
+            }
+            directories.insert(outside, directory.path().to_owned());
+        }
+        let path = std::env::join_paths(directories).unwrap();
+        Self { directory, path }
+    }
+
+    /// The search programs the child ran from the guard, sorted and without repeats.
+    fn reached(&self) -> Vec<String> {
+        let record = self.directory.path().join("reached");
+        if !record.try_exists().unwrap() {
+            return Vec::new();
+        }
+        let mut names: Vec<String> = std::fs::read_to_string(record)
+            .unwrap()
+            .lines()
+            .map(str::to_owned)
+            .collect();
+        names.sort_unstable();
+        names.dedup();
+        names
+    }
+
+    /// Fails when the child ran a search program from the guard.
+    fn assert_unreached(&self) {
+        let reached = self.reached();
+        assert!(
+            reached.is_empty(),
+            "the child ran {} from outside its test's directories; a test that supplies \
+             the command path installs its own search programs",
+            reached.join(", ")
+        );
+    }
+}
+
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
 /// directory, with no inherited environment apart from the command path and `envs`, so
 /// no developer credential reaches it. The child's temporary directory is that root's
 /// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
-/// Wayland one. The file-size signal keeps the child alive, so a write over a lowered
-/// limit fails instead of ending the child. A prepared native fixture stays available to it.
+/// Wayland one. Unless `envs` supplies the command path, the root's `bin` holds both
+/// search programs; a [`SearchGuard`] fails the run if the child ran a host copy. The
+/// file-size signal keeps the child alive, so a write over a lowered limit fails instead
+/// of ending the child. A prepared native fixture stays available to it.
 pub(super) fn isolated_case(
     test: &str,
     case: &str,
@@ -183,6 +250,20 @@ pub(super) fn isolated_output(
     setup: IsolatedSetup,
     body: impl AsyncFnOnce(&Path),
 ) -> Option<std::process::Output> {
+    let (output, guard) = guarded_output(test, case, envs, setup, body)?;
+    guard.assert_unreached();
+    Some(output)
+}
+
+/// Runs the child [`isolated_output`] describes and returns its output beside the guard on
+/// its command path.
+fn guarded_output(
+    test: &str,
+    case: &str,
+    envs: &[(&OsStr, &OsStr)],
+    setup: IsolatedSetup,
+    body: impl AsyncFnOnce(&Path),
+) -> Option<(std::process::Output, SearchGuard)> {
     let selection = maestro_test_process::selection();
     if selection.is_child() {
         let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
@@ -197,15 +278,21 @@ pub(super) fn isolated_output(
     for name in ["bin", "tmp"] {
         std::fs::create_dir(root.join(name)).unwrap();
     }
-    let path = format!(
-        "{}:{}",
-        root.join("bin").display(),
-        std::env::var("PATH").unwrap_or_default()
-    );
+    let supplied = envs.iter().rev().find(|(key, _)| *key == "PATH");
+    let guard = if let Some((_, path)) = supplied {
+        SearchGuard::new(root, path)
+    } else {
+        controlled_search_programs(root);
+        let path = format!(
+            "{}:{}",
+            root.join("bin").display(),
+            std::env::var("PATH").unwrap_or_default()
+        );
+        SearchGuard::new(root, OsStr::new(&path))
+    };
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE");
     let mut all: Vec<(&OsStr, &OsStr)> = vec![
         (OsStr::new(ENV_AGENT_DIR.as_str()), root.as_os_str()),
-        (OsStr::new("PATH"), OsStr::new(&path)),
         (OsStr::new("WAYLAND_DISPLAY"), OsStr::new("maestro-test")),
     ];
     // The cleared child installs the controlled programs from the prepared artifact.
@@ -215,6 +302,7 @@ pub(super) fn isolated_output(
             .map(|artifact| (OsStr::new("MAESTRO_NATIVE_FIXTURE"), artifact.as_os_str())),
     );
     all.extend(envs.iter().copied());
+    all.push((OsStr::new("PATH"), guard.path.as_os_str()));
     let output = TestProcess::current(test)
         .unwrap()
         .env_clear()
@@ -227,7 +315,39 @@ pub(super) fn isolated_output(
         .envs(all)
         .output()
         .expect("child starts");
-    Some(output)
+    Some((output, guard))
+}
+
+#[test]
+fn a_child_without_its_own_search_programs_reaches_the_guard_not_the_host() {
+    const TEST: &str = "a_child_without_its_own_search_programs_reaches_the_guard_not_the_host";
+    let host = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    controlled_search_programs(host.path());
+    let path = format!(
+        "{}:{}",
+        host.path().join("bin").display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let envs = [
+        (OsStr::new("PATH"), OsStr::new(&path)),
+        (OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1")),
+    ];
+    if let Some((output, guard)) =
+        guarded_output(TEST, "child", &envs, IsolatedSetup::new(), async |root| {
+            start(&Setup::default().build(root)).await;
+        })
+    {
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            guard.reached(),
+            ["fd", "rg"],
+            "the guard answers before the host copies"
+        );
+    }
 }
 
 /// A controlled replacement for one resource reload.

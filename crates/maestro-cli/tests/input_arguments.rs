@@ -18,7 +18,7 @@ fn argv_sets_short_version() {
 
 #[test]
 fn argv_keeps_messages_beside_version_and_help() {
-    support::assert_argv_title("--version takes precedence over other args");
+    support::assert_argv_title("--version wins over the other args");
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn argv_sets_short_print() {
 
 #[test]
 fn argv_accepts_a_frontmatter_print_prompt() {
-    support::assert_argv_title("parses prompt after -p even when it starts with YAML frontmatter");
+    support::assert_argv_title("parses a prompt after -p that starts with YAML frontmatter");
 }
 
 #[test]
@@ -133,7 +133,7 @@ fn argv_selects_a_thinking_level() {
 
 #[test]
 fn argv_splits_model_patterns() {
-    support::assert_argv_title("parses --models as comma-separated list");
+    support::assert_argv_title("parses --models as a comma-separated list");
 }
 
 #[test]
@@ -283,12 +283,12 @@ fn argv_removes_one_file_argument_prefix() {
 
 #[test]
 fn argv_keeps_files_and_messages_in_their_own_order() {
-    support::assert_argv_title("parses mixed messages and file args");
+    support::assert_argv_title("parses messages and file args interleaved");
 }
 
 #[test]
 fn argv_captures_an_unknown_string_flag() {
-    support::assert_argv_title("captures unknown long flags with string values");
+    support::assert_argv_title("captures unknown long flags that carry string values");
 }
 
 #[test]
@@ -298,7 +298,7 @@ fn argv_captures_an_unknown_boolean_flag() {
 
 #[test]
 fn argv_captures_an_unknown_equals_flag() {
-    support::assert_argv_title("captures unknown long flags with equals syntax");
+    support::assert_argv_title("captures unknown long flags in equals syntax");
 }
 
 #[test]

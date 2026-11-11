@@ -27,7 +27,6 @@ fn suspended(test: &str, body: impl AsyncFnOnce(&World, &Path)) -> Option<Output
         &[],
         IsolatedSetup::new().new_session(),
         async |directory: &Path| {
-            super::controlled_search_programs(directory);
             let world = started(directory).await;
             body(&world, directory).await;
         },

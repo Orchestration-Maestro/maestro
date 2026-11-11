@@ -35,7 +35,7 @@
             },
             "limit": {
               "type": "number",
-              "description": "Maximum number of results (default: 1000)"
+              "description": "Largest number of results returned (default: 1000)"
             }
           }
         }

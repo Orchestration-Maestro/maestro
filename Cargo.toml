@@ -36,7 +36,7 @@ futures-util = { version = "=0.3.34", default-features = false, features = ["std
 num-bigint = "=0.4.8"
 num-traits = "=0.2.19"
 nix = { version = "=0.31.3", default-features = false, features = ["signal"] }
-rustix = { version = "=1.1.5", default-features = false }
+rustix = { version = "=1.1.6", default-features = false }
 ryu-js = "=1.0.3"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { version = "=1.0.151", features = ["preserve_order", "float_roundtrip"] }
@@ -67,7 +67,7 @@ panic = "forbid"
 [profile.dev]
 debug = "line-tables-only"
 
-# Backtraces need file:line for workspace code only; dependency line tables take target space.
+# Dev backtraces need file:line for workspace code only; dependency line tables take target space.
 [profile.dev.package."*"]
 debug = false
 
@@ -103,5 +103,6 @@ opt-level = 3
 [profile.dev.package.sha2]
 opt-level = 3
 
+# Test binaries skip line tables, which cost about 17% of a large test unit's compile CPU; panic messages keep file:line.
 [profile.test]
-debug = "line-tables-only"
+debug = false

@@ -63,9 +63,7 @@ fn friendly(error: &RawValue, now: impl FnOnce() -> f64) -> Result<String, serde
                 ryu_js::Buffer::new().format(minutes)
             )
         });
-    Ok(format!(
-        "You have hit your ChatGPT usage limit{plan}.{when}"
-    ))
+    Ok(format!("Your ChatGPT usage limit is reached{plan}.{when}"))
 }
 
 /// Keep the envelope's local catch and the raw/status fallback.
