@@ -487,6 +487,18 @@ fn host_digest_excludes_packages_but_detects_host_changes() {
     assert_ne!(resources::digest(scratch.path()).unwrap(), before);
 }
 
+/// An export passes only while the bundle still hashes to the digest the setup recorded.
+#[test]
+fn export_requires_the_bundle_to_keep_the_recorded_digest() {
+    let scratch = Scratch::new().unwrap();
+    fs::write(scratch.path().join("host.js"), "host").unwrap();
+    let recorded = resources::digest(scratch.path()).unwrap();
+    block_on(require_unchanged(scratch.path(), &recorded)).unwrap();
+    fs::write(scratch.path().join("host.js"), "changed").unwrap();
+    let error = block_on(require_unchanged(scratch.path(), &recorded)).unwrap_err();
+    assert!(error.to_string().contains("host bundle changed"), "{error}");
+}
+
 /// A missing executable is diagnosed without the pinned browser environment.
 #[test]
 fn launch_failures_are_reported() {

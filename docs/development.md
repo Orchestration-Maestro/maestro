@@ -353,9 +353,10 @@ exports run on a page served under a content security policy without
 Canvas exports run on a page that holds only an 800 by 600 `#canvas` at the page
 origin, with no body margin, because they compare canvas points with page
 coordinates.
-Each export test checks that the host bundle's digest is the same after the export
-as before it. Nextest prints each export's `PASS`, `FAIL` or `TIMEOUT` under its
-test name, and its summary counts every case. `PHASE` records identify loaded
+The setup hashes the host bundle once and exports the digest as
+`MAESTRO_BROWSER_EXPORTS_DIGEST`. Each export test hashes the bundle again after
+the export and fails when the two differ. Nextest prints each export's `PASS`,
+`FAIL` or `TIMEOUT` under its test name, and its summary counts every case. `PHASE` records identify loaded
 pages, resolved exports, pointer dispatch and pointer acknowledgments. Nextest
 shows them for a failing or timed-out export, so an interrupted export keeps its
 last observed browser phase.

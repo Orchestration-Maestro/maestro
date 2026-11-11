@@ -10,7 +10,7 @@ use launch::Process;
 use package::command;
 use serde_json::{Value, json};
 use std::{
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     io,
     path::{Path, PathBuf},
     process::Command,
@@ -53,6 +53,9 @@ pub use server::Server;
 /// The export inventory, the same file the build script generates one test per export from.
 const INVENTORY: &str =
     include_str!("../../../maestro-web/tests/sandbox_loading_support/exports.json");
+
+/// The setup variable holding the digest of the prepared bundle, hashed once for the whole run.
+const DIGEST_VARIABLE: &str = "MAESTRO_BROWSER_EXPORTS_DIGEST";
 
 /// One CDP connection, owning the fresh pages it creates and its ordered diagnostics.
 struct Driver {
@@ -248,24 +251,26 @@ pub fn prepare(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<(
         .into_std_path_buf();
     let root = package::build(checkout, cargo, &target, &package::directory(&target)?)?;
     setup_variable("MAESTRO_BROWSER_EXPORTS", &root)?;
+    setup_variable(DIGEST_VARIABLE, resources::digest(&root)?)?;
     setup_variable(
         "MAESTRO_BROWSER_ASSETS",
-        &target.join("browser-analysis-assets"),
+        target.join("browser-analysis-assets"),
     )
 }
 
-/// Hand one prepared location to the tests the setup serves.
-fn setup_variable(variable: &str, path: &Path) -> io::Result<()> {
+/// Hand one prepared location or digest to the tests the setup serves.
+fn setup_variable(variable: &str, value: impl AsRef<OsStr>) -> io::Result<()> {
     let mut entry = OsString::from(format!("{variable}="));
-    entry.push(path);
+    entry.push(value);
     maestro_tooling::nextest_setup::export(&entry)
 }
 
 /// Run one inventory export in its own browser on the prepared package, which it must leave
-/// unchanged.
+/// as the setup recorded it.
 ///
 /// # Errors
-/// Returns server, launch, assertion, cleanup or host-change failures.
+/// Returns a missing recorded digest, or server, launch, assertion, cleanup or host-change
+/// failures.
 pub async fn run_export(
     executable: &Path,
     profile: &Path,
@@ -273,12 +278,21 @@ pub async fn run_export(
     family: &str,
     name: &str,
 ) -> io::Result<()> {
-    let before = host_digest(root).await?;
+    let recorded = std::env::var(DIGEST_VARIABLE).map_err(|error| {
+        io::Error::other(format!(
+            "the browser export setup exports {DIGEST_VARIABLE}: {error}"
+        ))
+    })?;
     session(executable, profile, root, async |browser, origin| {
         run_case(&mut browser.driver, origin, family, name).await
     })
     .await?;
-    if host_digest(root).await? == before {
+    require_unchanged(root, &recorded).await
+}
+
+/// Require the bundle on disk to hash to the digest the setup recorded.
+async fn require_unchanged(root: &Path, recorded: &str) -> io::Result<()> {
+    if host_digest(root).await? == recorded {
         Ok(())
     } else {
         Err(io::Error::other("host bundle changed while modules loaded"))
