@@ -128,8 +128,15 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
 }
 
 /// The workspace preparation resolves at the fixture root: its only member is the component
-/// crate, whose manifest holds the generated example region that marks it.
+/// crate, whose manifest holds the generated example region that marks it. Preparation lists
+/// the workspace's files through Git, so the root is a repository of its own.
 fn component_workspace(root: &Path) {
+    let init = Command::new("git")
+        .args(["init", "--quiet"])
+        .current_dir(root)
+        .status()
+        .unwrap();
+    assert!(init.success(), "git init failed in the fixture root");
     for (manifest, text) in [
         (
             root.join("Cargo.toml"),
