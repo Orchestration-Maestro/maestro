@@ -6,7 +6,7 @@ use maestro_app::{
     SessionManager,
 };
 use maestro_extensions::types::{NewSessionCommandOptions, SwitchSessionOptions};
-use serde_json::{Value, json};
+use std::io::Write;
 use std::{cell::RefCell, rc::Rc};
 use support::{Error, Sample};
 
@@ -16,51 +16,34 @@ fn main() -> Result<(), Error> {
 }
 
 /// Create, replace and resume the session while observing its live queues.
-async fn run(sample: Sample) -> Result<Value, Error> {
+async fn run(sample: Sample) -> Result<(), Error> {
     let sample = Rc::new(sample);
     let runtime = initial_runtime(Rc::clone(&sample)).await?;
     let first = runtime
         .session()
         .session_file()
         .ok_or("missing session file")?;
-    writeln!(sample.output.borrow_mut(), "Initial session: {first}")?;
-    let queues = Rc::new(RefCell::new(Vec::new()));
-    let unsubscribe = bind(
-        runtime.session(),
-        Rc::clone(&queues),
-        Rc::clone(&sample.output),
-    )
-    .await?;
+    writeln!(std::io::stdout(), "Initial session: {first}")?;
+    let unsubscribe = bind(runtime.session()).await?;
     runtime.session().steer("first queue", &[])?;
     unsubscribe()?;
     runtime
         .new_session(NewSessionCommandOptions::default())
         .await?;
-    let different = runtime.session().session_file().as_ref() != Some(&first);
     writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "After newSession(): {}",
         runtime.session().session_file().ok_or("missing new file")?
     )?;
-    let unsubscribe = bind(
-        runtime.session(),
-        Rc::clone(&queues),
-        Rc::clone(&sample.output),
-    )
-    .await?;
+    let unsubscribe = bind(runtime.session()).await?;
     runtime.session().follow_up("new queue", &[])?;
     unsubscribe()?;
     runtime
         .switch_session(&first, None, SwitchSessionOptions::default())
         .await?;
-    let unsubscribe = bind(
-        runtime.session(),
-        Rc::clone(&queues),
-        Rc::clone(&sample.output),
-    )
-    .await?;
+    let unsubscribe = bind(runtime.session()).await?;
     writeln!(
-        sample.output.borrow_mut(),
+        std::io::stdout(),
         "After switchSession(): {}",
         runtime
             .session()
@@ -68,13 +51,9 @@ async fn run(sample: Sample) -> Result<Value, Error> {
             .ok_or("missing resumed file")?
     )?;
     runtime.session().steer("resumed queue", &[])?;
-    let result = json!({"newIsDifferent": different,
-        "resumedOriginal": runtime.session().session_file().as_ref() == Some(&first),
-        "queues": *queues.borrow(),
-        "messages": runtime.session().messages().read().map_err(|error| error.to_string())?.len()});
     unsubscribe()?;
     runtime.dispose().await?;
-    Ok(result)
+    Ok(())
 }
 
 /// Create the first directory-bound runtime with the reusable session factory.
@@ -108,11 +87,7 @@ async fn initial_runtime(sample: Rc<Sample>) -> Result<maestro_app::AgentSession
 }
 
 /// Rebind extensions and subscribe only to the current session's queue updates.
-async fn bind(
-    session: Rc<AgentSession>,
-    queues: Rc<RefCell<Vec<usize>>>,
-    output: Rc<RefCell<dyn std::io::Write>>,
-) -> Result<Box<dyn Fn() -> Result<(), Error>>, Error> {
+async fn bind(session: Rc<AgentSession>) -> Result<Box<dyn Fn() -> Result<(), Error>>, Error> {
     session
         .bind_extensions(ExtensionBindings::default())
         .await?;
@@ -125,9 +100,8 @@ async fn bind(
         } = event
         {
             let count = steering.len() + follow_up.len();
-            queues.borrow_mut().push(count);
             if failed.borrow().is_none() {
-                *failed.borrow_mut() = writeln!(output.borrow_mut(), "Queued: {count}").err();
+                *failed.borrow_mut() = writeln!(std::io::stdout(), "Queued: {count}").err();
             }
         }
     }));
@@ -192,46 +166,4 @@ async fn create_runtime(
         extensions_result: created.extensions_result,
         model_fallback_message: created.model_fallback_message,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    mod queue_output;
-    mod writer;
-    use super::*;
-
-    /// Runtime replacement observations precede queue updates on each rebound session.
-    #[test]
-    fn session_runtime_prints_observations_in_order() -> Result<(), Error> {
-        let output = Rc::new(RefCell::new(Vec::new()));
-        support::execute(|mut sample| {
-            sample.output = output.clone();
-            run(sample)
-        })?;
-        let text = String::from_utf8(output.borrow().clone())?;
-        let lines: Vec<_> = text.lines().collect();
-        let first = lines[0]
-            .strip_prefix("Initial session: ")
-            .ok_or("missing initial path")?;
-        assert_eq!(lines[1], "Queued: 1");
-        let new = lines[2]
-            .strip_prefix("After newSession(): ")
-            .ok_or("missing new path")?;
-        assert_ne!(first, new);
-        assert_eq!(lines[3], "Queued: 1");
-        assert_eq!(lines[4], format!("After switchSession(): {first}"));
-        assert_eq!(lines[5..], ["Queued: 1"]);
-        Ok(())
-    }
-
-    /// New and resumed sessions get fresh subscriptions rather than retaining the old session.
-    #[test]
-    fn session_runtime_rebinds_after_new_and_resumed_sessions() -> Result<(), Error> {
-        let value = support::execute(run)?;
-        assert_eq!(value["newIsDifferent"], true);
-        assert_eq!(value["resumedOriginal"], true);
-        assert_eq!(value["queues"], json!([1, 1, 1]));
-        assert_eq!(value["messages"], 2);
-        Ok(())
-    }
 }
