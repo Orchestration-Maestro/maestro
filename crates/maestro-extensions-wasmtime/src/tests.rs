@@ -32,8 +32,9 @@ mod tree;
 mod unknown_events;
 mod writer;
 
-#[path = "../../maestro-extensions/tests/support/model.rs"]
-pub(super) mod model_support;
+pub(super) mod model_support {
+    pub use maestro_extensions::test_support::model;
+}
 
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 pub(crate) mod session;

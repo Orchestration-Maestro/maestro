@@ -4,6 +4,8 @@ use std::path::Path;
 use cargo_metadata::Metadata;
 use serde::Deserialize;
 
+/// Cargo metadata already read for an unchanged workspace.
+mod cache;
 /// Cargo metadata acquisition and identity validation.
 pub(crate) mod metadata;
 /// Package dependency and component-export boundaries.

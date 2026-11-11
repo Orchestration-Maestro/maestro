@@ -178,12 +178,15 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let directory = scratch.path();
     let gate = install_tracked(directory);
+    super::super::controlled_search_programs(directory);
+    let guard =
+        super::super::SearchGuard::new(directory, &std::env::var_os("PATH").unwrap_or_default());
     let mut child = TestProcess::current(test)
         .unwrap()
         .env_clear()
         .case(case)
         .nocapture()
-        .env("PATH", std::env::var_os("PATH").unwrap())
+        .env("PATH", &guard.path)
         .env(&*super::super::ENV_AGENT_DIR, directory)
         .temp_dir(directory)
         .current_dir(directory)
@@ -224,6 +227,7 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
         "",
         "the interactive process left its tracked child running"
     );
+    guard.assert_unreached();
 }
 
 /// Installs the tracked child, which waits at the returned gate and then prints to a pipe, so

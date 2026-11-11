@@ -11,7 +11,7 @@ edge. Launch exports from `maestro-tools` are native-gated; its shared key helpe
 remain available on browser targets. Other targets supply `FooterOperations` without these native
 process/stat edges.
 
-Unix tests also use the existing rustix `=1.1.5` (defaults off; `std`, `process`,
+Unix tests also use the existing rustix `=1.1.6` (defaults off; `std`, `process`,
 Apache-2.0 OR Apache-2.0 WITH LLVM-exception OR MIT). Its non-reaping status
 observation synchronizes the footer EOF test with direct-child reaping before
 advancing the controlled clock.

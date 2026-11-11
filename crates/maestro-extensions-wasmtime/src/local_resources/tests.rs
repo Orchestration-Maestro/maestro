@@ -11,8 +11,9 @@ use maestro_extensions::{
     ExtensionContextActions, ExtensionExecution, Local, types::ProviderActions,
 };
 use std::{rc::Rc, sync::mpsc};
-#[path = "../../../maestro-extensions/tests/support/ui_host.rs"]
-mod ui_host;
+mod ui_host {
+    pub use maestro_extensions::test_support::Named;
+}
 
 #[test]
 fn retained_ui_outlives_context_without_retaining_it() {

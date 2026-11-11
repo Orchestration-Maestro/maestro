@@ -945,9 +945,9 @@ fn maestro_offline_keeps_cwd_and_ignores_arguments() {
     );
 }
 
-/// The sandbox runtime script is built first, then every real-browser case, the driver
-/// regressions, each export and the report run in one nextest invocation under its hang limit,
-/// and that run's status is the command's.
+/// A checkout without the sandbox runtime script builds it first, then every real-browser
+/// case, the driver regressions, each export and the report run in one nextest invocation
+/// under its hang limit, and that run's status is the command's.
 #[test]
 fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_run() {
     drive();
@@ -980,6 +980,37 @@ fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_ru
             fixture.root.path().as_os_str().as_encoded_bytes()
         );
     }
+}
+
+/// A script the checkout already holds, whether an earlier sandbox-runtime run or a job
+/// artifact, is used as is, so the cases run without Emscripten on the path.
+#[test]
+fn browser_test_reuses_a_present_runtime_script() {
+    drive();
+    let fixture = Fixture::new();
+    let script = fixture
+        .root
+        .path()
+        .join("target/sandbox-runtime/maestro-sandbox-runtime.js");
+    fs::create_dir_all(script.parent().unwrap()).unwrap();
+    fs::write(&script, "script").unwrap();
+
+    let output = fixture
+        .invoke(
+            "browser_test_reuses_a_present_runtime_script",
+            "browser-test",
+            &[],
+        )
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert_eq!(
+        invocations(&fixture),
+        [
+            "nextest|run|--locked|-p|maestro-test-browser|--run-ignored|only|--no-fail-fast|-E|test(/^browser::/)",
+        ]
+    );
 }
 
 /// A failed script build stops the run before any browser case starts.
@@ -3970,12 +4001,7 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
         .set_modified(expected)
         .unwrap();
 
-    let result = Command::new(env!("CARGO_BIN_EXE_development"))
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(&profile)
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap();
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert!(
         result.status.success(),
@@ -4010,12 +4036,7 @@ fn cache_normalization_skips_build_scripts_named_after_their_file() {
         .set_modified(UNIX_EPOCH + Duration::from_secs(200))
         .unwrap();
 
-    let result = Command::new(env!("CARGO_BIN_EXE_development"))
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(&profile)
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap();
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert!(
         result.status.success(),
@@ -4048,12 +4069,7 @@ fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
     fs::write(&source, fs::read(&source).unwrap()).unwrap();
     cache_cargo(root, &["build", "--offline", "--locked", "-p", "leaf"]);
 
-    let result = Command::new(env!("CARGO_BIN_EXE_development"))
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(&profile)
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap();
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert_eq!(
         result.status.code(),
@@ -4109,12 +4125,7 @@ fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
     ));
     let fresh = fs::metadata(example).unwrap().modified().unwrap();
 
-    let result = Command::new(env!("CARGO_BIN_EXE_development"))
-        .args(["nextest-setup", "normalize-component-cache"])
-        .arg(&profile)
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap();
+    let result = crate::recipe_support::normalize_cache(&profile);
 
     assert!(
         result.status.success(),
@@ -4132,17 +4143,15 @@ fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
 /// Run the author setup from `root` with `profile` as nextest's artifact directory.
 #[cfg(unix)]
 fn author_setup(root: &Path, profile: &Path) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_development"))
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command
         .args(["nextest-setup", "author-component"])
         .current_dir(root)
-        .env_remove("TEST_PREPARE_OUTPUT")
-        .env_remove("TEST_ARCHIVE")
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
-        .env("CARGO", root.join("cargo"))
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap()
+        .env("CARGO", root.join("cargo"));
+    crate::recipe_support::without_prepared_bundles(&mut command);
+    command.output().unwrap()
 }
 
 /// Run the author setup, which must succeed, and return what it printed.

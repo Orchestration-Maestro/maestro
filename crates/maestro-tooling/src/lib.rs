@@ -31,6 +31,8 @@ mod cargo_lock;
 mod date_time_data;
 /// The source files a dependency file names.
 mod dep_info;
+/// The doctest phase of `just test`, skipped for a selection without a library.
+mod doc_test;
 /// Fetch of the package repository's example tree.
 mod example_fetch;
 /// Source-owned example discovery and component preparation.
@@ -142,6 +144,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         )),
         Some("check-browser-smoke") => check_browser_build::witnesses(cargo, checkout),
         Some("browser-clippy") => browser_clippy::run(args, cargo, checkout),
+        Some("doc-test") => doc_test::run(args, cargo, checkout),
         Some("browser-test") => browser_test(cargo, checkout),
         Some("pre-commit") => hook(cargo, checkout),
         Some("copy-assets") => {
@@ -219,26 +222,28 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     )
 }
 
-/// Build the sandbox runtime script the browser cases embed, then run every real-browser case,
-/// the driver regressions, each export and the report, as one nextest run, so the hang limit
-/// bounds and names each case and one run reports them all.
+/// Build the sandbox runtime script the browser cases embed unless the checkout already holds
+/// one, then run every real-browser case, the driver regressions, each export and the report, as
+/// one nextest run, so the hang limit bounds and names each case and one run reports them all.
 fn browser_test(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
-    let generated = Command::new(cargo)
-        .current_dir(checkout)
-        .args([
-            "run",
-            "--quiet",
-            "--locked",
-            "-p",
-            "maestro-tooling",
-            "--bin",
-            "development",
-            "--",
-            "sandbox-runtime",
-        ])
-        .status()?;
-    if !generated.success() {
-        return Ok(exit_code(generated));
+    if !checkout.join(sandbox_runtime::ASSET).is_file() {
+        let generated = Command::new(cargo)
+            .current_dir(checkout)
+            .args([
+                "run",
+                "--quiet",
+                "--locked",
+                "-p",
+                "maestro-tooling",
+                "--bin",
+                "development",
+                "--",
+                "sandbox-runtime",
+            ])
+            .status()?;
+        if !generated.success() {
+            return Ok(exit_code(generated));
+        }
     }
     let regressed = Command::new(cargo)
         .current_dir(checkout)

@@ -150,6 +150,9 @@ The checker first runs offline `cargo metadata --format-version 1 --no-deps`.
 It then detects the compiler host with `rustc -vV` and requests offline,
 host-filtered full metadata with default features, not all features. Both metadata
 children omit `RUSTC_WRAPPER`; the calling process and build commands retain it.
+A thread keeps each document it reads and reuses it while the workspace layout, the
+manifests, `Cargo.lock` and `.cargo` files stay the same. Edits to source files alone
+start no second Cargo run.
 Package IDs and canonical member paths establish identity, not dependency aliases.
 Optional, build, dev and inactive foreign-target declarations remain subject to policy.
 Malformed metadata and command failures return diagnostics, not acceptance.

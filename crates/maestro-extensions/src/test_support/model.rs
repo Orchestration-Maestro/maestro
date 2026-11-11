@@ -1,7 +1,7 @@
 //! Shared model descriptor for context witnesses.
-#![cfg(test)]
 use std::sync::{Arc, RwLock};
 /// A model descriptor with the supplied identity.
+#[must_use]
 pub fn model(id: &str) -> Arc<RwLock<maestro_models::Model>> {
     Arc::new(RwLock::new(maestro_models::Model {
         id: id.into(),

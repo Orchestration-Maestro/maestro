@@ -7,8 +7,13 @@ use cargo_metadata::{DependencyKind, Metadata, MetadataCommand, Package, Package
 
 use super::{Edge, Kind};
 
-/// Read offline declared or host-resolved metadata, omitting `RUSTC_WRAPPER` in children.
+/// Read offline declared or host-resolved metadata, once for each state of the workspace.
 pub(super) fn load(root: &Path, host: Option<&str>) -> Result<Metadata, String> {
+    super::cache::read(root, host, || run(root, host))
+}
+
+/// Run `cargo metadata`, omitting `RUSTC_WRAPPER` in the child.
+fn run(root: &Path, host: Option<&str>) -> Result<Metadata, String> {
     let mut command = MetadataCommand::new();
     command
         .current_dir(root)

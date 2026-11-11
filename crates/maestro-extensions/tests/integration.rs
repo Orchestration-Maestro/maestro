@@ -34,12 +34,14 @@ mod local_support;
 mod runtime_support;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "support/model.rs"]
-mod model_support;
+mod model_support {
+    pub use maestro_extensions::test_support::model;
+}
 
 #[cfg(not(target_arch = "wasm32"))]
-#[path = "support/ui_host.rs"]
-mod ui_host;
+mod ui_host {
+    pub use maestro_extensions::test_support::Named;
+}
 
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/ui_toolkit.rs"]

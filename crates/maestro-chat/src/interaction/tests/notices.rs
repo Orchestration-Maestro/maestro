@@ -293,7 +293,6 @@ fn unrecorded_selections() -> Vec<(SelectionInput, SelectionExpected)> {
 fn changelog_startup_selects_new_entries_and_records_seen_version() {
     const TEST: &str = "changelog_startup_selects_new_entries_and_records_seen_version";
     let stderr = isolated_package(TEST, async |directory, package| {
-        super::controlled_search_programs(directory);
         let recorded = cases::<SelectionInput, SelectionExpected>(FIXTURES, TEST);
         for (input, expected) in recorded.into_iter().chain(unrecorded_selections()) {
             selection_case(directory, package, input, expected).await;
@@ -731,7 +730,6 @@ async fn reporting_case(
 ) {
     let preference = input.preference;
     assert_eq!(input.op, "report");
-    super::controlled_search_programs(directory);
     let (fetch, requests) = reporting_transport();
     let world = Setup {
         options: crate::InteractiveModeOptions {
@@ -1224,7 +1222,6 @@ fn tmux_warning_selects_first_reachable_policy() {
 /// A started mode makes only the version request before the prompt, with the search
 /// programs supplied by the binary directory.
 async fn prompt_waits_for_version_request(directory: &std::path::Path) {
-    super::controlled_search_programs(directory);
     let (fetch, requests) = reporting_transport();
     let world = Setup {
         options: crate::InteractiveModeOptions {
@@ -1784,7 +1781,6 @@ fn startup_offline_selection_reaches_each_existing_operation() {
 
 /// Observes explicit offline forwarding at the actual request and native command consumers.
 async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: bool) {
-    super::controlled_search_programs(root);
     install_ready_tmux(root);
     let (fetch, requests) = reporting_transport();
     let world = native_package_world_with(
@@ -1872,7 +1868,6 @@ fn successful_release(
 
 /// Checks each producer's appended transcript slice in its completion order.
 async fn completion_order(root: &std::path::Path, order: [usize; 3]) {
-    super::controlled_search_programs(root);
     install_command(root, "tmux", &gated("gated-tmux", root));
     install_command(root, "npm", &gated("gated-package", root));
     let mut gates =
@@ -2018,7 +2013,6 @@ async fn assert_current_agent_root(world: &World, root: &std::path::Path) {
 
 /// An already-ready release still follows the synchronous startup warning.
 async fn ready_completion_order(root: &std::path::Path) {
-    super::controlled_search_programs(root);
     ready_prefix_root(root).await;
     let release = std::sync::Arc::new(tokio::sync::Notify::new());
     release.notify_one();

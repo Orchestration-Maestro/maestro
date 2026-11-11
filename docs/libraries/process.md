@@ -36,7 +36,7 @@ Native `maestro-chat` names pasted clipboard images with `uuid =1.27.0`, default
 off with `std` and `v4`, the version and features the application already locks.
 uuid is licensed MIT OR Apache-2.0.
 
-Linux pane terminals use the existing `rustix =1.1.5` (Apache-2.0 WITH
+Linux pane terminals use the existing `rustix =1.1.6` (Apache-2.0 WITH
 LLVM-exception OR Apache-2.0 OR MIT), with defaults off and `std`, `process`,
 `pty` and `termios` enabled; `pty` enables `fs`. Owned descriptors provide
 close-on-exec duplication, terminal creation, controlling-terminal acquisition and
@@ -59,7 +59,7 @@ continue signal, and sends the stop signal to its process group through rustix's
 `process` feature. Both reuse the locked dependency closure.
 
 The process tests run their controlled children as Rust. On Unix the test-process owner
-(`maestro-test-process`) depends on the existing `rustix =1.1.5` with `std`, `fs`, `stdio`
+(`maestro-test-process`) depends on the existing `rustix =1.1.6` with `std`, `fs`, `stdio`
 and `process`, so a child replaces one of its standard descriptors with the null device and
 applies its own umask, process-count limit and session without unsafe code; the process
 tests share that one operation. The mode and `umask` calls are the only items behind `fs`.
@@ -79,7 +79,7 @@ changes.
 The test-process owner's single harness-free native fixture inherits the existing
 workspace `serde` and `serde_json` pins, including `float_roundtrip`, for its
 controlled Cargo and search records. Unix fixture development dependencies inherit
-the workspace `signal-hook =0.3.18` and `rustix =1.1.5` pins, both with defaults off;
+the workspace `signal-hook =0.3.18` and `rustix =1.1.6` pins, both with defaults off;
 the fixture enables rustix's `process` feature.
 The signal handler queues TERM notifications in a retained socket pair before
 search readiness; a blocking read consumes that byte even when TERM arrives
