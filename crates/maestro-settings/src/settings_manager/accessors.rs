@@ -502,6 +502,14 @@ impl SettingsManager {
         self.set_global("enableSkillCommands", value);
     }
 
+    /// Returns the adapter name selected for a port, if any.
+    ///
+    /// The name lives at `adapters.<port>`, so a base layer locks it like any other key.
+    #[must_use]
+    pub fn get_adapter(&self, port: &str) -> Option<String> {
+        self.nested("adapters", port)
+    }
+
     /// Returns the custom thinking budgets, if configured.
     #[must_use]
     pub fn get_thinking_budgets(&self) -> Option<ThinkingBudgetsSettings> {
