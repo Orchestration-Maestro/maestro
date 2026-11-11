@@ -111,7 +111,8 @@ fn startup_selection_skips_missing_tool_downloads() {
                 None
             );
             assert_eq!(manager.ensure_tool(tool, None).await, None);
-            let advice = format!("{name} not found. Offline mode enabled, skipping download.");
+            let advice =
+                format!("{name} is missing. Offline mode is on, so the download is skipped.");
             assert_eq!(String::from_utf8(plain).unwrap(), format!("{advice}\n"));
             assert_eq!(
                 String::from_utf8(colored).unwrap(),

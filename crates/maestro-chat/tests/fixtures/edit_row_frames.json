@@ -421,8 +421,8 @@
         "\u001b[48;5;15m                                                                                \u001b[49m",
         "\u001b[48;5;15m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;3mpreflight.txt\u001b[39m                                                             \u001b[49m",
         "\u001b[48;5;15m                                                                                \u001b[49m",
-        "\u001b[48;5;15m \u001b[38;5;4mCould not find the exact text in preflight.txt. The old text must match        \u001b[49m",
-        "\u001b[48;5;15m \u001b[38;5;4mexactly including all whitespace and newlines.\u001b[39m                                 \u001b[49m",
+        "\u001b[48;5;15m \u001b[38;5;4mNo exact match for the text in preflight.txt. The old text must match          \u001b[49m",
+        "\u001b[48;5;15m \u001b[38;5;4mcharacter for character, whitespace and newlines included.\u001b[39m                     \u001b[49m",
         "\u001b[48;5;15m                                                                                \u001b[49m"
       ],
       "settled": [
@@ -430,8 +430,8 @@
         "\u001b[48;5;15m                                                                                \u001b[49m",
         "\u001b[48;5;15m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;3mpreflight.txt\u001b[39m                                                             \u001b[49m",
         "\u001b[48;5;15m                                                                                \u001b[49m",
-        "\u001b[48;5;15m \u001b[38;5;4mCould not find the exact text in preflight.txt. The old text must match        \u001b[49m",
-        "\u001b[48;5;15m \u001b[38;5;4mexactly including all whitespace and newlines.\u001b[39m                                 \u001b[49m",
+        "\u001b[48;5;15m \u001b[38;5;4mNo exact match for the text in preflight.txt. The old text must match          \u001b[49m",
+        "\u001b[48;5;15m \u001b[38;5;4mcharacter for character, whitespace and newlines included.\u001b[39m                     \u001b[49m",
         "\u001b[48;5;15m                                                                                \u001b[49m"
       ],
       "renders": 2,

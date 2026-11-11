@@ -89,7 +89,7 @@ pub fn create_bash_tool_definition<C: 'static>(
     ToolDefinition {
         definition: Tool {
             name: "bash".into(),
-            description: "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.".into(),
+            description: "Run a bash command; it starts in the current working directory. The result carries stdout and stderr, and output keeps only the last 2000 lines or 50KB, whichever limit is reached first. When output is cut, the full output is saved to a temporary file. Accepts an optional timeout in seconds.".into(),
             parameters: maestro_models::ParameterSchema::authored(json!({"type": "object", "required": ["command"], "properties": {
                 "command": {"type": "string", "description": "Bash command to execute"},
                 "timeout": {"type": "number", "description": "Timeout in seconds (optional, no default timeout)"}

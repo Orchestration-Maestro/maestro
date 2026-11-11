@@ -2,16 +2,16 @@
 /// Guidance supplied to the model for document extraction.
 pub const EXTRACT_DOCUMENT_DESCRIPTION: &str = r#"# Extract Document
 
-Extract plain text from documents on the web (PDF, DOCX, XLSX, PPTX).
+Pull plain text out of web documents: PDF, DOCX, XLSX or PPTX.
 
-## When to Use
-User wants you to read a document at a URL.
+## Use It When
+The user points you at a document URL.
 
 ## Input
-- { url: "https://example.com/document.pdf" } - URL to PDF, DOCX, XLSX, or PPTX
+- { url: "https://example.com/document.pdf" } - URL of a PDF, DOCX, XLSX or PPTX file
 
 ## Returns
-Structured plain text with page/sheet/slide delimiters."#;
+Plain text, organized with page, sheet or slide delimiters."#;
 
 /// Guidance supplied to the model with admitted runtime helper descriptions.
 #[must_use]
@@ -21,55 +21,55 @@ pub fn javascript_repl_tool_description(runtime_provider_descriptions: &[String]
         r"# JavaScript REPL
 
 ## Purpose
-Execute JavaScript code in a sandboxed browser environment with full Web APIs.
+Run JavaScript inside a sandboxed browser that exposes the full Web API surface.
 
 ## When to Use
-- Quick calculations or data transformations
-- Testing JavaScript code snippets in isolation
-- Processing data with libraries (XLSX, CSV, etc.)
-- Creating artifacts from data
+- Short calculations or reshaping of data
+- Trying out a JavaScript snippet in isolation
+- Working on data with libraries such as XLSX or CSV
+- Turning data into artifacts
 
 ## Environment
-- ES2023+ JavaScript (async/await, optional chaining, nullish coalescing, etc.)
-- All browser APIs: DOM, Canvas, WebGL, Fetch, Web Workers, WebSockets, Crypto, etc.
-- Import any npm package: await import('https://esm.run/package-name')
+- Modern ES2023+ JavaScript: optional chaining, nullish coalescing, async/await and more
+- Every browser API, among them Fetch, DOM, Canvas, WebGL, WebSockets, Web Workers and Crypto
+- Any npm package can be imported with: await import('https://esm.run/package-name')
 
-## Common Libraries
-- XLSX: const XLSX = await import('https://esm.run/xlsx');
-- CSV: const Papa = (await import('https://esm.run/papaparse')).default;
-- Chart.js: const Chart = (await import('https://esm.run/chart.js/auto')).default;
-- Three.js: const THREE = await import('https://esm.run/three');
+## Libraries You Can Import
+- Spreadsheets (XLSX): const XLSX = await import('https://esm.run/xlsx');
+- CSV parsing (Papa Parse): const Papa = (await import('https://esm.run/papaparse')).default;
+- Charts (Chart.js): const Chart = (await import('https://esm.run/chart.js/auto')).default;
+- 3D (Three.js): const THREE = await import('https://esm.run/three');
 
 ## Persistence between tool calls
-- Objects stored on global scope do not persist between calls.
-- Use artifacts as a key-value JSON object store:
-  - Use createOrUpdateArtifact(filename, content) to persist data between calls. JSON objects are auto-stringified.
-  - Use listArtifacts() and getArtifact(filename) to read persisted data. JSON files are auto-parsed to objects.
-  - Prefer to use a single artifact throughout the session to store intermediate data (e.g. 'data.json').
+- Values kept on the global scope are lost between calls.
+- Artifacts double as a key-value JSON store:
+  - createOrUpdateArtifact(filename, content) saves data across calls; JSON objects are stringified automatically.
+  - listArtifacts() and getArtifact(filename) read saved data back; JSON files are parsed into objects automatically.
+  - Prefer one artifact for the whole session to hold intermediate data (for example 'data.json').
 
 ## Input
-- You have access to the user's attachments via listAttachments(), readTextAttachment(id), and readBinaryAttachment(id)
-- You have access to previously created artifacts via listArtifacts() and getArtifact(filename)
+- The user's attachments are reachable through listAttachments(), readTextAttachment(id) and readBinaryAttachment(id)
+- Artifacts created earlier are reachable through listArtifacts() and getArtifact(filename)
 
 ## Output
-- All console.log() calls are captured for you to inspect. The user does not see these logs.
-- Create artifacts for file results (images, JSON, CSV, etc.) which persiste throughout the
-  session and are accessible to you and the user.
+- Every console.log() call is captured for you to inspect; the user never sees these logs.
+- Put file results (images, JSON, CSV and the like) in artifacts. They last for the whole
+  session, and both you and the user can open them.
 
-## Example
-const data = [10, 20, 15, 25];
-const sum = data.reduce((a, b) => a + b, 0);
-const avg = sum / data.length;
-console.log('Sum:', sum, 'Average:', avg);
+## Example Snippet
+const values = [10, 20, 15, 25];
+const total = values.reduce((a, b) => a + b, 0);
+const mean = total / values.length;
+console.log('Total:', total, 'Mean:', mean);
 
-## Important Notes
-- Graphics: Use fixed dimensions (800x600), NOT window.innerWidth/Height
-- Chart.js: Set options: {{ responsive: false, animation: false }}
-- Three.js: renderer.setSize(800, 600) with matching aspect ratio
+## Key Notes
+- Graphics: stick to fixed 800x600 dimensions; window.innerWidth/Height must not be used
+- Chart.js: set options: {{ responsive: false, animation: false }}
+- Three.js: call renderer.setSize(800, 600) with a matching aspect ratio
 
-## Helper Functions (Automatically Available)
+## Helper Functions (Injected Automatically)
 
-These functions are injected into the execution environment and available globally:
+The execution environment injects these functions as globals:
 
 {descriptions}
 "
@@ -89,76 +89,76 @@ pub fn artifacts_tool_description(runtime_provider_descriptions: &[&str]) -> Str
 /// Artifact command and HTML authoring guidance.
 const ARTIFACTS_DESCRIPTION: &str = r#"# Artifacts
 
-Create and manage persistent files that live alongside the conversation.
+Persistent files that sit next to the conversation, created and managed here.
 
-## When to Use - Artifacts Tool vs REPL
+## When to Use Which - Artifacts Tool or REPL
 
-**Use artifacts tool when YOU are the author:**
-- Writing research summaries, analysis, ideas, documentation
-- Creating markdown notes for user to read
-- Building HTML applications/visualizations that present data
-- Creating HTML artifacts that render charts from programmatically generated data
+**Reach for the artifacts tool when YOU write the content:**
+- Research summaries, analyses, ideas and documentation you write yourself
+- Markdown notes meant for the user to read
+- HTML applications and visualizations that present data
+- HTML artifacts that chart data generated by code
 
-**Use repl + artifact storage functions when CODE processes data:**
-- Scraping workflows that extract and store data
-- Processing CSV/Excel files programmatically
+**Choose the repl plus the artifact storage functions when CODE does the data processing:**
+- Scraping workflows that pull data out and store it
+- CSV or Excel files processed by code
 - Data transformation pipelines
-- Binary file generation requiring libraries (PDF, DOCX)
+- Binary files (PDF, DOCX) whose generation needs libraries
 
-**Pattern: REPL generates data → Artifacts tool creates HTML that visualizes it**
-Example: repl scrapes products → stores products.json → you author dashboard.html that reads products.json and renders Chart.js visualizations
+**Pattern: the REPL produces data → the artifacts tool writes HTML that visualizes it**
+Example: the repl scrapes products and stores products.json; you then write dashboard.html, which reads products.json and draws Chart.js charts
 
 ## Input
-- { command: "create", filename: "notes.md", content: "..." } - Create new file
-- { command: "update", filename: "notes.md", old_str: "...", new_str: "..." } - Update part of file (PREFERRED)
-- { command: "rewrite", filename: "notes.md", content: "..." } - Replace entire file (LAST RESORT)
-- { command: "get", filename: "data.json" } - Retrieve file content
-- { command: "delete", filename: "old.csv" } - Delete file
-- { command: "logs", filename: "app.html" } - Get console logs from HTML artifact
+- { command: "create", filename: "notes.md", content: "..." } - Create a new file
+- { command: "update", filename: "notes.md", old_str: "...", new_str: "..." } - Change part of a file (PREFERRED)
+- { command: "rewrite", filename: "notes.md", content: "..." } - Replace the whole file (LAST RESORT)
+- { command: "get", filename: "data.json" } - Fetch a file's content
+- { command: "delete", filename: "old.csv" } - Remove a file
+- { command: "logs", filename: "app.html" } - Read the console logs of an HTML artifact
 
 ## Returns
-Depends on action:
-- create/update/rewrite/delete: Success status or error
-- get: File content
-- logs: Console logs and errors
+Varies by command:
+- create/update/rewrite/delete: a success status, or an error
+- get: the file content
+- logs: console output and errors
 
-## Supported File Types
-✅ Text-based files you author: .md, .txt, .html, .js, .css, .json, .csv, .svg
-❌ Binary files requiring libraries (use repl): .pdf, .docx
+## File Types Allowed
+✅ Text files you write yourself: .md, .txt, .html, .js, .css, .json, .csv, .svg
+❌ Binary files that need libraries (use the repl): .pdf, .docx
 
-## Critical - Prefer Update Over Rewrite
-❌ NEVER: get entire file + rewrite to change small sections
-✅ ALWAYS: update for targeted edits (token efficient)
-✅ Ask: Can I describe the change as old_str → new_str? Use update.
+## Critical - Choose Update Before Rewrite
+❌ NEVER: fetch a whole file and rewrite it to alter a small section
+✅ ALWAYS: use update for targeted edits (saves tokens)
+✅ Ask yourself: can the change be written as old_str → new_str? Then use update.
 
 ---
 
-## HTML Artifacts
+## HTML Artifact Rules
 
-Interactive HTML applications that can visualize data from other artifacts.
+Interactive HTML apps that can chart data held in other artifacts.
 
 ### Data Access
-- Can read artifacts created by repl and user attachments
-- Use to build dashboards, visualizations, interactive tools
-- See Helper Functions section below for available functions
+- They can read artifacts made by the repl, and the user's attachments
+- Good for dashboards, visualizations and interactive tools
+- The Helper Functions section below lists the functions on offer
 
 ### Requirements
-- Self-contained single file
-- Import ES modules from esm.sh: <script type="module">import X from 'https://esm.sh/pkg';</script>
-- Use Tailwind CDN: <script src="https://cdn.tailwindcss.com"></script>
-- Can embed images from any domain: <img src="https://example.com/image.jpg">
-- MUST set background color explicitly (avoid transparent)
-- Inline CSS or Tailwind utility classes
-- No localStorage/sessionStorage
+- One self-contained file
+- Pull in ES modules through esm.sh, for example <script type="module">import X from 'https://esm.sh/pkg';</script>
+- Tailwind comes from its CDN: <script src="https://cdn.tailwindcss.com"></script>
+- Embedding images from other domains is allowed: <img src="https://example.com/image.jpg">
+- MUST give the page an explicit background color (never transparent)
+- Use inline CSS, or Tailwind's utility classes, for styling
+- Never use localStorage or sessionStorage
 
 ### Styling
-- Use Tailwind utility classes for clean, functional designs
-- Ensure responsive layout (iframe may be resized)
-- Avoid purple gradients, AI aesthetic clichés, and emojis
+- Tailwind utility classes give clean, functional designs
+- Keep the layout responsive, since the iframe may be resized
+- No purple gradients, no AI-aesthetic clichés, no emojis
 
-### Helper Functions (Automatically Available)
+### Helper Functions (Injected Automatically)
 
-These functions are injected into HTML artifact sandbox:
+The HTML artifact sandbox receives these functions:
 
 "#;
 
@@ -202,7 +202,7 @@ canvas.width = 800; canvas.height = 600;
 const ctx = canvas.getContext('2d');
 ctx.fillStyle = 'blue';
 ctx.fillRect(0, 0, 800, 600);
-// Remove data:image/png;base64, prefix
+// Strip the data:image/png;base64, prefix
 const base64 = canvas.toDataURL().split(',')[1];
 await createOrUpdateArtifact('chart.png', base64, 'image/png');
 ```

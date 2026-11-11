@@ -172,7 +172,7 @@ fn startup_reports_duplicate_and_early_exit() {
         for runs in 1..=2 {
             let error = failing.start().await.unwrap_err();
             let stderr = "boot failed\n".repeat(runs);
-            let message = format!("Agent process exited immediately with code 7. Stderr: {stderr}");
+            let message = format!("The agent process exited at once with code 7. Stderr: {stderr}");
             assert_eq!(
                 error.to_string(),
                 message,
@@ -199,7 +199,7 @@ fn startup_reports_duplicate_and_early_exit() {
         ));
         assert_eq!(
             error.to_string(),
-            "Agent process exited immediately with code null. Stderr: "
+            "The agent process exited at once with code null. Stderr: "
         );
         killed.stop().await.unwrap();
     });

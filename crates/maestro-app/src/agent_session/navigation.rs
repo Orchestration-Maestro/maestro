@@ -423,7 +423,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
             } if !api_key.is_empty() => Ok((api_key, headers, base_url)),
             ResolvedRequestAuth::Ok { .. } if self.model_registry.is_using_oauth(model) => {
                 Err(DiagnosticErrorInfo::error(format!(
-                    "Authentication failed for \"{provider}\". Credentials may have expired or network is unavailable. Run '/login {provider}' to re-authenticate."
+                    "Authentication failed for \"{provider}\". The credentials may have expired, or the network may be down. Run '/login {provider}' to authenticate again."
                 )))
             }
             ResolvedRequestAuth::Ok { .. } => Err(no_key()),

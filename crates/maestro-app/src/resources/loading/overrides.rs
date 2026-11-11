@@ -148,7 +148,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         self.report_missing(
             &mut result.diagnostics,
             extra,
-            "Skill path does not exist",
+            "Skill path was not found",
             true,
         )?;
         self.state.borrow_mut().skills = Rc::new(result);
@@ -183,7 +183,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         self.report_missing(
             &mut result.diagnostics,
             extra,
-            "Prompt template path does not exist",
+            "Prompt template path was not found",
             true,
         )?;
         self.state.borrow_mut().prompts = Rc::new(result);
@@ -216,7 +216,7 @@ impl<E: DefaultEventBus> DefaultResourceLoader<E> {
         self.report_missing(
             &mut result.diagnostics,
             extra,
-            "Theme path does not exist",
+            "Theme path was not found",
             false,
         )?;
         self.state.borrow_mut().themes = Rc::new(result);

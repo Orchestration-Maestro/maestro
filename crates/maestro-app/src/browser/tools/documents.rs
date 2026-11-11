@@ -297,7 +297,7 @@ where
     fn missing(&self, filename: &str) -> String {
         let files = read(&self.artifacts()).keys().cloned().collect::<Vec<_>>();
         if files.is_empty() {
-            format!("Error: File {filename} not found. No files have been created yet.")
+            format!("Error: File {filename} does not exist; no file has been created so far.")
         } else {
             format!(
                 "Error: File {filename} not found. Available files: {}",
@@ -426,7 +426,7 @@ where
             Ok(reader) => Ok(reader()),
             Err(ArtifactLogError::Missing) => Err(self.missing(filename)),
             Err(ArtifactLogError::NotHtml) => Err(format!(
-                "Error: File {filename} is not an HTML file. Logs are only available for HTML files."
+                "Error: File {filename} is not an HTML file, and only HTML files keep logs."
             )),
         }
     }
@@ -435,7 +435,7 @@ where
 fn created_content(params: &ArtifactsParams, exists: bool) -> Result<&str, String> {
     let content = params.content.as_deref().unwrap_or_default();
     if content.is_empty() || params.filename.is_empty() {
-        return Err("Error: create command requires filename and content".into());
+        return Err("Error: the create command needs both filename and content".into());
     }
     if exists {
         return Err(format!("Error: File {} already exists", params.filename));
@@ -460,7 +460,7 @@ fn edited_content(params: &ArtifactsParams, current: &str) -> Result<String, Str
     };
     if !current.contains(old.as_str()) {
         return Err(format!(
-            "Error: String not found in file. Here is the full content:\n\n{current}"
+            "Error: that string does not occur in the file. Its full content follows:\n\n{current}"
         ));
     }
     Ok(current.replacen(old.as_str(), new, 1))

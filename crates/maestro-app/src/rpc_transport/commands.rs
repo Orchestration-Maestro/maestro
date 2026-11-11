@@ -335,7 +335,7 @@ impl RpcClient {
         .await
     }
 
-    /// Duplicates the active branch into a new session; this is the session command, not
+    /// Copies the active branch to a fresh session; this is the session command, not
     /// a copy of the client.
     ///
     /// # Errors

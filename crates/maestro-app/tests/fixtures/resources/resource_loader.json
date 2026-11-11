@@ -1083,7 +1083,7 @@
         "promptDiagnostics": [
           {
             "type": "error",
-            "message": "Prompt template path does not exist",
+            "message": "Prompt template path was not found",
             "path": "$ROOT/missing-prompts"
           }
         ],
@@ -1148,7 +1148,7 @@
         "themeDiagnostics": [
           {
             "type": "warning",
-            "message": "theme path is not a json file",
+            "message": "theme path must be a json file",
             "path": "$ROOT/theme.txt"
           }
         ],
