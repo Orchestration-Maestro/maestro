@@ -1,6 +1,7 @@
 //! The frame the terminal shows and the choice of how to bring it up to date.
 
 use std::io;
+use std::ops::Range;
 
 use super::diagnostics::RedrawReason;
 use super::drawing::{self, CursorPosition, Update};
@@ -92,6 +93,20 @@ pub(super) enum Plan {
         /// First content row on screen.
         viewport_top: usize,
     },
+}
+
+impl Plan {
+    /// The rows of a frame of `lines` rows this plan writes content to; every other row
+    /// keeps what the terminal already shows.
+    fn drawn_rows(&self, lines: usize) -> Range<usize> {
+        match self {
+            Self::Full(_) => 0..lines,
+            Self::Differential { changes, .. } => {
+                changes.first..changes.last.min(lines.saturating_sub(1)) + 1
+            }
+            Self::DeleteTail { .. } | Self::Unchanged { .. } => 0..0,
+        }
+    }
 }
 
 /// What the terminal currently shows, as far as the writer knows.
@@ -267,13 +282,13 @@ impl TUI {
             width,
             height,
         };
-        self.reject_overflow(&frame)?;
         let policy = Policy {
             clear_on_shrink: self.shared.clear_on_shrink.get()
                 && self.shared.overlays.borrow().is_empty(),
             mobile: environment("TERMUX_VERSION").is_some_and(|version| !version.is_empty()),
         };
         let plan = self.shared.screen.borrow().plan(&frame, &policy);
+        self.reject_overflow(&frame, plan.drawn_rows(frame.lines.len()))?;
         match plan {
             Plan::Full(reason) => self.full_render(frame, &reason),
             Plan::DeleteTail {
@@ -394,5 +409,110 @@ impl TUI {
     /// Writes `data` to the terminal.
     fn write(&self, data: &str) -> io::Result<()> {
         self.shared.terminal.borrow_mut().write(data)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::interface::diagnostics::{forget_measured_lines, measured_lines, oversized_row};
+    use crate::interface::drawing::SEGMENT_RESET;
+
+    /// The lines of the five-row transcript these tests draw.
+    const TRANSCRIPT: [&str; 5] = ["one", "two", "three", "four", "five"];
+
+    /// A frame of `lines` on a 10 by 3 terminal, each line reset the way the writer resets
+    /// text lines.
+    fn frame(lines: &[&str]) -> Frame {
+        Frame {
+            lines: lines
+                .iter()
+                .map(|line| format!("{line}{SEGMENT_RESET}"))
+                .collect(),
+            cursor: None,
+            width: 10,
+            height: 3,
+        }
+    }
+
+    /// A screen that already drew `lines` on a 10 by 3 terminal.
+    fn drawn(lines: &[&str]) -> Screen {
+        let mut screen = Screen::default();
+        screen.commit(frame(lines));
+        screen.max_lines_rendered = lines.len();
+        screen.previous_viewport_top = lines.len().saturating_sub(3);
+        screen
+    }
+
+    /// The plan `screen` makes for `frame`.
+    fn plan_of(screen: &Screen, frame: &Frame) -> Plan {
+        screen.plan(
+            frame,
+            &Policy {
+                clear_on_shrink: false,
+                mobile: false,
+            },
+        )
+    }
+
+    /// The plan for `frame`, the rows it draws and how many lines the width check measures
+    /// before drawing them.
+    fn measured(screen: &Screen, frame: &Frame) -> (Plan, usize) {
+        let plan = plan_of(screen, frame);
+        forget_measured_lines();
+        let oversized = oversized_row(frame, plan.drawn_rows(frame.lines.len()));
+        let lines = measured_lines();
+        assert_eq!(oversized, None, "no line of this fixture is oversized");
+        (plan, lines)
+    }
+
+    #[test]
+    fn a_full_redraw_measures_every_row() {
+        let screen = drawn(&TRANSCRIPT);
+        let resized = Frame {
+            width: 11,
+            ..frame(&TRANSCRIPT)
+        };
+        let (plan, lines) = measured(&screen, &resized);
+        assert!(
+            matches!(plan, Plan::Full(RedrawReason::Width { .. })),
+            "a width change redraws every row"
+        );
+        assert_eq!(lines, 5);
+    }
+
+    #[test]
+    fn a_differential_frame_measures_only_the_rows_it_draws() {
+        let screen = drawn(&TRANSCRIPT);
+        let (plan, lines) = measured(&screen, &frame(&["one", "two", "THREE", "four", "five"]));
+        assert!(matches!(plan, Plan::Differential { .. }));
+        assert_eq!(lines, 1, "only the changed row is measured again");
+    }
+
+    #[test]
+    fn an_unchanged_frame_measures_no_rows() {
+        let screen = drawn(&TRANSCRIPT);
+        let (plan, lines) = measured(&screen, &frame(&TRANSCRIPT));
+        assert!(matches!(plan, Plan::Unchanged { .. }));
+        assert_eq!(lines, 0);
+    }
+
+    #[test]
+    fn a_shorter_frame_measures_no_rows() {
+        let screen = drawn(&TRANSCRIPT);
+        let (plan, lines) = measured(&screen, &frame(&["one", "two", "three"]));
+        assert!(matches!(plan, Plan::DeleteTail { .. }));
+        assert_eq!(lines, 0, "erasing rows draws no line");
+    }
+
+    #[test]
+    fn an_oversized_drawn_row_is_rejected_with_its_row() {
+        let screen = drawn(&TRANSCRIPT);
+        let frame = frame(&["one", "two", "01234567890", "four", "five"]);
+        let plan = plan_of(&screen, &frame);
+        assert_eq!(
+            oversized_row(&frame, plan.drawn_rows(frame.lines.len())),
+            Some((2, 11))
+        );
     }
 }
