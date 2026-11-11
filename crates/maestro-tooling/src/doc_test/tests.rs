@@ -17,26 +17,28 @@ fn fixture(root: &Path) -> Metadata {
         ("binary", &["src/main.rs"][..]),
         ("mixed", &["src/lib.rs", "src/main.rs"][..]),
     ] {
-        fs::create_dir_all(root.join(member).join("src")).unwrap();
+        fs::create_dir_all(root.join(member).join("src"))
+            .expect("the member source directory must be created");
         fs::write(
             root.join(member).join("Cargo.toml"),
             format!("[package]\nname = '{member}'\nversion = '0.0.0'\nedition = '2024'\n"),
         )
-        .unwrap();
+        .expect("the member manifest must be written");
         for file in files {
-            fs::write(root.join(member).join(file), "fn main() {}\n").unwrap();
+            fs::write(root.join(member).join(file), "fn main() {}\n")
+                .expect("the member source file must be written");
         }
     }
     fs::write(
         root.join("Cargo.toml"),
         "[workspace]\nmembers = ['library', 'binary', 'mixed']\nresolver = '3'\n",
     )
-    .unwrap();
+    .expect("the workspace manifest must be written");
     MetadataCommand::new()
         .manifest_path(root.join("Cargo.toml"))
         .no_deps()
         .exec()
-        .unwrap()
+        .expect("cargo metadata must read the fixture")
 }
 
 /// Turn argument text into the OS strings the recipe passes.
@@ -47,7 +49,7 @@ fn args(arguments: &[&str]) -> Vec<OsString> {
 /// A package without a library has no doctest phase, so a selection of such packages skips it.
 #[test]
 fn a_selection_of_packages_without_a_library_runs_no_doctests() {
-    let scratch = Scratch::new().unwrap();
+    let scratch = Scratch::new().expect("the scratch directory must be created");
     let metadata = fixture(scratch.path());
     assert!(!runs_doctests(&metadata, &["binary".to_owned()]));
     assert!(runs_doctests(&metadata, &["library".to_owned()]));
@@ -61,7 +63,7 @@ fn a_selection_of_packages_without_a_library_runs_no_doctests() {
 /// A name that is no member goes to Cargo, which reports it.
 #[test]
 fn an_unknown_package_name_is_left_to_cargo() {
-    let scratch = Scratch::new().unwrap();
+    let scratch = Scratch::new().expect("the scratch directory must be created");
     let metadata = fixture(scratch.path());
     assert!(runs_doctests(&metadata, &["missing".to_owned()]));
     assert!(runs_doctests(&metadata, &["bin*".to_owned()]));
@@ -91,20 +93,20 @@ fn every_package_spelling_names_its_package() {
 /// Naming a binary-only package passes without running Cargo's doctests, which refuse it.
 #[test]
 fn naming_a_binary_only_package_passes_the_doctest_phase() {
-    let scratch = Scratch::new().unwrap();
+    let scratch = Scratch::new().expect("the scratch directory must be created");
     fixture(scratch.path());
-    // The recipe runs Cargo with `--locked`, so the workspace has its lock file.
+    // `run` passes `--locked` to Cargo, so the workspace needs its lock file.
     let lock = Command::new(env!("CARGO"))
         .arg("generate-lockfile")
         .current_dir(scratch.path())
         .status()
-        .unwrap();
+        .expect("cargo generate-lockfile must start");
     assert!(lock.success());
     let code = run(
         &args(&["-p", "binary"]),
         Path::new(env!("CARGO")),
         scratch.path(),
     )
-    .unwrap();
+    .expect("the doctest phase must run");
     assert_eq!(code, ExitCode::SUCCESS);
 }
