@@ -2,6 +2,7 @@
 #![cfg(test)]
 use maestro_text::terminal::clean_controls;
 
+/// Sequences that act on a terminal go, and the words, tabs and line ends around them stay.
 #[test]
 fn control_sequences_leave_only_the_words_around_them() {
     let written = concat!(
@@ -15,6 +16,7 @@ fn control_sequences_leave_only_the_words_around_them() {
     );
 }
 
+/// Text with no controls comes back as written.
 #[test]
 fn text_without_controls_is_unchanged() {
     let plain = "plain text, Ω ünïcode,\ttabs and\nlines\n";

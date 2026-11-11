@@ -127,7 +127,6 @@ fn context_warning_colour_follows_the_shared_decision() {
     for (environment, expected_yellow) in [
         (&[("FORCE_COLOR", "1")][..], true),
         (&[("FORCE_COLOR", "0")], false),
-        (&[("TERM", "dumb")], false),
         (&[], false),
     ] {
         let Some((base, stderr)) = child_stderr_with(

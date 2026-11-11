@@ -487,6 +487,8 @@ pub fn child_stderr_with(
     let base = scratch.path().display().to_string();
     let output = scratch_child(test, &base)
         .env_remove("FORCE_COLOR")
+        .env_remove("TF_BUILD")
+        .env_remove("AGENT_NAME")
         .envs(environment.iter().copied())
         .nocapture()
         .output()

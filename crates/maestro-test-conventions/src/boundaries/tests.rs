@@ -101,6 +101,7 @@ const TERMINAL_DECISIONS: &[&str] = &[
     "impl X { fn d(&self) -> bool { self.0.is_terminal() } }",
 ];
 
+/// A stream's terminal decision outside its owners is reported in every position.
 #[test]
 fn a_terminal_decision_outside_its_owners_is_found_in_every_position() {
     for source in TERMINAL_DECISIONS {
@@ -114,6 +115,7 @@ fn a_terminal_decision_outside_its_owners_is_found_in_every_position() {
     }
 }
 
+/// Owners, tests and calls that only look similar are not reported.
 #[test]
 fn owners_tests_and_other_calls_are_not_reported() {
     let seeded = TERMINAL_DECISIONS[0];

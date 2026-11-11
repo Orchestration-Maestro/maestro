@@ -4,7 +4,7 @@ use crate::component_stdout::terminal_support::pty;
 use crate::support::{Root, provider::Provider};
 use std::{
     io::Read,
-    process::{Command, Output, Stdio},
+    process::{Command, Stdio},
 };
 
 /// What a model can write to act on a terminal: a clipboard write, a window title, a screen
@@ -30,8 +30,8 @@ fn print(root: &Root, mode: &str) -> Command {
 }
 
 /// Runs `mode` with standard output on a pseudo-terminal and returns what the terminal showed
-/// and the process's streams once it exited.
-fn on_terminal(mode: &str) -> (String, Output) {
+/// once the process exited.
+fn on_terminal(mode: &str) -> String {
     let root = Root::new();
     let provider = Provider::replying(HOSTILE);
     root.models(&provider.base);
@@ -49,13 +49,13 @@ fn on_terminal(mode: &str) -> (String, Output) {
     }
     let output = child.wait_with_output().unwrap();
     assert!(output.status.success(), "{output:?}");
-    (String::from_utf8(shown).unwrap(), output)
+    String::from_utf8(shown).unwrap()
 }
 
 /// A terminal shows the words a model wrote and none of the sequences that act on it.
 #[test]
 fn text_on_a_terminal_loses_its_control_sequences() {
-    let (shown, _) = on_terminal("text");
+    let shown = on_terminal("text");
     assert_eq!(shown, "see the docs at example.org\r\n");
 }
 
@@ -76,7 +76,7 @@ fn text_on_a_pipe_stays_byte_exact() {
 /// JSON records escape their controls, so a terminal never receives one raw.
 #[test]
 fn json_on_a_terminal_keeps_its_controls_escaped() {
-    let (shown, _) = on_terminal("json");
+    let shown = on_terminal("json");
     assert!(!shown.contains('\x1b'), "{shown:?}");
     assert!(shown.contains(r"see \u001b]52;c;aGk=\u0007the \u001b]0;owned"));
 }

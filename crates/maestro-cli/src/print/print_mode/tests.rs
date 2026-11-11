@@ -637,6 +637,7 @@ const HOSTILE: &str = concat!(
     "\u{1b}]8;;https://evil.example\u{1b}\\example.org\u{1b}]8;;\u{1b}\\"
 );
 
+/// On a terminal the final text loses its control sequences and keeps its words.
 #[test]
 fn text_on_a_terminal_loses_its_control_sequences_and_keeps_its_words() {
     on_task_set(async {
@@ -655,6 +656,7 @@ fn text_on_a_terminal_loses_its_control_sequences_and_keeps_its_words() {
     });
 }
 
+/// Off a terminal the final text keeps its bytes exactly.
 #[test]
 fn text_on_a_pipe_or_file_stays_byte_exact() {
     on_task_set(async {
