@@ -11,11 +11,7 @@ use maestro_tui::candidates::{
     SlashCommand,
 };
 use maestro_tui::{AutocompleteProvider, Cancellation, CombinedAutocompleteProvider, fuzzy_filter};
-use std::{
-    io::{self, IsTerminal},
-    rc::Rc,
-    sync::PoisonError,
-};
+use std::{io, rc::Rc, sync::PoisonError};
 
 /// The provenance marker a completion description carries, or `None` without provenance.
 ///
@@ -286,7 +282,7 @@ impl InteractiveMode {
         let manager =
             maestro_app::agent_session::ToolsManager::new(directory, self.options.fetch.clone())
                 .with_offline(self.runtime_host.services().offline);
-        let color = io::stdout().is_terminal();
+        let color = maestro_theme::supports_color();
         let mut fd_output = io::stdout();
         let mut rg_output = io::stdout();
         let fd = manager.ensure_tool(

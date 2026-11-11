@@ -29,7 +29,7 @@ you are watching, keep the print macros.
 
 | Producer | Text |
 | -------- | ---- |
-| Context and system prompt loading | `Warning: Could not read <path>: <error>`, in yellow on a terminal |
+| Context and system prompt loading | `Warning: Could not read <path>: <error>`, in yellow when [`supports_color`](theme.md) allows it |
 | Default extension bus | `Event handler error (<channel>): <error>` |
 | Agent loop | the message of a rejected submission |
 | Proxy stream | `Unhandled proxy event type: <type>` |

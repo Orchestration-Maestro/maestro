@@ -15,3 +15,5 @@ mod date_time_formatting;
 mod date_time_selection;
 
 mod shell_quote;
+
+mod terminal_controls;
