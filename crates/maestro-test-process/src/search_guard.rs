@@ -23,12 +23,12 @@ fn file_name(program: &str) -> String {
 }
 
 /// Install stub `fd` and `rg` programs in `bin`, which answer at once with no output and a
-/// zero status. Put `bin` ahead of the host directories on the child's command path.
+/// zero status. Put `bin` ahead of the host directories on the child's command path. The
+/// directory is created when it is absent.
 ///
 /// # Errors
 ///
 /// Returns a missing preparation variable, a failed installation or a failed record write.
-/// The directory is created when it is absent.
 pub fn install_stub_search_programs(bin: &Path) -> io::Result<()> {
     std::fs::create_dir_all(bin)?;
     let record = json!({"scenario": "output", "stdout": [], "stderr": [], "code": 0});

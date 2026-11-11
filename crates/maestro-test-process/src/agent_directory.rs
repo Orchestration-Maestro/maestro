@@ -61,7 +61,7 @@ fn link_entry(source: &Path, target: &Path) -> io::Result<()> {
     }
 }
 
-/// Report whether `source` itself is gone, rather than only the target's directory.
+/// Reports whether `source` itself is gone, rather than only the target's directory.
 fn source_is_gone(source: &Path) -> bool {
     std::fs::symlink_metadata(source).is_err_and(|error| error.kind() == io::ErrorKind::NotFound)
 }

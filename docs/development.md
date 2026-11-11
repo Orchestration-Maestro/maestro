@@ -2812,7 +2812,9 @@ and loads a prepared component passes `run_agent_directory()` as
 compiling the component again. A test that gives an executable its own agent
 directory links the run's cache into it first with
 `maestro_test_process::link_files`, as the root-command harness in
-`crates/maestro/tests/support/mod.rs` and the tool-override example tests do.
+`crates/maestro/tests/support/mod.rs` and the tool-override example tests do. An entry that
+a writer renames away during the link is left out, and the test that needs that component
+compiles it.
 Test code that proves a diagnostic path survives a closed standard error uses
 `maestro_test_process::run_with_broken_stderr`, which runs the case in a child whose
 standard error is a pipe with no reader, and `maestro_test_process::wait_for_broken_stderr`,

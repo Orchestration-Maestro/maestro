@@ -190,11 +190,11 @@ impl CheckedChild {
         })
     }
 
-    /// Close every pipe to the direct child, then reap it once it ends on its own, for a
+    /// Close the child's input and output pipes, then reap it once it ends on its own, for a
     /// failed start.
     ///
-    /// A child that reads its input or writes its output gets the end of input or a broken
-    /// pipe, so it exits by itself. It is never signalled: a coverage build writes the child's profile as it
+    /// A child that reads its input gets the end of input, and one that writes its output gets
+    /// a broken pipe, so it exits by itself. Its standard error stays open. It is never signalled: a coverage build writes the child's profile as it
     /// exits, and a signal landing during that write would cut the profile.
     ///
     /// The child's standard error stays open until it has ended, then the failure carries

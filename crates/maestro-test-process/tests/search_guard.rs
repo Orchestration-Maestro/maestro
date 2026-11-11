@@ -1,6 +1,6 @@
 //! Stub and guard search programs answer at once and record a run from outside the root.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::path::Path;
 use std::process::Command;
 
@@ -13,7 +13,7 @@ fn joined(first: &Path, second: &Path) -> OsString {
 }
 
 /// Runs `program` found on `path` and returns whether it succeeded with no output.
-fn answers_silently(program: &str, path: &OsString) -> bool {
+fn answers_silently(program: &str, path: &OsStr) -> bool {
     let output = Command::new(program).env("PATH", path).output().unwrap();
     output.status.success() && output.stdout.is_empty() && output.stderr.is_empty()
 }
@@ -35,9 +35,9 @@ fn guard_records_the_search_programs_a_child_ran_from_outside_the_root() {
     let guard = SearchGuard::new(root.path(), &joined(root.path(), host.path())).unwrap();
     assert!(guard.reached().unwrap().is_empty());
     guard.assert_unreached();
-    assert!(answers_silently("rg", &guard.path().to_owned()));
-    assert!(answers_silently("fd", &guard.path().to_owned()));
-    assert!(answers_silently("rg", &guard.path().to_owned()));
+    assert!(answers_silently("rg", guard.path()));
+    assert!(answers_silently("fd", guard.path()));
+    assert!(answers_silently("rg", guard.path()));
     assert_eq!(guard.reached().unwrap(), ["fd", "rg"]);
     let failed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         guard.assert_unreached();
