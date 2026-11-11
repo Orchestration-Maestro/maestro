@@ -4,7 +4,7 @@
 its `tokio` feature enabled, for the daemon's asynchronous API socket. The feature adds
 edges to the already-locked `tokio =1.53.3` and `futures-core =0.3.34`, not new
 packages. It uses the Apache-2.0 licence option.
-It also uses the already-locked `rustix =1.1.5` on Unix with default features
+It also uses the already-locked `rustix =1.1.6` on Unix with default features
 disabled and `std` and `net` enabled, under the MIT OR Apache-2.0 licence.
 `rustix` supplies the bounded connection attempts and the named native
 not-a-socket error code that separates a non-socket entry from a wrong-protocol
@@ -204,6 +204,6 @@ See [multiplexer rendering](../multiplexer.md#rendering) for the public operatio
 `help`, `usage` and `string` for command metadata and help. It uses
 `clap_complete =4.6.5` with defaults disabled to render bash, elvish, fish,
 PowerShell and zsh completions. Both use the MIT OR Apache-2.0 licence.
-Unix tests add the existing rustix `=1.1.5`, defaults off and `process`, to deliver
+Unix tests add the existing rustix `=1.1.6`, defaults off and `process`, to deliver
 a real termination signal to a checked child. The existing chat argument parser
 continues to consume chat input.
