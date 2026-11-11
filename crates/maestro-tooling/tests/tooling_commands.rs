@@ -2208,7 +2208,7 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
     assert!(!stdout(&output).contains("compilation failed"));
 }
 
-fn git(root: &Path, args: &[&str]) -> Output {
+pub(crate) fn git(root: &Path, args: &[&str]) -> Output {
     let output = Command::new("git")
         .current_dir(root)
         .args(args)

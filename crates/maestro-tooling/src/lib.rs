@@ -31,6 +31,8 @@ mod cargo_lock;
 mod date_time_data;
 /// The source files a dependency file names.
 mod dep_info;
+/// Fetch of the package repository's example tree.
+mod example_fetch;
 /// Source-owned example discovery and component preparation.
 pub mod example_files;
 
@@ -103,6 +105,7 @@ pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitC
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
         Some("asset-output") => asset_output(args, cargo),
+        Some("examples") => example_fetch::run(args, checkout),
         Some("example-index") => example_index::run(args, cargo, checkout),
         Some("date-time-data") => date_time_data::run(args, checkout),
         Some("browser-author") => browser_author::run(args, cargo, checkout),

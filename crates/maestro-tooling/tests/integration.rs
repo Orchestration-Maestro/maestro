@@ -10,6 +10,7 @@ mod cargo_fixtures;
 mod component_preparation;
 mod consuming_workspace;
 mod date_time_data;
+mod examples_fetch;
 mod fixture_sources_setup;
 mod native_setup;
 mod nextest_priorities;
