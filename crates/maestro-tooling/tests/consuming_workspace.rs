@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use crate::recipe_support::{executable, installed};
+use crate::recipe_support::{executable, installed, without_prepared_bundles};
 use maestro_test_directory::Scratch;
 
 use tooling::workspace::{REGION_END, REGION_START};
@@ -252,14 +252,13 @@ fn prepared_bundle(root: &Path, rev: &str) -> PathBuf {
 
 /// Run the `executable` setup from `root` and return its output.
 fn executable_setup(root: &Path, bundle: &Path) -> std::process::Output {
-    std::process::Command::new(env!("CARGO_BIN_EXE_development"))
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_development"));
+    command
         .args(["nextest-setup", "executable"])
         .current_dir(root)
-        .env("TEST_PREPARE_OUTPUT", bundle)
-        .env("NEXTEST_ENV", root.join("nextest-env"))
-        .env_remove("TEST_ARCHIVE")
-        .output()
-        .unwrap()
+        .env("NEXTEST_ENV", root.join("nextest-env"));
+    without_prepared_bundles(&mut command);
+    command.env("TEST_PREPARE_OUTPUT", bundle).output().unwrap()
 }
 
 /// The setup exports the executable the prepared bundle carries.
