@@ -2,22 +2,25 @@
 #![cfg(test)]
 
 use crate::support::{block_on, manager, manager_with, manager_with_both, settings};
-use maestro_settings::{BaseSettingsLayer, SettingsScope};
+use maestro_settings::{BaseSettingsLayer, SettingsManager, SettingsScope};
 use serde_json::json;
 
-/// A project value overrides the global one, a wrong type reads as unset and ports are independent.
+/// The adapter name a well-formed document selects for the port.
+fn adapter(manager: &SettingsManager, port: &str) -> Option<String> {
+    manager
+        .get_adapter(port)
+        .expect("a well-formed adapter setting")
+}
+
+/// A project value overrides the global one and ports are independent.
 #[test]
 fn adapter_reads_the_effective_name_for_each_port() {
     let (mut manager, _storage) = manager_with_both(
-        json!({"adapters": {"vector-store": "embedded", "embedder": 7}}),
+        json!({"adapters": {"vector-store": "embedded"}}),
         json!({"adapters": {"vector-store": "server"}}),
     );
-    assert_eq!(
-        manager.get_adapter("vector-store").as_deref(),
-        Some("server")
-    );
-    assert_eq!(manager.get_adapter("embedder"), None);
-    assert_eq!(manager.get_adapter("graph-store"), None);
+    assert_eq!(adapter(&manager, "vector-store").as_deref(), Some("server"));
+    assert_eq!(adapter(&manager, "graph-store"), None);
     manager.set_key_path(
         SettingsScope::Project,
         "adapters",
@@ -25,20 +28,36 @@ fn adapter_reads_the_effective_name_for_each_port() {
         Some(json!("local")),
     );
     block_on(manager.flush());
-    assert_eq!(manager.get_adapter("graph-store").as_deref(), Some("local"));
-    assert_eq!(
-        manager.get_adapter("vector-store").as_deref(),
-        Some("server")
-    );
+    assert_eq!(adapter(&manager, "graph-store").as_deref(), Some("local"));
+    assert_eq!(adapter(&manager, "vector-store").as_deref(), Some("server"));
 }
 
 /// Without any `adapters` object every port reads as unset.
 #[test]
 fn adapter_is_unset_without_the_adapters_object() {
     let (manager, _storage) = manager();
-    assert_eq!(manager.get_adapter("vector-store"), None);
-    let (manager, _storage) = manager_with(json!({"adapters": "embedded"}));
-    assert_eq!(manager.get_adapter("vector-store"), None);
+    assert_eq!(adapter(&manager, "vector-store"), None);
+}
+
+/// A value that is not a name, or an `adapters` entry that is not an object, is refused.
+#[test]
+fn malformed_adapter_setting_is_refused_with_its_key_and_value() {
+    for (document, message) in [
+        (
+            json!({"adapters": {"embedder": 7}}),
+            "Invalid adapters.embedder setting: 7",
+        ),
+        (
+            json!({"adapters": "embedded"}),
+            "Invalid adapters setting: \"embedded\"",
+        ),
+    ] {
+        let (manager, _storage) = manager_with(document);
+        let refusal = manager
+            .get_adapter("embedder")
+            .expect_err("a malformed setting is refused");
+        assert_eq!(refusal.to_string(), message);
+    }
 }
 
 /// A lock on one adapter key keeps the base name and leaves other ports editable.
@@ -55,7 +74,7 @@ fn locked_adapter_key_keeps_the_base_name_and_refuses_edits() {
         }),
     );
     assert_eq!(
-        manager.get_adapter("vector-store").as_deref(),
+        adapter(&manager, "vector-store").as_deref(),
         Some("embedded")
     );
     manager.drain_errors();
@@ -74,7 +93,7 @@ fn locked_adapter_key_keeps_the_base_name_and_refuses_edits() {
             .contains("adapters.vector-store")
     );
     assert_eq!(
-        manager.get_adapter("vector-store").as_deref(),
+        adapter(&manager, "vector-store").as_deref(),
         Some("embedded")
     );
     manager.set_key_path(
@@ -83,5 +102,5 @@ fn locked_adapter_key_keeps_the_base_name_and_refuses_edits() {
         &["embedder"],
         Some(json!("bge")),
     );
-    assert_eq!(manager.get_adapter("embedder").as_deref(), Some("bge"));
+    assert_eq!(adapter(&manager, "embedder").as_deref(), Some("bge"));
 }

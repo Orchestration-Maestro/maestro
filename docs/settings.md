@@ -518,7 +518,7 @@ every event as before.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `adapters.<port>` | string | unset | Name of the adapter that serves the port; see [ports](ports.md) |
+| `adapters.<port>` | string | The port's default adapter | Name of the adapter that serves the port; a value that is not a string is refused; see [ports](ports.md) |
 
 ### Resources
 

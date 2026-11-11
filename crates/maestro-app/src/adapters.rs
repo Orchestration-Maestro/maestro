@@ -5,25 +5,28 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use maestro_settings::SettingsManager;
+use maestro_settings::{InvalidAdapterSetting, SettingsManager};
 
-/// A seam to a technology: its settings key and the operations adapters must offer.
+/// A seam to a technology: its settings key and its default adapter.
+///
+/// The trait `T` is the contract: only a type that implements it can become
+/// an adapter, so a missing operation is a compile error, never a runtime refusal.
 pub struct Port<T: ?Sized> {
     /// The key below `adapters` in the settings.
     id: &'static str,
-    /// Operations every registration must declare.
-    required: &'static [&'static str],
+    /// The adapter selected while the settings name none.
+    default: &'static str,
     /// The adapter type the port hands out.
     adapter: PhantomData<fn() -> Arc<T>>,
 }
 
 impl<T: ?Sized> Port<T> {
-    /// Declares a port with its settings key and required operations.
+    /// Declares a port with its settings key and the name of its default adapter.
     #[must_use]
-    pub const fn new(id: &'static str, required: &'static [&'static str]) -> Self {
+    pub const fn new(id: &'static str, default: &'static str) -> Self {
         Self {
             id,
-            required,
+            default,
             adapter: PhantomData,
         }
     }
@@ -45,22 +48,8 @@ pub enum AdapterError {
         /// The repeated name.
         name: String,
     },
-    /// The adapter does not declare every operation the port requires.
-    MissingOperations {
-        /// The port's settings key.
-        port: &'static str,
-        /// The refused adapter's name.
-        name: String,
-        /// Required operations the adapter left out.
-        missing: Vec<&'static str>,
-    },
-    /// Settings select no adapter for the port.
-    NotSelected {
-        /// The port's settings key.
-        port: &'static str,
-        /// Names registered under the port.
-        installed: Vec<String>,
-    },
+    /// The settings entry for the port is not a name.
+    Setting(InvalidAdapterSetting),
     /// Settings select a name no adapter registered under the port.
     Unknown {
         /// The port's settings key.
@@ -78,20 +67,7 @@ impl fmt::Display for AdapterError {
             Self::Duplicate { port, name } => {
                 write!(formatter, "port `{port}` already has an adapter `{name}`")
             }
-            Self::MissingOperations {
-                port,
-                name,
-                missing,
-            } => write!(
-                formatter,
-                "adapter `{name}` for port `{port}` lacks required operations: {}",
-                missing.join(", ")
-            ),
-            Self::NotSelected { port, installed } => write!(
-                formatter,
-                "no adapter selected for port `{port}`; installed: {}",
-                installed.join(", ")
-            ),
+            Self::Setting(error) => error.fmt(formatter),
             Self::Unknown {
                 port,
                 name,
@@ -105,7 +81,14 @@ impl fmt::Display for AdapterError {
     }
 }
 
-impl std::error::Error for AdapterError {}
+impl std::error::Error for AdapterError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Setting(error) => Some(error),
+            Self::Duplicate { .. } | Self::Unknown { .. } => None,
+        }
+    }
+}
 
 /// One registration as the installed report lists it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -139,16 +122,32 @@ pub struct Registry {
 impl Registry {
     /// Admits an adapter under a port and a name.
     ///
+    /// The port's trait is the contract. A type that lacks an operation cannot be
+    /// returned as the port's adapter, so the registration does not compile:
+    ///
+    /// ```compile_fail,E0277
+    /// use std::sync::Arc;
+    /// use maestro_app::adapters::{Port, Registry};
+    ///
+    /// trait Store: Send + Sync {
+    ///     fn get(&self, key: &str) -> Option<String>;
+    /// }
+    /// struct Lacking;
+    /// const STORE: Port<dyn Store> = Port::new("store", "lacking");
+    ///
+    /// let mut registry = Registry::default();
+    /// registry.register(&STORE, "lacking", || Arc::new(Lacking) as Arc<dyn Store>)?;
+    /// # Ok::<(), maestro_app::adapters::AdapterError>(())
+    /// ```
+    ///
     /// # Errors
     ///
-    /// Returns [`AdapterError::Duplicate`] when the port already has the name, and
-    /// [`AdapterError::MissingOperations`] when `operations` leaves out an operation
-    /// the port requires. A refused registration changes nothing.
+    /// Returns [`AdapterError::Duplicate`] when the port already has the name. A
+    /// refused registration changes nothing.
     pub fn register<T: ?Sized + 'static>(
         &mut self,
         port: &Port<T>,
         name: &str,
-        operations: &[&str],
         factory: impl Fn() -> Arc<T> + Send + Sync + 'static,
     ) -> Result<(), AdapterError> {
         if self
@@ -161,19 +160,6 @@ impl Registry {
                 name: name.to_owned(),
             });
         }
-        let missing: Vec<&'static str> = port
-            .required
-            .iter()
-            .copied()
-            .filter(|required| !operations.contains(required))
-            .collect();
-        if !missing.is_empty() {
-            return Err(AdapterError::MissingOperations {
-                port: port.id,
-                name: name.to_owned(),
-                missing,
-            });
-        }
         self.entries.push(Entry {
             port: port.id,
             name: name.to_owned(),
@@ -182,24 +168,23 @@ impl Registry {
         Ok(())
     }
 
-    /// Builds the adapter the settings select for the port.
+    /// Builds the adapter the settings select for the port, or its default while
+    /// `adapters.<port>` is unset.
     ///
     /// # Errors
     ///
-    /// Returns [`AdapterError::NotSelected`] when `adapters.<port>` is unset and
-    /// [`AdapterError::Unknown`] when no adapter registered that name; both list the
-    /// installed names.
+    /// Returns [`AdapterError::Setting`] when the settings entry is not a name and
+    /// [`AdapterError::Unknown`] when no adapter registered the selected name; the
+    /// second lists the installed names.
     pub fn select<T: ?Sized + 'static>(
         &self,
         port: &Port<T>,
         settings: &SettingsManager,
     ) -> Result<Arc<T>, AdapterError> {
-        let Some(name) = settings.get_adapter(port.id) else {
-            return Err(AdapterError::NotSelected {
-                port: port.id,
-                installed: self.names(port),
-            });
-        };
+        let name = settings
+            .get_adapter(port.id)
+            .map_err(AdapterError::Setting)?
+            .unwrap_or_else(|| port.default.to_owned());
         self.entries
             .iter()
             .filter(|entry| entry.port == port.id && entry.name == name)

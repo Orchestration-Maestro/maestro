@@ -45,6 +45,33 @@ impl std::fmt::Display for InvalidHttpIdleTimeout {
 
 impl std::error::Error for InvalidHttpIdleTimeout {}
 
+/// An `adapters` setting that does not select an adapter by name.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InvalidAdapterSetting {
+    /// The setting key, `adapters` or `adapters.<port>`.
+    key: String,
+    /// The rejected value as compact JSON.
+    value: String,
+}
+
+impl std::fmt::Display for InvalidAdapterSetting {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "Invalid {} setting: {}", self.key, self.value)
+    }
+}
+
+impl std::error::Error for InvalidAdapterSetting {}
+
+impl InvalidAdapterSetting {
+    /// Names the key that holds the rejected value.
+    fn new(key: String, value: &Value) -> Self {
+        Self {
+            key,
+            value: maestro_json::compact_json(value).unwrap_or_else(|error| error.to_string()),
+        }
+    }
+}
+
 impl SettingsManager {
     /// Borrows a top-level string.
     pub(super) fn text(&self, field: &str) -> Option<&str> {
@@ -505,9 +532,25 @@ impl SettingsManager {
     /// Returns the adapter name selected for a port, if any.
     ///
     /// The name lives at `adapters.<port>`, so a base layer locks it like any other key.
-    #[must_use]
-    pub fn get_adapter(&self, port: &str) -> Option<String> {
-        self.nested("adapters", port)
+    ///
+    /// # Errors
+    /// Returns the rejected value when `adapters` is not an object or the port's entry
+    /// is not a string.
+    pub fn get_adapter(&self, port: &str) -> Result<Option<String>, InvalidAdapterSetting> {
+        let Some(adapters) = self.effective.get("adapters") else {
+            return Ok(None);
+        };
+        let Some(object) = adapters.as_object() else {
+            return Err(InvalidAdapterSetting::new("adapters".to_owned(), adapters));
+        };
+        match object.get(port) {
+            None => Ok(None),
+            Some(Value::String(name)) => Ok(Some(name.clone())),
+            Some(other) => Err(InvalidAdapterSetting::new(
+                format!("adapters.{port}"),
+                other,
+            )),
+        }
     }
 
     /// Returns the custom thinking budgets, if configured.

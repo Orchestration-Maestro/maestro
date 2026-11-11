@@ -7,7 +7,7 @@ use maestro_app::adapters::{AdapterError, Installed, Port, Registry};
 use maestro_settings::{BaseSettingsLayer, Settings, SettingsManager, SettingsScope};
 use serde_json::json;
 
-/// The operations a test port requires of its adapters.
+/// The operations a test port needs of its adapters.
 trait Greeter: Send + Sync {
     /// Names the double that answers.
     fn greet(&self) -> String;
@@ -22,15 +22,15 @@ impl Greeter for Named {
     }
 }
 
-/// The test port: adapters must offer `greet` and `farewell`.
-const GREETER: Port<dyn Greeter> = Port::new("greeter", &["greet", "farewell"]);
+/// The test port; `first` is its default adapter.
+const GREETER: Port<dyn Greeter> = Port::new("greeter", "first");
 
 /// A registry holding two doubles under the test port.
 fn registry() -> Registry {
     let mut registry = Registry::default();
     for name in ["first", "second"] {
         registry
-            .register(&GREETER, name, &["greet", "farewell"], move || {
+            .register(&GREETER, name, move || {
                 Arc::new(Named(name)) as Arc<dyn Greeter>
             })
             .expect("a complete double registers");
@@ -84,41 +84,39 @@ fn an_unknown_name_is_refused_with_the_installed_names() {
 }
 
 #[test]
-fn a_port_without_a_setting_lists_the_installed_names() {
-    let settings = selecting(&json!({ "other": "first" }));
-    let Err(error) = registry().select(&GREETER, &settings) else {
-        panic!("an unset port must be refused");
-    };
-    assert_eq!(
-        error.to_string(),
-        "no adapter selected for port `greeter`; installed: first, second"
-    );
+fn a_port_without_a_setting_selects_its_default_adapter() {
+    let registry = registry();
+    let adapter = registry
+        .select(&GREETER, &selecting(&json!({ "other": "second" })))
+        .expect("the default is selected");
+    assert_eq!(adapter.greet(), "first");
 }
 
 #[test]
-fn a_double_missing_a_required_operation_is_refused_at_registration() {
-    let mut registry = registry();
-    let error = registry
-        .register(&GREETER, "partial", &["greet"], || {
-            Arc::new(Named("partial")) as Arc<dyn Greeter>
-        })
-        .expect_err("a double without `farewell` is refused");
+fn a_malformed_adapter_setting_is_refused_instead_of_falling_back() {
+    let Err(error) = registry().select(&GREETER, &selecting(&json!({ "greeter": 7 }))) else {
+        panic!("a non-string name must be refused");
+    };
+    assert_eq!(error.to_string(), "Invalid adapters.greeter setting: 7");
+}
+
+#[test]
+fn an_unregistered_default_is_refused_with_the_installed_names() {
+    let port: Port<dyn Greeter> = Port::new("greeter", "absent");
+    let Err(error) = registry().select(&port, &selecting(&json!({}))) else {
+        panic!("an unregistered default must be refused");
+    };
     assert_eq!(
-        error,
-        AdapterError::MissingOperations {
-            port: "greeter",
-            name: "partial".into(),
-            missing: vec!["farewell"],
-        }
+        error.to_string(),
+        "no adapter `absent` for port `greeter`; installed: first, second"
     );
-    assert_eq!(registry.installed().len(), 2);
 }
 
 #[test]
 fn registering_the_same_name_twice_is_refused_and_keeps_the_first() {
     let mut registry = registry();
     let error = registry
-        .register(&GREETER, "first", &["greet", "farewell"], || {
+        .register(&GREETER, "first", || {
             Arc::new(Named("impostor")) as Arc<dyn Greeter>
         })
         .expect_err("a second `first` is refused");
@@ -138,7 +136,7 @@ fn registering_the_same_name_twice_is_refused_and_keeps_the_first() {
 fn installed_reports_every_registration_in_order() {
     let mut registry = registry();
     registry
-        .register(&OTHER, "only", &[], || {
+        .register(&OTHER, "only", || {
             Arc::new(Named("only")) as Arc<dyn Greeter>
         })
         .expect("registers");
@@ -157,8 +155,8 @@ fn installed_reports_every_registration_in_order() {
     );
 }
 
-/// A second port with no required operations.
-const OTHER: Port<dyn Greeter> = Port::new("other", &[]);
+/// A second port.
+const OTHER: Port<dyn Greeter> = Port::new("other", "only");
 
 #[test]
 fn a_locked_adapter_key_selects_the_base_name() {
