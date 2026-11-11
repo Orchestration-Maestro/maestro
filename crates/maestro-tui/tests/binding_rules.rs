@@ -9,27 +9,21 @@ fn default_definitions_keep_every_key_and_description() {
 
 use crate::binding_support;
 #[test]
-fn maestro_keys_does_not_evict_selector_confirm_when_input_submit_is_rebound() {
+fn maestro_keys_rebinding_submit_keeps_selector_confirm() {
     let _globals = crate::input_support::globals();
-    binding_support::run(
-        "maestro_keys_does_not_evict_selector_confirm_when_input_submit_is_rebound",
-    );
+    binding_support::run("maestro_keys_rebinding_submit_keeps_selector_confirm");
 }
 
 #[test]
-fn maestro_keys_does_not_evict_cursor_bindings_when_another_action_reuses_the_same_key() {
+fn maestro_keys_a_shared_key_keeps_the_cursor_bindings() {
     let _globals = crate::input_support::globals();
-    binding_support::run(
-        "maestro_keys_does_not_evict_cursor_bindings_when_another_action_reuses_the_same_key",
-    );
+    binding_support::run("maestro_keys_a_shared_key_keeps_the_cursor_bindings");
 }
 
 #[test]
-fn maestro_keys_still_reports_direct_user_binding_conflicts_without_evicting_defaults() {
+fn maestro_keys_direct_conflicts_are_reported_and_defaults_stay() {
     let _globals = crate::input_support::globals();
-    binding_support::run(
-        "maestro_keys_still_reports_direct_user_binding_conflicts_without_evicting_defaults",
-    );
+    binding_support::run("maestro_keys_direct_conflicts_are_reported_and_defaults_stay");
 }
 
 #[test]

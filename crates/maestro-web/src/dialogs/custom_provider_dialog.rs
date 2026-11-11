@@ -203,7 +203,7 @@ impl Editor {
         let name = self.name.borrow().clone();
         let base_url = self.base_url.borrow().clone();
         if name.is_empty() || base_url.is_empty() {
-            self.alert("Please fill in all required fields");
+            self.alert("Fill in every required field");
             return;
         }
         let api_key = self.api_key.borrow().clone();

@@ -293,10 +293,8 @@ fn fallback_text_includes_only_present_metadata() {
 }
 
 #[test]
-fn maestro_images_detect_iterm2_image_escape_sequence_at_start_of_line() {
-    for case in
-        image_support::cases("maestro_images_detect_iterm2_image_escape_sequence_at_start_of_line")
-    {
+fn maestro_images_an_iterm2_image_at_line_start_is_found() {
+    for case in image_support::cases("maestro_images_an_iterm2_image_at_line_start_is_found") {
         assert_eq!(
             maestro_tui::images::terminal_image::is_image_line(case["args"][0].as_str().unwrap()),
             case["expected"].as_bool().unwrap()
@@ -312,9 +310,8 @@ fn maestro_images_suppresses_kitty_replies_for_delete_commands() {
 }
 
 #[test]
-fn maestro_images_wraps_text_in_osc_8_open_and_close_sequences() {
-    for case in image_support::cases("maestro_images_wraps_text_in_osc_8_open_and_close_sequences")
-    {
+fn maestro_images_text_gets_osc_8_open_and_close() {
+    for case in image_support::cases("maestro_images_text_gets_osc_8_open_and_close") {
         assert_eq!(
             maestro_tui::images::terminal_image::hyperlink(
                 case["args"][0].as_str().unwrap(),
@@ -326,38 +323,10 @@ fn maestro_images_wraps_text_in_osc_8_open_and_close_sequences() {
 }
 
 #[test]
-fn maestro_images_detect_iterm2_image_escape_sequence_with_text_before_it() {
-    use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_detect_iterm2_image_escape_sequence_with_text_before_it",
-    ) {
-        let args = &case["args"];
-        assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
-        );
-    }
-}
-
-#[test]
-fn maestro_images_detect_iterm2_image_escape_sequence_in_middle_of_long_line() {
-    use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_detect_iterm2_image_escape_sequence_in_middle_of_long_line",
-    ) {
-        let args = &case["args"];
-        assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
-        );
-    }
-}
-
-#[test]
-fn maestro_images_detect_iterm2_image_escape_sequence_at_end_of_line() {
+fn maestro_images_text_before_an_iterm2_image_still_marks_an_image_line() {
     use maestro_tui::images::terminal_image::*;
     for case in
-        image_support::cases("maestro_images_detect_iterm2_image_escape_sequence_at_end_of_line")
+        image_support::cases("maestro_images_text_before_an_iterm2_image_still_marks_an_image_line")
     {
         let args = &case["args"];
         assert_eq!(
@@ -368,9 +337,9 @@ fn maestro_images_detect_iterm2_image_escape_sequence_at_end_of_line() {
 }
 
 #[test]
-fn maestro_images_detect_minimal_iterm2_image_escape_sequence() {
+fn maestro_images_an_iterm2_image_mid_line_is_found() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_detect_minimal_iterm2_image_escape_sequence") {
+    for case in image_support::cases("maestro_images_an_iterm2_image_mid_line_is_found") {
         let args = &case["args"];
         assert_eq!(
             is_image_line(args[0].as_str().unwrap()),
@@ -380,10 +349,46 @@ fn maestro_images_detect_minimal_iterm2_image_escape_sequence() {
 }
 
 #[test]
-fn maestro_images_detect_kitty_image_escape_sequence_at_start_of_line() {
+fn maestro_images_an_iterm2_image_at_line_end_is_found() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_an_iterm2_image_at_line_end_is_found") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_the_shortest_iterm2_image_is_found() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_the_shortest_iterm2_image_is_found") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_a_kitty_image_at_line_start_is_found() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_a_kitty_image_at_line_start_is_found") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_text_before_a_kitty_image_still_marks_an_image_line() {
     use maestro_tui::images::terminal_image::*;
     for case in
-        image_support::cases("maestro_images_detect_kitty_image_escape_sequence_at_start_of_line")
+        image_support::cases("maestro_images_text_before_a_kitty_image_still_marks_an_image_line")
     {
         let args = &case["args"];
         assert_eq!(
@@ -394,11 +399,9 @@ fn maestro_images_detect_kitty_image_escape_sequence_at_start_of_line() {
 }
 
 #[test]
-fn maestro_images_detect_kitty_image_escape_sequence_with_text_before_it() {
+fn maestro_images_padded_kitty_parameters_are_read() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_detect_kitty_image_escape_sequence_with_text_before_it",
-    ) {
+    for case in image_support::cases("maestro_images_padded_kitty_parameters_are_read") {
         let args = &case["args"];
         assert_eq!(
             is_image_line(args[0].as_str().unwrap()),
@@ -408,24 +411,10 @@ fn maestro_images_detect_kitty_image_escape_sequence_with_text_before_it() {
 }
 
 #[test]
-fn maestro_images_detect_kitty_image_escape_sequence_with_padding() {
+fn maestro_images_a_line_of_304k_characters_still_carries_images() {
     use maestro_tui::images::terminal_image::*;
     for case in
-        image_support::cases("maestro_images_detect_kitty_image_escape_sequence_with_padding")
-    {
-        let args = &case["args"];
-        assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
-        );
-    }
-}
-
-#[test]
-fn maestro_images_detect_image_sequences_in_very_long_lines_304k_chars() {
-    use maestro_tui::images::terminal_image::*;
-    for case in
-        image_support::cases("maestro_images_detect_image_sequences_in_very_long_lines_304k_chars")
+        image_support::cases("maestro_images_a_line_of_304k_characters_still_carries_images")
     {
         let args = &case["args"];
         assert_eq!(
@@ -450,10 +439,10 @@ fn maestro_images_detect_image_sequences_when_terminal_doesn_t_support_images() 
 }
 
 #[test]
-fn maestro_images_detect_image_sequences_with_ansi_codes_before_them() {
+fn maestro_images_ansi_codes_before_an_image_still_mark_an_image_line() {
     use maestro_tui::images::terminal_image::*;
     for case in
-        image_support::cases("maestro_images_detect_image_sequences_with_ansi_codes_before_them")
+        image_support::cases("maestro_images_ansi_codes_before_an_image_still_mark_an_image_line")
     {
         let args = &case["args"];
         assert_eq!(
@@ -464,10 +453,10 @@ fn maestro_images_detect_image_sequences_with_ansi_codes_before_them() {
 }
 
 #[test]
-fn maestro_images_detect_image_sequences_with_ansi_codes_after_them() {
+fn maestro_images_ansi_codes_after_an_image_still_mark_an_image_line() {
     use maestro_tui::images::terminal_image::*;
     for case in
-        image_support::cases("maestro_images_detect_image_sequences_with_ansi_codes_after_them")
+        image_support::cases("maestro_images_ansi_codes_after_an_image_still_mark_an_image_line")
     {
         let args = &case["args"];
         assert_eq!(
@@ -478,9 +467,9 @@ fn maestro_images_detect_image_sequences_with_ansi_codes_after_them() {
 }
 
 #[test]
-fn maestro_images_not_detect_images_in_plain_text_lines() {
+fn maestro_images_plain_text_carries_no_image() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_not_detect_images_in_plain_text_lines") {
+    for case in image_support::cases("maestro_images_plain_text_carries_no_image") {
         let args = &case["args"];
         assert_eq!(
             is_image_line(args[0].as_str().unwrap()),
@@ -490,11 +479,9 @@ fn maestro_images_not_detect_images_in_plain_text_lines() {
 }
 
 #[test]
-fn maestro_images_not_detect_images_in_lines_with_only_ansi_codes() {
+fn maestro_images_ansi_codes_alone_are_no_image() {
     use maestro_tui::images::terminal_image::*;
-    for case in
-        image_support::cases("maestro_images_not_detect_images_in_lines_with_only_ansi_codes")
-    {
+    for case in image_support::cases("maestro_images_ansi_codes_alone_are_no_image") {
         let args = &case["args"];
         assert_eq!(
             is_image_line(args[0].as_str().unwrap()),
@@ -504,11 +491,9 @@ fn maestro_images_not_detect_images_in_lines_with_only_ansi_codes() {
 }
 
 #[test]
-fn maestro_images_not_detect_images_in_lines_with_cursor_movement_codes() {
+fn maestro_images_cursor_codes_alone_are_no_image() {
     use maestro_tui::images::terminal_image::*;
-    for case in
-        image_support::cases("maestro_images_not_detect_images_in_lines_with_cursor_movement_codes")
-    {
+    for case in image_support::cases("maestro_images_cursor_codes_alone_are_no_image") {
         let args = &case["args"];
         assert_eq!(
             is_image_line(args[0].as_str().unwrap()),
@@ -518,10 +503,70 @@ fn maestro_images_not_detect_images_in_lines_with_cursor_movement_codes() {
 }
 
 #[test]
-fn maestro_images_not_detect_images_in_lines_with_partial_iterm2_sequences() {
+fn maestro_images_an_incomplete_iterm2_sequence_is_no_image() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_an_incomplete_iterm2_sequence_is_no_image") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_an_incomplete_kitty_sequence_is_no_image() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_an_incomplete_kitty_sequence_is_no_image") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_empty_lines_carry_no_image() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_empty_lines_carry_no_image") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_newlines_alone_are_no_image() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_newlines_alone_are_no_image") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_kitty_and_iterm2_images_coexist_in_a_line() {
+    use maestro_tui::images::terminal_image::*;
+    for case in image_support::cases("maestro_images_kitty_and_iterm2_images_coexist_in_a_line") {
+        let args = &case["args"];
+        assert_eq!(
+            is_image_line(args[0].as_str().unwrap()),
+            case["expected"].as_bool().unwrap()
+        );
+    }
+}
+
+#[test]
+fn maestro_images_text_and_images_sharing_a_line_still_mark_an_image_line() {
     use maestro_tui::images::terminal_image::*;
     for case in image_support::cases(
-        "maestro_images_not_detect_images_in_lines_with_partial_iterm2_sequences",
+        "maestro_images_text_and_images_sharing_a_line_still_mark_an_image_line",
     ) {
         let args = &case["args"];
         assert_eq!(
@@ -532,11 +577,9 @@ fn maestro_images_not_detect_images_in_lines_with_partial_iterm2_sequences() {
 }
 
 #[test]
-fn maestro_images_not_detect_images_in_lines_with_partial_kitty_sequences() {
+fn maestro_images_a_path_holding_image_words_is_no_image() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_not_detect_images_in_lines_with_partial_kitty_sequences",
-    ) {
+    for case in image_support::cases("maestro_images_a_path_holding_image_words_is_no_image") {
         let args = &case["args"];
         assert_eq!(
             is_image_line(args[0].as_str().unwrap()),
@@ -546,77 +589,22 @@ fn maestro_images_not_detect_images_in_lines_with_partial_kitty_sequences() {
 }
 
 #[test]
-fn maestro_images_not_detect_images_in_empty_lines() {
+fn maestro_images_unknown_terminals_start_without_hyperlinks() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_not_detect_images_in_empty_lines") {
-        let args = &case["args"];
+    for case in image_support::cases("maestro_images_unknown_terminals_start_without_hyperlinks") {
+        let env = case["environment"].clone();
+        let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
         assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
+            image_support::capability_output(terminal.detect_capabilities()),
+            case["expected"]
         );
     }
 }
 
 #[test]
-fn maestro_images_not_detect_images_in_lines_with_newlines_only() {
+fn maestro_images_tmux_turns_hyperlinks_off_despite_outer_osc_8() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_not_detect_images_in_lines_with_newlines_only")
-    {
-        let args = &case["args"];
-        assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
-        );
-    }
-}
-
-#[test]
-fn maestro_images_detect_images_when_line_has_both_kitty_and_iterm2_sequences() {
-    use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_detect_images_when_line_has_both_kitty_and_iterm2_sequences",
-    ) {
-        let args = &case["args"];
-        assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
-        );
-    }
-}
-
-#[test]
-fn maestro_images_detect_image_in_line_with_multiple_text_and_image_segments() {
-    use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_detect_image_in_line_with_multiple_text_and_image_segments",
-    ) {
-        let args = &case["args"];
-        assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
-        );
-    }
-}
-
-#[test]
-fn maestro_images_not_falsely_detect_image_in_line_with_file_path_containing_keywords() {
-    use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_not_falsely_detect_image_in_line_with_file_path_containing_keywords",
-    ) {
-        let args = &case["args"];
-        assert_eq!(
-            is_image_line(args[0].as_str().unwrap()),
-            case["expected"].as_bool().unwrap()
-        );
-    }
-}
-
-#[test]
-fn maestro_images_defaults_to_hyperlinks_false_for_unknown_terminals() {
-    use maestro_tui::images::terminal_image::*;
-    for case in
-        image_support::cases("maestro_images_defaults_to_hyperlinks_false_for_unknown_terminals")
+    for case in image_support::cases("maestro_images_tmux_turns_hyperlinks_off_despite_outer_osc_8")
     {
         let env = case["environment"].clone();
         let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
@@ -628,11 +616,9 @@ fn maestro_images_defaults_to_hyperlinks_false_for_unknown_terminals() {
 }
 
 #[test]
-fn maestro_images_forces_hyperlinks_false_under_tmux_even_if_outer_terminal_supports_osc_8() {
+fn maestro_images_a_tmux_terminal_turns_hyperlinks_off() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_forces_hyperlinks_false_under_tmux_even_if_outer_terminal_supports_osc_8",
-    ) {
+    for case in image_support::cases("maestro_images_a_tmux_terminal_turns_hyperlinks_off") {
         let env = case["environment"].clone();
         let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
         assert_eq!(
@@ -643,26 +629,9 @@ fn maestro_images_forces_hyperlinks_false_under_tmux_even_if_outer_terminal_supp
 }
 
 #[test]
-fn maestro_images_forces_hyperlinks_false_when_term_starts_with_tmux() {
+fn maestro_images_a_screen_terminal_turns_hyperlinks_off() {
     use maestro_tui::images::terminal_image::*;
-    for case in
-        image_support::cases("maestro_images_forces_hyperlinks_false_when_term_starts_with_tmux")
-    {
-        let env = case["environment"].clone();
-        let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
-        assert_eq!(
-            image_support::capability_output(terminal.detect_capabilities()),
-            case["expected"]
-        );
-    }
-}
-
-#[test]
-fn maestro_images_forces_hyperlinks_false_when_term_starts_with_screen() {
-    use maestro_tui::images::terminal_image::*;
-    for case in
-        image_support::cases("maestro_images_forces_hyperlinks_false_when_term_starts_with_screen")
-    {
+    for case in image_support::cases("maestro_images_a_screen_terminal_turns_hyperlinks_off") {
         let env = case["environment"].clone();
         let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
         assert_eq!(
@@ -688,12 +657,9 @@ fn maestro_images_enables_hyperlinks_for_the_ghostty_terminal_identifier() {
 }
 
 #[test]
-fn maestro_images_does_not_disable_the_ghostty_terminal_identifier_images_solely_because_cmux_is_present()
- {
+fn maestro_images_cmux_keeps_ghostty_images_on() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases(
-        "maestro_images_does_not_disable_the_ghostty_terminal_identifier_images_solely_because_cmux_is_present",
-    ) {
+    for case in image_support::cases("maestro_images_cmux_keeps_ghostty_images_on") {
         let env = case["environment"].clone();
         let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
         assert_eq!(
@@ -704,9 +670,9 @@ fn maestro_images_does_not_disable_the_ghostty_terminal_identifier_images_solely
 }
 
 #[test]
-fn maestro_images_enables_hyperlinks_for_kitty() {
+fn maestro_images_hyperlink_wraps_text_for_kitty() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_enables_hyperlinks_for_kitty") {
+    for case in image_support::cases("maestro_images_hyperlink_wraps_text_for_kitty") {
         let env = case["environment"].clone();
         let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
         assert_eq!(
@@ -732,9 +698,9 @@ fn maestro_images_enables_hyperlinks_for_the_wezterm_terminal_identifier() {
 }
 
 #[test]
-fn maestro_images_enables_hyperlinks_for_iterm2() {
+fn maestro_images_hyperlink_wraps_text_for_iterm2() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_enables_hyperlinks_for_iterm2") {
+    for case in image_support::cases("maestro_images_hyperlink_wraps_text_for_iterm2") {
         let env = case["environment"].clone();
         let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
         assert_eq!(
@@ -760,10 +726,9 @@ fn maestro_images_enables_hyperlinks_for_the_vscode_terminal_identifier() {
 }
 
 #[test]
-fn maestro_images_can_request_no_terminal_side_cursor_movement() {
+fn maestro_images_a_render_can_request_no_side_cursor_move() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_can_request_no_terminal_side_cursor_movement")
-    {
+    for case in image_support::cases("maestro_images_a_render_can_request_no_side_cursor_move") {
         let args = &case["args"];
         assert_eq!(
             encode_kitty(
@@ -810,16 +775,13 @@ fn maestro_images_preserves_renderimage_s_default_terminal_side_cursor_movement(
 }
 
 #[test]
-fn maestro_images_can_opt_renderimage_into_no_terminal_side_cursor_movement() {
+fn maestro_images_render_image_can_decline_side_cursor_moves() {
     use maestro_tui::images::terminal_image::*;
-    let env = image_support::cases(
-        "maestro_images_can_opt_renderimage_into_no_terminal_side_cursor_movement",
-    )[0]["environment"]
+    let env = image_support::cases("maestro_images_render_image_can_decline_side_cursor_moves")[0]
+        ["environment"]
         .clone();
     let terminal = TerminalImage::new(move |key| env[key].as_str().map(str::to_owned), || 1);
-    for case in image_support::cases(
-        "maestro_images_can_opt_renderimage_into_no_terminal_side_cursor_movement",
-    ) {
+    for case in image_support::cases("maestro_images_render_image_can_decline_side_cursor_moves") {
         let args = &case["args"];
         match case["symbol"].as_str().unwrap() {
             "setCapabilities" => {
@@ -844,9 +806,9 @@ fn maestro_images_can_opt_renderimage_into_no_terminal_side_cursor_movement() {
 }
 
 #[test]
-fn maestro_images_preserves_ansi_styling_inside_the_hyperlink() {
+fn maestro_images_ansi_styling_survives_inside_the_hyperlink() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_preserves_ansi_styling_inside_the_hyperlink") {
+    for case in image_support::cases("maestro_images_ansi_styling_survives_inside_the_hyperlink") {
         let args = &case["args"];
         assert_eq!(
             hyperlink(args[0].as_str().unwrap(), args[1].as_str().unwrap()),
@@ -856,9 +818,9 @@ fn maestro_images_preserves_ansi_styling_inside_the_hyperlink() {
 }
 
 #[test]
-fn maestro_images_works_with_empty_text() {
+fn maestro_images_hyperlink_wraps_empty_text() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_works_with_empty_text") {
+    for case in image_support::cases("maestro_images_hyperlink_wraps_empty_text") {
         let args = &case["args"];
         assert_eq!(
             hyperlink(args[0].as_str().unwrap(), args[1].as_str().unwrap()),
@@ -868,9 +830,9 @@ fn maestro_images_works_with_empty_text() {
 }
 
 #[test]
-fn maestro_images_works_with_file_uris() {
+fn maestro_images_hyperlink_wraps_file_uri_targets() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("maestro_images_works_with_file_uris") {
+    for case in image_support::cases("maestro_images_hyperlink_wraps_file_uri_targets") {
         let args = &case["args"];
         assert_eq!(
             hyperlink(args[0].as_str().unwrap(), args[1].as_str().unwrap()),

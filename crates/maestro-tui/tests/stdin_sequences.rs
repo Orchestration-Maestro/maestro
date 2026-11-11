@@ -134,18 +134,18 @@ fn maestro_stdin_handle_empty_input() {
 }
 
 #[test]
-fn maestro_stdin_pass_through_complete_mouse_sgr_sequences() {
-    replay("maestro_stdin_pass_through_complete_mouse_sgr_sequences");
+fn maestro_stdin_complete_sgr_mouse_sequences_reach_the_handler() {
+    replay("maestro_stdin_complete_sgr_mouse_sequences_reach_the_handler");
 }
 
 #[test]
-fn maestro_stdin_pass_through_complete_arrow_key_sequences() {
-    replay("maestro_stdin_pass_through_complete_arrow_key_sequences");
+fn maestro_stdin_complete_arrow_sequences_reach_the_handler() {
+    replay("maestro_stdin_complete_arrow_sequences_reach_the_handler");
 }
 
 #[test]
-fn maestro_stdin_pass_through_complete_function_key_sequences() {
-    replay("maestro_stdin_pass_through_complete_function_key_sequences");
+fn maestro_stdin_complete_function_key_sequences_reach_the_handler() {
+    replay("maestro_stdin_complete_function_key_sequences_reach_the_handler");
 }
 
 #[test]
@@ -159,13 +159,13 @@ fn maestro_stdin_pass_through_ss3_sequences() {
 }
 
 #[test]
-fn maestro_stdin_handle_characters_followed_by_escape_sequence() {
-    replay("maestro_stdin_handle_characters_followed_by_escape_sequence");
+fn maestro_stdin_characters_before_an_escape_sequence_are_read() {
+    replay("maestro_stdin_characters_before_an_escape_sequence_are_read");
 }
 
 #[test]
-fn maestro_stdin_handle_escape_sequence_followed_by_characters() {
-    replay("maestro_stdin_handle_escape_sequence_followed_by_characters");
+fn maestro_stdin_characters_after_an_escape_sequence_are_read() {
+    replay("maestro_stdin_characters_after_an_escape_sequence_are_read");
 }
 
 #[test]
@@ -174,18 +174,18 @@ fn maestro_stdin_handle_multiple_complete_sequences() {
 }
 
 #[test]
-fn maestro_stdin_handle_kitty_csi_u_press_events() {
-    replay("maestro_stdin_handle_kitty_csi_u_press_events");
+fn maestro_stdin_kitty_csi_u_press_events_are_read() {
+    replay("maestro_stdin_kitty_csi_u_press_events_are_read");
 }
 
 #[test]
-fn maestro_stdin_handle_kitty_csi_u_release_events() {
-    replay("maestro_stdin_handle_kitty_csi_u_release_events");
+fn maestro_stdin_kitty_csi_u_release_events_are_read() {
+    replay("maestro_stdin_kitty_csi_u_release_events_are_read");
 }
 
 #[test]
-fn maestro_stdin_handle_batched_kitty_press_and_release() {
-    replay("maestro_stdin_handle_batched_kitty_press_and_release");
+fn maestro_stdin_a_batched_kitty_press_and_release_is_read() {
+    replay("maestro_stdin_a_batched_kitty_press_and_release_is_read");
 }
 
 #[test]
@@ -194,23 +194,23 @@ fn maestro_stdin_handle_multiple_batched_kitty_events() {
 }
 
 #[test]
-fn maestro_stdin_handle_kitty_arrow_keys_with_event_type() {
-    replay("maestro_stdin_handle_kitty_arrow_keys_with_event_type");
+fn maestro_stdin_kitty_arrow_keys_keep_their_event_type() {
+    replay("maestro_stdin_kitty_arrow_keys_keep_their_event_type");
 }
 
 #[test]
-fn maestro_stdin_handle_kitty_functional_keys_with_event_type() {
-    replay("maestro_stdin_handle_kitty_functional_keys_with_event_type");
+fn maestro_stdin_kitty_function_keys_keep_their_event_type() {
+    replay("maestro_stdin_kitty_function_keys_keep_their_event_type");
 }
 
 #[test]
-fn maestro_stdin_handle_plain_characters_mixed_with_kitty_sequences() {
-    replay("maestro_stdin_handle_plain_characters_mixed_with_kitty_sequences");
+fn maestro_stdin_plain_characters_and_kitty_sequences_mix() {
+    replay("maestro_stdin_plain_characters_and_kitty_sequences_mix");
 }
 
 #[test]
-fn maestro_stdin_handle_rapid_typing_simulation_with_kitty_protocol() {
-    replay("maestro_stdin_handle_rapid_typing_simulation_with_kitty_protocol");
+fn maestro_stdin_fast_typing_keeps_kitty_order() {
+    replay("maestro_stdin_fast_typing_keeps_kitty_order");
 }
 
 #[test]
@@ -229,8 +229,8 @@ fn maestro_stdin_handle_multiple_mouse_events() {
 }
 
 #[test]
-fn maestro_stdin_handle_old_style_mouse_sequence_esc_m_3_bytes() {
-    replay("maestro_stdin_handle_old_style_mouse_sequence_esc_m_3_bytes");
+fn maestro_stdin_an_old_style_mouse_report_is_read() {
+    replay("maestro_stdin_an_old_style_mouse_report_is_read");
 }
 
 #[test]
@@ -274,13 +274,13 @@ fn maestro_stdin_flush_incomplete_sequence_after_timeout() {
 }
 
 #[test]
-fn maestro_stdin_handle_partial_sequence_with_preceding_characters() {
-    replay("maestro_stdin_handle_partial_sequence_with_preceding_characters");
+fn maestro_stdin_a_partial_sequence_after_characters_is_buffered() {
+    replay("maestro_stdin_a_partial_sequence_after_characters_is_buffered");
 }
 
 #[test]
-fn maestro_stdin_buffer_incomplete_old_style_mouse_sequence() {
-    replay("maestro_stdin_buffer_incomplete_old_style_mouse_sequence");
+fn maestro_stdin_a_partial_old_style_mouse_report_waits() {
+    replay("maestro_stdin_a_partial_old_style_mouse_report_waits");
 }
 
 #[test]
@@ -289,13 +289,13 @@ fn maestro_stdin_handle_split_mouse_events() {
 }
 
 #[test]
-fn maestro_stdin_handle_lone_escape_character_with_timeout() {
-    replay("maestro_stdin_handle_lone_escape_character_with_timeout");
+fn maestro_stdin_the_timeout_reads_a_lone_escape() {
+    replay("maestro_stdin_the_timeout_reads_a_lone_escape");
 }
 
 #[test]
-fn maestro_stdin_handle_lone_escape_character_with_explicit_flush() {
-    replay("maestro_stdin_handle_lone_escape_character_with_explicit_flush");
+fn maestro_stdin_an_explicit_flush_reads_a_lone_escape() {
+    replay("maestro_stdin_an_explicit_flush_reads_a_lone_escape");
 }
 
 #[test]
@@ -304,8 +304,8 @@ fn maestro_stdin_flush_incomplete_sequences() {
 }
 
 #[test]
-fn maestro_stdin_return_empty_array_if_nothing_to_flush() {
-    replay("maestro_stdin_return_empty_array_if_nothing_to_flush");
+fn maestro_stdin_a_flush_with_nothing_pending_returns_empty() {
+    replay("maestro_stdin_a_flush_with_nothing_pending_returns_empty");
 }
 
 #[test]
@@ -364,26 +364,23 @@ fn maestro_stdin_requires_three_ascii_mouse_coordinates() {
 }
 
 #[test]
-fn maestro_stdin_drop_raw_duplicate_character_after_matching_kitty_printable_sequence() {
-    replay("maestro_stdin_drop_raw_duplicate_character_after_matching_kitty_printable_sequence");
+fn maestro_stdin_a_duplicate_scalar_after_a_kitty_printable_is_dropped() {
+    replay("maestro_stdin_a_duplicate_scalar_after_a_kitty_printable_is_dropped");
 }
 
 #[test]
-fn maestro_stdin_drop_raw_duplicate_character_after_matching_kitty_printable_sequence_across_chunks()
- {
-    replay(
-        "maestro_stdin_drop_raw_duplicate_character_after_matching_kitty_printable_sequence_across_chunks",
-    );
+fn maestro_stdin_a_duplicate_scalar_split_across_chunks_is_dropped() {
+    replay("maestro_stdin_a_duplicate_scalar_split_across_chunks_is_dropped");
 }
 
 #[test]
-fn maestro_stdin_keep_non_matching_plain_character_after_kitty_printable_sequence() {
-    replay("maestro_stdin_keep_non_matching_plain_character_after_kitty_printable_sequence");
+fn maestro_stdin_a_different_character_after_a_kitty_printable_is_kept() {
+    replay("maestro_stdin_a_different_character_after_a_kitty_printable_is_kept");
 }
 
 #[test]
-fn maestro_stdin_keep_raw_character_after_modified_kitty_printable_sequence() {
-    replay("maestro_stdin_keep_raw_character_after_modified_kitty_printable_sequence");
+fn maestro_stdin_the_raw_character_after_a_modified_kitty_printable_is_kept() {
+    replay("maestro_stdin_the_raw_character_after_a_modified_kitty_printable_is_kept");
 }
 
 #[test]
@@ -417,8 +414,8 @@ fn maestro_stdin_empty_flush_keeps_pending_printable_identity() {
 }
 
 #[test]
-fn maestro_stdin_emit_paste_event_for_complete_bracketed_paste() {
-    replay("maestro_stdin_emit_paste_event_for_complete_bracketed_paste");
+fn maestro_stdin_a_complete_bracketed_paste_emits_one_event() {
+    replay("maestro_stdin_a_complete_bracketed_paste_emits_one_event");
 }
 
 #[test]

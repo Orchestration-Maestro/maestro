@@ -79,7 +79,7 @@ pub struct ToolDefinition {
 /// Options of a result rendering.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ToolRenderResultOptions {
-    /// Whether the result view is expanded.
+    /// Whether the result is shown in its expanded form.
     pub expanded: bool,
     /// Whether the result is still streaming.
     pub is_partial: bool,

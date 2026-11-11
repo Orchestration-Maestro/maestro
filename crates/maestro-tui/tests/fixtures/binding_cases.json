@@ -634,7 +634,7 @@
     },
     {
       "id": "submit-regression",
-      "test": "maestro_keys_does_not_evict_selector_confirm_when_input_submit_is_rebound",
+      "test": "maestro_keys_rebinding_submit_keeps_selector_confirm",
       "input": {
         "definitions": "builtins",
         "user": [
@@ -1297,7 +1297,7 @@
     },
     {
       "id": "cursor-regression",
-      "test": "maestro_keys_does_not_evict_cursor_bindings_when_another_action_reuses_the_same_key",
+      "test": "maestro_keys_a_shared_key_keeps_the_cursor_bindings",
       "input": {
         "definitions": "builtins",
         "user": [
@@ -1960,7 +1960,7 @@
     },
     {
       "id": "conflict-regression",
-      "test": "maestro_keys_still_reports_direct_user_binding_conflicts_without_evicting_defaults",
+      "test": "maestro_keys_direct_conflicts_are_reported_and_defaults_stay",
       "input": {
         "definitions": "builtins",
         "user": [

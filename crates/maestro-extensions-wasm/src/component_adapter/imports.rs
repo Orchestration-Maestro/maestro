@@ -480,7 +480,7 @@ pub trait Imports: super::native_imports::NativeImports + Clone + 'static {
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;
 
-    /// The command context bound to the replacement session.
+    /// The command context for the session that replaced the old one.
     fn command(&self, context: &Self::ReplacedContext) -> Self::CommandContext;
     /// Independently owned session reader.
     type Reader: 'static;

@@ -167,17 +167,17 @@
   {
     "test": "wrap_breaks_keep_original_ranges",
     "id": "spaces-4",
-    "line": "Lorem ipsum dolor sit amet,    consectetur",
+    "line": "Every split keeps the exact    coordinates",
     "width": 30,
     "parts": null,
     "chunks": [
       {
-        "text": "Lorem ipsum dolor sit ",
+        "text": "Every split keeps the ",
         "startIndex": 0,
         "endIndex": 22
       },
       {
-        "text": "amet,    consectetur",
+        "text": "exact    coordinates",
         "startIndex": 22,
         "endIndex": 42
       }
@@ -186,17 +186,17 @@
   {
     "test": "wrap_breaks_keep_original_ranges",
     "id": "spaces-14",
-    "line": "Lorem ipsum dolor sit amet,              consectetur",
+    "line": "Every split keeps the exact              coordinates",
     "width": 30,
     "parts": null,
     "chunks": [
       {
-        "text": "Lorem ipsum dolor sit ",
+        "text": "Every split keeps the ",
         "startIndex": 0,
         "endIndex": 22
       },
       {
-        "text": "amet,              consectetur",
+        "text": "exact              coordinates",
         "startIndex": 22,
         "endIndex": 52
       }
@@ -205,22 +205,22 @@
   {
     "test": "wrap_breaks_keep_original_ranges",
     "id": "spaces-15",
-    "line": "Lorem ipsum dolor sit amet,               consectetur",
+    "line": "Every split keeps the exact               coordinates",
     "width": 30,
     "parts": null,
     "chunks": [
       {
-        "text": "Lorem ipsum dolor sit ",
+        "text": "Every split keeps the ",
         "startIndex": 0,
         "endIndex": 22
       },
       {
-        "text": "amet,               ",
+        "text": "exact               ",
         "startIndex": 22,
         "endIndex": 42
       },
       {
-        "text": "consectetur",
+        "text": "coordinates",
         "startIndex": 42,
         "endIndex": 53
       }
@@ -229,22 +229,22 @@
   {
     "test": "wrap_breaks_keep_original_ranges",
     "id": "spaces-25",
-    "line": "Lorem ipsum dolor sit amet,                         consectetur",
+    "line": "Every split keeps the exact                         coordinates",
     "width": 30,
     "parts": null,
     "chunks": [
       {
-        "text": "Lorem ipsum dolor sit ",
+        "text": "Every split keeps the ",
         "startIndex": 0,
         "endIndex": 22
       },
       {
-        "text": "amet,                         ",
+        "text": "exact                         ",
         "startIndex": 22,
         "endIndex": 52
       },
       {
-        "text": "consectetur",
+        "text": "coordinates",
         "startIndex": 52,
         "endIndex": 63
       }
@@ -253,22 +253,22 @@
   {
     "test": "wrap_breaks_keep_original_ranges",
     "id": "spaces-26",
-    "line": "Lorem ipsum dolor sit amet,                          consectetur",
+    "line": "Every split keeps the exact                          coordinates",
     "width": 30,
     "parts": null,
     "chunks": [
       {
-        "text": "Lorem ipsum dolor sit ",
+        "text": "Every split keeps the ",
         "startIndex": 0,
         "endIndex": 22
       },
       {
-        "text": "amet,                         ",
+        "text": "exact                         ",
         "startIndex": 22,
         "endIndex": 52
       },
       {
-        "text": " consectetur",
+        "text": " coordinates",
         "startIndex": 52,
         "endIndex": 64
       }
@@ -277,22 +277,22 @@
   {
     "test": "wrap_breaks_keep_original_ranges",
     "id": "spaces-37",
-    "line": "Lorem ipsum dolor sit amet,                                     consectetur",
+    "line": "Every split keeps the exact                                     coordinates",
     "width": 30,
     "parts": null,
     "chunks": [
       {
-        "text": "Lorem ipsum dolor sit ",
+        "text": "Every split keeps the ",
         "startIndex": 0,
         "endIndex": 22
       },
       {
-        "text": "amet,                         ",
+        "text": "exact                         ",
         "startIndex": 22,
         "endIndex": 52
       },
       {
-        "text": "            consectetur",
+        "text": "            coordinates",
         "startIndex": 52,
         "endIndex": 75
       }
@@ -301,7 +301,7 @@
   {
     "test": "wrap_breaks_keep_original_ranges",
     "id": "url",
-    "line": "Check https://example.com/very/long/path/that/exceeds/width here",
+    "line": "Check https://example.com/docs/note/page/over/several/lines here",
     "width": 29,
     "parts": null,
     "chunks": [
@@ -311,12 +311,12 @@
         "endIndex": 6
       },
       {
-        "text": "https://example.com/very/long",
+        "text": "https://example.com/docs/note",
         "startIndex": 6,
         "endIndex": 35
       },
       {
-        "text": "/path/that/exceeds/width here",
+        "text": "/page/over/several/lines here",
         "startIndex": 35,
         "endIndex": 64
       }

@@ -11,6 +11,9 @@ Deliver crate by crate; write each crate's tickets when that crate is reached.
 ## Checks
 
 Install MinGW-w64 as described in [development setup](docs/development.md#setup-and-build).
+Install Emscripten SDK 6.0.10 and the wasm-bindgen CLI 0.2.129 as described in
+[Sandbox runtime bundle](docs/development.md#sandbox-runtime-bundle); `build`, `check`, `test`
+and `ci` build the sandbox runtime script first.
 Install mise and rustup, enable mise on `PATH`, then run:
 
 ```sh

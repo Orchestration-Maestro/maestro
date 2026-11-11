@@ -231,7 +231,7 @@ fn compacted_session_accepts_the_next_prompt() {
             texts,
             [
                 json!(format!(
-                    "The conversation history before this point was compacted into the following summary:\n\n<summary>\n{}\n</summary>",
+                    "Earlier conversation history was condensed into the summary below:\n\n<summary>\n{}\n</summary>",
                     result.summary
                 )),
                 json!("two"),

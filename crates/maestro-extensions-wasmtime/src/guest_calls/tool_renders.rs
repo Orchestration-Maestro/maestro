@@ -86,7 +86,7 @@ pub(crate) struct Render {
 #[derive(ComponentType, Lower, Lift, Clone)]
 #[component(record)]
 pub(crate) struct Options {
-    /// Whether the result view is expanded.
+    /// Whether the result is shown in its expanded form.
     pub(crate) expanded: bool,
     /// Whether this result is still streaming.
     #[component(name = "is-partial")]

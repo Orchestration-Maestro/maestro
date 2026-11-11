@@ -599,9 +599,7 @@ async fn edit_keeps_identity(
     let dialog = CustomProviderDialog::open(view, Some(original.clone()), None, None).unwrap();
     let shown = panel();
     assert_eq!(text(&find(&shown, "h2")), "Edit Provider");
-    assert!(
-        text(&shown).contains("For manual provider types, add models after saving the provider.")
-    );
+    assert!(text(&shown).contains("Add models to a manual provider after you save it."));
     assert!(
         !has(&shown, ".maestro-button-outline"),
         "no test for manual types"
@@ -699,7 +697,7 @@ pub async fn providers_models_tab_lists_keys_and_manages_custom_providers(
     assert!(
         prompts
             .messages()
-            .contains(&"?Are you sure you want to delete this provider?".to_owned())
+            .contains(&"?Delete this provider?".to_owned())
     );
     added(&parent).await;
     parent.remove();

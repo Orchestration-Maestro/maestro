@@ -182,9 +182,9 @@ impl SettingsList {
     fn hint(&self, lines: &mut Vec<String>, width: usize) {
         lines.push(String::new());
         let text = if self.search.is_some() {
-            "  Type to search · Enter/Space to change · Esc to cancel"
+            "  Type to search · Enter/Space sets a value · Esc closes"
         } else {
-            "  Enter/Space to change · Esc to cancel"
+            "  Enter/Space sets a value · Esc closes"
         };
         lines.push(truncate_to_width(
             &(self.theme.hint)(text),

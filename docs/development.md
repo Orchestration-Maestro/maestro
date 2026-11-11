@@ -21,6 +21,10 @@ Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
 and the other pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml`
 through rustup, not mise.
 
+`build`, `test`, `check` and `ci` first build the sandbox runtime script, which needs
+Emscripten SDK 6.0.10 and the wasm-bindgen CLI 0.2.129 on `PATH`; install them as
+described in [Sandbox runtime bundle](#sandbox-runtime-bundle) before the first run.
+
 Tool versions stay caller-owned in `mise.toml`. Generated downloads and checksums
 in `mise.lock` must cover Linux x64 and ARM64, macOS Intel and ARM64, and Windows
 x64 hosts, independently of the compilation target. A successful `mise lock` can
@@ -34,6 +38,11 @@ files that remain on disk, announces `Selected crates: ...`, then runs
 use repeated `-p` arguments. Formatting failures and Clippy warnings block the
 commit. Files changed by formatting but absent from the captured index stay
 unstaged.
+
+A staged `maestro-web` is linted through `just _check -p <package>` instead, because
+its build script embeds the generated sandbox runtime script, which that recipe builds
+first (see [Sandbox runtime bundle](#sandbox-runtime-bundle)). This adds minutes to
+commits that touch the crate.
 
 Root inputs such as `Cargo.lock`, the workspace manifest and documentation select
 no crates. They never widen a mixed change's selection. With no staged crate, the
@@ -208,29 +217,33 @@ generated filenames are unchanged.
 ## Sandbox runtime bundle
 
 The in-frame sandbox runtime is a Rust program in `crates/maestro-web/runtime`, built for
-`wasm32-unknown-emscripten` into one classic script that the web crate embeds from
-`crates/maestro-web/assets/maestro-sandbox-runtime.js`. The package has its own manifest and
-lock, outside the workspace, so the chat application never builds for the frame.
+`wasm32-unknown-emscripten` into one classic script. The script is a build output:
+`just sandbox-runtime` writes it to `target/sandbox-runtime/maestro-sandbox-runtime.js`,
+which Git ignores, and the `maestro-web` build script points the crate at that file. The
+package has its own manifest and lock, outside the workspace, so the chat application never
+builds for the frame.
 
 Install Emscripten SDK 6.0.10 and the Rust standard library for the target, then put
 `emcc` and the wasm-bindgen CLI 0.2.129 on `PATH`:
 
 ```sh
 rustup target add wasm32-unknown-emscripten
-CARGO_BUILD_JOBS=3 just sandbox-runtime          # regenerate the asset
-CARGO_BUILD_JOBS=3 just sandbox-runtime --check  # fail when the asset is stale
+CARGO_BUILD_JOBS=3 just sandbox-runtime
 ```
 
-Change the runtime package, regenerate, and commit the asset with the source. Never edit
-the asset. The command refuses a missing or unpinned compiler (naming the tool and its
-release), a library outside the audited list and script text that an inline script cannot
-carry. It wraps the script in a function so no glue name reaches the frame's global scope,
-and passes the compiler flags in Cargo's encoded form so a checkout path with spaces
-builds.
+Run the step before anything that builds `maestro-web`. `just check`, `just _check`,
+`just test`, `just build`, `just native-dev`, `just browser-chat-example` and
+`just browser-test` run it first. A plain `cargo` build without the file fails in the
+`maestro-web` build script with one message that names the step. The command refuses a
+missing or unpinned compiler (naming the tool and its release), a library outside the audited
+list and script text that an inline script cannot carry. It wraps the script in a function so
+no glue name reaches the frame's global scope, and passes the compiler flags in Cargo's
+encoded form so a checkout path with spaces builds. It writes the file only when the bytes
+change, so an unchanged build does not rebuild `maestro-web`.
 
 The command records the checkout as `/checkout` and each dependency's sources as
-`<name>-<version>`. These stable names keep the asset the same on every machine: no Cargo
-home or checkout path reaches the embedded module. A web crate test fails when the asset
+`<name>-<version>`. These stable names keep the script the same on every machine: no Cargo
+home or checkout path reaches the embedded module. A web crate test fails when the script
 names any other absolute source path.
 
 A plain Cargo build for the target links the runtime with the package's own settings.
@@ -238,11 +251,16 @@ Its build script passes the Emscripten link settings to the binary; its manifest
 `panic = "abort"` in the dev and release profiles. The generator command adds only compiler
 flags, source path names and the linker map for the audit. The package repeats the
 workspace lint table in its manifest. Browser linting checks it for
-`wasm32-unknown-emscripten`. `just browser-test` checks the bundle after the browser cases.
+`wasm32-unknown-emscripten`.
 
 The build box's saved setup carries the SDK. Shared CI installs the same release because
 `.github/ci.toml` lists the package in `emscripten_crates`: merge groups build it with a
-plain `cargo build`, and the browser job runs the check.
+plain `cargo build`. Every CI job that compiles `maestro-web` must run the step first.
+
+The workspace conventions check fails when Git tracks a `.js`, `.mjs`, `.cjs`, `.jsx`,
+`.ts`, `.tsx`, `.py`, `.sh` or `.ps1` file. Generated browser code comes out of the build
+under `target/` and is never committed. `examples/sdk/rpc.py` is the one named exception;
+it leaves with the examples move.
 
 ## Browser integration qualification
 
@@ -266,8 +284,8 @@ just browser-test
 
 The command installs no browser tools. It requires Chromium 156.0.8078.4
 (supplier revision 1248) and wasm-bindgen CLI 0.2.129, matching the locked Rust
-binding. It also rebuilds the sandbox runtime and compares it with the checked-in
-bundle, which needs Emscripten SDK 6.0.10 on `PATH` (see
+binding. It also builds the sandbox runtime script before the cases run, which needs
+Emscripten SDK 6.0.10 on `PATH` (see
 [Sandbox runtime bundle](#sandbox-runtime-bundle)). The browser executable must be an absolute path. The shared workflow owns
 tool acquisition. Rust repository tooling drives Chromium through its one CDP
 connection using chromiumoxide 0.9.1, with default features disabled and no browser
@@ -312,7 +330,7 @@ package to `browser-exports` under Cargo's target directory, replacing the
 previous run's copy. If setup fails, nextest prints its output and stops before
 any browser test runs. The crate's build script generates one test per name in
 `exports.json`, `browser::exports::<family>::<export>`: 27 execution exports,
-69 loading exports, 196 contribution exports and 165 canvas exports. Each test
+70 loading exports, 196 contribution exports and 165 canvas exports. Each test
 serves only the packaged output on an ephemeral loopback port, launches its own
 browser and runs its export in a fresh page, with a disposable browser context,
 page lifecycle and policy-error accounting. Nextest runs these tests in

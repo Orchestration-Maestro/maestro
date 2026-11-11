@@ -543,11 +543,10 @@ fn sent_steer(phase: &str) -> Value {
 }
 
 /// The literal guidance of an action called while the factory still loads.
-const LOADING: &str =
-    "Extension runtime not initialized. Action methods cannot be called during extension loading.";
+const LOADING: &str = "The extension runtime is not initialized yet. Do not call action methods while extensions are loading.";
 
 /// The literal guidance of a model selection requested before the runtime binds.
-const UNBOUND_MODEL: &str = "Extension runtime not initialized";
+const UNBOUND_MODEL: &str = "The extension runtime is not initialized yet";
 
 #[test]
 fn invalid_resource_access_is_catchable_before_guest_entry() {

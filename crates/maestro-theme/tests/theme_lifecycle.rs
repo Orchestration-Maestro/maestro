@@ -83,7 +83,7 @@ fn theme_live_view_follows_publication() {
     let error = live.get().err().unwrap();
     assert_eq!(
         error.to_string(),
-        "Theme not initialized. Call initTheme() first."
+        "Theme not initialized. Call init_theme() first."
     );
 
     state.init_theme(Some("dark"), None).unwrap();

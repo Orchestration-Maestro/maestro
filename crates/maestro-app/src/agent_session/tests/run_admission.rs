@@ -35,12 +35,7 @@ fn second_run_during_retry_is_refused_without_touching_active_run() {
         idle.await;
 
         assert!(refused.is_err(), "second run was accepted");
-        assert!(
-            refused
-                .unwrap_err()
-                .message
-                .contains("still working on a prompt")
-        );
+        assert!(refused.unwrap_err().message.contains("already running"));
         assert!(active);
         assert_eq!(prompt.as_deref(), Some("active override"));
         assert!(pending, "the original idle wait still belongs to its run");

@@ -45,7 +45,7 @@ impl LiveTheme {
     /// Returns an error before any theme was published.
     pub fn get(&self) -> Result<Rc<Theme>, ThemeError> {
         self.0.borrow().clone().ok_or_else(|| {
-            ThemeError::message("Theme not initialized. Call initTheme() first.".to_owned())
+            ThemeError::message("Theme not initialized. Call init_theme() first.".to_owned())
         })
     }
 }

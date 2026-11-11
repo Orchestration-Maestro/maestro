@@ -74,7 +74,7 @@ impl DomContent for ProvidersModelsTab {
         let known = section(
             &view,
             "Cloud Providers",
-            "Cloud LLM providers with predefined models. API keys are stored locally in your browser.",
+            "Cloud providers whose models are predefined. Keys stay in this browser.",
         )?;
         let keys = element(document, "div", "maestro-providers-keys")?;
         let mut mounted_keys = Vec::new();
@@ -88,7 +88,7 @@ impl DomContent for ProvidersModelsTab {
         let custom = section(
             &view,
             "Custom Providers",
-            "User-configured servers with auto-discovered or manually defined models.",
+            "Servers you configure; their models come from discovery or your own definition.",
         )?;
         let menu = add_menu(&view)?;
         if let Some(heading) = custom.first_element_child() {
@@ -96,7 +96,7 @@ impl DomContent for ProvidersModelsTab {
         }
         let empty = element(document, "div", "maestro-providers-empty")?;
         empty.set_text_content(Some(
-            "No custom providers configured. Click 'Add Provider' to get started.",
+            "No custom providers yet. Add one with 'Add Provider'.",
         ));
         let cards = element(document, "div", "maestro-providers-cards")?;
         for part in [&known, &separator, &custom] {
@@ -253,11 +253,7 @@ impl Tab {
             .view
             .document
             .default_view()
-            .and_then(|window| {
-                window
-                    .confirm_with_message("Are you sure you want to delete this provider?")
-                    .ok()
-            })
+            .and_then(|window| window.confirm_with_message("Delete this provider?").ok())
             .unwrap_or(false);
         if !confirmed {
             return;

@@ -113,8 +113,8 @@
       "expected": "API Keys Configuration"
     },
     {
-      "key": "Configure API keys for LLM providers. Keys are stored locally in your browser.",
-      "expected": "Configure API keys for LLM providers. Keys are stored locally in your browser."
+      "key": "Set provider API keys here. They stay in this browser.",
+      "expected": "Set provider API keys here. They stay in this browser."
     },
     {
       "key": "Configured",
@@ -225,12 +225,12 @@
       "expected": "Error loading spreadsheet"
     },
     {
-      "key": "Preview not available for this file type.",
-      "expected": "Preview not available for this file type."
+      "key": "No preview for this file type.",
+      "expected": "No preview for this file type."
     },
     {
-      "key": "Click the download button above to view it on your computer.",
-      "expected": "Click the download button above to view it on your computer."
+      "key": "Open it on your computer with the download button above.",
+      "expected": "Open it on your computer with the download button above."
     },
     {
       "key": "No content available",
@@ -241,8 +241,8 @@
       "expected": "Failed to display text content"
     },
     {
-      "key": "API keys are required to use AI models. Get your keys from the provider's website.",
-      "expected": "API keys are required to use AI models. Get your keys from the provider's website."
+      "key": "AI models need an API key. Get yours from the provider's website.",
+      "expected": "AI models need an API key. Get yours from the provider's website."
     },
     {
       "key": "console",
@@ -349,8 +349,8 @@
       "expected": "Please enter your auth token."
     },
     {
-      "key": "Auth token is required for proxy transport",
-      "expected": "Auth token is required for proxy transport"
+      "key": "The proxy transport needs an auth token",
+      "expected": "The proxy transport needs an auth token"
     },
     {
       "key": "Execution aborted",
@@ -577,12 +577,12 @@
       "expected": "Proxy URL"
     },
     {
-      "key": "Format: The proxy must accept requests as <proxy-url>/?url=<target-url>",
-      "expected": "Format: The proxy must accept requests as <proxy-url>/?url=<target-url>"
+      "key": "Format: the proxy must accept <proxy-url>/?url=<target-url>",
+      "expected": "Format: the proxy must accept <proxy-url>/?url=<target-url>"
     },
     {
-      "key": "Settings are stored locally in your browser",
-      "expected": "Settings are stored locally in your browser"
+      "key": "Settings stay in this browser",
+      "expected": "Settings stay in this browser"
     },
     {
       "key": "Clear",
@@ -597,8 +597,8 @@
       "expected": "Enter your API key for {provider}"
     },
     {
-      "key": "Allows browser-based apps to bypass CORS restrictions when calling LLM providers. Required for Z-AI and Anthropic with OAuth token.",
-      "expected": "Allows browser-based apps to bypass CORS restrictions when calling LLM providers. Required for Z-AI and Anthropic with OAuth token."
+      "key": "Lets a browser app call LLM providers past CORS limits. Needed with Z-AI and Anthropic OAuth tokens.",
+      "expected": "Lets a browser app call LLM providers past CORS limits. Needed with Z-AI and Anthropic OAuth tokens."
     },
     {
       "key": "Off",
@@ -625,36 +625,36 @@
       "expected": "Storage Permission Required"
     },
     {
-      "key": "This app needs persistent storage to save your conversations",
-      "expected": "This app needs persistent storage to save your conversations"
+      "key": "This app keeps your conversations only with persistent storage",
+      "expected": "This app keeps your conversations only with persistent storage"
     },
     {
       "key": "Why is this needed?",
       "expected": "Why is this needed?"
     },
     {
-      "key": "Without persistent storage, your browser may delete saved conversations when it needs disk space. Granting this permission ensures your chat history is preserved.",
-      "expected": "Without persistent storage, your browser may delete saved conversations when it needs disk space. Granting this permission ensures your chat history is preserved."
+      "key": "Without persistent storage, the browser can drop saved conversations when disk space runs short. Granting the permission keeps your chat history.",
+      "expected": "Without persistent storage, the browser can drop saved conversations when disk space runs short. Granting the permission keeps your chat history."
     },
     {
       "key": "What this means:",
       "expected": "What this means:"
     },
     {
-      "key": "Your conversations will be saved locally in your browser",
-      "expected": "Your conversations will be saved locally in your browser"
+      "key": "Conversations are saved in this browser",
+      "expected": "Conversations are saved in this browser"
     },
     {
-      "key": "Data will not be deleted automatically to free up space",
-      "expected": "Data will not be deleted automatically to free up space"
+      "key": "The browser will not delete data to free space",
+      "expected": "The browser will not delete data to free space"
     },
     {
-      "key": "You can still manually clear data at any time",
-      "expected": "You can still manually clear data at any time"
+      "key": "You can clear data yourself at any time",
+      "expected": "You can clear data yourself at any time"
     },
     {
-      "key": "No data is sent to external servers",
-      "expected": "No data is sent to external servers"
+      "key": "Nothing is sent to external servers",
+      "expected": "Nothing is sent to external servers"
     },
     {
       "key": "Continue Anyway",
@@ -725,24 +725,24 @@
       "expected": "Cloud Providers"
     },
     {
-      "key": "Cloud LLM providers with predefined models. API keys are stored locally in your browser.",
-      "expected": "Cloud LLM providers with predefined models. API keys are stored locally in your browser."
+      "key": "Cloud providers whose models are predefined. Keys stay in this browser.",
+      "expected": "Cloud providers whose models are predefined. Keys stay in this browser."
     },
     {
       "key": "Custom Providers",
       "expected": "Custom Providers"
     },
     {
-      "key": "User-configured servers with auto-discovered or manually defined models.",
-      "expected": "User-configured servers with auto-discovered or manually defined models."
+      "key": "Servers you configure; their models come from discovery or your own definition.",
+      "expected": "Servers you configure; their models come from discovery or your own definition."
     },
     {
       "key": "Add Provider",
       "expected": "Add Provider"
     },
     {
-      "key": "No custom providers configured. Click 'Add Provider' to get started.",
-      "expected": "No custom providers configured. Click 'Add Provider' to get started."
+      "key": "No custom providers yet. Add one with 'Add Provider'.",
+      "expected": "No custom providers yet. Add one with 'Add Provider'."
     },
     {
       "key": "auto-discovered",
@@ -757,8 +757,8 @@
       "expected": "Edit"
     },
     {
-      "key": "Are you sure you want to delete this provider?",
-      "expected": "Are you sure you want to delete this provider?"
+      "key": "Delete this provider?",
+      "expected": "Delete this provider?"
     },
     {
       "key": "Edit Provider",
@@ -817,12 +817,12 @@
       "expected": "more"
     },
     {
-      "key": "For manual provider types, add models after saving the provider.",
-      "expected": "For manual provider types, add models after saving the provider."
+      "key": "Add models to a manual provider after you save it.",
+      "expected": "Add models to a manual provider after you save it."
     },
     {
-      "key": "Please fill in all required fields",
-      "expected": "Please fill in all required fields"
+      "key": "Fill in every required field",
+      "expected": "Fill in every required field"
     },
     {
       "key": "Failed to save provider",
@@ -963,8 +963,8 @@
       "expected": "API-Schlüssel-Konfiguration"
     },
     {
-      "key": "Configure API keys for LLM providers. Keys are stored locally in your browser.",
-      "expected": "Konfigurieren Sie API-Schlüssel für LLM-Anbieter. Schlüssel werden lokal in Ihrem Browser gespeichert."
+      "key": "Set provider API keys here. They stay in this browser.",
+      "expected": "API-Schlüssel der Anbieter legen Sie hier fest. Sie bleiben in diesem Browser."
     },
     {
       "key": "Configured",
@@ -1075,12 +1075,12 @@
       "expected": "Fehler beim Laden der Tabelle"
     },
     {
-      "key": "Preview not available for this file type.",
-      "expected": "Vorschau für diesen Dateityp nicht verfügbar."
+      "key": "No preview for this file type.",
+      "expected": "Für diesen Dateityp gibt es keine Vorschau."
     },
     {
-      "key": "Click the download button above to view it on your computer.",
-      "expected": "Klicken Sie oben auf die Download-Schaltfläche, um die Datei auf Ihrem Computer anzuzeigen."
+      "key": "Open it on your computer with the download button above.",
+      "expected": "Öffnen Sie die Datei auf Ihrem Rechner mit der Download-Schaltfläche oben."
     },
     {
       "key": "No content available",
@@ -1091,8 +1091,8 @@
       "expected": "Textinhalt konnte nicht angezeigt werden"
     },
     {
-      "key": "API keys are required to use AI models. Get your keys from the provider's website.",
-      "expected": "API-Schlüssel sind erforderlich, um KI-Modelle zu verwenden. Holen Sie sich Ihre Schlüssel von der Website des Anbieters."
+      "key": "AI models need an API key. Get yours from the provider's website.",
+      "expected": "KI-Modelle brauchen einen API-Schlüssel. Ihren Schlüssel erhalten Sie auf der Website des Anbieters."
     },
     {
       "key": "console",
@@ -1199,8 +1199,8 @@
       "expected": "Bitte geben Sie Ihr Auth-Token ein."
     },
     {
-      "key": "Auth token is required for proxy transport",
-      "expected": "Auth-Token ist für Proxy-Transport erforderlich"
+      "key": "The proxy transport needs an auth token",
+      "expected": "Der Proxy-Transport braucht ein Auth-Token"
     },
     {
       "key": "Execution aborted",
@@ -1427,12 +1427,12 @@
       "expected": "Proxy-URL"
     },
     {
-      "key": "Format: The proxy must accept requests as <proxy-url>/?url=<target-url>",
-      "expected": "Format: Der Proxy muss Anfragen als <proxy-url>/?url=<ziel-url> akzeptieren"
+      "key": "Format: the proxy must accept <proxy-url>/?url=<target-url>",
+      "expected": "Format: Der Proxy muss <proxy-url>/?url=<ziel-url> akzeptieren"
     },
     {
-      "key": "Settings are stored locally in your browser",
-      "expected": "Einstellungen werden lokal in Ihrem Browser gespeichert"
+      "key": "Settings stay in this browser",
+      "expected": "Einstellungen bleiben in diesem Browser"
     },
     {
       "key": "Clear",
@@ -1447,8 +1447,8 @@
       "expected": "Geben Sie Ihren API-Schlüssel für {provider} ein"
     },
     {
-      "key": "Allows browser-based apps to bypass CORS restrictions when calling LLM providers. Required for Z-AI and Anthropic with OAuth token.",
-      "expected": "Ermöglicht browserbasierten Anwendungen, CORS-Einschränkungen beim Aufruf von LLM-Anbietern zu umgehen. Erforderlich für Z-AI und Anthropic mit OAuth-Token."
+      "key": "Lets a browser app call LLM providers past CORS limits. Needed with Z-AI and Anthropic OAuth tokens.",
+      "expected": "Lässt eine Browser-App LLM-Anbieter trotz CORS-Grenzen aufrufen. Nötig bei Z-AI sowie Anthropic mit OAuth-Token."
     },
     {
       "key": "Off",
@@ -1475,36 +1475,36 @@
       "expected": "Speicherberechtigung erforderlich"
     },
     {
-      "key": "This app needs persistent storage to save your conversations",
-      "expected": "Diese App benötigt dauerhaften Speicher, um Ihre Konversationen zu speichern"
+      "key": "This app keeps your conversations only with persistent storage",
+      "expected": "Diese App behält Ihre Gespräche nur mit dauerhaftem Speicher"
     },
     {
       "key": "Why is this needed?",
       "expected": "Warum wird das benötigt?"
     },
     {
-      "key": "Without persistent storage, your browser may delete saved conversations when it needs disk space. Granting this permission ensures your chat history is preserved.",
-      "expected": "Ohne dauerhaften Speicher kann Ihr Browser gespeicherte Konversationen löschen, wenn Speicherplatz benötigt wird. Diese Berechtigung stellt sicher, dass Ihr Chatverlauf erhalten bleibt."
+      "key": "Without persistent storage, the browser can drop saved conversations when disk space runs short. Granting the permission keeps your chat history.",
+      "expected": "Ohne dauerhaften Speicher kann der Browser gespeicherte Gespräche verwerfen, wenn der Platz knapp wird. Mit der Berechtigung bleibt Ihr Chatverlauf erhalten."
     },
     {
       "key": "What this means:",
       "expected": "Was das bedeutet:"
     },
     {
-      "key": "Your conversations will be saved locally in your browser",
-      "expected": "Ihre Konversationen werden lokal in Ihrem Browser gespeichert"
+      "key": "Conversations are saved in this browser",
+      "expected": "Gespräche werden in diesem Browser gespeichert"
     },
     {
-      "key": "Data will not be deleted automatically to free up space",
-      "expected": "Daten werden nicht automatisch gelöscht, um Speicherplatz freizugeben"
+      "key": "The browser will not delete data to free space",
+      "expected": "Der Browser löscht keine Daten, um Platz freizugeben"
     },
     {
-      "key": "You can still manually clear data at any time",
-      "expected": "Sie können Daten jederzeit manuell löschen"
+      "key": "You can clear data yourself at any time",
+      "expected": "Sie können die Daten jederzeit selbst löschen"
     },
     {
-      "key": "No data is sent to external servers",
-      "expected": "Keine Daten werden an externe Server gesendet"
+      "key": "Nothing is sent to external servers",
+      "expected": "Es wird nichts an externe Server gesendet"
     },
     {
       "key": "Continue Anyway",
@@ -1575,24 +1575,24 @@
       "expected": "Cloud-Anbieter"
     },
     {
-      "key": "Cloud LLM providers with predefined models. API keys are stored locally in your browser.",
-      "expected": "Cloud-LLM-Anbieter mit vordefinierten Modellen. API-Schlüssel werden lokal in Ihrem Browser gespeichert."
+      "key": "Cloud providers whose models are predefined. Keys stay in this browser.",
+      "expected": "Cloud-Anbieter mit vorgegebenen Modellen. Die Schlüssel bleiben in diesem Browser."
     },
     {
       "key": "Custom Providers",
       "expected": "Benutzerdefinierte Anbieter"
     },
     {
-      "key": "User-configured servers with auto-discovered or manually defined models.",
-      "expected": "Benutzerkonfigurierte Server mit automatisch erkannten oder manuell definierten Modellen."
+      "key": "Servers you configure; their models come from discovery or your own definition.",
+      "expected": "Server, die Sie konfigurieren; ihre Modelle stammen aus der Erkennung oder aus Ihrer eigenen Definition."
     },
     {
       "key": "Add Provider",
       "expected": "Anbieter hinzufügen"
     },
     {
-      "key": "No custom providers configured. Click 'Add Provider' to get started.",
-      "expected": "Keine benutzerdefinierten Anbieter konfiguriert. Klicken Sie auf 'Anbieter hinzufügen', um zu beginnen."
+      "key": "No custom providers yet. Add one with 'Add Provider'.",
+      "expected": "Noch keine benutzerdefinierten Anbieter. Fügen Sie einen über 'Anbieter hinzufügen' hinzu."
     },
     {
       "key": "auto-discovered",
@@ -1607,8 +1607,8 @@
       "expected": "Bearbeiten"
     },
     {
-      "key": "Are you sure you want to delete this provider?",
-      "expected": "Sind Sie sicher, dass Sie diesen Anbieter löschen möchten?"
+      "key": "Delete this provider?",
+      "expected": "Diesen Anbieter löschen?"
     },
     {
       "key": "Edit Provider",
@@ -1667,12 +1667,12 @@
       "expected": "mehr"
     },
     {
-      "key": "For manual provider types, add models after saving the provider.",
-      "expected": "Für manuelle Anbietertypen fügen Sie Modelle nach dem Speichern des Anbieters hinzu."
+      "key": "Add models to a manual provider after you save it.",
+      "expected": "Fügen Sie einem manuellen Anbieter nach dem Speichern Modelle hinzu."
     },
     {
-      "key": "Please fill in all required fields",
-      "expected": "Bitte füllen Sie alle erforderlichen Felder aus"
+      "key": "Fill in every required field",
+      "expected": "Alle erforderlichen Felder ausfüllen"
     },
     {
       "key": "Failed to save provider",

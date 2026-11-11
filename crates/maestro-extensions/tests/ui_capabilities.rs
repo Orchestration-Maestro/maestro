@@ -236,8 +236,7 @@ fn installed_ui_presence_does_not_claim_mode_support() {
         "app.interrupt".to_owned(),
         Some(KeybindingKeys::Single("ctrl+c".into())),
     )];
-    let warning =
-        "Extension shortcut 'Ctrl+C' from /reserved conflicts with built-in shortcut. Skipping.\n";
+    let warning = "Extension shortcut 'Ctrl+C' from /reserved clashes with a built-in shortcut and is skipped.\n";
     assert!(!runner.has_ui());
     assert!(runner.get_shortcuts(&bindings).is_empty());
     assert_eq!(*warnings.borrow(), [warning]);
@@ -818,7 +817,7 @@ fn live_theme_follows_publication(ui: &Ui, host: &Screen, fallback: &LiveTheme) 
     let unpublished = live.get().map(|_| ()).unwrap_err().to_string();
     assert_eq!(
         unpublished,
-        "Theme not initialized. Call initTheme() first."
+        "Theme not initialized. Call init_theme() first."
     );
     let first = published::theme(0).unwrap();
     host.state.set_theme_instance(Rc::clone(&first)).unwrap();
@@ -863,7 +862,7 @@ fn theme_selection_routes(ui: &Ui, host: &Screen, first: &Rc<Theme>) {
     let unpublished = ui.set_theme(ThemeSelection::Theme(LiveTheme::default()));
     assert_eq!(
         unpublished.unwrap_err().to_string(),
-        "Theme not initialized. Call initTheme() first."
+        "Theme not initialized. Call init_theme() first."
     );
     let names: Vec<_> = ui
         .get_all_themes()

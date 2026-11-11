@@ -20,7 +20,7 @@ fn continuation_reports_busy_empty_and_assistant_tail() {
             .set_messages(vec![AgentMessage::Assistant(support::assistant("old"))]);
         assert_eq!(
             empty.r#continue().await.unwrap_err().message,
-            "Cannot continue from message role: assistant"
+            "Nothing to continue from: the last message has the assistant role"
         );
         empty.steer(support::user("queued"));
         assert_eq!(
@@ -34,7 +34,7 @@ fn continuation_reports_busy_empty_and_assistant_tail() {
         agent.reset();
         assert_eq!(
             agent.r#continue().await.unwrap_err().message,
-            "Agent is already processing. Wait for completion before continuing."
+            "The agent is already running. Wait for it to finish before continuing."
         );
         tasks.take().await;
         observation.await.unwrap();
@@ -129,7 +129,7 @@ fn continuation_owns_work_after_observation_drop() {
         assert!(agent.signal().is_some());
         assert_eq!(
             agent.r#continue().await.unwrap_err().message,
-            "Agent is already processing. Wait for completion before continuing."
+            "The agent is already running. Wait for it to finish before continuing."
         );
         release.send(()).unwrap();
         joined.await.unwrap();

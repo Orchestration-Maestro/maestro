@@ -64,7 +64,7 @@ mod unix {
             let ruler = "=".repeat(width);
             let mut lines: Vec<String> = [
                 ruler.as_str(),
-                "Key Code Tester - Press keys to see their codes (Ctrl+C to exit)",
+                "Key code tester: press a key to read the codes it sends. Ctrl+C exits.",
                 ruler.as_str(),
                 "",
             ]
