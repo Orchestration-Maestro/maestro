@@ -3,7 +3,7 @@
 use std::ffi::OsString;
 use std::fs;
 use std::path::Path;
-use std::process::ExitCode;
+use std::process::{Command, ExitCode};
 
 use cargo_metadata::{Metadata, MetadataCommand};
 use maestro_test_directory::Scratch;
@@ -93,8 +93,15 @@ fn every_package_spelling_names_its_package() {
 fn naming_a_binary_only_package_passes_the_doctest_phase() {
     let scratch = Scratch::new().unwrap();
     fixture(scratch.path());
+    // The recipe runs Cargo with `--locked`, so the workspace has its lock file.
+    let lock = Command::new(env!("CARGO"))
+        .arg("generate-lockfile")
+        .current_dir(scratch.path())
+        .status()
+        .unwrap();
+    assert!(lock.success());
     let code = run(
-        &args(&["-p", "binary", "--locked"]),
+        &args(&["-p", "binary"]),
         Path::new(env!("CARGO")),
         scratch.path(),
     )

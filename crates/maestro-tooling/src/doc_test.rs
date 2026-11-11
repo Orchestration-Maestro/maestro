@@ -15,7 +15,7 @@ mod tests;
 /// Run the Cargo doctests for the caller's arguments, or the whole workspace when no package is named.
 ///
 /// Cargo refuses `--doc` for a selection without a library target, so a selection of packages
-/// that have none passes without running Cargo.
+/// that have none passes without running Cargo's doctests.
 ///
 /// # Errors
 /// Returns a metadata read or command failure.
