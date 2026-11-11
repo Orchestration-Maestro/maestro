@@ -80,7 +80,7 @@ fn production_code_that_names_the_setup_entry_passes() {
         &workspace,
         "maestro-text",
         "src/setup.rs",
-        "//! Setup entries.\n/// The setup entry nextest runs before a test.\npub const ENTRY: &str = \"nextest-setup\";\n",
+        "//! Setup entries.\n/// The setup entry nextest runs before a test.\npub fn entry() -> &'static str {\n    \"nextest-setup\"\n}\n",
     );
 
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));

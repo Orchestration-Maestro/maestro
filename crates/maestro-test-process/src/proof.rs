@@ -291,22 +291,22 @@ mod tests {
 
     #[test]
     fn a_child_that_fails_the_start_reports_what_it_wrote_to_standard_error() {
-        // A child that cannot run the selected test says why on standard error, then
-        // exits.
-        let mut command = Command::new("/bin/sh");
+        // A test binary given an option it does not know says why on standard error, then
+        // exits before it prints the start banner.
+        let mut command = Command::new(std::env::current_exe().unwrap());
         command
-            .args(["-c", "printf 'the setup refused to run\\n' >&2; exit 1"])
+            .arg("--no-such-option")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let error = CheckedChild::start("proof::tests::refused", command.spawn().unwrap())
+        let error = CheckedChild::start("proof::tests::unknown_option", command.spawn().unwrap())
             .unwrap_err()
             .to_string();
 
         assert!(error.contains("did not start exactly"), "{error}");
         assert!(
-            error.contains("the setup refused to run"),
+            error.contains("no-such-option"),
             "the failure dropped what the child wrote: {error}"
         );
     }
