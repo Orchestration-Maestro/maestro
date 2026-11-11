@@ -1,4 +1,4 @@
-//! A duration tool registered by an extension that declares its own parsing dependency.
+//! A fixture component whose duration tool uses an author-declared parsing dependency.
 // maestro-component: MAESTRO_WITH_DEPS_COMPONENT
 #![forbid(
     clippy::pedantic,

@@ -25,6 +25,3 @@ use maestro_test_process::compiler;
 
 #[path = "fixtures/recipe_support.rs"]
 mod recipe_support;
-
-#[path = "../../maestro-extensions-wasm/build/test_modules.rs"]
-mod example_test_modules;

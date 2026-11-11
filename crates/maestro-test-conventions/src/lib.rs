@@ -18,8 +18,6 @@ mod config_scripts;
 mod documented_commands;
 /// Exact production function-body ownership.
 mod duplicates;
-/// Shared-helper ownership in the extension example tests.
-mod example_helpers;
 /// Native fixture setup selection for declared test-process callers.
 mod fixture_selection;
 /// Binding manifest lint exceptions and generated extension source checks.
@@ -119,12 +117,6 @@ mod tracked_scripts;
 /// are not expanded and unparsed fragments add no candidates; no suppression or
 /// baseline is supported.
 ///
-/// The shipped extension example tests decode a document member and release every
-/// registration through the example support module, whose release also asserts the
-/// names the caller expects and that nothing stays lent. A per-example test that
-/// writes the decode or the release walk inline is reported with its file and
-/// line, wherever the copy sits.
-///
 /// The credentials crate names every name it exports. A public re-export or module in
 /// its root that the checker's declared surface does not carry is reported with its file
 /// and line, and a wildcard export is refused, so a removed writer cannot return.
@@ -137,11 +129,11 @@ mod tracked_scripts;
 /// accepted. `maestro-test-directory` is the only member outside the check: its
 /// accessor is the one place that reads the platform directory itself.
 ///
-/// A test that reads `docs/`, `examples/` or `assets/` at run time must have that directory
+/// A test that reads `docs/` or `assets/` at run time must have that directory
 /// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
 /// that climbs out of the crate directory into the directory, or one that joins the
 /// directory in a file that climbs to the workspace root, or a call to the package-directory
-/// resolver `get_docs_path`, `get_examples_path` or `get_package_dir`. Compile-time `include_*!`
+/// resolver `get_docs_path` or `get_package_dir`. Compile-time `include_*!`
 /// arguments and attributes are not reads. Each unrouted read is reported with its file
 /// and line.
 ///
@@ -179,7 +171,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| quality::check(root, &members),
         &|| time_limits::check(&members),
         &|| duplicates::check(&members),
-        &|| example_helpers::check(&members),
         &|| temp_directories::check(&members),
         &|| real_paths::check(&members),
         &|| standard_error::check(&members),

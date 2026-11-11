@@ -1,4 +1,4 @@
-//! An opt-in file watcher that sends external triggers to the conversation.
+//! A fixture component whose file watch sends external triggers to the conversation.
 // maestro-component: MAESTRO_FILE_TRIGGER_COMPONENT
 #![forbid(
     clippy::pedantic,

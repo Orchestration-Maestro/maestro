@@ -3,10 +3,6 @@
 
 mod abort_observers;
 mod asynchronous_reentry;
-mod auto_commit_on_exit_example;
-mod bash_spawn_hook_example;
-mod border_status_editor_example;
-mod built_in_tool_renderer;
 mod callback_lifetimes;
 mod callback_ordering;
 mod callback_results;
@@ -31,25 +27,15 @@ mod context_retention;
 mod editor_factories;
 mod exec_io;
 mod execution_bridge;
-mod extension_guide;
 mod factory_capabilities;
 mod factory_shutdown;
-mod git_checkpoint_example;
-mod handoff_example;
-mod hello_example;
 mod hook_diagnostics;
-mod inline_bash_example;
-mod interactive_shell_example;
 mod lifetimes;
 mod listener_prefixes;
 mod load_time_contributions;
-mod minimal_mode_example;
 mod module_location;
 mod native_helpers;
 mod native_io;
-mod overlay_qa_tests_example;
-mod overlay_test_example;
-mod project_rules_example;
 mod provider_catalog;
 mod replacement_callbacks;
 mod replacement_host;
@@ -57,7 +43,6 @@ mod retained_components;
 mod retained_contexts;
 mod runtime_retention;
 mod startup;
-mod summarize_example;
 mod synchronous_reentry;
 mod wasi_access;
 mod wasi_network;
@@ -96,10 +81,8 @@ mod model_finite;
 mod model_hook_gates;
 mod model_signal_selection;
 
-mod tool_override_example;
 mod tui_capabilities;
 
-mod custom_compaction_example;
 mod custom_ui;
 mod model_lifetimes;
 

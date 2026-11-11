@@ -1395,9 +1395,7 @@ fn fixture_with(root: &Path, example: &str) {
     fs::create_dir_all(&guide).unwrap();
     fs::write(
         guide.join("Cargo.toml.in"),
-        include_str!(
-            "../../maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.toml.in"
-        ),
+        "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[lib]\ncrate-type = [\"cdylib\"]\n\n[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro/crates/maestro-extensions-wasm\" }\n\n[workspace]\n",
     )
     .unwrap();
     fs::write(guide.join("Cargo.lock"), "locked guide dependencies").unwrap();

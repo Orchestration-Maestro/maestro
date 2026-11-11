@@ -2,10 +2,11 @@
 set unstable
 set lists
 
-# Install the pinned tools and both commit hook stages.
+# Install the pinned tools and both commit hook stages, then fetch the examples tree.
 setup:
     mise install
     mise exec -- prek install
+    cargo run --quiet --locked -p maestro-tooling --bin development -- examples
 
 # Formatting, lint, public documentation and the checkout's workspace conventions.
 check: prepare-tests
@@ -265,13 +266,6 @@ _browser-build output pack mode *args:
 [private]
 _browser-watch command pack mode *args:
     @cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{command}} {{quote(pack)}} {{quote(mode)}} {{quote(args)}}
-
-# Build the runnable browser chat example, then serve it on loopback.
-browser-chat-example *args: sandbox-runtime
-    cargo build --locked -p maestro-web --example chat --target wasm32-unknown-unknown --release
-    wasm-bindgen {{quote(justfile_directory() / "target/wasm32-unknown-unknown/release/examples/chat.wasm")}} --target web --out-dir {{quote(justfile_directory() / "target/maestro-browser/chat")}} --out-name chat
-    cp {{quote(justfile_directory() / "crates/maestro-web/examples/chat/index.html")}} {{quote(justfile_directory() / "target/maestro-browser/chat/index.html")}}
-    @miniserve {{quote(justfile_directory() / "target/maestro-browser/chat")}} --interfaces 127.0.0.1 --index index.html {{quote(args)}}
 
 # Run every real-browser case with supplied browser tools, even after a failure.
 browser-test: prepare-tests
