@@ -188,8 +188,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         if self.is_streaming() {
             let Some(behavior) = options.streaming_behavior else {
                 return Err(DiagnosticErrorInfo::error(
-                    "Agent is already processing. Specify streamingBehavior ('steer' or \
-                     'followUp') to queue the message.",
+                    "The agent is still processing. To queue the message, pass streamingBehavior as \
+                     'steer' or 'followUp'.",
                 ));
             };
             let images = images.as_deref().unwrap_or_default();

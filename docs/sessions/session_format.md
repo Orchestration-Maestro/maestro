@@ -44,7 +44,7 @@ and `tui.select.cancel`; [keybindings](https://github.com/Orchestration-Maestro/
 can change them. **Ctrl+Backspace** (`app.session.deleteNoninvasive`) also asks
 for deletion when the search field is empty; otherwise it edits the query.
 The active session cannot be deleted through the picker: Maestro shows
-`Cannot delete the currently active session`.
+`The active session cannot be deleted`.
 
 Confirmation authorizes **permanent deletion** if the `trash` program is missing
 or fails. Maestro tries `trash` first; if that fails and the file still exists,

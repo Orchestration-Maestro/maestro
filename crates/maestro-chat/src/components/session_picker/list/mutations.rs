@@ -84,7 +84,7 @@ impl SessionList {
         };
         if self.is_current_path(&path) {
             if let Some(callback) = self.on_error() {
-                callback("Cannot delete the currently active session");
+                callback("The active session cannot be deleted");
             }
         } else {
             self.set_confirmation(Some(&path));

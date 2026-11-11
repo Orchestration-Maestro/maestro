@@ -282,7 +282,7 @@
     },
     "expected": {
       "outcome": "fatal",
-      "line": "Error: Failed to create session: controlled replacement failure"
+      "line": "Error: Cannot create the session: controlled replacement failure"
     }
   },
   {
@@ -293,7 +293,7 @@
     },
     "expected": {
       "outcome": "fatal",
-      "line": "Error: Failed to create session: controlled replacement failure"
+      "line": "Error: Cannot create the session: controlled replacement failure"
     }
   },
   {
@@ -304,7 +304,7 @@
     },
     "expected": {
       "outcome": "fatal",
-      "line": "Error: Failed to create session: tool call id is not a string"
+      "line": "Error: Cannot create the session: tool call id is not a string"
     }
   },
   {

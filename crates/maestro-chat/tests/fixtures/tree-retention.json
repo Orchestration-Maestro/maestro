@@ -64,7 +64,7 @@
           "ctrl+left",
           "alt+left"
         ],
-        "description": "Fold tree branch or move up"
+        "description": "Collapse a tree branch, or move up"
       }
     ],
     [
@@ -74,7 +74,7 @@
           "ctrl+right",
           "alt+right"
         ],
-        "description": "Unfold tree branch or move down"
+        "description": "Expand a tree branch, or move down"
       }
     ],
     [

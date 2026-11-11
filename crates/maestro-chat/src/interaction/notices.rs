@@ -345,9 +345,9 @@ impl InteractiveMode {
         let (keys, format) = (keys.await, format.await);
         let keys = keys?;
         if keys != "on" && keys != "always" {
-            return Some("tmux extended-keys is off. Modified Enter keys may not work. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.".into());
+            return Some("tmux has extended-keys off, so modified Enter keys may not reach Maestro. Add `set -g extended-keys on` to ~/.tmux.conf and restart tmux.".into());
         }
-        (format.as_deref() == Some("xterm")).then(|| "tmux extended-keys-format is xterm. Maestro works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux.".into())
+        (format.as_deref() == Some("xterm")).then(|| "tmux uses the xterm extended-keys-format, while Maestro works best with csi-u. Put `set -g extended-keys-format csi-u` in ~/.tmux.conf and restart tmux.".into())
     }
 
     /// Starts native capture now, independently of the owned notice deadline.

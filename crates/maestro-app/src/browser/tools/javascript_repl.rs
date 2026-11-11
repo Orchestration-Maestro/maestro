@@ -176,7 +176,7 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
             name: "javascript_repl".into(),
             description: String::new(),
             parameters: maestro_models::ParameterSchema::authored(
-                serde_json::json!({"type":"object","required":["title","code"],"properties":{"title":{"type":"string","description":"Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"},"code":{"type":"string","description":"JavaScript code to execute"}}}),
+                serde_json::json!({"type":"object","required":["title","code"],"properties":{"title":{"type":"string","description":"Short title, in active form, saying what the snippet sets out to do, e.g. 'Calculating sum'"},"code":{"type":"string","description":"JavaScript code to execute"}}}),
                 [
                     (String::new(), maestro_models::SchemaKind::Object),
                     (

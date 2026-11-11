@@ -467,7 +467,7 @@ fn assert_image(tool: &Tool, image: &[u8], resize: bool, model_input: &maestro_m
         text[0]["text"]
             .as_str()
             .unwrap()
-            .contains("does not support images"),
+            .contains("cannot take images"),
         *model_input != ModelInput::Image
     );
     let UserBlock::Image(actual) = result.content.last().unwrap() else {

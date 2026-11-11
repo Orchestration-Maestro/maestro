@@ -89,11 +89,11 @@ impl InteractiveMode {
         .join(&theme.fg(&ThemeColor::Muted, " · ")?);
         let logo = Theme::bold(&theme.fg(&ThemeColor::Accent, APP_NAME)?, true)
             + &theme.fg(&ThemeColor::Dim, &format!(" v{VERSION}"))?;
-        let onboarding = theme.fg(&ThemeColor::Dim, "Maestro can explain its own features and look up its docs. Ask it how to use or extend Maestro.")?;
+        let onboarding = theme.fg(&ThemeColor::Dim, "Maestro knows its own features and can read its docs. Ask how to use or extend Maestro.")?;
         let compact_onboarding = theme.fg(
             &ThemeColor::Dim,
             &format!(
-                "Press {} to show full startup help and loaded resources.",
+                "Press {} for the full help and the loaded resources.",
                 key("app.tools.expand")
             ),
         )?;

@@ -73,7 +73,7 @@ fn build_tool(fetch: Fetch, load: LoadAttachment) -> ExtractDocumentTool {
             name: "extract_document".into(),
             description: EXTRACT_DOCUMENT_DESCRIPTION.into(),
             parameters: maestro_models::ParameterSchema::authored(
-                serde_json::json!({"type":"object","required":["url"],"properties":{"url":{"type":"string","description":"URL of the document to extract text from (PDF, DOCX, XLSX, or PPTX)"}}}),
+                serde_json::json!({"type":"object","required":["url"],"properties":{"url":{"type":"string","description":"URL of the PDF, DOCX, XLSX or PPTX document to read text from"}}}),
                 [
                     (String::new(), maestro_models::SchemaKind::Object),
                     (
@@ -135,7 +135,7 @@ async fn execute(
             let Some(proxy) = proxy.filter(|value| !value.is_empty()) else {
                 return Err(DiagnosticErrorInfo::error(NO_PROXY));
             };
-            download(&format!("{proxy}{}", crate::utils::uri::encode_uri_component(url)), fetch, signal.as_ref()).await.map_err(|error| DiagnosticErrorInfo::error(format!("TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: {}\n\n{MANUAL_ATTACHMENT}", error.message)))?
+            download(&format!("{proxy}{}", crate::utils::uri::encode_uri_component(url)), fetch, signal.as_ref()).await.map_err(|error| DiagnosticErrorInfo::error(format!("TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: {}\n\n{MANUAL_ATTACHMENT}", error.message)))?
         }
     };
     let path = url.split(['?', '#']).next().unwrap_or(url);
@@ -162,7 +162,7 @@ async fn execute(
 }
 
 /// Remediation shared by download and proxy failures.
-const MANUAL_ATTACHMENT: &str = "INSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file.";
+const MANUAL_ATTACHMENT: &str = "INSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text.";
 
 /// Enforce the declared or fully collected byte limit.
 fn check_size(size: f64) -> Result<(), DiagnosticErrorInfo> {
@@ -192,7 +192,7 @@ async fn download_work(
     .map_err(fetch_error)?;
     if !(200..300).contains(&response.status) {
         return Err(DiagnosticErrorInfo::error(format!(
-            "TELL USER: Unable to download the document ({} {}). The site likely blocks automated downloads.\n\n{MANUAL_ATTACHMENT}",
+            "TELL USER: The document could not be downloaded ({} {}). The site probably blocks automated downloads.\n\n{MANUAL_ATTACHMENT}",
             response.status, response.status_text
         )));
     }
@@ -216,15 +216,15 @@ fn fetch_error(error: FetchError) -> DiagnosticErrorInfo {
 }
 
 /// Configuration guidance when no proxy is available.
-const NO_PROXY: &str = r#"TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).
+const NO_PROXY: &str = r#"TELL USER: The document could not be fetched because of CORS restrictions (the server rejects requests from browser extensions).
 
-To fix this, you need to configure a CORS proxy in Maestro settings:
+A CORS proxy set in Maestro settings fixes this:
 1. Open Maestro settings
-2. Find "CORS Proxy URL" setting
-3. Enter a proxy URL like: https://corsproxy.io/?
-4. Save and try again
+2. Locate the setting named "CORS Proxy URL"
+3. Type a proxy URL such as: https://corsproxy.io/?
+4. Save, then try again
 
-Alternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."#;
+Or download the file yourself and attach it to your message with the attachment button (paperclip icon)."#;
 
 /// Select the emitted format from canonical attachment MIME text.
 fn attachment_format(mime: &str) -> &'static str {

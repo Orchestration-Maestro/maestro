@@ -540,10 +540,10 @@
         "expected": {
           "name": "write",
           "label": "write",
-          "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+          "description": "Write content to a file, creating it when missing and overwriting it when present. Parent directories are created automatically.",
           "promptSnippet": "Create or overwrite files",
           "promptGuidelines": [
-            "Use write only for new files or complete rewrites."
+            "Reserve write for new files and complete rewrites."
           ],
           "parameters": {
             "type": "object",
@@ -554,7 +554,7 @@
             "properties": {
               "path": {
                 "type": "string",
-                "description": "Path to the file to write (relative or absolute)"
+                "description": "File to write, as a relative or absolute path"
               },
               "content": {
                 "type": "string",

@@ -62,7 +62,7 @@ pub fn get_app_storage() -> io::Result<Rc<AppStorage>> {
     STORAGE.with(|slot| slot.borrow().clone()).ok_or_else(|| {
         io::Error::new(
             io::ErrorKind::NotConnected,
-            "AppStorage not initialized. Call setAppStorage() first.",
+            "AppStorage has not been initialized; call setAppStorage() first.",
         )
     })
 }

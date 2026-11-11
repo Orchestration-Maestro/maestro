@@ -2,7 +2,7 @@
   "metadata": {
     "label": "Extract Document",
     "name": "extract_document",
-    "description": "# Extract Document\n\nExtract plain text from documents on the web (PDF, DOCX, XLSX, PPTX).\n\n## When to Use\nUser wants you to read a document at a URL.\n\n## Input\n- { url: \"https://example.com/document.pdf\" } - URL to PDF, DOCX, XLSX, or PPTX\n\n## Returns\nStructured plain text with page/sheet/slide delimiters.",
+    "description": "# Extract Document\n\nPull plain text out of web documents: PDF, DOCX, XLSX or PPTX.\n\n## Use It When\nThe user points you at a document URL.\n\n## Input\n- { url: \"https://example.com/document.pdf\" } - URL of a PDF, DOCX, XLSX or PPTX file\n\n## Returns\nPlain text, organized with page, sheet or slide delimiters.",
     "parameters": {
       "type": "object",
       "required": [
@@ -11,7 +11,7 @@
       "properties": {
         "url": {
           "type": "string",
-          "description": "URL of the document to extract text from (PDF, DOCX, XLSX, or PPTX)"
+          "description": "URL of the PDF, DOCX, XLSX or PPTX document to read text from"
         }
       }
     },
@@ -809,7 +809,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to download the document (199 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be downloaded (199 Denied by fixture). The site probably blocks automated downloads.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -835,7 +835,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to download the document (300 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be downloaded (300 Denied by fixture). The site probably blocks automated downloads.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -861,7 +861,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to download the document (403 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be downloaded (403 Denied by fixture). The site probably blocks automated downloads.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -887,7 +887,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to download the document (500 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be downloaded (500 Denied by fixture). The site probably blocks automated downloads.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -912,7 +912,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to download the document (404 ). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be downloaded (404 ). The site probably blocks automated downloads.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -1873,7 +1873,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions (the server rejects requests from browser extensions).\n\nA CORS proxy set in Maestro settings fixes this:\n1. Open Maestro settings\n2. Locate the setting named \"CORS Proxy URL\"\n3. Type a proxy URL such as: https://corsproxy.io/?\n4. Save, then try again\n\nOr download the file yourself and attach it to your message with the attachment button (paperclip icon)."
         },
         "requests": [
           {
@@ -1943,7 +1943,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions (the server rejects requests from browser extensions).\n\nA CORS proxy set in Maestro settings fixes this:\n1. Open Maestro settings\n2. Locate the setting named \"CORS Proxy URL\"\n3. Type a proxy URL such as: https://corsproxy.io/?\n4. Save, then try again\n\nOr download the file yourself and attach it to your message with the attachment button (paperclip icon)."
         },
         "requests": [
           {
@@ -2013,7 +2013,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions (the server rejects requests from browser extensions).\n\nA CORS proxy set in Maestro settings fixes this:\n1. Open Maestro settings\n2. Locate the setting named \"CORS Proxy URL\"\n3. Type a proxy URL such as: https://corsproxy.io/?\n4. Save, then try again\n\nOr download the file yourself and attach it to your message with the attachment button (paperclip icon)."
         },
         "requests": [
           {
@@ -2083,7 +2083,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions (the server rejects requests from browser extensions).\n\nA CORS proxy set in Maestro settings fixes this:\n1. Open Maestro settings\n2. Locate the setting named \"CORS Proxy URL\"\n3. Type a proxy URL such as: https://corsproxy.io/?\n4. Save, then try again\n\nOr download the file yourself and attach it to your message with the attachment button (paperclip icon)."
         },
         "requests": [
           {
@@ -2254,7 +2254,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions (the server rejects requests from browser extensions).\n\nA CORS proxy set in Maestro settings fixes this:\n1. Open Maestro settings\n2. Locate the setting named \"CORS Proxy URL\"\n3. Type a proxy URL such as: https://corsproxy.io/?\n4. Save, then try again\n\nOr download the file yourself and attach it to your message with the attachment button (paperclip icon)."
         },
         "requests": [
           {
@@ -2283,7 +2283,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: proxy socket closed\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: proxy socket closed\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -2316,7 +2316,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: TELL USER: Unable to download the document (503 Unavailable). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: TELL USER: The document could not be downloaded (503 Unavailable). The site probably blocks automated downloads.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -2348,7 +2348,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: Document is too large (50.0MB). Maximum supported size is 50MB.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: Document is too large (50.0MB). Maximum supported size is 50MB.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -2380,7 +2380,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: proxy body lost\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: proxy body lost\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -2414,7 +2414,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: Document is too large (50.0MB). Maximum supported size is 50MB.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: Document is too large (50.0MB). Maximum supported size is 50MB.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {
@@ -2695,7 +2695,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions (the server rejects requests from browser extensions).\n\nA CORS proxy set in Maestro settings fixes this:\n1. Open Maestro settings\n2. Locate the setting named \"CORS Proxy URL\"\n3. Type a proxy URL such as: https://corsproxy.io/?\n4. Save, then try again\n\nOr download the file yourself and attach it to your message with the attachment button (paperclip icon)."
         },
         "requests": [
           {
@@ -3404,7 +3404,7 @@
       "expected": {
         "error": {
           "name": "Error",
-          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: Request was aborted.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+          "message": "TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: Request was aborted.\n\nINSTRUCT USER: Download the file yourself, then attach it to your message with the paperclip button in the message box; afterwards I can extract its text."
         },
         "requests": [
           {

@@ -962,7 +962,7 @@ fn transfer_import_missing_file_is_recoverable() {
                     &world,
                     &ThemeColor::Error,
                     &format!(
-                        "Error: Failed to import session: File not found: {}",
+                        "Error: Cannot import the session: File not found: {}",
                         directory.join(name).display()
                     ),
                     name,
@@ -1167,7 +1167,7 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
         let painted = String::from_utf8(output.stderr).unwrap();
         let text = maestro_app::strip_ansi(&painted).unwrap();
         assert!(
-            text.contains("Error: Failed to import session: replacement refused"),
+            text.contains("Error: Cannot import the session: replacement refused"),
             "{text}"
         );
         assert!(
@@ -1348,7 +1348,7 @@ fn transfer_import_notice_failures_keep_the_source_catch_boundary() {
             let painted = String::from_utf8(output.stderr).unwrap();
             let text = maestro_app::strip_ansi(&painted).unwrap();
             assert!(
-                text.contains("Error: Failed to import session:"),
+                text.contains("Error: Cannot import the session:"),
                 "{branch}: {text}"
             );
             assert!(painted.contains("\x1b[?25h"));
@@ -1501,7 +1501,7 @@ async fn import_retry_failure(directory: &Path, failure: &str) {
     assert_eq!(poll(&mut waiter), None);
     let transcript = rows(&world).join("\n");
     assert!(
-        !transcript.contains("Failed to import session"),
+        !transcript.contains("Cannot import the session"),
         "{transcript}"
     );
     assert!(!transcript.contains("Session imported from:"));

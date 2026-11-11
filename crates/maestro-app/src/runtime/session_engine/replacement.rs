@@ -46,7 +46,7 @@ impl AgentSessionRuntime {
         Ok(SessionChangeResult { cancelled: false })
     }
 
-    /// Starts a new session in the current directory, optionally recording `parent_session`,
+    /// Opens a fresh session rooted at the current directory, optionally recording `parent_session`,
     /// prepares its history with `setup` and continues with `with_session`, unless an
     /// extension cancels the switch. The new history is kept in memory exactly when the
     /// current one is, and stored in the current session directory otherwise. Setup, message

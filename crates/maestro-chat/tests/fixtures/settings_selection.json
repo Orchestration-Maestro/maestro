@@ -7,7 +7,7 @@
         {
           "id": "autocompact",
           "label": "Auto-compact",
-          "description": "Automatically compact context when it gets too large",
+          "description": "Compact the context automatically once it grows too large",
           "current_value": "true",
           "values": [
             "true",
@@ -18,7 +18,7 @@
         {
           "id": "auto-resize-images",
           "label": "Auto-resize images",
-          "description": "Resize large images to 2000x2000 max for better model compatibility",
+          "description": "Scale images above 2000x2000 down to that bound, for model compatibility",
           "current_value": "true",
           "values": [
             "true",
@@ -29,7 +29,7 @@
         {
           "id": "block-images",
           "label": "Block images",
-          "description": "Prevent images from being sent to LLM providers",
+          "description": "Keep images out of LLM provider requests",
           "current_value": "false",
           "values": [
             "true",
@@ -40,7 +40,7 @@
         {
           "id": "skill-commands",
           "label": "Skill commands",
-          "description": "Register skills as /skill:name commands",
+          "description": "Expose skills as /skill:name commands",
           "current_value": "true",
           "values": [
             "true",
@@ -51,7 +51,7 @@
         {
           "id": "show-hardware-cursor",
           "label": "Show hardware cursor",
-          "description": "Show the terminal cursor while still positioning it for IME support",
+          "description": "Keep the terminal cursor visible, still positioned for IME support",
           "current_value": "false",
           "values": [
             "true",
@@ -75,7 +75,7 @@
         {
           "id": "autocomplete-max-visible",
           "label": "Autocomplete max items",
-          "description": "Max visible items in autocomplete dropdown (3-20)",
+          "description": "Autocomplete rows shown at once (3-20)",
           "current_value": "5",
           "values": [
             "3",
@@ -90,7 +90,7 @@
         {
           "id": "clear-on-shrink",
           "label": "Clear on shrink",
-          "description": "Clear empty rows when content shrinks (may cause flicker)",
+          "description": "Clear rows the content leaves behind; may flicker",
           "current_value": "false",
           "values": [
             "true",
@@ -101,7 +101,7 @@
         {
           "id": "terminal-progress",
           "label": "Terminal progress",
-          "description": "Show OSC 9;4 progress indicators in the terminal tab bar",
+          "description": "Show OSC 9;4 progress in the terminal tab bar",
           "current_value": "false",
           "values": [
             "true",
@@ -112,7 +112,7 @@
         {
           "id": "steering-mode",
           "label": "Steering mode",
-          "description": "Enter while streaming queues steering messages. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.",
+          "description": "Enter mid-stream queues steering messages. 'one-at-a-time': one message at a time, each waiting for its response. 'all': everything at once.",
           "current_value": "one-at-a-time",
           "values": [
             "one-at-a-time",
@@ -123,7 +123,7 @@
         {
           "id": "follow-up-mode",
           "label": "Follow-up mode",
-          "description": "Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.",
+          "description": "Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time': one message at a time, each waiting for its response. 'all': everything at once.",
           "current_value": "all",
           "values": [
             "one-at-a-time",
@@ -134,7 +134,7 @@
         {
           "id": "transport",
           "label": "Transport",
-          "description": "Preferred transport for providers that support multiple transports",
+          "description": "Transport to prefer when a provider offers several",
           "current_value": "auto",
           "values": [
             "sse",
@@ -161,7 +161,7 @@
         {
           "id": "hide-thinking",
           "label": "Hide thinking",
-          "description": "Hide thinking blocks in assistant responses",
+          "description": "Hide thinking blocks in responses",
           "current_value": "false",
           "values": [
             "true",
@@ -194,7 +194,7 @@
         {
           "id": "install-telemetry",
           "label": "Install telemetry",
-          "description": "Send an anonymous version/update ping after changelog-detected updates",
+          "description": "Send an anonymous version ping once the changelog shows an update",
           "current_value": "false",
           "values": [
             "true",
@@ -205,7 +205,7 @@
         {
           "id": "double-escape-action",
           "label": "Double-escape action",
-          "description": "Action when pressing Escape twice with empty editor",
+          "description": "What Escape twice does with an empty editor",
           "current_value": "tree",
           "values": [
             "tree",
@@ -238,7 +238,7 @@
         {
           "id": "thinking",
           "label": "Thinking level",
-          "description": "Reasoning depth for thinking-capable models",
+          "description": "Reasoning depth for models that think",
           "current_value": "medium",
           "submenu": true
         },
@@ -266,7 +266,7 @@
         "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
         "\u001b[38;5;34m  (1/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+        "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -299,7 +299,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -323,7 +323,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -352,7 +352,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -395,7 +395,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -419,7 +419,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -448,7 +448,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -491,7 +491,7 @@
           "  Double-escape action    \u001b[38;5;33mtree\u001b[39m",
           "\u001b[38;5;34m  (14/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Hide thinking blocks in assistant responses\u001b[39m",
+          "\u001b[38;5;34m  Hide thinking blocks in responses\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -515,7 +515,7 @@
           "  Double-escape action    \u001b[38;5;33mtree\u001b[39m",
           "\u001b[38;5;34m  (14/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Hide thinking blocks in assistant responses\u001b[39m",
+          "\u001b[38;5;34m  Hide thinking blocks in responses\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -544,7 +544,7 @@
           "  Double-escape action    \u001b[38;5;33mtree\u001b[39m",
           "\u001b[38;5;34m  (14/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Hide thinking blocks in assistant responses\u001b[39m",
+          "\u001b[38;5;34m  Hide thinking blocks in responses\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -587,7 +587,7 @@
           "  Double-escape action    \u001b[38;5;33mtree\u001b[39m",
           "\u001b[38;5;34m  (14/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Hide thinking blocks in assistant responses\u001b[39m",
+          "\u001b[38;5;34m  Hide thinking blocks in responses\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -611,7 +611,7 @@
           "  Double-escape action    \u001b[38;5;33mtree\u001b[39m",
           "\u001b[38;5;34m  (14/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Hide thinking blocks in assistant responses\u001b[39m",
+          "\u001b[38;5;34m  Hide thinking blocks in responses\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -640,7 +640,7 @@
           "  Double-escape action    \u001b[38;5;33mtree\u001b[39m",
           "\u001b[38;5;34m  (14/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Hide thinking blocks in assistant responses\u001b[39m",
+          "\u001b[38;5;34m  Hide thinking blocks in responses\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1067,7 +1067,7 @@
           "  Thinking level          \u001b[38;5;33mmedium\u001b[39m",
           "\u001b[38;5;34m  (17/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Send an anonymous version/update ping after changelog-detected updates\u001b[39m",
+          "\u001b[38;5;34m  Send an anonymous version ping once the changelog shows an update\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1091,7 +1091,7 @@
           "  Thinking level          \u001b[38;5;33mmedium\u001b[39m",
           "\u001b[38;5;34m  (17/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Send an anonymous version/update ping after changelog-detected updates\u001b[39m",
+          "\u001b[38;5;34m  Send an anonymous version ping once the changelog shows an update\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1120,7 +1120,7 @@
           "  Thinking level          \u001b[38;5;33mmedium\u001b[39m",
           "\u001b[38;5;34m  (17/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Send an anonymous version/update ping after changelog-detected updates\u001b[39m",
+          "\u001b[38;5;34m  Send an anonymous version ping once the changelog shows an update\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1163,7 +1163,7 @@
           "  Thinking level          \u001b[38;5;33mmedium\u001b[39m",
           "\u001b[38;5;34m  (17/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Send an anonymous version/update ping after changelog-detected updates\u001b[39m",
+          "\u001b[38;5;34m  Send an anonymous version ping once the changelog shows an update\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1187,7 +1187,7 @@
           "  Thinking level          \u001b[38;5;33mmedium\u001b[39m",
           "\u001b[38;5;34m  (17/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Send an anonymous version/update ping after changelog-detected updates\u001b[39m",
+          "\u001b[38;5;34m  Send an anonymous version ping once the changelog shows an update\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1216,7 +1216,7 @@
           "  Thinking level          \u001b[38;5;33mmedium\u001b[39m",
           "\u001b[38;5;34m  (17/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Send an anonymous version/update ping after changelog-detected updates\u001b[39m",
+          "\u001b[38;5;34m  Send an anonymous version ping once the changelog shows an update\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1260,8 +1260,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1285,8 +1285,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1315,8 +1315,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1360,8 +1360,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1385,8 +1385,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1415,8 +1415,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1460,8 +1460,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1485,8 +1485,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1515,8 +1515,8 @@
           "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (10/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-          "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+          "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1560,8 +1560,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1585,8 +1586,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1615,8 +1617,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1651,8 +1654,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1676,8 +1680,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1706,8 +1711,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1751,8 +1757,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1776,8 +1783,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1806,8 +1814,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1842,8 +1851,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1867,8 +1877,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1897,8 +1908,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1942,8 +1954,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1967,8 +1980,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -1997,8 +2011,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+          "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+          "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2033,8 +2048,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2058,8 +2074,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2088,8 +2105,9 @@
           "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
           "\u001b[38;5;34m  (11/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-          "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+          "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+          "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+          "\u001b[38;5;34m  once.\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2130,7 +2148,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2154,7 +2172,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2203,7 +2221,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2227,7 +2245,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2276,7 +2294,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2300,7 +2318,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2349,7 +2367,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2373,7 +2391,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2422,7 +2440,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2446,7 +2464,7 @@
           "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
           "\u001b[38;5;34m  (12/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+          "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2497,7 +2515,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2521,7 +2539,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2568,7 +2586,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2592,7 +2610,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2639,7 +2657,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2663,7 +2681,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2710,7 +2728,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -2734,7 +2752,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (18/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+          "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3200,7 +3218,7 @@
           "",
           "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAuto-compact          \u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3214,7 +3232,7 @@
           "",
           "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAuto-compact          \u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3331,7 +3349,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3355,7 +3373,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3394,7 +3412,7 @@
         "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
         "\u001b[38;5;34m  (1/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+        "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3424,8 +3442,8 @@
         "  Hide thinking           \u001b[38;5;33mfalse\u001b[39m",
         "\u001b[38;5;34m  (10/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter while streaming queues steering messages. 'one-at-a-time': deliver\u001b[39m",
-        "\u001b[38;5;34m  one, wait for response. 'all': deliver all at once.\u001b[39m",
+        "\u001b[38;5;34m  Enter mid-stream queues steering messages. 'one-at-a-time': one message at a\u001b[39m",
+        "\u001b[38;5;34m  time, each waiting for its response. 'all': everything at once.\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3455,8 +3473,9 @@
         "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
         "\u001b[38;5;34m  (11/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Option+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-        "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+        "\u001b[38;5;34m  Option+Enter queues follow-up messages until the agent stops.\u001b[39m",
+        "\u001b[38;5;34m  'one-at-a-time': one message at a time, each waiting for its response.\u001b[39m",
+        "\u001b[38;5;34m  'all': everything at once.\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3480,8 +3499,9 @@
         "  Collapse changelog      \u001b[38;5;33mtrue\u001b[39m",
         "\u001b[38;5;34m  (11/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Alt+Enter queues follow-up messages until agent stops. 'one-at-a-time':\u001b[39m",
-        "\u001b[38;5;34m  deliver one, wait for response. 'all': deliver all at once.\u001b[39m",
+        "\u001b[38;5;34m  Alt+Enter queues follow-up messages until the agent stops. 'one-at-a-time':\u001b[39m",
+        "\u001b[38;5;34m  one message at a time, each waiting for its response. 'all': everything at\u001b[39m",
+        "\u001b[38;5;34m  once.\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3511,7 +3531,7 @@
         "  Quiet startup           \u001b[38;5;33mfalse\u001b[39m",
         "\u001b[38;5;34m  (12/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Preferred transport for providers that support multiple transports\u001b[39m",
+        "\u001b[38;5;34m  Transport to prefer when a provider offers several\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3541,7 +3561,7 @@
         "  Double-escape action    \u001b[38;5;33mtree\u001b[39m",
         "\u001b[38;5;34m  (14/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Hide thinking blocks in assistant responses\u001b[39m",
+        "\u001b[38;5;34m  Hide thinking blocks in responses\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3631,7 +3651,7 @@
         "  Thinking level          \u001b[38;5;33mmedium\u001b[39m",
         "\u001b[38;5;34m  (17/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Send an anonymous version/update ping after changelog-detected updates\u001b[39m",
+        "\u001b[38;5;34m  Send an anonymous version ping once the changelog shows an update\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3661,7 +3681,7 @@
         "  Theme                   \u001b[38;5;33mdark\u001b[39m",
         "\u001b[38;5;34m  (18/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Action when pressing Escape twice with empty editor\u001b[39m",
+        "\u001b[38;5;34m  What Escape twice does with an empty editor\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3751,7 +3771,7 @@
         "  Theme                   \u001b[38;5;33mdark\u001b[39m",
         "\u001b[38;5;34m  (21/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+        "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3811,8 +3831,8 @@
         "  Steering mode           \u001b[38;5;33mone-at-a-tim\u001b[0m\u001b[39m",
         "\u001b[38;5;34m  (1/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Automatically compact context when\u001b[39m",
-        "\u001b[38;5;34m  it gets too large\u001b[39m",
+        "\u001b[38;5;34m  Compact the context automatically\u001b[39m",
+        "\u001b[38;5;34m  once it grows too large\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a\u001b[0m...\u001b[0m",
         "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
@@ -3842,8 +3862,8 @@
         "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
         "\u001b[38;5;34m  (1/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Automatically compact context when it\u001b[39m",
-        "\u001b[38;5;34m  gets too large\u001b[39m",
+        "\u001b[38;5;34m  Compact the context automatically\u001b[39m",
+        "\u001b[38;5;34m  once it grows too large\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a \u001b[0m...\u001b[0m",
         "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m"
@@ -3873,7 +3893,7 @@
         "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
         "\u001b[38;5;34m  (1/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+        "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3903,7 +3923,7 @@
         "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
         "\u001b[38;5;34m  (1/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+        "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -3922,8 +3942,8 @@
         "\u001b[38;5;31m────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                          ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for              ",
-        "\u001b[38;5;33mthinking-capable models\u001b[39m                 ",
+        "\u001b[38;5;33mChoose the reasoning depth for models   ",
+        "\u001b[38;5;33mthat think\u001b[39m                              ",
         "",
         "  off",
         "  minimal",
@@ -3932,7 +3952,7 @@
         "  high",
         "  xhigh",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m      ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m         ",
         "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -3949,8 +3969,8 @@
         "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                           ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for               ",
-        "\u001b[38;5;33mthinking-capable models\u001b[39m                  ",
+        "\u001b[38;5;33mChoose the reasoning depth for models    ",
+        "\u001b[38;5;33mthat think\u001b[39m                               ",
         "",
         "  off\u001b[38;5;33m         No reasoning\u001b[39m",
         "  minimal\u001b[38;5;33m     Very brief reasoning (~1k\u001b[0m\u001b[39m",
@@ -3959,7 +3979,7 @@
         "  high\u001b[38;5;33m        Deep reasoning (~16k toke\u001b[0m\u001b[39m",
         "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k t\u001b[0m\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m       ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m          ",
         "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -3976,7 +3996,7 @@
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+        "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
         "",
         "  off\u001b[38;5;33m         No reasoning\u001b[39m",
         "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -3985,7 +4005,7 @@
         "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
         "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -4002,7 +4022,7 @@
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                                                          ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                                                                      ",
+        "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                                                        ",
         "",
         "  off\u001b[38;5;33m         No reasoning\u001b[39m",
         "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -4011,7 +4031,7 @@
         "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
         "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                                                                      ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                                                         ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -4034,7 +4054,7 @@
         "\u001b[38;5;32m→ dark\u001b[39m",
         "  界é👩‍💻",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m      ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m         ",
         "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -4057,7 +4077,7 @@
         "\u001b[38;5;32m→ dark\u001b[39m",
         "  界é👩‍💻",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m       ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m          ",
         "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -4080,7 +4100,7 @@
         "\u001b[38;5;32m→ dark\u001b[39m",
         "  界é👩‍💻",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -4103,7 +4123,7 @@
         "\u001b[38;5;32m→ dark\u001b[39m",
         "  界é👩‍💻",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                                                                      ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                                                         ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -4120,7 +4140,7 @@
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
           "",
-          "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+          "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
           "",
           "\u001b[38;5;32m→ off         No reasoning\u001b[39m",
           "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -4129,7 +4149,7 @@
           "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
           "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -4151,7 +4171,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (21/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+          "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4176,7 +4196,7 @@
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
           "",
-          "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+          "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
           "",
           "  off\u001b[38;5;33m         No reasoning\u001b[39m",
           "\u001b[38;5;32m→ minimal     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -4185,7 +4205,7 @@
           "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
           "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -4207,7 +4227,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (21/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+          "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4232,7 +4252,7 @@
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
           "",
-          "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+          "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
           "",
           "  off\u001b[38;5;33m         No reasoning\u001b[39m",
           "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -4241,7 +4261,7 @@
           "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
           "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -4263,7 +4283,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (21/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+          "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4288,7 +4308,7 @@
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
           "",
-          "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+          "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
           "",
           "  off\u001b[38;5;33m         No reasoning\u001b[39m",
           "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -4297,7 +4317,7 @@
           "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
           "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -4319,7 +4339,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (21/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+          "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4344,7 +4364,7 @@
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
           "",
-          "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+          "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
           "",
           "  off\u001b[38;5;33m         No reasoning\u001b[39m",
           "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -4353,7 +4373,7 @@
           "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
           "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -4375,7 +4395,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (21/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+          "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4400,7 +4420,7 @@
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
           "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
           "",
-          "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+          "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
           "",
           "  off\u001b[38;5;33m         No reasoning\u001b[39m",
           "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -4409,7 +4429,7 @@
           "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
           "\u001b[38;5;32m→ xhigh       Maximum reasoning (~32k tokens)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -4431,7 +4451,7 @@
           "  Theme                   \u001b[38;5;33mdark\u001b[39m",
           "\u001b[38;5;34m  (21/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+          "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4458,11 +4478,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4472,11 +4492,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4486,11 +4506,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4512,7 +4532,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4535,11 +4555,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4549,11 +4569,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4563,11 +4583,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4589,7 +4609,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4614,11 +4634,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4628,11 +4648,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4654,7 +4674,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4683,7 +4703,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4716,11 +4736,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4730,11 +4750,11 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4756,7 +4776,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4785,7 +4805,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4821,14 +4841,14 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
             "  off\u001b[38;5;33m         No reasoning\u001b[39m",
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4838,14 +4858,14 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "\u001b[38;5;32m→ off         No reasoning\u001b[39m",
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4867,7 +4887,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4896,7 +4916,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -4932,14 +4952,14 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
             "  off\u001b[38;5;33m         No reasoning\u001b[39m",
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4949,14 +4969,14 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "\u001b[38;5;32m→ off         No reasoning\u001b[39m",
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -4978,7 +4998,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -5007,7 +5027,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -5033,7 +5053,7 @@
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+        "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
         "",
         "  off\u001b[38;5;33m         No reasoning\u001b[39m",
         "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -5042,7 +5062,7 @@
         "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
         "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -5069,7 +5089,7 @@
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+        "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
         "",
         "  off\u001b[38;5;33m         No reasoning\u001b[39m",
         "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -5081,7 +5101,7 @@
         "\u001b[38;5;32m→ minimal     Very brief reasoning (~1k tokens)\u001b[39m",
         "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -5109,7 +5129,7 @@
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+        "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
         "",
         "  off\u001b[38;5;33m         No reasoning\u001b[39m",
         "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -5122,7 +5142,7 @@
         "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
         "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -5151,7 +5171,7 @@
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
         "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
         "",
-        "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+        "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
         "",
         "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
         "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
@@ -5165,7 +5185,7 @@
         "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
         "\u001b[38;5;33m  (8/11)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+        "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
         "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
       ],
       "events": []
@@ -5189,7 +5209,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5203,7 +5223,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5217,7 +5237,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5255,7 +5275,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5269,7 +5289,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5283,7 +5303,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5309,7 +5329,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5323,7 +5343,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5337,7 +5357,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5380,7 +5400,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5399,7 +5419,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5418,7 +5438,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5449,7 +5469,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5463,7 +5483,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5477,7 +5497,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5515,7 +5535,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5529,7 +5549,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5543,7 +5563,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5569,7 +5589,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5583,7 +5603,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5597,7 +5617,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5640,7 +5660,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5659,7 +5679,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5678,7 +5698,7 @@
             "",
             "\u001b[38;5;33m  No matching commands\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5711,7 +5731,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5725,7 +5745,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5739,7 +5759,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5777,7 +5797,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5791,7 +5811,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5848,7 +5868,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -5862,7 +5882,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5881,7 +5901,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5941,7 +5961,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -5968,7 +5988,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6058,7 +6078,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6072,7 +6092,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6086,7 +6106,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6124,7 +6144,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6138,7 +6158,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6195,7 +6215,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6209,7 +6229,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6228,7 +6248,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6288,7 +6308,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6315,7 +6335,7 @@
             "",
             "\u001b[38;5;32m→ dark\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6411,7 +6431,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6428,7 +6448,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6445,7 +6465,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6486,7 +6506,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6503,7 +6523,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6566,7 +6586,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6583,7 +6603,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6605,7 +6625,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6668,7 +6688,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6698,7 +6718,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6794,7 +6814,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6811,7 +6831,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6828,7 +6848,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6869,7 +6889,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6886,7 +6906,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6949,7 +6969,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -6966,7 +6986,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -6988,7 +7008,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -7051,7 +7071,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -7081,7 +7101,7 @@
             "  light",
             "  custom-long-界custom-long-界custom-long-界custom-long-界",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -7208,7 +7228,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7220,7 +7240,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7242,7 +7262,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7316,7 +7336,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7347,7 +7367,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7451,7 +7471,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7463,7 +7483,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7485,7 +7505,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7559,7 +7579,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7590,7 +7610,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7694,7 +7714,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7706,7 +7726,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7728,7 +7748,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7802,7 +7822,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7833,7 +7853,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7937,7 +7957,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7949,7 +7969,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -7971,7 +7991,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8045,7 +8065,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8076,7 +8096,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8184,7 +8204,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8196,7 +8216,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8224,7 +8244,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8322,7 +8342,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8365,7 +8385,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8511,7 +8531,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8523,7 +8543,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8552,7 +8572,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8654,7 +8674,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8699,7 +8719,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8846,7 +8866,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8858,7 +8878,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8882,7 +8902,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8964,7 +8984,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -8999,7 +9019,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9116,7 +9136,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9128,7 +9148,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9152,7 +9172,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9234,7 +9254,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9269,7 +9289,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9386,7 +9406,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9398,7 +9418,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9422,7 +9442,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9504,7 +9524,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9539,7 +9559,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9662,7 +9682,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9679,7 +9699,7 @@
           "\u001b[38;5;32m→ dark\u001b[39m",
           "  light",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9694,7 +9714,7 @@
           "\u001b[38;5;36m→ dark\u001b[39m",
           "  light",
           "",
-          "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+          "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
           "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
         "events": []
@@ -9754,7 +9774,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "\u001b[38;5;34m  (1/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+            "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9783,7 +9803,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "\u001b[38;5;34m  (1/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+            "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9812,7 +9832,7 @@
             "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
             "\u001b[38;5;34m  (1/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+            "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9831,7 +9851,7 @@
             "",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAutocomplete max items\u001b[39m  \u001b[38;5;32m5\u001b[39m",
             "",
-            "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
+            "\u001b[38;5;34m  Autocomplete rows shown at once (3-20)\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9850,7 +9870,7 @@
             "",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAutocomplete max items\u001b[39m  \u001b[38;5;32m5\u001b[39m",
             "",
-            "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
+            "\u001b[38;5;34m  Autocomplete rows shown at once (3-20)\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9869,7 +9889,7 @@
             "",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAutocomplete max items\u001b[39m  \u001b[38;5;32m7\u001b[39m",
             "",
-            "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
+            "\u001b[38;5;34m  Autocomplete rows shown at once (3-20)\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9892,7 +9912,7 @@
             "",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAutocomplete max items\u001b[39m  \u001b[38;5;32m7\u001b[39m",
             "",
-            "\u001b[38;5;34m  Max visible items in autocomplete dropdown (3-20)\u001b[39m",
+            "\u001b[38;5;34m  Autocomplete rows shown at once (3-20)\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9926,7 +9946,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9938,7 +9958,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9950,7 +9970,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9962,7 +9982,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9974,7 +9994,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mtrue\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -9986,7 +10006,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -10052,7 +10072,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "  off\u001b[38;5;33m         No reasoning\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -10061,7 +10081,7 @@
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10071,7 +10091,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "  off\u001b[38;5;33m         No reasoning\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -10080,7 +10100,7 @@
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10090,7 +10110,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "  off\u001b[38;5;33m         No reasoning\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -10099,7 +10119,7 @@
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10109,7 +10129,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "  off\u001b[38;5;33m         No reasoning\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -10118,7 +10138,7 @@
             "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
             "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10128,7 +10148,7 @@
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
             "\u001b[1m\u001b[38;5;32mThinking Level\u001b[39m\u001b[22m                                                                  ",
             "",
-            "\u001b[38;5;33mSelect reasoning depth for thinking-capable models\u001b[39m                              ",
+            "\u001b[38;5;33mChoose the reasoning depth for models that think\u001b[39m                                ",
             "",
             "  off\u001b[38;5;33m         No reasoning\u001b[39m",
             "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
@@ -10137,7 +10157,7 @@
             "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
             "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10159,7 +10179,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -10188,7 +10208,7 @@
             "  Theme                   \u001b[38;5;33mdark\u001b[39m",
             "\u001b[38;5;34m  (21/22)\u001b[39m",
             "",
-            "\u001b[38;5;34m  Reasoning depth for thinking-capable models\u001b[39m",
+            "\u001b[38;5;34m  Reasoning depth for models that think\u001b[39m",
             "",
             "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -10223,7 +10243,7 @@
             "\u001b[38;5;32m→ dark\u001b[39m",
             "  light",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10238,7 +10258,7 @@
             "\u001b[38;5;32m→ dark\u001b[39m",
             "  light",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10253,7 +10273,7 @@
             "\u001b[38;5;32m→ dark\u001b[39m",
             "  light",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10268,7 +10288,7 @@
             "\u001b[38;5;32m→ dark\u001b[39m",
             "  light",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": []
@@ -10283,7 +10303,7 @@
             "  dark",
             "\u001b[38;5;32m→ light\u001b[39m",
             "",
-            "\u001b[38;5;34m  Enter to select · Esc to go back\u001b[39m                                              ",
+            "\u001b[38;5;34m  Enter selects · Esc goes back\u001b[39m                                                 ",
             "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
           "events": [
@@ -10386,7 +10406,7 @@
         "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
         "\u001b[38;5;34m  (1/22)\u001b[39m",
         "",
-        "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+        "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
         "",
         "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m"
       ],
@@ -10407,7 +10427,7 @@
           "  Steering mode           \u001b[38;5;33mone-at-a-time\u001b[39m",
           "\u001b[38;5;34m  (1/22)\u001b[39m",
           "",
-          "\u001b[38;5;34m  Automatically compact context when it gets too large\u001b[39m",
+          "\u001b[38;5;34m  Compact the context automatically once it grows too large\u001b[39m",
           "",
           "\u001b[38;5;34m  Type to search · Enter/Space sets a value · Esc closes\u001b[39m",
           "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
@@ -10461,7 +10481,7 @@
           [
             "\u001b[38;5;32m→ \u001b[39m\u001b[38;5;32mAnthropic extra usage\u001b[39m  \u001b[38;5;32mfalse\u001b[39m",
             "",
-            "\u001b[38;5;34m  Warn when Anthropic subscription auth may use paid extra usage\u001b[39m",
+            "\u001b[38;5;34m  Warn when Anthropic subscription auth can bill paid extra usage\u001b[39m",
             "",
             "\u001b[38;5;34m  Enter/Space sets a value · Esc closes\u001b[39m"
           ]

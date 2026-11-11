@@ -263,7 +263,7 @@ impl SessionConnection {
             .map(str::to_owned);
         let Some(leaf) = leaf else {
             return Ok(Answer::Refused(
-                "Cannot clone session: no current entry selected".into(),
+                "Cannot clone the session: no entry is currently selected".into(),
             ));
         };
         let options = ForkOptions {
