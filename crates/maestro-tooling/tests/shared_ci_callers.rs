@@ -133,6 +133,23 @@ fn pins(workflows: &Path, name: &str) -> Vec<String> {
     found
 }
 
+/// Every watched workflow this repository declares calls the shared CI, so the guards read the job
+/// names behind the caller's prefix instead of reporting them missing.
+fn watched_workflows_call_shared_ci(workflows: &Path, watched: &[String]) {
+    for (file, name) in declared(workflows) {
+        if !watched.contains(&name) {
+            continue;
+        }
+        let text = std::fs::read_to_string(&file).expect("the watched workflow reads");
+        assert!(
+            text.lines().any(|line| line.trim_start().starts_with(
+                "uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/ci.yml@"
+            )),
+            "the listener watches {name}, which {file} declares without calling the shared CI"
+        );
+    }
+}
+
 /// The workflow name each file in the workflow directory declares.
 fn declared(workflows: &Path) -> Vec<(String, String)> {
     let mut names = Vec::new();
@@ -165,8 +182,8 @@ fn the_browser_proof_runs_the_suites_release_on_the_named_ref() {
     );
 }
 
-/// Every caller pins one released commit, and the guards listener judges the runs whose job names
-/// the pinned guards compare exactly.
+/// Every caller pins one released commit, and the guards listener passes the pinned guards every
+/// run they judge: merge groups, pull requests and the full suite after landing.
 #[test]
 fn the_guards_listener_judges_completed_runs_at_the_callers_pin() {
     let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -193,13 +210,18 @@ fn the_guards_listener_judges_completed_runs_at_the_callers_pin() {
         "the listener reads a finished run"
     );
     let watched = items(value_of(&listener, "workflows:"));
-    assert!(!watched.is_empty(), "the listener awaits a workflow's runs");
-    // The pinned guards match job names exactly, and a reusable caller names every job after the
-    // calling one, so a run of a workflow this repository declares reads as missing checks.
-    for (file, name) in declared(&workflows) {
+    assert_eq!(
+        watched,
+        ["Rust CI", "Full suite after landing"],
+        "the listener watches the merge groups, pull requests and the full suite"
+    );
+    // The pinned guards read the job names a reusable caller prefixes with its own job name, so a
+    // watched workflow this repository declares must be a caller of the shared CI.
+    watched_workflows_call_shared_ci(&workflows, &watched);
+    for event in ["pull_request", "merge_group", "push"] {
         assert!(
-            !watched.contains(&name),
-            "the listener watches {name}, which {file} declares"
+            listener.contains(&format!("github.event.workflow_run.event == '{event}'")),
+            "the listener passes completed {event} runs"
         );
     }
     assert!(
