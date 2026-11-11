@@ -567,7 +567,7 @@ fn removed(world: &World, expected: &Removed) {
                 painted(world, &format!("Error: {error}")),
                 "the failure reaches the terminal"
             );
-            assert!(!notes(world, "Logged out of") && !notes(world, "Removed stored API key"));
+            assert!(!notes(world, "Logged out of") && !notes(world, "Removed the stored API key"));
         }
         _ => panic!("a removal either succeeds or fails"),
     }

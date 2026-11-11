@@ -139,6 +139,8 @@ pub(in crate::credentials) mod native {
     pub struct ProcessConfigValueOperations {
         /// Used only for Windows configured execution.
         shell_config: Box<ShellSelector>,
+        /// How long one helper may run before it is stopped without a value.
+        pub(in crate::credentials) timeout: Duration,
     }
     impl ProcessConfigValueOperations {
         /// Retain a lazy configured-shell selector without evaluating it.
@@ -147,17 +149,31 @@ pub(in crate::credentials) mod native {
         ) -> Self {
             Self {
                 shell_config: Box::new(shell_config),
+                timeout: HELPER_TIMEOUT,
             }
+        }
+        /// Replace the helper time limit so a test need not wait out the default.
+        #[cfg(feature = "test-support")]
+        #[must_use]
+        pub fn with_timeout(mut self, timeout: Duration) -> Self {
+            self.timeout = timeout;
+            self
         }
     }
     impl ConfigValueOperations for ProcessConfigValueOperations {
         fn execute(&self, command: &str) -> Option<Vec<u8>> {
-            routed(cfg!(windows), command, &*self.shell_config, &run, || {
-                let comspec = cfg!(windows)
-                    .then(|| std::env::var("COMSPEC").ok())
-                    .flatten();
-                default_shell(command, Platform::current(), comspec.as_deref())
-            })
+            routed(
+                cfg!(windows),
+                command,
+                &*self.shell_config,
+                &|launch| run(launch, self.timeout),
+                || {
+                    let comspec = cfg!(windows)
+                        .then(|| std::env::var("COMSPEC").ok())
+                        .flatten();
+                    default_shell(command, Platform::current(), comspec.as_deref())
+                },
+            )
         }
     }
     pub(in crate::credentials) use maestro_process::Launch;
@@ -235,7 +251,7 @@ pub(in crate::credentials) mod native {
     }
 
     /// Run one launch through the shared synchronous capture.
-    fn run(launch: Launch) -> Attempt {
+    fn run(launch: Launch, timeout: Duration) -> Attempt {
         attempt(
             launch
                 .with_context(std::iter::empty::<(&str, &str)>(), None)
@@ -244,7 +260,7 @@ pub(in crate::credentials) mod native {
                     max_buffer_bytes: None,
                     stdout: OutputMode::Capture,
                     input: None,
-                    timeout: Some(HELPER_TIMEOUT),
+                    timeout: Some(timeout),
                     stderr: OutputMode::Discard,
                 }),
         )

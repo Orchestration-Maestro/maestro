@@ -28,130 +28,128 @@ fn yank_keeps_raw_history_text() {
 }
 
 #[test]
-fn maestro_editor_ctrl_w_saves_deleted_text_to_kill_ring_and_ctrl_y_yanks_it() {
-    support::run("maestro_editor_ctrl_w_saves_deleted_text_to_kill_ring_and_ctrl_y_yanks_it");
+fn maestro_editor_ctrl_w_then_ctrl_y_returns_the_removed_word() {
+    support::run("maestro_editor_ctrl_w_then_ctrl_y_returns_the_removed_word");
 }
 
 #[test]
-fn maestro_editor_ctrl_u_saves_deleted_text_to_kill_ring() {
-    support::run("maestro_editor_ctrl_u_saves_deleted_text_to_kill_ring");
+fn maestro_editor_ctrl_u_puts_the_removed_text_in_the_kill_ring() {
+    support::run("maestro_editor_ctrl_u_puts_the_removed_text_in_the_kill_ring");
 }
 
 #[test]
-fn maestro_editor_ctrl_k_saves_deleted_text_to_kill_ring() {
-    support::run("maestro_editor_ctrl_k_saves_deleted_text_to_kill_ring");
+fn maestro_editor_ctrl_k_puts_the_removed_text_in_the_kill_ring() {
+    support::run("maestro_editor_ctrl_k_puts_the_removed_text_in_the_kill_ring");
 }
 
 #[test]
-fn maestro_editor_ctrl_y_does_nothing_when_kill_ring_is_empty() {
-    support::run("maestro_editor_ctrl_y_does_nothing_when_kill_ring_is_empty");
+fn maestro_editor_ctrl_y_with_an_empty_kill_ring_changes_nothing() {
+    support::run("maestro_editor_ctrl_y_with_an_empty_kill_ring_changes_nothing");
 }
 
 #[test]
-fn maestro_editor_alt_y_cycles_through_kill_ring_after_ctrl_y() {
-    support::run("maestro_editor_alt_y_cycles_through_kill_ring_after_ctrl_y");
+fn maestro_editor_alt_y_after_yank_walks_the_kill_ring() {
+    support::run("maestro_editor_alt_y_after_yank_walks_the_kill_ring");
 }
 
 #[test]
-fn maestro_editor_alt_y_does_nothing_if_not_preceded_by_yank() {
-    support::run("maestro_editor_alt_y_does_nothing_if_not_preceded_by_yank");
+fn maestro_editor_alt_y_without_a_yank_changes_nothing() {
+    support::run("maestro_editor_alt_y_without_a_yank_changes_nothing");
 }
 
 #[test]
-fn maestro_editor_alt_y_does_nothing_if_kill_ring_has_1_entry() {
-    support::run("maestro_editor_alt_y_does_nothing_if_kill_ring_has_1_entry");
+fn maestro_editor_alt_y_with_one_entry_changes_nothing() {
+    support::run("maestro_editor_alt_y_with_one_entry_changes_nothing");
 }
 
 #[test]
-fn maestro_editor_consecutive_ctrl_w_accumulates_into_one_kill_ring_entry() {
-    support::run("maestro_editor_consecutive_ctrl_w_accumulates_into_one_kill_ring_entry");
+fn maestro_editor_repeated_ctrl_w_builds_one_kill_entry() {
+    support::run("maestro_editor_repeated_ctrl_w_builds_one_kill_entry");
 }
 
 #[test]
-fn maestro_editor_ctrl_u_accumulates_multiline_deletes_including_newlines() {
-    support::run("maestro_editor_ctrl_u_accumulates_multiline_deletes_including_newlines");
+fn maestro_editor_ctrl_u_collects_multiline_removals_with_newlines() {
+    support::run("maestro_editor_ctrl_u_collects_multiline_removals_with_newlines");
 }
 
 #[test]
-fn maestro_editor_backward_deletions_prepend_forward_deletions_append_during_accumulation() {
-    support::run(
-        "maestro_editor_backward_deletions_prepend_forward_deletions_append_during_accumulation",
-    );
+fn maestro_editor_accumulated_kills_prepend_backward_and_append_forward_text() {
+    support::run("maestro_editor_accumulated_kills_prepend_backward_and_append_forward_text");
 }
 
 #[test]
-fn maestro_editor_non_delete_actions_break_kill_accumulation() {
-    support::run("maestro_editor_non_delete_actions_break_kill_accumulation");
+fn maestro_editor_a_non_delete_action_ends_kill_accumulation() {
+    support::run("maestro_editor_a_non_delete_action_ends_kill_accumulation");
 }
 
 #[test]
-fn maestro_editor_non_yank_actions_break_alt_y_chain() {
-    support::run("maestro_editor_non_yank_actions_break_alt_y_chain");
+fn maestro_editor_a_non_yank_action_ends_the_alt_y_chain() {
+    support::run("maestro_editor_a_non_yank_action_ends_the_alt_y_chain");
 }
 
 #[test]
-fn maestro_editor_kill_ring_rotation_persists_after_cycling() {
-    support::run("maestro_editor_kill_ring_rotation_persists_after_cycling");
+fn maestro_editor_kill_ring_rotation_survives_cycling() {
+    support::run("maestro_editor_kill_ring_rotation_survives_cycling");
 }
 
 #[test]
-fn maestro_editor_consecutive_deletions_across_lines_coalesce_into_one_entry() {
-    support::run("maestro_editor_consecutive_deletions_across_lines_coalesce_into_one_entry");
+fn maestro_editor_deletes_over_line_boundaries_merge_into_one_entry() {
+    support::run("maestro_editor_deletes_over_line_boundaries_merge_into_one_entry");
 }
 
 #[test]
-fn maestro_editor_ctrl_k_at_line_end_deletes_newline_and_coalesces() {
-    support::run("maestro_editor_ctrl_k_at_line_end_deletes_newline_and_coalesces");
+fn maestro_editor_ctrl_k_at_line_end_joins_lines_and_coalesces() {
+    support::run("maestro_editor_ctrl_k_at_line_end_joins_lines_and_coalesces");
 }
 
 #[test]
-fn maestro_editor_handles_yank_in_middle_of_text() {
-    support::run("maestro_editor_handles_yank_in_middle_of_text");
+fn maestro_editor_yank_inserts_in_the_middle_of_the_text() {
+    support::run("maestro_editor_yank_inserts_in_the_middle_of_the_text");
 }
 
 #[test]
-fn maestro_editor_handles_yank_pop_in_middle_of_text() {
-    support::run("maestro_editor_handles_yank_pop_in_middle_of_text");
+fn maestro_editor_yank_pop_replaces_text_in_the_middle() {
+    support::run("maestro_editor_yank_pop_replaces_text_in_the_middle");
 }
 
 #[test]
-fn maestro_editor_multiline_yank_and_yank_pop_in_middle_of_text() {
-    support::run("maestro_editor_multiline_yank_and_yank_pop_in_middle_of_text");
+fn maestro_editor_multiline_yank_and_pop_mid_text() {
+    support::run("maestro_editor_multiline_yank_and_pop_mid_text");
 }
 
 #[test]
-fn maestro_editor_alt_d_deletes_word_forward_and_saves_to_kill_ring() {
-    support::run("maestro_editor_alt_d_deletes_word_forward_and_saves_to_kill_ring");
+fn maestro_editor_alt_d_drops_the_next_word_in_the_kill_ring() {
+    support::run("maestro_editor_alt_d_drops_the_next_word_in_the_kill_ring");
 }
 
 #[test]
-fn maestro_editor_alt_d_at_end_of_line_deletes_newline() {
-    support::run("maestro_editor_alt_d_at_end_of_line_deletes_newline");
+fn maestro_editor_alt_d_at_line_end_joins_the_lines() {
+    support::run("maestro_editor_alt_d_at_line_end_joins_the_lines");
 }
 
 #[test]
-fn maestro_editor_undoes_ctrl_w_delete_word_backward() {
-    support::run("maestro_editor_undoes_ctrl_w_delete_word_backward");
+fn maestro_editor_one_undo_restores_text_after_ctrl_w() {
+    support::run("maestro_editor_one_undo_restores_text_after_ctrl_w");
 }
 
 #[test]
-fn maestro_editor_undoes_ctrl_k_delete_to_line_end() {
-    support::run("maestro_editor_undoes_ctrl_k_delete_to_line_end");
+fn maestro_editor_one_undo_restores_text_after_ctrl_k() {
+    support::run("maestro_editor_one_undo_restores_text_after_ctrl_k");
 }
 
 #[test]
-fn maestro_editor_undoes_ctrl_u_delete_to_line_start() {
-    support::run("maestro_editor_undoes_ctrl_u_delete_to_line_start");
+fn maestro_editor_one_undo_restores_text_after_ctrl_u() {
+    support::run("maestro_editor_one_undo_restores_text_after_ctrl_u");
 }
 
 #[test]
-fn maestro_editor_undoes_yank() {
-    support::run("maestro_editor_undoes_yank");
+fn maestro_editor_one_undo_reverts_a_yank() {
+    support::run("maestro_editor_one_undo_reverts_a_yank");
 }
 
 #[test]
-fn maestro_editor_no_op_delete_operations_do_not_push_undo_snapshots() {
-    support::run("maestro_editor_no_op_delete_operations_do_not_push_undo_snapshots");
+fn maestro_editor_deletes_that_change_nothing_add_no_undo_step() {
+    support::run("maestro_editor_deletes_that_change_nothing_add_no_undo_step");
 }
 
 fn ring_editor(entries: &[&str]) -> (maestro_tui::TUI, std::rc::Rc<maestro_tui::Editor>) {

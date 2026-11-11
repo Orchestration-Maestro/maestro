@@ -187,8 +187,8 @@ fn extension_shortcuts_never_replace_reserved_keys() {
                 assert_eq!(
                     diagnostics(&world),
                     [
-                        "Extension shortcut 'ctrl+q' from <inline> conflicts with built-in \
-                         shortcut. Skipping."
+                        "Extension shortcut 'ctrl+q' from <inline> clashes with a built-in \
+                         shortcut and is skipped."
                             .to_owned()
                     ],
                     "{config}"

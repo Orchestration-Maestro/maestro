@@ -17,3 +17,6 @@ pub use maestro_text::normalize_to_lf;
 pub use maestro_text::css;
 
 pub use maestro_text::is_truthy_env_flag;
+
+/// Shared with the print frontend: the cleaner the terminal views apply to model text.
+pub use maestro_text::terminal::clean_controls;

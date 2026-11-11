@@ -23,8 +23,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-const NOT_INITIALIZED: &str =
-    "Extension runtime not initialized. Action methods cannot be called during extension loading.";
+const NOT_INITIALIZED: &str = "The extension runtime is not initialized yet. Do not call action methods while extensions are loading.";
 
 pub(crate) use crate::session::NoCommands;
 

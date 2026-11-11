@@ -18,7 +18,7 @@ mod providers;
 pub use providers::is_api_key_login_provider;
 
 /// The notice shown when no stored credential can be removed.
-const NO_STORED_CREDENTIALS: &str = "No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.";
+const NO_STORED_CREDENTIALS: &str = "There are no stored credentials to remove. /logout removes only what /login saved; the environment and models.json stay as they are.";
 
 impl InteractiveMode {
     /// Shows the stored credentials to remove, or says there are none.
@@ -160,7 +160,7 @@ fn logout_message(option: &AuthSelectorProvider) -> String {
     match option.auth_type {
         AuthType::OAuth => format!("Logged out of {}", option.name),
         AuthType::ApiKey => format!(
-            "Removed stored API key for {}. Environment variables and models.json config are unchanged.",
+            "Removed the stored API key for {}. The environment and models.json stay as they are.",
             option.name
         ),
     }

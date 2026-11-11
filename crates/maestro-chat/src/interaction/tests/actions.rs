@@ -869,10 +869,10 @@ fn model_cycle_renders_failures_without_success_effects() {
 }
 
 /// The status a thinking cycle shows when the model cannot reason.
-const NO_THINKING: &str = "Current model does not support thinking";
+const NO_THINKING: &str = "The model in use does not support thinking";
 
 /// The warning an external edit shows without a configured editor.
-const NO_EDITOR: &str = "No editor configured";
+const NO_EDITOR: &str = "No editor is set";
 
 /// The default keys of forward and backward model cycling and image paste, whose work
 /// runs on the terminal runtime.

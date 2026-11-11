@@ -12,7 +12,6 @@ mod development_guidance;
 mod documented_commands;
 mod duplicates;
 mod example_helpers;
-mod handwritten_scripts;
 mod integration_tests;
 mod json_dependencies;
 mod message_renderer_ownership;
@@ -29,5 +28,6 @@ mod temp_directories;
 mod test_directories;
 mod test_input_routes;
 mod time_limits;
+mod tracked_scripts;
 
 mod test_budget;

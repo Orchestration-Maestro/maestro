@@ -228,7 +228,7 @@ fn maestro_images_recognizes_images_in_tool_output() {
 }
 
 #[test]
-fn maestro_images_restores_the_cursor_to_the_reserved_image_row_after_kitty_rendering() {
+fn maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image() {
     let terminal = TerminalImage::new(|_| None, || 2_147_483_648);
     terminal.set_capabilities(TerminalCapabilities {
         images: Some(ImageProtocol::Kitty),
@@ -318,7 +318,7 @@ fn zero_geometry_falls_back_without_allocating() {
 /// Replays the helper operations reached during component cursor placement.
 fn replay_cursor_operations(terminal: &TerminalImage) -> Result<(), Box<dyn std::error::Error>> {
     for case in image_support::cases(
-        "maestro_images_restores_the_cursor_to_the_reserved_image_row_after_kitty_rendering",
+        "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     ) {
         let args = &case["args"];
         match case["symbol"].as_str().ok_or("missing operation input")? {

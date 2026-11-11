@@ -245,8 +245,15 @@ fn a_consuming_workspace_plans_its_own_components_alone() {
     );
 }
 
+/// The workspace manifest `closure_workspace` writes: every member inherits its path from
+/// `[workspace.dependencies]`.
+const CLOSURE_MANIFEST: &str = "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n\n\
+    [workspace.dependencies]\nlibrary = { path = \"crates/library\" }\n\
+    helper = { path = \"crates/helper\" }\nspare = { path = \"crates/spare\" }\n";
+
 /// A workspace whose component crate builds on `library`, which has a unit test file, an
 /// integration test and a development dependency on `helper`; `spare` is a member nothing uses.
+/// Each crate names the others through the workspace's dependency entries.
 fn closure_workspace(root: &Path) {
     assert!(
         Command::new("git")
@@ -257,23 +264,19 @@ fn closure_workspace(root: &Path) {
             .success()
     );
     std::fs::write(root.join("Cargo.lock"), "version = 4\n").unwrap();
-    std::fs::write(
-        root.join("Cargo.toml"),
-        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n",
-    )
-    .unwrap();
+    std::fs::write(root.join("Cargo.toml"), CLOSURE_MANIFEST).unwrap();
     for (name, manifest) in [
         (
             "component-fixture",
             format!(
-                "[dependencies]\nlibrary = {{ path = \"../library\" }}\n{}{}\n",
+                "[dependencies]\nlibrary.workspace = true\n{}{}\n",
                 crate::workspace::REGION_START,
                 crate::workspace::REGION_END
             ),
         ),
         (
             "library",
-            "[dev-dependencies]\nhelper = { path = \"../helper\" }\n".to_owned(),
+            "[dev-dependencies]\nhelper.workspace = true\n".to_owned(),
         ),
         ("helper", String::new()),
         ("spare", String::new()),
@@ -368,6 +371,63 @@ fn component_digest_follows_the_dependency_manifest_and_the_example_crate_manife
     )
     .unwrap();
     assert_ne!(shared_digest(root), before);
+}
+
+/// The components build with `cargo build --release`, which never reads the member list, the
+/// tool metadata, the other profiles or a dependency entry no component crate inherits, so a
+/// change to any of them keeps every component.
+#[test]
+fn component_digest_ignores_workspace_manifest_entries_the_release_build_does_not_read() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    closure_workspace(root);
+    let before = shared_digest(root);
+
+    for edited in [
+        CLOSURE_MANIFEST.replace(
+            "resolver",
+            "exclude = [\"unused\"]\ndefault-members = [\"crates/spare\"]\nresolver",
+        ),
+        format!("{CLOSURE_MANIFEST}[workspace.metadata.tool]\nsetting = true\n"),
+        format!(
+            "{CLOSURE_MANIFEST}[profile.dev]\nopt-level = 1\n[profile.dev.package.library]\nopt-level = 3\n"
+        ),
+        CLOSURE_MANIFEST.replace(
+            "\"crates/spare\" }",
+            "\"crates/spare\", default-features = false }",
+        ),
+        CLOSURE_MANIFEST.replace("\"crates/helper\" }", "\"crates/helper\", features = [] }"),
+    ] {
+        std::fs::write(root.join("Cargo.toml"), &edited).unwrap();
+        assert_eq!(shared_digest(root), before, "{edited}");
+    }
+}
+
+/// A release build reads the resolver, the inherited package fields and lints, the dependency
+/// entries the component crates inherit, the release profile with its package overrides and the
+/// patches, so a change to any of them rebuilds the components.
+#[test]
+fn component_digest_follows_workspace_manifest_entries_the_release_build_reads() {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let root = scratch.path();
+    closure_workspace(root);
+    let before = shared_digest(root);
+
+    for edited in [
+        CLOSURE_MANIFEST.replace("resolver = \"3\"", "resolver = \"2\""),
+        format!("{CLOSURE_MANIFEST}[workspace.package]\nedition = \"2021\"\n"),
+        format!("{CLOSURE_MANIFEST}[workspace.lints.rust]\nunsafe_code = \"forbid\"\n"),
+        CLOSURE_MANIFEST.replace(
+            "\"crates/library\" }",
+            "\"crates/library\", default-features = false }",
+        ),
+        format!("{CLOSURE_MANIFEST}[profile.release]\nopt-level = \"s\"\n"),
+        format!("{CLOSURE_MANIFEST}[profile.release.package.library]\nopt-level = 1\n"),
+        format!("{CLOSURE_MANIFEST}[patch.crates-io]\nspare = {{ path = \"crates/spare\" }}\n"),
+    ] {
+        std::fs::write(root.join("Cargo.toml"), &edited).unwrap();
+        assert_ne!(shared_digest(root), before, "{edited}");
+    }
 }
 
 /// What each artifact hashes, from the real workspace's metadata.

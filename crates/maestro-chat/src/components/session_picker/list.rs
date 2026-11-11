@@ -299,9 +299,9 @@ impl SessionList {
         let cwd = self.show_cwd.get();
         let base = match (named, cwd) {
             (false, true) => "  No sessions found",
-            (false, false) => "  No sessions in current folder.",
+            (false, false) => "  No sessions in this folder.",
             (true, true) => "  No named sessions found.",
-            (true, false) => "  No named sessions in current folder.",
+            (true, false) => "  No named sessions in this folder.",
         };
         let toggle = if named {
             maestro_app::key_text("app.session.toggleNamedFilter")
@@ -315,9 +315,11 @@ impl SessionList {
         };
         let scope = if scope == "tab" { "Tab".into() } else { scope };
         match (toggle.is_empty(), scope.is_empty()) {
-            (false, false) => format!("{base} Press {toggle} to show all, or {scope} to view all."),
+            (false, false) => {
+                format!("{base} Press {toggle} to show all, or {scope} for all sessions.")
+            }
             (false, true) => format!("{base} Press {toggle} to show all."),
-            (true, false) => format!("{base} Press {scope} to view all."),
+            (true, false) => format!("{base} Press {scope} for all sessions."),
             (true, true) => base.into(),
         }
     }

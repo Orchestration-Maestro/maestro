@@ -1,8 +1,8 @@
 ---
 name: child-skill
-description: A nested skill in a subdirectory.
+description: Fixture placed one directory down.
 ---
 
 # Child Skill
 
-This skill is nested in a subdirectory.
+It lives in a subfolder of the fixture root.

@@ -7537,7 +7537,7 @@
             "content": [
               {
                 "type": "text",
-                "text": "The conversation history before this point was compacted into the following summary:\n\n<summary>\nsummary compact\n</summary>"
+                "text": "Earlier conversation history was condensed into the summary below:\n\n<summary>\nsummary compact\n</summary>"
               }
             ],
             "timestamp": 1735787045678
@@ -7562,7 +7562,7 @@
             "content": [
               {
                 "type": "text",
-                "text": "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nbranch text</summary>"
+                "text": "Summary of a branch this conversation returned from:\n\n<summary>\nbranch text</summary>"
               }
             ],
             "timestamp": 1735787045678

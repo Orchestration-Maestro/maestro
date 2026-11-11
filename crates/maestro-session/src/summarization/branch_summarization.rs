@@ -178,40 +178,40 @@ pub struct GenerateBranchSummaryOptions<E: AgentExecution = Threaded> {
 }
 
 /// Context preceding generated branch text.
-const BRANCH_SUMMARY_PREAMBLE: &str = r"The user explored a different conversation branch before returning here.
-Summary of that exploration:
+const BRANCH_SUMMARY_PREAMBLE: &str = r"The user went down another branch of this conversation and then came back to this point.
+Summary of that branch:
 
 ";
 
 /// Structured branch instructions.
-const BRANCH_SUMMARY_PROMPT: &str = r#"Create a structured summary of this conversation branch for context when returning later.
+const BRANCH_SUMMARY_PROMPT: &str = r#"Write a structured summary of the branch just explored, so its context is on hand when the user comes back to this point.
 
-Use this EXACT format:
+Follow this format EXACTLY:
 
 ## Goal
-[What was the user trying to accomplish in this branch?]
+[What the user was trying to get done on this branch]
 
 ## Constraints & Preferences
-- [Any constraints, preferences, or requirements mentioned]
-- [Or "(none)" if none were mentioned]
+- [Limits, wishes or requirements the user stated]
+- [Or "(none)" when the user stated none]
 
 ## Progress
 ### Done
-- [x] [Completed tasks/changes]
+- [x] [Tasks and changes already finished]
 
 ### In Progress
-- [ ] [Work that was started but not finished]
+- [ ] [Work that was begun but is not finished]
 
 ### Blocked
-- [Issues preventing progress, if any]
+- [Anything stopping progress, if present]
 
 ## Key Decisions
-- **[Decision]**: [Brief rationale]
+- **[Decision]**: [Short reason]
 
 ## Next Steps
-1. [What should happen next to continue this work]
+1. [What should happen next to carry this work on]
 
-Keep each section concise. Preserve exact file paths, function names, and error messages."#;
+Keep every section short. Quote error messages, function names and file paths exactly as they appear."#;
 
 /// Start a branch summary eagerly and return an independently owned observation.
 /// No history is mutated or saved. Projection errors precede invocation; adapter

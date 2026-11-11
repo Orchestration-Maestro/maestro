@@ -268,8 +268,10 @@ fn check_continuation<C: CustomAgentMessages, E: AgentExecution>(
     context: &AgentContextRecord<C, E>,
 ) -> Result<(), DiagnosticErrorInfo> {
     let diagnostic = match read(&context.messages).last() {
-        None => Some("Cannot continue: no messages in context"),
-        Some(AgentMessage::Assistant(_)) => Some("Cannot continue from message role: assistant"),
+        None => Some("Nothing to continue from: the context holds no messages"),
+        Some(AgentMessage::Assistant(_)) => {
+            Some("Nothing to continue from: the last message has the assistant role")
+        }
         _ => None,
     };
     diagnostic.map_or(Ok(()), |message| Err(failure(message)))

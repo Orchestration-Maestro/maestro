@@ -172,7 +172,7 @@ impl ThemeState {
         let (path, label) = match source {
             Some(path) if path.is_empty() => {
                 return Err(ThemeError::message(format!(
-                    "Theme \"{name}\" does not have a source path for export"
+                    "Theme \"{name}\" has no source path to export"
                 )));
             }
             Some(path) => (path, None),

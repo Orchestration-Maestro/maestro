@@ -107,7 +107,7 @@ edits a nonempty raw query instead, and confirms only with an empty query.
 Confirmation freezes the authored target and intercepts other controls. Enter
 clears confirmation before deletion; Escape clears it without cancelling the
 picker. Canonical active-session aliases refuse deletion with
-`Cannot delete the currently active session` for 3000 ms.
+`The active session cannot be deleted` for 3000 ms.
 
 `SessionFileOperations` supplies literal `trash` and owned permanent-unlink
 operations; native construction installs the existing process-capture adapter.

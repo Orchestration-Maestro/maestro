@@ -6,7 +6,7 @@ use std::{ops::Deref, rc::Rc, sync::RwLock};
 /// Sends a custom message to the session.
 pub type SendMessageHandler<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::SendMessage>;
-/// Sends a user message to the agent.
+/// Delivers a user message to the agent.
 pub type SendUserMessageHandler<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::SendUserMessage>;
 /// Appends a custom entry to the session.

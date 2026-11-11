@@ -1,4 +1,5 @@
-//! Terminal escape stripping and binary-output control filtering.
+//! Terminal escape stripping, binary-output control filtering and their combination for text
+//! a model wrote.
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -35,4 +36,12 @@ pub fn sanitize_binary_output(text: &str) -> String {
                 || !(c <= '\u{1f}' || ('\u{fff9}'..='\u{fffb}').contains(&c))
         })
         .collect()
+}
+
+/// Removes the escape sequences and then the binary controls that would act on a terminal
+/// showing `text`: the words around them, TAB, LF and CR stay. Text the escape expression
+/// cannot be matched against keeps its escapes and loses only its binary controls.
+#[must_use]
+pub fn clean_controls(text: &str) -> String {
+    sanitize_binary_output(&strip_ansi(text).unwrap_or_else(|_| text.to_owned()))
 }

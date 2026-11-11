@@ -64,7 +64,7 @@ fn shell_text(message: &ShellText<'_>) -> String {
         && let Some(path) = message.full_output_path
         && !path.is_empty()
     {
-        text.push_str("\n\n[Output truncated. Full output: ");
+        text.push_str("\n\n[Output truncated; the complete output is at: ");
         text.push_str(path);
         text.push(']');
     }
@@ -255,12 +255,13 @@ fn user_message(content: UserContent, timestamp: f64) -> Message {
 }
 
 /// Opening wrapper for compaction summaries.
-pub const COMPACTION_SUMMARY_PREFIX: &str = "The conversation history before this point was compacted into the following summary:\n\n<summary>\n";
+pub const COMPACTION_SUMMARY_PREFIX: &str =
+    "Earlier conversation history was condensed into the summary below:\n\n<summary>\n";
 /// Closing wrapper for compaction summaries.
 pub const COMPACTION_SUMMARY_SUFFIX: &str = "\n</summary>";
 /// Opening wrapper for branch summaries.
 pub const BRANCH_SUMMARY_PREFIX: &str =
-    "The following is a summary of a branch that this conversation came back from:\n\n<summary>\n";
+    "Summary of a branch this conversation returned from:\n\n<summary>\n";
 /// Closing wrapper for branch summaries.
 pub const BRANCH_SUMMARY_SUFFIX: &str = "</summary>";
 

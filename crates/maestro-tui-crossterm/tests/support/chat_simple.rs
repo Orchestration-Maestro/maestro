@@ -89,7 +89,7 @@ mod unix {
                 None,
                 NativeAutocompleteOperations::default(),
             )));
-            tui.add_child(Rc::new(Text::new("Welcome to Simple Chat!\n\nType your messages below. Type '/' for commands. Press Ctrl+C to exit.".into(), 0, 0, None)));
+            tui.add_child(Rc::new(Text::new("Welcome to Simple Chat.\n\nType a message below. Type '/' for commands. Ctrl+C exits.".into(), 0, 0, None)));
             tui.add_child(editor.clone());
             tui.set_focus(Some(editor.clone()));
             let message = color("text")?;

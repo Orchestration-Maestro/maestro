@@ -16,7 +16,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -34,7 +34,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -86,7 +86,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -152,7 +152,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -798,7 +798,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -816,7 +816,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -865,7 +865,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -883,7 +883,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -1198,7 +1198,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -1216,7 +1216,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -1234,7 +1234,7 @@
           "",
           "> \u001b[7m \u001b[27m                                                                                                                     ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -2245,7 +2245,7 @@
           "",
           "> needle\u001b[7m \u001b[27m                                                                                                               ",
           "",
-          "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+          "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
           "",
           "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
         ],
@@ -3282,7 +3282,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3390,7 +3390,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3408,7 +3408,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3442,7 +3442,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3546,7 +3546,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3602,7 +3602,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3620,7 +3620,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3655,7 +3655,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],
@@ -3785,7 +3785,7 @@
             "",
             "> \u001b[7m \u001b[27m                                                                                                                     ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m",
+            "\u001b[38;5;33m  No sessions in this folder. Press Tab for all sessions.\u001b[39m",
             "",
             "\u001b[38;5;32m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\u001b[39m"
           ],

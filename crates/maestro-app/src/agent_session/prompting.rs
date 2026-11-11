@@ -83,7 +83,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ) -> Result<(), DiagnosticErrorInfo> {
         if !self.begin_run() {
             return Err(DiagnosticErrorInfo::error(
-                "The agent is still working on a prompt. Queue messages with steer() or followUp(), or wait until it finishes.",
+                "The agent is already running a prompt. Queue messages with steer() or followUp(), or wait for it to finish.",
             ));
         }
         let outcome = self.drive_run(input).await;

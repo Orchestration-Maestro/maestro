@@ -2,8 +2,8 @@
 //! working directory, and the warning for one that cannot be read.
 #![cfg(unix)]
 use crate::resource_fixtures::{
-    Entry, Root, child_stderr, child_with_closed_stderr, directory_read_error, loader_case,
-    on_task_set, run_loader_case, warnings,
+    Entry, Root, child_stderr, child_stderr_with, child_with_closed_stderr, directory_read_error,
+    loader_case, on_task_set, run_loader_case, warnings,
 };
 use maestro_app::load_project_context_files;
 use serde::Deserialize;
@@ -113,6 +113,39 @@ fn unreadable_context_candidate_warns_and_falls_through() {
     };
     let unreadable = format!("{base}/{}/project/AGENTS.md", case.name);
     assert_eq!(warnings(&stderr), [read_warning("", &unreadable)]);
+}
+
+/// The context-file warning follows the shared colour decision, not the error stream: a forced
+/// colour with captured streams is yellow, a forbidden or terminal-less one is plain.
+#[test]
+fn context_warning_colour_follows_the_shared_decision() {
+    if !candidates_kept_apart("context_warning_colour_follows_the_shared_decision") {
+        return;
+    }
+    let case = context_case("unreadable_candidate_falls_through");
+    let yellow = |line: String| format!("\u{1b}[33m{line}\u{1b}[39m");
+    for (environment, expected_yellow) in [
+        (&[("FORCE_COLOR", "1")][..], true),
+        (&[("FORCE_COLOR", "0")], false),
+        (&[], false),
+    ] {
+        let Some((base, stderr)) = child_stderr_with(
+            "context_warning_colour_follows_the_shared_decision",
+            environment,
+            |base| {
+                assert_eq!(discover(base, &case), case.expected);
+            },
+        ) else {
+            return;
+        };
+        let line = read_warning("", &format!("{base}/{}/project/AGENTS.md", case.name));
+        let expected = if expected_yellow { yellow(line) } else { line };
+        assert_eq!(
+            stderr.lines().collect::<Vec<_>>(),
+            [expected.as_str()],
+            "{environment:?}"
+        );
+    }
 }
 
 /// Name of the recorded case whose system prompt file cannot be read.

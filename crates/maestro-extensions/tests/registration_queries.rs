@@ -305,7 +305,7 @@ mod tests {
             api.get_flag("live")
                 .unwrap_err()
                 .to_string()
-                .starts_with("This extension ctx is stale")
+                .starts_with("This extension ctx went stale")
         );
         assert!(
             api.register_flag(
@@ -318,7 +318,7 @@ mod tests {
             )
             .unwrap_err()
             .to_string()
-            .starts_with("This extension ctx is stale")
+            .starts_with("This extension ctx went stale")
         );
     }
 
