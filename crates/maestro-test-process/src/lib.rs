@@ -31,6 +31,8 @@
 //!
 //! [`install_search_program`] copies the pinned `rg` or `fd` exported by test setup into a
 //! caller-owned directory, so native search tests never depend on the runner's search PATH.
+//! A child that only needs to start without a search program gets [`install_stub_search_programs`],
+//! and a [`SearchGuard`] on its command path fails the test when it ran a host copy instead.
 
 mod agent_directory;
 mod alone;
@@ -47,6 +49,7 @@ pub mod gate;
 pub mod git_command;
 mod proof;
 pub mod rpc_peer;
+mod search_guard;
 mod selection;
 #[cfg(unix)]
 mod setup;
@@ -61,6 +64,7 @@ pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_enviro
 pub use error::TestProcessError;
 pub use executable::{install_command, install_executable, install_family, install_search_program};
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
+pub use search_guard::{SearchGuard, install_stub_search_programs};
 pub use selection::test_name;
 #[cfg(unix)]
 pub use setup::{IsolatedSetup, SetupError, SetupGuard};

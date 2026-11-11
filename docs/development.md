@@ -1542,13 +1542,18 @@ The tool-factory suite in `maestro-tools` and the factory-construction test in
 test that receives the exports: add a test to it when the test calls
 `install_search_program`.
 
-The chat crate's isolated test children get stub `fd` and `rg` programs in their
-binary directory. A child that starts the interactive mode then neither downloads a
-search program nor runs one found on `PATH`. A test that supplies the child's `PATH`
-skips the stubs and installs whatever programs it needs. Every child's `PATH` also
-carries a guard `fd` and `rg` ahead of its first directory outside the child's root,
-unless its `PATH` names no such directory. If the child runs one, its test fails and
-names the program, whether or not the machine has `fd` or `rg` installed.
+Test children get stub `fd` and `rg` programs in their binary directory, from one
+helper in `maestro-test-process`: `install_stub_search_programs`. The chat crate's
+isolated children and the executable crate's `Root::command` children use it. A child
+that starts the interactive mode then neither downloads a search program nor runs one
+found on `PATH`. A test that supplies the child's `PATH` skips the stubs and installs
+whatever programs it needs.
+
+`SearchGuard`, from the same crate, wraps a child's `PATH`: it places a guard `fd` and
+`rg` ahead of the first directory outside the child's root, unless the `PATH` names no
+such directory. If the child runs one, the test fails and names the program, whether or
+not the machine has `fd` or `rg` installed. The chat harness asserts it after each
+isolated child. A `Root` asserts it when it is dropped.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
