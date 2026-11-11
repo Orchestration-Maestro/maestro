@@ -291,6 +291,16 @@ fn browser_check_repairs_formatting() {
     }
 }
 
+/// A lane that has linted the library once lints it again from its compiled state.
+#[test]
+fn browser_check_reuses_the_compiled_library_of_the_lane() {
+    success(&Browser::cached().run("browser-check"));
+    let output = Browser::cached().run("browser-check");
+    success(&output);
+    let log = String::from_utf8_lossy(&output.stderr);
+    assert!(!log.contains("Checking maestro-web v"), "{log}");
+}
+
 #[test]
 fn browser_author_checks_accept_valid_sources() {
     let browser = Browser::cached();

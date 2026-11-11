@@ -1633,6 +1633,14 @@ where two lanes flag none. A test outside the group, or a run without the setup,
 first lane and waits on its lock, so plain Cargo tests still run the browser tests one at a
 time. Each lane past the first costs one copy of the graph before the first test starts.
 
+A test that needs a stable checkout path takes its copy with `Browser::cached`. The copy keeps
+the modification times of its sources and manifests, so a lane that already linted
+`maestro-web` finds the library fresh and the check lints only the fixture, which takes
+about 0.4 s. Only the fixture's `src/main.rs` is stamped newer than the lane, because tests
+replace it and build the replacement; a newer library source or manifest would make every
+check compile the library again. `browser_check_reuses_the_compiled_library_of_the_lane`
+proves it.
+
 `browser_author_bootstraps_from_empty_build_state` starts with Maestro's own crates
 unbuilt on purpose, so the browser author setup is not run for it. Only Maestro's own
 crates compile in it: the workspace-sources setup below provides the registry units. The
