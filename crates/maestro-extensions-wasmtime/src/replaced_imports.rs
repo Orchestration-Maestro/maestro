@@ -9,7 +9,7 @@ use crate::{
     context_imports::{CommandContext, add_resource},
     lifecycle::State,
     read_imports::{endpoint, forwards, release},
-    replaced_reads::{Endpoint, Request},
+    replaced_reads::Endpoint,
 };
 use wasmtime::component::{LinkerInstance, Resource};
 use wasmtime_wasi::WasiView;
@@ -40,16 +40,25 @@ pub(crate) fn add_replaced(host: &mut LinkerInstance<'_, State>) -> wasmtime::Re
 pub(crate) fn add_to_linker<T: WasiView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    for (method, request) in [
-        ("send-message", Request::Message as fn(_, _, _) -> _),
-        ("send-user-message", Request::UserMessage),
-    ] {
-        host.func_wrap_concurrent(&format!("[method]replaced-session-context.{method}"), move |accessor, (resource, value, options): (Resource<Endpoint>, String, Option<String>)| {
+    host.func_wrap_concurrent(
+        "[method]replaced-session-context.send-message",
+        |accessor, (resource, message, options): (Resource<Endpoint>, String, Option<String>)| {
             Box::pin(async move {
-                let endpoint = accessor.with(|mut access| Ok::<_, wasmtime::Error>(access.get().ctx().table.get(&resource)?.clone()))?;
-                Ok((endpoint.send(|reply| request(value, options, reply)).await,))
+                let endpoint =
+                    accessor.with(|mut access| access.get().ctx().table.get(&resource).cloned())?;
+                Ok((endpoint.send_message(message, options).await,))
             })
-        })?;
-    }
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]replaced-session-context.send-user-message",
+        |accessor, (resource, value, options): (Resource<Endpoint>, String, Option<String>)| {
+            Box::pin(async move {
+                let endpoint =
+                    accessor.with(|mut access| access.get().ctx().table.get(&resource).cloned())?;
+                Ok((endpoint.send_user_message(value, options).await,))
+            })
+        },
+    )?;
     Ok(())
 }

@@ -210,7 +210,6 @@ impl State {
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
-            Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
@@ -288,21 +287,6 @@ impl State {
         match capability.as_deref() {
             Some(Capability::Api(api)) => self.registry.schema_listing(api),
             _ => Err("extension API resource ended".into()),
-        }
-    }
-
-    /// Starts the original creating session's operation outside the registry borrow.
-    fn start_replaced(
-        &self,
-        id: u64,
-        request: crate::replaced_reads::Request,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Replaced(context)) = capability.as_deref() {
-            self.admit(request.start(context), admission);
-        } else {
-            request.reject("extension replaced-session resource ended");
         }
     }
 

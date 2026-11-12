@@ -1,10 +1,6 @@
 //! A replacement session's context ends with its capability.
 use super::ended_endpoint;
-use crate::{
-    local_resources::Capability,
-    replaced_reads::{Endpoint, Request},
-    tests::runner,
-};
+use crate::{local_resources::Capability, replaced_reads::Endpoint, tests::runner};
 use maestro_extensions::ReplacedSessionContext;
 use std::rc::Rc;
 
@@ -34,12 +30,9 @@ fn released_replaced_session_rejects_its_messages_with_its_ended_text() {
             .unwrap()
             .block_on(async {
                 [
+                    replaced.send_message("{}".into(), None).await.unwrap_err(),
                     replaced
-                        .send(|reply| Request::Message("{}".into(), None, reply))
-                        .await
-                        .unwrap_err(),
-                    replaced
-                        .send(|reply| Request::UserMessage("\"\"".into(), None, reply))
+                        .send_user_message("\"\"".into(), None)
                         .await
                         .unwrap_err(),
                 ]

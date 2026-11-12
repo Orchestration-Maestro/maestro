@@ -133,8 +133,6 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
         Admission,
     ),
-    /// Sends through the original creating session, even after guarded reads retire.
-    Replaced(u64, crate::replaced_reads::Request, Admission),
     /// Uses original native observers and explicit subscription removers.
     Effect(u64, effects::Request),
     /// Runs a request whose native code may call back into this instance through its route.
