@@ -214,7 +214,8 @@ explicit JSON values and native `ArtifactsParams`; it does not read result
 details. Partial JSON arguments are rendered without execution-schema decoding.
 
 ```rust,ignore
-use maestro_app::{JsonObject, browser::tools::documents::ArtifactsParams};
+use maestro_app::browser::tools::documents::ArtifactsParams;
+use maestro_models::JsonObject;
 use maestro_web::{ArtifactsToolRenderer, register_tool_renderer,
     tools::types::ToolRendererBinding};
 use serde_json::Value;

@@ -7,11 +7,12 @@ use crate::resource_fixtures::{
 use indexmap::IndexMap;
 use maestro_app::{
     AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, AgentSessionServices,
-    CreateAgentSessionServicesOptions, ExtensionFactory, FlagValue, ProviderConfig,
-    ProviderModelConfig, ResourceKind, ResourceLoaderOptions, create_agent_session_services,
+    CreateAgentSessionServicesOptions, ExtensionFactory, ProviderConfig, ProviderModelConfig,
+    ResourceKind, ResourceLoaderOptions, create_agent_session_services,
 };
 use maestro_catalog::{ModelRegistry, ResolvedRequestAuth};
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
+use maestro_extensions::types::FlagValue;
 use maestro_models::{Local, ModelCost, ModelInput};
 use maestro_settings::{Settings, SettingsManager};
 use serde::Deserialize;

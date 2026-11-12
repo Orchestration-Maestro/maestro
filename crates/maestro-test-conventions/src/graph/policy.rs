@@ -12,6 +12,17 @@ pub(crate) struct Rule {
     pub(crate) dependencies: &'static [&'static str],
 }
 
+/// The frontends and the composition root, whose rows of the table bound the lower crates they
+/// name and whose paths below the application the reach check resolves.
+pub(crate) const FRONTENDS: &[&str] = &[
+    "maestro",
+    "maestro-chat",
+    "maestro-cli",
+    "maestro-multiplexer",
+    "maestro-rpc",
+    "maestro-web",
+];
+
 /// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-credentials"),

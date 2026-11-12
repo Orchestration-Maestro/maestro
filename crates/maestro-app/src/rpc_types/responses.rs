@@ -1,10 +1,11 @@
 //! Correlated responses: session results in their declared shapes, failures, and workspace
 //! responses, all written through the shared envelope.
-use super::{RpcSessionState, RpcSlashCommand, workspace};
+use super::{RpcSessionState, RpcSlashCommand};
 use crate::agent_session::{ForkMessage, ModelCycleResult, SessionStats};
 use maestro_extensions::NativeAgentMessage;
 use maestro_json::object::names;
 use maestro_models::{Model, ModelThinkingLevel};
+use maestro_protocol::rpc_types as workspace;
 use maestro_session::{CompactionResult, Presence};
 use maestro_tools::BashResult;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};

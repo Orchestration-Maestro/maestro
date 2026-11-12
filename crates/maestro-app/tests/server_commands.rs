@@ -30,7 +30,7 @@ use std::{
 
 /// `value` as a client reads it from the compact protocol text.
 fn wire(value: &Value) -> Value {
-    serde_json::from_str(&maestro_app::compact_json(value).unwrap()).unwrap()
+    serde_json::from_str(&maestro_json::compact_json(value).unwrap()).unwrap()
 }
 
 /// The state reply carries every member of the live session, and the input's end

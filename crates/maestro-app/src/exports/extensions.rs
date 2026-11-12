@@ -1,68 +1,57 @@
 //! Existing extensions owners exposed at the application root.
 
-pub use maestro_extensions::types::{
-    ExtensionUIContextPort, ExtensionUIFuture, NotificationType, ThemeSelection, ThemeSetResult,
-    UIUnsubscribe,
+pub use maestro_extensions::{
+    AutocompleteProviderFactory, CompactOptions, ContextUsage, ExtensionActions,
+    ExtensionCommandContext, ExtensionCommandContextActions, ExtensionContext,
+    ExtensionContextActions, ExtensionError, ExtensionRuntime, ExtensionUIContext,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer,
+    ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo, WidgetPlacement,
+    WorkingIndicatorOptions, create_extension_runtime,
 };
 
-pub use maestro_extensions::{
-    AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
-    EventError, ExtensionActions, ExtensionCommandContext, ExtensionCommandContextActions,
-    ExtensionContext, ExtensionContextActions, ExtensionError, ExtensionRuntime,
-    ExtensionUIContext, ExtensionUIContextBinding, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, ExtensionWidgets, MessageRenderOptions, MessageRenderer,
-    ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo, UIHostCall,
-    WidgetPlacement, WorkingIndicatorOptions, create_extension_runtime,
+pub use maestro_extensions::types::events::{
+    AfterProviderResponseEvent, AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent,
+    BeforeAgentStartEventResult, BeforeProviderRequestEvent, BeforeProviderRequestEventResult,
+    ContextEvent, ContextEventResult, CustomToolCallEvent, ExtensionEvent, InputEvent,
+    InputEventResult, InputSource, MessageEndEvent, MessageEndEventResult, MessageStartEvent,
+    MessageUpdateEvent, ModelSelectEvent, ModelSelectSource, ResourcesDiscoverEvent,
+    ResourcesDiscoverResult, SessionBeforeCompactEvent, SessionBeforeCompactResult,
+    SessionBeforeForkEvent, SessionBeforeForkResult, SessionBeforeSwitchEvent,
+    SessionBeforeSwitchResult, SessionBeforeTreeEvent, SessionBeforeTreeResult,
+    SessionCompactEvent, SessionShutdownEvent, SessionStartEvent, SessionTreeEvent,
+    ThinkingLevelSelectEvent, ToolCallEvent, ToolCallEventResult, ToolExecutionEndEvent,
+    ToolExecutionStartEvent, ToolExecutionUpdateEvent, ToolResultEvent, ToolResultEventResult,
+    TurnEndEvent, TurnStartEvent, UserBashEvent, UserBashEventResult, is_bash_tool_result,
+    is_edit_tool_result, is_find_tool_result, is_grep_tool_result, is_ls_tool_result,
+    is_read_tool_result, is_tool_call_event_type, is_write_tool_result,
 };
 
-pub use maestro_extensions::types::events::*;
+/// The tool-call events of the native built-in tools.
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_extensions::types::events::{
+    BashToolCallEvent, EditToolCallEvent, FindToolCallEvent, GrepToolCallEvent, LsToolCallEvent,
+    ReadToolCallEvent, WriteToolCallEvent,
+};
 
-/// What a session-changing command reports back: whether it was cancelled.
-pub use maestro_extensions::types::SessionChangeResult;
+pub use maestro_extensions::types::ExtensionFlag;
 
-pub use maestro_extensions::types::{ExtensionFlag, ExtensionFlagOptions, FlagType};
-
-/// The option records of the session-changing command operations.
-pub use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 pub use maestro_extensions::{
-    Extension, ExtensionAPI, ExtensionExecution, ExtensionFactory, ExtensionHandler,
-    ExtensionRunner, RegisteredTool, RegisteredToolInput, load_extension_from_factory,
+    Extension, ExtensionAPI, ExtensionFactory, ExtensionHandler, ExtensionRunner, RegisteredTool,
     wrap_registered_tool, wrap_registered_tools,
 };
-pub use maestro_models::system_prompt::{BuildSystemPromptOptions, ContextFile};
+pub use maestro_models::system_prompt::BuildSystemPromptOptions;
 
 pub use maestro_extensions::{AgentToolResult, AgentToolUpdateCallback, ToolExecutionMode};
-
-pub use maestro_extensions::MessageRendererCall;
-
-/// The application's bordered loader, as an extension holds it.
-pub use maestro_extensions::presentation::{
-    ExtensionEditor, ExtensionKeybindings, ExtensionLoader,
-};
 
 /// Creates an empty shared event bus whose default callbacks use the thread-safe family.
 ///
 /// A frontend binds an inline native renderer to this bus through
-/// [`MessageRendererCall::new`] and then retains the projected call.
+/// `maestro_extensions::MessageRendererCall::new` and then retains the projected call.
 pub use maestro_extensions::create_event_bus;
-pub use maestro_extensions::create_event_bus_for;
 
 pub use maestro_extensions::{
     EventBus, EventBusController, ExtensionShortcut, RegisteredCommand, ResolvedCommand,
 };
 
-/// The option records of the shortcut and command registrations.
-pub use maestro_extensions::types::{ExtensionShortcutOptions, RegisteredCommandOptions};
-
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_extensions::discover_and_load_extensions;
-
-pub use maestro_extensions::footer::iteration::Live;
-pub use maestro_extensions::types::{
-    ActionHandlers, ComponentFactory, CustomClose, CustomComponentFactory, CustomEditorComponent,
-    CustomFactoryOutcome, CustomUIOptions, EditorFactory, EditorFactoryOutcome, ExtensionComponent,
-    ExtensionShortcutCallback, FooterFactory, OverlayOptionsSource, WidgetContent,
-};
-
-/// Shared identity-preserving callback storage for application consumers.
-pub use maestro_listeners::Listeners;

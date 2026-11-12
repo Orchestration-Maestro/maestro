@@ -1,11 +1,9 @@
 //! Enabled package contribution files read for the browser frontend.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use maestro_app::{
-    PathMetadata, ResolvedResource, SourceOrigin, SourceScope,
-    contribution_files::load_contributions,
-};
+use maestro_app::{PathMetadata, ResolvedResource, contribution_files::load_contributions};
 use maestro_resources::DiagnosticType;
+use maestro_resources::{SourceOrigin, SourceScope};
 use std::{fs, path::Path};
 
 /// A resolved contribution file from `source`.
@@ -111,8 +109,8 @@ fn resource_loader_reads_the_contributions_the_browser_receives() {
     use crate::resource_fixtures::{module_loader, on_task_set};
     use maestro_app::{
         DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
-        contribution_files::BrowserContribution,
     };
+    use maestro_protocol::contributions::BrowserContribution;
     use maestro_settings::{Settings, SettingsManager};
     use std::{cell::RefCell, rc::Rc};
     let fixtures = fs::canonicalize(

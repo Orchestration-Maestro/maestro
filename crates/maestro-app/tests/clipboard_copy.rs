@@ -209,7 +209,7 @@ fn native_adapter_forwards_launches_without_clipboard_access() {
 #[cfg(target_os = "linux")]
 fn native_launches() {
     use maestro_app::utils::copying::{ClipboardOperations, NativeClipboardOperations};
-    use maestro_app::{OutputMode, SpawnSyncOptions};
+    use maestro_process::{OutputMode, SpawnSyncOptions};
     use tokio::process::Command;
     let root = crate::native::Scratch::new();
     let echo = crate::native::clipboard_alias(&root, "echo", r#"{"scenario":"echo","code":7}"#);

@@ -610,7 +610,7 @@ unless a component-backed editor reports its own failure. The application capabi
 of a replacement editor (`CustomEditorComponent`), the editor factory result
 (`EditorFactoryOutcome`) and the shared action map (`ActionHandlers`) belong to
 `maestro-extensions::types::ui`, because extension editor factories return them. The
-application re-exports them; the chat frontend's `CustomEditor` implements the
+chat frontend imports them from there; its `CustomEditor` implements the
 capability and keeps the action map alias at its existing path. Extension components
 carry their optional disposal, expansion and overlay width in the same owner.
 Native repository discovery belongs to `maestro-workspace::spaces::repository`.
@@ -1150,8 +1150,8 @@ Manifest mode and its settings locks are specified in [manifest mode](manifest-m
 **Approved scope exclusions.** Hidden joke commands and their views are not part of Maestro. Omit their dedicated assets and model-selection checks. Rust file paths use the current source-keyed name map; source-based ownership does not change.
 
 `maestro-markdown` owns native Markdown structure, owned source extents and mapped
-extended links. The toolkit keeps terminal normalization and formatting. The
-application re-exports the parser as `markdown`; browser consumers use that edge.
+extended links. The toolkit keeps terminal normalization and formatting. Browser
+consumers import the parser from `maestro-markdown`.
 Document, list-item and quote-chunk parsing share one block accumulator.
 Quotes suspend and resume through retained source handles. List items enter
 non-top-level grammar; completed block calls return to top level. Quote chunks save and restore the enclosing grammar while appending

@@ -5,7 +5,7 @@ use futures_util::{SinkExt as _, StreamExt as _};
 use maestro_app::browser::utils::model_discovery::{
     DiscoveryErrorKind, SocketPhase, discover_lm_studio_models,
 };
-use maestro_app::{
+use maestro_models::{
     WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest, default_web_socket,
 };
 use serde_json::{Value, json};

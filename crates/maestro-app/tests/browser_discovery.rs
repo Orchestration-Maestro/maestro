@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_app::browser::utils::model_discovery::*;
-use maestro_app::{DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, HttpResponse, Model};
+use maestro_models::{DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, HttpResponse, Model};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -79,7 +79,7 @@ fn response(reply: &Reply) -> Result<HttpResponse, FetchError> {
         )));
     }
     let bytes = reply.bytes.clone();
-    let body: maestro_app::HttpBody = Box::pin(futures_util::stream::iter([Ok(bytes)]));
+    let body: maestro_models::HttpBody = Box::pin(futures_util::stream::iter([Ok(bytes)]));
     Ok(HttpResponse {
         status: reply.status,
         status_text: "Fixture status".into(),
@@ -88,7 +88,7 @@ fn response(reply: &Reply) -> Result<HttpResponse, FetchError> {
     })
 }
 /// Complete one controlled response without further asynchronous effects.
-fn ready_response(bytes: Vec<u8>) -> maestro_app::BoxFuture<Result<HttpResponse, FetchError>> {
+fn ready_response(bytes: Vec<u8>) -> maestro_models::BoxFuture<Result<HttpResponse, FetchError>> {
     let result = response(&Reply {
         status: 200,
         bytes,
@@ -178,7 +178,7 @@ async fn replay(mut case: Case) {
     let options = DiscoveryOptions {
         fetch,
         log,
-        connect_web_socket: maestro_app::default_web_socket(),
+        connect_web_socket: maestro_models::default_web_socket(),
     };
     let result = if case.provider == "ollama" {
         discover_ollama_models(&base, case.key.as_deref(), &options).await
@@ -294,7 +294,7 @@ fn discovery_attributes_network_http_and_decode_failures() {
             "http://fixture.test",
             None,
             &DiscoveryOptions {
-                connect_web_socket: maestro_app::default_web_socket(),
+                connect_web_socket: maestro_models::default_web_socket(),
                 fetch,
                 log: Arc::new(|_| {}),
             },
@@ -345,7 +345,7 @@ fn ollama_host_selection_matches_requests() {
             let requests = Arc::new(Mutex::new(Vec::new()));
             let observed = Arc::clone(&requests);
             let options = DiscoveryOptions {
-                connect_web_socket: maestro_app::default_web_socket(),
+                connect_web_socket: maestro_models::default_web_socket(),
                 fetch: Arc::new(move |request| {
                     observed.lock().unwrap().push(request.url);
                     ready_response(br#"{"models":[]}"#.to_vec())
@@ -415,7 +415,7 @@ fn ollama_context_uses_architecture_and_decimal_prefix() {
             "http://fixture.test",
             None,
             &DiscoveryOptions {
-                connect_web_socket: maestro_app::default_web_socket(),
+                connect_web_socket: maestro_models::default_web_socket(),
                 fetch,
                 log: Arc::new(|_| {}),
             },
@@ -554,8 +554,8 @@ async fn native(case: Case, barrier: bool) {
     let (origin, server) = server(case.replies, count, barrier);
     let base = case.base.replace("$ORIGIN", &origin);
     let options = DiscoveryOptions {
-        connect_web_socket: maestro_app::default_web_socket(),
-        fetch: maestro_app::default_fetch(),
+        connect_web_socket: maestro_models::default_web_socket(),
+        fetch: maestro_models::default_fetch(),
         log: Arc::new(|_| panic!("unexpected diagnostic")),
     };
     let models = match provider(&case.provider) {
@@ -646,7 +646,7 @@ fn discovery_dispatches_three_provider_types() {
                 "http://fixture.test",
                 None,
                 &DiscoveryOptions {
-                    connect_web_socket: maestro_app::default_web_socket(),
+                    connect_web_socket: maestro_models::default_web_socket(),
                     fetch,
                     log: Arc::new(|_| panic!("unexpected diagnostic")),
                 },
@@ -714,7 +714,7 @@ fn discovery_diagnostics_preserve_call_boundaries() {
             "http://fixture.test",
             None,
             &DiscoveryOptions {
-                connect_web_socket: maestro_app::default_web_socket(),
+                connect_web_socket: maestro_models::default_web_socket(),
                 fetch,
                 log: Arc::clone(&log),
             },
@@ -749,7 +749,7 @@ async fn failure_diagnostics(transcript: &Arc<Mutex<Vec<String>>>, log: Discover
             "http://fixture.test",
             None,
             &DiscoveryOptions {
-                connect_web_socket: maestro_app::default_web_socket(),
+                connect_web_socket: maestro_models::default_web_socket(),
                 fetch,
                 log: Arc::clone(&log),
             },

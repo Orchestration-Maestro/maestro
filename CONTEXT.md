@@ -214,7 +214,8 @@ traversal runs, so one removal and a complete clear both stay cheap.
 ### Interfaces
 
 - **Footer metadata:** A cached Git branch, extension status texts and a supplied available-provider count, owned by `maestro-app` and rendered by frontends. Its read-only contract and live status view belong to `maestro-extensions`, whose footer factories receive them.
-- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. Its skill-block parser of an expanded prompt belongs to the application; the native transcript reads it, and it is available to browser builds, though the offline viewer does not read it yet.
+- **Application:** The shared operations and embedding SDK exposed by `maestro-app`; frontends select presentation, not alternate application policy. It exports what it declares plus the embedding interface; a frontend imports every other lower-crate name from its owner. Its skill-block parser of an expanded prompt belongs to the application; the native transcript reads it, and it is available to browser builds, though the offline viewer does not read it yet.
+- **Embedding interface:** The lower-crate names the application root keeps for embedding hosts, under the exported names Maestro ports (tool factories and operations, session and compaction records, extension contracts and events, resource, credential, package, theme, settings and catalog types). A host imports them from `maestro_app`; a frontend never does.
 - **CLI:** The command-line frontend for argument parsing, startup and print/JSON operations.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.

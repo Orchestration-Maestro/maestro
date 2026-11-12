@@ -1,9 +1,10 @@
 //! The protocol's output: the records a server writes and the framed lines that carry them.
 use crate::agent_session::AgentSessionEvent;
 use crate::output_guard::write_raw_stdout;
-use crate::rpc_types::{RpcExtensionUIRequest, RpcResponse, workspace_schema};
+use crate::rpc_types::{RpcExtensionUIRequest, RpcResponse};
 use maestro_extensions::ExtensionError;
 use maestro_json::lines::serialize_json_line;
+use maestro_protocol::schema as workspace_schema;
 use serde::{Serialize, Serializer, ser::SerializeMap};
 use std::{cell::RefCell, future::Future, io, rc::Rc, time::Duration};
 use tokio::io::{AsyncWrite, AsyncWriteExt};

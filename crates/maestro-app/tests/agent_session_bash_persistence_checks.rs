@@ -6,10 +6,11 @@ use crate::support::session_harness::{
     entries_view, harness, on_task_set, recorded_number, run_native_tool_child, script_responses,
     start_prompt, transcribed, waiting_tool,
 };
-use maestro_app::{AgentSessionEvent, BashResult, agent_session::BashRunOptions};
+use maestro_app::{AgentSessionEvent, agent_session::BashRunOptions};
 use maestro_session::{
     message_records::SendMessageOptions, session_manager::ReadonlySessionManager,
 };
+use maestro_tools::BashResult;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -146,15 +147,15 @@ impl maestro_app::BashOperations<maestro_models::Local> for CancelledShell {
         &'a self,
         _: &'a str,
         _: &'a str,
-        options: maestro_app::BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>,
+        options: maestro_tools::BashExecOptions<'a, dyn FnMut(&[u8]) + 'a>,
     ) -> <maestro_models::Local as maestro_models::Execution>::Future<
         'a,
-        Result<maestro_app::BashExecResult, maestro_app::BashError>,
+        Result<maestro_tools::BashExecResult, maestro_tools::BashError>,
     > {
         Box::pin(async move {
             self.0.notify_one();
             options.signal.unwrap().cancelled().await;
-            Err(maestro_app::BashError::Aborted)
+            Err(maestro_tools::BashError::Aborted)
         })
     }
 }

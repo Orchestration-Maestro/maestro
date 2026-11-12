@@ -12,9 +12,10 @@ use std::path::Path;
 use std::rc::Rc;
 
 use maestro_app::ReadonlyFooterDataProvider;
-use maestro_app::presentation_data::status_line::{ExtensionStatuses, FooterDataProvider};
+use maestro_app::presentation_data::status_line::FooterDataProvider;
 #[cfg(unix)]
 use maestro_app::presentation_data::status_line::{FooterOperations, NativeFooterOperations};
+use maestro_extensions::footer::ExtensionStatuses;
 #[cfg(unix)]
 use maestro_test_process::git_command;
 use serde::Deserialize;

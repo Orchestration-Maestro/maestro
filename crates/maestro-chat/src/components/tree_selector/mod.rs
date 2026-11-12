@@ -2,15 +2,12 @@
 
 mod entry_text;
 mod navigation;
-mod nodes;
 mod panel;
 mod render;
-mod search;
-mod structure;
 mod tool_call;
 mod tree_list;
 
-pub use nodes::SessionTreeNode;
+pub use maestro_session::export_html::template::SessionTreeNode;
 pub use panel::{TreeSelectorCallbacks, TreeSelectorComponent, TreeSelectorOptions};
 pub use tree_list::TreeList;
 

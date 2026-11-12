@@ -8,7 +8,7 @@ use std::sync::Arc;
 #[test]
 fn pdf_detection_prioritizes_mime_or_suffix() {
     let bytes = include_bytes!("fixtures/pdf/synthetic-wide.pdf");
-    let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+    let fetch: maestro_models::Fetch = Arc::new(|_| panic!("local input fetched"));
     for row in support::pdf::routes().iter().take(5) {
         support::pdf::check_route(row);
     }
@@ -130,7 +130,7 @@ fn pdf_processing_errors_are_categorized() {
 fn pdf_url_failures_precede_parsing() {
     use maestro_models::{FetchError, HttpResponse};
     for status in [403, 500] {
-        let fetch: maestro_app::Fetch = Arc::new(move |_| {
+        let fetch: maestro_models::Fetch = Arc::new(move |_| {
             let body = Box::pin(futures_util::stream::poll_fn(|_| {
                 panic!("rejected body polled")
             }));
@@ -147,7 +147,7 @@ fn pdf_url_failures_precede_parsing() {
             matches!(support::run(load_attachment(AttachmentSource::Url("https://example.test/a.pdf"), None, &fetch)), Err(maestro_app::browser::utils::attachments::AttachmentError::HttpStatus(actual)) if actual == status)
         );
     }
-    let fetch: maestro_app::Fetch = Arc::new(|_| Box::pin(async { Err(FetchError::Aborted) }));
+    let fetch: maestro_models::Fetch = Arc::new(|_| Box::pin(async { Err(FetchError::Aborted) }));
     assert!(matches!(
         support::run(load_attachment(
             AttachmentSource::Url("https://example.test/a.pdf"),
@@ -156,7 +156,7 @@ fn pdf_url_failures_precede_parsing() {
         )),
         Err(maestro_app::browser::utils::attachments::AttachmentError::Fetch(FetchError::Aborted))
     ));
-    let fetch: maestro_app::Fetch = Arc::new(|_| {
+    let fetch: maestro_models::Fetch = Arc::new(|_| {
         Box::pin(async {
             Ok(HttpResponse {
                 status: 200,
@@ -246,7 +246,7 @@ fn pdf_translated_fill_and_stroke_shows_keep_both_texts() {
          BT /F1 12 Tf 1 Tr 5 30 Td (Page A) Tj ET",
         false,
     );
-    let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+    let fetch: maestro_models::Fetch = Arc::new(|_| panic!("local input fetched"));
     let attachment = support::run(load_attachment(
         AttachmentSource::Buffer(&bytes),
         Some("translated.pdf"),
@@ -265,7 +265,7 @@ fn pdf_translated_fill_and_stroke_shows_keep_both_texts() {
 fn pdf_preview_preserves_full_precision_direct_and_inherited_boxes() {
     for inherited in [false, true] {
         let bytes = support::pdf::synthetic("", inherited);
-        let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+        let fetch: maestro_models::Fetch = Arc::new(|_| panic!("local input fetched"));
         let attachment = support::run(load_attachment(
             AttachmentSource::Buffer(&bytes),
             Some("geometry.pdf"),

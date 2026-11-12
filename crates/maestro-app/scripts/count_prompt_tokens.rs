@@ -8,7 +8,9 @@ use maestro_app::browser::tools::prompts::{
     ATTACHMENTS_RUNTIME_DESCRIPTION, artifacts_tool_description, javascript_repl_tool_description,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_app::{Fetch, HttpRequest, LocaleNumberFormat, decode_utf8};
+use maestro_models::{Fetch, HttpRequest};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_text::{decode_utf8, numbers::LocaleNumberFormat};
 #[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
 #[cfg(not(target_arch = "wasm32"))]
@@ -103,7 +105,7 @@ async fn run(
 fn main() -> Result<ExitCode, Box<dyn Error>> {
     let api_key = std::env::var("ANTHROPIC_API_KEY").unwrap_or_default();
     if api_key.is_empty() {
-        maestro_app::diagnostics::write_stderr_line(
+        maestro_agent::diagnostics::write_stderr_line(
             "Error: ANTHROPIC_API_KEY environment variable not set",
         );
         return Ok(ExitCode::FAILURE);
@@ -114,7 +116,7 @@ fn main() -> Result<ExitCode, Box<dyn Error>> {
         .build()?;
     runtime.block_on(run(
         &api_key,
-        &maestro_app::default_fetch(),
+        &maestro_models::default_fetch(),
         &formatter,
         &mut std::io::stdout().lock(),
         &mut std::io::stderr().lock(),
@@ -136,7 +138,7 @@ mod runtime;
 mod tests {
     use super::*;
     use futures_util::stream;
-    use maestro_app::{FetchError, HttpResponse};
+    use maestro_models::{FetchError, HttpResponse};
     use serde::Deserialize;
     use std::collections::VecDeque;
     use std::sync::{Arc, Mutex};
@@ -220,14 +222,14 @@ mod tests {
     fn response(reply: Reply) -> Result<HttpResponse, FetchError> {
         if let Some(message) = reply.transport_error {
             return Err(FetchError::Connection(
-                maestro_app::DiagnosticErrorInfo::new(None, message),
+                maestro_models::DiagnosticErrorInfo::new(None, message),
             ));
         }
         let chunk = reply.body_error.map_or_else(
             || Ok(reply.body.unwrap().into_bytes()),
             |message| {
                 Err(FetchError::Connection(
-                    maestro_app::DiagnosticErrorInfo::new(None, message),
+                    maestro_models::DiagnosticErrorInfo::new(None, message),
                 ))
             },
         );
@@ -637,7 +639,7 @@ mod tests {
         let server = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let origin = format!("http://{}", server.local_addr().unwrap());
         let peer = std::thread::spawn(move || serve(&server, case.input.replies));
-        let transport = maestro_app::default_fetch();
+        let transport = maestro_models::default_fetch();
         let envelopes = Arc::new(Mutex::new(Vec::new()));
         let observed = envelopes.clone();
         let fetch: Fetch = Arc::new(move |mut request| {

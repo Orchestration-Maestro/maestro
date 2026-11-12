@@ -49,7 +49,7 @@ impl RuntimeMessageBridge {
     /// })?;
     /// assert!(source.starts_with("var Module={arguments:[\"frame-bridge\",\"execution\"]};"));
     /// assert!(source.ends_with(BUNDLE));
-    /// # Ok::<(), maestro_app::DiagnosticErrorInfo>(())
+    /// # Ok::<(), maestro_models::DiagnosticErrorInfo>(())
     /// ```
     ///
     /// # Errors

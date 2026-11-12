@@ -82,7 +82,7 @@ use that field's absent fallback; unknown fields stay unread.
 A wrapper can borrow the existing map through `ToolRenderContext::renderer_state`,
 select a native state handle, release the map borrow and use `with_state` to
 delegate. This preserves the row's arguments, host effects and previous component.
-The application root re-exports these renderer types for frontends.
+Frontends import these renderer types from `maestro_tools`.
 
 `ToolRenderResultBinding` separates preparation from invocation. Call `prepare`
 with the borrowed persisted result, then call the returned

@@ -14,5 +14,5 @@ pub fn platform_opener(target: &str, platform: &str) {
     let mut command = maestro_process::command(program);
     command.arg(target);
     // Opening a viewer is best-effort; its worker still reaps the child.
-    drop(crate::spawn(command, None));
+    drop(maestro_process::spawn(command, None));
 }

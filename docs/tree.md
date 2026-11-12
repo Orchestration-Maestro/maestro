@@ -30,7 +30,7 @@ identities first appear, using each identity's last record. It is a method of
 ## Shared construction
 
 `maestro_session::export_html::template::build_tree(entries, label, label_timestamp)`
-is also available through `maestro_app::export_html::template`. It borrows raw
+is the constructor frontends import from `maestro_session`. It borrows raw
 records and synchronously calls the supplied metadata selectors; no selectors
 are retained. The manager's `get_tree` uses this same constructor with its resolved
 label and timestamp maps. The offline reader supplies its own viewer-selected

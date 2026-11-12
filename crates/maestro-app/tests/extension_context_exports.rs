@@ -75,15 +75,16 @@ fn native_context_exports_share_the_extension_records() {
 #[test]
 fn native_command_context_exports_share_the_extension_records() {
     let runner = runner();
-    let actions =
-        maestro_app::ExtensionCommandContextActions::new(maestro_app::CommandContextOperations {
+    let actions = maestro_app::ExtensionCommandContextActions::new(
+        maestro_extensions::CommandContextOperations {
             new_session: Rc::new(|_| {
                 Box::pin(async {
                     Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
                 })
             }),
             ..maestro_extensions::test_support::silent_command_operations()
-        });
+        },
+    );
     runner.bind_command_context(Some(actions));
     let ctx: maestro_app::ExtensionCommandContext = runner.create_command_context();
     crate::support::run(async {
@@ -252,7 +253,7 @@ fn native_registration_exports_resolve_to_shared_records() {
             api.register_tool(maestro_app::define_tool(tool)).unwrap();
             Box::pin(async { Ok(()) })
         });
-        let owner = maestro_app::load_extension_from_factory::<Threaded>(
+        let owner = maestro_extensions::load_extension_from_factory::<Threaded>(
             factory,
             "/factory".into(),
             bus.for_extension(),
@@ -340,41 +341,36 @@ macro_rules! extension_export_identity {
         const _: fn(maestro_app::$name $(<$($arg),*>)?) -> maestro_extensions::$name $(<$($arg),*>)? = |value| value;
     )*};
 }
-extension_export_identity!(ResourcesDiscoverReason,ResourcesDiscoverEvent,ResourcesDiscoverResult,
-    SessionStartReason,SessionStartEvent,SessionBeforeSwitchReason,SessionBeforeSwitchEvent,
-    SessionBeforeForkEvent,SessionShutdownReason,SessionShutdownEvent,SessionBeforeSwitchResult,
+extension_export_identity!(ResourcesDiscoverEvent,ResourcesDiscoverResult,
+    SessionStartEvent,SessionBeforeSwitchEvent,
+    SessionBeforeForkEvent,SessionShutdownEvent,SessionBeforeSwitchResult,
     SessionBeforeForkResult,BeforeProviderRequestEvent,BeforeProviderRequestEventResult,AfterProviderResponseEvent,
-    InputSource,InputEvent,InputTransform,InputEventResult,SessionBeforeCompactEventData,SessionBeforeCompactEvent,
+    InputSource,InputEvent,InputEventResult,SessionBeforeCompactEvent,
     SessionBeforeCompactResult,ContextEvent,BeforeAgentStartEvent,AgentStartEvent,AgentEndEvent,TurnStartEvent,
     TurnEndEvent,MessageStartEvent,MessageUpdateEvent,MessageEndEvent,ContextEventResult,MessageEndEventResult,
     BeforeAgentStartEventResult,ModelSelectSource,ModelSelectEvent,ThinkingLevelSelectEvent,SessionCompactEvent,
-    TreePreparation,SessionTreeEvent,SessionBeforeTreeSummary,SessionBeforeTreeResult,SessionBeforeTreeEvent,
+    SessionTreeEvent,SessionBeforeTreeResult,SessionBeforeTreeEvent,
     ToolExecutionStartEvent,ToolExecutionUpdateEvent,ToolExecutionEndEvent,ToolCallEvent,ToolResultEvent,
-    CustomToolCallEvent,CustomToolResultEvent,UserBashEvent,UserBashEventResult<(),()>,ToolCallEventResult,
-    ToolResultEventResult,SessionEvent,
-    ExtensionEvent,ExtensionEventResult<()>,ExtensionFactory,RegisteredTool);
+    CustomToolCallEvent,UserBashEvent,UserBashEventResult<(),()>,ToolCallEventResult,
+    ToolResultEventResult,
+    ExtensionEvent,ExtensionFactory,RegisteredTool);
 #[cfg(not(target_arch = "wasm32"))]
 extension_export_identity!(
     BashToolCallEvent,
-    BashToolResultEvent,
     ReadToolCallEvent,
-    ReadToolResultEvent,
     EditToolCallEvent,
-    EditToolResultEvent,
     WriteToolCallEvent,
-    WriteToolResultEvent,
     GrepToolCallEvent,
-    GrepToolResultEvent,
     FindToolCallEvent,
-    FindToolResultEvent,
-    LsToolCallEvent,
-    LsToolResultEvent
+    LsToolCallEvent
 );
 
 const _: fn(
     maestro_app::BuildSystemPromptOptions,
 ) -> maestro_models::system_prompt::BuildSystemPromptOptions = |value| value;
-const _: fn(maestro_app::ContextFile) -> maestro_models::system_prompt::ContextFile = |value| value;
+const _: fn(
+    maestro_models::system_prompt::ContextFile,
+) -> maestro_models::system_prompt::ContextFile = |value| value;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_bash_tool_result;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_read_tool_result;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_edit_tool_result;

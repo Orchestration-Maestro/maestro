@@ -4,7 +4,8 @@
 use crate::rpc_peer::{Peer, Scenario, events, next_of, release as release_peer};
 use crate::support::session_harness::on_task_set;
 use futures_util::FutureExt;
-use maestro_app::{Presence, RpcClient, RpcClientError};
+use maestro_app::{RpcClient, RpcClientError};
+use maestro_session::Presence;
 use serde::Serialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, pin::pin, rc::Rc};

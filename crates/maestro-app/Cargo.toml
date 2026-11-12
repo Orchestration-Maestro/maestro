@@ -7,7 +7,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-maestro-markdown = { path = "../maestro-markdown" }
 maestro-protocol = { path = "../maestro-protocol" }
 hayro = "=0.8.0"
 hayro-interpret = "=0.8.0"
@@ -48,7 +47,6 @@ maestro-realpath = { path = "../maestro-realpath" }
 maestro-export = { path = "../maestro-export" }
 maestro-workspace = { path = "../maestro-workspace" }
 maestro-daemon = { path = "../maestro-daemon" }
-maestro-terminal-emulator = { path = "../maestro-terminal-emulator" }
 maestro-packages = { path = "../maestro-packages" }
 maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
@@ -72,7 +70,6 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-t
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-packages = { path = "../maestro-packages", features = ["test-support"] }
-maestro-markdown = { path = "../maestro-markdown", features = ["test-support"] }
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio-tungstenite.workspace = true

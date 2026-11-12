@@ -60,6 +60,8 @@ pub(crate) struct Walk {
     pub(crate) includes: Vec<(usize, String)>,
     /// Imports of an application source in its logical module.
     pub(crate) imports: Option<Vec<application_exports::Import>>,
+    /// Paths a frontend source writes below the application crate, with their lines.
+    pub(crate) reach: Vec<(usize, Vec<String>)>,
     /// First public credentials name its declared surface does not carry, with its line.
     pub(crate) credentials: Option<(usize, String)>,
     /// Lint-level attributes and root layout of a guest source.
@@ -146,6 +148,8 @@ struct Walker<'a> {
     includes: fixture_includes::Includes,
     /// Application imports, for application sources.
     uses: Option<application_exports::Uses>,
+    /// Paths below the application crate, for frontend sources.
+    reach: Option<application_exports::frontends::Paths>,
     /// Credentials exports the declared surface does not carry, for a credentials root.
     credentials: Option<(usize, String)>,
     /// Lint-level attributes, for guest sources.
@@ -183,6 +187,8 @@ impl<'a> Walker<'a> {
             reads: test_input_routes::Reads::default(),
             includes: fixture_includes::Includes::default(),
             uses: application_exports::Uses::new(member, source),
+            reach: application_exports::frontends::checked(member)
+                .then(application_exports::frontends::Paths::default),
             credentials: application_exports::file_credentials(member, source, file),
             attributes: generated::generates(&member.name)
                 .then(|| generated::Attributes::new(file)),
@@ -274,6 +280,9 @@ impl<'a> Walker<'a> {
             reads: self.reads.finish(),
             includes: self.includes.targets,
             imports: self.uses.map(|uses| uses.imports),
+            reach: self
+                .reach
+                .map_or_else(Vec::new, application_exports::frontends::Paths::finish),
             credentials: self.credentials,
             guest: self.attributes,
             exports: self.exports.map_or(0, Exports::finish),
@@ -449,10 +458,16 @@ impl<'a> Visit<'a> for Walker<'a> {
         if let Some(uses) = &mut self.uses {
             uses.item_use(item);
         }
+        if let Some(reach) = &mut self.reach {
+            reach.use_tree(&item.tree);
+        }
         syn::visit::visit_item_use(self, item);
     }
 
     fn visit_macro(&mut self, invocation: &'a syn::Macro) {
+        if let Some(reach) = &mut self.reach {
+            reach.macro_tokens(invocation);
+        }
         if self.referencing()
             && let Some(references) = &mut self.references
         {
@@ -498,6 +513,9 @@ impl<'a> Visit<'a> for Walker<'a> {
     }
 
     fn visit_path(&mut self, path: &'a syn::Path) {
+        if let Some(reach) = &mut self.reach {
+            reach.path(path);
+        }
         if !self.testing() {
             self.guard.path(path);
             if let Some(resolutions) = &mut self.resolutions {

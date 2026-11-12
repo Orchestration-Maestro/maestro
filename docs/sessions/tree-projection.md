@@ -3,7 +3,7 @@
 `maestro_session::export_html::template` owns retained occurrence handles,
 stable active-first ordering, physical/visible branch geometry, content/search
 reads and raw-record ancestry. Frontends
-reach it through `maestro_app::export_html::template`; the [chat selector](../chat/tree-selector.md)
+import it from `maestro_session`; the [chat selector](../chat/tree-selector.md)
 keeps filter, authored query, fold, selection and callback state.
 
 `flatten_tree` borrows ordered occurrences; `retain` consumes that complete

@@ -30,7 +30,7 @@ pub fn parse_changelog(changelog_path: &str) -> Vec<ChangelogEntry> {
     let bytes = match std::fs::read(changelog_path) {
         Ok(bytes) => bytes,
         Err(error) => {
-            crate::diagnostics::write_stderr_line(&format!(
+            maestro_agent::diagnostics::write_stderr_line(&format!(
                 "Warning: Could not parse changelog: {error}"
             ));
             return Vec::new();

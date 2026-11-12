@@ -24,8 +24,8 @@ application composes them with the 29 session commands under the same `type` tag
 `maestro_app::rpc_types::RpcCommand`, which also owns the session responses, session
 events and extension dialog records; see the [JSONL protocol](rpc.md). Both
 response families write their envelope through `rpc_types::serialize_rpc_response`.
-There is no second command registry here. Frontends consume contracts through
-application re-exports.
+There is no second command registry here. Frontends import the contracts from
+`maestro_protocol` and call the application only for what it owns.
 
 `RpcResponse` carries the original `command` and optional correlation `id`,
 `type: "response"`, and a boolean `success`. A successful workspace operation

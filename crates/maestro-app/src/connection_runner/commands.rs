@@ -7,13 +7,14 @@ use crate::agent_session::{AgentSession, BashRunOptions, CycleDirection, PromptO
 use crate::rpc_types::{
     RpcAvailableModels, RpcCancelled, RpcCommandList, RpcData, RpcExportPath, RpcForkMessages,
     RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcSessionCommand,
-    RpcSessionState, RpcThinkingLevel, workspace, workspace_schema,
+    RpcSessionState, RpcThinkingLevel,
 };
 use maestro_daemon::{diagnostics, service::request_changes_ui};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{ForkPosition, InputSource};
 use maestro_lock::read;
 use maestro_models::ImageContent;
+use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
 use maestro_session::Presence;
 use maestro_session::message_records::UserMessageDelivery;
 use maestro_session::session_manager::ReadonlySessionManager;

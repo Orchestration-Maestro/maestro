@@ -1,11 +1,14 @@
 //! Application paths retain their model-selection owners.
 use crate::support::no_commands::no_commands;
-use maestro_app::{
-    AuthStorage, BUILT_IN_PROVIDER_DISPLAY_NAMES, CatalogError, DEFAULT_MODEL_PER_PROVIDER, Model,
-    ModelFileOperations, ModelRegistry, ModelResolverOutput, OAuthSelectOption, OAuthSelectPrompt,
-    ProviderConfigInput, ProviderModelInput, ScopedModel, SettingsManager, SharedHandle,
-    ThinkingLevel, find_exact_model_reference_match, get_providers, model_id_comparator,
-    models_are_equal, resolve_model_scope,
+use maestro_agent::ThinkingLevel;
+use maestro_app::{AuthStorage, ModelRegistry, ScopedModel, SettingsManager};
+use maestro_catalog::{
+    BUILT_IN_PROVIDER_DISPLAY_NAMES, CatalogError, DEFAULT_MODEL_PER_PROVIDER, ModelFileOperations,
+    ModelResolverOutput, ProviderConfigInput, ProviderModelInput, find_exact_model_reference_match,
+    model_id_comparator, resolve_model_scope,
+};
+use maestro_models::{
+    Model, OAuthSelectOption, OAuthSelectPrompt, SharedHandle, get_providers, models_are_equal,
 };
 use serde::Deserialize;
 use std::sync::Arc;

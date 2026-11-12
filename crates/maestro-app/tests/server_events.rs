@@ -145,7 +145,7 @@ async fn exchange() -> (Vec<Value>, Vec<Value>) {
     let recorded = Rc::clone(&emitted);
     let _unsubscribe = runtime.session().subscribe(Rc::new(move |event| {
         let value = serde_json::to_value(event).unwrap();
-        let line = maestro_app::compact_json(&value).unwrap();
+        let line = maestro_json::compact_json(&value).unwrap();
         recorded
             .borrow_mut()
             .push(serde_json::from_str::<Value>(&line).unwrap());

@@ -37,7 +37,7 @@ Each exposes the existing `Container` child-array editing interface. Render the
 outer component, but focus its `get_select_list()` or `get_message_list()` handle.
 The focus handle remains usable after clearing or dropping the outer component.
 
-`ThinkingSelectorComponent::new` takes the current `maestro_app::ThinkingLevel`,
+`ThinkingSelectorComponent::new` takes the current `maestro_agent::ThinkingLevel`,
 the available levels, select/cancel callbacks and a `LiveTheme`. Available levels
 keep their supplied order and duplicates; the first current match is selected,
 or the first available level when unmatched. Confirmations report typed levels,
@@ -120,7 +120,7 @@ confirmation alone do not rebuild the list. Text and cursor layout belong to the
 registry, propagates refresh failures and requests one render after a completed
 load or caught availability failure. Options supply the
 current shared `Model`, ordered `ScopedModel` records, initial search and
-`LiveTheme`; the application re-exports their existing catalog/settings owners.
+`LiveTheme`; the chat frontend imports them from their catalog, settings and theme owners.
 
 The picker starts scoped when scoped records exist, otherwise all. Scoped order,
 duplicates and missing models are retained; registry matches use refreshed
@@ -227,7 +227,7 @@ completion callback and `LoginDialogOptions`. Pass the toolkit writer's
 [`weak_render_request`](../terminal/rendering.md) to avoid retaining the writer.
 Options supply the [live theme](../theme.md), platform observation and optional
 provider-name/browser effects. Default names come from
-`maestro_app::presentation_data::get_oauth_providers`. A nonempty name override
+`maestro_models::get_oauth_providers`. A nonempty name override
 wins; a present title override wins even when empty.
 
 `show_auth` replaces content with linked URL, click hint and optional nonempty

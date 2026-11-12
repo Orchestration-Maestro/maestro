@@ -425,3 +425,102 @@ fn read() { drop(terminal::Terminal::new(1, 1, 0)); }
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
+
+#[test]
+fn application_exports_reject_a_wildcard_or_module_of_any_lower_crate() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-app", "maestro-tools", "maestro-extensions"]);
+    for owner in ["maestro-tools", "maestro-extensions"] {
+        source(
+            &workspace,
+            owner,
+            "src/lib.rs",
+            "pub mod types { pub mod events { pub struct Event; } }",
+        );
+        let name = owner.replace('-', "_");
+        for export in [
+            format!("pub use {name}::types::events::*;"),
+            format!("pub use {name}::types as domain;"),
+        ] {
+            source(&workspace, "maestro-app", "src/lib.rs", &export);
+            let error = check_workspace(workspace.root.path()).unwrap_err();
+            assert!(
+                error.contains("named application exports")
+                    && error.contains(&format!("{}:1:", native_path_text("src/lib.rs"))),
+                "{export}: {error}"
+            );
+        }
+        source(
+            &workspace,
+            "maestro-app",
+            "src/lib.rs",
+            &format!("pub use {name}::types::events::Event;"),
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    }
+}
+
+/// A workspace whose application re-exports `Tool` from the tools crate and declares `Own`.
+fn reach_workspace() -> Workspace {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-chat", "maestro-tools"]);
+    source(
+        &workspace,
+        "maestro-tools",
+        "src/lib.rs",
+        "pub struct Tool;",
+    );
+    source(
+        &workspace,
+        "maestro-app",
+        "src/lib.rs",
+        "pub use maestro_tools::Tool;\npub struct Own;\npub mod nested { pub use maestro_tools::Tool as Renamed; pub struct Inner; }",
+    );
+    workspace
+}
+
+#[test]
+fn frontends_reach_lower_crate_items_only_through_their_owners() {
+    let workspace = reach_workspace();
+    for (frontend, name) in [
+        ("use maestro_app::Tool;", "Tool"),
+        ("use maestro_app::{Own, Tool};", "Tool"),
+        ("use maestro_app::nested::Renamed;", "Renamed"),
+        (
+            "use maestro_app::nested::{self as n};\nfn f() { let _ = n::Inner; }",
+            "",
+        ),
+        ("fn f() -> maestro_app::Tool { loop {} }", "Tool"),
+        (
+            "fn f() { let _ = serde_json::json!({\"a\": maestro_app::Tool}); }",
+            "Tool",
+        ),
+    ] {
+        source(&workspace, "maestro-chat", "src/lib.rs", frontend);
+        let result = check_workspace(workspace.root.path());
+        if name.is_empty() {
+            assert_eq!(result, Ok(()), "{frontend}");
+            continue;
+        }
+        let error = result.unwrap_err();
+        assert!(
+            error.contains(&format!(
+                "{}:1: {name} belongs to maestro-tools; import it from its owner, not through maestro-app",
+                native_path_text("src/lib.rs")
+            )),
+            "{frontend}: {error}"
+        );
+    }
+}
+
+#[test]
+fn frontends_may_name_application_items_and_import_owners_directly() {
+    let workspace = reach_workspace();
+    source(
+        &workspace,
+        "maestro-chat",
+        "src/lib.rs",
+        "use maestro_app::{Own, nested::Inner};\nuse maestro_tools::Tool;\nfn f() { let _ = (Own, Inner, Tool, maestro_app::Own); }",
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
