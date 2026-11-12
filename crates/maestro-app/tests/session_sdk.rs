@@ -828,7 +828,7 @@ fn attribution_case(id: &str, row: &Value) -> AttributionCase {
 /// Sends each recorded attribution case `ids` names from a child without the telemetry
 /// variable and compares the presence and the whole map of the provider's headers.
 fn check_attribution_cases(ids: &[&str]) {
-    crate::isolated_home::with_environment_without(
+    maestro_test_process::with_environment_without(
         std::thread::current().name().unwrap(),
         &[],
         &["MAESTRO_TELEMETRY"],
@@ -845,7 +845,8 @@ fn check_attribution_cases(ids: &[&str]) {
                 }
             });
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]

@@ -174,7 +174,8 @@ fn invalid_theme_files_warn_with_the_theme_error() {
         let observed =
             on_task_set(|local| async move { run_loader_case(&root, &case, local).await });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -280,7 +281,8 @@ fn reload_rebuilds_package_provenance() {
             [first, second].map(|skills| skills.skills[0].source_info.scope)
         });
         assert_eq!(scopes, [SourceScope::User, SourceScope::Project]);
-    });
+    })
+    .unwrap();
 }
 
 /// A diagnostic with only a type and a message.
@@ -322,7 +324,8 @@ fn overrides_see_base_results_in_reference_order() {
         });
         assert_eq!(Value::Array(seen.take()), row["seen"]);
         assert_eq!(observed, row["expected"]);
-    });
+    })
+    .unwrap();
 }
 
 /// Installs the seven recorded overrides, each noting what it received.
@@ -418,7 +421,8 @@ fn missing_override_extension_path_uses_its_parent_directory() {
             });
             assert_eq!(observed, row["expected"]);
         },
-    );
+    )
+    .unwrap();
 }
 
 /// Settings applied in memory survive the reload that refreshes them from storage.
@@ -464,5 +468,5 @@ fn in_memory_settings_survive_resource_reload() {
             "compactionEnabled": manager.get_compaction_enabled(),
         });
         assert_eq!(&observed, expected);
-    });
+    }).unwrap();
 }

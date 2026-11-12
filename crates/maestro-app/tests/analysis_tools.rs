@@ -8,7 +8,7 @@ use crate::analysis_fixtures::{
     opened, page_data, root, run_tools, scratch, with_controlled_viewer,
 };
 #[cfg(not(windows))]
-use crate::isolated_home::with_environment;
+use maestro_test_process::with_environment;
 use serde_json::Value;
 #[cfg(not(windows))]
 use std::io::{BufRead, BufReader, Read, Write};
@@ -808,7 +808,8 @@ fn witness_viewer(test: &str, program: &'static str, platform: Option<&'static s
             .read_to_string(&mut done)
             .expect("the viewer finishes");
         assert_eq!(done, "done");
-    });
+    })
+    .unwrap();
 }
 
 // Windows resolves the viewer through its own directories before `PATH`, so the

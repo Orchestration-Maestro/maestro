@@ -1,36 +1,62 @@
 //! One isolated-home child for tests that read process variables.
-#![cfg(test)]
 
 use std::collections::BTreeMap;
+
+use crate::TestProcessError;
 
 /// The variable that carries the scratch base into the child.
 const BASE: &str = "MAESTRO_TEST_BASE";
 
 /// Runs `body` with a scratch base in one child whose home is `<base>/home` and whose
 /// other variables are cleared, so no real home or agent directory is read.
-pub fn with_isolated_home(test: &str, body: impl FnOnce(&str)) {
-    with_environment(test, &[], body);
+///
+/// # Errors
+/// Returns the failure to create the scratch base in the parent, to read the base in the
+/// child, or to run the case's child.
+pub fn with_isolated_home(test: &str, body: impl FnOnce(&str)) -> Result<(), TestProcessError> {
+    with_environment(test, &[], body)
 }
 
 /// Runs `body` as [`with_isolated_home`] does, with `variables` added; `$BASE` in a value
 /// is the scratch base.
-pub fn with_environment(test: &str, variables: &[(&str, &str)], body: impl FnOnce(&str)) {
-    with_environment_without(test, variables, &[], body);
+///
+/// # Errors
+/// Returns every failure [`with_isolated_home`] returns.
+pub fn with_environment(
+    test: &str,
+    variables: &[(&str, &str)],
+    body: impl FnOnce(&str),
+) -> Result<(), TestProcessError> {
+    with_environment_without(test, variables, &[], body)
 }
 
 /// Runs `body` as [`with_environment`] does, with `removed` cleared from the child.
+///
+/// # Errors
+/// Returns the failure to create the scratch base in the parent, to read the base in the
+/// child, or to run the case's child.
 pub fn with_environment_without(
     test: &str,
     variables: &[(&str, &str)],
     removed: &[&str],
     body: impl FnOnce(&str),
-) {
-    let parent = (!maestro_test_process::selection().is_child())
-        .then(|| maestro_test_directory::Scratch::new().unwrap());
-    let base = parent.as_ref().map_or_else(
-        || std::env::var(BASE).expect("the child carries the scratch base"),
-        |scratch| scratch.path().display().to_string(),
-    );
+) -> Result<(), TestProcessError> {
+    let failure = |step: &str| TestProcessError::new(test, step);
+    let scratch = if crate::selection().is_child() {
+        None
+    } else {
+        Some(
+            maestro_test_directory::Scratch::new()
+                .map_err(|error| failure("the scratch base is not creatable").caused_by(error))?,
+        )
+    };
+    let base = scratch.as_ref().map_or_else(
+        || {
+            std::env::var(BASE)
+                .map_err(|error| failure("the child carries the scratch base").caused_by(error))
+        },
+        |scratch| Ok(scratch.path().display().to_string()),
+    )?;
     let environment = |(): &()| {
         let home = std::path::Path::new(&base)
             .join("home")
@@ -60,8 +86,8 @@ pub fn with_environment_without(
         }
         environment
     };
-    let selected = maestro_test_process::run_per_environment(test, [()], environment).unwrap();
-    if selected.is_some() {
+    if crate::run_per_environment(test, [()], environment)?.is_some() {
         body(&base);
     }
+    Ok(())
 }

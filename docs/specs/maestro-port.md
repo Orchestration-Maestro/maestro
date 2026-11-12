@@ -914,6 +914,10 @@ See [Rust test children](test-processes.md) for the complete contract.
 Its native helpers also provide loopback servers and their recorded-request header
 lookup, completed child probes, executable installation, child-build toolchain
 selection and the caller-owned local executor its witnesses drive native futures on.
+A case that reads process variables runs in one cleared child through
+`with_isolated_home`, which gives it a scratch home and the caller's variable
+edits, or through `with_environment` and `with_environment_without` when it adds
+or clears named variables.
 
 On Unix the owner applies each isolated child's typed native setup at that child's
 entry: a file creation umask, a process-count limit, a nonterminating file-size

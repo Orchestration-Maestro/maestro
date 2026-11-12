@@ -102,9 +102,6 @@ mod helper_launches;
 mod hold_unchecked_text_checks;
 mod install_reporting;
 mod installation_kind;
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "support/isolated_home.rs"]
-mod isolated_home;
 mod javascript_execution;
 mod legacy_workbook_support;
 mod legacy_workbooks;
