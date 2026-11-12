@@ -33,7 +33,7 @@ pub mod tab;
 pub mod workspace;
 
 /// Daemon snapshot save and clear operations.
-pub mod persist;
+pub mod persistence;
 
 /// Environment names grouped by their runtime consumers.
 pub mod variables;

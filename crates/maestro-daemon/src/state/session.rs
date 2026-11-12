@@ -1,8 +1,8 @@
 //! Debounced owned session jobs through the existing snapshot storage owner.
 
 use super::App;
-use crate::{locations::DaemonPaths, persist};
-use maestro_workspace::persist::records::{SessionHistorySnapshot, SessionSnapshot};
+use crate::{locations::DaemonPaths, persistence};
+use maestro_workspace::persistence::records::{SessionHistorySnapshot, SessionSnapshot};
 use std::time::{Duration, Instant};
 
 /// Delay after a dirty observation before capturing the current session.
@@ -31,7 +31,7 @@ impl<C: FnMut() -> u128> App<C> {
             if let Some(thread) = self.session_save_thread.take() {
                 let _ = thread.join();
             }
-            persist::clear_history(paths);
+            persistence::clear_history(paths);
         }
     }
 
@@ -48,9 +48,9 @@ impl<C: FnMut() -> u128> App<C> {
             SessionSaveJob::Clear
         } else {
             SessionSaveJob::Save {
-                snapshot: persist::capture(&self.state, &self.terminal_runtimes),
+                snapshot: persistence::capture(&self.state, &self.terminal_runtimes),
                 history: self.config.experimental.pane_history.0.then(|| {
-                    persist::capture_history(
+                    persistence::capture_history(
                         &self.state.topology.workspaces,
                         &self.terminal_runtimes,
                     )
@@ -107,9 +107,9 @@ impl<C: FnMut() -> u128> App<C> {
 /// Performs a captured job through the single snapshot effect owner.
 fn run_session_save_job(paths: &DaemonPaths, job: SessionSaveJob) {
     match job {
-        SessionSaveJob::Clear => persist::clear(paths),
+        SessionSaveJob::Clear => persistence::clear(paths),
         SessionSaveJob::Save { snapshot, history } => {
-            persist::save(paths, &snapshot, history.as_ref());
+            persistence::save(paths, &snapshot, history.as_ref());
         }
     }
 }

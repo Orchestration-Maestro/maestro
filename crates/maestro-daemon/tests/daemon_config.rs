@@ -419,9 +419,9 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     let paths = maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
     app.config.experimental.pane_history.0 = true;
     std::fs::write(paths.history_path(), "old history").unwrap();
-    let snapshot = maestro_daemon::persist::capture(&app.state, &app.terminal_runtimes);
+    let snapshot = maestro_daemon::persistence::capture(&app.state, &app.terminal_runtimes);
     let expected = serde_json::to_string_pretty(&snapshot).unwrap();
-    let history = maestro_daemon::persist::capture_history(
+    let history = maestro_daemon::persistence::capture_history(
         &app.state.topology.workspaces,
         &app.terminal_runtimes,
     );
@@ -431,7 +431,7 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     app.session_save_thread = Some(std::thread::spawn(move || {
         ready.send(()).unwrap();
         wait.recv().unwrap();
-        maestro_daemon::persist::save(&target, &snapshot, Some(&history));
+        maestro_daemon::persistence::save(&target, &snapshot, Some(&history));
     }));
     waiting.recv().unwrap();
     put(

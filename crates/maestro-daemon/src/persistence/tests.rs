@@ -2,7 +2,7 @@
 use super::*;
 use crate::diagnostics::tests::capture;
 use maestro_test_directory::{Scratch, temporary_root};
-use maestro_workspace::persist::records::{SNAPSHOT_VERSION, SessionHistorySnapshot};
+use maestro_workspace::persistence::records::{SNAPSHOT_VERSION, SessionHistorySnapshot};
 use std::fs;
 
 #[test]

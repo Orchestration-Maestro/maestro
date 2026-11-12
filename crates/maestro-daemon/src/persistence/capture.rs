@@ -6,7 +6,7 @@ use crate::{
 };
 use maestro_workspace::{
     pane_state::PaneState,
-    persist::records::{
+    persistence::records::{
         PaneAgentSessionSnapshot, PaneHistorySnapshot, PaneSnapshot, SNAPSHOT_VERSION,
         SessionHistorySnapshot, SessionSnapshot, TabHistorySnapshot, TabSnapshot,
         WorkspaceHistorySnapshot, WorkspaceSnapshot, capture_node,

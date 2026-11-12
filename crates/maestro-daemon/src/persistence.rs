@@ -1,8 +1,8 @@
 //! Snapshot effects through the shared workspace storage owner.
 
 use crate::{diagnostics, locations::DaemonPaths};
-use maestro_workspace::persist::records::{SessionHistorySnapshot, SessionSnapshot};
-use maestro_workspace::persist::{clear_path, save_to_paths};
+use maestro_workspace::persistence::records::{SessionHistorySnapshot, SessionSnapshot};
+use maestro_workspace::persistence::{clear_path, save_to_paths};
 use std::path::Path;
 
 #[cfg(target_os = "linux")]

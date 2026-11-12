@@ -186,7 +186,7 @@ modifier aliases and shifted-key matching; shifted Tab normalizes to BackTab.
 
 ## Snapshot
 
-[`maestro_workspace::persist`](../crates/maestro-workspace/src/persist/mod.rs)
+[`maestro_workspace::persistence`](../crates/maestro-workspace/src/persistence/mod.rs)
 loads and saves version-1 topology at supplied paths. Owned records retain
 workspace/tab/pane names, public numbers, selection, working directories, split
 axes and resume provenance. Screen history is stored separately and can be
@@ -787,11 +787,11 @@ retain their event, subsystem, outcome and operation-specific fields.
 
 ## Snapshot operations
 
-The live `state`, `tab` and `workspace` modules and `persist::capture` and
+The live `state`, `tab` and `workspace` modules and `persistence::capture` and
 `capture_history` use the Linux pane runtime and are available only on Linux.
 Snapshot save and clear operations remain available on other native targets.
 
-`persist::save`, `clear` and `clear_history` use `DaemonPaths` and the existing
+`persistence::save`, `clear` and `clear_history` use `DaemonPaths` and the existing
 workspace snapshot storage. They add no format or serializer. Save commits
 topology before separate history; absent history removes the history file.
 Only a completed combined save emits success. A history failure does not undo

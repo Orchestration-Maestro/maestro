@@ -1,6 +1,6 @@
 //! Replacement of read-only session and history files by supplied-path saves.
 use super::support::snapshot::{Directory, empty};
-use maestro_workspace::persist::save_to_paths;
+use maestro_workspace::persistence::save_to_paths;
 use std::{
     fs,
     path::{Path, PathBuf},
