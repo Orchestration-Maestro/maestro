@@ -149,7 +149,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-realpath",
         ],
     ),
-    ("maestro-test-terminal", &["maestro-tui"]),
     (
         "maestro-theme",
         &[
