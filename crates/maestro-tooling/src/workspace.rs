@@ -12,14 +12,13 @@ use std::path::{Component, Path, PathBuf};
 
 use cargo_metadata::Metadata;
 
+use crate::example_files;
 use crate::member_graph::members;
 
 /// The marker that opens the generated example region in a crate's manifest.
 pub const REGION_START: &str = "# example-index:start";
 /// The marker that closes that region.
 pub const REGION_END: &str = "# example-index:end";
-/// The shipped extension folder, beside the workspace manifest.
-const SHIPPED: &str = "examples/extensions";
 /// The standalone guide fixture, under the crate that holds one.
 pub(crate) const GUIDE: &str = "tests/fixtures/hello-extension";
 /// The fixture components of the component crate, relative to that crate.
@@ -189,10 +188,9 @@ impl Workspace {
         })
     }
 
-    /// The shipped extension folder, when this workspace has one.
+    /// The shipped extension folder, when this workspace has one that git does not ignore.
     pub(crate) fn shipped(&self) -> Option<PathBuf> {
-        let folder = self.root.join(SHIPPED);
-        folder.is_dir().then_some(folder)
+        example_files::shipped(&self.root)
     }
 
     /// The workspace-relative name of `path`, with `/` separators.
@@ -244,6 +242,8 @@ fn directory(manifest: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    /// The shipped extension folder, beside the workspace manifest.
+    const SHIPPED: &str = "examples/extensions";
 
     use maestro_test_directory::Scratch;
 
@@ -377,6 +377,36 @@ mod tests {
         workspace = read(root);
         assert_eq!(workspace.guide().unwrap(), root.join("crates/guide"));
         assert_eq!(workspace.shipped().unwrap(), root.join(SHIPPED));
+    }
+
+    /// A tree the checkout fetched and git ignores is never read as the workspace's shipped
+    /// examples, by the workspace or by component discovery; an unignored one is.
+    #[test]
+    fn a_shipped_folder_git_ignores_is_not_read() {
+        let scratch = fixture();
+        let root = scratch.path();
+        std::fs::create_dir_all(root.join(SHIPPED)).unwrap();
+        assert!(
+            std::process::Command::new("git")
+                .args(["init", "-q"])
+                .current_dir(root)
+                .status()
+                .unwrap()
+                .success()
+        );
+        let component = root.join("crates/component");
+        let shipped = |root: &Path| {
+            crate::example_files::folders(root, &component)
+                .into_iter()
+                .any(|folder| folder.ends_with(SHIPPED))
+        };
+        assert!(shipped(root));
+        assert_eq!(read(root).shipped().unwrap(), root.join(SHIPPED));
+
+        std::fs::write(root.join(".gitignore"), "/examples/\n").unwrap();
+
+        assert!(!shipped(root));
+        assert_eq!(read(root).shipped(), None);
     }
 
     /// A shipped example's manifest path climbs from the component crate to the root.

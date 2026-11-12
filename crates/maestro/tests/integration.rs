@@ -2,20 +2,12 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 mod component_stdout;
-mod custom_message_provider_example;
 mod entry_routes;
 mod host_operations;
 mod model_streams;
 mod native_io;
 mod print_terminal;
-mod provider_payload_example;
-mod qna_example;
-mod rpc_demo_example;
 mod startup_modes;
-mod structured_output_example;
 mod subagent_example;
 mod support;
-mod tic_tac_toe_example;
-pub mod tools_example;
-mod truncated_tool_example;
 mod windows_terminal;

@@ -237,8 +237,9 @@ fn run_setup(root: &Path, wrapper: Option<&str>) -> String {
     let _ = fs::remove_file(&calls);
     let _ = fs::remove_file(root.join("nextest-env"));
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command.args(["nextest-setup", "browser-author"]);
+    maestro_test_process::without_prepared_bundles(&mut command);
     command
-        .args(["nextest-setup", "browser-author"])
         .current_dir(root)
         .env_clear()
         .env(
