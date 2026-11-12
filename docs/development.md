@@ -1067,7 +1067,7 @@ remain visible in GitHub but do not block the merge queue.
 ### Slowest-first test order
 
 Nextest starts the slowest tests first inside each shard. The tests that took more
-than 30 seconds in the latest merge-group run hold distinct priorities in
+than 30 seconds in the merge-group run below hold distinct priorities in
 `.config/nextest.toml`, 100 down by duration. The cold browser build always holds
 100. A test that falls under 30 seconds gives up its priority and its table row.
 Other tests keep priority 0. These are
@@ -2788,8 +2788,9 @@ comes from `maestro-test-directory::temporary_root`. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept
 variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
-instead of compiling it again. The parent starts every group's child before it collects the first, so a test takes
-the time of its slowest group, and one group child runs per group at the same time.
+instead of compiling it again. The parent starts every group's child before it collects the first, so all group
+children run at once and a test takes the time of its slowest group. Nextest's
+thread count does not count these children.
 In the parent, `run_per_environment` returns
 `None` once every child passes, and repeats each passing child's standard error
 in group order, so a case that left one out keeps its reason. `run_per_environment`
