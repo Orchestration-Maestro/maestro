@@ -312,16 +312,20 @@ fn reread_follows_another_storage_and_in_place_edits() {
     let storage = AuthStorage::create(&path);
     assert_eq!(storage.get("p"), Some(api_key("old-1")));
 
-    let first_write = std::fs::metadata(&path).unwrap().modified().unwrap();
-    other.set("p", api_key("new-1"));
-    // The write is in place at the same size; restoring the time reproduces one timestamp tick.
-    std::fs::OpenOptions::new()
-        .write(true)
-        .open(&path)
-        .unwrap()
-        .set_modified(first_write)
-        .unwrap();
-    assert_eq!(storage.get("p"), Some(api_key("new-1")));
+    // Restoring the time needs a change time to tell the edit apart, which only Unix reports.
+    #[cfg(unix)]
+    {
+        let first_write = std::fs::metadata(&path).unwrap().modified().unwrap();
+        other.set("p", api_key("new-1"));
+        // The write is in place at the same size; restoring the time reproduces one timestamp tick.
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(first_write)
+            .unwrap();
+        assert_eq!(storage.get("p"), Some(api_key("new-1")));
+    }
 
     std::fs::write(&path, r#"{"p":{"type":"api_key","key":"edited-in-place"}}"#).unwrap();
     assert_eq!(storage.get("p"), Some(api_key("edited-in-place")));

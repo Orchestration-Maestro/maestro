@@ -29,9 +29,10 @@ pub struct FileAuthStorageBackend {
 
 /// What an edited, replaced or restored credential file changes: its size, modification time
 /// and, where the platform reports them, device, inode and change time. Maestro writes the
-/// file in place, so the inode stays; the change time moves with every write and cannot be set
-/// back, which separates an edit that restores the old modification time. Where the platform
-/// reports no change time, two equal-size edits inside one timestamp tick look the same.
+/// file in place, so the inode stays; the change time moves with every write, at the
+/// filesystem's timestamp resolution, and cannot be set back, which separates an edit that
+/// restores the old modification time. Writes inside one timestamp tick look the same, and
+/// so do equal-size edits where the platform reports no change time.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct FileIdentity {
     /// Size in bytes.

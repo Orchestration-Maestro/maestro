@@ -18,12 +18,13 @@ source names; it is not the stored-file writer, which stays with `AuthStorage`.
 read (`get`, `get_all`, `list`, `has`, `has_auth`, `get_auth_status` and `get_api_key`)
 rereads the document under exclusion. The one exception is a credential file that
 still has the size, modification time, device, inode and change time of the last read:
-the remembered text answers without taking the lock. Every write moves the change time,
-even when it keeps the size or restores the modification time, so a long-lived storage
-still follows what another process stores or removes. A successful reread replaces
-the accepted records, even when the text is unchanged. An acquisition, read or parse
-failure keeps the
-accepted records and records nothing. Missing or empty text is an empty store;
+the remembered text answers without taking the lock. On Unix, every write moves the
+change time (at the filesystem's timestamp resolution), even when it keeps the size or
+restores the modification time, so a long-lived storage still follows what another
+process stores or removes. Where the platform reports no change time, two equal-size
+edits inside one timestamp tick look the same. A successful reread replaces the accepted
+records, even when the text is unchanged. An acquisition, read or parse failure keeps
+the accepted records and records nothing. Missing or empty text is an empty store;
 a non-object JSON value is unparsable.
 
 A reread never clears a recorded load failure. Only a successful `reload` or locked
