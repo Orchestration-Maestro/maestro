@@ -31,16 +31,6 @@ impl State {
     /// Serves placement without borrowing the capability table across native effects.
     pub(super) fn overlays(&self, message: OverlayMessage) {
         match message {
-            OverlayMessage::Close(id, reply) => {
-                let capability = self.registry.capability(id);
-                let result = match capability.as_deref() {
-                    Some(Capability::CustomClose(close)) => {
-                        close().map_err(|error| error.to_string())
-                    }
-                    _ => Err("extension custom close resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
-            }
             OverlayMessage::NewOptions(encoded, reply) => {
                 let result = crate::overlay_layout::decode(&encoded).and_then(|options| {
                     self.registry.lend_placement(Placement {

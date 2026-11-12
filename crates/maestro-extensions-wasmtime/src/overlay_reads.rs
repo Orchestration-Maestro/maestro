@@ -71,8 +71,6 @@ pub(crate) struct Visibility {
 
 /// Overlay requests share the widget pump and resource table.
 pub(crate) enum OverlayMessage {
-    /// Calls the original custom-component close operation.
-    Close(u64, Reply<bool>),
     /// Creates one shared options record.
     NewOptions(String, Reply<OptionsEndpoint>),
     /// Operates on the options record with this identity.

@@ -163,6 +163,14 @@ held!(
     Capability::BashOutput(frame) => frame
 );
 
+held!(
+    /// The close operation of a custom component.
+    Close,
+    maestro_extensions::types::CustomClose,
+    "extension custom close resource ended",
+    Capability::CustomClose(close) => close
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
