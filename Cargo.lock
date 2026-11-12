@@ -4092,9 +4092,9 @@ name = "maestro-daemon"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "interprocess",
  "maestro-dependencies",
  "maestro-detection",
- "maestro-ipc",
  "maestro-json",
  "maestro-lock",
  "maestro-path",
@@ -4113,6 +4113,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.0",
+ "socket2",
  "time",
  "tokio",
  "tracing",
@@ -4340,19 +4341,6 @@ dependencies = [
  "tokio",
  "wasmtime",
  "wasmtime-wasi",
-]
-
-[[package]]
-name = "maestro-ipc"
-version = "0.1.0"
-dependencies = [
- "interprocess",
- "maestro-dependencies",
- "maestro-lock",
- "maestro-test-directory",
- "maestro-test-process",
- "rustix",
- "socket2",
 ]
 
 [[package]]

@@ -35,7 +35,7 @@ pub fn git_rev_parse_verify(repo_root: &Path, revision: &str) -> Option<String> 
 
 /// Read the full reference `HEAD` names, absent for a detached head.
 #[must_use]
-pub fn git_symbolic_head_full(repo_root: &Path) -> Option<String> {
+pub(crate) fn git_symbolic_head_full(repo_root: &Path) -> Option<String> {
     git_trimmed_stdout(repo_root, &["symbolic-ref", "--quiet", "HEAD"])
 }
 

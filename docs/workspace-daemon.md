@@ -7,11 +7,12 @@ The common command records live in [daemon protocol](daemon-protocol.md).
 
 ## Sockets
 
-`maestro-ipc` owns native socket effects and consumes supplied paths. It reads no
-environment variables and chooses no configuration root. Both transports use the
-shared [JSONL codec](json.md#jsonl-framing); socket code defines no command set.
+The daemon's `service::local_socket` module owns native socket effects and consumes
+supplied paths. It reads no environment variables and chooses no configuration
+root. Both transports use the shared [JSONL codec](json.md#jsonl-framing); socket
+code defines no command set.
 
-`socket_paths::client_socket_path` selects, in order:
+`service::local_socket::paths::client_socket_path` selects, in order:
 
 1. The caller's explicit named-daemon client path, even when empty.
 2. The client path derived from the supplied API socket override
@@ -65,8 +66,8 @@ still match. A missing path succeeds. This metadata comparison followed by unlin
 is not atomic; callers must coordinate pathname replacement with cleanup.
 
 After binding, callers restrict the socket to owner read/write mode (`0600`)
-through `socket_paths::restrict_socket_permissions`. Private listeners also need
-this post-bind call on Unix. Write shutdown leaves the read direction usable.
+through `service::local_socket::paths::restrict_socket_permissions`. Private
+listeners also need this post-bind call on Unix. Write shutdown leaves the read direction usable.
 Only an actual end-of-input read ends incoming traffic; pending command bytes are
 not consumed by a disconnect probe.
 

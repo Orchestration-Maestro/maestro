@@ -89,7 +89,6 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 | Crate | Modules added | Deliveries |
 |---|---|---|
 | `maestro-json` | `lines` | 1 |
-| `maestro-ipc` | `local_socket`, `socket_paths` | 1 |
 | `maestro-process` | `terminal::{fd, channels, jobs}`, `commands` additions, `children::native` signal escalation | 2, 19, 29 |
 | `maestro-workspace` | `tiling`, `spaces`, `spaces::repository`, `tab`, `pane_state`, `terminal_id`, `metadata_tokens`, `persist::{records, io}` | 3, 6, 14 |
 | `maestro-detection` | `agents`, `definitions`, `updates`, bundled manifests | 4, 7 |

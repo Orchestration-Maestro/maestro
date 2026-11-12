@@ -9,7 +9,7 @@ use super::{AgentVisibility, EffectiveStateChange};
 impl TerminalState {
     /// Apply a fallback detection without visible screen signals.
     #[cfg(test)]
-    pub fn set_detected_state(
+    pub(crate) fn set_detected_state(
         &mut self,
         agent: Option<Agent>,
         fallback_state: AgentState,
@@ -20,7 +20,7 @@ impl TerminalState {
 
     /// Apply fallback detection and return all mutation flags.
     #[cfg(test)]
-    pub fn set_detected_state_with_mutation(
+    pub(crate) fn set_detected_state_with_mutation(
         &mut self,
         agent: Option<Agent>,
         fallback_state: AgentState,

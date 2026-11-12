@@ -13,7 +13,8 @@ mod resize;
 mod retained;
 mod stream;
 
-pub use modes::{InputMode, InputState};
+pub use modes::InputMode;
+pub use modes::InputState;
 pub use reads::{PaneRenderView, TerminalReadSnapshot};
 pub use retained::{TerminalTextMatch, TerminalTextPoint, TerminalWordMotion};
 
@@ -57,15 +58,15 @@ pub struct ProcessBytesResult {
     /// Whether the renderer should redraw now.
     pub request_render: bool,
     /// Optional follow-up delay for image or cursor settling.
-    pub render_delay: Option<Duration>,
+    pub(crate) render_delay: Option<Duration>,
     /// Whether a completed title changed the display title.
-    pub terminal_title_changed: bool,
+    pub(crate) terminal_title_changed: bool,
     /// Live bell count, saturated by the engine.
-    pub terminal_bells: u16,
+    pub(crate) terminal_bells: u16,
     /// Accepted live clipboard writes.
     pub clipboard_writes: Vec<Vec<u8>>,
     /// Latest accepted live working directory.
-    pub reported_cwd: Option<PathBuf>,
+    pub(crate) reported_cwd: Option<PathBuf>,
     /// Ordered replies to send directly to the child PTY.
     pub terminal_responses: Vec<Vec<u8>>,
 }

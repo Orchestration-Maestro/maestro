@@ -63,7 +63,7 @@ const fn default_command_timeout_seconds() -> u64 {
 ///
 /// # Errors
 /// Returns an explanation for empty, invalid or unsupported formats.
-pub fn parse_tab_bar_datetime_format(
+pub(crate) fn parse_tab_bar_datetime_format(
     value: &str,
 ) -> Result<time::format_description::OwnedFormatItem, String> {
     if value.is_empty() {
@@ -79,7 +79,7 @@ pub fn parse_tab_bar_datetime_format(
 
 /// Diagnose the first sixteen entries, retaining their authored order.
 #[must_use]
-pub fn tab_bar_right_diagnostics(entries: &[TabBarRightEntryConfig]) -> Vec<String> {
+pub(crate) fn tab_bar_right_diagnostics(entries: &[TabBarRightEntryConfig]) -> Vec<String> {
     let mut diagnostics = Vec::new();
     if entries.len() > MAX_TAB_BAR_RIGHT_ENTRIES {
         diagnostics

@@ -30,7 +30,8 @@ fn daemon_deletion_preserves_running_and_unrelated_folders() {
         .unwrap()
         .api_socket_path();
     let listener =
-        maestro_ipc::local_socket::bind_local_listener(std::path::Path::new(&socket)).unwrap();
+        maestro_daemon::service::local_socket::bind_local_listener(std::path::Path::new(&socket))
+            .unwrap();
     assert_eq!(
         instances::delete_session(agent, "live").unwrap_err(),
         "daemon live is running; stop it before deleting"

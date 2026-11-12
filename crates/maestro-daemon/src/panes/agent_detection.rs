@@ -11,15 +11,15 @@ pub struct DetectionScreenReadInput {
     /// Retained foreground identity.
     pub agent: Option<Agent>,
     /// Whether an idle transition awaits confirmation.
-    pub pending_idle_active: bool,
+    pub(crate) pending_idle_active: bool,
     /// Whether the foreground identity changed.
-    pub agent_changed: bool,
+    pub(crate) agent_changed: bool,
     /// Whether the foreground process exited.
     pub process_exited: bool,
     /// Latest terminal content revision.
-    pub current_detection_content_seq: Option<u64>,
+    pub(crate) current_detection_content_seq: Option<u64>,
     /// Content revision of the last screen scan.
-    pub last_screen_scan_detection_content_seq: Option<u64>,
+    pub(crate) last_screen_scan_detection_content_seq: Option<u64>,
 }
 
 /// Whether a detector needs fresh terminal text.
@@ -68,15 +68,15 @@ pub struct DetectionPublishState {
 #[derive(Debug, Clone, Copy)]
 pub struct DetectionTransitionInput {
     /// Last published observation.
-    pub previous_publish: DetectionPublishState,
+    pub(crate) previous_publish: DetectionPublishState,
     /// Proposed screen observation.
-    pub next_publish: DetectionPublishState,
+    pub(crate) next_publish: DetectionPublishState,
     /// Whether process identity changed.
-    pub agent_changed: bool,
+    pub(crate) agent_changed: bool,
     /// Whether the retained process exited.
     pub process_exited: bool,
     /// Whether unchanged blocker evidence needs refreshing.
-    pub stable_refresh_due: bool,
+    pub(crate) stable_refresh_due: bool,
     /// Time of this observation.
     pub now: Instant,
 }
@@ -171,13 +171,13 @@ pub struct ScreenDetectionPublishInput {
     /// Last published state and screen evidence.
     pub previous: DetectionPublishState,
     /// Time of the last published blocker or working evidence.
-    pub last_visible_signal_refresh: Option<Instant>,
+    pub(crate) last_visible_signal_refresh: Option<Instant>,
     /// Detector result for the live bottom buffer.
-    pub screen_detection: AgentDetection,
+    pub(crate) screen_detection: AgentDetection,
     /// Whether the foreground process exited.
     pub process_exited: bool,
     /// Whether process identity changed.
-    pub agent_changed: bool,
+    pub(crate) agent_changed: bool,
     /// Time of this observation.
     pub now: Instant,
 }

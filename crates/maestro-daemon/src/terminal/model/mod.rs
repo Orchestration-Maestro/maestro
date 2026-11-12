@@ -1,5 +1,6 @@
 //! Retained identity and centralized effective-state arbitration.
-pub use super::agents::{AgentMetadata, AgentMetadataReport, EffectivePresentation};
+pub use super::agents::AgentMetadataReport;
+pub use super::agents::{AgentMetadata, EffectivePresentation};
 use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_workspace::terminal_id::TerminalId;
 use std::{
@@ -44,7 +45,7 @@ pub struct HookAuthority {
     /// Optional integration status detail.
     pub message: Option<String>,
     /// Observation time of the retained report.
-    pub reported_at: Instant,
+    pub(crate) reported_at: Instant,
     /// Validated session identity, when supplied.
     pub session_ref: Option<crate::resume::AgentSessionRef>,
 }
@@ -169,13 +170,13 @@ pub(in crate::terminal) struct ManagedAgent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EffectiveStateChange {
     /// Effective label before the mutation.
-    pub previous_agent_label: Option<String>,
+    pub(crate) previous_agent_label: Option<String>,
     /// Known catalogue identity before the mutation.
-    pub previous_known_agent: Option<Agent>,
+    pub(crate) previous_known_agent: Option<Agent>,
     /// Execution state before the mutation.
     pub previous_state: AgentState,
     /// Visible presentation before the mutation.
-    pub previous_presentation: EffectivePresentation,
+    pub(crate) previous_presentation: EffectivePresentation,
     /// External catalogue label or custom identity.
     pub agent_label: Option<String>,
     /// Resolved catalogue identity, if known.
@@ -199,11 +200,11 @@ pub struct TerminalTitleChange {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TerminalStateMutation {
     /// Observable identity, state or presentation change, if any.
-    pub effective_state_change: Option<EffectiveStateChange>,
+    pub(crate) effective_state_change: Option<EffectiveStateChange>,
     /// Whether retained session identity changed.
-    pub session_ref_changed: bool,
+    pub(crate) session_ref_changed: bool,
     /// Whether this mutation released agent ownership.
-    pub agent_released: bool,
+    pub(crate) agent_released: bool,
 }
 
 /// Agent and optional session owning the retained name.
@@ -285,7 +286,7 @@ pub struct TerminalState {
     /// Whether initial foreground-process acquisition still awaits idle.
     pub(in crate::terminal) agent_process_acquisition_pending: bool,
     /// Resume plan awaiting caller execution.
-    pub pending_agent_resume_plan: Option<crate::resume::AgentResumePlan>,
+    pub(crate) pending_agent_resume_plan: Option<crate::resume::AgentResumePlan>,
 }
 impl TerminalState {
     /// Create an unacquired terminal with caller-owned identity and working directory.
