@@ -36,7 +36,7 @@ fn a_value_that_is_not_an_object_is_refused() {
     for value in [json!([1]), json!("{}"), json!(null), json!(3)] {
         assert_eq!(
             with_property(&value, "type", &"x").unwrap_err(),
-            "event is not an object"
+            "value is not a JSON object"
         );
     }
 }

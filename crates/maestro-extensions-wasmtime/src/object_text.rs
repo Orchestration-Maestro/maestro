@@ -18,7 +18,7 @@ pub(crate) fn with_property(
         .strip_prefix('{')
         .and_then(|rest| rest.strip_suffix('}'))
     else {
-        return Err("event is not an object".to_owned());
+        return Err("value is not a JSON object".to_owned());
     };
     let key = serde_json::to_string(key).map_err(|error| error.to_string())?;
     let property = serde_json::to_string(property).map_err(|error| error.to_string())?;

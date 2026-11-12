@@ -1,4 +1,4 @@
-//! The one engine configuration every component engine is built from.
+//! The one engine configuration and host link table every component is built from.
 use crate::lifecycle::State;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
