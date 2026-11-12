@@ -5,13 +5,14 @@ use super::{
     SharedHandle, diagnostic,
 };
 use crate::browser::timer::{self, Timer};
+use maestro_app::SandboxResult;
 use maestro_app::browser::components::{
     sandbox::{
         console_runtime_provider::ConsoleRuntimeProvider, providers::RuntimeProviderValue as _,
     },
     sandboxed_iframe::{SandboxError, SandboxExecution},
 };
-use maestro_app::{BoxFuture, Cancellation, SandboxResult};
+use maestro_models::{BoxFuture, Cancellation};
 use std::{
     cell::RefCell,
     future::{Future as _, poll_fn},

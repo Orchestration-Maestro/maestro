@@ -2,9 +2,8 @@
 
 use crate::input::arguments::{Args, Diagnostic, DiagnosticType, Mode};
 use maestro_app::configuration::config::paths::expand_tilde_path;
-use maestro_app::{
-    AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, SettingsManager,
-};
+use maestro_app::{AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType};
+use maestro_settings::SettingsManager;
 use maestro_theme::Theme;
 use std::io::{self, Write};
 

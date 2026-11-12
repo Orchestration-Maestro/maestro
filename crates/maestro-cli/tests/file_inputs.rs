@@ -1,12 +1,13 @@
 //! Ordered file preparation observed through both file-effect routes.
 
 use crate::support::{self, Recorded};
-use maestro_app::{ImageContent, ResizedImage};
 use maestro_cli::input::file_processor::{
     FileArgumentError, FileArgumentOperations, NativeFileArgumentOperations, ProcessFileOptions,
     ProcessedFiles, process_file_arguments,
 };
+use maestro_models::ImageContent;
 use maestro_test_directory::Scratch;
+use maestro_tools::utils::ResizedImage;
 use std::cell::RefCell;
 use std::io;
 

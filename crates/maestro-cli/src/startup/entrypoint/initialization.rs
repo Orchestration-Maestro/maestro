@@ -6,10 +6,15 @@ use super::configuration::{
 use crate::input::arguments::Args;
 use maestro_app::{
     AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, AgentSessionServices,
-    AuthStorage, CreateAgentSessionFromServicesOptions, CreateAgentSessionRuntimeResult,
-    DiagnosticErrorInfo, Local, ModelResolverOutput, SessionManager, SessionStartEvent,
-    SettingsListEntry, create_agent_session_from_services, resolve_model_scope,
+    CreateAgentSessionFromServicesOptions, CreateAgentSessionRuntimeResult,
+    create_agent_session_from_services,
 };
+use maestro_catalog::{ModelResolverOutput, resolve_model_scope};
+use maestro_credentials::AuthStorage;
+use maestro_extensions::types::events::SessionStartEvent;
+use maestro_models::{DiagnosticErrorInfo, Local};
+use maestro_session::SessionManager;
+use maestro_settings::SettingsListEntry;
 use maestro_theme::{Collator, LiveTheme};
 use std::{borrow::Cow, cell::RefCell, rc::Rc};
 
@@ -44,7 +49,7 @@ fn scoped_models(
     parsed: &Args,
     creation: &RuntimeCreation,
     output: &mut ModelResolverOutput<'_>,
-) -> Result<Vec<maestro_app::ScopedModel>, DiagnosticErrorInfo> {
+) -> Result<Vec<maestro_catalog::ScopedModel>, DiagnosticErrorInfo> {
     let (patterns, invalid) = if let Some(models) = &parsed.models {
         (Cow::Borrowed(models.as_slice()), false)
     } else {
@@ -105,7 +110,7 @@ fn runtime_diagnostics(creation: &RuntimeCreation) -> Vec<AgentSessionRuntimeDia
 fn session_options(
     parsed: &Args,
     creation: &RuntimeCreation,
-    scoped: &[maestro_app::ScopedModel],
+    scoped: &[maestro_catalog::ScopedModel],
 ) -> Result<BuiltSessionOptions, DiagnosticErrorInfo> {
     let has_existing_session = !creation
         .session_manager

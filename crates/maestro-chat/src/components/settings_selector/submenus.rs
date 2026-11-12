@@ -1,6 +1,6 @@
 //! Warning edits and bounded nested option lists.
 use crate::components::bounded_select_list;
-use maestro_app::WarningSettings;
+use maestro_settings::WarningSettings;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
 use maestro_tui::InputHandler;
 use maestro_tui::components::SettingsListOptions;
@@ -28,7 +28,7 @@ impl WarningSettingsSubmenu {
             .0
             .get("anthropicExtraUsage")
             .filter(|value| !value.is_null())
-            .is_none_or(maestro_app::is_truthy);
+            .is_none_or(maestro_json::is_truthy);
         let state = RefCell::new(initial);
         let item = SettingItem {
             id: "anthropic-extra-usage".into(),

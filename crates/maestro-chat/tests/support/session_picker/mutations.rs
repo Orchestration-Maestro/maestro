@@ -65,7 +65,7 @@ fn replay_cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str, run: impl 
     }
 }
 /// Two original default records with distinguishable identities.
-fn records() -> Vec<maestro_app::SessionInfo> {
+fn records() -> Vec<maestro_session::SessionInfo> {
     vec![named("a", "Old"), named("b", "Other")]
 }
 /// Constructs mutation configuration without duplicating the selector host.
@@ -714,7 +714,7 @@ fn moved(mut frame: Frame, (from, to): (&str, &str)) -> Frame {
     frame
 }
 /// The default records, with session `a` stored at `path`.
-fn records_at(path: &str) -> Vec<maestro_app::SessionInfo> {
+fn records_at(path: &str) -> Vec<maestro_session::SessionInfo> {
     let mut records = records();
     records[0].path = path.into();
     records
@@ -903,7 +903,7 @@ record!(ScopeCompletion {
     all_loads: usize
 });
 /// The default records, with session `a` stored at `path` when it is deleted.
-fn scope_records(mutation: &str, path: &str) -> Vec<maestro_app::SessionInfo> {
+fn scope_records(mutation: &str, path: &str) -> Vec<maestro_session::SessionInfo> {
     if mutation == "delete" {
         records_at(path)
     } else {

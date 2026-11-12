@@ -2,9 +2,12 @@
 
 use super::{clear_render_dirty, style::CellStyler};
 use crate::render::conversion::color_to_u32;
-use maestro_app::daemon_api::{PaneRenderView, PaneTerminal, render_profile};
-use maestro_app::terminal::Dirty;
+use maestro_daemon::{
+    panes::display::{PaneRenderView, PaneTerminal},
+    render_profile,
+};
 use maestro_protocol::frames::CellData;
+use maestro_terminal_emulator::painting::Dirty;
 use ratatui::style::{Color, Style};
 use std::time::Instant;
 

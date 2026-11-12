@@ -1,7 +1,8 @@
 //! Raw exported document loading.
 use super::{Stats, compute_stats};
 use indexmap::IndexMap;
-use maestro_app::{Presence, export_html::template::read_message, is_truthy};
+use maestro_json::is_truthy;
+use maestro_session::{Presence, export_html::template::read_message};
 use serde_json::{Map, Value};
 use std::io;
 
@@ -88,13 +89,13 @@ pub(super) fn invalid(message: impl Into<Box<dyn std::error::Error + Send + Sync
 impl SessionDocument {
     /// Borrow a forest over the current raw entries with viewer-selected labels.
     #[must_use]
-    pub fn build_tree(&self) -> Vec<maestro_app::SessionTreeNode<'_>> {
+    pub fn build_tree(&self) -> Vec<maestro_session::session_manager::SessionTreeNode<'_>> {
         let entries = self
             .data
             .get("entries")
             .and_then(Value::as_array)
             .map_or(&[][..], Vec::as_slice);
-        maestro_app::export_html::template::build_tree(
+        maestro_session::export_html::template::build_tree(
             entries,
             |id| {
                 self.label_map
@@ -155,7 +156,7 @@ impl SessionDocument {
 fn decode(base64: &str) -> io::Result<Map<String, Value>> {
     let bytes = crate::utils::base64::decode(base64)?;
     let data: Map<String, Value> =
-        serde_json::from_str(&maestro_app::decode_utf8(&bytes)).map_err(invalid)?;
+        serde_json::from_str(&maestro_text::decode_utf8(&bytes)).map_err(invalid)?;
     Ok(data)
 }
 

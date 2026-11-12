@@ -1,11 +1,10 @@
 //! The model table observed through the public writer.
 
 use crate::support;
-use maestro_app::{
-    AuthStorage, AuthStorageData, ModelCost, ModelFileOperations, ModelInput, ModelRegistry,
-    ProviderModelInput,
-};
+use maestro_catalog::{ModelFileOperations, ModelRegistry, ProviderModelInput};
 use maestro_cli::input::model_listing::{ListModelsOptions, list_models};
+use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_models::{ModelCost, ModelInput};
 use maestro_theme::Collator;
 use std::cell::RefCell;
 use std::rc::Rc;

@@ -1,5 +1,5 @@
 //! The signal delivery and process exit of a print run.
-use maestro_app::{TerminationSignal, register_signals};
+use maestro_process::{TerminationSignal, register_signals};
 use std::{io, rc::Rc};
 
 /// The signal delivery and process exit of a print run.

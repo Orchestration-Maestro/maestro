@@ -121,13 +121,13 @@ fn assert_declared(names: &[&str]) {
 fn names_the_session_and_history_records_at_the_root() {
     assert_declared(&[
         std::any::type_name::<maestro_app::AgentSessionRuntime>(),
-        std::any::type_name::<maestro_app::BashExecutorOptions>(),
-        std::any::type_name::<maestro_app::BashResult>(),
+        std::any::type_name::<maestro_tools::BashExecutorOptions>(),
+        std::any::type_name::<maestro_tools::BashResult>(),
         std::any::type_name::<maestro_app::BranchPreparation>(),
         std::any::type_name::<maestro_app::BranchSummaryResult>(),
         std::any::type_name::<maestro_app::CollectEntriesResult>(),
         std::any::type_name::<maestro_app::CompactionResult>(),
-        std::any::type_name::<maestro_app::GeneratedSummary>(),
+        std::any::type_name::<maestro_session::summarization::GeneratedSummary>(),
         std::any::type_name::<maestro_app::CompactionSettings>(),
         std::any::type_name::<maestro_app::CreateAgentSessionFromServicesOptions>(),
         std::any::type_name::<maestro_app::CreateAgentSessionOptions>(),
@@ -219,7 +219,7 @@ fn names_the_session_and_history_operations_at_the_root() {
             &maestro_app::discover_and_load_extensions::<maestro_models::Local>,
         ),
         std::any::type_name_of_val(&maestro_app::estimate_tokens),
-        std::any::type_name_of_val(&maestro_app::execute_bash_with_operations),
+        std::any::type_name_of_val(&maestro_tools::execute_bash_with_operations),
     ]);
 }
 

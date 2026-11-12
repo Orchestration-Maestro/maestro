@@ -1,7 +1,7 @@
 use super::search::{
     ModelEntry, ModelFilter, filter_models, format_tokens, model_entries, subsequence_score,
 };
-use maestro_app::Model;
+use maestro_models::Model;
 use std::collections::HashSet;
 
 /// A descriptor with the given identity and capabilities: `r` for reasoning, `i` for images.
@@ -160,9 +160,9 @@ fn model_filters_restrict_providers_and_intersect_capabilities() {
 fn model_entries_append_custom_models_under_their_own_provider() {
     let custom = model("My Server", "local-1", "Local", "");
     let entries = model_entries(std::slice::from_ref(&custom));
-    let catalog = maestro_app::get_providers()
+    let catalog = maestro_models::get_providers()
         .iter()
-        .map(|provider| maestro_app::get_models(provider).len())
+        .map(|provider| maestro_models::get_models(provider).len())
         .sum::<usize>();
     assert_eq!(entries.len(), catalog + 1);
     let last = entries.last().unwrap();
@@ -172,7 +172,7 @@ fn model_entries_append_custom_models_under_their_own_provider() {
     );
     assert_eq!(last.model, custom);
     let first = &entries[0];
-    assert_eq!(first.provider, maestro_app::get_providers()[0]);
+    assert_eq!(first.provider, maestro_models::get_providers()[0]);
     assert_eq!(first.model.provider, first.provider);
 }
 

@@ -11,10 +11,9 @@ use crate::{
     page::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
 };
-use maestro_app::{
-    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, Presence, get_app_storage,
-    get_providers,
-};
+use maestro_app::{AutoDiscoveryProviderType, CustomProvider, CustomProviderType, get_app_storage};
+use maestro_models::get_providers;
+use maestro_session::Presence;
 use std::{
     cell::RefCell,
     collections::HashMap,

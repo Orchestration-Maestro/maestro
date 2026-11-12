@@ -1,6 +1,6 @@
 //! Export walking needs no transcript indexing state.
 use super::super::{Policy, Prepared, Writer};
-use maestro_app::markdown;
+use maestro_markdown as markdown;
 
 #[test]
 fn export_writer_needs_no_inline_context() {

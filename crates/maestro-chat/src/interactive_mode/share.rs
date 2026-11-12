@@ -4,10 +4,12 @@
 use super::InteractiveMode;
 use crate::{BorderedLoader, BorderedLoaderOptions};
 use maestro_app::configuration::config::{SERVICE_ORIGIN, get_share_viewer_url};
-use maestro_app::{
-    CapturedChild, OutputMode, SpawnSyncOptions, Termination, WaitOptions, is_whitespace_scalar,
-    spawn_sync, wait_for_child_process,
+use maestro_process::{
+    OutputMode, SpawnSyncOptions,
+    children::{CapturedChild, Termination, WaitOptions, wait_for_child_process},
+    spawn_sync,
 };
+use maestro_text::is_whitespace_scalar;
 use std::{
     error::Error,
     fs, io,

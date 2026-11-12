@@ -1,7 +1,7 @@
 //! Literal debug listings with strict JSON-string projection.
 #[cfg(any(target_arch = "wasm32", test))]
 use crate::tools::types::ToolUiError;
-use maestro_app::ToolResultMessage;
+use maestro_models::ToolResultMessage;
 use std::rc::Rc;
 
 /// Native debug listings, independent of result-payload presence.
@@ -22,7 +22,7 @@ fn pretty(value: Option<&serde_json::Value>) -> Result<(String, &'static str), T
     };
     let parsed;
     let value = if let Some(text) = value.as_str() {
-        match maestro_app::browser::utils::parse_json(text) {
+        match maestro_models::parameters::json_parse::parse_json(text) {
             Ok(value) => {
                 parsed = value;
                 &parsed
@@ -32,7 +32,7 @@ fn pretty(value: Option<&serde_json::Value>) -> Result<(String, &'static str), T
     } else {
         value
     };
-    maestro_app::pretty_json(value)
+    maestro_json::pretty_json(value)
         .map(|text| (text, "json"))
         .map_err(|error| ToolUiError::Presentation(error.to_string()))
 }

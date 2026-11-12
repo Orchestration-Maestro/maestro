@@ -6,7 +6,6 @@ use crate::support::session_harness::{
     prompt_to_end, recorded,
 };
 use maestro_app::ModelCycleResult;
-use maestro_app::Presence;
 use maestro_app::agent_session::{ExtensionBindings, PromptOptions};
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ContextEvent, ContextEventResult,
@@ -19,6 +18,7 @@ use maestro_models::{
     FauxResponseStep, FauxToolCallOptions, Local, ModelThinkingLevel, StopReason, TextContent,
     Threaded, faux_assistant_message, faux_tool_call,
 };
+use maestro_session::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
 use std::{

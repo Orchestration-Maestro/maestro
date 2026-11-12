@@ -5,7 +5,7 @@ use crate::browser_fixture_support::{get, global, invoke, object, post_from};
 use crate::contributions_support::settle;
 use crate::sandbox_bootstrap_support::OBSERVER;
 use crate::sandbox_program_inputs::{MARKER_PROVIDER, MARKER_USER, PROVIDER, USER};
-use maestro_app::SharedHandle;
+use maestro_models::SharedHandle;
 use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
 use std::{

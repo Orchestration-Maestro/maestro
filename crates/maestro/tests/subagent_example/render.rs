@@ -1,8 +1,8 @@
 //! The actual component's retained call and result renderers.
 use super::*;
-use maestro_app::{
-    ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResultLike,
-    ToolRenderResultOptions, ToolRendererState,
+use maestro_tools::{
+    ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResultOptions,
+    ToolRendererState, output::render_utils::ToolRenderResultLike,
 };
 use std::cell::RefCell;
 
@@ -89,7 +89,8 @@ pub(super) fn rendered(
             &context,
         )
         .unwrap();
-    maestro_app::strip_ansi(&view.try_render(120).unwrap().join("\n")).unwrap()
+    maestro_tools::output::render_utils::strip_ansi(&view.try_render(120).unwrap().join("\n"))
+        .unwrap()
 }
 
 /// Checks compact tool arguments, retained Markdown and per-agent/aggregate usage.
@@ -155,7 +156,10 @@ fn subagent_renderers_show_calls_full_outputs_usage_and_live_progress() {
                 &context,
             )
             .unwrap();
-            let text = maestro_app::strip_ansi(&call.try_render(120).unwrap().join("\n")).unwrap();
+            let text = maestro_tools::output::render_utils::strip_ansi(
+                &call.try_render(120).unwrap().join("\n"),
+            )
+            .unwrap();
             assert!(text.contains("chain (2 steps) [both]"), "{text}");
             assert!(!text.contains("{previous}"), "{text}");
             result_views(&session);
@@ -252,8 +256,10 @@ fn subagent_call_previews_bound_single_parallel_and_chain_arguments() {
                     &context,
                 )
                 .unwrap();
-                let text =
-                    maestro_app::strip_ansi(&call.try_render(120).unwrap().join("\n")).unwrap();
+                let text = maestro_tools::output::render_utils::strip_ansi(
+                    &call.try_render(120).unwrap().join("\n"),
+                )
+                .unwrap();
                 assert!(text.contains(expected), "{text}");
                 assert!(text.contains(&preview), "{text}");
                 assert!(!text.contains(&hidden), "{text}");

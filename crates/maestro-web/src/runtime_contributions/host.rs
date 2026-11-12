@@ -8,7 +8,8 @@ use crate::{
     page::DomContent,
     tools::types::{ToolRenderer, ToolRendererBinding},
 };
-use maestro_app::{CustomAgentMessages, JsonObject};
+use maestro_agent::CustomAgentMessages;
+use maestro_models::JsonObject;
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use wasm_bindgen::{JsValue, closure::Closure};

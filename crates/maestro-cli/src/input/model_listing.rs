@@ -1,7 +1,9 @@
 //! The available-model table with its optional fuzzy search.
 
 use super::pad_column;
-use maestro_app::{Model, ModelInput, ModelRegistry, format_no_models_available_message};
+use maestro_catalog::ModelRegistry;
+use maestro_credentials::format_no_models_available_message;
+use maestro_models::{Model, ModelInput};
 use maestro_theme::{Collator, Theme};
 use maestro_tui::fuzzy_filter;
 use std::cmp::Ordering;

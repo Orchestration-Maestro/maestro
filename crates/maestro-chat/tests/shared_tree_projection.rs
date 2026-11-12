@@ -1,7 +1,7 @@
 //! Shared ordering through the application's public session-tree route.
 #![cfg(test)]
 use crate::tree;
-use maestro_app::{SessionTreeNode as InputNode, export_html::template};
+use maestro_session::{export_html::template, session_manager::SessionTreeNode as InputNode};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashSet;

@@ -23,9 +23,9 @@ pub async fn default_tool_renderer_preserves_all_recorded_branches(
     assert_eq!(fixture["rows"].as_array().unwrap().len(), 95);
     for row in fixture["rows"].as_array().unwrap() {
         let input = &row["input"];
-        let message = input
-            .get("result")
-            .map(|r| serde_json::from_value::<maestro_app::ToolResultMessage>(r.clone()).unwrap());
+        let message = input.get("result").map(|r| {
+            serde_json::from_value::<maestro_models::ToolResultMessage>(r.clone()).unwrap()
+        });
         let recipe = render_tool::<Value, Value>(
             "unregistered",
             input.get("params").map(ToolParams::json),
@@ -224,7 +224,7 @@ async fn localized_and_literal(view: &DomView) {
     }
     let mut result = crate::recipes::message::<Value>(None);
     result.content.truncate(1);
-    let maestro_app::UserBlock::Text(output) = &mut result.content[0] else {
+    let maestro_models::UserBlock::Text(output) = &mut result.content[0] else {
         unreachable!()
     };
     output.text = "YWJj".into();
@@ -327,7 +327,7 @@ fn command_lifetimes(view: &DomView, parent: &web_sys::Element) {
     };
     let command = |value: &str| serde_json::json!({"command": value});
     let bash = |args: Option<&Value>| {
-        <BashRenderer as ToolRenderer<maestro_app::JsonObject, ()>>::render(
+        <BashRenderer as ToolRenderer<maestro_models::JsonObject, ()>>::render(
             &BashRenderer,
             args.and_then(Value::as_object),
             None,
@@ -346,7 +346,7 @@ fn command_lifetimes(view: &DomView, parent: &web_sys::Element) {
     assert!(!console.is_connected());
     assert!(select(&root, ".maestro-tool-caption").is_same_node(Some(&caption)));
     let mut result = crate::recipes::message::<()>(None);
-    let calculate = |expression: &str, result: &maestro_app::ToolResultMessage<()>| {
+    let calculate = |expression: &str, result: &maestro_models::ToolResultMessage<()>| {
         let args = serde_json::json!({"expression": expression});
         CalculateRenderer
             .render(args.as_object(), Some(result.into()), false)

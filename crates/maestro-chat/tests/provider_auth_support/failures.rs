@@ -1,9 +1,9 @@
 //! Provider failure transactions through retained metadata and input dispatch.
 use crate::{manual_runtime::ManualRuntime, selector_failure_support as recorded};
-use maestro_app::{AuthStatus, AuthStorage};
 use maestro_chat::{
     AuthSelectorProvider, AuthType, OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions,
 };
+use maestro_credentials::{AuthStatus, AuthStorage};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::Component;
 use serde_json::{Value, json};
@@ -220,10 +220,12 @@ pub fn bypasses() {
         if branch.starts_with("stored") {
             rig.storage.set(
                 "maestro-custom-fallback",
-                maestro_app::AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
-                    env: None,
-                    key: String::new(),
-                }),
+                maestro_credentials::AuthCredential::ApiKey(
+                    maestro_credentials::ApiKeyCredential {
+                        env: None,
+                        key: String::new(),
+                    },
+                ),
             );
         }
         let mut choices = providers(&[("maestro-custom-fallback", "Custom")]);

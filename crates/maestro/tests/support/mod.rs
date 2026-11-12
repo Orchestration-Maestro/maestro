@@ -302,7 +302,7 @@ pub fn resources(root: &Root) -> std::path::PathBuf {
 }
 
 /// The application's host widgets over the default live theme.
-pub fn widgets() -> std::rc::Rc<dyn maestro_app::ExtensionWidgets> {
+pub fn widgets() -> std::rc::Rc<dyn maestro_extensions::ExtensionWidgets> {
     let highlighter = std::rc::Rc::new(
         maestro_theme::SyntectHighlighter::new().expect("bundled syntax definitions"),
     );

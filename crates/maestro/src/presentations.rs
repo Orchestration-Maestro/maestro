@@ -101,7 +101,9 @@ pub fn sessions(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> SessionPresentati
                             .as_secs_f64()
                             * 1000.0
                     }),
-                    home: Rc::new(|| maestro_app::home_directory().unwrap_or_default()),
+                    home: Rc::new(|| {
+                        maestro_resources::paths::home_directory().unwrap_or_default()
+                    }),
                     styles_enabled: Rc::new(supports_color),
                 },
             )?;

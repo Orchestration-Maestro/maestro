@@ -1,12 +1,12 @@
 //! Model, effort, tool and resource-path selections of a created session.
 
 use crate::input::arguments::Args;
-use maestro_app::{
-    AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, Model, ModelRegistry,
-    NoTools, ResolveCliModelOptions, ScopedModel, SettingsManager, ThinkingLevel,
-    resolve_cli_model,
-};
+use maestro_agent::ThinkingLevel;
+use maestro_app::{AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, NoTools};
+use maestro_catalog::{ModelRegistry, ResolveCliModelOptions, ScopedModel, resolve_cli_model};
 use maestro_lock::read;
+use maestro_models::Model;
+use maestro_settings::SettingsManager;
 use std::cmp::Ordering;
 use std::io;
 use std::sync::{Arc, RwLock};
@@ -181,8 +181,8 @@ pub fn resolve_cli_paths(cwd: &str, paths: Option<&[String]>) -> io::Result<Opti
             paths
                 .iter()
                 .map(|value| {
-                    if maestro_app::is_local_path(value) {
-                        maestro_app::resolve(&[cwd, value])
+                    if maestro_resources::paths::is_local_path(value) {
+                        maestro_resources::paths::resolve(&[cwd, value])
                     } else {
                         Ok(value.clone())
                     }

@@ -2,7 +2,10 @@
 use super::super::extension_ui::port;
 use super::super::extension_widgets::with_factories;
 use super::super::{World, isolated};
-use maestro_app::{AutocompleteProviderFactory, ExtensionAPI, Local, NewSessionCommandOptions};
+use maestro_extensions::{
+    AutocompleteProviderFactory, ExtensionAPI, types::NewSessionCommandOptions,
+};
+use maestro_models::Local;
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation};
 use maestro_tui::{CompletionError, CompletionOptions, CompletionResult, CursorPosition};
 use std::{
@@ -175,7 +178,7 @@ fn autocomplete_wrappers_stack_over_fresh_base_and_share_the_installed_handle() 
 /// Completes through the custom editor and then the restored default editor.
 fn complete_both_editors(
     world: &World,
-    factory: maestro_app::EditorFactory,
+    factory: maestro_extensions::types::EditorFactory,
     knobs: &super::super::extension_editors::Knobs,
     trace: &Trace,
 ) {
@@ -358,7 +361,8 @@ fn failing(
     api.ui_callback(move |inner: Provider, _| {
         trace.borrow_mut().push("F:factory".into());
         if refused.get() {
-            let error: maestro_app::EventError = Box::new(std::io::Error::from_raw_os_error(13));
+            let error: maestro_extensions::EventError =
+                Box::new(std::io::Error::from_raw_os_error(13));
             address.set(std::ptr::from_ref(&*error).cast::<()>().addr());
             return Err(error);
         }
@@ -473,7 +477,7 @@ fn wrapper_failure_keeps_the_previous_provider_and_original_error() {
 }
 
 /// One listener observing the factory's originating callback frame.
-fn observe(bus: &maestro_app::EventBus<Local>, trace: Trace, label: &'static str) {
+fn observe(bus: &maestro_extensions::EventBus<Local>, trace: Trace, label: &'static str) {
     bus.on(
         "completion",
         Rc::new(move |_, _| {
@@ -490,7 +494,7 @@ fn autocomplete_factories_keep_origin_after_transfer_and_facade_release() {
         async |directory| {
             let trace = Trace::default();
             let controller =
-                maestro_app::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
+                maestro_extensions::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
             let foreign = controller.for_extension();
             observe(&foreign, trace.clone(), "foreign");
             let stored = Rc::new(RefCell::new(None));
@@ -498,7 +502,7 @@ fn autocomplete_factories_keep_origin_after_transfer_and_facade_release() {
             let recorded = trace.clone();
             let retained = Rc::new(());
             let released = Rc::downgrade(&retained);
-            let factory: maestro_app::ExtensionFactory<Local> = Rc::new(move |api| {
+            let factory: maestro_extensions::ExtensionFactory<Local> = Rc::new(move |api| {
                 observe(&api.events, recorded.clone(), "same");
                 let (recorded, retained) = (recorded.clone(), retained.clone());
                 output.replace(Some(api.ui_callback(move |inner: Provider, emitter| {

@@ -1,11 +1,11 @@
 //! Shared recording presentation for artifact reconstruction tests.
 #![cfg(test)]
-use maestro_app::BoxFuture;
 use maestro_app::browser::tools::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanelState, FileType,
     get_file_type,
 };
 use maestro_app::browser::tools::prompts::ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO;
+use maestro_models::BoxFuture;
 use serde_json::{Value, json};
 #[cfg(target_arch = "wasm32")]
 use std::rc::Rc as LogReader;

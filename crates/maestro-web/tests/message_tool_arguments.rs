@@ -143,12 +143,12 @@ fn model_tool_call_uses_default_raw_object_route() {
         .into_iter()
         .enumerate()
     {
-        let call: maestro_app::ToolCall = serde_json::from_value(json!({"type":"toolCall", "id":"model-call", "name":"model-route", "arguments": arguments})).unwrap();
+        let call: maestro_models::ToolCall = serde_json::from_value(json!({"type":"toolCall", "id":"model-call", "name":"model-route", "arguments": arguments})).unwrap();
         let address = std::ptr::from_ref(&call.arguments) as usize;
         let called = Rc::new(Cell::new(false));
         let observed = called.clone();
         let renderer: Rc<dyn ToolRenderer> = Rc::new(Renderer(Rc::new(
-            move |params: Option<&maestro_app::JsonObject>,
+            move |params: Option<&maestro_models::JsonObject>,
                   _: Option<ToolResultMessageView<'_>>,
                   _| {
                 assert_eq!(std::ptr::from_ref(params.unwrap()) as usize, address);
@@ -235,7 +235,7 @@ pub fn default_object_input_keeps_canonical_json_spelling(import_module: &js_sys
     use crate::contributions_support::{container, host, select, text, view};
     use maestro_web::page::MountedContent;
     reset();
-    let object: maestro_app::JsonObject = serde_json::from_str(
+    let object: maestro_models::JsonObject = serde_json::from_str(
         r#"{"b":"雪 <literal>","10":10,"2":2,"zero":-0.0,"large":1e21,"small":1e-7}"#,
     )
     .unwrap();
@@ -320,13 +320,13 @@ pub fn tool_rows_dispatch_borrowed_argument_root_values() {
 #[wasm_bindgen]
 pub fn tool_rows_keep_root_specific_default_input_sections() {
     reset();
-    let output = maestro_app::ToolResultMessage::<Value> {
-        content: vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
-            r#"{"ok":true}"#.into(),
-        ))],
+    let output = maestro_models::ToolResultMessage::<Value> {
+        content: vec![maestro_models::UserBlock::Text(
+            maestro_models::TextContent::new(r#"{"ok":true}"#.into()),
+        )],
         ..message(None)
     };
-    let empty = maestro_app::ToolResultMessage::<Value> {
+    let empty = maestro_models::ToolResultMessage::<Value> {
         content: Vec::new(),
         is_error: false,
         ..message(None)
@@ -362,8 +362,8 @@ pub fn tool_rows_keep_root_specific_default_input_sections() {
 /// The default-row cases: each call's parts and the row that must appear.
 #[cfg(target_arch = "wasm32")]
 fn default_row_cases<'a>(
-    output: &'a maestro_app::ToolResultMessage,
-    empty: &'a maestro_app::ToolResultMessage,
+    output: &'a maestro_models::ToolResultMessage,
+    empty: &'a maestro_models::ToolResultMessage,
 ) -> Vec<Shown<'a>> {
     let ok = "{\n  \"ok\": true\n}";
     let mut cases = awaiting_rows();
@@ -465,8 +465,8 @@ fn preparing_rows<'a>() -> Vec<Shown<'a>> {
 /// The rows a call draws once a result arrives, including its abort-free listings.
 #[cfg(target_arch = "wasm32")]
 fn ready_rows<'a>(
-    output: &'a maestro_app::ToolResultMessage,
-    empty: &'a maestro_app::ToolResultMessage,
+    output: &'a maestro_models::ToolResultMessage,
+    empty: &'a maestro_models::ToolResultMessage,
     ok: &'a str,
 ) -> Vec<Shown<'a>> {
     vec![
@@ -498,7 +498,7 @@ fn ready_rows<'a>(
 #[cfg(target_arch = "wasm32")]
 fn shown<'a>(
     arguments: Value,
-    result: Option<&'a maestro_app::ToolResultMessage>,
+    result: Option<&'a maestro_models::ToolResultMessage>,
     is_streaming: bool,
     caption: &'a str,
     listings: Vec<(&'a str, &'a str)>,
@@ -525,7 +525,7 @@ struct Shown<'a> {
     /// Call arguments.
     arguments: Value,
     /// Result ready for the row, absent before one arrives.
-    result: Option<&'a maestro_app::ToolResultMessage>,
+    result: Option<&'a maestro_models::ToolResultMessage>,
     /// Whether the response still streams.
     is_streaming: bool,
     /// Caption the header must show.
@@ -550,7 +550,7 @@ fn show_json_over_custom(name: &str) {
 
 /// A retained model call holding the supplied argument value.
 #[cfg(target_arch = "wasm32")]
-fn model_call(name: &str, arguments: &Value) -> maestro_app::ToolCall {
+fn model_call(name: &str, arguments: &Value) -> maestro_models::ToolCall {
     serde_json::from_value(
         json!({"type": "toolCall", "id": "root-call", "name": name, "arguments": arguments}),
     )
@@ -569,7 +569,7 @@ struct RowState {
 /// Register the call's operand route and check each callback borrows the original value.
 #[cfg(target_arch = "wasm32")]
 fn register_root_observer(
-    call: &maestro_app::ToolCall,
+    call: &maestro_models::ToolCall,
     calls: &Rc<Cell<usize>>,
     native: &Rc<Cell<i32>>,
     state: RowState,
@@ -651,7 +651,7 @@ fn assert_envelope(result: &ToolResultMessageView<'_, Rc<Cell<i32>>>, state: Row
     assert_eq!(result.tool_call_id(), "original call");
     assert_eq!(result.tool_name(), "original tool");
     assert_eq!(
-        maestro_app::UserBlock::text_output(result.content()),
+        maestro_models::UserBlock::text_output(result.content()),
         "one\ntwo"
     );
     assert_eq!(result.timestamp().to_bits(), 17.25_f64.to_bits());
@@ -696,7 +696,7 @@ fn draw_row<D: 'static>(props: &maestro_web::ToolMessage<D>) -> Drawn {
 }
 
 /// Register the typed callback with the original envelope addresses.
-fn register_typed_object(calls: &Rc<Cell<usize>>, result: &maestro_app::ToolResultMessage) {
+fn register_typed_object(calls: &Rc<Cell<usize>>, result: &maestro_models::ToolResultMessage) {
     let count = calls.clone();
     let blocks = result.content.as_ptr() as usize;
     let id = result.tool_call_id.as_ptr() as usize;

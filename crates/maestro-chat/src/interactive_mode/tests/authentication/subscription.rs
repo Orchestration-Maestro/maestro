@@ -7,11 +7,11 @@ use super::{
     saved_path, settle, sign_in_to, signed, started_with, storage, stored_access, subscribe,
 };
 use crate::AuthType;
-use maestro_app::presentation_data::{OAuthAuthInfo, OAuthPrompt};
-use maestro_app::{
+use maestro_models::{
     DiagnosticErrorInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthSelectOption,
     OAuthSelectPrompt,
 };
+use maestro_models::{OAuthAuthInfo, OAuthPrompt};
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
 use maestro_tui::Component;
 use std::{
@@ -549,7 +549,7 @@ struct Failing {
     /// Opens when the presentation works again.
     repaired: Gate,
     /// The store the sign-in saves into.
-    storage: Arc<maestro_app::AuthStorage>,
+    storage: Arc<maestro_credentials::AuthStorage>,
     /// Announces the observation the sign-in recorded.
     observation: Arc<Mutex<Option<oneshot::Sender<()>>>>,
 }

@@ -1,9 +1,11 @@
 //! Compiled factory calls reach the original owners before session binding.
 use maestro_app::{
-    DefaultResourceLoader, DefaultResourceLoaderOptions, Local, ResourceLoader,
-    ResourceLoaderOptions, SettingsManager, configuration::config::CONFIG_DIR_NAME,
-    create_event_bus_for,
+    DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
 };
+use maestro_extensions::create_event_bus_for;
+use maestro_models::Local;
+use maestro_resources::paths::CONFIG_DIR_NAME;
+use maestro_settings::SettingsManager;
 use maestro_test_process::{TestProcess, selection};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

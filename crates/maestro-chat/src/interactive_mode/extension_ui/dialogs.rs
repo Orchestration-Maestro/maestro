@@ -6,10 +6,9 @@ use crate::components::{
     extension_input::{ExtensionInputComponent, ExtensionInputOptions},
     extension_selector::{ExtensionSelectorComponent, ExtensionSelectorOptions},
 };
-use maestro_app::{
-    Cancellation, ExtensionUIDialogOptions, ExtensionUIFuture, MissingSessionCwdError,
-    format_missing_session_cwd_prompt,
-};
+use maestro_extensions::{ExtensionUIDialogOptions, types::ExtensionUIFuture};
+use maestro_models::Cancellation;
+use maestro_session::cwd::{MissingSessionCwdError, format_missing_session_cwd_prompt};
 use maestro_theme::ThemeError;
 use maestro_tui::{Component, EditorOptions, TUI, get_keybindings};
 use std::{

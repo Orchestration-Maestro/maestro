@@ -1,6 +1,7 @@
 //! The message being streamed, published at most once per animation frame.
+use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages};
 use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
-use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages, ToolResultMessage};
+use maestro_models::ToolResultMessage;
 use std::{
     collections::{HashMap, HashSet},
     rc::Rc,
@@ -8,7 +9,7 @@ use std::{
 };
 
 /// The live local tools forwarded to the assistant row.
-type Tools = Rc<RwLock<Vec<maestro_app::SharedAgentTool<maestro_app::Local>>>>;
+type Tools = Rc<RwLock<Vec<maestro_agent::SharedAgentTool<maestro_models::Local>>>>;
 /// Original result envelopes by exact call ID.
 type LiveResults = Rc<HashMap<String, Arc<RwLock<ToolResultMessage>>>>;
 /// One shared transcript entry.

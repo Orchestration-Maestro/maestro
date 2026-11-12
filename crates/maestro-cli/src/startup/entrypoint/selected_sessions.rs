@@ -11,9 +11,11 @@ use crate::input::arguments::Args;
 use crate::input::session_picker::{SessionPresentation, select_session};
 use crate::packages::package_manager_cli::presentation::line;
 use maestro_app::presentation_data::input_selectors::{SessionListProgress, SessionsLoader};
-use maestro_app::{
-    MissingSessionCwdError, SessionManager, SettingsManager, get_missing_session_cwd_issue,
+use maestro_session::{
+    SessionManager,
+    cwd::{MissingSessionCwdError, get_missing_session_cwd_issue},
 };
+use maestro_settings::SettingsManager;
 use maestro_theme::{Theme, ThemeState, ThemeWatchOperations};
 use std::{cell::RefCell, error::Error, io, io::Write, ops::ControlFlow, rc::Rc};
 use tokio::io::AsyncBufRead;

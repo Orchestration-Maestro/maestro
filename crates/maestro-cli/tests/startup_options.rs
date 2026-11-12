@@ -1,12 +1,13 @@
 //! Model, effort, tool and resource-path selections of a created session.
 
 use crate::support::startup;
-use maestro_app::{
-    AgentSessionRuntimeDiagnosticType, Model, ModelRegistry, NoTools, ScopedModel, ThinkingLevel,
-};
+use maestro_agent::ThinkingLevel;
+use maestro_app::{AgentSessionRuntimeDiagnosticType, NoTools};
+use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_cli::startup::entrypoint::configuration::{
     BuiltSessionOptions, SessionOptionInputs, build_session_options, resolve_cli_paths,
 };
+use maestro_models::Model;
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 
@@ -34,7 +35,7 @@ struct Fixture<'a> {
     /// The catalog the selection resolves through.
     catalog: &'a ModelRegistry,
     /// The settings holding the saved default model.
-    settings: &'a maestro_app::SettingsManager,
+    settings: &'a maestro_settings::SettingsManager,
     /// The prepared identifier comparator.
     compare: &'a dyn Fn(&str, &str) -> std::cmp::Ordering,
 }
@@ -369,7 +370,7 @@ fn cli_resource_paths_keep_startup_directory() {
     ];
     let resolved = resolve_cli_paths(cwd, Some(&authored)).unwrap().unwrap();
     // The host's spelling of a POSIX path: Windows puts it on the working drive.
-    let native = |path: &str| maestro_app::resolve(&[path]).unwrap();
+    let native = |path: &str| maestro_resources::paths::resolve(&[path]).unwrap();
     assert_eq!(
         resolved,
         vec![
@@ -485,7 +486,7 @@ fn selected_model_keeps_the_shared_descriptor() {
 #[test]
 fn model_patterns_use_cli_before_saved_settings() {
     use crate::startup_runtime::{Fixture, run};
-    use maestro_app::ModelResolverOutput;
+    use maestro_catalog::ModelResolverOutput;
     use maestro_cli::startup::entrypoint::initialization::create_runtime;
     run(
         "model_patterns_use_cli_before_saved_settings",
@@ -540,7 +541,7 @@ fn model_patterns_use_cli_before_saved_settings() {
 /// Invalid stored members fail after the valid prefix reports its warnings.
 async fn assert_mixed_patterns_fail(local: std::rc::Rc<tokio::task::LocalSet>) {
     use crate::startup_runtime::Fixture;
-    use maestro_app::ModelResolverOutput;
+    use maestro_catalog::ModelResolverOutput;
     use maestro_cli::startup::entrypoint::initialization::create_runtime;
     let fixture = Fixture::new(
         local,

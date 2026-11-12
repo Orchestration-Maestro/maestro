@@ -1,10 +1,14 @@
 //! The extension UI host over the retained interactive mode.
 use super::InteractiveMode;
-use maestro_app::{
-    AutocompleteProviderFactory, EventError, ExtensionUIContextPort, ExtensionUIDialogOptions,
-    ExtensionUIFuture, NotificationType, PreparedSettingsEdit, SettingsEdit, TerminalInputHandler,
-    ThemeSelection, ThemeSetResult, UIUnsubscribe, WorkingIndicatorOptions,
+use maestro_extensions::{
+    AutocompleteProviderFactory, EventError, ExtensionUIDialogOptions, TerminalInputHandler,
+    WorkingIndicatorOptions,
+    types::{
+        ExtensionUIContextPort, ExtensionUIFuture, NotificationType, ThemeSelection,
+        ThemeSetResult, UIUnsubscribe,
+    },
 };
+use maestro_settings::{PreparedSettingsEdit, SettingsEdit};
 use maestro_theme::{LiveTheme, Theme, ThemeChangeResult, ThemeInfo, ThemeWatchOperations};
 use std::rc::Rc;
 
@@ -95,8 +99,8 @@ impl ExtensionUIContextPort for InteractiveMode {
     fn set_widget(
         &self,
         key: String,
-        content: Option<maestro_app::WidgetContent>,
-        options: Option<maestro_app::ExtensionWidgetOptions>,
+        content: Option<maestro_extensions::types::WidgetContent>,
+        options: Option<maestro_extensions::ExtensionWidgetOptions>,
     ) -> Result<(), EventError> {
         self.set_extension_widget(key, content, options)
     }
@@ -105,7 +109,10 @@ impl ExtensionUIContextPort for InteractiveMode {
     ///
     /// # Errors
     /// Returns the original disposal or factory failure.
-    fn set_footer(&self, factory: Option<maestro_app::FooterFactory>) -> Result<(), EventError> {
+    fn set_footer(
+        &self,
+        factory: Option<maestro_extensions::types::FooterFactory>,
+    ) -> Result<(), EventError> {
         self.set_extension_footer(factory)
     }
 
@@ -113,7 +120,10 @@ impl ExtensionUIContextPort for InteractiveMode {
     ///
     /// # Errors
     /// Returns the original disposal, factory or expansion failure.
-    fn set_header(&self, factory: Option<maestro_app::ComponentFactory>) -> Result<(), EventError> {
+    fn set_header(
+        &self,
+        factory: Option<maestro_extensions::types::ComponentFactory>,
+    ) -> Result<(), EventError> {
         self.set_extension_header(factory)
     }
 
@@ -121,8 +131,8 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// closes or fails.
     fn custom_component(
         &self,
-        factory: maestro_app::CustomComponentFactory,
-        options: Option<maestro_app::CustomUIOptions>,
+        factory: maestro_extensions::types::CustomComponentFactory,
+        options: Option<maestro_extensions::types::CustomUIOptions>,
     ) -> ExtensionUIFuture<()> {
         self.show_extension_custom(&factory, options)
     }
@@ -169,7 +179,7 @@ impl ExtensionUIContextPort for InteractiveMode {
     /// Returns the original text, factory or editor failure.
     fn set_editor_component(
         &self,
-        factory: Option<maestro_app::EditorFactory>,
+        factory: Option<maestro_extensions::types::EditorFactory>,
     ) -> Result<(), EventError> {
         self.set_custom_editor_component(factory)
     }
@@ -178,7 +188,9 @@ impl ExtensionUIContextPort for InteractiveMode {
     ///
     /// # Errors
     /// This implementation does not return errors.
-    fn get_editor_component(&self) -> Result<Option<maestro_app::EditorFactory>, EventError> {
+    fn get_editor_component(
+        &self,
+    ) -> Result<Option<maestro_extensions::types::EditorFactory>, EventError> {
         Ok(self.editor_factory())
     }
 

@@ -1,7 +1,9 @@
 //! Portable application exports retain the session owner's records.
 #![cfg(test)]
 
-use maestro_app::{Presence, SessionInfo, is_whitespace_scalar};
+use maestro_app::SessionInfo;
+use maestro_session::Presence;
+use maestro_text::is_whitespace_scalar;
 
 #[test]
 fn session_facade_uses_original_records() {
@@ -39,7 +41,8 @@ fn session_facade_uses_original_records() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn session_facade_reexports_progress_and_resource_owners() {
-    use maestro_app::{ResourceEntry, ResourceFileType, SessionListProgress, canonicalize_path};
+    use maestro_resources::{ResourceEntry, ResourceFileType, canonicalize_path};
+    use maestro_session::session_manager::SessionListProgress;
     let path = "missing-session-facade";
     assert_eq!(canonicalize_path(path), path);
     let entry: maestro_resources::ResourceEntry = ResourceEntry {
@@ -56,11 +59,11 @@ fn session_facade_reexports_progress_and_resource_owners() {
     progress(2, 3).unwrap();
     assert_eq!(seen, Some((2, 3)));
     assert_eq!(
-        maestro_app::current_directory().unwrap(),
+        maestro_resources::current_directory().unwrap(),
         std::env::current_dir().unwrap().to_string_lossy()
     );
     assert_eq!(
-        maestro_app::drive_directories(),
+        maestro_resources::drive_directories(),
         maestro_resources::drive_directories()
     );
 }

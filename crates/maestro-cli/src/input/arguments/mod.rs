@@ -8,7 +8,8 @@ pub use help::print_help;
 pub use parse::{is_valid_thinking_level, parse_args};
 
 use indexmap::IndexMap;
-use maestro_app::{FlagValue, ThinkingLevel};
+use maestro_agent::ThinkingLevel;
+use maestro_extensions::types::FlagValue;
 
 /// The accepted output modes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]

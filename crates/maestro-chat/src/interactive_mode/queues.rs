@@ -3,8 +3,8 @@
 //! and the queue key actions.
 use super::InteractiveMode;
 use maestro_app::agent_session::{PromptOptions, QueueTexts};
-use maestro_app::is_whitespace_scalar;
-use maestro_app::messages::UserMessageDelivery;
+use maestro_session::message_records::UserMessageDelivery;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::ThemeColor;
 use maestro_tui::{Spacer, TruncatedText};
 use std::{error::Error, iter, rc::Rc};

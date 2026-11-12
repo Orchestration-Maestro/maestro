@@ -1,6 +1,7 @@
 //! Borrow the authoritative message; project only its details representation.
-use maestro_app::ToolResultMessage;
-use maestro_app::{ToolRenderResultLike, UserBlock};
+use maestro_models::ToolResultMessage;
+use maestro_models::UserBlock;
+use maestro_tools::output::render_utils::ToolRenderResultLike;
 use serde_json::Value;
 /// Object-safe access to the authoritative message envelope.
 trait MessageHeader {

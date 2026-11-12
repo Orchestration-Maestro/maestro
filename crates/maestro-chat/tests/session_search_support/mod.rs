@@ -1,7 +1,7 @@
 //! Strict oracle fixture consumption.
 
-use maestro_app::{Presence, SessionInfo};
 use maestro_chat::*;
+use maestro_session::{Presence, SessionInfo};
 use serde::Deserialize;
 use serde_json::Value;
 

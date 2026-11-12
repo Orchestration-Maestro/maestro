@@ -7,7 +7,9 @@ use super::InteractiveMode;
 use crate::components::user_message_selector::{
     UserMessageItem, UserMessageSelectorComponent, UserMessageSelectorOptions,
 };
-use maestro_app::{DoubleEscapeAction, ForkOptions, ForkPosition, ReadonlySessionManager};
+use maestro_extensions::types::{ForkOptions, events::ForkPosition};
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_settings::DoubleEscapeAction;
 use maestro_tui::Component;
 use std::{error::Error, rc::Rc};
 
@@ -113,7 +115,7 @@ impl InteractiveMode {
         match self.current_editor().try_get_text() {
             Ok(text)
                 if text
-                    .trim_matches(maestro_app::is_whitespace_scalar)
+                    .trim_matches(maestro_text::is_whitespace_scalar)
                     .is_empty() =>
             {
                 self.handle_double_escape();

@@ -3,10 +3,13 @@ use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{Setup, World, isolated};
 use crate::interactive_mode::startup::ExpandableText;
-use maestro_app::{
-    ComponentFactory, ExtensionAPI, ExtensionComponent, ExtensionFactory, ExtensionUIContextPort,
-    FooterFactory, Local, ReadonlyFooterDataProvider, strip_ansi,
+use maestro_extensions::{
+    ExtensionAPI, ExtensionFactory,
+    footer::ReadonlyFooterDataProvider,
+    types::{ComponentFactory, ExtensionComponent, ExtensionUIContextPort, FooterFactory},
 };
+use maestro_models::Local;
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::{Component, ComponentHandle, Text};
 use std::{cell::RefCell, path::Path, rc::Rc};
 
@@ -285,7 +288,7 @@ fn failing(
         ..plain("OLD")
     })));
     let (called, failure) = (trace.clone(), error.clone());
-    let fail = move || -> Result<ExtensionComponent, maestro_app::EventError> {
+    let fail = move || -> Result<ExtensionComponent, maestro_extensions::EventError> {
         called.borrow_mut().push("new-factory".into());
         Err(Box::new(Original::new(
             "replacement callback failed",
@@ -307,9 +310,9 @@ fn failing(
 
 /// Installs `factory` through the host.
 fn install(
-    ui: &maestro_app::ExtensionUIContext,
+    ui: &maestro_extensions::ExtensionUIContext,
     factory: Replacement,
-) -> Result<(), maestro_app::EventError> {
+) -> Result<(), maestro_extensions::EventError> {
     match factory {
         Replacement::Header(factory) => ui.set_header(Some(factory)),
         Replacement::Footer(factory) => ui.set_footer(Some(factory)),

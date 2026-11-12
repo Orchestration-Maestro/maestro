@@ -1,6 +1,6 @@
 //! Native custom-message fixtures shared by registry and browser consumers.
 #![cfg(test)]
-use maestro_app::{AgentMessage, CustomAgentMessages};
+use maestro_agent::{AgentMessage, CustomAgentMessages};
 use maestro_web::{MessageRenderer, tools::types::ToolUiError};
 use std::{
     rc::Rc,

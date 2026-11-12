@@ -1,9 +1,10 @@
 //! The final startup handoff to a selected presentation.
 use super::bootstrap::AppMode;
 use crate::print::print_mode::{PrintMode, PrintModeOptions, run_print_mode};
+use maestro_app::AgentSessionRuntime;
 use maestro_app::configuration::timings::Timings;
 use maestro_app::presentation_data::mode_dispatch::{InteractiveModeOptions, ModeLaunchers};
-use maestro_app::{AgentSessionRuntime, is_truthy_env_flag};
+use maestro_text::is_truthy_env_flag;
 use maestro_theme::{Theme, ThemeState};
 use std::{error::Error, io::Write, rc::Rc};
 
@@ -16,7 +17,7 @@ pub struct ModeDispatch {
     /// The prompt inputs and existing presentation configuration.
     pub interactive_options: InteractiveModeOptions,
     /// The scope captured by startup before reporting diagnostics.
-    pub scoped_models: Vec<maestro_app::ScopedModel>,
+    pub scoped_models: Vec<maestro_catalog::ScopedModel>,
 }
 /// Caller-owned streams and timing observations.
 pub struct DispatchOutput<'a> {
@@ -46,7 +47,7 @@ fn visible_scope(runtime: &AgentSessionRuntime, request: &ModeDispatch) -> Optio
 /// Writes the model scope with the key bound to cycling it, which the interactive mode has
 /// loaded by now; the hint is left out when no key is bound.
 fn report_scope(list: &str, output: &mut DispatchOutput<'_>) -> std::io::Result<()> {
-    let keys = maestro_app::key_display_text("app.model.cycleForward");
+    let keys = maestro_tools::key_display_text("app.model.cycleForward");
     let hint = if keys.is_empty() {
         String::new()
     } else {
@@ -139,7 +140,7 @@ async fn run_interactive(
 }
 
 /// Formats the captured scope in one walk, keeping each read guard local.
-fn model_list<'a>(models: impl IntoIterator<Item = &'a maestro_app::ScopedModel>) -> String {
+fn model_list<'a>(models: impl IntoIterator<Item = &'a maestro_catalog::ScopedModel>) -> String {
     models
         .into_iter()
         .map(|scoped| {

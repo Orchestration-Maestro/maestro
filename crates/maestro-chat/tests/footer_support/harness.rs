@@ -2,11 +2,15 @@
 //! in-memory settings and loader.
 use maestro_app::resources::loading::ResourceLoader;
 use maestro_app::{
-    AgentSession, AgentSessionConfig, AgentSessionServices, AuthStorage, ConfigValues,
-    CreateAgentSessionRuntimeResult, DefaultResourceLoader, DefaultResourceLoaderOptions, Local,
-    ModelRegistry, ModuleLoader, ProcessConfigValueOperations, ResourceLoaderOptions,
-    SessionManager, Settings, SettingsManager,
+    AgentSession, AgentSessionConfig, AgentSessionServices, CreateAgentSessionRuntimeResult,
+    DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoaderOptions,
 };
+use maestro_catalog::{ConfigValues, ModelRegistry};
+use maestro_credentials::{AuthStorage, ProcessConfigValueOperations};
+use maestro_extensions::ModuleLoader;
+use maestro_models::Local;
+use maestro_session::SessionManager;
+use maestro_settings::{Settings, SettingsManager};
 use maestro_theme::LiveTheme;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -84,10 +88,7 @@ fn over_manager(
         base_tools_override: None,
         extension_runner_ref: None,
         session_start_event: None,
-        tools_manager: Arc::new(maestro_app::agent_session::ToolsManager::new(
-            String::new(),
-            None,
-        )),
+        tools_manager: Arc::new(maestro_tools::ToolsManager::new(String::new(), None)),
         theme: LiveTheme::default(),
     })
     .expect("a memory session");
@@ -143,8 +144,8 @@ fn services(
 }
 
 /// Stored credentials, with a subscription for `provider` when supplied.
-fn credentials(provider: Option<&str>) -> maestro_app::AuthStorageData {
-    let mut data = maestro_app::AuthStorageData::new();
+fn credentials(provider: Option<&str>) -> maestro_credentials::AuthStorageData {
+    let mut data = maestro_credentials::AuthStorageData::new();
     if let Some(provider) = provider {
         let credential = serde_json::json!({
             "type": "oauth",

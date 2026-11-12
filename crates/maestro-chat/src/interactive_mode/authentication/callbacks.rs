@@ -3,11 +3,11 @@
 use super::InteractiveMode;
 use crate::local_dispatch::{DispatchToken, local_dispatch};
 use crate::{AuthType, LoginDialogComponent, LoginDialogError, LoginInputFuture};
-use maestro_app::presentation_data::{OAuthAuthInfo, OAuthLoginCallbacks, OAuthPrompt};
-use maestro_app::{
+use maestro_models::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, Model, OAuthCallbacks, OAuthError,
     OAuthSelectPrompt,
 };
+use maestro_models::{OAuthAuthInfo, OAuthLoginCallbacks, OAuthPrompt};
 use maestro_theme::ThemeError;
 use std::{
     error::Error,

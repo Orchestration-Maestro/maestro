@@ -265,7 +265,7 @@ fn shell_expand_and_collapse_hints_close_in_the_muted_colour() {
         .unwrap();
     component.set_complete(None, false, None, None);
     let muted = |text| theme.fg(&maestro_theme::ThemeColor::Muted, text).unwrap();
-    let hint = |text| maestro_app::key_hint("app.tools.expand", text, &live).unwrap();
+    let hint = |text| maestro_tools::key_hint("app.tools.expand", text, &live).unwrap();
     let collapsed = format!(
         "{}{}{}",
         muted("... 2 more lines ("),

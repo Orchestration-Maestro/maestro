@@ -65,7 +65,7 @@ The `maestro-package` leaf owns portable package interchange records; native
 packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
-application re-exports them as `markdown`. The dedicated conventions checker may
+the web frontend imports them directly. The dedicated conventions checker may
 consume the same parser's code-block source ranges for documentation checks.
 Tools may also depend directly on text for shared newline
 normalization. The guest authoring crate may depend on request,
@@ -73,7 +73,7 @@ entry, tool, JSON and text, never on native session, tool or catalog runtimes. T
 repeated here.
 
 Pure retained [session-tree projection](sessions/tree-projection.md) belongs to
-`maestro-session`, with frontend access through `maestro-app::export_html`.
+`maestro-session`; frontends import it from `maestro_session::export_html`.
 Its allowed dependency set is unchanged; it has no frontend or toolkit edge.
 
 The `maestro-export` owner may depend directly on `maestro-json` and
@@ -101,8 +101,11 @@ actual members are rejected.
 The specification table identifies leaves with no internal dependencies; the
 foundation utility `maestro-path` is also a leaf. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
-checks the table against the enforced graph policy. Frontend dependency requirements
-follow the [specification's dependency boundary](specs/maestro-port.md#common-semantic-and-boundary-contract).
+checks the table against the enforced graph policy. The frontend rows of that table
+are the frontend edge table: chat, CLI, RPC, web, the multiplexer and the executable
+depend only on the lower crates their row lists, declared when used, and a
+frontend calls `maestro-app` only for what the application owns. Frontend dependency
+requirements follow the [specification's dependency boundary](specs/maestro-port.md#common-semantic-and-boundary-contract).
 Other crates may use a subset of their specification row, except the terminal
 adapter, which requires the toolkit and `maestro-text`; an absent required toolkit
 or text owner fails.
@@ -575,6 +578,18 @@ Removing the dependency passes. An otherwise empty CLI fixture instead reports
 application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
+
+The row bounds every crate a frontend can name; the reach check closes the one route
+around it, a lower-crate item that the application re-exports. It resolves each path a
+frontend writes below `maestro_app` through the application's own bindings and rejects
+one that lands in another crate:
+
+```text
+crates/maestro-chat/src/lib.rs:1: Tool belongs to maestro-tools; import it from its owner, not through maestro-app
+```
+
+The application's own exports obey the same boundary: they name each item of a
+lower crate, never a module, wildcard or crate alias.
 
 `check_workspace` reads each Rust source once. A file is parsed, lexed and walked a
 single time; the checks read what the walk recorded, and no parsed syntax outlives

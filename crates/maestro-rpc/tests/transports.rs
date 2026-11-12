@@ -3,8 +3,10 @@
 #![cfg(unix)]
 use crate::support::{Child, Served, on_local, options, runtime, serve};
 use maestro_app::connection_runner::{JsonlLineReader, RpcLine, RpcOutput};
-use maestro_app::rpc_types::workspace_schema::{ErrorBody, EventData, ResponseResult};
-use maestro_app::{ExtensionFactory, Local, RpcConnectionOutcome, run_rpc_connection};
+use maestro_app::{RpcConnectionOutcome, run_rpc_connection};
+use maestro_extensions::ExtensionFactory;
+use maestro_models::Local;
+use maestro_protocol::schema::{ErrorBody, EventData, ResponseResult};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -78,7 +80,7 @@ struct NoSignals;
 impl maestro_app::connection_runner::RpcProcessPort for NoSignals {
     fn register_signals(
         &self,
-        _callback: Rc<dyn Fn(maestro_app::TerminationSignal)>,
+        _callback: Rc<dyn Fn(maestro_process::TerminationSignal)>,
     ) -> std::io::Result<Box<dyn Fn()>> {
         Ok(Box::new(|| {}))
     }
@@ -113,7 +115,7 @@ fn memory_and_stdio_use_one_dispatch_path() {
 /// An extension that writes managed output when the session starts.
 fn noisy() -> ExtensionFactory<Local> {
     Rc::new(|api| {
-        let started = api.on::<maestro_app::SessionStartEvent, ()>(
+        let started = api.on::<maestro_extensions::types::events::SessionStartEvent, ()>(
             "session_start".into(),
             Rc::new(|_, _| {
                 maestro_app::output_guard::write_stdout("managed noise\n").unwrap();
@@ -311,14 +313,14 @@ fn native_process_reopens_and_shares_termination_delivery() {
             }))
             .unwrap();
         let (sent, mut print_received) = tokio::sync::mpsc::unbounded_channel();
-        let print = maestro_app::register_signals(Rc::new(move |signal| {
+        let print = maestro_process::register_signals(Rc::new(move |signal| {
             sent.send(signal).unwrap();
         }))
         .unwrap();
         old();
         for signal in [
-            maestro_app::TerminationSignal::Terminate,
-            maestro_app::TerminationSignal::Hangup,
+            maestro_process::TerminationSignal::Terminate,
+            maestro_process::TerminationSignal::Hangup,
         ] {
             raise_termination(signal);
             assert_eq!(received.recv().await, Some(signal));
@@ -326,10 +328,10 @@ fn native_process_reopens_and_shares_termination_delivery() {
         }
         rpc();
         rpc();
-        raise_termination(maestro_app::TerminationSignal::Terminate);
+        raise_termination(maestro_process::TerminationSignal::Terminate);
         assert_eq!(
             print_received.recv().await,
-            Some(maestro_app::TerminationSignal::Terminate)
+            Some(maestro_process::TerminationSignal::Terminate)
         );
         assert!(received.try_recv().is_err());
         print();
@@ -337,7 +339,7 @@ fn native_process_reopens_and_shares_termination_delivery() {
 }
 
 /// Sends one real native signal to the calling test child.
-fn raise_termination(signal: maestro_app::TerminationSignal) {
+fn raise_termination(signal: maestro_process::TerminationSignal) {
     assert!(
         std::process::Command::new("kill")
             // `kill -s` takes only names on some hosts; every host takes `-<number>`.

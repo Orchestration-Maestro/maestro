@@ -6,7 +6,7 @@ use crate::{
     page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
-use maestro_app::CustomAgentMessages;
+use maestro_agent::CustomAgentMessages;
 use std::cell::RefCell;
 use web_sys::Element;
 /// Bubble children mounted once and updated in place by position.

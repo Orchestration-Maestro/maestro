@@ -179,7 +179,7 @@ fn resolver_is_visible_only_when_rows_rebuild() {
 #[test]
 /// Application auth exports use existing owners.
 fn application_auth_exports_use_existing_owners() {
-    use maestro_app::{
+    use maestro_credentials::{
         ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
         InMemoryAuthStorageBackend, OAuthCredential,
     };
@@ -303,7 +303,7 @@ fn provider_host_routes(
     assert_eq!(errors.len(), 1);
     assert!(
         errors[0]
-            .downcast_ref::<maestro_app::OAuthError>()
+            .downcast_ref::<maestro_models::OAuthError>()
             .is_some()
     );
     assert_eq!(writer_runtime.pending(), 0);
@@ -315,7 +315,7 @@ fn provider_host_routes(
     assert_eq!(errors.len(), 1);
     assert!(
         errors[0]
-            .downcast_ref::<maestro_app::OAuthError>()
+            .downcast_ref::<maestro_models::OAuthError>()
             .is_some()
     );
     assert_eq!(rig.runtime.pending(), 0);

@@ -3,7 +3,7 @@
 use maestro_app::browser::utils::model_discovery::{
     DiscoveryOptions, DiscoveryProvider, discover_lm_studio_models, discover_models,
 };
-use maestro_app::{Model, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest};
+use maestro_models::{Model, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{

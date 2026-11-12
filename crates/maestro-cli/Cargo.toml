@@ -10,6 +10,21 @@ repository.workspace = true
 clap = { version = "=4.6.7", default-features = false, features = ["std", "help", "usage", "string"] }
 clap_complete = { version = "=4.6.5", default-features = false }
 maestro-app = { path = "../maestro-app" }
+maestro-agent = { path = "../maestro-agent" }
+maestro-catalog = { path = "../maestro-catalog" }
+maestro-credentials = { path = "../maestro-credentials" }
+maestro-daemon = { path = "../maestro-daemon" }
+maestro-extensions = { path = "../maestro-extensions" }
+maestro-json = { path = "../maestro-json" }
+maestro-models = { path = "../maestro-models" }
+maestro-packages = { path = "../maestro-packages" }
+maestro-process = { path = "../maestro-process" }
+maestro-protocol = { path = "../maestro-protocol" }
+maestro-resources = { path = "../maestro-resources" }
+maestro-session = { path = "../maestro-session" }
+maestro-settings = { path = "../maestro-settings" }
+maestro-text = { path = "../maestro-text" }
+maestro-tools = { path = "../maestro-tools" }
 maestro-tui = { path = "../maestro-tui" }
 maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
 maestro-theme = { path = "../maestro-theme" }

@@ -54,8 +54,8 @@ async fn execute(session: &Rc<AgentSession>, args: Value) -> Value {
 async fn invoked(
     session: &Rc<AgentSession>,
     args: Value,
-    signal: Option<maestro_app::Cancellation>,
-    update: Option<maestro_app::AgentToolUpdateCallback<Value, maestro_app::Local>>,
+    signal: Option<maestro_models::Cancellation>,
+    update: Option<maestro_extensions::AgentToolUpdateCallback<Value, maestro_models::Local>>,
 ) -> Result<Value, String> {
     let runner = session.extension_runner();
     let registered = runner
@@ -63,7 +63,7 @@ async fn invoked(
         .into_iter()
         .find(|tool| tool.definition.name() == "subagent")
         .unwrap();
-    let tool = maestro_app::wrap_registered_tool(&registered, runner);
+    let tool = maestro_extensions::wrap_registered_tool(&registered, runner);
     (tool.execute)("delegated".into(), args, signal, update)
         .await
         .map(|result| serde_json::to_value(result).unwrap())

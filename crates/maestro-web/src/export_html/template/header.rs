@@ -1,6 +1,6 @@
 //! Native offline session metadata.
 use super::SessionDocument;
-use maestro_app::is_truthy;
+use maestro_json::is_truthy;
 use serde_json::Value;
 use std::io;
 mod details;

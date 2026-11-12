@@ -4,10 +4,11 @@ use super::{
     session::stored_key,
 };
 use crate::{SharedAttachment, components::composer::can_send, tools::types::ToolUiError};
+use maestro_agent::{AgentMessage, CustomAgentMessages, PromptInput};
 use maestro_app::browser::components::records::{
     CustomAgentMessages as BrowserMessages, UserMessageWithAttachments,
 };
-use maestro_app::{AgentMessage, CustomAgentMessages, PromptInput, UserContent};
+use maestro_models::UserContent;
 use std::{
     rc::Rc,
     sync::{Arc, PoisonError, RwLock},

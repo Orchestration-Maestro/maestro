@@ -1,7 +1,8 @@
 //! The session commands the editor starts: a new session and a manual compaction.
 
 use super::InteractiveMode;
-use maestro_app::{NewSessionCommandOptions, ReadonlySessionManager};
+use maestro_extensions::types::NewSessionCommandOptions;
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_theme::ThemeColor;
 use serde_json::Value;
 use std::{error::Error, rc::Rc};

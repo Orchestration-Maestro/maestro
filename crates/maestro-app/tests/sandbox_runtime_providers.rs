@@ -466,7 +466,6 @@ fn built_in_providers_select_their_runtime_helpers() {
     }
 }
 
-use maestro_app::BoxFuture;
 use maestro_app::browser::components::sandbox::artifacts_runtime_provider::{
     ArtifactOperation, ArtifactResponse, ArtifactsRuntimeProvider,
 };
@@ -477,6 +476,7 @@ use maestro_app::browser::components::sandboxed_iframe::{SandboxError, SandboxFi
 use maestro_app::browser::tools::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanel, ArtifactsPanelState,
 };
+use maestro_models::BoxFuture;
 use maestro_models::DiagnosticErrorInfo;
 use std::time::Duration;
 

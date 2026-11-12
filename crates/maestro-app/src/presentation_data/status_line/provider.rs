@@ -5,9 +5,10 @@ use std::rc::Rc;
 
 use maestro_extensions::footer::iteration::Live;
 
+use super::ReadonlyFooterDataProvider;
 use super::git::{GitPaths, find_git_paths, resolve_branch};
 use super::operations::FooterOperations;
-use super::{ExtensionStatuses, ReadonlyFooterDataProvider};
+use maestro_extensions::footer::ExtensionStatuses;
 
 /// Branch-change callbacks keyed by the identity of their `Rc`.
 pub(super) type Callbacks = Live<usize, Rc<dyn Fn()>>;

@@ -43,7 +43,7 @@ pub fn set_show_json_mode(enabled: bool) {
 pub fn render_tool<P: 'static, D: 'static>(
     tool_name: &str,
     params: Option<ToolParams<'_, P>>,
-    result: Option<&maestro_app::ToolResultMessage<D>>,
+    result: Option<&maestro_models::ToolResultMessage<D>>,
     is_streaming: bool,
 ) -> Result<ToolRenderResult, ToolUiError> {
     render_with_binding(
@@ -58,7 +58,7 @@ pub fn render_tool<P: 'static, D: 'static>(
 fn render_with_binding<P: 'static, D: 'static>(
     binding: impl FnOnce() -> Option<types::ToolRendererBinding>,
     params: Option<ToolParams<'_, P>>,
-    result: Option<&maestro_app::ToolResultMessage<D>>,
+    result: Option<&maestro_models::ToolResultMessage<D>>,
     is_streaming: bool,
 ) -> Result<ToolRenderResult, ToolUiError> {
     if !SHOW_JSON_MODE.get()
@@ -95,7 +95,7 @@ pub(crate) fn render_call<D: 'static>(
     view: &crate::page::DomView,
     tool_name: &str,
     arguments: &serde_json::Value,
-    result: Option<&maestro_app::ToolResultMessage<D>>,
+    result: Option<&maestro_models::ToolResultMessage<D>>,
     is_streaming: bool,
 ) -> Result<ToolRenderResult, ToolUiError> {
     let binding = || {

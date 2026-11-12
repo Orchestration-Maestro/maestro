@@ -176,7 +176,7 @@ fn editor_hint(theme: &LiveTheme) -> Result<String, ThemeError> {
     }
     Ok(hints
         .into_iter()
-        .map(|(action, label)| maestro_app::key_hint(action, label, theme))
+        .map(|(action, label)| maestro_tools::key_hint(action, label, theme))
         .collect::<Result<Vec<_>, _>>()?
         .join("  "))
 }

@@ -1,11 +1,11 @@
 //! Selected self-updates: release plan, settings adaptation and ordered execution.
 
 use super::{SelfUpdateCommand, SelfUpdateCommandStep, SelfUpdateContext, SelfUpdateOperations};
-use crate::Settings;
 use crate::configuration::{
     config::{PACKAGE_NAME, VERSION},
     releases::{VersionCheckOptions, get_latest_maestro_release, is_newer_package_version},
 };
+use maestro_settings::Settings;
 use serde::Deserialize;
 use std::{io, process::ExitStatus};
 

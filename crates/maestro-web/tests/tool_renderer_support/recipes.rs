@@ -69,14 +69,14 @@ pub fn reset() {
     drop(old);
     maestro_web::set_show_json_mode(false);
 }
-pub fn message<D>(details: Option<D>) -> maestro_app::ToolResultMessage<D> {
-    maestro_app::ToolResultMessage {
+pub fn message<D>(details: Option<D>) -> maestro_models::ToolResultMessage<D> {
+    maestro_models::ToolResultMessage {
         tool_call_id: "original call".into(),
         tool_name: "original tool".into(),
         timestamp: 17.25,
         content: vec![
-            maestro_app::UserBlock::Text(maestro_app::TextContent::new("one".into())),
-            maestro_app::UserBlock::Text(maestro_app::TextContent::new("two".into())),
+            maestro_models::UserBlock::Text(maestro_models::TextContent::new("one".into())),
+            maestro_models::UserBlock::Text(maestro_models::TextContent::new("two".into())),
         ],
         details,
         is_error: true,

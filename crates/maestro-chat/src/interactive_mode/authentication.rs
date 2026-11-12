@@ -5,7 +5,7 @@ use super::InteractiveMode;
 use crate::{
     AuthSelectorProvider, AuthType, OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions,
 };
-use maestro_app::AuthCredential;
+use maestro_credentials::AuthCredential;
 use maestro_theme::Collator;
 use std::{error::Error, rc::Rc, sync::Arc};
 

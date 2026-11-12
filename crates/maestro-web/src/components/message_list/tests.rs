@@ -1,7 +1,8 @@
 //! List preparation reads each history entry a bounded number of times.
 use super::{MessageList, index};
 use crate::components::messages::{AssistantMessage, ToolResults};
-use maestro_app::{AgentMessage, NoCustomMessages, ToolResultMessage};
+use maestro_agent::{AgentMessage, NoCustomMessages};
+use maestro_models::ToolResultMessage;
 use serde_json::json;
 use std::{
     cell::Cell,
@@ -18,7 +19,7 @@ fn assistant(id: &str) -> Entry {
     let message = json!({
         "role":"assistant", "content":[{"type":"toolCall","id":id,"name":"probe","arguments":{}}],
         "api":"controlled", "provider":"controlled", "model":"controlled",
-        "usage":maestro_app::Usage::default(), "stopReason":"stop", "timestamp":0,
+        "usage":maestro_models::Usage::default(), "stopReason":"stop", "timestamp":0,
     });
     AgentMessage::Assistant(Arc::new(RwLock::new(
         serde_json::from_value(message).unwrap(),

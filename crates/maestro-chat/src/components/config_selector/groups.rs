@@ -1,8 +1,9 @@
 //! Stable scope/source grouping and basename-based display labels.
 use super::{RESOURCE_TYPE_LABELS, ResourceItem};
 use indexmap::IndexMap;
-use maestro_app::{PathMetadata, ResolvedPaths, SourceOrigin, SourceScope};
+use maestro_packages::{PathMetadata, ResolvedPaths};
 use maestro_path::{basename, dirname};
+use maestro_resources::{SourceOrigin, SourceScope};
 use maestro_theme::Collator;
 use std::{cell::RefCell, rc::Rc};
 
@@ -79,7 +80,7 @@ fn display_name(path: &str, kind: &str) -> String {
 /// Inserts one resource into its captured source and kind owners.
 fn add(
     groups: &mut IndexMap<String, ResourceGroup>,
-    resource: maestro_app::ResolvedResource,
+    resource: maestro_packages::ResolvedResource,
     kind: &str,
     label: &str,
 ) {

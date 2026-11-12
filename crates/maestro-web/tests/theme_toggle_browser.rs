@@ -248,7 +248,7 @@ fn consumers(forge: &Rc<DomView>, platform: &Platform) {
     plain
         .update(AgentInterfaceProps {
             session: Some(Rc::new(maestro_web::BrowserSession::new_local(
-                maestro_app::AgentOptions::default(),
+                maestro_agent::AgentOptions::default(),
             ))),
             ..AgentInterfaceProps::default()
         })
@@ -263,7 +263,7 @@ fn consumers(forge: &Rc<DomView>, platform: &Platform) {
     plain
         .update(AgentInterfaceProps {
             session: Some(Rc::new(maestro_web::BrowserSession::new_local(
-                maestro_app::AgentOptions::default(),
+                maestro_agent::AgentOptions::default(),
             ))),
             show_theme_toggle: true,
             ..AgentInterfaceProps::default()

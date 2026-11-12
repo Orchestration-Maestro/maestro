@@ -6,12 +6,15 @@ use super::{
 };
 use diagnostics::SourceInfos;
 use indexmap::IndexMap;
-use maestro_app::{
-    ContextFile, LoadPromptsResult, LoadSkillsResult, LoadThemesResult, PromptTemplate,
-    ReadonlySessionManager, Skill, SourceInfo, SourceScope, home_directory, is_whitespace_scalar,
-};
+use maestro_app::{LoadPromptsResult, LoadThemesResult};
 use maestro_lock::read;
+use maestro_models::system_prompt::ContextFile;
 use maestro_path::{Cwd, is_absolute, relative};
+use maestro_resources::{
+    LoadSkillsResult, PromptTemplate, Skill, SourceInfo, SourceScope, paths::home_directory,
+};
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Spacer;
 use std::{collections::HashMap, error::Error, io, rc::Rc};
@@ -143,8 +146,8 @@ fn format_display_path(path: &str, home: &HomeLookup<'_>) -> io::Result<String> 
 /// Returns the working-directory error of a resolution that needed it, or the failure
 /// of the home lookup.
 fn format_context_path(path: &str, cwd: &str, home: &HomeLookup<'_>) -> io::Result<String> {
-    let cwd = maestro_app::resolve(&[cwd])?;
-    let absolute = maestro_app::resolve(&[&cwd, path])?;
+    let cwd = maestro_resources::paths::resolve(&[cwd])?;
+    let absolute = maestro_resources::paths::resolve(&[&cwd, path])?;
     let relative = relative(
         &cwd,
         &absolute,
@@ -179,10 +182,10 @@ fn get_short_path(
         .and_then(|info| info.base_dir.as_deref())
         .filter(|base_dir| !base_dir.is_empty())
     {
-        let base_dir = maestro_app::resolve(&[base_dir])?;
+        let base_dir = maestro_resources::paths::resolve(&[base_dir])?;
         let short = relative(
             &base_dir,
-            &maestro_app::resolve(&[path])?,
+            &maestro_resources::paths::resolve(&[path])?,
             &Cwd {
                 current: &base_dir,
                 drive_directories: &[],

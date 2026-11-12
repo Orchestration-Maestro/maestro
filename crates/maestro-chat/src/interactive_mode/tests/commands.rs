@@ -8,13 +8,22 @@ use super::{
     painted, submit, with_held_response,
 };
 use crate::InteractiveMode;
-use maestro_app::{
-    AgentSession, AgentSessionEvent, CompactionResult, CreateAgentSessionRuntimeFactory,
-    DiagnosticErrorInfo, ExtensionFactory, Local, Presence, ReadonlySessionManager,
-    SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
-    SessionBeforeSwitchResult, SessionManager, SettingsManager, strip_ansi,
+use maestro_app::{AgentSession, AgentSessionEvent, CreateAgentSessionRuntimeFactory};
+use maestro_extensions::{
+    ExtensionFactory,
+    types::events::{
+        SessionBeforeCompactEvent, SessionBeforeCompactResult, SessionBeforeSwitchEvent,
+        SessionBeforeSwitchResult,
+    },
 };
+use maestro_models::{DiagnosticErrorInfo, Local};
+use maestro_session::{
+    Presence, SessionManager, session_manager::ReadonlySessionManager,
+    summarization::CompactionResult,
+};
+use maestro_settings::SettingsManager;
 use maestro_test_process::IsolatedSetup;
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -172,7 +181,7 @@ fn seed_old_state(world: &World) {
     world.mode.compaction_queued_messages.borrow_mut().push(
         super::super::queues::CompactionQueuedMessage {
             text: "old queue".to_owned(),
-            mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+            mode: maestro_session::message_records::UserMessageDelivery::FollowUp,
         },
     );
 }

@@ -3,14 +3,16 @@
 use crate::support::presenters::{
     Harness, NoWatch, RecordingWatch, options, settings, theme, view,
 };
+use maestro_app::KeybindingsManager;
 use maestro_app::presentation_data::input_selectors::{
     ConfigSelectorCallbacks, ConfigSelectorFactory, ConfigSelectorOptions,
     SessionSelectorCallbacks, SessionSelectorFactory, SessionSelectorRequest, SessionsFuture,
     SessionsLoader,
 };
-use maestro_app::{KeybindingsManager, SessionInfo, Settings, SettingsManager};
 use maestro_cli::input::configuration::{ConfigPresentation, select_config};
 use maestro_cli::input::session_picker::{SessionPresentation, select_session};
+use maestro_session::SessionInfo;
+use maestro_settings::{Settings, SettingsManager};
 use maestro_test_directory::Scratch;
 use maestro_tui::Component;
 use maestro_tui::Input;

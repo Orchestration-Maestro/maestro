@@ -14,8 +14,9 @@ use crate::{
     tools::types::ToolUiError,
     utils::formatting::format_usage,
 };
+use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages, Subscription};
 use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
-use maestro_app::{AgentMessage, CustomAgentMessages, Local, NoCustomMessages, Subscription};
+use maestro_models::Local;
 use std::{
     cell::{Cell, RefCell},
     collections::{HashMap, HashSet},
@@ -468,7 +469,7 @@ struct Snapshot {
     /// Calls waiting for results.
     pending: Rc<HashSet<String>>,
     /// Summed assistant usage.
-    totals: Option<maestro_app::Usage>,
+    totals: Option<maestro_models::Usage>,
     /// Entries in the shared history.
     entries: usize,
 }
@@ -506,7 +507,7 @@ impl Snapshot {
 /// The session's tool results by call identifier.
 fn results<C: CustomAgentMessages>(
     session: &BrowserSession<C>,
-) -> HashMap<String, Arc<RwLock<maestro_app::ToolResultMessage>>> {
+) -> HashMap<String, Arc<RwLock<maestro_models::ToolResultMessage>>> {
     let messages = Arc::clone(
         session
             .state()

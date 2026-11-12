@@ -3,10 +3,11 @@
 use super::PackageCommandContext;
 use super::help::usage;
 use super::parse::{PackageCommand, PackageCommandOptions};
-use maestro_app::{
-    APP_NAME, ConfiguredPackage, InstalledSourceScope, PackageManager, ProgressEvent,
-    ProgressEventType, Settings, SettingsManager,
+use maestro_app::APP_NAME;
+use maestro_packages::{
+    ConfiguredPackage, InstalledSourceScope, PackageManager, ProgressEvent, ProgressEventType,
 };
+use maestro_settings::{Settings, SettingsManager};
 use maestro_theme::Theme;
 use std::{cell::RefCell, io, io::Write, rc::Rc};
 

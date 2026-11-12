@@ -2,7 +2,8 @@
 
 use super::{InteractiveMode, sorted_by_name};
 use crate::{AuthSelectorProvider, AuthType};
-use maestro_app::{BUILT_IN_PROVIDER_DISPLAY_NAMES, get_providers};
+use maestro_catalog::BUILT_IN_PROVIDER_DISPLAY_NAMES;
+use maestro_models::get_providers;
 use std::collections::HashSet;
 use std::error::Error;
 use std::hash::BuildHasher;

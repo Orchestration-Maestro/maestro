@@ -11,9 +11,9 @@ use crate::{
     page::{DomView, MountedContent, report},
     tools::types::{ToolRendererBinding, ToolUiError},
 };
+use maestro_agent::{CustomAgentMessages, NoCustomMessages, SharedAgentTool};
 use maestro_app::{
-    CustomAgentMessages, JsonObject, Local, NoCustomMessages, SandboxRuntimeProvider,
-    SandboxUrlProvider, SharedAgentTool,
+    SandboxRuntimeProvider, SandboxUrlProvider,
     browser::{
         components::sandbox::{
             artifacts_runtime_provider::{AgentLike, ArtifactsRuntimeProvider},
@@ -25,6 +25,7 @@ use maestro_app::{
         },
     },
 };
+use maestro_models::{JsonObject, Local};
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},

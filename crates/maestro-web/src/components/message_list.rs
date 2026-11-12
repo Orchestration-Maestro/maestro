@@ -8,14 +8,14 @@ use crate::{
     page::PreparedContent,
     tools::types::ToolUiError,
 };
-#[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::ToolResultMessage;
+use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages};
 use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 #[cfg(any(target_arch = "wasm32", test))]
 use maestro_app::browser::components::records::{
     is_artifact_message, is_user_message_with_attachments,
 };
-use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages};
+#[cfg(any(target_arch = "wasm32", test))]
+use maestro_models::ToolResultMessage;
 #[cfg(any(target_arch = "wasm32", test))]
 use std::{collections::HashMap, sync::PoisonError};
 use std::{
@@ -25,7 +25,7 @@ use std::{
 };
 
 /// The live local tools forwarded to each assistant row.
-type Tools = Rc<RwLock<Vec<maestro_app::SharedAgentTool<maestro_app::Local>>>>;
+type Tools = Rc<RwLock<Vec<maestro_agent::SharedAgentTool<maestro_models::Local>>>>;
 /// One shared transcript entry.
 type Message<C> = AgentMessage<BrowserMessages<C>>;
 /// The shared transcript the list reads.

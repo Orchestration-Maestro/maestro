@@ -3,7 +3,7 @@ use super::{
     ComponentOptions, ResourceItem, ResourceToggle,
     groups::{ResourceGroup, ResourceSubgroup},
 };
-use maestro_app::SettingsManager;
+use maestro_settings::SettingsManager;
 use maestro_tui::{
     Component, FocusFlag, Focusable, Input, InputHandler, get_keybindings, matches_key,
 };
@@ -127,7 +127,7 @@ impl ResourceList {
     fn filter_items(&self, query: &str) {
         let lower = query.to_lowercase();
         let all = query
-            .trim_matches(maestro_app::is_whitespace_scalar)
+            .trim_matches(maestro_text::is_whitespace_scalar)
             .is_empty();
         let query = (!all).then_some(lower.as_str());
         let mut entries = Vec::new();

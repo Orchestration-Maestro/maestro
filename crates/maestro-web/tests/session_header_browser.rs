@@ -260,7 +260,7 @@ fn populated_replays_every_expectation(header: &mut Header, rows: &serde_json::V
 
 /// Expect unknown for a falsy timestamp, the recorded en-US UTC text, else the browser's text.
 fn localized(timestamp: &serde_json::Value, recorded: &serde_json::Value) -> String {
-    if !maestro_app::is_truthy(timestamp) {
+    if !maestro_json::is_truthy(timestamp) {
         "unknown".into()
     } else if js(&JsValue::NULL, "return Intl.DateTimeFormat().resolvedOptions().timeZone==='UTC' && navigator.language==='en-US'").as_bool().unwrap() {
         recorded.as_str().unwrap().to_owned()

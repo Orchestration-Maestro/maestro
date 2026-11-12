@@ -158,9 +158,9 @@ mod tests {
                 html.contains(&format!("<{} ", tag.to_ascii_lowercase())),
                 "{id}"
             );
-            let attribute = maestro_app::markup::escape(
+            let attribute = maestro_text::markup::escape(
                 consumer["attribute"].as_str().unwrap(),
-                maestro_app::markup::EscapeMode::HtmlDecimal,
+                maestro_text::markup::EscapeMode::HtmlDecimal,
             );
             assert!(
                 html.replace('\0', "\u{fffd}")

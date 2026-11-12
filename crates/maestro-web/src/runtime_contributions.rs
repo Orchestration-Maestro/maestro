@@ -1,6 +1,6 @@
 //! Built-in and package contributions mounted at named slots.
 use crate::page::DomContent;
-pub use maestro_app::contribution_files::{
+pub use maestro_protocol::contributions::{
     BrowserContribution, BrowserModule, ContributionDescriptor, ContributionSlot,
 };
 use serde_json::Value;

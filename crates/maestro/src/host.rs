@@ -54,19 +54,19 @@ pub async fn run(args: Vec<String>, local: Rc<LocalSet>) -> Result<i32, Box<dyn 
     let offline = Rc::new(Cell::new(None));
     let status = Cell::new(None);
     let create = |options| Ok(package_manager(options, &local, offline.get()));
-    let select = |settings: &maestro_app::Settings, name: &str| {
+    let select = |settings: &maestro_settings::Settings, name: &str| {
         config::get_self_update_command_from_settings(&update, settings, name)
     };
-    let instruction = |settings: &maestro_app::Settings, name: &str| {
+    let instruction = |settings: &maestro_settings::Settings, name: &str| {
         config::get_self_update_unavailable_instruction_from_settings(&update, settings, name)
     };
     let version = VersionCheckOptions {
-        fetch: Some(maestro_app::default_fetch()),
+        fetch: Some(maestro_models::default_fetch()),
         ..Default::default()
     };
     let load = |cwd: &str, agent: &str| Ok(settings(cwd, agent));
     let package = PackageCommandContext {
-        cwd: &maestro_app::current_directory,
+        cwd: &maestro_resources::current_directory,
         agent_dir: &config::get_agent_dir,
         load_settings: &load,
         create_package_manager: &create,
@@ -102,7 +102,7 @@ struct NativeStartup {
     /// Offline choice sampled before package dispatch.
     offline: Rc<Cell<Option<bool>>>,
     /// Native supplied-bundle export adapter.
-    export: Rc<dyn maestro_app::ExportOperations>,
+    export: Rc<dyn maestro_export::ExportOperations>,
     /// The unstarted native terminal shared by component output and interactive frames.
     terminal: Rc<RefCell<maestro_tui_crossterm::ProcessTerminal>>,
 }
@@ -150,9 +150,9 @@ async fn startup(
         now: &now,
         files: &files,
         export_from_file: Rc::new(move |source, destination| {
-            maestro_app::export_from_file(
+            maestro_export::export_from_file(
                 source,
-                Some(maestro_app::ExportOptions {
+                Some(maestro_export::ExportOptions {
                     output_path: destination,
                     ..Default::default()
                 }),
@@ -170,7 +170,7 @@ fn module_loader(
     theme: maestro_theme::LiveTheme,
     local: &Rc<LocalSet>,
     terminal: &maestro_tui_crossterm::ProcessTerminal,
-) -> maestro_app::ModuleLoader<maestro_app::Local> {
+) -> maestro_extensions::ModuleLoader<maestro_models::Local> {
     let stdout = terminal.standard_output_writer();
     let stdout_is_terminal = io::stdout().is_terminal();
     let widgets = Rc::new(std::cell::OnceCell::new());
@@ -183,7 +183,7 @@ fn module_loader(
                 maestro_extensions_wasmtime::Installation {
                     version: config::VERSION.into(),
                     agent_dir: config::get_agent_dir()
-                        .map_err(|error| maestro_app::EventError::from(error.to_string()))?,
+                        .map_err(|error| maestro_extensions::EventError::from(error.to_string()))?,
                 },
                 Rc::clone(&io),
                 Some(maestro_extensions_wasmtime::Stdout::new(
@@ -199,9 +199,9 @@ fn module_loader(
 /// The host widgets of every component, with the live theme, the code highlighting and the
 /// terminal's capabilities.
 fn extension_widgets(
-    cell: &std::cell::OnceCell<Rc<dyn maestro_app::ExtensionWidgets>>,
+    cell: &std::cell::OnceCell<Rc<dyn maestro_extensions::ExtensionWidgets>>,
     theme: &maestro_theme::LiveTheme,
-) -> Result<Rc<dyn maestro_app::ExtensionWidgets>, maestro_app::EventError> {
+) -> Result<Rc<dyn maestro_extensions::ExtensionWidgets>, maestro_extensions::EventError> {
     if let Some(widgets) = cell.get() {
         return Ok(Rc::clone(widgets));
     }
@@ -216,11 +216,11 @@ fn exports(
     themes: &'static Rc<ThemeState>,
     installation: &Installation,
     package_dir: &str,
-) -> Rc<dyn maestro_app::ExportOperations> {
+) -> Rc<dyn maestro_export::ExportOperations> {
     let path = config::paths::get_export_template_dir(package_dir, installation.layout, |path| {
         std::path::Path::new(path).exists()
     });
-    Rc::new(maestro_app::NativeExportOperations {
+    Rc::new(maestro_export::NativeExportOperations {
         app_name: config::APP_NAME,
         template_dir: Box::leak(path.into_boxed_str()),
         theme: themes.as_ref(),
@@ -229,14 +229,14 @@ fn exports(
 
 /// Construct the package manager over its supplied settings and local task owner.
 fn package_manager(
-    options: maestro_app::PackageManagerOptions,
+    options: maestro_packages::PackageManagerOptions,
     local: &Rc<LocalSet>,
     offline: Option<bool>,
-) -> Rc<dyn maestro_app::PackageManager> {
+) -> Rc<dyn maestro_packages::PackageManager> {
     Rc::new(
-        maestro_app::DefaultPackageManager::new(
+        maestro_packages::DefaultPackageManager::new(
             options,
-            maestro_app::NativePackageOperations::new(
+            maestro_packages::NativePackageOperations::new(
                 Rc::new(maestro_app::output_guard::is_stdout_taken_over),
                 local,
             ),
@@ -246,8 +246,8 @@ fn package_manager(
 }
 
 /// Read accepted settings through the existing application owner.
-fn settings(cwd: &str, agent: &str) -> Rc<RefCell<maestro_app::SettingsManager>> {
-    Rc::new(RefCell::new(maestro_app::SettingsManager::create(
+fn settings(cwd: &str, agent: &str) -> Rc<RefCell<maestro_settings::SettingsManager>> {
+    Rc::new(RefCell::new(maestro_settings::SettingsManager::create(
         cwd,
         agent,
         config::CONFIG_DIR_NAME,

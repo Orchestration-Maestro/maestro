@@ -5,7 +5,7 @@ use super::super::{
 use super::{append_user, fork_panel, tree::finish, tree::panel};
 use crate::TreeSelectorComponent;
 use crate::components::session_selector::SessionSelectorComponent;
-use maestro_app::DoubleEscapeAction;
+use maestro_settings::DoubleEscapeAction;
 use maestro_tui::InputHandler;
 use std::{path::Path, rc::Rc};
 

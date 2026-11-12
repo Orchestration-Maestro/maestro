@@ -2,7 +2,7 @@
 
 use super::{flag, option, path, required, snapshot};
 use clap::{Arg, ArgAction, ArgGroup, Command};
-use maestro_app::daemon_api::{Agent, agent_label};
+use maestro_daemon::{Agent, agent_label};
 
 /// Describe agent inspection, input and lifecycle operations.
 pub(super) fn command() -> Command {

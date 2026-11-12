@@ -3,8 +3,9 @@
 use maestro_app::rpc_types::{
     RpcCommandBody, RpcData, RpcLastAssistantText, RpcSessionCommand, parse_rpc_command,
 };
-use maestro_app::{Presence, RpcCommand, RpcResponse, RpcSessionState};
+use maestro_app::{RpcCommand, RpcResponse, RpcSessionState};
 use maestro_json::lines::serialize_json_line;
+use maestro_session::Presence;
 use serde_json::{Value, json};
 
 /// One recorded command, its input and the exact line answering it.
@@ -114,7 +115,7 @@ fn typed_command_union_keeps_workspace_requests() {
             "{request}"
         );
         let written = serde_json::to_value(&command).unwrap();
-        let workspace: maestro_app::rpc_types::workspace::Request =
+        let workspace: maestro_protocol::rpc_types::Request =
             serde_json::from_value(request.clone()).unwrap();
         assert_eq!(
             written,

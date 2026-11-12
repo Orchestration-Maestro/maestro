@@ -1,6 +1,6 @@
 //! Browser provider facade reaches application-owned policies.
 #![cfg(test)]
-use maestro_app::{DiagnosticErrorInfo, Model};
+use maestro_models::{DiagnosticErrorInfo, Model};
 use maestro_web::{
     apply_proxy_if_needed, create_stream_fn, is_cors_error, should_use_proxy_for_provider,
 };
@@ -17,18 +17,19 @@ fn browser_proxy_exports_reach_application() {
     assert!(is_cors_error(&DiagnosticErrorInfo::error(
         "cross-origin refusal"
     )));
-    let wrapper: maestro_app::StreamFn = create_stream_fn(maestro_app::SharedHandle::new(|| {
-        Box::pin(async { Err(DiagnosticErrorInfo::error("facade settings")) })
-    }));
+    let wrapper: maestro_agent::StreamFn =
+        create_stream_fn(maestro_models::SharedHandle::new(|| {
+            Box::pin(async { Err(DiagnosticErrorInfo::error("facade settings")) })
+        }));
     let mut invocation = wrapper(
         model,
-        maestro_app::Context {
+        maestro_models::Context {
             system_prompt: None,
             messages: Vec::new(),
             tools: None,
         },
-        maestro_app::SimpleStreamOptions::default(),
-        maestro_app::ProviderStreamOptions::default(),
+        maestro_models::SimpleStreamOptions::default(),
+        maestro_models::ProviderStreamOptions::default(),
     );
     let mut context = std::task::Context::from_waker(std::task::Waker::noop());
     let std::task::Poll::Ready(Err(error)) = invocation.as_mut().poll(&mut context) else {

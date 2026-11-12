@@ -177,7 +177,7 @@ fn bash_routes_custom_shell_only_to_local_operations() {
             .exec(
                 "unused",
                 &cwd,
-                maestro_app::BashExecOptions {
+                maestro_tools::BashExecOptions {
                     on_data: &mut |_| panic!("missing shell must not produce output"),
                     signal: None,
                     timeout: None,
@@ -248,11 +248,11 @@ fn bash_decodes_split_utf8_output() {
 #[test]
 fn direct_shell_operation_cleans_terminal_output() {
     let operations = ScriptedShell::output("\x1b[31mred\x1b[0m\r\n", Some(0.0));
-    let result = run_io(maestro_app::execute_bash_with_operations(
+    let result = run_io(maestro_tools::execute_bash_with_operations(
         "output",
         "/work",
         &operations,
-        maestro_app::BashExecutorOptions::default(),
+        maestro_tools::BashExecutorOptions::default(),
     ))
     .unwrap();
     assert_eq!(
@@ -301,11 +301,11 @@ fn direct_shell_line_truncation_retains_artifact() {
         writeln!(content, "{line}").unwrap();
     }
     let shell = ScriptedShell::output(&content, Some(0.0));
-    let result = run_io(maestro_app::execute_bash_with_operations(
+    let result = run_io(maestro_tools::execute_bash_with_operations(
         "lines",
         "/work",
         &shell,
-        maestro_app::BashExecutorOptions::default(),
+        maestro_tools::BashExecutorOptions::default(),
     ))
     .unwrap();
     let artifact = result.full_output_path.as_ref().unwrap();
@@ -472,7 +472,7 @@ fn bash_local_operations_preserve_explicit_environment() {
     let result = run_io(operations.exec(
         "echo $TEST_LOCAL_BASH_OPS",
         &root.path().display().to_string(),
-        maestro_app::BashExecOptions {
+        maestro_tools::BashExecOptions {
             on_data: &mut |chunk| bytes.extend_from_slice(chunk),
             signal: None,
             timeout: None,
@@ -491,11 +491,11 @@ fn native_direct_shell_operation_cleans_terminal_output() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     let operations = maestro_app::create_local_bash_operations(String::new(), None);
-    let result = run_io(maestro_app::execute_bash_with_operations(
+    let result = run_io(maestro_tools::execute_bash_with_operations(
         "printf '\\033[31mred\\033[0m\\r\\n'",
         &root.path().display().to_string(),
         operations.as_ref(),
-        maestro_app::BashExecutorOptions::default(),
+        maestro_tools::BashExecutorOptions::default(),
     ))
     .unwrap();
     assert_eq!(
@@ -538,11 +538,11 @@ fn native_direct_shell_line_truncation_retains_artifact() {
     }
     let root = maestro_test_directory::Scratch::new().unwrap();
     let operations = maestro_app::create_local_bash_operations(String::new(), None);
-    let result = run_io(maestro_app::execute_bash_with_operations(
+    let result = run_io(maestro_tools::execute_bash_with_operations(
         "seq 3000",
         &root.path().display().to_string(),
         operations.as_ref(),
-        maestro_app::BashExecutorOptions::default(),
+        maestro_tools::BashExecutorOptions::default(),
     ))
     .unwrap();
     let artifact = result.full_output_path.as_ref().unwrap();

@@ -1,6 +1,6 @@
 use maestro_agent::{AgentToolResult, ExecuteTool};
-use maestro_app::{DiagnosticErrorInfo, Fetch, FetchError, HttpResponse};
 use maestro_models::{Cancellation, SharedHandle};
+use maestro_models::{DiagnosticErrorInfo, Fetch, FetchError, HttpResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock, Weak};

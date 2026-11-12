@@ -8,13 +8,16 @@ use maestro_app::configuration::config::{
     get_self_update_command_from_settings, get_self_update_unavailable_instruction_from_settings,
 };
 use maestro_app::configuration::releases::VersionCheckOptions;
-use maestro_app::{
-    CommandCaptureOptions, CommandOutput, PackageFuture, PackageManager, PackageManagerOptions,
-    PackageOperations, Settings, SettingsManager, SettingsScope, SettingsStorage,
-    SettingsStorageError, SettingsUpdate, SpawnSyncError,
-};
 use maestro_cli::input::configuration::ConfigPresentation;
 use maestro_cli::packages::{PackageCommandContext, handle_config_command, handle_package_command};
+use maestro_packages::{
+    CommandCaptureOptions, CommandOutput, PackageFuture, PackageManager, PackageManagerOptions,
+    PackageOperations,
+};
+use maestro_process::SpawnSyncError;
+use maestro_settings::{
+    Settings, SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate,
+};
 use maestro_test_directory::Scratch;
 use serde_json::Value;
 use std::cell::{Cell, RefCell};
@@ -340,7 +343,7 @@ impl std::error::Error for Trace {}
 type Edit = Arc<dyn Fn(&mut SettingsManager)>;
 
 /// A response body carrying one chunk.
-fn release_body(chunk: Result<Vec<u8>, maestro_app::FetchError>) -> maestro_app::HttpBody {
+fn release_body(chunk: Result<Vec<u8>, maestro_models::FetchError>) -> maestro_models::HttpBody {
     Box::pin(futures_util::stream::once(async move { chunk }))
 }
 
@@ -459,7 +462,7 @@ impl Harness {
 
     /// Answer the release lookup with one controlled body and status.
     pub fn release(&mut self, status: u16, body: &str) {
-        use maestro_app::{Fetch, HttpResponse};
+        use maestro_models::{Fetch, HttpResponse};
         let body = body.to_owned();
         let requests = Arc::clone(&self.release_requests);
         let fetch: Fetch = Arc::new(move |_request| {
@@ -467,7 +470,7 @@ impl Harness {
             let chunk = if status == 200 {
                 Ok(body.clone().into_bytes())
             } else {
-                Err(maestro_app::FetchError::Aborted)
+                Err(maestro_models::FetchError::Aborted)
             };
             Box::pin(async move {
                 Ok(HttpResponse {
@@ -656,12 +659,12 @@ impl Harness {
         }
         if state.second.get() {
             let manager =
-                maestro_app::DefaultPackageManager::new(options, Second(Rc::clone(&effects)))
+                maestro_packages::DefaultPackageManager::new(options, Second(Rc::clone(&effects)))
                     .with_offline(state.offline.get());
             return Rc::new(manager) as Rc<dyn PackageManager>;
         }
         let manager =
-            maestro_app::DefaultPackageManager::new(options, Operations(Rc::clone(&effects)))
+            maestro_packages::DefaultPackageManager::new(options, Operations(Rc::clone(&effects)))
                 .with_offline(state.offline.get());
         Rc::new(manager) as Rc<dyn PackageManager>
     }

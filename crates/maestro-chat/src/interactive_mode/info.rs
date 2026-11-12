@@ -1,6 +1,7 @@
 //! The session name and session information commands.
 use super::InteractiveMode;
-use maestro_app::{LocaleNumberFormat, SessionStats, is_whitespace_scalar};
+use maestro_app::SessionStats;
+use maestro_text::{is_whitespace_scalar, numbers::LocaleNumberFormat};
 use maestro_theme::{Theme, ThemeColor};
 use std::{error::Error, fmt::Write as _};
 

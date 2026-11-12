@@ -2,10 +2,14 @@
 use super::super::InteractiveMode;
 use crate::components::extension_widgets::keybindings;
 use crate::whole_cell_width::whole_cell_width;
-use maestro_app::{
-    CustomClose, CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, EventError,
-    ExtensionComponent, ExtensionUIFuture, Listeners, OverlayOptionsSource,
+use maestro_extensions::{
+    EventError,
+    types::{
+        CustomClose, CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions,
+        ExtensionComponent, ExtensionUIFuture, OverlayOptionsSource,
+    },
 };
+use maestro_listeners::Listeners;
 use maestro_tui::ComponentHandle;
 use maestro_tui::{OverlayHandle, OverlayOptions, SizeValue};
 use std::{

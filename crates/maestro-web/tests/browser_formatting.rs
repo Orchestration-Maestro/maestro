@@ -41,7 +41,8 @@ fn format_cost_preserves_four_digit_rounding() {
 }
 
 use crate::support;
-use maestro_app::{ModelCost, Presence, Usage, UsageCost};
+use maestro_models::{ModelCost, Usage, UsageCost};
+use maestro_session::Presence;
 use maestro_web::{I18n, format_model_cost};
 use std::rc::Rc;
 use support::Host;

@@ -1,13 +1,12 @@
 //! Insertion-ordered renderer registration and shared tool headers.
 use super::types::{ToolRenderer, ToolRendererBinding};
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
-use maestro_app::{
-    JsonObject,
-    browser::tools::{
-        extraction::{ExtractDocumentParams, ExtractDocumentResult},
-        javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
-    },
+use maestro_app::browser::tools::{
+    extraction::{ExtractDocumentParams, ExtractDocumentResult},
+    javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
 };
+#[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
+use maestro_models::JsonObject;
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
@@ -92,7 +91,7 @@ pub(crate) fn get_text_output<D>(
     result: Option<&super::types::ToolResultMessageView<'_, D>>,
 ) -> String {
     result.map_or_else(String::new, |result| {
-        maestro_app::UserBlock::text_output(result.content())
+        maestro_models::UserBlock::text_output(result.content())
     })
 }
 

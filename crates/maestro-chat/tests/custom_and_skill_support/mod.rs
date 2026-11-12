@@ -3,11 +3,13 @@ use crate::palette;
 use crate::platform_keys::for_this_platform;
 use crate::registry::REGISTRY;
 use crate::registry::Restore;
-use maestro_app::{
-    CustomMessage, ImageContent, MessageRenderOptions, MessageRenderer, MessageRendererCall,
-    ParsedSkillBlock, Presence, TextContent, UserBlock, UserContent, create_event_bus,
-};
+use maestro_app::ParsedSkillBlock;
 use maestro_chat::{CustomMessageComponent, SkillInvocationMessageComponent};
+use maestro_extensions::{
+    MessageRenderOptions, MessageRenderer, MessageRendererCall, create_event_bus,
+};
+use maestro_models::{ImageContent, TextContent, UserBlock, UserContent};
+use maestro_session::{Presence, message_records::CustomMessage};
 use maestro_theme::{LiveTheme, ThemeColor, ThemeState, paint};
 use maestro_tui::{
     Component, ComponentHandle, KeybindingDefinition, KeybindingKeys, KeybindingsManager,
@@ -514,7 +516,9 @@ impl Replay for SkillInvocationMessageComponent {
         self.set_expanded(expanded);
     }
 }
-impl<T: 'static, E: maestro_app::ExtensionExecution> Replay for CustomMessageComponent<T, E> {
+impl<T: 'static, E: maestro_extensions::ExtensionExecution> Replay
+    for CustomMessageComponent<T, E>
+{
     fn expand(&self, expanded: bool) {
         self.set_expanded(expanded);
     }

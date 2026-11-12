@@ -166,7 +166,7 @@ fn border_uses_live_theme_but_custom_color_needs_no_theme() {
 
 #[test]
 fn extension_widget_host_builds_widgets_over_the_live_theme_and_terminal() {
-    use maestro_app::ExtensionWidgets;
+    use maestro_extensions::ExtensionWidgets;
     use maestro_tui::{Markdown, MarkdownOptions};
     let (state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
@@ -203,7 +203,7 @@ fn extension_widget_host_builds_widgets_over_the_live_theme_and_terminal() {
 
 #[test]
 fn extension_widget_host_builds_application_loaders_and_list_styles() {
-    use maestro_app::ExtensionWidgets;
+    use maestro_extensions::ExtensionWidgets;
     let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let host = maestro_chat::ExtensionWidgetHost::new(
@@ -262,7 +262,7 @@ fn extension_widget_host_builds_application_loaders_and_list_styles() {
 
 #[test]
 fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles() {
-    use maestro_app::ExtensionWidgets;
+    use maestro_extensions::ExtensionWidgets;
     let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let host = maestro_chat::ExtensionWidgetHost::new(
@@ -274,12 +274,12 @@ fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles()
     let hint = host.key_hint("tui.select.up", "up").unwrap();
     assert_eq!(
         hint,
-        maestro_app::key_hint("tui.select.up", "up", &live).unwrap()
+        maestro_tools::key_hint("tui.select.up", "up", &live).unwrap()
     );
     let raw = host.raw_key_hint("esc", "back").unwrap();
     assert_eq!(
         raw,
-        maestro_app::raw_key_hint("esc", "back", &live).unwrap()
+        maestro_tools::raw_key_hint("esc", "back", &live).unwrap()
     );
     let theme = host.editor_theme();
     let direct = maestro_theme::get_editor_theme(live);
@@ -287,7 +287,7 @@ fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles()
 }
 
 /// The supplied managers retain their own file, overrides and effective snapshots.
-fn assert_application_keybindings(host: &dyn maestro_app::ExtensionWidgets) {
+fn assert_application_keybindings(host: &dyn maestro_extensions::ExtensionWidgets) {
     use maestro_tui::KeybindingKeys;
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let dir = scratch.path().to_str().unwrap().to_owned();
@@ -347,7 +347,7 @@ fn assert_application_keybindings(host: &dyn maestro_app::ExtensionWidgets) {
 
 #[test]
 fn extension_widget_host_builds_the_application_custom_editor() {
-    use maestro_app::ExtensionWidgets;
+    use maestro_extensions::ExtensionWidgets;
     let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
     let highlighter = Rc::new(maestro_theme::SyntectHighlighter::new().unwrap());
     let host = maestro_chat::ExtensionWidgetHost::new(
@@ -933,13 +933,13 @@ fn application_hint_exports_use_owner_semantics() {
     {
         maestro_tui::set_keybindings(bindings(&[("tui.select.cancel", input.keys)]));
         let (_state, live) = published::published(&colors(31, 32, 33, 34)).unwrap();
-        assert_eq!(maestro_app::key_text("tui.select.cancel"), expected.text);
+        assert_eq!(maestro_tools::key_text("tui.select.cancel"), expected.text);
         assert_eq!(
-            maestro_app::key_hint("tui.select.cancel", "cancel", &live).unwrap(),
+            maestro_tools::key_hint("tui.select.cancel", "cancel", &live).unwrap(),
             expected.hint
         );
         assert_eq!(
-            maestro_app::raw_key_hint("Z", "cancel", &live).unwrap(),
+            maestro_tools::raw_key_hint("Z", "cancel", &live).unwrap(),
             expected.raw
         );
     }

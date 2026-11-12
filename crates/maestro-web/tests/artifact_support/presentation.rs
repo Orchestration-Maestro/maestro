@@ -78,7 +78,7 @@ impl ArtifactPresentation for Presentation {
     fn get_logs(&self, _: &str) -> Result<ArtifactLogReader, ArtifactLogError> {
         Err(ArtifactLogError::NotHtml)
     }
-    fn wait(&self, _: std::time::Duration) -> maestro_app::BoxFuture<()> {
+    fn wait(&self, _: std::time::Duration) -> maestro_models::BoxFuture<()> {
         Box::pin(std::future::ready(()))
     }
     fn request_update(&self) {}

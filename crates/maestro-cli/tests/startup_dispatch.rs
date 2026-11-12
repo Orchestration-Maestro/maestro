@@ -170,7 +170,7 @@ fn file_preparation_forwards_resize_order_and_failures() {
 }
 
 /// Recorded, distinct attachments in the authored order under each resize policy.
-fn image_expectations(resize: bool) -> Vec<maestro_app::ImageContent> {
+fn image_expectations(resize: bool) -> Vec<maestro_models::ImageContent> {
     let cases = if resize {
         ["files-182", "files-190"]
     } else {

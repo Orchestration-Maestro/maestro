@@ -2,8 +2,10 @@
 //! the prompt loop.
 use super::InteractiveMode;
 use super::bash::selected_shell_command;
-use maestro_app::messages::UserMessageDelivery;
-use maestro_app::{ImageContent, PromptOptions, is_whitespace_scalar};
+use maestro_app::PromptOptions;
+use maestro_models::ImageContent;
+use maestro_session::message_records::UserMessageDelivery;
+use maestro_text::is_whitespace_scalar;
 use maestro_tui::EditorComponent;
 use maestro_tui::LocalFuture;
 use std::{

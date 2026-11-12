@@ -48,7 +48,7 @@ impl LoginDialogOptions {
     fn title(&mut self, provider_id: &str) -> Result<String, ThemeError> {
         let name = self.provider_name_lookup.take().map_or_else(
             || {
-                maestro_app::presentation_data::get_oauth_providers()
+                maestro_models::get_oauth_providers()
                     .into_iter()
                     .find(|provider| provider.id() == provider_id)
                     .map(|provider| provider.name().to_owned())
@@ -209,7 +209,7 @@ impl LoginDialogComponent {
     }
     /// Captures the currently bound cancellation help.
     fn cancel_hint(&self, description: &str) -> Result<String, ThemeError> {
-        maestro_app::key_hint("tui.select.cancel", description, &self.options.theme)
+        maestro_tools::key_hint("tui.select.cancel", description, &self.options.theme)
     }
     /// Appends manual entry with an empty input, keeping earlier rows.
     ///
@@ -238,7 +238,7 @@ impl LoginDialogComponent {
         let help = format!(
             "({} {})",
             self.cancel_hint("to cancel,")?,
-            maestro_app::key_hint("tui.select.confirm", "to submit", &self.options.theme)?
+            maestro_tools::key_hint("tui.select.confirm", "to submit", &self.options.theme)?
         );
         self.input.set_value(String::new());
         self.input_result(&help, true)

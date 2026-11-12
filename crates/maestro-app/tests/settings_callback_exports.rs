@@ -3,7 +3,9 @@
 //! `delivery_mode` and `queue_mode` belong to the native session, so the browser build skips it.
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_app::{MessageDeliveryMode, QueueMode, delivery_mode, queue_mode};
+use maestro_agent::QueueMode;
+use maestro_app::{delivery_mode, queue_mode};
+use maestro_settings::MessageDeliveryMode;
 
 #[test]
 fn settings_queue_policy_exports_keep_distinct_types() {

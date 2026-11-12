@@ -23,7 +23,7 @@ pub fn custom_message_content_reaches_the_native_reading_consumer() {
     register_message_renderer(
         "browser-custom",
         Rc::new(Renderer(Rc::new(|message| {
-            let maestro_app::AgentMessage::Custom(value) = message else {
+            let maestro_agent::AgentMessage::Custom(value) = message else {
                 unreachable!()
             };
             assert_eq!(value.read().unwrap().handle.load(Ordering::Relaxed), 42);
@@ -65,7 +65,7 @@ pub fn custom_message_content_reaches_the_native_reading_consumer() {
 /// A replacement registration rewrites the parsed descendants inside the same placement.
 fn replace_renderer(
     slot: &mut MountedContent,
-    input: &maestro_app::AgentMessage<NativeMessage>,
+    input: &maestro_agent::AgentMessage<NativeMessage>,
     (parent, view): (&web_sys::Element, &maestro_web::page::DomView),
     strong: &web_sys::Element,
 ) {
@@ -94,7 +94,7 @@ fn replace_renderer(
 /// Prepare through the public registry and update the same native placement.
 fn show(
     slot: &mut MountedContent,
-    input: &maestro_app::AgentMessage<NativeMessage>,
+    input: &maestro_agent::AgentMessage<NativeMessage>,
     parent: &web_sys::Element,
     view: &maestro_web::page::DomView,
 ) {

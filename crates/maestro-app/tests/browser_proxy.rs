@@ -36,13 +36,13 @@ struct RewriteCase {
     /// Case or model name.
     name: String,
     /// Supplied model descriptor.
-    model: maestro_app::Model,
+    model: maestro_models::Model,
     /// Optional or supplied test credential.
     key: String,
     /// Supplied authored proxy URL.
     proxy_url: Option<String>,
     /// Recorded expected result.
-    expected: maestro_app::Model,
+    expected: maestro_models::Model,
 }
 
 #[test]
@@ -82,7 +82,7 @@ struct CorsCase {
 /// Cors classifier distinguishes failure classes.
 fn cors_classifier_distinguishes_failure_classes() {
     use maestro_app::browser::utils::proxy::is_cors_error;
-    use maestro_app::{DiagnosticErrorInfo, FetchError};
+    use maestro_models::{DiagnosticErrorInfo, FetchError};
     let cases: Vec<CorsCase> =
         serde_json::from_str(include_str!("fixtures/browser_providers/cors.json")).unwrap();
     for case in cases {
@@ -103,7 +103,7 @@ fn cors_classifier_distinguishes_failure_classes() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_app::{
+use maestro_models::{
     AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model, ProviderStreamOptions,
     SimpleStreamOptions,
 };
@@ -220,7 +220,7 @@ fn simple_options(key: Option<&str>) -> SimpleStreamOptions {
             max_retries: Some(2.0),
             headers: Some([("x-test".into(), "kept".into())].into_iter().collect()),
             on_payload: Some(Arc::new(|payload, _| Box::pin(async move { Ok(payload) }))),
-            fetch: Some(maestro_app::default_fetch()),
+            fetch: Some(maestro_models::default_fetch()),
             ..StreamOptions::default()
         },
         reasoning: Some(ThinkingLevel::High),
@@ -267,8 +267,8 @@ fn proxy_stream_reads_current_settings_and_forwards_inputs() {
             assert_eq!(
                 actual_model.input,
                 [
-                    maestro_app::ModelInput::Text,
-                    maestro_app::ModelInput::Image
+                    maestro_models::ModelInput::Text,
+                    maestro_models::ModelInput::Image
                 ]
             );
         }
@@ -416,10 +416,11 @@ fn local_proxy_stream_reads_current_settings_per_invocation() {
             Some("browser-proxy-local".into()),
         );
         let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let spawner: maestro_app::AgentSpawner<maestro_app::Local> = std::rc::Rc::new(|_| {});
+        let spawner: maestro_agent::AgentSpawner<maestro_models::Local> = std::rc::Rc::new(|_| {});
         let wrapper = create_local_stream_fn(settings_getter(Arc::clone(&reads)), spawner);
         for key in [None, Some("key"), None, Some("key"), Some(""), Some("key")] {
-            let mut options = maestro_models::SimpleStreamOptions::<maestro_app::Local>::default();
+            let mut options =
+                maestro_models::SimpleStreamOptions::<maestro_models::Local>::default();
             options.common.api_key = key.map(str::to_owned);
             let mut input = model();
             input.api = "browser-proxy-local".into();
