@@ -1,4 +1,4 @@
-//! Model protocol adapters, the opt-in simulator and the transport they share.
+//! Model protocol adapters, the opt-in simulator and the names they import from the transport.
 
 pub mod assistant_output;
 pub mod chat;

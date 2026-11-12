@@ -426,8 +426,8 @@ Ask before adding any unapproved crate; never add one silently.
 
 `maestro-http` and `maestro-models` pin `reqwest =0.13.5` (default features plus `stream`),
 `url =2.5.8`, `futures-core =0.3.34` (`std`) and `futures-util =0.3.34`
-(`std` and `sink`); `maestro-http` also pins `httpdate =1.0.3`, and `maestro-models`
-pins `ryu-js =1.0.3`. Native targets add `tokio =1.53.3`
+(`std` and `sink`); `maestro-http` also pins `httpdate =1.0.3` (models pins it for its tests), and
+`maestro-models` pins `ryu-js =1.0.3`. Native targets add `tokio =1.53.3`
 (`rt`, `time`; `test-util` for tests); browser targets add `wasm-bindgen =0.2.129`,
 `wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`. All are MIT OR Apache-2.0
 except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).

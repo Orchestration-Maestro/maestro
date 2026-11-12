@@ -152,7 +152,7 @@ mod tests {
     #[test]
     fn header_layer_keeps_order_and_final_values() {
         let rows: Vec<serde_json::Value> =
-            serde_json::from_str(include_str!("../tests/fixtures/header_layers.json")).unwrap();
+            serde_json::from_str(crate::test_support::HEADER_LAYERS).unwrap();
         for row in rows.iter().filter(|row| row["kind"] == "headers") {
             let mut actual = IndexMap::new();
             for source in row["input"]["layers"].as_array().unwrap() {

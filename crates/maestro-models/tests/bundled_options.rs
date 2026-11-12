@@ -503,9 +503,7 @@ fn simple_key_selection_stays_shared_across_existing_providers() -> TestResult {
 #[test]
 fn later_header_spelling_wins_over_older_alias() -> TestResult {
     let _registry = bundled::registry();
-    let rows: Vec<Value> = serde_json::from_str(include_str!(
-        "../../maestro-http/tests/fixtures/header_layers.json"
-    ))?;
+    let rows: Vec<Value> = serde_json::from_str(maestro_http::test_support::HEADER_LAYERS)?;
     for row in rows.iter().filter(|row| row["kind"] == "headers") {
         for api in [
             "openai-completions",

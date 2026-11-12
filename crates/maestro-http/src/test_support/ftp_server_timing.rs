@@ -1,4 +1,4 @@
-//! Live FTP peer observations compiled only by the native library tests.
+//! Live FTP peer observations shared with the tests of the transport and of its callers.
 
 #![cfg(not(target_arch = "wasm32"))]
 
