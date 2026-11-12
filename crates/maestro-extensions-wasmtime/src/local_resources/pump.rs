@@ -2,11 +2,10 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::Request;
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Cancellation, Model};
+use maestro_extensions::Cancellation;
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::Arc,
     task::{Context, Poll},
 };
 use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
@@ -200,9 +199,6 @@ impl State {
             Message::BuiltinOperation(operation) => self.builtin_operation(operation),
             Message::Events(id, request) => self.event(id, request),
             Message::Registration(id, request) => self.api_request(id, request),
-            Message::ApiModel(id, model, tx, scope) => self.start_api_model(id, *model, tx, scope),
-            Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
-            Message::HostOperation(call) => self.host_operation(call),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             message @ (Message::OAuthLogin(..)
@@ -329,56 +325,6 @@ impl State {
             }
         } else {
             request.reject("extension API resource ended");
-        }
-    }
-
-    /// Selects the original facade and cancellation before starting admitted execution.
-    fn start_exec(
-        &self,
-        id: u64,
-        request: crate::exec::Request,
-        reply: tokio::sync::oneshot::Sender<Result<String, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Api(api)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension API resource ended".to_owned()));
-            return;
-        };
-        let signal = request
-            .signal
-            .as_ref()
-            .map(|signal| self.registry.cancellation(signal))
-            .transpose();
-        match signal {
-            Ok(signal) => self.admit(
-                crate::exec::start(request.data, api.clone(), signal, reply),
-                admission,
-            ),
-            Err(error) => {
-                let _ = reply.send(Err(error));
-            }
-        }
-    }
-
-    /// Starts the native model operation at consumption and retains its admission.
-    fn start_api_model(
-        &self,
-        id: u64,
-        model: Model,
-        reply: tokio::sync::oneshot::Sender<Result<bool, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Api(api)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension API resource ended".to_owned()));
-            return;
-        };
-        match api.set_model(Arc::new(std::sync::RwLock::new(model))) {
-            Ok(work) => self.admit(crate::command_reads::settle(work, reply), admission),
-            Err(error) => {
-                let _ = reply.send(Err(error.to_string()));
-            }
         }
     }
 

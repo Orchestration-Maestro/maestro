@@ -316,6 +316,14 @@ held!(
 );
 
 held!(
+    /// The original extension facade.
+    ApiFacade,
+    maestro_extensions::ExtensionAPI<maestro_extensions::Local>,
+    "extension API resource ended",
+    Capability::Api(api) => api
+);
+
+held!(
     /// The native buffer of generic authored events.
     EventBuffer,
     super::stream_reads::Owner,

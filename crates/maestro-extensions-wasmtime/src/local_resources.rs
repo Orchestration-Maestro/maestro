@@ -6,7 +6,7 @@
 )]
 use crate::context_reads::{Endpoint, Owner, Request};
 use maestro_extensions::{
-    Cancellation, ExtensionUIContext, Model, ModelRegistry, ReadonlySessionManager, SharedHandle,
+    Cancellation, ExtensionUIContext, ModelRegistry, ReadonlySessionManager, SharedHandle,
 };
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
@@ -91,22 +91,6 @@ pub(crate) enum Message {
     Registration(u64, crate::registration_reads::Request),
     /// Uses the original facade bus for listener registration and emission.
     Events(u64, crate::event_reads::Request),
-    /// Selects and admits a model operation without blocking synchronous reads.
-    ApiModel(
-        u64,
-        Box<Model>,
-        tokio::sync::oneshot::Sender<Result<bool, String>>,
-        Admission,
-    ),
-    /// Starts explicit execution through its original facade and signal.
-    Exec(
-        u64,
-        crate::exec::Request,
-        tokio::sync::oneshot::Sender<Result<String, String>>,
-        Admission,
-    ),
-    /// Calls the original factory-time settings and package owner.
-    HostOperation(host_operations::Call),
     /// Waits through the native owner without blocking other requests.
     Sleep(
         native_io::Wait,
@@ -376,7 +360,7 @@ impl Registry {
     }
 
     /// Resolves an original cancellation without retaining the capability table borrow.
-    fn cancellation(&self, signal: &SignalEndpoint) -> Result<Cancellation, String> {
+    pub(crate) fn cancellation(&self, signal: &SignalEndpoint) -> Result<Cancellation, String> {
         match self.capability(signal.0.id).as_deref() {
             Some(Capability::Signal(signal)) => Ok(signal.clone()),
             _ => Err("extension signal resource ended".to_owned()),
