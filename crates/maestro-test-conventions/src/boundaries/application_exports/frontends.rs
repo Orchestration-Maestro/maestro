@@ -47,10 +47,7 @@ impl Paths {
 
     /// Record a path written below the application crate.
     pub(crate) fn path(&mut self, path: &syn::Path) {
-        if path.leading_colon.is_none()
-            && path.segments.len() > 1
-            && path.segments[0].ident == APPLICATION
-        {
+        if path.segments.len() > 1 && path.segments[0].ident == APPLICATION {
             let tail = path.segments.iter().skip(1);
             self.found.push((
                 path.segments[0].ident.span().start().line,
@@ -155,9 +152,7 @@ fn foreign(path: &[String], aliases: &Aliases) -> Option<(String, String)> {
     (1..=path.len()).find_map(|length| {
         let resolved = resolve(&path[..length], &[], aliases);
         let first = resolved.first()?;
-        let owner = first
-            .strip_prefix("maestro_")
-            .filter(|_| first != APPLICATION)?;
+        let owner = first.strip_prefix("maestro_")?;
         Some((
             path[length - 1].clone(),
             format!("maestro-{}", owner.replace('_', "-")),

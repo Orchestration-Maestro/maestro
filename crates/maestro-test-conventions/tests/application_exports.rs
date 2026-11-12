@@ -491,6 +491,7 @@ fn frontends_reach_lower_crate_items_only_through_their_owners() {
             "",
         ),
         ("fn f() -> maestro_app::Tool { loop {} }", "Tool"),
+        ("fn f() -> ::maestro_app::Tool { loop {} }", "Tool"),
         (
             "fn f() { let _ = serde_json::json!({\"a\": maestro_app::Tool}); }",
             "Tool",

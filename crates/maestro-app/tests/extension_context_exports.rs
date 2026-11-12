@@ -368,9 +368,6 @@ extension_export_identity!(
 const _: fn(
     maestro_app::BuildSystemPromptOptions,
 ) -> maestro_models::system_prompt::BuildSystemPromptOptions = |value| value;
-const _: fn(
-    maestro_models::system_prompt::ContextFile,
-) -> maestro_models::system_prompt::ContextFile = |value| value;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_bash_tool_result;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_read_tool_result;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_edit_tool_result;
