@@ -2,21 +2,19 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::settings::model::Config;
-use crate::state::App;
-use crate::state::test_support::api::{
+use maestro_daemon::settings::model::Config;
+use maestro_daemon::state::App;
+use maestro_daemon::state::test_support::api::{
     add_workspaces, daemon_with, daemon_with_workspaces, root_pane, split_pane,
 };
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{PaneDirection, PaneLayoutRect, SplitDirection};
 use maestro_protocol::shared::Flag;
 use maestro_workspace::tiling::{PaneId, Rect};
-
 /// The public handle of a pane in the first workspace.
 fn public(app: &App, pane: PaneId) -> String {
     app.state.public_pane_id(0, pane).unwrap()
 }
-
 /// A rectangle record in the snapshot's own vocabulary.
 fn cells(x: u16, y: u16, width: u16, height: u16) -> PaneLayoutRect {
     PaneLayoutRect {
@@ -26,7 +24,6 @@ fn cells(x: u16, y: u16, width: u16, height: u16) -> PaneLayoutRect {
         height,
     }
 }
-
 #[test]
 fn the_view_area_is_the_headless_surface_until_a_view_supplies_one() {
     let mut config = Config::default();
@@ -41,7 +38,6 @@ fn the_view_area_is_the_headless_surface_until_a_view_supplies_one() {
         Rect::new(0, 0, 30, 10)
     );
 }
-
 #[test]
 fn a_layout_snapshot_lists_public_ids_cells_and_dividers() {
     let mut app = daemon_with_workspaces(&["/work"]).unwrap();
@@ -71,7 +67,6 @@ fn a_layout_snapshot_lists_public_ids_cells_and_dividers() {
     assert!((snapshot.splits[0].ratio - 0.5).abs() < f32::EPSILON);
     assert_eq!(snapshot.splits[0].rect, cells(0, 0, 120, 40));
 }
-
 #[test]
 fn nested_dividers_are_named_by_their_index_and_path() {
     let mut app = daemon_with_workspaces(&["/work"]).unwrap();
@@ -87,7 +82,6 @@ fn nested_dividers_are_named_by_their_index_and_path() {
         .collect();
     assert_eq!(ids, ["split_0_root", "split_1_1", "split_2_10"]);
 }
-
 #[test]
 fn a_layout_snapshot_applies_the_accepted_chrome() {
     let mut config = Config::default();
@@ -101,7 +95,6 @@ fn a_layout_snapshot_applies_the_accepted_chrome() {
     assert_eq!(rects, [cells(0, 0, 59, 40), cells(60, 0, 60, 40)]);
     assert_eq!(snapshot.panes[1].pane_id, public(&app, right));
 }
-
 #[test]
 fn a_layout_snapshot_reports_focus_and_zoom_of_its_tab() {
     let mut app = daemon_with_workspaces(&["/work"]).unwrap();
@@ -116,7 +109,6 @@ fn a_layout_snapshot_reports_focus_and_zoom_of_its_tab() {
     assert_eq!(snapshot.focused_pane_id, public(&app, right));
     assert!(snapshot.panes[1].focused && !snapshot.panes[0].focused);
 }
-
 #[test]
 fn no_snapshot_exists_for_a_missing_workspace_or_tab() {
     let app = daemon_with_workspaces(&["/work"]).unwrap();
@@ -124,7 +116,6 @@ fn no_snapshot_exists_for_a_missing_workspace_or_tab() {
     assert_eq!(app.pane_layout_snapshot(0, 1), None);
     assert_eq!(app.pane_layout_snapshot(1, 0), None);
 }
-
 #[test]
 fn a_one_cell_view_still_yields_a_snapshot() {
     let mut config = Config::default();
@@ -139,7 +130,6 @@ fn a_one_cell_view_still_yields_a_snapshot() {
     assert_eq!(snapshot.panes.len(), 2);
     assert_eq!(snapshot.splits.len(), 1);
 }
-
 #[test]
 fn a_layout_update_publishes_the_complete_snapshot_once() {
     let mut app = daemon_with_workspaces(&["/work"]).unwrap();
@@ -148,19 +138,17 @@ fn a_layout_update_publishes_the_complete_snapshot_once() {
     let expected = app.pane_layout_snapshot(0, 0).unwrap();
     app.emit_layout_updated_event(0, 0);
     assert_eq!(
-        app.event_hub.events_after(0),
+        app.event_hub().events_after(0),
         [(1, EventData::LayoutUpdated { layout: expected })]
     );
 }
-
 #[test]
 fn a_layout_update_for_a_missing_tab_publishes_nothing() {
     let app = daemon_with_workspaces(&["/work"]).unwrap();
     app.emit_layout_updated_event(0, 4);
     app.emit_layout_updated_event(3, 0);
-    assert!(app.event_hub.events_after(0).is_empty());
+    assert!(app.event_hub().events_after(0).is_empty());
 }
-
 #[test]
 fn a_removal_reports_its_tab_only_while_panes_remain() {
     let mut app = daemon_with_workspaces(&["/work"]).unwrap();
@@ -176,7 +164,6 @@ fn a_removal_reports_its_tab_only_while_panes_remain() {
         None
     );
 }
-
 #[test]
 fn directional_targets_follow_the_served_geometry() {
     let mut app = daemon_with_workspaces(&["/work"]).unwrap();

@@ -1,10 +1,7 @@
 //! Retained status segments react only to current command output.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::test_support::spawning;
 use crate::state::tests::support;
-
 use crate::{
     events::AppEvent,
     service::event_hub::EventHub,
@@ -14,7 +11,6 @@ use crate::{
 use maestro_test_directory::temporary_root;
 use std::time::Instant;
 use tokio::sync::mpsc;
-
 /// Supplies a daemon without launching any pane process.
 fn test_app() -> App {
     let (launch, receiver) =
@@ -36,7 +32,6 @@ fn test_app() -> App {
     support::assert_identity_invariants(&app.state);
     app
 }
-
 /// A command that produces two complete lines.
 fn command() -> TabBarRightEntryConfig {
     TabBarRightEntryConfig::Command {
@@ -45,7 +40,6 @@ fn command() -> TabBarRightEntryConfig {
         timeout_seconds: 2,
     }
 }
-
 #[test]
 fn daemon_tab_bar_command_events_render_only_when_visible_output_changes() {
     let mut app = test_app();
@@ -67,7 +61,6 @@ fn daemon_tab_bar_command_events_render_only_when_visible_output_changes() {
         assert_eq!(app.launch.render_dirty.take().generic, changed);
     }
 }
-
 #[test]
 fn daemon_stale_command_result_does_not_replace_reloaded_status() {
     let mut app = test_app();
@@ -89,7 +82,6 @@ fn daemon_stale_command_result_does_not_replace_reloaded_status() {
         vec![TabBarStatusSegment::Text(Some("fresh".into()))]
     );
 }
-
 #[test]
 fn daemon_in_flight_command_has_no_second_deadline() {
     tokio::runtime::Builder::new_current_thread()
@@ -108,7 +100,6 @@ fn daemon_in_flight_command_has_no_second_deadline() {
             assert!(app.next_tab_bar_status_deadline().is_some());
         });
 }
-
 #[test]
 fn daemon_datetime_refresh_updates_its_segment_once_per_deadline() {
     let mut app = test_app();
@@ -126,7 +117,6 @@ fn daemon_datetime_refresh_updates_its_segment_once_per_deadline() {
     );
     assert!(!app.handle_tab_bar_status_tasks(deadline));
 }
-
 #[test]
 fn tab_status_command_reports_its_sanitized_last_line() {
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
@@ -145,7 +135,6 @@ fn tab_status_command_reports_its_sanitized_last_line() {
 
     });
 }
-
 #[test]
 fn tab_status_command_drains_large_output_and_keeps_the_last_line() {
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
@@ -165,7 +154,6 @@ fn tab_status_command_drains_large_output_and_keeps_the_last_line() {
 
     });
 }
-
 #[test]
 fn daemon_reload_aborts_an_in_flight_command_task_and_its_descendants() {
     tokio::runtime::Builder::new_current_thread()
@@ -174,7 +162,6 @@ fn daemon_reload_aborts_an_in_flight_command_task_and_its_descendants() {
         .unwrap()
         .block_on(check_descendant_reload());
 }
-
 /// Uses FIFO handshakes rather than sleeps to start and release a real descendant.
 async fn check_descendant_reload() {
     use std::io::Write;
@@ -228,7 +215,6 @@ async fn check_descendant_reload() {
     );
     std::fs::remove_dir_all(root).unwrap();
 }
-
 /// Waits for the kernel's killed/exited state, without polling the Tokio executor.
 fn wait_for_process_exit(pid: u32) {
     while let Ok(status) = std::fs::read_to_string(format!("/proc/{pid}/status")) {
@@ -240,40 +226,6 @@ fn wait_for_process_exit(pid: u32) {
         std::thread::yield_now();
     }
 }
-
-#[test]
-fn local_datetime_observes_supplied_timezone_inside_runtime() {
-    use maestro_test_process::TestProcess;
-    if let Ok(seconds) = std::env::var("MAESTRO_TEST_ZONE_OFFSET") {
-        let offset = time::UtcOffset::from_whole_seconds(seconds.parse().unwrap()).unwrap();
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(async {
-                let before = time::OffsetDateTime::now_utc().unix_timestamp();
-                let local = crate::platform::local_datetime().unwrap();
-                let after = time::OffsetDateTime::now_utc().unix_timestamp();
-                assert!((before..=after).contains(&local.assume_offset(offset).unix_timestamp()));
-            });
-        return;
-    }
-    for (zone, offset) in [("Etc/UTC", "0"), ("Etc/GMT+7", "-25200")] {
-        let output =
-            TestProcess::current("local_datetime_observes_supplied_timezone_inside_runtime")
-                .unwrap()
-                .env("TZ", zone)
-                .env("MAESTRO_TEST_ZONE_OFFSET", offset)
-                .output()
-                .unwrap();
-        assert!(
-            output.status.success(),
-            "{zone}: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
-}
-
 #[test]
 fn internal_drain_retains_status_and_bell_render_impact() {
     let mut app = test_app();

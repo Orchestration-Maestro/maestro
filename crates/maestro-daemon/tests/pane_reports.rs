@@ -1,29 +1,25 @@
 //! Agent reports through the daemon's handler: state, session identity, authority and release.
 #![cfg(target_os = "linux")]
-use crate::state::App;
-use crate::state::test_support::api::{
+use maestro_daemon::state::App;
+use maestro_daemon::state::test_support::api::{
     accepted, daemon_with_workspaces, event_names, failure, pane_record, pilot, request,
 };
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{AgentSessionInfo, AgentStatus, ErrorBody, ResponseResult};
 use maestro_protocol::shared::AgentSessionRefKind;
 use serde_json::{Value, json};
-
 /// The session file the reports below name.
 const SESSION: &str = "/sessions/pi-session.jsonl";
-
 /// A daemon whose only pane runs a recognized agent process that looks idle.
 fn piloted() -> App {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     pilot(&mut app, AgentState::Idle);
     app
 }
-
 /// Anchors the official integration's authority with session and working-state reports.
 fn anchored(app: &mut App) {
     anchored_under(app, "maestro:pi");
 }
-
 /// Anchors the official integration's authority with reports under the supplied `source`.
 fn anchored_under(app: &mut App, source: &str) {
     let session = json!({
@@ -38,7 +34,6 @@ fn anchored_under(app: &mut App, source: &str) {
     working["seq"] = json!(2);
     accepted(app, working);
 }
-
 /// A state report for the first pane.
 fn report(source: &str, agent: &str, state: &str) -> Value {
     json!({
@@ -46,12 +41,10 @@ fn report(source: &str, agent: &str, state: &str) -> Value {
         "source": source, "agent": agent, "state": state
     })
 }
-
 /// The failure an unreadable agent label answers with.
 fn blank_agent() -> Result<ResponseResult, ErrorBody> {
     failure("invalid_agent", "agent label must not be empty")
 }
-
 #[test]
 fn a_custom_agent_report_becomes_the_effective_agent_and_state() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -60,7 +53,6 @@ fn a_custom_agent_report_becomes_the_effective_agent_and_state() {
     assert_eq!(reported.agent.as_deref(), Some("hermes"));
     assert_eq!(reported.agent_status, AgentStatus::Working);
 }
-
 #[test]
 fn an_official_report_adds_its_session_identity_to_the_pane_record() {
     let mut app = piloted();
@@ -70,7 +62,6 @@ fn an_official_report_adds_its_session_identity_to_the_pane_record() {
     assert_eq!(reported.agent_status, AgentStatus::Working);
     assert_eq!(reported.agent_session, Some(pi_session()));
 }
-
 #[test]
 fn a_session_report_alone_keeps_the_state_and_records_the_identity() {
     let mut app = piloted();
@@ -89,7 +80,6 @@ fn a_session_report_alone_keeps_the_state_and_records_the_identity() {
         Some(SESSION)
     );
 }
-
 #[test]
 fn agent_labels_are_normalized_and_a_blank_one_is_refused() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -111,7 +101,6 @@ fn agent_labels_are_normalized_and_a_blank_one_is_refused() {
     });
     assert_eq!(request(&mut app, release), blank_agent());
 }
-
 #[test]
 fn a_report_for_a_missing_pane_is_refused() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -126,7 +115,6 @@ fn a_report_for_a_missing_pane_is_refused() {
         assert_eq!(request(&mut app, wire.clone()), missing, "{wire}");
     }
 }
-
 #[test]
 fn a_report_publishes_the_agent_and_its_status() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -136,7 +124,6 @@ fn a_report_publishes_the_agent_and_its_status() {
         ["pane_agent_detected", "pane_agent_status_changed"]
     );
 }
-
 #[test]
 fn clearing_authority_restores_the_detected_state() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -157,7 +144,6 @@ fn clearing_authority_restores_the_detected_state() {
     assert_eq!(restored.agent.as_deref(), Some("pi"));
     assert_eq!(restored.agent_status, AgentStatus::Working);
 }
-
 #[test]
 fn releasing_a_custom_integration_clears_its_agent_but_an_official_release_keeps_the_process() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -178,7 +164,6 @@ fn releasing_a_custom_integration_clears_its_agent_but_an_official_release_keeps
     assert_eq!(kept.agent.as_deref(), Some("pi"));
     assert_eq!(kept.agent_status, AgentStatus::Working);
 }
-
 #[test]
 fn a_stale_sequence_is_ignored() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -193,7 +178,6 @@ fn a_stale_sequence_is_ignored() {
         AgentStatus::Working
     );
 }
-
 /// The session identity the official integration reports under its canonical source.
 fn pi_session() -> AgentSessionInfo {
     AgentSessionInfo {
@@ -203,7 +187,6 @@ fn pi_session() -> AgentSessionInfo {
         value: SESSION.into(),
     }
 }
-
 #[test]
 fn a_session_report_under_the_legacy_source_records_the_identity() {
     let mut app = piloted();
@@ -218,7 +201,6 @@ fn a_session_report_under_the_legacy_source_records_the_identity() {
         Some(pi_session())
     );
 }
-
 #[test]
 fn a_state_report_under_the_legacy_source_carries_the_identity() {
     let mut app = piloted();
@@ -227,7 +209,6 @@ fn a_state_report_under_the_legacy_source_carries_the_identity() {
     assert_eq!(reported.agent_status, AgentStatus::Working);
     assert_eq!(reported.agent_session, Some(pi_session()));
 }
-
 #[test]
 fn an_official_release_under_the_legacy_source_keeps_the_process() {
     let mut app = piloted();

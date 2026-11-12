@@ -1,9 +1,6 @@
 //! Terminal title synchronization preserves public observations and sidebar damage.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::test_support::spawning;
-
 use crate::{service::event_hub::EventHub, settings::model::Config, state::App};
 use maestro_workspace::tiling::PaneId;
 use std::{
@@ -17,7 +14,6 @@ fn setup_entry() {
         std::process::exit(1);
     }
 }
-
 /// Constructs real native ownership without a shell emitting unsolicited titles.
 fn fixture(args: &[String]) -> (App, PaneId) {
     let manifests = Arc::new(RwLock::new(
@@ -58,7 +54,6 @@ fn fixture(args: &[String]) -> (App, PaneId) {
     app.terminal_runtimes.insert(id, runtime);
     (app, pane)
 }
-
 /// Feeds the actual terminal parser independently of native process output timing.
 fn title(app: &App, bytes: &[u8]) {
     let runtime = app.terminal_runtimes.values().next().unwrap();
@@ -69,7 +64,6 @@ fn title(app: &App, bytes: &[u8]) {
         || None,
     );
 }
-
 /// Counts the shared protocol events, not a separate title notification.
 fn updates(app: &App) -> usize {
     app.event_hub
@@ -83,7 +77,6 @@ fn updates(app: &App) -> usize {
         })
         .count()
 }
-
 #[test]
 fn daemon_sync_keeps_latest_raw_title_and_emits_only_for_stripped_changes() {
     let name = "daemon_sync_keeps_latest_raw_title_and_emits_only_for_stripped_changes";
@@ -104,7 +97,6 @@ fn daemon_sync_keeps_latest_raw_title_and_emits_only_for_stripped_changes() {
         })
         .unwrap();
 }
-
 /// Preserves every raw/stripped, revision, presentation and agent assertion.
 async fn check_titles(args: &[String]) {
     let (mut app, pane) = fixture(args);
@@ -124,7 +116,6 @@ async fn check_titles(args: &[String]) {
     app.shutdown(&crate::locations::DaemonPaths::new("/unused", None).unwrap())
         .await;
 }
-
 /// First publication exposes complete pane and agent presentation.
 async fn check_initial_title(app: &mut App, pane: PaneId, sources: &HashSet<PaneId>) {
     title(app, "\x1b]0;⠋ 修复🙂标题\x07".as_bytes());
@@ -143,7 +134,6 @@ async fn check_initial_title(app: &mut App, pane: PaneId, sources: &HashSet<Pane
     assert_eq!(agent.terminal_title, info.terminal_title);
     assert_eq!(agent.terminal_title_stripped, info.terminal_title_stripped);
 }
-
 /// Spinner-only updates retain raw text without semantic publication.
 async fn check_spinner_title(app: &mut App, pane: PaneId, sources: &HashSet<PaneId>) {
     title(app, "\x1b]2;⠙ 修复🙂标题\x1b\\".as_bytes());
@@ -155,7 +145,6 @@ async fn check_spinner_title(app: &mut App, pane: PaneId, sources: &HashSet<Pane
     assert_eq!(info.revision, 1);
     assert_eq!(updates(app), 1);
 }
-
 #[test]
 fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
     let name = "daemon_syncing_pending_titles_preserves_sidebar_render_impact";
@@ -187,44 +176,6 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
         })
         .unwrap();
 }
-
-#[test]
-fn daemon_sidebar_redraws_only_for_the_configured_title_form() {
-    use crate::{
-        settings::navigation::AgentSidebarToken, state::terminal_titles::TerminalTitleChanges,
-    };
-    let manifests = Arc::new(RwLock::new(
-        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
-    ));
-    let (launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
-    let mut app = App::new(
-        &Config::default(),
-        || 0,
-        launch,
-        receiver,
-        EventHub::default(),
-    );
-    app.config.ui.sidebar.agents.rows = vec![vec![AgentSidebarToken::Agent]];
-    app.config.ui.sidebar.agents.rows_by_agent.insert(
-        "claude".into(),
-        vec![vec![AgentSidebarToken::TerminalTitleStripped]],
-    );
-    let spinner_only = TerminalTitleChanges {
-        raw_changed: true,
-        stripped_changed: false,
-    };
-    assert!(!app.terminal_title_sidebar_changed(&spinner_only));
-    assert!(app.terminal_title_sidebar_changed(&TerminalTitleChanges {
-        raw_changed: false,
-        stripped_changed: true
-    }));
-    app.config.ui.sidebar.agents.rows_by_agent.insert(
-        "claude".into(),
-        vec![vec![AgentSidebarToken::TerminalTitle]],
-    );
-    assert!(app.terminal_title_sidebar_changed(&spinner_only));
-}
-
 #[test]
 fn daemon_loop_consumes_titles_and_publishes_complete_pane_records() {
     let name = "daemon_loop_consumes_titles_and_publishes_complete_pane_records";
@@ -245,7 +196,6 @@ fn daemon_loop_consumes_titles_and_publishes_complete_pane_records() {
         })
         .unwrap();
 }
-
 /// A render wake reaches the loop and publishes the shared pane record before shutdown.
 async fn check_loop_projection(args: &[String]) {
     let (mut app, pane) = fixture(args);

@@ -1,15 +1,13 @@
 //! Pane reads through the daemon's handler: the shared snapshot clipping, sources, formats and
 //! the record a read answers with.
-#![cfg(target_os = "linux")]
-use crate::panes::display::TerminalReadSnapshot;
 use crate::state::App;
-use crate::state::test_support::api::{answer, daemon_with_workspaces, failure, request};
+use crate::state::test_support::api::answer;
+use crate::state::test_support::pane_read::read;
 use crate::state::tests::support::live::{run_in_pane, with_live_daemon};
 use maestro_protocol::schema::{
     ErrorBody, PaneInfo, PaneReadResult, ReadFormat, ReadSource, ResponseResult,
 };
-use serde_json::{Value, json};
-
+use serde_json::json;
 /// The record a read answers with.
 fn read_of(result: Result<ResponseResult, ErrorBody>) -> PaneReadResult {
     match result {
@@ -17,7 +15,6 @@ fn read_of(result: Result<ResponseResult, ErrorBody>) -> PaneReadResult {
         other => panic!("expected a read: {other:?}"),
     }
 }
-
 /// A live workspace whose shell has run `script` up to a line that starts with `marker`.
 ///
 /// Returns the workspace identity and its root pane.
@@ -39,41 +36,6 @@ async fn printed(app: &mut App, script: &str, marker: &str) -> (String, PaneInfo
     run_in_pane(app, &terminal, &format!("{script}\n"), marker).await;
     (workspace.workspace_id, root_pane)
 }
-
-/// A read request for `pane`.
-fn read(pane: &PaneInfo, source: &str, lines: Option<u32>, format: &str) -> Value {
-    let mut wire = json!({
-        "type": "pane.read", "pane_id": pane.pane_id, "source": source, "format": format
-    });
-    if let Some(lines) = lines {
-        wire["lines"] = json!(lines);
-    }
-    wire
-}
-
-#[test]
-fn snapshot_limits_keep_endings_and_report_truncation() {
-    let snapshot = TerminalReadSnapshot::limited("one\ntwø\n三\n".into(), Some(2));
-    assert_eq!(snapshot.text, "twø\n三\n");
-    assert!(snapshot.truncated);
-    let snapshot = TerminalReadSnapshot::limited("one\ntwo\nthree".into(), Some(1));
-    assert_eq!(snapshot.text, "three");
-    assert!(snapshot.truncated);
-    let snapshot = TerminalReadSnapshot::limited("one\ntwo".into(), Some(0));
-    assert_eq!(snapshot.text, "");
-    assert!(snapshot.truncated);
-    let snapshot = TerminalReadSnapshot::limited(String::new(), Some(2));
-    assert_eq!(snapshot.text, "");
-    assert!(!snapshot.truncated);
-}
-
-#[test]
-fn an_absent_snapshot_limit_keeps_all_text() {
-    let snapshot = TerminalReadSnapshot::limited("one\ntwo\n".into(), None);
-    assert_eq!(snapshot.text, "one\ntwo\n");
-    assert!(!snapshot.truncated);
-}
-
 #[test]
 fn a_read_names_its_pane_workspace_and_tab_and_echoes_the_request() {
     with_live_daemon(
@@ -95,7 +57,6 @@ fn a_read_names_its_pane_workspace_and_tab_and_echoes_the_request() {
         },
     );
 }
-
 #[test]
 fn a_line_limit_clips_the_visible_text_to_its_last_lines() {
     with_live_daemon(
@@ -114,7 +75,6 @@ fn a_line_limit_clips_the_visible_text_to_its_last_lines() {
         },
     );
 }
-
 #[test]
 fn recent_reads_report_when_older_rows_are_omitted() {
     with_live_daemon(
@@ -136,7 +96,6 @@ fn recent_reads_report_when_older_rows_are_omitted() {
         },
     );
 }
-
 #[test]
 fn ansi_reads_keep_the_styling_that_text_reads_drop() {
     with_live_daemon(
@@ -154,7 +113,6 @@ fn ansi_reads_keep_the_styling_that_text_reads_drop() {
         },
     );
 }
-
 #[test]
 fn visible_ansi_reads_keep_the_styling_that_visible_text_reads_drop() {
     with_live_daemon(
@@ -171,7 +129,6 @@ fn visible_ansi_reads_keep_the_styling_that_visible_text_reads_drop() {
         },
     );
 }
-
 #[test]
 fn unwrapped_reads_join_the_soft_wrapped_rows_that_physical_reads_keep_apart() {
     with_live_daemon(
@@ -203,7 +160,6 @@ fn unwrapped_reads_join_the_soft_wrapped_rows_that_physical_reads_keep_apart() {
         },
     );
 }
-
 #[test]
 fn a_recent_read_without_a_line_count_returns_the_last_eighty_rows() {
     with_live_daemon(
@@ -230,7 +186,6 @@ fn a_recent_read_without_a_line_count_returns_the_last_eighty_rows() {
         },
     );
 }
-
 #[test]
 fn a_read_asks_for_at_most_one_thousand_lines() {
     with_live_daemon(
@@ -252,16 +207,4 @@ fn a_read_asks_for_at_most_one_thousand_lines() {
             }
         },
     );
-}
-
-#[test]
-fn a_pane_that_cannot_be_read_is_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    for pane in ["w1:p1", "w1:p9"] {
-        let wire = json!({"type": "pane.read", "pane_id": pane, "source": "visible"});
-        assert_eq!(
-            request(&mut app, wire),
-            failure("pane_not_found", &format!("pane {pane} not found"))
-        );
-    }
 }

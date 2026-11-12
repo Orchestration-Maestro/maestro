@@ -6,6 +6,10 @@
 
 /// A daemon answering workspace commands, with workspaces that need no live process.
 pub mod api;
+/// Helpers that the pane input tests share between the integration program and the unit tests.
+pub mod pane_input;
+/// Helpers that the pane read tests share between the integration program and the unit tests.
+pub mod pane_read;
 /// Helpers that the pane swap tests share between the integration program and the unit tests.
 pub mod pane_swap;
 /// Native launch adapters for the daemon-owner tests.

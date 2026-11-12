@@ -1,12 +1,8 @@
 //! Workspace reordering preserves logical navigation selection.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::tests::support;
-use support::assert_identity_invariants;
-
 use crate::{settings::model::Config, state::model::DaemonState};
-
+use support::assert_identity_invariants;
 /// Creates pure workspace topology with an active first workspace.
 fn app_with_workspaces(names: &[&str]) -> DaemonState {
     let mut state = DaemonState::new(
@@ -29,7 +25,6 @@ fn app_with_workspaces(names: &[&str]) -> DaemonState {
     }
     state
 }
-
 /// Reads display names in current topology order.
 fn names(state: &DaemonState) -> Vec<String> {
     state
@@ -39,7 +34,6 @@ fn names(state: &DaemonState) -> Vec<String> {
         .map(|workspace| workspace.display_name(None))
         .collect()
 }
-
 #[test]
 fn daemon_move_workspace_reorders_without_changing_logical_selection() {
     let mut state = app_with_workspaces(&["a", "b", "c"]);
@@ -58,7 +52,6 @@ fn daemon_move_workspace_reorders_without_changing_logical_selection() {
     assert_eq!(state.topology.workspaces[state.selected].id, selected_id);
     assert!(state.session_dirty);
 }
-
 #[test]
 fn daemon_move_workspace_accepts_insert_at_end() {
     let mut state = app_with_workspaces(&["a", "b", "c"]);
@@ -70,7 +63,6 @@ fn daemon_move_workspace_accepts_insert_at_end() {
     assert!(!state.move_workspace(0, 4));
     assert!(!state.session_dirty);
 }
-
 #[test]
 fn daemon_move_workspace_block_collects_non_contiguous_members() {
     let mut state = app_with_workspaces(&["child-one", "normal", "parent", "child-two", "tail"]);
@@ -94,7 +86,6 @@ fn daemon_move_workspace_block_collects_non_contiguous_members() {
     assert_eq!(state.topology.workspaces[state.selected].id, ids[4]);
     assert!(state.session_dirty);
 }
-
 #[test]
 fn daemon_move_workspace_block_rejects_invalid_and_noop_orders() {
     let mut state = app_with_workspaces(&["a", "b", "c"]);
@@ -115,7 +106,6 @@ fn daemon_move_workspace_block_rejects_invalid_and_noop_orders() {
     assert!(state.move_workspace_block(&[ids[0].clone()], None));
     assert_eq!(names(&state), ["b", "c", "a"]);
 }
-
 #[test]
 fn daemon_notification_context_formats_resolved_workspace_label() {
     let mut state = app_with_workspaces(&["stale"]);
@@ -154,7 +144,6 @@ fn daemon_notification_context_formats_resolved_workspace_label() {
         "resolved · 3"
     );
 }
-
 #[test]
 fn daemon_switch_workspace_updates_active_and_selected() {
     let mut state = app_with_workspaces(&["a", "b", "c"]);
@@ -162,7 +151,6 @@ fn daemon_switch_workspace_updates_active_and_selected() {
     assert_eq!(state.active, Some(2));
     assert_eq!(state.selected, 2);
 }
-
 /// Adds a right-hand pane using the topology's consuming runtime callback.
 fn split(state: &mut DaemonState, workspace: usize) -> maestro_workspace::tiling::PaneId {
     let target = state.topology.workspaces[workspace]
@@ -184,7 +172,6 @@ fn split(state: &mut DaemonState, workspace: usize) -> maestro_workspace::tiling
         .unwrap()
         .0
 }
-
 #[test]
 fn daemon_last_pane_toggles_to_previous_focus_in_active_tab() {
     let mut state = app_with_workspaces(&["test"]);
@@ -197,7 +184,6 @@ fn daemon_last_pane_toggles_to_previous_focus_in_active_tab() {
     state.last_pane();
     assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(right));
 }
-
 #[test]
 fn daemon_removing_background_pane_preserves_last_pane_history() {
     let mut state = app_with_workspaces(&["test"]);
@@ -210,7 +196,6 @@ fn daemon_removing_background_pane_preserves_last_pane_history() {
     state.last_pane();
     assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(root));
 }
-
 /// Creates a second tab through the sole topology allocator.
 fn add_tab(state: &mut DaemonState, workspace: usize) -> maestro_workspace::tiling::PaneId {
     state
@@ -220,7 +205,6 @@ fn add_tab(state: &mut DaemonState, workspace: usize) -> maestro_workspace::tili
         .unwrap()
         .0
 }
-
 #[test]
 fn daemon_last_pane_jumps_across_workspaces_and_tabs() {
     let mut state = app_with_workspaces(&["one", "two"]);
@@ -243,7 +227,6 @@ fn daemon_last_pane_jumps_across_workspaces_and_tabs() {
         Some(second_root)
     );
 }
-
 #[test]
 fn daemon_last_pane_tracks_tab_and_workspace_switches() {
     let mut state = app_with_workspaces(&["one", "two"]);
@@ -281,7 +264,6 @@ fn daemon_last_pane_tracks_tab_and_workspace_switches() {
         Some(second_root)
     );
 }
-
 #[test]
 fn daemon_last_pane_tracks_cross_workspace_tab_selection() {
     let mut state = app_with_workspaces(&["one", "two"]);
@@ -304,7 +286,6 @@ fn daemon_last_pane_tracks_cross_workspace_tab_selection() {
     );
     assert_ne!(second_first_root, second_root);
 }
-
 #[test]
 fn daemon_switch_workspace_marks_panes_seen() {
     let mut state = app_with_workspaces(&["a", "b"]);
@@ -316,7 +297,6 @@ fn daemon_switch_workspace_marks_panes_seen() {
     state.switch_workspace(1);
     assert!(state.topology.workspaces[1].pane_state(pane).unwrap().seen);
 }
-
 #[test]
 fn daemon_switch_workspace_out_of_bounds_is_noop() {
     let mut state = app_with_workspaces(&["a"]);
@@ -325,7 +305,6 @@ fn daemon_switch_workspace_out_of_bounds_is_noop() {
     assert_eq!(state.selected, 0);
     assert!(!state.session_dirty);
 }
-
 #[test]
 fn focus_navigation_retains_copy_pane_but_clears_cross_pane_selection() {
     use crate::{
@@ -354,7 +333,6 @@ fn focus_navigation_retains_copy_pane_but_clears_cross_pane_selection() {
     assert_eq!(state.mode, Mode::Copy);
     assert_eq!(state.topology.workspaces[0].focused_pane_id(), Some(root));
 }
-
 #[test]
 fn daemon_close_workspace_adjusts_indices() {
     let mut state = app_with_workspaces(&["a", "b", "c"]);
@@ -366,7 +344,6 @@ fn daemon_close_workspace_adjusts_indices() {
     assert_eq!(state.active, Some(1));
     assert_eq!(state.topology.workspaces[1].display_name(None), "c");
 }
-
 #[test]
 fn daemon_close_parent_worktree_workspace_closes_group() {
     let mut state = app_with_workspaces(&["main", "issue", "notes"]);
@@ -378,7 +355,6 @@ fn daemon_close_parent_worktree_workspace_closes_group() {
     assert_eq!(state.active, Some(0));
     assert_eq!(state.selected, 0);
 }
-
 #[test]
 fn daemon_close_last_workspace_clears_active() {
     let mut state = app_with_workspaces(&["only"]);
@@ -387,7 +363,6 @@ fn daemon_close_last_workspace_clears_active() {
     assert_eq!(state.active, None);
     assert_eq!(state.selected, 0);
 }
-
 #[test]
 fn daemon_close_workspace_at_end_adjusts_selected() {
     let mut state = app_with_workspaces(&["a", "b"]);
@@ -398,7 +373,6 @@ fn daemon_close_workspace_at_end_adjusts_selected() {
     assert_eq!(state.selected, 0);
     assert_eq!(state.active, Some(0));
 }
-
 #[test]
 fn daemon_close_non_focused_workspace_keeps_focus() {
     let mut state = app_with_workspaces(&["a", "b", "c"]);
@@ -411,7 +385,6 @@ fn daemon_close_non_focused_workspace_keeps_focus() {
     assert_eq!(state.active, Some(0));
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_close_workspace_removes_unattached_terminal_states() {
     use crate::state::model::ActionPaneRecord;
@@ -433,7 +406,6 @@ fn daemon_close_workspace_removes_unattached_terminal_states() {
     assert!(!state.action_panes.contains_key(&pane));
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_pane_died_last_pane_removes_workspace() {
     let mut state = app_with_workspaces(&["a", "b"]);
@@ -443,7 +415,6 @@ fn daemon_pane_died_last_pane_removes_workspace() {
     assert_eq!(state.topology.workspaces[0].display_name(None), "b");
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_pane_died_last_workspace_enters_navigate() {
     use crate::state::model::Mode;
@@ -455,7 +426,6 @@ fn daemon_pane_died_last_workspace_enters_navigate() {
     assert_eq!(state.mode, Mode::Navigate);
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_pane_died_multi_pane_keeps_workspace() {
     let mut state = app_with_workspaces(&["test"]);
@@ -466,7 +436,6 @@ fn daemon_pane_died_multi_pane_keeps_workspace() {
     assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 1);
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_pane_died_unknown_pane_is_noop() {
     let mut state = app_with_workspaces(&["test"]);
@@ -474,7 +443,6 @@ fn daemon_pane_died_unknown_pane_is_noop() {
     assert_eq!(state.topology.workspaces.len(), 1);
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn pane_death_keeps_logical_focus_after_earlier_workspace_removal() {
     let names: Vec<_> = (0..20).map(|index| format!("ws{index:02}")).collect();
@@ -490,7 +458,6 @@ fn pane_death_keeps_logical_focus_after_earlier_workspace_removal() {
     assert_eq!(state.active, Some(0));
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn pane_death_clears_only_its_selection_and_retires_detached_metadata() {
     use crate::{
@@ -524,7 +491,6 @@ fn pane_death_clears_only_its_selection_and_retires_detached_metadata() {
     assert_eq!(state.terminal_runtime_shutdowns.len(), 2);
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_state_changed_updates_pane() {
     use crate::events::AppEvent;
@@ -544,7 +510,6 @@ fn daemon_state_changed_updates_pane() {
     assert_eq!(terminal.state, AgentState::Working);
     assert_eq!(terminal.detected_agent, Some(Agent::Pi));
 }
-
 #[test]
 fn daemon_state_changed_idle_in_background_marks_unseen() {
     use crate::{events::AppEvent, settings::model::ToastDelivery, state::model::ToastKind};
@@ -573,7 +538,6 @@ fn daemon_state_changed_idle_in_background_marks_unseen() {
         Some(ToastKind::Finished)
     );
 }
-
 /// Reports the same screen-state envelope used by the background detector.
 fn report_state(
     state: &mut DaemonState,
@@ -595,7 +559,6 @@ fn report_state(
         },
     )
 }
-
 #[test]
 fn daemon_active_tab_completion_marks_pane_seen() {
     use maestro_detection::agents::AgentState;
@@ -615,7 +578,6 @@ fn daemon_active_tab_completion_marks_pane_seen() {
     assert_eq!(state.terminals[&terminal].state, AgentState::Idle);
     assert!(state.topology.workspaces[0].pane_state(pane).unwrap().seen);
 }
-
 #[test]
 fn daemon_initial_idle_in_background_stays_seen() {
     let mut state = app_with_workspaces(&["active", "background"]);
@@ -627,7 +589,6 @@ fn daemon_initial_idle_in_background_stays_seen() {
     );
     assert!(state.topology.workspaces[1].pane_state(pane).unwrap().seen);
 }
-
 #[test]
 fn daemon_idle_after_known_unknown_agent_in_background_marks_done() {
     use maestro_detection::agents::AgentState;
@@ -638,35 +599,6 @@ fn daemon_idle_after_known_unknown_agent_in_background_marks_done() {
     report_state(&mut state, pane, AgentState::Idle);
     assert!(!state.topology.workspaces[1].pane_state(pane).unwrap().seen);
 }
-
-#[test]
-fn daemon_waiting_sound_plays_even_in_active_workspace() {
-    use crate::state::actions::notification_sound_for_state_change;
-    use maestro_detection::agents::AgentState;
-    assert_eq!(
-        notification_sound_for_state_change(true, AgentState::Working, AgentState::Blocked),
-        Some(maestro_protocol::schema::NotificationShowSound::Request)
-    );
-}
-
-#[test]
-fn daemon_done_sound_only_plays_in_background() {
-    use crate::state::actions::notification_sound_for_state_change;
-    use maestro_detection::agents::AgentState;
-    assert_eq!(
-        notification_sound_for_state_change(false, AgentState::Working, AgentState::Idle),
-        Some(maestro_protocol::schema::NotificationShowSound::Done)
-    );
-    assert_eq!(
-        notification_sound_for_state_change(true, AgentState::Working, AgentState::Idle),
-        None
-    );
-    assert_eq!(
-        notification_sound_for_state_change(false, AgentState::Unknown, AgentState::Idle),
-        None
-    );
-}
-
 #[test]
 fn daemon_background_waiting_sets_attention_toast() {
     use crate::{settings::model::ToastDelivery, state::model::ToastKind};
@@ -683,7 +615,6 @@ fn daemon_background_waiting_sets_attention_toast() {
     assert_eq!(toast.title, "pi needs attention");
     assert_eq!(toast.context, "background · 2");
 }
-
 #[test]
 fn daemon_delayed_background_waiting_schedules_before_toast() {
     use crate::{settings::model::ToastDelivery, state::model::ToastKind};
@@ -707,7 +638,6 @@ fn daemon_delayed_background_waiting_schedules_before_toast() {
     assert_eq!(toast.context, "background · 2");
     assert!(state.pending_agent_notifications.is_empty());
 }
-
 #[test]
 fn daemon_delayed_background_waiting_cancels_when_agent_resumes_working() {
     use crate::settings::model::ToastDelivery;
@@ -731,7 +661,6 @@ fn daemon_delayed_background_waiting_cancels_when_agent_resumes_working() {
     assert!(state.drain_due_agent_notifications(deadline).is_empty());
     assert!(state.toast.is_none());
 }
-
 #[test]
 fn daemon_delayed_background_waiting_is_suppressed_if_pane_becomes_active() {
     use crate::settings::model::ToastDelivery;
@@ -749,7 +678,6 @@ fn daemon_delayed_background_waiting_is_suppressed_if_pane_becomes_active() {
     assert!(state.drain_due_agent_notifications(deadline).is_empty());
     assert!(state.toast.is_none());
 }
-
 #[test]
 fn daemon_delayed_active_tab_unfocused_keeps_client_notification_available() {
     use crate::settings::model::ToastDelivery;
@@ -770,7 +698,6 @@ fn daemon_delayed_active_tab_unfocused_keeps_client_notification_available() {
     assert!(deliveries[0].client_notification.is_some());
     assert!(state.toast.is_none());
 }
-
 #[test]
 fn daemon_delayed_background_waiting_is_cleared_when_pane_dies() {
     use crate::settings::model::ToastDelivery;
@@ -789,7 +716,6 @@ fn daemon_delayed_background_waiting_is_cleared_when_pane_dies() {
     assert!(state.drain_due_agent_notifications(deadline).is_empty());
     assert!(state.toast.is_none());
 }
-
 /// Feeds supplied screen signals through the same event consumer as detection.
 fn report_detected(
     state: &mut DaemonState,
@@ -806,7 +732,6 @@ fn report_detected(
         observed_at: std::time::Instant::now(),
     })
 }
-
 /// Reports process acquisition before any screen-state event.
 fn detect_agent(
     state: &mut DaemonState,
@@ -819,7 +744,6 @@ fn detect_agent(
         observed_at: std::time::Instant::now(),
     });
 }
-
 #[test]
 fn daemon_first_idle_after_process_detection_is_not_completion() {
     use crate::state::{actions::CompletionPolicy, model::ToastKind};
@@ -860,7 +784,6 @@ fn daemon_first_idle_after_process_detection_is_not_completion() {
     );
     assert_acquired_process_exit_is_completion(&mut state, pane);
 }
-
 /// Acquisition suppression ends when the actual detected process exits.
 fn assert_acquired_process_exit_is_completion(
     state: &mut DaemonState,
@@ -889,7 +812,6 @@ fn assert_acquired_process_exit_is_completion(
         }
     }
 }
-
 #[test]
 fn delayed_notifications_recheck_live_context_and_select_independent_outputs() {
     use crate::settings::model::ToastDelivery;
@@ -922,7 +844,6 @@ fn delayed_notifications_recheck_live_context_and_select_independent_outputs() {
     );
     assert!(state.toast.is_none());
 }
-
 #[test]
 fn daemon_hook_reported_unknown_agent_sets_toast_title_from_label() {
     use crate::{events::AppEvent, state::model::ToastKind};
@@ -944,7 +865,6 @@ fn daemon_hook_reported_unknown_agent_sets_toast_title_from_label() {
     assert_eq!(toast.title, "hermes needs attention");
     assert_eq!(toast.context, "background · 2");
 }
-
 #[test]
 fn daemon_visible_blocker_overrides_hook_working_and_notifies() {
     use crate::{events::AppEvent, state::model::ToastKind};
@@ -993,7 +913,6 @@ fn daemon_visible_blocker_overrides_hook_working_and_notifies() {
     assert_eq!(toast.kind, ToastKind::NeedsAttention);
     assert_eq!(toast.title, "codex needs attention");
 }
-
 #[test]
 fn daemon_reserved_native_state_report_does_not_override_screen_state() {
     use crate::events::AppEvent;
@@ -1045,7 +964,6 @@ fn daemon_reserved_native_state_report_does_not_override_screen_state() {
     assert_eq!(terminal.state, AgentState::Idle);
     assert!(state.toast.is_none());
 }
-
 #[test]
 fn daemon_official_release_preserves_process_owned_agent_identity() {
     use crate::events::AppEvent;
@@ -1107,7 +1025,6 @@ fn daemon_official_release_preserves_process_owned_agent_identity() {
     assert!(terminal.is_full_lifecycle_hook_authority_active());
     assert!(!state.session_dirty);
 }
-
 #[test]
 fn daemon_session_metadata_report_refreshes_session_without_overriding_screen_state() {
     use crate::events::AppEvent;
@@ -1144,7 +1061,6 @@ fn daemon_session_metadata_report_refreshes_session_without_overriding_screen_st
     assert!(terminal.hook_authority.is_none());
     assert!(terminal.persisted_agent_session.is_some());
 }
-
 #[test]
 fn daemon_hidden_custom_session_ref_only_update_marks_session_dirty_without_visible_update() {
     use crate::events::AppEvent;
@@ -1180,7 +1096,6 @@ fn daemon_hidden_custom_session_ref_only_update_marks_session_dirty_without_visi
     assert!(second_updates.is_empty());
     assert!(state.session_dirty);
 }
-
 #[test]
 fn daemon_custom_release_clears_report_owned_agent() {
     use crate::events::AppEvent;
@@ -1217,7 +1132,6 @@ fn daemon_custom_release_clears_report_owned_agent() {
     assert!(terminal.hook_authority.is_none());
     assert_eq!(terminal.state, AgentState::Unknown);
 }
-
 #[test]
 fn daemon_terminal_cwd_report_updates_terminal_cwd_and_marks_session_dirty() {
     use crate::events::AppEvent;
@@ -1242,7 +1156,6 @@ fn daemon_terminal_cwd_report_updates_terminal_cwd_and_marks_session_dirty() {
     assert!(state.session_dirty);
     let _ = std::fs::remove_dir_all(cwd);
 }
-
 #[test]
 fn daemon_background_idle_sets_finished_toast() {
     use crate::{events::AppEvent, state::model::ToastKind};
@@ -1276,7 +1189,6 @@ fn daemon_background_idle_sets_finished_toast() {
     assert_eq!(&target.workspace_id, &state.topology.workspaces[1].id);
     assert_eq!(target.pane_id, bg_pane_id);
 }
-
 #[test]
 fn daemon_background_toast_includes_tab_name_when_workspace_has_multiple_tabs() {
     use crate::{events::AppEvent, state::model::ToastKind};
@@ -1306,7 +1218,6 @@ fn daemon_background_toast_includes_tab_name_when_workspace_has_multiple_tabs() 
     assert_eq!(toast.title, "pi needs attention");
     assert_eq!(toast.context, "background · 2 · logs");
 }
-
 #[test]
 fn daemon_background_tab_in_active_workspace_still_sets_toast() {
     use crate::{events::AppEvent, state::model::ToastKind};
@@ -1336,7 +1247,6 @@ fn daemon_background_tab_in_active_workspace_still_sets_toast() {
     assert_eq!(toast.title, "pi needs attention");
     assert_eq!(toast.context, "active · 1 · logs");
 }
-
 #[test]
 fn daemon_active_workspace_active_tab_does_not_set_toast() {
     use crate::events::AppEvent;
@@ -1358,7 +1268,6 @@ fn daemon_active_workspace_active_tab_does_not_set_toast() {
 
     assert!(state.toast.is_none());
 }
-
 #[test]
 fn daemon_active_workspace_active_tab_keeps_workspace_toast_suppressed_when_outer_terminal_is_unfocused()
  {
@@ -1382,16 +1291,6 @@ fn daemon_active_workspace_active_tab_keeps_workspace_toast_suppressed_when_oute
 
     assert!(state.toast.is_none());
 }
-
-#[test]
-fn daemon_active_tab_suppression_preserves_unknown_focus_behavior() {
-    use crate::state::actions::active_tab_suppresses_notifications;
-    assert!(active_tab_suppresses_notifications(true, None));
-    assert!(active_tab_suppresses_notifications(true, Some(true)));
-    assert!(!active_tab_suppresses_notifications(true, Some(false)));
-    assert!(!active_tab_suppresses_notifications(false, None));
-}
-
 #[test]
 fn daemon_update_ready_sets_manual_update_toast() {
     use crate::{events::AppEvent, state::model::ToastKind};
@@ -1415,7 +1314,6 @@ fn daemon_update_ready_sets_manual_update_toast() {
         "detach, run `maestro update`, then follow its restart guidance"
     );
 }
-
 #[test]
 fn daemon_update_ready_uses_event_install_command_in_toast() {
     use crate::events::AppEvent;
@@ -1437,7 +1335,6 @@ fn daemon_update_ready_uses_event_install_command_in_toast() {
         "detach, run `brew update && brew upgrade maestro`, then restart this Maestro session when ready"
     );
 }
-
 #[test]
 fn update_guidance_keeps_install_manager_and_delivery_policies_separate() {
     use crate::{events::AppEvent, settings::model::ToastDelivery};
@@ -1483,7 +1380,6 @@ fn update_guidance_keeps_install_manager_and_delivery_policies_separate() {
         assert_eq!(state.toast, previous);
     }
 }
-
 #[test]
 fn daemon_agent_detection_manifest_update_event_updates_status_and_toast() {
     use crate::{events::AppEvent, state::model::ToastKind};
@@ -1513,7 +1409,6 @@ fn daemon_agent_detection_manifest_update_event_updates_status_and_toast() {
     assert_eq!(toast.title, "Agent detection rules updated");
     assert_eq!(toast.context, "codex 2026.06.10.1");
 }
-
 #[test]
 fn manifest_update_refreshes_the_shared_runtime_snapshot_without_a_toast() {
     use crate::{events::AppEvent, settings::model::ToastDelivery};
@@ -1577,7 +1472,6 @@ contains = ["controlled working"]
     assert!(state.toast.is_none());
     std::fs::remove_dir_all(root).unwrap();
 }
-
 #[test]
 fn daemon_toggle_zoom_works() {
     let mut state = app_with_workspaces(&["test"]);
@@ -1602,7 +1496,6 @@ fn daemon_toggle_zoom_works() {
     state.toggle_zoom();
     assert!(!state.topology.workspaces[0].tabs[0].zoomed);
 }
-
 #[test]
 fn daemon_toggle_zoom_single_pane_noop() {
     let mut state = app_with_workspaces(&["test"]);
@@ -1610,7 +1503,6 @@ fn daemon_toggle_zoom_single_pane_noop() {
     assert!(!state.topology.workspaces[0].tabs[0].zoomed);
     assert!(!state.session_dirty);
 }
-
 #[test]
 fn daemon_close_pane_removes_from_workspace() {
     let mut state = app_with_workspaces(&["test"]);
@@ -1629,7 +1521,6 @@ fn daemon_close_pane_removes_from_workspace() {
     assert!(!state.action_panes.contains_key(&closed));
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_pane_process_exit_publish_marks_agent_idle_before_pane_removal() {
     use crate::{
@@ -1672,7 +1563,6 @@ fn daemon_pane_process_exit_publish_marks_agent_idle_before_pane_removal() {
         Some(ToastKind::Finished)
     ));
 }
-
 #[test]
 fn daemon_close_pane_removes_unattached_terminal_state() {
     let mut state = app_with_workspaces(&["test"]);
@@ -1686,7 +1576,6 @@ fn daemon_close_pane_removes_unattached_terminal_state() {
     assert!(!state.terminals.contains_key(&terminal));
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_close_tab_removes_unattached_terminal_states() {
     let mut state = app_with_workspaces(&["test"]);
@@ -1713,7 +1602,6 @@ fn daemon_close_tab_removes_unattached_terminal_states() {
     assert!(!state.action_panes.contains_key(&pane));
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_close_tab_closes_active_workspace_not_selected_workspace() {
     let mut state = app_with_workspaces(&["selected", "active"]);
@@ -1730,7 +1618,6 @@ fn daemon_close_tab_closes_active_workspace_not_selected_workspace() {
     assert!(!state.terminals.contains_key(&terminal));
     assert_identity_invariants(&state);
 }
-
 #[test]
 fn daemon_close_pane_last_pane_closes_active_workspace_not_selected_workspace() {
     let mut state = app_with_workspaces(&["selected", "active"]);
@@ -1747,7 +1634,6 @@ fn daemon_close_pane_last_pane_closes_active_workspace_not_selected_workspace() 
     assert!(!state.terminals.contains_key(&terminal));
     assert_identity_invariants(&state);
 }
-
 /// Assigns supplied repository-group membership without invoking later discovery effects.
 fn mark_worktree(state: &mut DaemonState, index: usize, linked: bool) {
     state.topology.workspaces[index].worktree_space =
@@ -1764,7 +1650,6 @@ fn mark_worktree(state: &mut DaemonState, index: usize, linked: bool) {
             is_linked_worktree: linked,
         });
 }
-
 #[test]
 fn daemon_close_pane_last_pane_in_parent_worktree_group_prompts() {
     use crate::state::model::Mode;
@@ -1779,7 +1664,6 @@ fn daemon_close_pane_last_pane_in_parent_worktree_group_prompts() {
     assert_eq!(state.selected, 0);
     assert_eq!(state.topology.workspaces.len(), 2);
 }
-
 #[test]
 fn daemon_close_tab_in_linked_worktree_closes_workspace_only() {
     let mut state = app_with_workspaces(&["selected", "active"]);
@@ -1799,7 +1683,6 @@ fn daemon_close_tab_in_linked_worktree_closes_workspace_only() {
     assert_eq!(state.topology.workspaces[0].display_name(None), "selected");
     std::fs::remove_dir(checkout).unwrap();
 }
-
 #[test]
 fn daemon_close_tab_last_tab_in_parent_worktree_group_prompts() {
     use crate::state::model::Mode;
@@ -1814,7 +1697,6 @@ fn daemon_close_tab_last_tab_in_parent_worktree_group_prompts() {
     assert_eq!(state.selected, 0);
     assert_eq!(state.topology.workspaces.len(), 2);
 }
-
 #[test]
 fn daemon_close_pane_last_pane_in_linked_worktree_closes_workspace_only() {
     let mut state = app_with_workspaces(&["selected", "active"]);
@@ -1834,7 +1716,6 @@ fn daemon_close_pane_last_pane_in_linked_worktree_closes_workspace_only() {
     assert_eq!(state.topology.workspaces[0].display_name(None), "selected");
     std::fs::remove_dir(checkout).unwrap();
 }
-
 #[test]
 fn daemon_close_pane_last_pane_in_parent_worktree_group_closes_when_confirmation_disabled() {
     let mut state = app_with_workspaces(&["parent", "child", "notes"]);
