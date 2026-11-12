@@ -13,7 +13,7 @@ use crate::{
     keys_reads::{Config, Hint, KeysBuild, KeysEndpoint, config, definitions},
     lifecycle::State,
     local_resources::Message,
-    read_imports::{endpoint, forwards, release},
+    read_imports::{endpoint, forwards, reads, release},
     widget_reads::{StyleEndpoint, WidgetMessage},
 };
 use wasmtime::{
@@ -119,21 +119,8 @@ fn constructors<T: CallbackView + 'static>(
     )
 }
 
-/// Declares the methods that run one endpoint operation.
-macro_rules! reads {
-    ($($method:ident($($operand:ident: $kind:ty),*) -> $result:ty;)+) => {
-        $(fn $method(
-            &mut self,
-            this: Resource<KeysEndpoint>,
-            $($operand: $kind),*
-        ) -> wasmtime::Result<Result<$result, String>> {
-            Ok(endpoint(self, &this)?.$method($($operand),*))
-        })+
-    };
-}
-
 impl HostKeybindingsManager for State {
-    reads! {
+    reads! { KeysEndpoint;
         matches(data: String, keybinding: String) -> bool;
         get_keys(keybinding: String) -> Vec<String>;
         get_definition(keybinding: String) -> Option<KeybindingDefinition>;

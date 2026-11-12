@@ -8,27 +8,14 @@ use crate::{
     bindings::maestro::extension::host::HostSessionManager,
     context_imports::add_resource,
     lifecycle::State,
-    read_imports::{endpoint, forwards, release},
+    read_imports::{endpoint, forwards, reads, release},
     writer_reads::Endpoint,
 };
 use wasmtime::component::{LinkerInstance, Resource};
 use wasmtime_wasi::WasiView;
 
-/// Declares the methods that run one endpoint operation.
-macro_rules! reads {
-    ($($method:ident($($operand:ident: $kind:ty),*) -> $result:ty;)+) => {
-        $(fn $method(
-            &mut self,
-            this: Resource<Endpoint>,
-            $($operand: $kind),*
-        ) -> wasmtime::Result<Result<$result, String>> {
-            Ok(endpoint(self, &this)?.$method($($operand),*))
-        })+
-    };
-}
-
 impl HostSessionManager for State {
-    reads! {
+    reads! { Endpoint;
         set_session_file(path: String) -> ();
         new_session(options: Option<String>) -> Option<String>;
         is_persisted() -> bool;

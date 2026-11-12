@@ -13,7 +13,7 @@ use crate::{
     guest_calls::Callback,
     import_route::{Route, push},
     lifecycle::State,
-    read_imports::{endpoint, forwards, release},
+    read_imports::{endpoint, forwards, reads, release, routes},
 };
 use wasmtime::{
     StoreContextMut,
@@ -21,41 +21,14 @@ use wasmtime::{
 };
 use wasmtime_wasi::WasiView;
 
-/// Declares the methods that run one endpoint operation to its result.
-macro_rules! reads {
-    ($($method:ident($($operand:ident: $kind:ty),*) -> $result:ty;)+) => {
-        $(fn $method(
-            &mut self,
-            this: Resource<Endpoint>,
-            $($operand: $kind),*
-        ) -> wasmtime::Result<Result<$result, String>> {
-            Ok(endpoint(self, &this)?.$method($($operand),*))
-        })+
-    };
-}
-
-/// Declares the methods whose native code may call back into this instance.
-macro_rules! routes {
-    ($($method:ident($($operand:ident: $kind:ty),*);)+) => {
-        $(fn $method(
-            &mut self,
-            this: Resource<Endpoint>,
-            $($operand: $kind),*
-        ) -> wasmtime::Result<Resource<Route>> {
-            let route = endpoint(self, &this)?.$method($($operand),*);
-            push(self, route)
-        })+
-    };
-}
-
 impl HostAuthStorage for State {
-    reads! {
+    reads! { Endpoint;
         set_runtime_api_key(provider: String, key: String) -> ();
         remove_runtime_api_key(provider: String) -> ();
         drain_errors() -> String;
     }
 
-    routes! {
+    routes! { Endpoint;
         reload();
         get(provider: String);
         set(provider: String, credential: String);
