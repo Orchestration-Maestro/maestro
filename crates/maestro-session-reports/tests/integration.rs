@@ -11,5 +11,5 @@ mod analysis_usage;
 /// Test-owned runtimes the report cases run on.
 mod support {
     mod runtime;
-    pub use runtime::*;
+    pub use runtime::run_io;
 }

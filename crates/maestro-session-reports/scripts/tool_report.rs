@@ -1,10 +1,10 @@
-//! Write the tool report page for one session directory.
+//! Write the interactive tool report for the recorded sessions.
 
 use maestro_session_reports::tool_stats;
 use std::io;
 use std::process::ExitCode;
 
-/// Supplies the argument, clock, viewer and stream owners to the report.
+/// Supplies the argument, clock and stream owners to the report.
 fn main() -> io::Result<ExitCode> {
     let args: Vec<String> = std::env::args_os()
         .skip(1)

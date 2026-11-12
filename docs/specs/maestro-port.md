@@ -369,7 +369,8 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 | `crates/maestro-models/scripts/`, `crates/maestro-models/tests/support/`, `crates/maestro-catalog/tests/support/` | catalog and fixture generators, browser smoke checks |
 | `crates/maestro-theme/scripts/` | theme generation and browser author inputs |
 | `crates/maestro-tui-crossterm/tests/support/` | terminal development programs |
-| `crates/maestro-app/scripts/*_report.rs`, `count_prompt_tokens.rs` | cost, usage, tool, transcript and prompt-token reports |
+| `crates/maestro-session-reports/scripts/` | cost, usage, tool and transcript reports |
+| `crates/maestro-app/scripts/count_prompt_tokens.rs` | prompt-token report |
 
 **What users see.** Nothing moves in their installation: `examples/` ships in its package directory, beside the README and the documentation. `get_examples_path` resolves it, and the default system prompt names it. Documentation links examples by relative path. The links resolve in an installation and in a set-up source checkout.
 
