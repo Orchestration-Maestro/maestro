@@ -8,7 +8,7 @@ use crate::{
 use maestro_app::agent_session::ToolsManager;
 use maestro_app::{
     EventError, ReadonlySessionManager, SessionContext, TextContent, ToolName, ToolRendererBinding,
-    ToolResultMessage, ToolsOptions, UserBlock, create_all_tool_definitions,
+    ToolResultMessage, ToolsOptions, UserBlock, create_tool_definition,
 };
 use maestro_tui::Component;
 use serde_json::Value;
@@ -330,18 +330,17 @@ fn built_in_tool_definition(
     name: &str,
     cwd: &str,
 ) -> Result<Option<ToolRendererBinding>, maestro_app::DiagnosticErrorInfo> {
-    let Ok(name) = name.parse::<ToolName>() else {
+    if name.parse::<ToolName>().is_err() {
         return Ok(None);
-    };
+    }
     let tools = Arc::new(ToolsManager::new(String::new(), None));
-    let definitions = create_all_tool_definitions::<()>(
+    create_tool_definition::<()>(
+        name,
         cwd.to_owned(),
         ToolsOptions::default(),
         String::new(),
         tools,
-    );
-    definitions
-        .get(&name)
-        .map(maestro_app::ToolDef::renderer_binding)
-        .transpose()
+    )?
+    .renderer_binding()
+    .map(Some)
 }
