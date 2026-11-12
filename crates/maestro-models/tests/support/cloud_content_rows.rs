@@ -10,6 +10,7 @@ use maestro_request::presence::Presence;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
+use std::process::Stdio;
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
@@ -348,9 +349,8 @@ pub fn assert_rows(test: &str) -> TestResult {
             .ok_or("unknown child case")?;
         return check_in_child(test, row);
     }
-    let mut count = 0;
+    let mut running = Vec::new();
     for (index, row) in rows.iter().enumerate().filter(|(_, row)| row.test == test) {
-        count += 1;
         let files = content_credentials::Files::new();
         let path = files.path("adc.json");
         let home = files.path("home");
@@ -367,17 +367,26 @@ pub fn assert_rows(test: &str) -> TestResult {
                     .map(|(key, value)| (key.as_str(), value.as_str())),
             );
         }
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .envs(env.iter().copied())
-                .case(index.to_string())
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
+        let child = maestro_test_process::TestProcess::current(test)?
+            .nocapture()
+            .env_clear()
+            .envs(env.iter().copied())
+            .case(index.to_string())
+            .stdin(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()?;
+        running.push((files, child));
     }
-    assert!(count > 0, "no recorded rows");
+    assert!(!running.is_empty(), "no recorded rows");
+    // Every row's child is already running; its credential files stay until it is collected.
+    let outputs = running
+        .into_iter()
+        .map(|(files, child)| (files, child.wait_with_output()))
+        .collect::<Vec<_>>();
+    for (_files, output) in outputs {
+        let output = output?;
+        assert!(output.status.success(), "{output:?}");
+    }
     Ok(())
 }
 
