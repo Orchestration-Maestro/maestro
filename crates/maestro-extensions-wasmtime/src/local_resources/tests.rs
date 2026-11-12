@@ -4,6 +4,7 @@ mod builtin;
 mod component;
 mod keys;
 mod lent;
+mod local_bash;
 mod lock;
 mod oauth;
 mod overlay;
@@ -16,7 +17,7 @@ mod stream;
 mod synchronous;
 mod watch;
 mod worker;
-use super::{Capability, Lease, Pump};
+use super::{Capability, Lease, Pump, Registry};
 use crate::{
     context_reads::{Owner, Request},
     tests::{ended_errors, runner},
@@ -43,6 +44,26 @@ pub(super) fn ended_endpoint<E: Send + 'static, const N: usize>(
     let lease = pump.registry().insert(capability).unwrap();
     let endpoint = endpoint(lease.clone());
     ended_errors(lease, pump, admission, move || operations(endpoint))
+}
+
+/// Callback handles that need no Store: their releases go to the returned receiver.
+pub(super) fn handles<const N: usize>(
+    registry: &Registry,
+) -> (
+    [crate::guest_calls::Handle; N],
+    tokio::sync::mpsc::UnboundedReceiver<crate::guest_calls::Call>,
+    tokio::sync::mpsc::UnboundedSender<crate::guest_calls::Call>,
+) {
+    let (calls, releases) = tokio::sync::mpsc::unbounded_channel();
+    let callbacks = crate::guest_calls::Callbacks::new(
+        calls.downgrade(),
+        crate::lifecycle::replies::Replies::default(),
+    );
+    let handles = std::array::from_fn(|id| {
+        let observer = callbacks.observer(u32::try_from(id).unwrap());
+        observer.handle(registry.admission().unwrap()).unwrap()
+    });
+    (handles, releases, calls)
 }
 
 #[test]

@@ -1,8 +1,7 @@
 //! A native assistant stream ends with its capability.
-use super::{Pump, ended_endpoint};
+use super::{Pump, ended_endpoint, handles};
 use crate::{
-    lifecycle::replies::Replies,
-    local_resources::{Capability, Registry, model_streams::Endpoint},
+    local_resources::{Capability, model_streams::Endpoint},
     tests::ended_errors,
 };
 use maestro_extensions::AssistantMessageEventStream;
@@ -20,23 +19,6 @@ fn released_assistant_stream_rejects_push_and_end_with_its_ended_text() {
         },
     );
     assert_eq!(errors, ["extension assistant stream resource ended"; 2]);
-}
-
-/// Callback handles that need no Store: their releases go to the returned receiver.
-fn handles<const N: usize>(
-    registry: &Registry,
-) -> (
-    [crate::guest_calls::Handle; N],
-    tokio::sync::mpsc::UnboundedReceiver<crate::guest_calls::Call>,
-    tokio::sync::mpsc::UnboundedSender<crate::guest_calls::Call>,
-) {
-    let (calls, releases) = tokio::sync::mpsc::unbounded_channel();
-    let callbacks = crate::guest_calls::Callbacks::new(calls.downgrade(), Replies::default());
-    let handles = std::array::from_fn(|id| {
-        let observer = callbacks.observer(u32::try_from(id).unwrap());
-        observer.handle(registry.admission().unwrap()).unwrap()
-    });
-    (handles, releases, calls)
 }
 
 #[test]
