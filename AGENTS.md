@@ -246,6 +246,13 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   formatting and workbook reading, and Word package reading, from supplied bytes. It depends
   only on text, JSON and lock, builds for the browser, and only the application and the web
   frontend depend on it.
+- `maestro-http` is a core crate below layer 0 that performs HTTP requests: the replaceable
+  client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and
+  complete-message sockets. It depends only on cancellation, request, text and JSON, plus
+  `maestro-path` on native targets, builds for the browser, and only models depends on it.
+  Models re-exports the client records at its existing paths. Its non-default `test-support`
+  feature holds the scripted FTP, SOCKS and TLS peers and the test runtimes that its own
+  tests and the models tests share.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
@@ -268,7 +275,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and the provider registration records `provider_config::{ProviderConfig<C>,
   ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
-  (models, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
+  (models, http, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
