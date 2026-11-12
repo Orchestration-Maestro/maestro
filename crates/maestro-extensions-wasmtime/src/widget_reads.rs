@@ -165,8 +165,6 @@ pub(crate) enum WidgetMessage {
         crate::keys_reads::KeysBuild,
         Reply<crate::keys_reads::KeysEndpoint>,
     ),
-    /// A request on the keybindings manager with this identity.
-    Keys(u64, crate::keys_reads::KeysRequest),
     /// A keybinding hint.
     Hint(crate::keys_reads::Hint, Reply<String>),
     /// Lends the live theme's editor border and selection list styles in field order.

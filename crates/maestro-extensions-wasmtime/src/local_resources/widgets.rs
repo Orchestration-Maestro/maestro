@@ -218,10 +218,6 @@ impl State {
                     .and_then(|keys| registry.keybindings(keys));
                 let _ = reply.send(keys);
             }
-            WidgetMessage::Keys(id, request) => match registry.capability(id).as_deref() {
-                Some(Capability::Keybindings(keys)) => request.answer(keys),
-                _ => request.reject("extension keybindings resource ended"),
-            },
             WidgetMessage::Hint(hint, reply) => {
                 let _ = reply.send(crate::keys_reads::hint(hint, &*registry.widgets));
             }

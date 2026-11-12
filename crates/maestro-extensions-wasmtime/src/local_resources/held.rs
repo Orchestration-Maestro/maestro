@@ -227,6 +227,14 @@ held!(
     Capability::NativeComponent(component) => component
 );
 
+held!(
+    /// A keybindings manager the host keeps.
+    Keybindings,
+    maestro_extensions::presentation::ExtensionKeybindings,
+    "extension keybindings resource ended",
+    Capability::Keybindings(keys) => keys
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,

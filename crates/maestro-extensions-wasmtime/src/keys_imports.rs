@@ -5,11 +5,15 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    callback_imports::CallbackView,
-    keys_reads::{
-        Config, Definition, Hint, KeysBuild, KeysEndpoint, KeysRequest, config, definitions,
+    bindings::maestro::extension::host::{
+        HostKeybindingsManager, KeybindingConflict, KeybindingDefinition,
     },
+    callback_imports::CallbackView,
+    context_imports::add_resource,
+    keys_reads::{Config, Hint, KeysBuild, KeysEndpoint, config, definitions},
+    lifecycle::State,
     local_resources::Message,
+    read_imports::{endpoint, forwards, release},
     widget_reads::{StyleEndpoint, WidgetMessage},
 };
 use wasmtime::{
@@ -72,22 +76,11 @@ fn hint<T: CallbackView>(store: &T, hint: Hint) -> Result<String, String> {
         .request(|_, reply| Message::Widgets(WidgetMessage::Hint(hint, reply)))
 }
 
-/// The manager behind a borrowed resource.
-fn manager<T: CallbackView>(
-    store: &mut T,
-    this: &Resource<KeysEndpoint>,
-) -> wasmtime::Result<KeysEndpoint> {
-    Ok(store.ctx().table.get(this)?.clone())
-}
-
-/// Installs the manager constructors, its methods, the hints and the editor styles.
+/// Installs the manager constructors, the hints and the editor styles.
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, KeysEndpoint>(host, "keybindings-manager")?;
     constructors(host)?;
-    reads(host)?;
-    writes(host)?;
     hints(host)
 }
 
@@ -113,7 +106,7 @@ fn constructors<T: CallbackView + 'static>(
     host.func_wrap(
         "new-keybindings-with-definitions",
         |mut store: StoreContextMut<'_, T>,
-         (defined, user): (Vec<(String, Definition)>, Config)| {
+         (defined, user): (Vec<(String, KeybindingDefinition)>, Config)| {
             let build = KeysBuild::Definitions(definitions(defined), config(user));
             Ok((keep(store.data_mut(), build)?,))
         },
@@ -126,73 +119,65 @@ fn constructors<T: CallbackView + 'static>(
     )
 }
 
-/// Installs the reads of a manager.
-fn reads<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]keybindings-manager.matches",
-        |mut store: StoreContextMut<'_, T>,
-         (this, data, id): (Resource<KeysEndpoint>, String, String)| {
-            let manager = manager(store.data_mut(), &this)?;
-            Ok((manager.read(|reply| KeysRequest::Matches(data, id, reply)),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]keybindings-manager.get-keys",
-        |mut store: StoreContextMut<'_, T>, (this, id): (Resource<KeysEndpoint>, String)| {
-            let manager = manager(store.data_mut(), &this)?;
-            Ok((manager.read(|reply| KeysRequest::Keys(id, reply)),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]keybindings-manager.get-definition",
-        |mut store: StoreContextMut<'_, T>, (this, id): (Resource<KeysEndpoint>, String)| {
-            let manager = manager(store.data_mut(), &this)?;
-            Ok((manager.read(|reply| KeysRequest::Definition(id, reply)),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]keybindings-manager.get-conflicts",
-        |mut store: StoreContextMut<'_, T>, (this,): (Resource<KeysEndpoint>,)| {
-            Ok((manager(store.data_mut(), &this)?.read(KeysRequest::Conflicts),))
-        },
-    )?;
-    for method in [
-        "get-user-bindings",
-        "get-resolved-bindings",
-        "get-effective-config",
-    ] {
-        let user = method == "get-user-bindings";
-        host.func_wrap(
-            &format!("[method]keybindings-manager.{method}"),
-            move |mut store: StoreContextMut<'_, T>, (this,): (Resource<KeysEndpoint>,)| {
-                let manager = manager(store.data_mut(), &this)?;
-                let request = if user {
-                    KeysRequest::UserBindings
-                } else {
-                    KeysRequest::ResolvedBindings
-                };
-                Ok((manager.read(request),))
-            },
-        )?;
-    }
-    Ok(())
+/// Declares the methods that run one endpoint operation.
+macro_rules! reads {
+    ($($method:ident($($operand:ident: $kind:ty),*) -> $result:ty;)+) => {
+        $(fn $method(
+            &mut self,
+            this: Resource<KeysEndpoint>,
+            $($operand: $kind),*
+        ) -> wasmtime::Result<Result<$result, String>> {
+            Ok(endpoint(self, &this)?.$method($($operand),*))
+        })+
+    };
 }
 
-/// Installs the changes of a manager.
-fn writes<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]keybindings-manager.set-user-bindings",
-        |mut store: StoreContextMut<'_, T>, (this, user): (Resource<KeysEndpoint>, Config)| {
-            let manager = manager(store.data_mut(), &this)?;
-            Ok((manager.read(|reply| KeysRequest::SetUserBindings(config(user), reply)),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]keybindings-manager.reload",
-        |mut store: StoreContextMut<'_, T>, (this,): (Resource<KeysEndpoint>,)| {
-            Ok((manager(store.data_mut(), &this)?.read(KeysRequest::Reload),))
-        },
-    )
+impl HostKeybindingsManager for State {
+    reads! {
+        matches(data: String, keybinding: String) -> bool;
+        get_keys(keybinding: String) -> Vec<String>;
+        get_definition(keybinding: String) -> Option<KeybindingDefinition>;
+        get_conflicts() -> Vec<KeybindingConflict>;
+        get_user_bindings() -> Config;
+        get_resolved_bindings() -> Config;
+        reload() -> ();
+    }
+
+    fn set_user_bindings(
+        &mut self,
+        this: Resource<KeysEndpoint>,
+        user_bindings: Config,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(endpoint(self, &this)?.set_user_bindings(config(user_bindings)))
+    }
+
+    fn get_effective_config(
+        &mut self,
+        this: Resource<KeysEndpoint>,
+    ) -> wasmtime::Result<Result<Config, String>> {
+        Ok(endpoint(self, &this)?.get_resolved_bindings())
+    }
+
+    fn drop(&mut self, this: Resource<KeysEndpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards every keybindings manager method to its trait implementation.
+pub(crate) fn add_manager(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, KeysEndpoint>(host, "keybindings-manager")?;
+    forwards! { host, "keybindings-manager", HostKeybindingsManager, KeysEndpoint,
+        "matches" => matches(data: String, keybinding: String);
+        "get-keys" => get_keys(keybinding: String);
+        "get-definition" => get_definition(keybinding: String);
+        "get-conflicts" => get_conflicts();
+        "set-user-bindings" => set_user_bindings(user_bindings: Config);
+        "get-user-bindings" => get_user_bindings();
+        "get-resolved-bindings" => get_resolved_bindings();
+        "reload" => reload();
+        "get-effective-config" => get_effective_config();
+    }
+    Ok(())
 }
 
 /// Installs the hints and the lent editor styles.
