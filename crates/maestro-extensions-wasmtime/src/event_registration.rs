@@ -113,12 +113,7 @@ binding! {
 
 /// Encodes a payload with the canonical tag without adding resources to JSON.
 fn tagged(value: &impl Serialize, name: &str) -> Result<String, String> {
-    let mut data = serde_json::to_value(value).map_err(|error| error.to_string())?;
-    let object = data
-        .as_object_mut()
-        .ok_or_else(|| "event is not an object".to_owned())?;
-    object.insert("type".into(), name.into());
-    serde_json::to_string(&data).map_err(|error| error.to_string())
+    crate::object_text::with_property(value, "type", name)
 }
 /// Ordinary records retain the native type's own Serde contract.
 macro_rules! records {
