@@ -183,6 +183,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::keys_imports::add_manager(&mut host)?;
     crate::overlay_imports::add_options(&mut host)?;
     crate::native_render_imports::add_tool(&mut host)?;
+    crate::completion_imports::add_provider(&mut host)?;
     crate::native_render_imports::add_component(&mut host)?;
     crate::ui_themes::add_to_linker(&mut host)?;
     crate::widget_imports::add_to_linker(&mut host)?;

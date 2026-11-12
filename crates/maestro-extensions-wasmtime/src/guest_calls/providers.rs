@@ -3,11 +3,14 @@
 use super::{Call, Handle};
 use crate::guest_calls::widget_calls::Item;
 use crate::lifecycle::replies::Reply;
-use crate::local_resources::{Lease, Message, Registry, SignalEndpoint, effects::EmitterEndpoint};
+use crate::local_resources::{
+    Lease, Message, Registry, SignalEndpoint, effects::EmitterEndpoint, held::LentProvider,
+};
 use crate::widget_reads::WidgetMessage;
 use maestro_extensions::presentation::{AutocompleteProvider, CursorPosition};
 use maestro_extensions::{
-    Cancellation, EventError, ExtensionAPI, Local, types::AutocompleteProviderFactory,
+    AutocompleteItem, Cancellation, EventError, ExtensionAPI, Local,
+    types::AutocompleteProviderFactory,
 };
 use std::{rc::Rc, sync::Arc};
 use wasmtime::component::{ComponentType, Lift, Lower};
@@ -100,24 +103,6 @@ pub(crate) struct FactoryCall<H = Handle> {
 #[derive(Clone)]
 pub struct ProviderEndpoint(pub(crate) Arc<Lease>);
 
-/// One request on a lent native completion provider.
-pub(crate) enum Lent {
-    /// Applies a chosen item in place of its prefix.
-    Apply(
-        Vec<String>,
-        Cursor,
-        Item,
-        String,
-        std::sync::mpsc::Sender<Result<Completed, String>>,
-    ),
-    /// Whether explicit completion should offer files.
-    Trigger(
-        Vec<String>,
-        Cursor,
-        std::sync::mpsc::Sender<Result<Option<bool>, String>>,
-    ),
-}
-
 /// One suggestion request on a lent native completion provider.
 pub(crate) struct SuggestionRequest {
     /// The edited lines.
@@ -155,13 +140,35 @@ impl ProviderEndpoint {
             .await
     }
 
-    /// Sends one request whose native code may call back into this instance.
-    pub(crate) fn route<T: Into<crate::import_route::Value> + Send + 'static>(
+    /// Applies a chosen item in place of its prefix; the provider may call back into this
+    /// instance.
+    pub(crate) fn apply(
         &self,
-        request: impl FnOnce(std::sync::mpsc::Sender<Result<T, String>>) -> Lent,
+        lines: Vec<String>,
+        at: Cursor,
+        chosen: AutocompleteItem,
+        prefix: String,
     ) -> crate::import_route::Route {
-        self.0
-            .route(|id, reply| Message::Widgets(WidgetMessage::Provider(id, request(reply))))
+        self.0.run_routed::<LentProvider, _>(move |provider, _| {
+            let applied = provider.apply_completion(&lines, native_cursor(at)?, &chosen, &prefix);
+            let count = |value: usize| u32::try_from(value).map_err(|e| e.to_string());
+            Ok(Completed {
+                cursor_line: count(applied.cursor_line)?,
+                cursor_col: count(applied.cursor_col)?,
+                lines: applied.lines,
+            })
+        })
+    }
+
+    /// Reads the provider's file-completion decision; it may call back into this instance.
+    pub(crate) fn should_trigger_file_completion(
+        &self,
+        lines: Vec<String>,
+        at: Cursor,
+    ) -> crate::import_route::Route {
+        self.0.run_routed::<LentProvider, _>(move |provider, _| {
+            Ok(provider.should_trigger_file_completion(&lines, native_cursor(at)?))
+        })
     }
 }
 

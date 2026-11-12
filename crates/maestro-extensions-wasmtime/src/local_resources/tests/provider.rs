@@ -1,9 +1,6 @@
 //! A lent completion provider ends with its capability.
 use super::ended_endpoint;
-use crate::{
-    guest_calls::providers::{Lent, ProviderEndpoint},
-    local_resources::Capability,
-};
+use crate::{guest_calls::providers::ProviderEndpoint, local_resources::Capability};
 use maestro_extensions::{
     AutocompleteItem, Cancellation,
     presentation::{
@@ -50,14 +47,18 @@ fn released_completion_provider_rejects_every_kind_of_operation_with_its_ended_t
         Capability::Provider(Rc::new(Silent)),
         ProviderEndpoint,
         |provider| {
-            let item = || crate::guest_calls::widget_calls::Item::new("v", "l", None);
+            let item = AutocompleteItem {
+                value: "v".into(),
+                label: "l".into(),
+                description: None,
+            };
             [
                 provider
-                    .route(|reply| Lent::Apply(Vec::new(), (0, 0), item(), String::new(), reply))
+                    .apply(Vec::new(), (0, 0), item, String::new())
                     .result()
                     .unwrap_err(),
                 provider
-                    .route(|reply| Lent::Trigger(Vec::new(), (0, 0), reply))
+                    .should_trigger_file_completion(Vec::new(), (0, 0))
                     .result()
                     .unwrap_err(),
             ]

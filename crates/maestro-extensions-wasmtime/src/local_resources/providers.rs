@@ -2,10 +2,9 @@
 //! the local owner.
 use super::{Admission, Capability, Registry, pump::State};
 use crate::guest_calls::providers::{
-    Completed, Lent, Native, ProviderEndpoint, SuggestionRequest, Suggestions, native_cursor,
+    Native, ProviderEndpoint, SuggestionRequest, Suggestions, native_cursor,
 };
 use crate::guest_calls::widget_calls::Item;
-use maestro_extensions::AutocompleteItem;
 use maestro_extensions::presentation::CompletionOptions;
 
 impl Registry {
@@ -54,15 +53,6 @@ fn suggestions(
     }
 }
 
-/// The native form of a canonical candidate.
-fn item(item: Item) -> AutocompleteItem {
-    AutocompleteItem {
-        value: item.value,
-        label: item.label,
-        description: item.description,
-    }
-}
-
 impl State {
     /// Starts one suggestion request on a lent provider with the caller's signal.
     pub(super) fn suggestions(&self, id: u64, request: SuggestionRequest, admission: Admission) {
@@ -91,31 +81,5 @@ impl State {
             }),
             admission,
         );
-    }
-
-    /// Applies a completion or reads the file-completion decision of a lent provider.
-    pub(super) fn provider(&self, id: u64, request: Lent) {
-        let provider = self.registry.provider(id);
-        match request {
-            Lent::Apply(lines, at, chosen, prefix, reply) => {
-                let applied = provider.and_then(|provider| {
-                    let at = native_cursor(at)?;
-                    let applied = provider.apply_completion(&lines, at, &item(chosen), &prefix);
-                    let count = |value: usize| u32::try_from(value).map_err(|e| e.to_string());
-                    Ok(Completed {
-                        cursor_line: count(applied.cursor_line)?,
-                        cursor_col: count(applied.cursor_col)?,
-                        lines: applied.lines,
-                    })
-                });
-                let _ = reply.send(applied);
-            }
-            Lent::Trigger(lines, at, reply) => {
-                let decision = provider.and_then(|provider| {
-                    Ok(provider.should_trigger_file_completion(&lines, native_cursor(at)?))
-                });
-                let _ = reply.send(decision);
-            }
-        }
     }
 }

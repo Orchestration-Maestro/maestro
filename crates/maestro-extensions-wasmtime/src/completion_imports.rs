@@ -4,15 +4,15 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
+use crate::bindings::maestro::extension::host::{AutocompleteItem, HostCompletionProvider};
 use crate::callback_imports::CallbackView;
-use crate::guest_calls::providers::{Cursor, Lent, ProviderEndpoint};
-use crate::guest_calls::widget_calls::Item;
-use crate::import_route::push;
+use crate::context_imports::add_resource;
+use crate::guest_calls::providers::{Cursor, ProviderEndpoint};
+use crate::import_route::{Route, push};
+use crate::lifecycle::State;
 use crate::local_resources::SignalEndpoint;
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
-};
+use crate::read_imports::{endpoint, forwards, release};
+use wasmtime::component::{LinkerInstance, Resource};
 
 /// The operands of a suggestion request.
 type SuggestionOperands = (
@@ -27,7 +27,6 @@ type SuggestionOperands = (
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, ProviderEndpoint>(host, "completion-provider")?;
     host.func_wrap_concurrent(
         "[method]completion-provider.get-suggestions",
         |accessor, (this, lines, cursor, signal, force): SuggestionOperands| {
@@ -42,29 +41,56 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                 Ok((provider.suggestions(lines, cursor, signal, force).await,))
             })
         },
-    )?;
-    host.func_wrap(
-        "[method]completion-provider.apply-completion",
-        |mut store: StoreContextMut<'_, T>,
-         (this, lines, cursor, item, prefix): (
-            Resource<ProviderEndpoint>,
-            Vec<String>,
-            Cursor,
-            Item,
-            String,
-        )| {
-            let provider = store.data_mut().ctx().table.get(&this)?.clone();
-            let route = provider.route(|reply| Lent::Apply(lines, cursor, item, prefix, reply));
-            Ok((push(store.data_mut(), route)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]completion-provider.should-trigger-file-completion",
-        |mut store: StoreContextMut<'_, T>,
-         (this, lines, cursor): (Resource<ProviderEndpoint>, Vec<String>, Cursor)| {
-            let provider = store.data_mut().ctx().table.get(&this)?.clone();
-            let route = provider.route(|reply| Lent::Trigger(lines, cursor, reply));
-            Ok((push(store.data_mut(), route)?,))
-        },
     )
+}
+
+impl HostCompletionProvider for State {
+    fn apply_completion(
+        &mut self,
+        this: Resource<ProviderEndpoint>,
+        lines: Vec<String>,
+        cursor: Cursor,
+        item: AutocompleteItem,
+        prefix: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let item = maestro_extensions::AutocompleteItem {
+            value: item.value,
+            label: item.label,
+            description: item.description,
+        };
+        let route = endpoint(self, &this)?.apply(lines, cursor, item, prefix);
+        push(self, route)
+    }
+
+    fn should_trigger_file_completion(
+        &mut self,
+        this: Resource<ProviderEndpoint>,
+        lines: Vec<String>,
+        cursor: Cursor,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.should_trigger_file_completion(lines, cursor);
+        push(self, route)
+    }
+
+    fn drop(&mut self, this: Resource<ProviderEndpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Registers the lent provider resource with its synchronous methods forwarded to the trait.
+pub(crate) fn add_provider(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, ProviderEndpoint>(host, "completion-provider")?;
+    forwards! { host, "completion-provider", HostCompletionProvider, ProviderEndpoint,
+        "apply-completion" => apply_completion(
+            lines: Vec<String>,
+            cursor: Cursor,
+            item: AutocompleteItem,
+            prefix: String
+        );
+        "should-trigger-file-completion" => should_trigger_file_completion(
+            lines: Vec<String>,
+            cursor: Cursor
+        );
+    }
+    Ok(())
 }

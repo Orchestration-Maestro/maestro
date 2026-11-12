@@ -284,6 +284,14 @@ held!(
 );
 
 held!(
+    /// A native completion provider lent to the guest.
+    LentProvider,
+    crate::guest_calls::providers::Native,
+    "extension completion provider resource ended",
+    Capability::Provider(provider) => provider
+);
+
+held!(
     /// The native buffer of generic authored events.
     EventBuffer,
     super::stream_reads::Owner,
