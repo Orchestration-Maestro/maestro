@@ -1,6 +1,6 @@
 //! Pane renaming through the daemon's handler: the label and its publication.
 #![cfg(target_os = "linux")]
-use crate::support::api::{daemon_with_workspaces, events_after, failure, request};
+use crate::support::api::{daemon_with_workspaces, events_after, failure, marked, request};
 use maestro_daemon::state::App;
 use maestro_protocol::{
     events::EventData,
@@ -45,11 +45,11 @@ fn renaming_sets_trims_and_clears_the_label() {
             .unwrap();
         app.state.terminals[id].manual_label.clone()
     };
-    app.state.session_dirty = false;
+    marked(&mut app);
     let named = label_of(request(&mut app, rename(Some("reviewer"))));
     assert_eq!(named.as_deref(), Some("reviewer"));
     assert_eq!(retained(&app).as_deref(), Some("reviewer"));
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
     let padded = label_of(request(&mut app, rename(Some("  padded \t"))));
     assert_eq!(padded.as_deref(), Some("padded"));
     assert_eq!(label_of(request(&mut app, rename(Some("   ")))), None);

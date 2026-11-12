@@ -1,7 +1,7 @@
 //! Pane close through the daemon's handler: the pane, its tab or its workspace goes, with its terminal.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_tab, daemon_with_workspaces, events_after, failure, join_group, request, root_pane,
+    add_tab, daemon_with_workspaces, events_after, failure, join_group, marked, request, root_pane,
     split_pane, workspace_ids,
 };
 use maestro_daemon::state::App;
@@ -18,7 +18,7 @@ fn close(app: &mut App, pane: &str) -> Result<ResponseResult, maestro_protocol::
 #[test]
 fn closing_a_split_pane_keeps_its_tab_and_publishes_the_layout() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&app, 0);
+    let left = root_pane(&mut app, 0);
     let right = split_pane(&mut app, 0, left, SplitDirection::Right);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(right)
@@ -30,7 +30,7 @@ fn closing_a_split_pane_keeps_its_tab_and_publishes_the_layout() {
         [left]
     );
     assert!(!app.state.terminals.contains_key(&terminal));
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
     assert_eq!(
         events_after(&app, 0),
         [
@@ -59,7 +59,7 @@ fn closing_the_only_pane_of_one_of_several_tabs_closes_only_that_tab() {
         .unwrap()
         .clone();
     assert_eq!(close(&mut app, "w1:p2"), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w1"]);
     assert_eq!(app.state.topology.workspaces[0].tabs.len(), 1);
     assert!(!app.state.terminals.contains_key(&terminal));
     assert_eq!(
@@ -84,7 +84,7 @@ fn closing_the_last_pane_closes_the_workspace() {
         workspace
     };
     assert_eq!(close(&mut app, "w1:p1"), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.terminals.len(), 1);
     assert_eq!(app.state.active, Some(0));
     assert_eq!(
@@ -121,7 +121,7 @@ fn closing_the_last_pane_of_a_parent_group_waits_for_confirmation() {
     );
     assert_eq!(app.state.mode, Mode::ConfirmClose);
     assert_eq!(app.state.selected, 0);
-    assert_eq!(workspace_ids(&app), ["w1", "w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w1", "w2"]);
     assert_eq!(app.state.terminals.len(), 2);
     assert!(events_after(&app, 0).is_empty());
 }
@@ -133,7 +133,7 @@ fn closing_the_only_pane_of_a_linked_worktree_closes_only_its_workspace() {
     join_group(&mut app, 1, "repo-key", true);
     app.state.confirm_close.0 = true;
     assert_eq!(close(&mut app, "w2:p1"), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w1"]);
 }
 
 #[test]
@@ -143,6 +143,6 @@ fn closing_a_missing_pane_is_refused_without_a_change() {
         close(&mut app, "w1:p9"),
         failure("pane_not_found", "pane w1:p9 not found")
     );
-    assert_eq!(workspace_ids(&app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w1"]);
     assert!(events_after(&app, 0).is_empty());
 }

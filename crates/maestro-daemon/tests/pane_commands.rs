@@ -135,7 +135,7 @@ fn focusing_a_pane_activates_its_tab_and_workspace() {
 #[test]
 fn focusing_the_focused_pane_marks_a_finished_agent_seen() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let pane = root_pane(&app, 0);
+    let pane = root_pane(&mut app, 0);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()

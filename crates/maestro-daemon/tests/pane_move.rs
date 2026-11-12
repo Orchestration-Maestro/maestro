@@ -1,8 +1,8 @@
 //! Pane move through the daemon's handler: destinations, identity, focus, events and refusals.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_tab, daemon_with_workspaces, event_names, events_after, failure, join_group, request,
-    root_pane, split_pane, workspace_ids,
+    add_tab, daemon_with_workspaces, event_names, events_after, failure, join_group, marked,
+    request, root_pane, split_pane, workspace_ids,
 };
 use maestro_daemon::events::AppEvent;
 use maestro_daemon::state::App;
@@ -44,8 +44,9 @@ fn two_tabs() -> App {
 /// together with the terminal identity the pane had before.
 fn into_the_second_tab() -> (App, PaneMoveResult, String) {
     let mut app = two_tabs();
+    let root = root_pane(&mut app, 0);
     let terminal = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(&app, 0))
+        .terminal_id(root)
         .unwrap()
         .to_string();
     let mut destination = into_tab("w1:t2", Some("w1:p2"), "right");
@@ -80,7 +81,7 @@ fn moving_a_pane_to_another_tab_keeps_its_terminal_and_closes_the_emptied_tab() 
 
 #[test]
 fn a_focused_move_splits_at_the_ratio_and_focuses_the_moved_pane() {
-    let (app, moved, _) = into_the_second_tab();
+    let (mut app, moved, _) = into_the_second_tab();
     assert_eq!(moved.target_layout.panes.len(), 2);
     assert!((moved.target_layout.splits[0].ratio - 0.25).abs() < f32::EPSILON);
     assert_eq!(moved.focused_pane_id, "w1:p1");
@@ -89,7 +90,7 @@ fn a_focused_move_splits_at_the_ratio_and_focuses_the_moved_pane() {
         app.state.topology.workspaces[0].tabs[0].layout.focused(),
         pane
     );
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
 }
 
 #[test]
@@ -122,7 +123,7 @@ fn a_move_to_another_tab_publishes_the_closed_tab_the_move_and_the_target_layout
 #[test]
 fn a_focused_move_returns_copy_mode_to_the_moved_pane() {
     let mut app = two_tabs();
-    let source = root_pane(&app, 0);
+    let source = root_pane(&mut app, 0);
     app.state.copy_mode = Some(CopyModeState {
         pane_id: source,
         selection: None,
@@ -144,7 +145,7 @@ fn a_focused_move_returns_copy_mode_to_the_moved_pane() {
 /// without focus, with the terminal identity it had before.
 fn across_workspaces() -> (App, PaneMoveResult, String) {
     let mut app = daemon_with_workspaces(&["/issue", "/other"]);
-    let source = root_pane(&app, 0);
+    let source = root_pane(&mut app, 0);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(source)
         .unwrap()
@@ -161,7 +162,7 @@ fn across_workspaces() -> (App, PaneMoveResult, String) {
 
 #[test]
 fn moving_a_pane_across_workspaces_gives_it_the_target_workspaces_handle() {
-    let (app, moved, terminal) = across_workspaces();
+    let (mut app, moved, terminal) = across_workspaces();
     assert!(moved.changed);
     assert_eq!(moved.previous_pane_id, "w1:p1");
     assert_eq!(moved.previous_workspace_id, "w1");
@@ -171,7 +172,7 @@ fn moving_a_pane_across_workspaces_gives_it_the_target_workspaces_handle() {
     assert_eq!(moved.pane.workspace_id, "w2");
     assert_eq!(moved.pane.tab_id, "w2:t1");
     assert_eq!(moved.pane.terminal_id, terminal);
-    assert_eq!(workspace_ids(&app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.active, Some(0));
 }
 
@@ -200,7 +201,7 @@ fn a_legacy_tab_spelling_survives_the_removal_of_the_source_workspace() {
         (moved.pane.workspace_id.as_str(), moved.pane.tab_id.as_str()),
         ("w2", "w2:t1")
     );
-    assert_eq!(workspace_ids(&app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.active, Some(0));
     assert_eq!(app.state.selected, 0);
 }
@@ -208,7 +209,7 @@ fn a_legacy_tab_spelling_survives_the_removal_of_the_source_workspace() {
 #[test]
 fn moving_a_pane_to_a_new_tab_wraps_the_same_terminal() {
     let mut app = daemon_with_workspaces(&["/issue"]);
-    let source = root_pane(&app, 0);
+    let source = root_pane(&mut app, 0);
     let right = split_pane(&mut app, 0, source, SplitDirection::Right);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(source)
@@ -270,20 +271,18 @@ fn moving_the_only_pane_to_a_new_tab_keeps_its_workspace() {
         (tab.tab_id.as_str(), tab.label.as_str()),
         ("w1:t2", "again")
     );
-    assert_eq!(workspace_ids(&app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w1"]);
     let workspace = &app.state.topology.workspaces[0];
     assert_eq!(workspace.tabs.len(), 1);
     assert_eq!(workspace.active_tab, 0);
-    assert_eq!(
-        app.state.public_pane_id(0, root_pane(&app, 0)).as_deref(),
-        Some("w1:p1")
-    );
+    let root = root_pane(&mut app, 0);
+    assert_eq!(app.state.public_pane_id(0, root).as_deref(), Some("w1:p1"));
 }
 
 #[test]
 fn moving_a_pane_to_a_new_tab_of_another_workspace_renumbers_it_there() {
     let mut app = daemon_with_workspaces(&["/issue", "/other"]);
-    let source = root_pane(&app, 0);
+    let source = root_pane(&mut app, 0);
     split_pane(&mut app, 0, source, SplitDirection::Right);
     let destination = json!({"type": "new_tab", "workspace_id": "w2"});
     let moved = move_of(request(&mut app, moving("w1:p1", &destination, false)));
@@ -301,8 +300,9 @@ fn moving_a_pane_to_a_new_tab_of_another_workspace_renumbers_it_there() {
 /// terminal identity the pane had before.
 fn promoted() -> (App, PaneMoveResult, String) {
     let mut app = daemon_with_workspaces(&["/issue"]);
+    let root = root_pane(&mut app, 0);
     let terminal = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(&app, 0))
+        .terminal_id(root)
         .unwrap()
         .to_string();
     let destination = json!({"type": "new_workspace", "label": "promoted", "tab_label": "main"});
@@ -374,7 +374,7 @@ fn moving_into_the_same_tab_is_a_no_op() {
     assert_eq!(moved.source_layout.as_deref(), Some(&*moved.target_layout));
     assert_eq!(app.state.topology.workspaces[0].tabs.len(), 1);
     assert!(events_after(&app, 0).is_empty());
-    assert!(!app.state.session_dirty);
+    assert!(!marked(&mut app));
 }
 
 #[test]
@@ -392,7 +392,7 @@ fn a_zoomed_tab_refuses_a_move_and_names_both_layouts() {
     );
     assert_eq!(app.state.topology.workspaces[0].tabs.len(), 2);
     app.state.topology.workspaces[0].tabs[1].zoomed = false;
-    let root = root_pane(&app, 0);
+    let root = root_pane(&mut app, 0);
     let split = split_pane(&mut app, 0, root, SplitDirection::Right);
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     let destination = into_tab("w1:t2", None, "right");

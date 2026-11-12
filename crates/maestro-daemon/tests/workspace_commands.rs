@@ -1,8 +1,8 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
-    with_live_daemon, workspace_ids,
+    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, marked,
+    request, with_live_daemon, workspace_ids, workspace_ids_of,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_daemon::state::App;
@@ -101,7 +101,7 @@ fn workspace_move_preserves_stable_identity_and_focus() {
     let moved = json!({"type": "workspace.move", "workspace_id": "w1", "insert_index": 3});
     let result = request(&mut app, moved);
     assert_eq!(listed(&result), ["w2", "w3", "w1"]);
-    assert_eq!(workspace_ids(&app), ["w2", "w3", "w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w2", "w3", "w1"]);
     assert_eq!(navigation(&app), (Some("w1".into()), "w2".into()));
     let Ok(ResponseResult::WorkspaceList { workspaces }) = result else {
         unreachable!()
@@ -116,7 +116,7 @@ fn workspace_move_preserves_stable_identity_and_focus() {
     );
     assert_eq!(workspaces[2].number, 3);
     assert!(workspaces[2].focused);
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn workspace_block_moves_are_atomic_and_keep_request_order() {
     });
     let result = request(&mut app, block);
     assert_eq!(listed(&result), ["w2", "w3", "w1", "w4"]);
-    assert_eq!(workspace_ids(&app), ["w2", "w3", "w1", "w4"]);
+    assert_eq!(workspace_ids(&mut app), ["w2", "w3", "w1", "w4"]);
     assert_eq!(navigation(&app), (Some("w3".into()), "w1".into()));
     let Ok(ResponseResult::WorkspaceList { workspaces }) = result else {
         unreachable!()
@@ -158,9 +158,9 @@ fn unchanged_workspace_order_emits_no_move() {
         let result = request(&mut app, unchanged.clone());
         assert_eq!(listed(&result), ["w1", "w2", "w3"], "{unchanged}");
     }
-    assert_eq!(workspace_ids(&app), ["w1", "w2", "w3"]);
+    assert_eq!(workspace_ids(&mut app), ["w1", "w2", "w3"]);
     assert!(events_after(&app, 0).is_empty());
-    assert!(!app.state.session_dirty);
+    assert!(!marked(&mut app));
 }
 
 #[test]
@@ -195,7 +195,7 @@ fn workspace_block_validation_is_atomic() {
         ),
     ] {
         assert_eq!(request(&mut app, rejected.clone()), expected, "{rejected}");
-        assert_eq!(workspace_ids(&app), ["w1", "w2", "w3", "w4"]);
+        assert_eq!(workspace_ids(&mut app), ["w1", "w2", "w3", "w4"]);
     }
     assert!(events_after(&app, 0).is_empty());
     for (accepted, order) in [
@@ -225,7 +225,7 @@ fn closing_a_linked_workspace_keeps_its_neighbours() {
         .collect();
     let close = json!({"type": "workspace.close", "workspace_id": "w2"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&app), ["w1", "w3", "w4"]);
+    assert_eq!(workspace_ids(&mut app), ["w1", "w3", "w4"]);
     assert_eq!(app.state.terminals.len(), 3);
     assert!(
         closed
@@ -464,7 +464,7 @@ fn workspace_creation_preserves_explicit_cwd_and_focus_policy() {
             };
             assert_eq!(error.code, "workspace_create_failed");
             assert!(!error.message.is_empty());
-            assert_eq!(workspace_ids(app), ["w1", "w2"]);
+            assert_eq!(workspace_ids_of(app).await, ["w1", "w2"]);
             assert_eq!(
                 (app.state.terminals.len(), app.terminal_runtimes.len()),
                 (2, 2)

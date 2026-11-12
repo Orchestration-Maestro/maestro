@@ -4091,6 +4091,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "interprocess",
+ "maestro-daemon",
  "maestro-dependencies",
  "maestro-detection",
  "maestro-json",

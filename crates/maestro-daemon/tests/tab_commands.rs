@@ -1,8 +1,8 @@
 //! Tab commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
-    run_in_pane, with_live_daemon, workspace_ids,
+    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, marked,
+    request, run_in_pane, with_live_daemon, workspace_ids,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_daemon::state::App;
@@ -158,13 +158,13 @@ fn tab_move_keeps_its_workspace_and_active_identity() {
             tabs,
         }]
     );
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
 }
 
 #[test]
 fn renaming_a_tab_updates_its_label_and_publishes_it() {
     let mut app = three_tabs();
-    app.state.session_dirty = false;
+    marked(&mut app);
     let rename = json!({"type": "tab.rename", "tab_id": "w1:t2", "label": "a much longer label"});
     let tab = reported(request(&mut app, rename));
     assert_eq!(
@@ -177,7 +177,7 @@ fn renaming_a_tab_updates_its_label_and_publishes_it() {
             .as_deref(),
         Some("a much longer label")
     );
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
     assert_eq!(
         events_after(&app, 0),
         [EventData::TabRenamed {
@@ -223,7 +223,7 @@ fn single_moves_validate_insertion_boundaries() {
     assert!(request(&mut app, moved).is_ok());
     let moved = json!({"type": "workspace.move", "workspace_id": "w2", "insert_index": 3});
     assert!(request(&mut app, moved).is_ok());
-    assert_eq!(workspace_ids(&app), ["w1", "w3", "w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w1", "w3", "w2"]);
     assert_eq!(app.state.active, Some(0));
     assert_eq!(events_after(&app, 0).len(), 2);
 }
@@ -236,12 +236,12 @@ fn final_tab_close_publishes_tab_then_workspace() {
     let Ok(ResponseResult::WorkspaceInfo { workspace }) = request(&mut app, get) else {
         panic!("expected the workspace")
     };
-    app.state.session_dirty = false;
+    marked(&mut app);
     let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.terminals.len(), 1);
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
     assert!(workspace.worktree.as_ref().unwrap().is_linked_worktree);
     assert_eq!(
         events_after(&app, 0),
@@ -261,7 +261,7 @@ fn final_tab_close_publishes_tab_then_workspace() {
 #[test]
 fn final_tab_close_empties_the_daemon_and_clears_focus() {
     let mut app = daemon_with_workspaces(&["/only"]);
-    app.state.session_dirty = false;
+    marked(&mut app);
 
     let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
@@ -269,7 +269,7 @@ fn final_tab_close_empties_the_daemon_and_clears_focus() {
     assert!(app.state.topology.workspaces.is_empty());
     assert!(app.state.terminals.is_empty());
     assert_eq!(app.state.active, None);
-    assert!(app.state.session_dirty);
+    assert!(marked(&mut app));
 }
 
 #[test]
@@ -302,7 +302,7 @@ fn tab_close_preserves_confirmation_and_terminal_ownership() {
             "closing this tab would close a worktree group"
         )
     );
-    assert_eq!(workspace_ids(&app), ["w1", "w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w1", "w2"]);
     assert_eq!(app.state.terminals.len(), 2);
     assert_eq!(app.state.mode, Mode::ConfirmClose);
     assert!(events_after(&app, 0).is_empty());
@@ -391,7 +391,7 @@ fn launch_environment_rejects_equals_in_keys_before_spawning() {
             failure("invalid_env", "env key BAD=KEY must not contain '='")
         );
     }
-    assert_eq!(workspace_ids(&app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w1"]);
     assert_eq!(app.state.topology.workspaces[0].tabs.len(), 1);
     assert_eq!(app.state.topology.workspaces[0].next_public_tab_number, 2);
     assert!(events_after(&app, 0).is_empty());

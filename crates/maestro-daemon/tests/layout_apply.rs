@@ -3,8 +3,8 @@
 #![cfg(target_os = "linux")]
 use crate::support::{
     api::{
-        add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
-        wait_for_line, with_live_daemon, workspace_ids,
+        add_tab, add_workspaces, answer, event_names, events_after, failure, marked, root_pane_of,
+        wait_for_line, with_live_daemon, workspace_ids_of,
     },
     layouts::{balanced, chain, shell, sleeper, split},
 };
@@ -130,7 +130,7 @@ fn applying_a_layout_replaces_the_named_tab() {
             );
             assert_eq!(app.state.terminals.len(), 2);
             assert_eq!(app.terminal_runtimes.len(), 2);
-            assert!(app.state.session_dirty);
+            assert!(marked(app));
         },
     );
 }
@@ -173,7 +173,8 @@ fn a_new_layout_tab_follows_the_directory_of_the_focused_pane() {
             follow(app);
             add_workspaces(app, &["/tabs"]);
             let focused = Scratch::new().unwrap();
-            set_cwd(app, root_pane(app, 0), focused.path());
+            let root = root_pane_of(app, 0).await;
+            set_cwd(app, root, focused.path());
             applied(answer(app, apply_wire(&sleeper(), &json!({}))).await);
             assert_eq!(app.state.topology.workspaces[0].tabs.len(), 2);
             assert_eq!(root_cwd(app, 1), focused.path());
@@ -189,7 +190,8 @@ fn a_replacing_layout_follows_the_directory_of_the_replaced_tab() {
             follow(app);
             add_workspaces(app, &["/tabs"]);
             let (active, background) = (Scratch::new().unwrap(), Scratch::new().unwrap());
-            set_cwd(app, root_pane(app, 0), active.path());
+            let root = root_pane_of(app, 0).await;
+            set_cwd(app, root, active.path());
             let replaced = add_tab(app, 0);
             set_cwd(app, replaced, background.path());
             let wire = apply_wire(&sleeper(), &json!({"tab_id": "w1:t2"}));
@@ -237,7 +239,7 @@ fn replacing_a_tab_drops_the_action_records_of_its_panes() {
         "layout_apply::replacing_a_tab_drops_the_action_records_of_its_panes",
         async |app| {
             add_workspaces(app, &["/tabs"]);
-            let replaced = root_pane(app, 0);
+            let replaced = root_pane_of(app, 0).await;
             app.state.action_panes.insert(
                 replaced,
                 ActionPaneRecord {
@@ -280,7 +282,7 @@ async fn assert_rolled_back(app: &mut App, original: PaneId, wire: Value) {
     assert_eq!(app.state.terminals.len(), 1);
     assert!(app.terminal_runtimes.is_empty());
     assert!(events_after(app, 0).is_empty());
-    assert!(!app.state.session_dirty);
+    assert!(!marked(app));
 }
 
 #[test]
@@ -289,7 +291,7 @@ fn a_leaf_that_cannot_start_rolls_the_whole_layout_back() {
         "layout_apply::a_leaf_that_cannot_start_rolls_the_whole_layout_back",
         async |app| {
             add_workspaces(app, &["/tabs"]);
-            let original = root_pane(app, 0);
+            let original = root_pane_of(app, 0).await;
             let missing = Scratch::new().unwrap().path().join("missing");
             let broken = json!({"type": "pane", "cwd": missing, "command": ["/bin/sleep", "60"]});
             let trees = [
@@ -580,7 +582,7 @@ fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
                     answer(app, replacement).await,
                     failure("layout_apply_failed", "new layout tab disappeared")
                 );
-                assert!(workspace_ids(app).is_empty());
+                assert!(workspace_ids_of(app).await.is_empty());
             }))
             .await
             .unwrap();
@@ -614,7 +616,7 @@ fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout
                     (layout.workspace_id.as_str(), layout.tab_id.as_str()),
                     ("w2", "w2:t3")
                 );
-                assert_eq!(workspace_ids(app), ["w2", "w3"]);
+                assert_eq!(workspace_ids_of(app).await, ["w2", "w3"]);
                 let closed: Vec<_> = events_after(app, 0)
                     .into_iter()
                     .filter_map(|event| match event {

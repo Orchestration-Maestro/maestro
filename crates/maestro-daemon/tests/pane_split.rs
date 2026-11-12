@@ -2,7 +2,7 @@
 #![cfg(target_os = "linux")]
 use crate::support::api::{
     add_tab, add_workspaces, answer, daemon_with_workspaces, event_names, events_after, failure,
-    request, root_pane, run_in_pane, split_pane, with_live_daemon,
+    marked, request, root_pane_of, run_in_pane, split_pane, with_live_daemon,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_daemon::state::App;
@@ -24,9 +24,9 @@ fn split_of(result: Result<ResponseResult, ErrorBody>) -> PaneInfo {
 /// A workspace with a background second tab of two panes, the first tab's root focused.
 ///
 /// Returns the first tab's root, the background tab's root and the background tab's focused pane.
-fn background_tab(app: &mut App) -> (PaneId, PaneId, PaneId) {
+async fn background_tab(app: &mut App) -> (PaneId, PaneId, PaneId) {
     add_workspaces(app, &["/tabs"]);
-    let active = root_pane(app, 0);
+    let active = root_pane_of(app, 0).await;
     let target = add_tab(app, 0);
     let focused = split_pane(app, 0, target, SplitDirection::Right);
     app.state.topology.workspaces[0].tabs[1]
@@ -44,7 +44,7 @@ fn a_split_targets_the_named_pane_in_a_background_tab() {
         async |app| {
             let scratch = maestro_test_directory::Scratch::new().unwrap();
             app.config.terminal.new_cwd = NewTerminalCwdConfig::Follow;
-            let (active, target, focused) = background_tab(app);
+            let (active, target, focused) = background_tab(app).await;
             let terminal = app.state.topology.workspaces[0]
                 .terminal_id(target)
                 .unwrap()
@@ -77,7 +77,7 @@ fn a_split_focuses_the_new_pane_when_asked() {
     with_live_daemon(
         "pane_split::a_split_focuses_the_new_pane_when_asked",
         async |app| {
-            let (active, _, _) = background_tab(app);
+            let (active, _, _) = background_tab(app).await;
             let wire = json!({
                 "type": "pane.split", "target_pane_id": "w1:p2", "direction": "down", "focus": true
             });
@@ -160,13 +160,13 @@ fn a_split_publishes_the_new_pane_and_its_layout() {
         "pane_split::a_split_publishes_the_new_pane_and_its_layout",
         async |app| {
             add_workspaces(app, &["/tabs"]);
-            app.state.session_dirty = false;
+            marked(app);
             let wire =
                 json!({"type": "pane.split", "target_pane_id": "w1:p1", "direction": "right"});
             let pane = split_of(answer(app, wire).await);
             assert_eq!(pane.pane_id, "w1:p2");
             assert!(pane.terminal_id.starts_with("term_"));
-            assert!(app.state.session_dirty);
+            assert!(marked(app));
             let (workspace, created) = app.state.parse_pane_id(&pane.pane_id).unwrap();
             let terminal = app.state.topology.workspaces[workspace]
                 .terminal_id(created)
