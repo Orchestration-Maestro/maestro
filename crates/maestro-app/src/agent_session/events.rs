@@ -199,12 +199,21 @@ impl AgentSession<Local> {
     }
 
     /// Tells the extensions about `event` in their own event form; an extension that
-    /// rewrites a finished message replaces it where every later reader finds it.
+    /// rewrites a finished message replaces it where every later reader finds it. A tool
+    /// progress or end event nobody listens for is neither copied nor serialized.
     async fn emit_extension_event(
         &self,
         event: &SharedAgentEvent,
     ) -> Result<(), DiagnosticErrorInfo> {
         let runner = self.extension_runner();
+        let unheard = match &*read(event) {
+            AgentEvent::ToolExecutionUpdate { .. } => !runner.has_handlers("tool_execution_update"),
+            AgentEvent::ToolExecutionEnd { .. } => !runner.has_handlers("tool_execution_end"),
+            _ => false,
+        };
+        if unheard {
+            return Ok(());
+        }
         let copied = { read(event).clone() };
         match copied {
             AgentEvent::MessageEnd { message } => {
