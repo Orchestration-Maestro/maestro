@@ -6,17 +6,21 @@
 )]
 use crate::{
     api_imports::ApiView,
+    bindings::maestro::extension::host::{HostChildProcess, HostReadable},
     context_imports::add_resource,
+    lifecycle::State,
     local_resources::{
         Message,
         native_resources::{Child, Reader, Request, Spawn, Writer},
     },
+    read_imports::{endpoint, forwards, release},
 };
 use maestro_extensions::native_io;
 use wasmtime::{
     StoreContextMut,
     component::{ComponentType, Lift, LinkerInstance, Lower, Resource},
 };
+use wasmtime_wasi::WasiView;
 
 /// Canonical standard descriptor selection.
 #[derive(ComponentType, Lift)]
@@ -87,15 +91,12 @@ struct Exit {
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    add_resource::<T, Child>(host, "child-process")?;
-    add_resource::<T, Reader>(host, "readable")?;
     add_resource::<T, Writer>(host, "writable")?;
     crate::http_imports::add_to_linker(host)?;
     crate::watch_imports::add_to_linker(host)?;
     crate::file_imports::add_to_linker(host)?;
     launch(host)?;
     controls(host)?;
-    pipes(host)?;
     reads(host)?;
     writes(host)
 }
@@ -143,23 +144,8 @@ fn launch<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
         },
     )
 }
-/// Reads and signals the original child; only the native owner waits and reaps.
+/// Waits on the original child; only the native owner waits and reaps.
 fn controls<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]child-process.pid",
-        |mut store: StoreContextMut<'_, T>, (child,): (Resource<Child>,)| {
-            let child = store.data_mut().ctx().table.get(&child)?.clone();
-            let result = child.pid().map_err(wasmtime::Error::msg)?;
-            Ok((result,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]child-process.kill",
-        |mut store: StoreContextMut<'_, T>, (child, signal): (Resource<Child>, Option<String>)| {
-            let child = store.data_mut().ctx().table.get(&child)?.clone();
-            Ok((child.kill(signal),))
-        },
-    )?;
     host.func_wrap_concurrent(
         "[method]child-process.wait",
         |accessor, (child,): (Resource<Child>,)| {
@@ -179,38 +165,7 @@ fn controls<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime:
         },
     )
 }
-/// Gives each descriptor alias independent resource ownership, not independent bytes.
-fn pipes<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]child-process.stdin",
-        |mut store: StoreContextMut<'_, T>, (child,): (Resource<Child>,)| {
-            let child = store.data_mut().ctx().table.get(&child)?.clone();
-            let pipe = child.stdin().map_err(wasmtime::Error::msg)?;
-            let pipe = pipe
-                .map(|pipe| store.data_mut().ctx().table.push(pipe))
-                .transpose()?;
-            Ok((pipe,))
-        },
-    )?;
-    for (name, stderr) in [
-        ("[method]child-process.stdout", false),
-        ("[method]child-process.stderr", true),
-    ] {
-        host.func_wrap(
-            name,
-            move |mut store: StoreContextMut<'_, T>, (child,): (Resource<Child>,)| {
-                let child = store.data_mut().ctx().table.get(&child)?.clone();
-                let pipe = child.output(stderr).map_err(wasmtime::Error::msg)?;
-                let pipe = pipe
-                    .map(|pipe| store.data_mut().ctx().table.push(pipe))
-                    .transpose()?;
-                Ok((pipe,))
-            },
-        )?;
-    }
-    Ok(())
-}
-/// Reads only this consumer's bytes; close never aborts a caller signal.
+/// Reads only this consumer's bytes.
 fn reads<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
     host.func_wrap_concurrent(
         "[method]readable.read",
@@ -225,15 +180,9 @@ fn reads<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Re
                     .await,))
             })
         },
-    )?;
-    host.func_wrap(
-        "[method]readable.close",
-        |mut store: StoreContextMut<'_, T>, (reader,): (Resource<Reader>,)| {
-            let reader = store.data_mut().ctx().table.get(&reader)?.clone();
-            Ok((reader.close(),))
-        },
     )
 }
+
 /// Admits ordered native writes without blocking stdout, stderr or child controls.
 fn writes<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
     host.func_wrap_concurrent(
@@ -264,4 +213,76 @@ fn writes<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
             })
         },
     )
+}
+
+impl HostChildProcess for State {
+    fn pid(&mut self, this: Resource<Child>) -> wasmtime::Result<Option<u32>> {
+        endpoint(self, &this)?.pid().map_err(wasmtime::Error::msg)
+    }
+
+    fn stdin(&mut self, this: Resource<Child>) -> wasmtime::Result<Option<Resource<Writer>>> {
+        let pipe = endpoint(self, &this)?
+            .stdin()
+            .map_err(wasmtime::Error::msg)?;
+        Ok(pipe.map(|pipe| self.ctx().table.push(pipe)).transpose()?)
+    }
+
+    fn stdout(&mut self, this: Resource<Child>) -> wasmtime::Result<Option<Resource<Reader>>> {
+        output(self, &this, false)
+    }
+
+    fn stderr(&mut self, this: Resource<Child>) -> wasmtime::Result<Option<Resource<Reader>>> {
+        output(self, &this, true)
+    }
+
+    fn kill(
+        &mut self,
+        this: Resource<Child>,
+        signal: Option<String>,
+    ) -> wasmtime::Result<Result<bool, String>> {
+        Ok(endpoint(self, &this)?.kill(signal))
+    }
+
+    fn drop(&mut self, this: Resource<Child>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Acquires one output pipe of a child and lends it to the guest.
+fn output(
+    state: &mut State,
+    this: &Resource<Child>,
+    stderr: bool,
+) -> wasmtime::Result<Option<Resource<Reader>>> {
+    let pipe = endpoint(state, this)?
+        .output(stderr)
+        .map_err(wasmtime::Error::msg)?;
+    Ok(pipe.map(|pipe| state.ctx().table.push(pipe)).transpose()?)
+}
+
+impl HostReadable for State {
+    fn close(&mut self, this: Resource<Reader>) -> wasmtime::Result<Result<(), String>> {
+        Ok(endpoint(self, &this)?.close())
+    }
+
+    fn drop(&mut self, this: Resource<Reader>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards the synchronous methods of a child and its byte reader to their traits.
+pub(crate) fn add_pipes(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Child>(host, "child-process")?;
+    add_resource::<State, Reader>(host, "readable")?;
+    forwards! { host, "child-process", HostChildProcess, Child,
+        "pid" => pid();
+        "stdin" => stdin();
+        "stdout" => stdout();
+        "stderr" => stderr();
+        "kill" => kill(signal: Option<String>);
+    }
+    forwards! { host, "readable", HostReadable, Reader,
+        "close" => close();
+    }
+    Ok(())
 }

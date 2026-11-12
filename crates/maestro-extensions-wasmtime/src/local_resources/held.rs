@@ -251,6 +251,22 @@ held!(
     Capability::Credentials(owner, _) => owner
 );
 
+held!(
+    /// A native child process.
+    NativeChild,
+    std::rc::Rc<dyn maestro_extensions::native_io::ChildProcess>,
+    "native child resource ended",
+    Capability::NativeChild(child) => child
+);
+
+held!(
+    /// A native byte reader.
+    NativeReader,
+    std::rc::Rc<dyn maestro_extensions::native_io::Readable>,
+    "native byte resource ended",
+    Capability::NativeReader(reader) => reader
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
