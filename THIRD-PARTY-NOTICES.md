@@ -2,7 +2,7 @@
 
 ## Package pattern matcher
 
-The file pattern matcher in `crates/maestro-pattern/src/minimatch/`, re-exported
+The file pattern matcher in `crates/maestro-pattern/src/glob/`, re-exported
 by packages, derives from minimatch 10.2.5 by Isaac Z. Schlueter
 and contributors. This source is licensed under the
 [Blue Oak Model License 1.0.0](https://blueoakcouncil.org/license/1.0.0).

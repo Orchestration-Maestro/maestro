@@ -2,7 +2,7 @@
 //!
 //! MIT attribution is in [third-party notices](https://github.com/Orchestration-Maestro/maestro/blob/main/THIRD-PARTY-NOTICES.md#package-ignore-rules).
 
-use crate::minimatch::{IgnorePattern, canonical};
+use crate::glob::{IgnorePattern, canonical};
 
 /// The decision of the last matching rule, or absence of a matching rule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
