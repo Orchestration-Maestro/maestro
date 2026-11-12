@@ -178,10 +178,12 @@ crate builds, so a caller receives the name instead of spelling one. A report th
 reads one keeps that record through its consuming helpers and borrows its text for
 filesystem paths and displayed output.
 
-A fresh history publishes at its first assistant message. Loaded and recovered
-histories stay published: each later append writes one record. An append error
-leaves the accepted memory and any partial bytes in place, and a failed switch
-keeps the prior manager state. An empty file is initialised immediately at the
+A fresh history publishes at its first assistant message, writing the header and every
+record so far in one append. A failed first write is cut back to the file's earlier
+length and leaves the history unpublished, so the next save writes it once from the
+start. Loaded and recovered histories stay published: each later append writes one
+record. A later append error leaves the accepted memory and any partial bytes in
+place, and a failed switch keeps the prior manager state. An empty file is initialised immediately at the
 selected path. A nonempty file without a valid session header is refused with
 `Session file is not a valid maestro session: <path>` and keeps its bytes, so
 `open` and `set_session_file` never erase a file that is not a session. A missing
@@ -251,8 +253,8 @@ beneath `agent_dir`. Once the source is loaded and converted, an empty
 `session_dir` path fails with a not-found error before the destination is created.
 A source that is empty or has no valid header fails with
 `Cannot fork: the source session file has no valid entries: {source}` before anything is
-created. A null source record and later write errors leave the records already
-written.
+created. A null source record is skipped. The header and every record go to the file in
+one append, and a write error leaves whatever bytes that append wrote.
 
 ```rust
 # #[cfg(not(target_arch = "wasm32"))] {
