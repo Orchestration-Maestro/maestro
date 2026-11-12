@@ -2,12 +2,13 @@
 use super::child;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_test_process::{IsolatedSetup, TestProcess};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::{
     collections::BTreeMap,
     fs,
     os::unix::fs::{MetadataExt, PermissionsExt, symlink},
     path::Path,
+    process::Command,
 };
 
 #[derive(Deserialize)]
@@ -45,7 +46,7 @@ struct Observation {
     tree: Vec<Entry>,
     settings_target_identity_preserved: Option<bool>,
 }
-#[derive(Deserialize, Serialize, PartialEq)]
+#[derive(Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Failure {
     code: String,
@@ -61,11 +62,19 @@ struct Entry {
     mode: Option<u32>,
     target: Option<String>,
 }
-#[derive(Deserialize, Serialize)]
+/// What one conversion child reported.
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Outcome {
+pub struct Outcome {
     providers: Option<Vec<String>>,
     error: Option<Failure>,
+}
+
+impl Outcome {
+    /// The failure category the conversion reported, if it failed.
+    pub fn error(self) -> Option<String> {
+        self.error.map(|error| error.code)
+    }
 }
 
 fn setup(root: &Path, input: &Input) {
@@ -192,105 +201,71 @@ fn check_link(root: &Path, path: &Path, item: &Entry) {
     );
 }
 
-/// Applies this child's requested setup, then runs the selected conversion operation.
-fn operation_child() {
-    let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
-    operation();
+/// One conversion launch.
+struct Launch<'a> {
+    /// The operation the child runs, `auth` or `sessions`.
+    operation: &'a str,
+    /// The agent directory the child reads, as authored.
+    agent_dir: &'a str,
+    /// The file-size limit, in kibibytes, the child runs the conversion under.
+    limit_kib: Option<u64>,
+    /// A file the child writes after lifting the limit.
+    exit_write: Option<&'a str>,
 }
 
-fn operation() {
-    use maestro_app::configuration::conversion::{
-        migrate_auth_to_auth_json, migrate_sessions_from_agent_root,
-    };
-    use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
-    let previous_limit = std::env::var("STARTUP_FILE_LIMIT").ok().map(|limit| {
-        let previous = getrlimit(Resource::Fsize);
-        setrlimit(
-            Resource::Fsize,
-            Rlimit {
-                current: Some(limit.parse::<u64>().unwrap() * 1024),
-                ..previous
-            },
-        )
-        .unwrap();
-        previous
-    });
-    let result = match std::env::var("STARTUP_OPERATION").unwrap().as_str() {
-        "auth" => migrate_auth_to_auth_json().map(Some),
-        "sessions" => migrate_sessions_from_agent_root().map(|()| None),
-        _ => panic!("unknown operation"),
-    };
-    // Restore before reporting errors or writing the runtime's exit profile.
-    if let Some(previous) = previous_limit {
-        setrlimit(Resource::Fsize, previous).unwrap();
+/// Run one conversion in the prepared child, in `cwd`, and read its outcome.
+fn invoke(cwd: &Path, launch: &Launch) -> Outcome {
+    let program = std::env::var_os("MAESTRO_STARTUP_CONVERSION")
+        .expect("run just prepare-tests, then run these tests with cargo nextest");
+    let mut command = Command::new(program);
+    command
+        .arg(launch.operation)
+        .current_dir(cwd)
+        .env("MAESTRO_CODING_AGENT_DIR", launch.agent_dir);
+    if let Some(limit) = launch.limit_kib {
+        let (name, request) = IsolatedSetup::new().file_size_continues().environment();
+        command
+            .env(name, request)
+            .args(["--file-limit-kib", &limit.to_string()]);
     }
-    let outcome = match result {
-        Ok(providers) => Outcome {
-            providers,
-            error: None,
-        },
-        Err(error) => Outcome {
-            providers: None,
-            error: Some(Failure {
-                code: match error.raw_os_error() {
-                    Some(2) => "ENOENT",
-                    Some(13) => "EACCES",
-                    Some(27) => "EFBIG",
-                    _ => panic!("unexpected native error category"),
-                }
-                .into(),
-            }),
-        },
-    };
-    if let Some(path) = std::env::var_os("STARTUP_EXIT_WRITE") {
-        fs::write(path, [0_u8; 4096]).expect("exit-time writes exceed the operation's file limit");
+    if let Some(path) = launch.exit_write {
+        command.args(["--exit-write", path]);
     }
-    println!("\nPROBE {}", serde_json::to_string(&outcome).unwrap());
+    let output = command.output().expect("the conversion child starts");
+    assert!(
+        output.status.success(),
+        "conversion child failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let mut lines = stdout
+        .lines()
+        .filter_map(|line| line.strip_prefix("PROBE "));
+    let line = lines.next().expect("the child reports one outcome");
+    assert!(lines.next().is_none());
+    serde_json::from_str(line).unwrap()
 }
 
-fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> Outcome {
-    let lines = if let Some(limit) = limit {
-        let output = TestProcess::current(name)
-            .unwrap()
-            .setup(IsolatedSetup::new().file_size_continues())
-            .env("STARTUP_FILE_LIMIT", limit.to_string())
-            .nocapture()
-            .single_threaded()
-            .current_dir(cwd)
-            .envs(envs.iter().copied())
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "limited child transport failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        String::from_utf8(output.stdout)
-            .unwrap()
-            .lines()
-            .filter_map(|line| line.strip_prefix("PROBE ").map(str::to_owned))
-            .collect()
-    } else {
-        child::probe(
-            maestro_test_process::TestProcess::current(name)
-                .unwrap()
-                .case("*"),
-            cwd,
-            envs,
-            &[],
-        )
-        .expect("child starts")
-    };
-    assert_eq!(lines.len(), 1);
-    serde_json::from_str(&lines[0]).unwrap()
+/// Move the sessions below `agent_dir` in the prepared child, in `cwd`, and require success.
+pub fn sessions(cwd: &Path, agent_dir: &str) {
+    assert!(convert("sessions", cwd, agent_dir).error().is_none());
+}
+
+/// Run `operation` once in the prepared child, in `cwd`, with `agent_dir` as the agent directory.
+pub fn convert(operation: &str, cwd: &Path, agent_dir: &str) -> Outcome {
+    invoke(
+        cwd,
+        &Launch {
+            operation,
+            agent_dir,
+            limit_kib: None,
+            exit_write: None,
+        },
+    )
 }
 
 /// Check that a limited operation leaves room for exit-time profile writes.
-pub fn check_file_limit_restoration(name: &str) {
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        operation_child();
-        return;
-    }
+pub fn check_file_limit_restoration() {
     let scratch = child::Scratch::new();
     let output = scratch.join("exit-write");
     for fail_write in [false, true] {
@@ -302,33 +277,22 @@ pub fn check_file_limit_restoration(name: &str) {
             .unwrap();
         }
         let outcome = invoke(
-            name,
             scratch.0.path(),
-            &[
-                ("STARTUP_OPERATION", "auth"),
-                (
-                    "MAESTRO_CODING_AGENT_DIR",
-                    scratch.0.path().to_str().unwrap(),
-                ),
-                ("STARTUP_EXIT_WRITE", &output),
-            ],
-            Some(1),
+            &Launch {
+                operation: "auth",
+                agent_dir: scratch.0.path().to_str().unwrap(),
+                limit_kib: Some(1),
+                exit_write: Some(&output),
+            },
         );
-        assert_eq!(
-            outcome.error.map(|error| error.code),
-            fail_write.then(|| "EFBIG".into())
-        );
+        assert_eq!(outcome.error(), fail_write.then(|| "EFBIG".into()));
         assert_eq!(fs::read(&output).unwrap(), [0_u8; 4096]);
         fs::remove_file(&output).unwrap();
     }
 }
 
 /// Check that a conversion through a dangling `auth.json` link fails and creates no directory.
-pub fn check_dangling_auth_link(name: &str) {
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        operation_child();
-        return;
-    }
+pub fn check_dangling_auth_link() {
     let scratch = child::Scratch::new();
     let root = scratch.0.path();
     fs::write(
@@ -338,17 +302,9 @@ pub fn check_dangling_auth_link(name: &str) {
     .unwrap();
     symlink("missing/nested/auth.json", root.join("auth.json")).unwrap();
 
-    let outcome = invoke(
-        name,
-        root,
-        &[
-            ("STARTUP_OPERATION", "auth"),
-            ("MAESTRO_CODING_AGENT_DIR", root.to_str().unwrap()),
-        ],
-        None,
-    );
+    let outcome = convert("auth", root, root.to_str().unwrap());
 
-    assert_eq!(outcome.error.map(|error| error.code), Some("ENOENT".into()));
+    assert_eq!(outcome.error(), Some("ENOENT".into()));
     assert_eq!(
         fs::read_link(root.join("auth.json")).unwrap(),
         Path::new("missing/nested/auth.json")
@@ -357,10 +313,6 @@ pub fn check_dangling_auth_link(name: &str) {
 }
 
 pub fn run(name: &str) {
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        operation_child();
-        return;
-    }
     if std::env::var_os("STARTUP_CORPUS_CHILD").is_none() {
         let output = TestProcess::current(name)
             .unwrap()
@@ -387,12 +339,12 @@ pub fn run(name: &str) {
     let denials = crate::native::denials();
     for (index, case) in corpus.remove(name).unwrap().into_iter().enumerate() {
         if denials || (case.input.file_modes.is_empty() && case.input.root_mode.is_none()) {
-            replay(name, index, &case);
+            replay(index, &case);
         }
     }
 }
 
-fn replay(name: &str, index: usize, case: &Case) {
+fn replay(index: usize, case: &Case) {
     let scratch = child::Scratch::new();
     let root = std::path::PathBuf::from(scratch.join("root"));
     setup(&root, &case.input);
@@ -417,16 +369,16 @@ fn replay(name: &str, index: usize, case: &Case) {
             root.to_str().unwrap().to_owned()
         };
         let actual = invoke(
-            name,
             scratch.0.path(),
-            &[
-                ("STARTUP_OPERATION", &case.input.operation),
-                ("MAESTRO_CODING_AGENT_DIR", &authored),
-            ],
-            if turn == 0 {
-                case.input.limit_kib
-            } else {
-                None
+            &Launch {
+                operation: &case.input.operation,
+                agent_dir: &authored,
+                limit_kib: if turn == 0 {
+                    case.input.limit_kib
+                } else {
+                    None
+                },
+                exit_write: None,
             },
         );
         assert!(
