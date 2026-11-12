@@ -1,6 +1,7 @@
 //! Reads a response body as server-sent events.
 
-use super::line_decoder::LineDecoder;
+use maestro_text::line_framing::ByteLineDecoder;
+use maestro_text::{decode_utf8, lossy_string};
 
 #[cfg(test)]
 mod tests;
@@ -14,6 +15,20 @@ pub(crate) struct ServerSentEvent {
     pub(crate) data: String,
     /// Whether `data` is event data rather than a complete non-data segment.
     pub(crate) is_data: bool,
+    /// Every nonblank line since the previous event, comments and unknown fields included;
+    /// empty unless [`SseOptions::raw_lines`] asks for it.
+    pub(crate) raw: Vec<String>,
+}
+
+/// The ways a reader differs from the default framing.
+#[derive(Clone, Copy, Default)]
+pub(crate) struct SseOptions {
+    /// Drop a byte-order mark from the start of the stream only, not from every line.
+    pub(crate) stream_start_mark: bool,
+    /// Keep the lines of each event in [`ServerSentEvent::raw`].
+    pub(crate) raw_lines: bool,
+    /// Dispatch the event being collected when the body ends.
+    pub(crate) flush_pending: bool,
 }
 
 /// Turns lines into events: `event` and `data` fields collect until a blank line dispatches
@@ -24,21 +39,20 @@ struct SseDecoder {
     event: Option<String>,
     /// Values of the `data` fields so far.
     data: Vec<String>,
+    /// Nonblank lines since the last dispatch, when kept.
+    raw: Vec<String>,
+    /// Whether the nonblank lines are kept.
+    keep_raw: bool,
 }
 
 impl SseDecoder {
-    /// Read one line, returning the event a blank line dispatches. A blank line dispatches
-    /// nothing while neither a nonempty event name nor a data field has been seen.
+    /// Read one line, returning the event a blank line dispatches.
     fn decode(&mut self, line: &str) -> Option<ServerSentEvent> {
         if line.is_empty() {
-            if self.event.as_deref().is_none_or(str::is_empty) && self.data.is_empty() {
-                return None;
-            }
-            return Some(ServerSentEvent {
-                event: self.event.take(),
-                data: std::mem::take(&mut self.data).join("\n"),
-                is_data: true,
-            });
+            return self.dispatch();
+        }
+        if self.keep_raw {
+            self.raw.push(line.to_owned());
         }
         let (field, value) = line.split_once(':').unwrap_or((line, ""));
         let value = value.strip_prefix(' ').unwrap_or(value);
@@ -49,6 +63,20 @@ impl SseDecoder {
         }
         None
     }
+
+    /// Dispatch the event collected so far. Nothing is dispatched while neither a nonempty
+    /// event name nor a data field has been seen.
+    fn dispatch(&mut self) -> Option<ServerSentEvent> {
+        if self.event.as_deref().is_none_or(str::is_empty) && self.data.is_empty() {
+            return None;
+        }
+        Some(ServerSentEvent {
+            event: self.event.take(),
+            data: std::mem::take(&mut self.data).join("\n"),
+            is_data: true,
+            raw: std::mem::take(&mut self.raw),
+        })
+    }
 }
 
 /// Reads server-sent events from body chunks.
@@ -56,11 +84,17 @@ impl SseDecoder {
 /// In field mode, completed lines are read as each chunk arrives. CR, LF and CRLF end a
 /// line; CR ends its line immediately and one following LF is skipped, even across chunks.
 /// UTF-8 bytes stay buffered until their line ends. A blank line dispatches the collected
-/// event. Data-segment mode instead preserves each completed segment's payload.
+/// event. Data-segment mode instead preserves each completed segment's payload. Each line
+/// loses a leading byte-order mark unless [`SseOptions::stream_start_mark`] limits that to
+/// the first line.
 #[derive(Default)]
 pub(crate) struct SseMessages {
     /// Splits body chunks into lines.
-    lines: LineDecoder,
+    lines: ByteLineDecoder,
+    /// How this reader differs from the default framing.
+    options: SseOptions,
+    /// Whether the first line of the stream has been read.
+    started: bool,
     /// Collects the fields of the lines.
     fields: SseDecoder,
     /// Whole-segment framing, when selected instead of fields.
@@ -68,6 +102,18 @@ pub(crate) struct SseMessages {
 }
 
 impl SseMessages {
+    /// A reader of field framing that differs from the default as `options` say.
+    pub(crate) fn with_options(options: SseOptions) -> Self {
+        Self {
+            fields: SseDecoder {
+                keep_raw: options.raw_lines,
+                ..SseDecoder::default()
+            },
+            options,
+            ..Self::default()
+        }
+    }
+
     /// Add a body chunk and return the events it completes.
     pub(crate) fn push(&mut self, chunk: &[u8]) -> Vec<ServerSentEvent> {
         if let Some(segments) = &mut self.segments {
@@ -78,15 +124,20 @@ impl SseMessages {
         events
     }
 
-    /// In field mode, read a final unterminated line without delivering an event whose
-    /// blank line never arrived. Data-segment mode returns no events.
+    /// In field mode, read a final unterminated line; an event whose blank line never
+    /// arrived is delivered only when [`SseOptions::flush_pending`] asks. Data-segment mode
+    /// returns no events.
     pub(crate) fn finish(&mut self) -> Vec<ServerSentEvent> {
         if self.segments.is_some() {
             return Vec::new();
         }
         let mut events = Vec::new();
         for line in self.lines.flush() {
+            let line = self.text(line);
             events.extend(self.fields.decode(&line));
+        }
+        if self.options.flush_pending {
+            events.extend(self.fields.dispatch());
         }
         events
     }
@@ -94,8 +145,21 @@ impl SseMessages {
     /// Decode `bytes` into lines and collect the events they complete.
     fn read(&mut self, bytes: &[u8], events: &mut Vec<ServerSentEvent>) {
         for line in self.lines.decode(bytes) {
+            let line = self.text(line);
             events.extend(self.fields.decode(&line));
         }
+    }
+
+    /// Decode a line as text: invalid sequences become U+FFFD and a byte-order mark is dropped.
+    fn text(&mut self, bytes: Vec<u8>) -> String {
+        if !self.options.stream_start_mark {
+            return decode_utf8(&bytes).into_owned();
+        }
+        let mut text = lossy_string(bytes);
+        if !std::mem::replace(&mut self.started, true) && text.starts_with('\u{feff}') {
+            text.remove(0);
+        }
+        text
     }
 }
 
@@ -133,6 +197,7 @@ impl Segments {
             events.push(ServerSentEvent {
                 event: None,
                 is_data: data.is_some(),
+                raw: Vec::new(),
                 data: data
                     .unwrap_or(text)
                     .trim_matches(maestro_text::is_whitespace_scalar)
