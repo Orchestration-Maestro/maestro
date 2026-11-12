@@ -4425,6 +4425,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-json",
  "maestro-lock",
+ "maestro-models-catalog",
  "maestro-path",
  "maestro-realpath",
  "maestro-request",
@@ -4458,6 +4459,16 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "windows-version",
+]
+
+[[package]]
+name = "maestro-models-catalog"
+version = "0.1.0"
+dependencies = [
+ "indexmap 2.14.2",
+ "maestro-dependencies",
+ "maestro-request",
+ "serde_json",
 ]
 
 [[package]]

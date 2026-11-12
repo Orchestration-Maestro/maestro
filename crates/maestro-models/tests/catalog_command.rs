@@ -78,7 +78,7 @@ struct ObserveFiles<'a> {
 impl io::Write for ObserveFiles<'_> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
         if bytes.starts_with(b"Generated ") {
-            assert!(self.destination.join("mod.rs").is_file());
+            assert!(self.destination.join("lib.rs").is_file());
             assert!(self.destination.join("provider_openai.rs").is_file());
         }
         self.bytes.extend(bytes);
@@ -119,7 +119,7 @@ fn catalog_command_fetches_sequentially_and_reports_after_writes() {
     );
     assert_eq!(
         String::from_utf8(output.bytes).unwrap(),
-        "Fetching models from models.dev API...\nLoaded 0 models with tool support from models.dev\nFetching models from OpenRouter API...\nFetched 0 models with tool support from OpenRouter\nFetching models from Vercel AI Gateway API...\nFetched 0 models with tool support from Vercel AI Gateway\nGenerated src/catalog/models_generated/\n\nModel Statistics:\n  Models with tool support: 45\n  Models with reasoning: 36\n  amazon-bedrock: 1 models\n  anthropic: 3 models\n  google: 1 models\n  openai: 5 models\n  deepseek: 2 models\n  openai-codex: 10 models\n  xai: 3 models\n  mistral: 1 models\n  openrouter: 1 models\n  google-vertex: 13 models\n  azure-openai-responses: 5 models\n"
+        "Fetching models from models.dev API...\nLoaded 0 models with tool support from models.dev\nFetching models from OpenRouter API...\nFetched 0 models with tool support from OpenRouter\nFetching models from Vercel AI Gateway API...\nFetched 0 models with tool support from Vercel AI Gateway\nGenerated crates/maestro-models-catalog/src/\n\nModel Statistics:\n  Models with tool support: 45\n  Models with reasoning: 36\n  amazon-bedrock: 1 models\n  anthropic: 3 models\n  google: 1 models\n  openai: 5 models\n  deepseek: 2 models\n  openai-codex: 10 models\n  xai: 3 models\n  mistral: 1 models\n  openrouter: 1 models\n  google-vertex: 13 models\n  azure-openai-responses: 5 models\n"
     );
 }
 
@@ -394,7 +394,7 @@ fn assert_filesystem_errors(fetch: &Fetch) {
             }
             _ => {
                 fs::create_dir(&destination).unwrap();
-                fs::create_dir(destination.join("mod.rs")).unwrap();
+                fs::create_dir(destination.join("lib.rs")).unwrap();
                 destination
             }
         };

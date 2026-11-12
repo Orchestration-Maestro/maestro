@@ -4,7 +4,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::{Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel};
+use maestro_models::Model;
 
 mod account_message_routing;
 mod account_tool_names;

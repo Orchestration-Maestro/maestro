@@ -12,6 +12,7 @@ maestro-text = { path = "../maestro-text" }
 maestro-json = { path = "../maestro-json" }
 maestro-cancellation = { path = "../maestro-cancellation" }
 maestro-request = { path = "../maestro-request" }
+maestro-models-catalog = { path = "../maestro-models-catalog" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 sha2 = { version = "=0.11.0", default-features = false }
 getrandom = "=0.4.3"

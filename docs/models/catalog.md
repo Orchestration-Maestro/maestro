@@ -30,6 +30,10 @@ catalog membership nor a registered protocol adapter.
 
 ## Generated data layout
 
+The table ships as its own crate, `maestro-models-catalog`, written whole in
+`crates/maestro-models-catalog/src/`. `maestro-models` keeps the lookups and
+reads the crate's `models` function once, on first use.
+
 Generated descriptors use `<provider>/<family>.rs`. The family is the vendor
 segment for qualified IDs or the leading model-family segment (before a hyphen,
 dot or digit) for unqualified IDs. Account/model/router, `workers-ai/@cf` and

@@ -550,11 +550,14 @@ fn module_repetition_lint_cannot_be_weakened() {
 #[test]
 fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
     let workspace = Workspace::new();
+    workspace.member("models-catalog", "maestro-models-catalog", "");
     workspace.member("models", "maestro-models", "");
-    workspace.list(&[("maestro-models", "core")]);
-    let source = workspace.root.path().join("crates/models/src");
-    let generated = source.join("catalog/models_generated");
-    std::fs::create_dir_all(&generated).unwrap();
+    workspace.list(&[
+        ("maestro-models-catalog", "core"),
+        ("maestro-models", "core"),
+    ]);
+    let generated = workspace.root.path().join("crates/models-catalog/src");
+    let handwritten = workspace.root.path().join("crates/models/src");
     let file = generated.join("provider.rs");
     std::fs::write(
         &file,
@@ -565,7 +568,7 @@ fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
     )
     .unwrap();
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    std::fs::rename(&file, source.join("provider.rs")).unwrap();
+    std::fs::rename(&file, handwritten.join("provider.rs")).unwrap();
     assert!(
         check_workspace(workspace.root.path())
             .unwrap_err()
