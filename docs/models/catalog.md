@@ -34,15 +34,12 @@ The table ships as its own crate, `maestro-models-catalog`, written whole in
 `crates/maestro-models-catalog/src/`. `maestro-models` keeps the lookups and
 reads the crate's `models` function once, on first use.
 
-Generated descriptors use `<provider>/<family>.rs`. The family is the vendor
-segment for qualified IDs or the leading model-family segment (before a hyphen,
-dot or digit) for unqualified IDs. Account/model/router, `workers-ai/@cf` and
-regional inference-profile prefixes are stripped first; unqualified `labs-` and
-`open-` prefixes are also stripped. Names use lowercase Rust snake casing.
-Each family retains recorded order and is greedily partitioned only when its
-formatted file would exceed 500 lines, using `_1`, `_2`, … suffixes for all of its
-partitions. Provider assembly preserves original registry order, including
-interleaved families; filenames never determine enumeration order.
+Each provider gets one file, `provider_<name>.rs`, named from its key: lowercase
+letters, digits and hyphens are kept and every other byte becomes `%XX`. The crate
+root, `lib.rs`, declares those modules by path and holds the `PROVIDERS` table and
+the `models` function that assembles them. Providers are emitted in UTF-16 order
+of their keys and each file lists its descriptors in UTF-16 order of their IDs;
+filenames never determine enumeration order.
 
 ## Provider rules
 
