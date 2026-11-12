@@ -19,7 +19,7 @@ fn measured_priorities_order_tests_without_changing_shards() {
         "#[test] fn a_short() {}\nmod browser_author_build {\n\
          #[test] fn browser_author_checks_accept_valid_sources() {}\n\
          #[test] fn browser_author_bootstraps_from_empty_build_state() {}\n\
-         #[test] fn browser_check_repairs_formatting() { assert!(false); }\n}\n",
+         #[test] fn browser_example_development_serves_rebuilt_external_assets() { assert!(false); }\n}\n",
     )
     .unwrap();
     let baseline = root.path().join("baseline.toml");
@@ -47,9 +47,9 @@ fn measured_priorities_order_tests_without_changing_shards() {
         after,
         [
             "browser_author_build::browser_author_bootstraps_from_empty_build_state",
-            "browser_author_build::browser_check_repairs_formatting",
-            "browser_author_build::browser_author_checks_accept_valid_sources",
+            "browser_author_build::browser_example_development_serves_rebuilt_external_assets",
             "a_short",
+            "browser_author_build::browser_author_checks_accept_valid_sources",
         ]
     );
     assert_eq!(before[0], "a_short");
