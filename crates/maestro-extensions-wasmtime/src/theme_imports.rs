@@ -7,14 +7,13 @@
 use crate::{
     bindings::maestro::extension::host::{ColorMode, HostTheme},
     lifecycle::State,
-    read_imports::forward,
+    read_imports::{endpoint, forwards, release},
     theme_reads::Endpoint,
 };
 use wasmtime::{
     StoreContextMut,
     component::{LinkerInstance, Resource},
 };
-use wasmtime_wasi::WasiView;
 
 impl From<maestro_extensions::ColorMode> for ColorMode {
     fn from(mode: maestro_extensions::ColorMode) -> Self {
@@ -23,11 +22,6 @@ impl From<maestro_extensions::ColorMode> for ColorMode {
             maestro_extensions::ColorMode::Color256 => Self::Color256,
         }
     }
-}
-
-/// Clones the endpoint a guest handle names before native code runs.
-fn endpoint(state: &mut State, this: &Resource<Endpoint>) -> wasmtime::Result<Endpoint> {
-    Ok(state.ctx().table.get(this)?.clone())
 }
 
 /// Declares the methods that read one endpoint operation with string operands.
@@ -77,8 +71,7 @@ impl HostTheme for State {
     }
 
     fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
-        self.ctx().table.delete(this)?;
-        Ok(())
+        release(self, this)
     }
 }
 
@@ -103,22 +96,9 @@ pub(crate) fn add_global<T: crate::api_imports::ApiView + 'static>(
     )
 }
 
-/// Registers each method as a forward to the trait.
-macro_rules! forwards {
-    ($host:ident, $($wit:literal => $method:ident($($operand:ident: $kind:ty),*);)+) => {$(
-        forward(
-            $host,
-            concat!("[method]theme.", $wit),
-            |state, (this, $($operand),*): (Resource<Endpoint>, $($kind),*)| {
-                HostTheme::$method(state, this, $($operand),*)
-            },
-        )?;
-    )+};
-}
-
 /// Forwards every theme method to its trait implementation.
 pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
-    forwards! { host,
+    forwards! { host, "theme", HostTheme, Endpoint,
         "name" => name();
         "source-path" => source_path();
         "source-info" => source_info();

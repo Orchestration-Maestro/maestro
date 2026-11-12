@@ -5,16 +5,14 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    bindings::maestro::extension::host::HostReadonlySessionManager, context_imports::add_resource,
-    history_reads::Endpoint, lifecycle::State, read_imports::forward, tree_imports::lower_nodes,
+    bindings::maestro::extension::host::HostReadonlySessionManager,
+    context_imports::add_resource,
+    history_reads::Endpoint,
+    lifecycle::State,
+    read_imports::{endpoint, forwards, release},
+    tree_imports::lower_nodes,
 };
 use wasmtime::component::{LinkerInstance, Resource};
-use wasmtime_wasi::WasiView;
-
-/// Clones the endpoint a guest handle names before native code runs.
-fn endpoint(state: &mut State, this: &Resource<Endpoint>) -> wasmtime::Result<Endpoint> {
-    Ok(state.ctx().table.get(this)?.clone())
-}
 
 /// Declares the methods that read one endpoint operation.
 macro_rules! reads {
@@ -54,28 +52,14 @@ impl HostReadonlySessionManager for State {
     }
 
     fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
-        self.ctx().table.delete(this)?;
-        Ok(())
+        release(self, this)
     }
-}
-
-/// Registers each method as a forward to the trait.
-macro_rules! forwards {
-    ($host:ident, $($wit:literal => $method:ident($($operand:ident: $kind:ty),*);)+) => {$(
-        forward(
-            $host,
-            concat!("[method]readonly-session-manager.", $wit),
-            |state, (this, $($operand),*): (Resource<Endpoint>, $($kind),*)| {
-                HostReadonlySessionManager::$method(state, this, $($operand),*)
-            },
-        )?;
-    )+};
 }
 
 /// Forwards every reader method to its trait implementation.
 pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
     add_resource::<State, Endpoint>(host, "readonly-session-manager")?;
-    forwards! { host,
+    forwards! { host, "readonly-session-manager", HostReadonlySessionManager, Endpoint,
         "get-cwd" => get_cwd();
         "get-session-dir" => get_session_dir();
         "get-session-id" => get_session_id();

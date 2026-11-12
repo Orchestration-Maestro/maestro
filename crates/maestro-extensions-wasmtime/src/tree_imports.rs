@@ -5,16 +5,13 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    bindings::maestro::extension::host::HostSessionTreeNode, lifecycle::State,
-    read_imports::forward, tree_reads::Endpoint,
+    bindings::maestro::extension::host::HostSessionTreeNode,
+    lifecycle::State,
+    read_imports::{endpoint, forwards, release},
+    tree_reads::Endpoint,
 };
 use wasmtime::component::{LinkerInstance, Resource};
 use wasmtime_wasi::WasiView;
-
-/// Clones the endpoint a guest handle names before native code runs.
-fn endpoint(state: &mut State, this: &Resource<Endpoint>) -> wasmtime::Result<Endpoint> {
-    Ok(state.ctx().table.get(this)?.clone())
-}
 
 impl HostSessionTreeNode for State {
     fn entry(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<Result<String, String>> {
@@ -44,35 +41,25 @@ impl HostSessionTreeNode for State {
     }
 
     fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
-        self.ctx().table.delete(this)?;
-        Ok(())
+        release(self, this)
     }
 }
 
 /// Defines the captured node methods as forwards to the trait, with actual typed destruction.
 pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<State, Endpoint>(host, "session-tree-node")?;
-    forward(host, "[method]session-tree-node.entry", |state, (this,)| {
-        HostSessionTreeNode::entry(state, this)
-    })?;
-    forward(host, "[method]session-tree-node.label", |state, (this,)| {
-        HostSessionTreeNode::label(state, this)
-    })?;
-    forward(
-        host,
-        "[method]session-tree-node.label-timestamp",
-        |state, (this,)| HostSessionTreeNode::label_timestamp(state, this),
-    )?;
-    forward(
-        host,
-        "[method]session-tree-node.children",
-        |state, (this,)| HostSessionTreeNode::children(state, this),
-    )
+    forwards! { host, "session-tree-node", HostSessionTreeNode, Endpoint,
+        "entry" => entry();
+        "label" => label();
+        "label-timestamp" => label_timestamp();
+        "children" => children();
+    }
+    Ok(())
 }
 
 /// Transfers each independently retained node to the Store table without changing order.
-pub(crate) fn lower_nodes<T: WasiView>(
-    state: &mut T,
+pub(crate) fn lower_nodes(
+    state: &mut State,
     nodes: Result<Vec<Endpoint>, String>,
 ) -> wasmtime::Result<Result<Vec<Resource<Endpoint>>, String>> {
     match nodes {

@@ -6,7 +6,7 @@
 )]
 use crate::{
     history_reads::optional_string,
-    local_resources::{Lease, Registry, held::Node as Held},
+    local_resources::{Lease, Registry, held},
 };
 use maestro_extensions::SessionTreeNode;
 use serde_json::Value;
@@ -92,25 +92,25 @@ pub struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
     /// Encodes the retained entry as an owned crossing value.
     pub(crate) fn entry(&self) -> Result<String, String> {
-        self.0.run::<Held, _>(|node, _| {
+        self.0.run::<held::Node, _>(|node, _| {
             serde_json::to_string(&node.nodes[node.index].entry).map_err(|error| error.to_string())
         })
     }
 
     /// Retains each captured child independently.
     pub(crate) fn children(&self) -> Result<Vec<Endpoint>, String> {
-        self.0.run::<Held, _>(Owner::children)
+        self.0.run::<held::Node, _>(Owner::children)
     }
 
     /// Reads the label captured when the tree was built.
     pub(crate) fn label(&self) -> Result<Option<String>, String> {
         self.0
-            .run::<Held, _>(|node, _| Ok(node.nodes[node.index].label.clone()))
+            .run::<held::Node, _>(|node, _| Ok(node.nodes[node.index].label.clone()))
     }
 
     /// Reads the timestamp captured when the tree was built.
     pub(crate) fn label_timestamp(&self) -> Result<Option<String>, String> {
         self.0
-            .run::<Held, _>(|node, _| Ok(node.nodes[node.index].label_timestamp.clone()))
+            .run::<held::Node, _>(|node, _| Ok(node.nodes[node.index].label_timestamp.clone()))
     }
 }
