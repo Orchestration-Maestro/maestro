@@ -211,9 +211,10 @@ declaration. Execute only the checked and coerced object that comes back. A sche
 default is not inserted automatically. A validation failure belongs to the
 caller's tool loop and does not turn the provider stream into an error. A
 successful execution likewise yields a caller-authored `ToolResult` tied to the
-returned call ID. The [schema validator](schema-validation.md#reference-invocation-checking) lists the
-supported schemas, coercion, formats and the exact path and received-argument feedback. The
-application still owns authorization for every tool effect.
+returned call ID. The
+[schema validator](schema-validation.md#reference-invocation-checking) lists the
+supported schemas, coercion, formats and the exact path and received-argument
+feedback. The application still owns authorization for every tool effect.
 
 ## Images and cross-provider histories
 
