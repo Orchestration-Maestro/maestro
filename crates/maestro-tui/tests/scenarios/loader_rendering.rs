@@ -5,8 +5,8 @@ use std::rc::Rc;
 use maestro_tui::{Component, Loader, LoaderIndicatorOptions, TUI};
 use serde::Deserialize;
 
-use crate::support::checks::{parse, succeeds};
-use crate::support::writer::writer;
+use crate::scenarios::support::checks::{parse, succeeds};
+use crate::scenarios::support::writer::writer;
 
 /// One distinct rendering query and its complete observations.
 #[derive(Deserialize)]

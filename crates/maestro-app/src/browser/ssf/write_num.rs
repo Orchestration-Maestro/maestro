@@ -4,7 +4,7 @@ use super::FormatError::UnsupportedNumberFormat as Unsupported;
 use super::{FormatError, NumberToken};
 use num_traits::ToPrimitive;
 
-pub(super) use crate::utils::numbers::round;
+pub(super) use maestro_text::numeric::round;
 
 /// Shortest binary64 decimal spelling.
 pub(super) fn spelling(value: f64) -> String {

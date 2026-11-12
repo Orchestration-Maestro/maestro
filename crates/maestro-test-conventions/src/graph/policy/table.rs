@@ -90,10 +90,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-listing",
         ],
     ),
-    (
-        "maestro-settings",
-        &["maestro-lock", "maestro-json", "maestro-resources"],
-    ),
+    ("maestro-settings", &["maestro-lock", "maestro-json"]),
     (
         "maestro-test-browser",
         &["maestro-tooling", "maestro-realpath"],
@@ -115,7 +112,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-process",
             "maestro-markdown",
             "maestro-listing",
-            "maestro-resources",
             "maestro-listeners",
         ],
     ),
@@ -153,7 +149,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-realpath",
         ],
     ),
-    ("maestro-test-terminal", &["maestro-tui"]),
     (
         "maestro-theme",
         &[

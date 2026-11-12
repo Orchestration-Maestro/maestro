@@ -8,9 +8,9 @@ use maestro_tui::{CancellableLoader, Component, Loader, LoaderIndicatorOptions};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use crate::support::checks::{parse, succeeds};
-use crate::support::manual_runtime::{ManualRuntime, ms};
-use crate::support::writer::writer;
+use crate::scenarios::support::checks::{parse, succeeds};
+use crate::scenarios::support::manual_runtime::{ManualRuntime, ms};
+use crate::scenarios::support::writer::writer;
 
 /// Creates defaults or an explicit cancel override.
 fn manager(keys: Option<Vec<String>>) -> KeybindingsManager {

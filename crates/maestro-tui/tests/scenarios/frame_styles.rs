@@ -1,6 +1,6 @@
 //! Styles never leak from one drawn line into the next.
 
-use crate::support::scene::Scene;
+use crate::scenarios::support::scene::Scene;
 
 #[test]
 fn maestro_frames_not_leak_styles_when_a_trailing_reset_sits_beyond_the_last_visible_column_no_overlay()

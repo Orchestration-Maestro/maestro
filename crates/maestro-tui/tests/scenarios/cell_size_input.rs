@@ -8,12 +8,12 @@ use maestro_tui::interface::{InputListener, InputListenerResult};
 use maestro_tui::{Component, Container, TUI, TerminalImage};
 use serde::Deserialize;
 
-use crate::support::checks::parse;
-use crate::support::checks::succeeds;
-use crate::support::components::{Capabilities, Probe};
-use crate::support::manual_runtime::ManualRuntime;
-use crate::support::recording_terminal::RecordingTerminal;
-use crate::support::scene::Scene;
+use crate::scenarios::support::checks::parse;
+use crate::scenarios::support::checks::succeeds;
+use crate::scenarios::support::components::{Capabilities, Probe};
+use crate::scenarios::support::manual_runtime::ManualRuntime;
+use crate::scenarios::support::recording_terminal::RecordingTerminal;
+use crate::scenarios::support::scene::Scene;
 
 /// The pixel size of a cell before any reply.
 const DEFAULT_CELLS: CellDimensions = CellDimensions {

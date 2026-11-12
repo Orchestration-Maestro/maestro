@@ -20,7 +20,7 @@ use crate::{
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Obtain a unique, increasing stamp across screens, resets and terminals.
-pub fn next_generation() -> u64 {
+pub(crate) fn next_generation() -> u64 {
     GENERATION.fetch_add(1, Ordering::Relaxed) + 1
 }
 

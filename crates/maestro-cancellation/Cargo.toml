@@ -6,6 +6,9 @@ license.workspace = true
 repository.workspace = true
 autotests = false
 
+[lib]
+test = false
+
 [dependencies]
 maestro-listeners = { path = "../maestro-listeners" }
 tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }

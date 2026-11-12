@@ -47,7 +47,7 @@ impl Page {
     ///
     /// # Errors
     /// Returns the corresponding capacity error when the requested storage cannot fit.
-    pub fn set_graphemes(
+    pub(crate) fn set_graphemes(
         &mut self,
         position: CellPosition,
         cps: &[char],
@@ -129,14 +129,14 @@ impl Page {
 
     /// Maximum suffix-map entries in this page's logical layout.
     #[must_use]
-    pub fn grapheme_capacity(&self) -> usize {
+    pub(crate) fn grapheme_capacity(&self) -> usize {
         usize::try_from(Self::layout(self.capacity).grapheme_map.capacity).unwrap_or(usize::MAX)
     }
 }
 
 impl Page {
     /// Move a suffix map entry without changing either cell's packed fields.
-    pub fn move_grapheme(&mut self, src: CellPosition, dst: CellPosition) {
+    pub(crate) fn move_grapheme(&mut self, src: CellPosition, dst: CellPosition) {
         if let Some(entry) = self.graphemes.remove(&self.cell_index(src)) {
             self.graphemes.insert(self.cell_index(dst), entry);
         }

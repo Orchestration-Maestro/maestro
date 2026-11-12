@@ -10,6 +10,12 @@ comparator accepts a caller-supplied environment reader and exposes no ICU type.
 reads fixtures with the workspace `serde` and `serde_json`.
 See [text](../text.md).
 
+## URI components
+
+URI component encoding uses the workspace `percent-encoding =2.3.2` with default
+features (MIT OR Apache-2.0). The declaration moved here from the application; no
+package was added. Callers receive plain text and never a library type.
+
 ## Locale numbers
 
 The optional `number-format` feature enables `icu_decimal =2.3.0` with its default

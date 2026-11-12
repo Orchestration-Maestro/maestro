@@ -295,7 +295,7 @@ fn test_support_members_are_checked() {
         &[("src/lib.rs", 2, "tokio::time::timeout")],
     );
     check(
-        "maestro-test-terminal",
+        "maestro-test-directory",
         &[(
             "src/lib.rs",
             "async fn sample() {\n    tokio::time::timeout(deadline, operation).await;\n}\n",

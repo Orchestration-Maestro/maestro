@@ -6,6 +6,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lib]
+test = false
+
 [dependencies]
 maestro-tools = { path = "../maestro-tools" }
 maestro-tui = { path = "../maestro-tui" }

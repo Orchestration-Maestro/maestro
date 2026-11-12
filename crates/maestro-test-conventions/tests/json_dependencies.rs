@@ -391,7 +391,7 @@ fn json_rule_reads_toml_structure_not_text() {
     for distraction in [
         "# float_roundtrip\n",
         "[workspace.metadata]\nfeatures = [\"float_roundtrip\"]\n",
-        "[package]\nname = \"maestro-tui\"\nversion = \"0.1.0\"\ndescription = '''\nfloat_roundtrip\n'''\n[lints]\nworkspace = true\n",
+        "[package]\nname = \"maestro-tui\"\nversion = \"0.1.0\"\ndescription = '''\nfloat_roundtrip\n'''\n[lints]\nworkspace = true\n[lib]\ntest = false\n",
     ] {
         let workspace = fixture();
         root_json(&workspace, "{ version = \"=1.0.151\" }");
@@ -486,7 +486,7 @@ fn json_checks_include_guest_and_all_workspace_members() {
     std::fs::write(workspace.root.path().join("src/lib.rs"), "").unwrap();
     let text = std::fs::read_to_string(&path).unwrap();
     let text = text.replace("members = [\"crates/*\"]", "members = []");
-    let package = "[package]\nname = \"maestro-tui\"\nversion = \"0.1.0\"\n[lints]\nworkspace = true\n[dependencies]\nserde_json = \"=1.0.151\"\n";
+    let package = "[package]\nname = \"maestro-tui\"\nversion = \"0.1.0\"\n[lints]\nworkspace = true\n[lib]\ntest = false\n[dependencies]\nserde_json = \"=1.0.151\"\n";
     std::fs::write(&path, format!("{text}\n{package}")).unwrap();
     assert_eq!(
         check_workspace(workspace.root.path()),

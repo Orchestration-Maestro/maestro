@@ -1,5 +1,5 @@
 //! Quote width saturation through the public component interface.
-use crate::support::markdown_cases as markdown;
+use crate::scenarios::support::markdown_cases as markdown;
 use maestro_tui::{Component, Markdown, MarkdownOptions, TerminalImage};
 use std::{cell::Cell, rc::Rc};
 

@@ -6,7 +6,7 @@ use crate::color::{Palette, Rgb};
 impl Terminal {
     /// Resolve a colour query, falling back from an unset cursor to foreground.
     #[must_use]
-    pub fn color_for_xterm(&self, target: crate::osc::color::Target) -> Option<Rgb> {
+    pub(crate) fn color_for_xterm(&self, target: crate::osc::color::Target) -> Option<Rgb> {
         use crate::{color::Dynamic, osc::color::Target};
         match target {
             Target::Palette(index) => Some(self.colors.palette.current[usize::from(index)]),
@@ -23,7 +23,7 @@ impl Terminal {
 
     /// Resolve a keyboard-protocol colour query without a cursor fallback.
     #[must_use]
-    pub fn color_for_kitty(&self, key: crate::kitty::color::Kind) -> Option<Rgb> {
+    pub(crate) fn color_for_kitty(&self, key: crate::kitty::color::Kind) -> Option<Rgb> {
         use crate::kitty::color::{Kind, Special};
         match key {
             Kind::Palette(index) => Some(self.colors.palette.current[usize::from(index)]),
