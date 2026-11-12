@@ -308,6 +308,14 @@ held!(
 );
 
 held!(
+    /// The native local shell backend.
+    LocalBash,
+    std::rc::Rc<dyn maestro_extensions::BashOperations<maestro_extensions::Local>>,
+    "extension local shell resource ended",
+    Capability::LocalBash(operations) => operations
+);
+
+held!(
     /// The native buffer of generic authored events.
     EventBuffer,
     super::stream_reads::Owner,

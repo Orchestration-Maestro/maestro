@@ -1,5 +1,5 @@
 //! Original native local operations on the sole request pump, without process policy here.
-use super::{Admission, Capability, Lease, Message, Registry, builtin::Operation, pump::State};
+use super::{Capability, Lease, Message, Registry, builtin::Operation, held::LocalBash};
 use crate::{
     api_reads,
     guest_calls::{Handle, SynchronousKind, bash::BashRequest},
@@ -37,8 +37,15 @@ impl Endpoint {
     /// Starts original local work on the existing pump with independent admission.
     pub(crate) async fn execute(&self, execution: Execution) -> Result<Option<f64>, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::BuiltinOperation(Operation::LocalExec(id, execution, reply, admission))
+            .admit::<LocalBash, _, _>(move |operations, registry| {
+                let signal = execution
+                    .signal
+                    .as_ref()
+                    .map(|signal| registry.cancellation(signal))
+                    .transpose()?;
+                let events = registry.events(&execution.api)?;
+                let (operations, registry) = (operations.clone(), registry.clone());
+                Ok(async move { execution.run(operations, signal, (registry, events)).await })
             })
             .await
     }
@@ -56,46 +63,6 @@ impl Registry {
         self.insert(Capability::LocalBash(operations)).map(Endpoint)
     }
 }
-impl State {
-    /// Admits raw execution without retaining a borrowed native output sink in the registry.
-    pub(super) fn local_exec(
-        &self,
-        id: u64,
-        execution: Execution,
-        reply: tokio::sync::oneshot::Sender<Result<Option<f64>, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let selected = (|| {
-            let Some(Capability::LocalBash(operations)) = capability.as_deref() else {
-                return Err("extension local shell resource ended".to_owned());
-            };
-            let signal = execution
-                .signal
-                .as_ref()
-                .map(|signal| self.registry.cancellation(signal))
-                .transpose()?;
-            let events = self.registry.events(&execution.api)?;
-            Ok((operations.clone(), signal, events))
-        })();
-        match selected {
-            Ok((operations, signal, events)) => {
-                let registry = self.registry.clone();
-                self.admit(
-                    Box::pin(async move {
-                        let result = execution.run(operations, signal, (registry, events)).await;
-                        let _ = reply.send(result);
-                    }),
-                    admission,
-                );
-            }
-            Err(error) => {
-                let _ = reply.send(Err(error));
-            }
-        }
-    }
-}
-
 impl Execution {
     /// Borrows the native sink only while the original backend drains and reaps its child.
     async fn run(
