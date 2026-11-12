@@ -3,7 +3,6 @@ use super::*;
 use crate::read_imports::ReadEndpoint;
 use crate::{
     context_reads::{Owner, Request},
-    history_reads,
     local_resources::Pump,
     tree_reads,
 };
@@ -41,7 +40,7 @@ fn captured_nodes_outlive_reader_without_rebuilding_history() {
         let worker = std::thread::spawn(move || {
             let history = endpoint.read(Request::SessionManager).unwrap();
             drop(endpoint);
-            let roots = history.read(history_reads::Request::Tree).unwrap();
+            let roots = history.get_tree().unwrap();
             drop(history);
             assert_eq!(roots.len(), 1);
             observe(&roots[0], &observed_id);

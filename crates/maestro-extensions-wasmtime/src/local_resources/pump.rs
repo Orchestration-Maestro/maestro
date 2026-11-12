@@ -207,7 +207,6 @@ impl State {
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::Signal(id, request) => self.signal(id, request),
-            Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
             message @ (Message::OAuthLogin(..)
@@ -274,16 +273,6 @@ impl State {
     fn release(&self, id: u64) {
         let removed = self.registry.resources.borrow_mut().entries.remove(&id);
         drop(removed);
-    }
-
-    /// Reads the original live history independently of guarded contexts.
-    fn history(&self, id: u64, request: crate::history_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::History(history)) = capability.as_deref() {
-            request.answer(&*history.borrow(), &self.registry);
-        } else {
-            request.reject("extension history resource ended");
-        }
     }
 
     /// Answers a request while its native code owns the route into this instance.

@@ -64,6 +64,14 @@ held!(
     Capability::Node(node) => node
 );
 
+held!(
+    /// The retained read-only view of a session.
+    History,
+    std::rc::Rc<std::cell::RefCell<dyn maestro_extensions::ReadonlySessionManager>>,
+    "extension history resource ended",
+    Capability::History(history) => history
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,

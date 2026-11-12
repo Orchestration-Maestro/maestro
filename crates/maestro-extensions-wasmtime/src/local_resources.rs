@@ -123,8 +123,6 @@ pub(crate) enum Message {
     ),
     /// Uses the original retained cancellation, not the current context signal.
     Signal(u64, signals::Request),
-    /// Reads the original live history independently of guarded contexts.
-    History(u64, crate::history_reads::Request),
     /// Mutates the original writable session supplied to setup.
     Writer(u64, crate::writer_reads::Request),
     /// Acquires an independent live reader from the writable setup capability.
