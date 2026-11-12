@@ -344,6 +344,15 @@ application coupling, no application policy in frontends, a wiring-only binary,
 and complete WIT code-generation evidence. Current absent owners are tested with
 scratch workspaces, not certified as delivered capabilities.
 
+The RPC mode lives in `maestro-rpc`: the session records in `rpc_types`, the one
+connection runner in `connection_runner`, the client of a child process
+(`RpcClient`) and the standard-stream adapter. The conventions check rejects an
+`Rpc*` declaration in any crate other than `maestro-rpc` and `maestro-protocol`,
+naming its file and line. One declaration is exempt: `RpcModeRunner` in the
+application's `presentation_data/mode_dispatch.rs`, the callback its mode dispatch
+runs. The protocol tests drive sessions through the application's scripted session
+harness, which `crates/maestro-rpc/tests/support/mod.rs` includes by path.
+
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in
 `crates/maestro-chat/tests/footer_support/harness.rs`. The conventions check rejects
