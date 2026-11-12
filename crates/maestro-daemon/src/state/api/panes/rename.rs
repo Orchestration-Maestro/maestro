@@ -21,15 +21,16 @@ impl App {
             .cloned()
             .ok_or_else(|| pane_not_found(&params.pane_id))?;
         let changed = self.state.edit_topology(|state| {
-            let terminal = state.terminals.get_mut(&terminal)?;
-            let previous = terminal.manual_label.clone();
-            match &params.label {
-                Some(label) => terminal.set_manual_label(label),
-                None => terminal.clear_manual_label(),
-            }
-            Some(terminal.manual_label != previous)
+            state.terminals.get_mut(&terminal).is_some_and(|terminal| {
+                let previous = terminal.manual_label.clone();
+                match &params.label {
+                    Some(label) => terminal.set_manual_label(label),
+                    None => terminal.clear_manual_label(),
+                }
+                terminal.manual_label != previous
+            })
         });
-        if changed.unwrap_or(false) {
+        if changed {
             self.emit_pane_updated(workspace, pane).await;
         }
         self.pane_info_result(workspace, pane, &params.pane_id)

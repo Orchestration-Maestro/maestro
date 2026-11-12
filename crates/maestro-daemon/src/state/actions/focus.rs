@@ -16,14 +16,16 @@ impl DaemonState {
     /// Selects a valid workspace and tab, marking its panes seen.
     pub fn switch_workspace_tab(&mut self, workspace: usize, tab: usize) -> bool {
         let previous = self.current_pane_focus_target();
-        let Some(target) = self.topology.workspaces.get_mut(workspace) else {
+        let Some(target) = self.topology.workspaces.get(workspace) else {
             return false;
         };
         if tab >= target.tabs.len() {
             return false;
         }
-        target.switch_tab(tab);
         self.edit_topology(|state| {
+            if let Some(target) = state.topology.workspaces.get_mut(workspace) {
+                target.switch_tab(tab);
+            }
             state.active = Some(workspace);
             state.selected = workspace;
         });
