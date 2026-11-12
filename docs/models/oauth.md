@@ -54,6 +54,10 @@ order. `register_oauth_provider` appends a new literal ID or replaces an existin
 implementation without moving its slot. `unregister_oauth_provider` restores a
 built-in implementation or removes a custom entry; unknown IDs are ignored.
 `reset_oauth_providers` restores the original roster and order.
+`install_built_in_oauth_providers(providers)` places the given providers as the
+registry's base layer. They hold the first positions wherever registrations already
+stand; a registration with a built-in's ID shadows that built-in until it is removed,
+and installing the same providers again changes nothing.
 `get_oauth_provider` looks up an exact ID; `get_oauth_providers` returns an ordered
 membership snapshot whose handles share provider state.
 

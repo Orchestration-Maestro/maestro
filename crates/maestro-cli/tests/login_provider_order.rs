@@ -1,39 +1,25 @@
 //! The login provider registry keeps the built-in providers in their positions through startup.
 #![cfg(unix)]
 use crate::support::entry::{Entry, Provider, cases};
+use login_registry::listed;
 use maestro_cli::startup::entrypoint::MainOptions;
-use maestro_models::{
-    get_oauth_providers, register_oauth_provider, reset_oauth_providers, unregister_oauth_provider,
-};
+use maestro_models::{register_oauth_provider, reset_oauth_providers, unregister_oauth_provider};
 use named_account::Named;
 use std::rc::Rc;
 use std::sync::Arc;
 use tokio::task::LocalSet;
 
+#[path = "../../maestro-models/tests/support/login_registry.rs"]
+mod login_registry;
 #[path = "../../maestro-models/tests/support/named_account.rs"]
 mod named_account;
 
-/// The built-in providers' identifiers and display names, in their positions.
-const BUILT_INS: [(&str, &str); 3] = [
-    ("anthropic", "Anthropic (Claude Pro/Max)"),
-    ("github-copilot", "GitHub Copilot"),
-    ("openai-codex", "ChatGPT Plus/Pro (Codex Subscription)"),
+/// The built-in providers as the registry lists them, in their positions.
+const BUILT_INS: [&str; 3] = [
+    "anthropic: Anthropic (Claude Pro/Max)",
+    "github-copilot: GitHub Copilot",
+    "openai-codex: ChatGPT Plus/Pro (Codex Subscription)",
 ];
-
-/// The registry's identifiers and display names, in registry order.
-fn registry() -> Vec<(String, String)> {
-    get_oauth_providers()
-        .iter()
-        .map(|provider| (provider.id().to_owned(), provider.name().to_owned()))
-        .collect()
-}
-
-/// `rows` as owned pairs, for comparison with [`registry`].
-fn owned(rows: &[(&str, &str)]) -> Vec<(String, String)> {
-    rows.iter()
-        .map(|(id, name)| ((*id).to_owned(), (*name).to_owned()))
-        .collect()
-}
 
 /// Start `mode` through the public entry and wait for its presentation to end.
 async fn compose(e: &Entry, local: &Rc<LocalSet>, mode: &str) {
@@ -78,7 +64,7 @@ fn built_in_login_providers_hold_their_positions_after_each_mode_starts() {
         |local, mode| async move {
             compose(&Entry::new(), &local, mode).await;
 
-            assert_eq!(registry(), owned(&BUILT_INS), "{mode}");
+            assert_eq!(listed(), BUILT_INS, "{mode}");
         },
     );
 }
@@ -95,13 +81,16 @@ fn registrations_made_before_startup_keep_the_built_in_positions() {
 
             compose(&Entry::new(), &local, mode).await;
 
-            let mut shadowed = owned(&BUILT_INS);
-            shadowed[1].1 = "Replacement".into();
-            shadowed.push(("custom-login".into(), "Custom".into()));
-            assert_eq!(registry(), shadowed, "{mode}");
+            let shadowed = [
+                BUILT_INS[0],
+                "github-copilot: Replacement",
+                BUILT_INS[2],
+                "custom-login: Custom",
+            ];
+            assert_eq!(listed(), shadowed, "{mode}");
             unregister_oauth_provider("github-copilot");
             unregister_oauth_provider("custom-login");
-            assert_eq!(registry(), owned(&BUILT_INS), "{mode}: removed");
+            assert_eq!(listed(), BUILT_INS, "{mode}: removed");
         },
     );
 }
@@ -119,7 +108,7 @@ fn resetting_after_startup_leaves_only_the_built_in_login_providers() {
 
             reset_oauth_providers();
 
-            assert_eq!(registry(), owned(&BUILT_INS));
+            assert_eq!(listed(), BUILT_INS);
         },
     );
 }
