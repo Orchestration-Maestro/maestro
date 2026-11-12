@@ -4190,7 +4190,7 @@
       "input": {
         "definitions": [
           [
-            "plugin.run",
+            "extension.run",
             {
               "defaultKeys": [
                 "ctrl+x",
@@ -4208,7 +4208,7 @@
         ],
         "user": [
           [
-            "plugin.run",
+            "extension.run",
             "ctrl+g"
           ],
           [
@@ -4221,7 +4221,7 @@
         "before": {
           "keys": [
             [
-              "plugin.run",
+              "extension.run",
               [
                 "ctrl+g"
               ]
@@ -4239,7 +4239,7 @@
           ],
           "definitions": [
             [
-              "plugin.run",
+              "extension.run",
               {
                 "defaultKeys": [
                   "ctrl+x",
@@ -4261,7 +4261,7 @@
           ],
           "user": [
             [
-              "plugin.run",
+              "extension.run",
               "ctrl+g"
             ],
             [
@@ -4271,7 +4271,7 @@
           ],
           "resolved": [
             [
-              "plugin.run",
+              "extension.run",
               "ctrl+g"
             ],
             [
@@ -4283,12 +4283,12 @@
           "matches": [
             {
               "data": "\u0007",
-              "id": "plugin.run",
+              "id": "extension.run",
               "result": true
             },
             {
               "data": "\r",
-              "id": "plugin.run",
+              "id": "extension.run",
               "result": false
             },
             {
@@ -5294,7 +5294,7 @@
           {
             "key": "ctrl+x",
             "keybindings": [
-              "plugin.run",
+              "extension.run",
               "tui.input.submit"
             ]
           }

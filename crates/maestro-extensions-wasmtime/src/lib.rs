@@ -52,6 +52,7 @@ mod import_route;
 mod imported_assistant;
 mod keys_imports;
 mod keys_reads;
+mod lent_imports;
 mod lifecycle;
 mod local_bash_imports;
 mod local_resources;

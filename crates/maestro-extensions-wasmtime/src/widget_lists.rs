@@ -7,8 +7,12 @@
 use crate::guest_calls::Handle;
 use crate::guest_calls::paints::Failure;
 use crate::guest_calls::widget_calls::{Answered, Event, Item, Truncate};
-use crate::local_resources::{Lease, Message, Registry, SignalEndpoint, effects::TuiEndpoint};
-use crate::widget_reads::{Lent, Paint, Reply, WidgetMessage};
+use crate::local_resources::{
+    Lease, Registry, SignalEndpoint,
+    effects::TuiEndpoint,
+    held::{LentRowStyle, SubmenuCloser},
+};
+use crate::widget_reads::{Paint, Reply};
 use maestro_extensions::presentation::{
     Container, ExtensionLoader, ExtensionWidgets, SelectItem, SelectList, SelectListLayoutOptions,
     SelectListTheme, SelectListTruncatePrimaryContext, SettingItem, SettingsList,
@@ -29,8 +33,10 @@ pub struct SubmenuDoneEndpoint(pub(crate) Arc<Lease>);
 impl SubmenuDoneEndpoint {
     /// Closes the submenu; the list's change callback may call back into this instance.
     pub(crate) fn done(&self, value: Option<String>) -> crate::import_route::Route {
-        self.0
-            .route(|id, reply| Message::Widgets(WidgetMessage::Lent(id, Lent::Done(value, reply))))
+        self.0.run_routed::<SubmenuCloser, _>(move |done, _| {
+            done(value);
+            Ok(())
+        })
     }
 }
 
@@ -41,9 +47,8 @@ pub struct RowStyleEndpoint(pub(crate) Arc<Lease>);
 impl RowStyleEndpoint {
     /// Applies the row style.
     pub(crate) fn apply(&self, text: String, selected: bool) -> Result<String, String> {
-        self.0.request(|id, reply| {
-            Message::Widgets(WidgetMessage::Lent(id, Lent::Row(text, selected, reply)))
-        })
+        self.0
+            .run::<LentRowStyle, _>(move |style, _| Ok(style(&text, selected)))
     }
 }
 

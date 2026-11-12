@@ -4,38 +4,28 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::local_resources::{Lease, Message, Registry};
-use crate::widget_reads::{Reply, WidgetMessage};
+use crate::bindings::maestro::extension::host::{
+    KeybindingConflict as WireConflict, KeybindingDefinition as WireDefinition,
+    KeybindingKeys as WireKeys,
+};
+use crate::local_resources::{Lease, Registry, held::Keybindings};
 use maestro_extensions::presentation::{
     ExtensionKeybindings, ExtensionWidgets, KeybindingConflict, KeybindingDefinition,
     KeybindingKeys, KeybindingsConfig, get_keybindings, key_text,
 };
 use maestro_extensions::{KeybindingsManager, presentation};
 use std::sync::Arc;
-use wasmtime::component::{ComponentType, Lift, Lower};
 
-/// The keys of one keybinding as they cross the boundary.
-#[derive(Clone, ComponentType, Lift, Lower)]
-#[component(variant)]
-pub(crate) enum Keys {
-    /// One key.
-    #[component(name = "single")]
-    Single(String),
-    /// Keys in their order.
-    #[component(name = "multiple")]
-    Multiple(Vec<String>),
-}
-
-impl From<Keys> for KeybindingKeys {
-    fn from(keys: Keys) -> Self {
+impl From<WireKeys> for KeybindingKeys {
+    fn from(keys: WireKeys) -> Self {
         match keys {
-            Keys::Single(key) => Self::Single(key),
-            Keys::Multiple(keys) => Self::Multiple(keys),
+            WireKeys::Single(key) => Self::Single(key),
+            WireKeys::Multiple(keys) => Self::Multiple(keys),
         }
     }
 }
 
-impl From<KeybindingKeys> for Keys {
+impl From<KeybindingKeys> for WireKeys {
     fn from(keys: KeybindingKeys) -> Self {
         match keys {
             KeybindingKeys::Single(key) => Self::Single(key),
@@ -44,29 +34,8 @@ impl From<KeybindingKeys> for Keys {
     }
 }
 
-/// One keybinding's definition as it crosses the boundary.
-#[derive(Clone, ComponentType, Lift, Lower)]
-#[component(record)]
-pub(crate) struct Definition {
-    /// Default keys.
-    #[component(name = "default-keys")]
-    default_keys: Keys,
-    /// Description.
-    description: Option<String>,
-}
-
-/// Several keybindings claiming one key, as they cross the boundary.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-pub(crate) struct Conflict {
-    /// The key.
-    key: String,
-    /// The claimants.
-    keybindings: Vec<String>,
-}
-
 /// Bindings as they cross the boundary.
-pub(crate) type Config = Vec<(String, Option<Keys>)>;
+pub(crate) type Config = Vec<(String, Option<WireKeys>)>;
 
 /// Bindings converted between their wire and toolkit forms.
 pub(crate) fn config<A: Into<B>, B>(config: Vec<(String, Option<A>)>) -> Vec<(String, Option<B>)> {
@@ -78,7 +47,7 @@ pub(crate) fn config<A: Into<B>, B>(config: Vec<(String, Option<A>)>) -> Vec<(St
 
 /// Toolkit definitions from their wire form.
 pub(crate) fn definitions(
-    definitions: Vec<(String, Definition)>,
+    definitions: Vec<(String, WireDefinition)>,
 ) -> presentation::KeybindingDefinitions {
     definitions
         .into_iter()
@@ -104,80 +73,9 @@ pub(crate) enum KeysBuild {
     Global,
 }
 
-/// One request on a manager.
-pub(crate) enum KeysRequest {
-    /// Whether input matches a keybinding.
-    Matches(String, String, Reply<bool>),
-    /// A keybinding's keys.
-    Keys(String, Reply<Vec<String>>),
-    /// A keybinding's definition.
-    Definition(String, Reply<Option<Definition>>),
-    /// The user binding conflicts.
-    Conflicts(Reply<Vec<Conflict>>),
-    /// Replaces the user bindings.
-    SetUserBindings(KeybindingsConfig, Reply<()>),
-    /// The user bindings.
-    UserBindings(Reply<Config>),
-    /// The resolved bindings.
-    ResolvedBindings(Reply<Config>),
-    /// Reloads the user bindings.
-    Reload(Reply<()>),
-}
-
-impl KeysRequest {
-    /// Returns a catchable failure.
-    pub(crate) fn reject(self, error: &str) {
-        let error = error.to_owned();
-        match self {
-            Self::Matches(_, _, reply) => drop(reply.send(Err(error))),
-            Self::Keys(_, reply) => drop(reply.send(Err(error))),
-            Self::Definition(_, reply) => drop(reply.send(Err(error))),
-            Self::Conflicts(reply) => drop(reply.send(Err(error))),
-            Self::UserBindings(reply) | Self::ResolvedBindings(reply) => {
-                drop(reply.send(Err(error)));
-            }
-            Self::SetUserBindings(_, reply) | Self::Reload(reply) => drop(reply.send(Err(error))),
-        }
-    }
-
-    /// Answers the request from `keybindings`.
-    pub(crate) fn answer(self, keybindings: &ExtensionKeybindings) {
-        let manager = &keybindings.manager;
-        match self {
-            Self::Matches(data, id, reply) => drop(reply.send(Ok(manager.matches(&data, &id)))),
-            Self::Keys(id, reply) => drop(reply.send(Ok(manager.get_keys(&id)))),
-            Self::Definition(id, reply) => {
-                let definition = manager.get_definition(&id).map(|definition| Definition {
-                    default_keys: definition.default_keys.into(),
-                    description: definition.description,
-                });
-                drop(reply.send(Ok(definition)));
-            }
-            Self::Conflicts(reply) => {
-                let conflicts = manager.get_conflicts().into_iter().map(conflict).collect();
-                drop(reply.send(Ok(conflicts)));
-            }
-            Self::SetUserBindings(user, reply) => {
-                manager.set_user_bindings(user);
-                drop(reply.send(Ok(())));
-            }
-            Self::UserBindings(reply) => drop(reply.send(Ok(config(manager.get_user_bindings())))),
-            Self::ResolvedBindings(reply) => {
-                drop(reply.send(Ok(config(manager.get_resolved_bindings()))));
-            }
-            Self::Reload(reply) => {
-                if let Some(reload) = &keybindings.reload {
-                    reload();
-                }
-                drop(reply.send(Ok(())));
-            }
-        }
-    }
-}
-
 /// The wire form of a conflict.
-fn conflict(conflict: KeybindingConflict) -> Conflict {
-    Conflict {
+fn conflict(conflict: KeybindingConflict) -> WireConflict {
+    WireConflict {
         key: conflict.key,
         keybindings: conflict.keybindings,
     }
@@ -226,13 +124,71 @@ pub(crate) fn hint(hint: Hint, widgets: &dyn ExtensionWidgets) -> Result<String,
 pub struct KeysEndpoint(pub(crate) Arc<Lease>);
 
 impl KeysEndpoint {
-    /// Sends one request.
-    pub(crate) fn read<T>(
-        &self,
-        request: impl FnOnce(Reply<T>) -> KeysRequest,
-    ) -> Result<T, String> {
+    /// Whether input matches a keybinding.
+    pub(crate) fn matches(&self, data: String, id: String) -> Result<bool, String> {
         self.0
-            .request(|id, reply| Message::Widgets(WidgetMessage::Keys(id, request(reply))))
+            .run::<Keybindings, _>(move |keys, _| Ok(keys.manager.matches(&data, &id)))
+    }
+
+    /// A keybinding's keys.
+    pub(crate) fn get_keys(&self, id: String) -> Result<Vec<String>, String> {
+        self.0
+            .run::<Keybindings, _>(move |keys, _| Ok(keys.manager.get_keys(&id)))
+    }
+
+    /// A keybinding's definition.
+    pub(crate) fn get_definition(&self, id: String) -> Result<Option<WireDefinition>, String> {
+        self.0.run::<Keybindings, _>(move |keys, _| {
+            Ok(keys
+                .manager
+                .get_definition(&id)
+                .map(|definition| WireDefinition {
+                    default_keys: definition.default_keys.into(),
+                    description: definition.description,
+                }))
+        })
+    }
+
+    /// The user binding conflicts.
+    pub(crate) fn get_conflicts(&self) -> Result<Vec<WireConflict>, String> {
+        self.0.run::<Keybindings, _>(|keys, _| {
+            Ok(keys
+                .manager
+                .get_conflicts()
+                .into_iter()
+                .map(conflict)
+                .collect())
+        })
+    }
+
+    /// Replaces the user bindings.
+    pub(crate) fn set_user_bindings(&self, user: KeybindingsConfig) -> Result<(), String> {
+        self.0.run::<Keybindings, _>(move |keys, _| {
+            keys.manager.set_user_bindings(user);
+            Ok(())
+        })
+    }
+
+    /// The user bindings.
+    pub(crate) fn get_user_bindings(&self) -> Result<Config, String> {
+        self.0
+            .run::<Keybindings, _>(|keys, _| Ok(config(keys.manager.get_user_bindings())))
+    }
+
+    /// The resolved bindings.
+    pub(crate) fn get_resolved_bindings(&self) -> Result<Config, String> {
+        self.0
+            .run::<Keybindings, _>(|keys, _| Ok(config(keys.manager.get_resolved_bindings())))
+    }
+
+    /// Reloads the user bindings from the manager's file, when it has one.
+    pub(crate) fn reload(&self) -> Result<(), String> {
+        self.0.run::<Keybindings, _>(|keys, _| {
+            if let Some(reload) = &keys.reload {
+                reload();
+            }
+            Ok(())
+        })
     }
 }
 

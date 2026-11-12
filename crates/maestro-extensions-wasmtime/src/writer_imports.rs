@@ -1,144 +1,85 @@
-//! Canonical writable setup methods forward to their retained domain session.
+//! Canonical writable setup methods over the live session the local owner retains.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::read_imports::ReadEndpoint;
-use crate::read_imports::{add_operand, add_read};
 use crate::{
+    bindings::maestro::extension::host::HostSessionManager,
     context_imports::add_resource,
-    writer_reads::{Endpoint, Request},
+    lifecycle::State,
+    read_imports::{endpoint, forwards, reads, release},
+    writer_reads::Endpoint,
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
-};
+use wasmtime::component::{LinkerInstance, Resource};
 use wasmtime_wasi::WasiView;
 
-/// Canonical summary operands, including independently optional metadata.
-type SummaryArgs = (
-    Resource<Endpoint>,
-    Option<String>,
-    String,
-    (Option<String>, Option<bool>),
-);
+impl HostSessionManager for State {
+    reads! { Endpoint;
+        set_session_file(path: String) -> ();
+        new_session(options: Option<String>) -> Option<String>;
+        is_persisted() -> bool;
+        get_children(parent_id: String) -> String;
+        build_session_context() -> String;
+        append_message(message: String) -> String;
+        append_thinking_level_change(level: String) -> String;
+        append_model_change(provider: String, model_id: String) -> String;
+        append_compaction(compaction: String, from_hook: Option<bool>) -> String;
+        append_custom_entry(custom_type: String, data: Option<String>) -> String;
+        append_session_info(name: String) -> String;
+        append_custom_message_entry(message: String) -> String;
+        append_label_change(target_id: String, label: Option<String>) -> String;
+        branch(from_id: String) -> ();
+        reset_leaf() -> ();
+        branch_with_summary(
+            from_id: Option<String>,
+            summary: String,
+            metadata: (Option<String>, Option<bool>)
+        ) -> String;
+        create_branched_session(leaf_id: String) -> Option<String>;
+    }
 
-/// Defines all writable operations without a substitute session or publication policy.
-pub(crate) fn add_to_linker<T: WasiView + 'static>(
-    host: &mut LinkerInstance<'_, T>,
-) -> wasmtime::Result<()> {
-    add_resource::<T, Endpoint>(host, "session-manager")?;
-    host.func_wrap(
-        "[method]session-manager.reader",
-        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Endpoint>,)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let reader = endpoint.reader().map_err(wasmtime::Error::msg)?;
-            Ok((store.data_mut().ctx().table.push(reader)?,))
-        },
-    )?;
-    add_read(
-        host,
-        "[method]session-manager.is-persisted",
-        Request::Persisted,
-        crate::read_imports::resource::<T, Endpoint>,
-    )?;
-    add_read(
-        host,
-        "[method]session-manager.build-session-context",
-        Request::BuildContext,
-        crate::read_imports::resource::<T, Endpoint>,
-    )?;
-    add_read(
-        host,
-        "[method]session-manager.reset-leaf",
-        Request::ResetLeaf,
-        crate::read_imports::resource::<T, Endpoint>,
-    )?;
-    add_mutations(host)?;
-    add_appends(host)
+    fn reader(
+        &mut self,
+        this: Resource<Endpoint>,
+    ) -> wasmtime::Result<Resource<crate::history_reads::Endpoint>> {
+        let reader = endpoint(self, &this)?
+            .reader()
+            .map_err(wasmtime::Error::msg)?;
+        Ok(self.ctx().table.push(reader)?)
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
 }
 
-/// Forwards the multi-operand append operations without flattening optional metadata.
-fn add_appends<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]session-manager.append-model-change",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, provider, id): (Resource<Endpoint>, String, String)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((endpoint.read(|reply| Request::Model(provider, id, reply)),))
-        },
-    )?;
-    for (method, request) in [
-        ("append-custom-entry", Request::Custom as fn(_, _, _) -> _),
-        ("append-label-change", Request::Label),
-    ] {
-        host.func_wrap(
-            &format!("[method]session-manager.{method}"),
-            move |mut store: StoreContextMut<'_, T>,
-                  (resource, id, value): (Resource<Endpoint>, String, Option<String>)| {
-                let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-                Ok((endpoint.read(|reply| request(id, value, reply)),))
-            },
-        )?;
+/// Forwards every writable session method to its trait implementation.
+pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Endpoint>(host, "session-manager")?;
+    forwards! { host, "session-manager", HostSessionManager, Endpoint,
+        "reader" => reader();
+        "set-session-file" => set_session_file(path: String);
+        "new-session" => new_session(options: Option<String>);
+        "is-persisted" => is_persisted();
+        "get-children" => get_children(parent_id: String);
+        "build-session-context" => build_session_context();
+        "append-message" => append_message(message: String);
+        "append-thinking-level-change" => append_thinking_level_change(level: String);
+        "append-model-change" => append_model_change(provider: String, model_id: String);
+        "append-compaction" => append_compaction(compaction: String, from_hook: Option<bool>);
+        "append-custom-entry" => append_custom_entry(custom_type: String, data: Option<String>);
+        "append-session-info" => append_session_info(name: String);
+        "append-custom-message-entry" => append_custom_message_entry(message: String);
+        "append-label-change" => append_label_change(target_id: String, label: Option<String>);
+        "branch" => branch(from_id: String);
+        "reset-leaf" => reset_leaf();
+        "branch-with-summary" => branch_with_summary(
+            from_id: Option<String>,
+            summary: String,
+            metadata: (Option<String>, Option<bool>)
+        );
+        "create-branched-session" => create_branched_session(leaf_id: String);
     }
-    host.func_wrap(
-        "[method]session-manager.append-compaction",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, value, from_hook): (Resource<Endpoint>, String, Option<bool>)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((endpoint.read(|reply| Request::Compaction(value, from_hook, reply)),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]session-manager.branch-with-summary",
-        |mut store: StoreContextMut<'_, T>, (resource, id, summary, metadata): SummaryArgs| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((endpoint.read(|reply| Request::Summary(id, summary, metadata, reply)),))
-        },
-    )?;
-    Ok(())
-}
-
-/// Registers exact single-operand writable-session mutations.
-fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    add_operand(
-        host,
-        "[method]session-manager.set-session-file",
-        Request::SetFile,
-        crate::read_imports::operand::<T, Endpoint, _>,
-    )?;
-    add_operand(
-        host,
-        "[method]session-manager.new-session",
-        Request::NewSession,
-        crate::read_imports::operand::<T, Endpoint, _>,
-    )?;
-    for (method, request) in [
-        ("get-children", Request::Children as fn(_, _) -> _),
-        ("append-message", Request::Message),
-        ("append-thinking-level-change", Request::Thinking),
-        ("append-session-info", Request::Info),
-        ("append-custom-message-entry", Request::CustomMessage),
-    ] {
-        add_operand(
-            host,
-            &format!("[method]session-manager.{method}"),
-            request,
-            crate::read_imports::operand::<T, Endpoint, _>,
-        )?;
-    }
-    add_operand(
-        host,
-        "[method]session-manager.branch",
-        Request::Branch,
-        crate::read_imports::operand::<T, Endpoint, _>,
-    )?;
-    add_operand(
-        host,
-        "[method]session-manager.create-branched-session",
-        Request::CreateBranched,
-        crate::read_imports::operand::<T, Endpoint, _>,
-    )?;
     Ok(())
 }
