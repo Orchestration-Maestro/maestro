@@ -22,6 +22,36 @@ pub struct Reader(pub(crate) Arc<Lease>);
 #[derive(Clone)]
 pub struct Writer(pub(crate) Arc<Lease>);
 
+impl Child {
+    /// Reads the original admitted child's PID.
+    pub(crate) fn pid(&self) -> Result<Option<u32>, String> {
+        self.0
+            .request(|id, reply| super::Message::Native(id, Request::Pid(reply)))
+    }
+    /// Acquires the original input pipe without resetting it.
+    pub(crate) fn stdin(&self) -> Result<Option<Writer>, String> {
+        self.0
+            .request(|id, reply| super::Message::Native(id, Request::Stdin(reply)))
+    }
+    /// Acquires one original output pipe without resetting it.
+    pub(crate) fn output(&self, stderr: bool) -> Result<Option<Reader>, String> {
+        self.0
+            .request(|id, reply| super::Message::Native(id, Request::Output(stderr, reply)))
+    }
+    /// Signals this original child only while it is live.
+    pub(crate) fn kill(&self, signal: Option<String>) -> Result<bool, String> {
+        self.0
+            .request(|id, reply| super::Message::Native(id, Request::ChildKill(signal, reply)))
+    }
+}
+impl Reader {
+    /// Closes only this byte consumer.
+    pub(crate) fn close(&self) -> Result<(), String> {
+        self.0
+            .request(|id, reply| super::Message::Native(id, Request::Close(reply)))
+    }
+}
+
 /// Literal operands for one native child launch.
 pub(crate) struct Spawn {
     /// Program name without shell interpretation.

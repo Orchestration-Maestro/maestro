@@ -149,10 +149,7 @@ fn controls<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime:
         "[method]child-process.pid",
         |mut store: StoreContextMut<'_, T>, (child,): (Resource<Child>,)| {
             let child = store.data_mut().ctx().table.get(&child)?.clone();
-            let result = child
-                .0
-                .request(|id, reply| Message::Native(id, Request::Pid(reply)))
-                .map_err(wasmtime::Error::msg)?;
+            let result = child.pid().map_err(wasmtime::Error::msg)?;
             Ok((result,))
         },
     )?;
@@ -160,9 +157,7 @@ fn controls<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime:
         "[method]child-process.kill",
         |mut store: StoreContextMut<'_, T>, (child, signal): (Resource<Child>, Option<String>)| {
             let child = store.data_mut().ctx().table.get(&child)?.clone();
-            Ok((child
-                .0
-                .request(|id, reply| Message::Native(id, Request::ChildKill(signal, reply))),))
+            Ok((child.kill(signal),))
         },
     )?;
     host.func_wrap_concurrent(
@@ -190,10 +185,7 @@ fn pipes<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Re
         "[method]child-process.stdin",
         |mut store: StoreContextMut<'_, T>, (child,): (Resource<Child>,)| {
             let child = store.data_mut().ctx().table.get(&child)?.clone();
-            let pipe = child
-                .0
-                .request(|id, reply| Message::Native(id, Request::Stdin(reply)))
-                .map_err(wasmtime::Error::msg)?;
+            let pipe = child.stdin().map_err(wasmtime::Error::msg)?;
             let pipe = pipe
                 .map(|pipe| store.data_mut().ctx().table.push(pipe))
                 .transpose()?;
@@ -208,10 +200,7 @@ fn pipes<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Re
             name,
             move |mut store: StoreContextMut<'_, T>, (child,): (Resource<Child>,)| {
                 let child = store.data_mut().ctx().table.get(&child)?.clone();
-                let pipe = child
-                    .0
-                    .request(|id, reply| Message::Native(id, Request::Output(stderr, reply)))
-                    .map_err(wasmtime::Error::msg)?;
+                let pipe = child.output(stderr).map_err(wasmtime::Error::msg)?;
                 let pipe = pipe
                     .map(|pipe| store.data_mut().ctx().table.push(pipe))
                     .transpose()?;
@@ -241,9 +230,7 @@ fn reads<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Re
         "[method]readable.close",
         |mut store: StoreContextMut<'_, T>, (reader,): (Resource<Reader>,)| {
             let reader = store.data_mut().ctx().table.get(&reader)?.clone();
-            Ok((reader
-                .0
-                .request(|id, reply| Message::Native(id, Request::Close(reply))),))
+            Ok((reader.close(),))
         },
     )
 }

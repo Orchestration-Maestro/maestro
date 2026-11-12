@@ -4,6 +4,7 @@ mod component;
 mod keys;
 mod lent;
 mod overlay;
+mod pipes;
 mod synchronous;
 mod watch;
 mod worker;
