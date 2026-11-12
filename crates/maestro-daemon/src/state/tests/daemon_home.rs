@@ -142,7 +142,8 @@ fn daemon_creation_without_home_labels_the_account_directory_by_name() {
             crate::tests::block_on(async {
                 let mut config = crate::settings::model::Config::default();
                 config.terminal.default_shell = "/bin/sh".into();
-                let mut app = crate::state::tests::daemon_runtime::app_with_args(&config, args);
+                let mut app =
+                    crate::state::test_support::api::daemon_with_args(&config, args).unwrap();
                 app.create_workspace_with_options(account.clone(), true)
                     .unwrap();
                 let expected = account

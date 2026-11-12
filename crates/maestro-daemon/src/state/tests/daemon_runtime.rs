@@ -1,82 +1,9 @@
 //! Public workspace identity forms preserve positional and stable numbering.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
-use crate::{settings::model::Config, state::model::DaemonState};
-
-#[test]
-fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
-    let mut state = DaemonState::new(
-        &Config::default(),
-        || 0,
-        std::sync::Arc::new(std::sync::RwLock::new(
-            maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
-        )),
-    );
-    state
-        .topology
-        .new_with_tab("/workspace".into(), None, |_, _| Ok(()))
-        .unwrap();
-    for _ in 0..4 {
-        state
-            .topology
-            .create_tab_with_runtime(0, |_, _| Ok(()))
-            .unwrap()
-            .unwrap();
-    }
-    assert!(state.topology.workspaces[0].close_tab(1));
-    assert_eq!(state.topology.workspaces[0].tabs[2].number, 4);
-    assert_eq!(state.topology.workspaces[0].tabs[3].number, 5);
-    assert_eq!(state.parse_tab_id("w1:t4"), Some((0, 2)));
-    assert_eq!(state.parse_tab_id("w1:4"), Some((0, 3)));
-}
-
+use crate::state::test_support::api::{daemon_with, daemon_with_args};
 #[cfg(unix)]
 use crate::state::test_support::spawning;
-
-/// Builds the daemon with retained adapters but no native process.
-#[cfg(unix)]
-fn app(config: &Config) -> crate::state::App {
-    app_with_args(config, &[])
-}
-
-/// Builds the daemon with the setup entry's own harness arguments.
-#[cfg(unix)]
-pub(crate) fn app_with_args(config: &Config, args: &[String]) -> crate::state::App {
-    let manifests = std::sync::Arc::new(std::sync::RwLock::new(
-        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
-    ));
-    let (launch, receiver) = spawning::launch_inputs(args, manifests).unwrap();
-    crate::state::App::new(
-        config,
-        || 0,
-        launch,
-        receiver,
-        crate::service::event_hub::EventHub::default(),
-    )
-}
-
-#[test]
-#[cfg(unix)]
-fn daemon_tab_info_number_uses_stable_public_tab_number() {
-    let mut app = app(&Config::default());
-    app.state
-        .topology
-        .new_with_tab("/workspace".into(), None, |_, _| Ok(()))
-        .unwrap();
-    for _ in 0..2 {
-        app.state
-            .topology
-            .create_tab_with_runtime(0, |_, _| Ok(()))
-            .unwrap()
-            .unwrap();
-    }
-    assert!(app.state.topology.workspaces[0].close_tab(1));
-    let tab = app.tab_info(0, 1).unwrap();
-    assert_eq!(tab.tab_id, "w1:t3");
-    assert_eq!(tab.number, 3);
-    assert_eq!(tab.label, "2");
-}
+use crate::{settings::model::Config, state::model::DaemonState};
 
 #[test]
 #[cfg(unix)]
@@ -84,7 +11,7 @@ fn tab_projection_keeps_focus_and_agent_attention_independent_of_identity() {
     use crate::terminal::model::TerminalState;
     use maestro_detection::agents::AgentState;
     use maestro_protocol::schema::AgentStatus;
-    let mut app = app(&Config::default());
+    let mut app = daemon_with(&Config::default()).unwrap();
     let (pane, ()) = app
         .state
         .topology
@@ -122,7 +49,6 @@ fn tab_projection_keeps_focus_and_agent_attention_independent_of_identity() {
     assert!(app.tab_info(0, 1).is_none());
     assert!(app.tab_info(1, 0).is_none());
 }
-
 /// Resolves creation through the real pending-name route without starting a child.
 #[cfg(unix)]
 async fn pending_cwd(
@@ -132,7 +58,7 @@ async fn pending_cwd(
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
     config.terminal.new_cwd = policy;
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     if let Some(cwd) = source {
         app.state
             .topology
@@ -144,7 +70,6 @@ async fn pending_cwd(
     assert!(app.state.topology.workspaces.len() <= 1);
     app.state.pending_workspace_create_cwd.unwrap()
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_workspace_creation_in_navigate_mode_uses_selected_workspace_seed_cwd() {
@@ -156,7 +81,7 @@ fn daemon_workspace_creation_in_navigate_mode_uses_selected_workspace_seed_cwd()
             use crate::state::model::Mode;
             let mut config = Config::default();
             config.ui.prompt_new_workspace_name.0 = true;
-            let mut app = app(&config);
+            let mut app = daemon_with(&config).unwrap();
             for cwd in ["/first", "/second"] {
                 app.state
                     .topology
@@ -177,7 +102,6 @@ fn daemon_workspace_creation_in_navigate_mode_uses_selected_workspace_seed_cwd()
             );
         });
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_new_terminal_cwd_follow_uses_source_cwd() {
@@ -194,7 +118,6 @@ fn daemon_new_terminal_cwd_follow_uses_source_cwd() {
             assert_eq!(cwd, std::path::Path::new("/source"));
         });
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_new_terminal_cwd_follow_without_source_uses_home() {
@@ -208,7 +131,6 @@ fn daemon_new_terminal_cwd_follow_without_source_uses_home() {
             assert_eq!(cwd, std::path::PathBuf::from(home));
         });
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_new_terminal_cwd_path_uses_configured_path() {
@@ -225,11 +147,10 @@ fn daemon_new_terminal_cwd_path_uses_configured_path() {
             assert_eq!(cwd, std::path::Path::new("/fixed"));
         });
 }
-
 /// Adds one viewport and its retained terminal metadata without starting a process.
 #[cfg(unix)]
 fn target_app() -> (crate::state::App, maestro_workspace::tiling::PaneId) {
-    let mut app = app(&Config::default());
+    let mut app = daemon_with(&Config::default()).unwrap();
     let (pane, ()) = app
         .state
         .topology
@@ -239,7 +160,6 @@ fn target_app() -> (crate::state::App, maestro_workspace::tiling::PaneId) {
     app.state.active = Some(0);
     (app, pane)
 }
-
 /// Supplies the terminal metadata normally installed by a successful native spawn.
 #[cfg(unix)]
 fn attach_terminal(app: &mut crate::state::App, pane: maestro_workspace::tiling::PaneId) {
@@ -252,7 +172,6 @@ fn attach_terminal(app: &mut crate::state::App, pane: maestro_workspace::tiling:
         crate::terminal::model::TerminalState::new(id, "/target".into()),
     );
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_terminal_and_agent_targets_treat_terminal_ids_differently() {
@@ -269,7 +188,6 @@ fn daemon_terminal_and_agent_targets_treat_terminal_ids_differently() {
         Err(crate::state::terminal_targets::TerminalTargetError::NotFound { .. })
     ));
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_agent_target_rejects_a_pane_that_only_has_a_launch_command() {
@@ -283,7 +201,6 @@ fn daemon_agent_target_rejects_a_pane_that_only_has_a_launch_command() {
         Err(crate::state::terminal_targets::TerminalTargetError::NotFound { .. })
     ));
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_terminal_target_resolves_pane_id_for_an_agent() {
@@ -300,7 +217,6 @@ fn daemon_terminal_target_resolves_pane_id_for_an_agent() {
             .to_string()
     );
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_terminal_target_resolves_unique_agent_name() {
@@ -321,7 +237,6 @@ fn daemon_terminal_target_resolves_unique_agent_name() {
             .to_string()
     );
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_agent_target_treats_legacy_pane_syntax_as_a_name() {
@@ -339,7 +254,6 @@ fn daemon_agent_target_treats_legacy_pane_syntax_as_a_name() {
             .to_string()
     );
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_terminal_target_reports_missing_target() {
@@ -351,7 +265,6 @@ fn daemon_terminal_target_reports_missing_target() {
         }
     );
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
@@ -392,7 +305,6 @@ fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
                 && candidate.cwd.is_some())
     );
 }
-
 /// Admits the same process identity observation consumed by live panes.
 #[cfg(unix)]
 fn detect_agent(app: &mut crate::state::App, pane: maestro_workspace::tiling::PaneId) {
@@ -403,7 +315,6 @@ fn detect_agent(app: &mut crate::state::App, pane: maestro_workspace::tiling::Pa
             observed_at: std::time::Instant::now(),
         });
 }
-
 #[test]
 #[cfg(unix)]
 fn terminal_target_precedence_and_agent_labels_do_not_admit_historical_pane_aliases() {
@@ -434,7 +345,6 @@ fn terminal_target_precedence_and_agent_labels_do_not_admit_historical_pane_alia
         Err(TerminalTargetError::NotFound { .. })
     ));
 }
-
 #[test]
 #[cfg(unix)]
 fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous() {
@@ -480,7 +390,6 @@ fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous(
     assert_eq!(candidates[0].tab_id, "w1:t1");
     assert_eq!(candidates[1].tab_id, "w1:t2");
 }
-
 /// Builds the screen-state observation used by native fallback detection.
 #[cfg(unix)]
 fn state_event(
@@ -497,7 +406,6 @@ fn state_event(
         observed_at: std::time::Instant::now(),
     }
 }
-
 #[test]
 #[cfg(unix)]
 fn daemon_full_internal_event_queue_eventually_applies_working_to_idle_transition() {
@@ -534,7 +442,6 @@ fn daemon_full_internal_event_queue_eventually_applies_working_to_idle_transitio
         });
     assert_eq!(app.state.terminals[&id].state, AgentState::Idle);
 }
-
 #[test]
 #[cfg(unix)]
 fn setup_entry() {
@@ -542,7 +449,6 @@ fn setup_entry() {
         std::process::exit(1);
     }
 }
-
 #[test]
 #[cfg(unix)]
 fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
@@ -564,7 +470,6 @@ fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
         })
         .unwrap();
 }
-
 /// Holds a real child until shutdown while the critical event queue is full.
 #[cfg(unix)]
 async fn check_shutdown(args: &[String]) {
@@ -622,7 +527,6 @@ async fn check_shutdown(args: &[String]) {
     assert!(app.terminal_runtimes.is_empty());
     assert!(app.state.topology.workspaces.is_empty());
 }
-
 /// Starts a checked child and waits for its already-ingested readiness observation.
 #[cfg(unix)]
 async fn live_shutdown_app(
@@ -664,7 +568,6 @@ async fn live_shutdown_app(
     }
     (app, pane)
 }
-
 #[test]
 fn daemon_construction_initializes_supplied_manifest_summaries() {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
@@ -675,7 +578,6 @@ fn daemon_construction_initializes_supplied_manifest_summaries() {
     let state = DaemonState::new(&Config::default(), || 0, manifests);
     assert_eq!(state.agent_manifest_summaries, expected);
 }
-
 /// Prepares a home directory, then runs this test again with it as `HOME`.
 ///
 /// Returns the directory in that child, `None` where the prepared home does not exist so
@@ -706,7 +608,6 @@ fn isolated_home(
     );
     None
 }
-
 /// Creates the home directory whose spelling text cannot hold, inside the owner's
 /// directory; `None` where the host does not store that name, so the native-home
 /// behaviour cannot run there.
@@ -721,7 +622,6 @@ fn unspellable_home(root: &maestro_test_directory::Scratch) -> Option<std::path:
     std::fs::create_dir_all(home.join("child")).unwrap();
     Some(home)
 }
-
 /// Creates the default workspace through the prompt-free creation entry.
 #[cfg(unix)]
 fn default_workspace_cwd(policy: &str) -> std::path::PathBuf {
@@ -735,7 +635,7 @@ fn default_workspace_cwd(policy: &str) -> std::path::PathBuf {
             .single_threaded()
             .invoke_with(|args| Ok::<_, std::io::Error>(args.to_vec()))
             .unwrap();
-    let mut app = app_with_args(&config, &args);
+    let mut app = daemon_with_args(&config, &args).unwrap();
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -749,7 +649,6 @@ fn default_workspace_cwd(policy: &str) -> std::path::PathBuf {
             cwd
         })
 }
-
 /// A configured `~` reaches the directory its written parent segment names.
 #[cfg(unix)]
 #[test]
@@ -783,7 +682,6 @@ fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
         std::fs::canonicalize(home.join("elsewhere/f")).unwrap()
     );
 }
-
 /// A `~` path's written rest joins below the home directory as written, so an absolute rest
 /// stays below it, and `~name` is not a home form.
 #[cfg(unix)]
@@ -818,7 +716,6 @@ fn daemon_tilde_paths_join_their_rest_natively() {
             }
         });
 }
-
 /// A home directory that text cannot hold stays the created workspace directory.
 #[cfg(unix)]
 #[test]
@@ -844,7 +741,6 @@ fn daemon_workspace_creation_keeps_native_home_bytes() {
             }
         });
 }
-
 /// A home directory that text cannot hold stays the default workspace directory.
 #[cfg(unix)]
 #[test]

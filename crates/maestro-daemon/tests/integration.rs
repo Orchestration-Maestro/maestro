@@ -3,6 +3,7 @@
 
 mod daemon_actions;
 mod daemon_api;
+mod daemon_base_settings;
 mod daemon_client;
 mod daemon_construction;
 mod daemon_environment;
@@ -11,12 +12,14 @@ mod daemon_ids;
 mod daemon_instances;
 mod daemon_layout;
 mod daemon_paths;
+mod daemon_runtime;
 mod daemon_session;
 mod desktop_notification;
 mod event_replay;
 mod git_status;
 mod git_worktree;
 mod key_combo;
+mod layout_apply;
 mod layout_commands;
 mod local_sockets;
 mod pane_chrome;

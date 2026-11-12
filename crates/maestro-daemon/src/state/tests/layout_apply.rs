@@ -1,11 +1,11 @@
 //! Layout apply through the daemon's handler with live processes: replacement, launch inputs,
 //! directories, limits, rollback, focus and publication.
-#![cfg(target_os = "linux")]
 use crate::state::App;
 use crate::state::test_support::api::{
     add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
     workspace_ids_of,
 };
+use crate::state::test_support::layout_apply::relay_hangup;
 use crate::state::tests::support::{
     layouts::{balanced, chain, shell, sleeper, split},
     live::{wait_for_line, with_live_daemon},
@@ -23,10 +23,7 @@ use maestro_protocol::{
 use maestro_test_directory::Scratch;
 use maestro_workspace::tiling::PaneId;
 use serde_json::{Value, json};
-use std::io::{self, Read, Write};
-use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
-
 /// The layout an apply answers with.
 fn applied(result: Result<ResponseResult, ErrorBody>) -> LayoutDescription {
     match result {
@@ -34,7 +31,6 @@ fn applied(result: Result<ResponseResult, ErrorBody>) -> LayoutDescription {
         other => panic!("expected an applied layout: {other:?}"),
     }
 }
-
 /// The leaves of an exported tree in layout order.
 fn leaves(node: &LayoutNode) -> Vec<&LayoutPane> {
     match node {
@@ -46,7 +42,6 @@ fn leaves(node: &LayoutNode) -> Vec<&LayoutPane> {
         }
     }
 }
-
 /// The request applying `root`, with the members of `extra` beside it.
 fn apply_wire(root: &Value, extra: &Value) -> Value {
     let mut wire = json!({"type": "layout.apply", "root": root});
@@ -55,12 +50,10 @@ fn apply_wire(root: &Value, extra: &Value) -> Value {
         .extend(extra.as_object().unwrap().clone());
     wire
 }
-
 /// Makes new panes follow the directory of the pane they come from.
 fn follow(app: &mut App) {
     app.config.terminal.new_cwd = NewTerminalCwdConfig::Follow;
 }
-
 /// Records `cwd` as the last known directory of `pane` in the first workspace.
 fn set_cwd(app: &mut App, pane: PaneId, cwd: &Path) {
     let terminal = app.state.topology.workspaces[0]
@@ -69,7 +62,6 @@ fn set_cwd(app: &mut App, pane: PaneId, cwd: &Path) {
         .clone();
     app.state.terminals.get_mut(&terminal).unwrap().cwd = cwd.to_path_buf();
 }
-
 /// The directory recorded for the root pane of tab `tab` in the first workspace.
 fn root_cwd(app: &App, tab: usize) -> PathBuf {
     let tab = &app.state.topology.workspaces[0].tabs[tab];
@@ -77,7 +69,6 @@ fn root_cwd(app: &App, tab: usize) -> PathBuf {
         .cwd
         .clone()
 }
-
 #[test]
 fn applying_a_layout_replaces_the_named_tab() {
     with_live_daemon(
@@ -135,7 +126,6 @@ fn applying_a_layout_replaces_the_named_tab() {
         },
     );
 }
-
 #[test]
 fn a_leaf_command_runs_with_its_directory_and_environment() {
     with_live_daemon(
@@ -165,7 +155,6 @@ fn a_leaf_command_runs_with_its_directory_and_environment() {
         },
     );
 }
-
 #[test]
 fn a_new_layout_tab_follows_the_directory_of_the_focused_pane() {
     with_live_daemon(
@@ -182,7 +171,6 @@ fn a_new_layout_tab_follows_the_directory_of_the_focused_pane() {
         },
     );
 }
-
 #[test]
 fn a_replacing_layout_follows_the_directory_of_the_replaced_tab() {
     with_live_daemon(
@@ -202,7 +190,6 @@ fn a_replacing_layout_follows_the_directory_of_the_replaced_tab() {
         },
     );
 }
-
 #[test]
 fn a_leaf_without_a_directory_starts_where_the_pane_it_splits_runs() {
     with_live_daemon(
@@ -233,7 +220,6 @@ fn a_leaf_without_a_directory_starts_where_the_pane_it_splits_runs() {
         },
     );
 }
-
 #[test]
 fn replacing_a_tab_drops_the_action_records_of_its_panes() {
     with_live_daemon(
@@ -254,7 +240,6 @@ fn replacing_a_tab_drops_the_action_records_of_its_panes() {
         },
     );
 }
-
 #[test]
 fn a_layout_may_hold_sixteen_levels_and_twenty_four_panes() {
     with_live_daemon(
@@ -268,7 +253,6 @@ fn a_layout_may_hold_sixteen_levels_and_twenty_four_panes() {
         },
     );
 }
-
 /// Applies `wire`, which cannot start a process, and checks that the workspace is as it was:
 /// one tab holding only `original`, no runtime, no event and no pending save.
 async fn assert_rolled_back(app: &mut App, original: PaneId, wire: Value) {
@@ -285,7 +269,6 @@ async fn assert_rolled_back(app: &mut App, original: PaneId, wire: Value) {
     assert!(events_after(app, 0).is_empty());
     assert!(!app.state.session_dirty);
 }
-
 #[test]
 fn a_leaf_that_cannot_start_rolls_the_whole_layout_back() {
     with_live_daemon(
@@ -308,7 +291,6 @@ fn a_leaf_that_cannot_start_rolls_the_whole_layout_back() {
         },
     );
 }
-
 #[test]
 fn a_layout_activates_its_tab_when_asked_or_when_it_replaces_the_active_tab() {
     with_live_daemon(
@@ -332,7 +314,6 @@ fn a_layout_activates_its_tab_when_asked_or_when_it_replaces_the_active_tab() {
         },
     );
 }
-
 #[test]
 fn a_replaced_tab_keeps_its_name_unless_the_layout_names_one() {
     with_live_daemon(
@@ -352,7 +333,6 @@ fn a_replaced_tab_keeps_its_name_unless_the_layout_names_one() {
         },
     );
 }
-
 #[test]
 fn a_leaf_label_is_trimmed_and_a_blank_one_is_ignored() {
     with_live_daemon(
@@ -372,7 +352,6 @@ fn a_leaf_label_is_trimmed_and_a_blank_one_is_ignored() {
         },
     );
 }
-
 #[test]
 fn a_layout_is_applied_to_the_named_workspace() {
     with_live_daemon(
@@ -394,7 +373,6 @@ fn a_layout_is_applied_to_the_named_workspace() {
         },
     );
 }
-
 #[test]
 fn applying_a_layout_publishes_the_closed_tab_the_new_tab_and_every_pane() {
     with_live_daemon(
@@ -439,7 +417,6 @@ fn applying_a_layout_publishes_the_closed_tab_the_new_tab_and_every_pane() {
         },
     );
 }
-
 #[test]
 fn shell_leaves_start_the_configured_shell_without_a_launch_command() {
     with_live_daemon(
@@ -457,7 +434,6 @@ fn shell_leaves_start_the_configured_shell_without_a_launch_command() {
         },
     );
 }
-
 /// Installs the prepared native fixture as `name` in `directory`, selected by a `command` scenario.
 fn install_leaf(directory: &Path, name: &str, scenario: &str) -> PathBuf {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
@@ -472,78 +448,12 @@ fn install_leaf(directory: &Path, name: &str, scenario: &str) -> PathBuf {
     .unwrap();
     path
 }
-
-/// Run the layout operation with a checked relay, returning as soon as either fails.
-async fn relay_hangup(
-    socket: &Path,
-    body: impl std::future::Future<Output = ()>,
-) -> io::Result<()> {
-    let listener = UnixListener::bind(socket)?;
-    let (report, result) = tokio::sync::oneshot::channel();
-    let relay = std::thread::spawn(move || {
-        // A failed body may drop its receiver before the relay ends.
-        let _ = report.send(release_after_hangup(&listener));
-    });
-    tokio::try_join!(
-        async {
-            result.await.map_err(io::Error::other)??;
-            relay
-                .join()
-                .map_err(|_| io::Error::other("hangup relay panicked"))
-        },
-        async {
-            body.await;
-            Ok(())
-        }
-    )?;
-    Ok(())
-}
-
-/// Release the one waiting leaf after the one holder reports its hangup, in either arrival order.
-fn release_after_hangup(listener: &UnixListener) -> io::Result<()> {
-    let mut waiting = None;
-    let mut hung_up = false;
-    for stream in listener.incoming() {
-        let mut stream = stream?;
-        let mut kind = [0];
-        stream.read_exact(&mut kind)?;
-        match kind {
-            [b'h'] => hung_up = true,
-            [b'w'] => waiting = Some(stream),
-            _ => return Err(io::Error::other("unknown relay announcement")),
-        }
-        if hung_up && let Some(leaf) = waiting.take() {
-            release(leaf);
-            return Ok(());
-        }
-    }
-    Err(io::Error::other("hangup relay closed before release"))
-}
-
-/// A peer that closes before announcing returns its I/O error to the layout operation.
-#[test]
-fn hangup_relay_reports_closed_stream() {
-    let scratch = Scratch::new().unwrap();
-    let socket = scratch.path().join("hangup");
-    let error = crate::tests::block_on(relay_hangup(&socket, async {
-        drop(UnixStream::connect(&socket).unwrap());
-    }))
-    .unwrap_err();
-    assert_eq!(error.kind(), io::ErrorKind::UnexpectedEof);
-}
-
-/// Sends the release byte; a leaf that already ended needs none.
-fn release(mut leaf: UnixStream) {
-    let _ = leaf.write_all(b"x");
-}
-
 /// A leaf that holds the hangup, reports `ready` on a line of its own (the launch helper leaves
 /// one open) and tells `socket` once the hangup arrives, so the pane takes a while to stop.
 fn holds_until_terminated(directory: &Path, socket: &Path) -> Value {
     let holder = install_leaf(directory, "holder", "hold-hangup");
     json!({"type": "pane", "command": [holder, socket]})
 }
-
 /// Waits until the focused pane of `layout` has blocked hangup, so shutdown cannot reach it first.
 async fn wait_until_ready(app: &App, layout: &LayoutDescription) {
     let (workspace, pane) = app.state.parse_pane_id(&layout.focused_pane_id).unwrap();
@@ -553,13 +463,11 @@ async fn wait_until_ready(app: &App, layout: &LayoutDescription) {
         .clone();
     wait_for_line(app, &terminal, "ready").await;
 }
-
 /// A leaf that exits once `socket` releases it.
 fn exits_once_released(directory: &Path, socket: &Path) -> Value {
     let waiter = install_leaf(directory, "waiter", "await-release");
     json!({"type": "pane", "command": [waiter, socket]})
 }
-
 #[test]
 fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
     with_live_daemon(
@@ -590,7 +498,6 @@ fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
         },
     );
 }
-
 #[test]
 fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout() {
     with_live_daemon(

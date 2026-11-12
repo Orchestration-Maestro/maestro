@@ -8,6 +8,8 @@
 pub mod api;
 /// Helpers that the daemon api tests share between the integration program and the unit tests.
 pub mod daemon_api;
+/// Helpers that the layout apply tests share between the integration program and the unit tests.
+pub mod layout_apply;
 /// Helpers that the layout commands tests share between the integration program and the unit tests.
 pub mod layout_commands;
 /// Helpers that the pane close tests share between the integration program and the unit tests.

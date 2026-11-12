@@ -26,7 +26,16 @@ use std::{sync::Arc, time::Instant};
 /// # Errors
 /// Returns why the launch inputs could not be built.
 pub fn daemon_with(config: &Config) -> Result<App, String> {
-    let (launch, receiver) = launch_inputs(&[], manifest_cache()?)?;
+    daemon_with_args(config, &[])
+}
+
+/// A daemon without workspaces, built from `config`, whose panes start the setup entry with
+/// the harness arguments `args`.
+///
+/// # Errors
+/// Returns why the launch inputs could not be built.
+pub fn daemon_with_args(config: &Config, args: &[String]) -> Result<App, String> {
+    let (launch, receiver) = launch_inputs(args, manifest_cache()?)?;
     Ok(App::new(
         config,
         || 0,
