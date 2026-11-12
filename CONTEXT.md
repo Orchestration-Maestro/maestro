@@ -16,6 +16,7 @@ From `docs/specs/maestro-port.md`.
 - **Replay identity:** Provider, API and model ID used to decide whether signed response content is reusable.
 - **Socket effect:** A replaceable model-library operation opening an owned connection for complete text messages; native upgrades are shared, while caller authentication and lifetime policy stay with their operation.
 - **Protocol adapter:** An implementation of a registered model protocol, including provider-specific wire conversion and usage interpretation.
+- **Model catalog:** The generated table of models Maestro ships. _Avoid:_ offline catalog, built-in models, generated catalog.
 - **ModelRegistry:** The owner of the usable local model catalog. [Local model loading](docs/catalog.md) provides explicit-file and memory construction, overrides, shared observations, reload, request authentication, provider metadata and dynamic registration, replacement, replay and removal.
 - **Tool arguments:** The model-supplied argument value of any JSON root kind, completed from accumulated JSON before execution.
 - **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.

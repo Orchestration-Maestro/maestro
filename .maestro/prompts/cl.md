@@ -25,7 +25,7 @@ Do not edit CHANGELOG.md in implementation PRs, and do not invent historical rel
 
 4. **Check each commit:**
    - Skip: changelog updates, doc-only changes and release housekeeping.
-   - Skip: changes to generated model catalogs (for example `crates/maestro-models/src/catalog/models_generated/`), unless an intentional product-facing change in non-generated source or docs comes with them.
+   - Skip: changes to generated model catalogs (for example `crates/maestro-models-catalog/src/`), unless an intentional product-facing change in non-generated source or docs comes with them.
    - Find the package or packages the commit affects (use `git show <hash> --stat`).
    - Verify that the release metadata covers each affected crate.
    - For an external contribution (PR), verify the format: `Description ([#N](url) by [@user](url))`

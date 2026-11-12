@@ -135,7 +135,7 @@ fn complete_catalog_matches_all_descriptors() {
     let scratch = Scratch::new().unwrap();
     super::super::emit::write_catalog(&catalog, &scratch.path().join("generated")).unwrap();
     let committed =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/catalog/models_generated");
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-models-catalog/src");
     let actual_files = std::fs::read_dir(scratch.path().join("generated"))
         .unwrap()
         .map(Result::unwrap)
@@ -201,7 +201,7 @@ fn assert_directory_local_filenames() {
     let scratch = Scratch::new().unwrap();
     let destination = scratch.path().join("generated");
     super::super::emit::write_catalog(&catalog, &destination).unwrap();
-    let registry = std::fs::read_to_string(destination.join("mod.rs")).unwrap();
+    let registry = std::fs::read_to_string(destination.join("lib.rs")).unwrap();
     for filename in [
         "provider_.rs",
         "provider_con.rs",

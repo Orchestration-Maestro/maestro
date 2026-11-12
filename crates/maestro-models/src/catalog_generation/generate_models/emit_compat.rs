@@ -1,11 +1,16 @@
 //! Emission of complete compatibility-option objects.
-use crate::ModelCompat;
+use maestro_request::types::ModelCompat;
 use serde_json::Value;
 /// Emit the complete ordered object without a runtime JSON decoder.
 pub(super) fn compat(compat: Option<&ModelCompat>) -> String {
     compat.map_or_else(
         || "None".into(),
-        |compat| format!("Some(crate::ModelCompat({}))", object(&compat.0)),
+        |compat| {
+            format!(
+                "Some(maestro_request::types::ModelCompat({}))",
+                object(&compat.0)
+            )
+        },
     )
 }
 /// Emit ordered object members as native value constructors.
