@@ -39,9 +39,9 @@ pub struct PaneFocusTarget {
 
 /// Extension provenance for a registered pane.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PluginPaneRecord {
+pub struct ActionPaneRecord {
     /// Owning extension identity.
-    pub plugin_id: String,
+    pub action_id: String,
     /// Registered pane entrypoint.
     pub entrypoint: String,
 }
@@ -120,7 +120,7 @@ pub struct DaemonState<C> {
     /// Diagnostics from the latest detection catalogue update.
     pub agent_manifest_update_status: ManifestUpdateStatus,
     /// Registered pane provenance removed with its owning pane.
-    pub plugin_panes: HashMap<PaneId, PluginPaneRecord>,
+    pub action_panes: HashMap<PaneId, ActionPaneRecord>,
     /// Detached metadata identities awaiting runtime shutdown by the loop.
     pub terminal_runtime_shutdowns: Vec<TerminalId>,
     /// Active workspace display position, absent when no workspace is active.
@@ -209,7 +209,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             manifests,
             agent_manifest_summaries,
             agent_manifest_update_status: ManifestUpdateStatus::default(),
-            plugin_panes: HashMap::new(),
+            action_panes: HashMap::new(),
             terminal_runtime_shutdowns: Vec::new(),
             active: None,
             selected: 0,

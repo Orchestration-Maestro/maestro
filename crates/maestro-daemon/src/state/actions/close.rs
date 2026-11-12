@@ -24,7 +24,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         if !workspace.close_tab(tab) {
             return false;
         }
-        self.remove_plugin_pane_records(&panes);
+        self.remove_action_pane_records(&panes);
         self.remove_unattached_terminal_ids(terminals);
         true
     }
@@ -71,7 +71,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         };
         let terminals = target.terminal_id(pane).cloned().into_iter().collect();
         let close_workspace = target.close_pane(pane);
-        self.remove_plugin_pane_records(&std::collections::HashSet::from([pane]));
+        self.remove_action_pane_records(&std::collections::HashSet::from([pane]));
         if close_workspace {
             self.selected = workspace;
             self.close_selected_workspace();
@@ -134,7 +134,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
             .flat_map(|tab| tab.panes.values())
             .map(|pane| pane.attached_terminal_id.clone())
             .collect();
-        self.remove_plugin_pane_records(&panes);
+        self.remove_action_pane_records(&panes);
         for index in indices.into_iter().rev() {
             self.topology.workspaces.remove(index);
         }

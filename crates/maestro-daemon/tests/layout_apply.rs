@@ -10,7 +10,7 @@ use crate::support::{
 };
 use maestro_daemon::{
     settings::model::NewTerminalCwdConfig,
-    state::model::{Mode, PluginPaneRecord},
+    state::model::{ActionPaneRecord, Mode},
 };
 use maestro_protocol::{
     events::EventData,
@@ -231,22 +231,22 @@ fn a_leaf_without_a_directory_starts_where_the_pane_it_splits_runs() {
 }
 
 #[test]
-fn replacing_a_tab_drops_the_plugin_records_of_its_panes() {
+fn replacing_a_tab_drops_the_action_records_of_its_panes() {
     with_live_daemon(
-        "layout_apply::replacing_a_tab_drops_the_plugin_records_of_its_panes",
+        "layout_apply::replacing_a_tab_drops_the_action_records_of_its_panes",
         async |app| {
             add_workspaces(app, &["/tabs"]);
             let replaced = root_pane(app, 0);
-            app.state.plugin_panes.insert(
+            app.state.action_panes.insert(
                 replaced,
-                PluginPaneRecord {
-                    plugin_id: "example.layout".into(),
+                ActionPaneRecord {
+                    action_id: "example.layout".into(),
                     entrypoint: "board".into(),
                 },
             );
             let wire = apply_wire(&sleeper(), &json!({"tab_id": "w1:t1"}));
             applied(answer(app, wire).await);
-            assert!(app.state.plugin_panes.is_empty());
+            assert!(app.state.action_panes.is_empty());
         },
     );
 }

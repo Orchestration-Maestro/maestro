@@ -420,23 +420,23 @@ fn daemon_close_non_focused_workspace_keeps_focus() {
 
 #[test]
 fn daemon_close_workspace_removes_unattached_terminal_states() {
-    use maestro_daemon::state::model::PluginPaneRecord;
+    use maestro_daemon::state::model::ActionPaneRecord;
     let mut state = app_with_workspaces(&["one", "two"]);
     let pane = state.topology.workspaces[0].tabs[0].root_pane;
     let terminal = state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
         .clone();
-    state.plugin_panes.insert(
+    state.action_panes.insert(
         pane,
-        PluginPaneRecord {
-            plugin_id: "example.pane".into(),
+        ActionPaneRecord {
+            action_id: "example.pane".into(),
             entrypoint: "board".into(),
         },
     );
     state.close_selected_workspace();
     assert!(!state.terminals.contains_key(&terminal));
-    assert!(!state.plugin_panes.contains_key(&pane));
+    assert!(!state.action_panes.contains_key(&pane));
     assert_identity_invariants(&state);
 }
 
@@ -1625,16 +1625,16 @@ fn daemon_close_pane_removes_from_workspace() {
     let closed = split(&mut state, 0);
     populate_terminals(&mut state);
     assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 2);
-    state.plugin_panes.insert(
+    state.action_panes.insert(
         closed,
-        maestro_daemon::state::model::PluginPaneRecord {
-            plugin_id: "example.pane".into(),
+        maestro_daemon::state::model::ActionPaneRecord {
+            action_id: "example.pane".into(),
             entrypoint: "board".into(),
         },
     );
     state.close_pane();
     assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 1);
-    assert!(!state.plugin_panes.contains_key(&closed));
+    assert!(!state.action_panes.contains_key(&closed));
     assert_identity_invariants(&state);
 }
 
@@ -1709,16 +1709,16 @@ fn daemon_close_tab_removes_unattached_terminal_states() {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    state.plugin_panes.insert(
+    state.action_panes.insert(
         pane,
-        maestro_daemon::state::model::PluginPaneRecord {
-            plugin_id: "example.pane".into(),
+        maestro_daemon::state::model::ActionPaneRecord {
+            action_id: "example.pane".into(),
             entrypoint: "board".into(),
         },
     );
     state.close_tab();
     assert!(!state.terminals.contains_key(&terminal));
-    assert!(!state.plugin_panes.contains_key(&pane));
+    assert!(!state.action_panes.contains_key(&pane));
     assert_identity_invariants(&state);
 }
 

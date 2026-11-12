@@ -8,7 +8,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     /// Applies pane death without closing the other workspaces in its repository group.
     pub fn handle_pane_died(&mut self, pane: PaneId) {
         self.pending_agent_notifications.remove(&pane);
-        self.remove_plugin_pane_records(&HashSet::from([pane]));
+        self.remove_action_pane_records(&HashSet::from([pane]));
         let Some(index) = self
             .topology
             .workspaces

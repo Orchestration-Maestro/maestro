@@ -3,7 +3,7 @@
 use super::*;
 use crate::{
     settings::model::Config,
-    state::model::{PaneFocusTarget, PluginPaneRecord},
+    state::model::{ActionPaneRecord, PaneFocusTarget},
     terminal::model::TerminalState,
 };
 use maestro_detection::definitions::ManifestCache;
@@ -50,10 +50,10 @@ fn targeted_tab_retirement_cleans_only_its_owned_records() {
         workspace_id: workspace.id.clone(),
         pane_id: pane,
     });
-    state.plugin_panes.insert(
+    state.action_panes.insert(
         pane,
-        PluginPaneRecord {
-            plugin_id: "plugin".into(),
+        ActionPaneRecord {
+            action_id: "plugin".into(),
             entrypoint: "pane".into(),
         },
     );
@@ -62,7 +62,7 @@ fn targeted_tab_retirement_cleans_only_its_owned_records() {
     assert_eq!(state.topology.workspaces[1].tabs.len(), 1);
     assert_eq!(state.active, Some(0));
     assert_eq!(state.topology.workspaces[1].active_tab, 0);
-    assert!(!state.plugin_panes.contains_key(&pane));
+    assert!(!state.action_panes.contains_key(&pane));
     assert!(state.previous_pane_focus.is_none());
     assert!(!state.terminals.contains_key(&terminal));
     assert_eq!(state.terminals.len(), 3);
