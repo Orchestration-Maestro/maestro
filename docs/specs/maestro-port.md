@@ -518,8 +518,8 @@ observers of each signal. Only models and the terminal toolkit may depend on it.
 
 `maestro-text` and `maestro-json` are core leaves below layer 0 with no workspace
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
-lexical comparison, markup escaping, CSS string serialization, locale construction and optional locale-number
-formatting shared by transcript components. JSON owns JSON boundary
+lexical comparison, markup escaping, CSS string serialization, locale construction, optional locale-number
+formatting shared by transcript components, author-written number prefixes with half-up rounding, and URI component encoding. JSON owns JSON boundary
 semantics: object acceptance, canonical keys, truth, selected-value display, compact and pretty text, and JSONL line framing.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
 only on `maestro-request`: entry defines session interchange records, including the

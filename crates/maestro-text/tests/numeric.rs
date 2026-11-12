@@ -20,6 +20,7 @@ fn a_decimal_prefix_reads_its_leading_digits() {
 fn a_radix_prefix_reads_hexadecimal_notation_only_when_it_admits_it() {
     assert_eq!(integer_prefix("0x1f", 10).to_bits(), 31.0_f64.to_bits());
     assert_eq!(integer_prefix("101", 2).to_bits(), 5.0_f64.to_bits());
+    assert_eq!(decimal_integer_prefix("0x1f").to_bits(), 0.0_f64.to_bits());
 }
 
 #[test]
