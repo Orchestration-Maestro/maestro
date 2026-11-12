@@ -188,8 +188,9 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
             let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
                 panic!("expected a created workspace: {created:?}");
             };
+            let root = crate::support::api::root_pane(app, 0);
             let terminal = app.state.topology.workspaces[0]
-                .terminal_id(crate::support::api::root_pane(app, 0))
+                .terminal_id(root)
                 .unwrap()
                 .clone();
             // Force readiness to follow output without a newline, as a late shell prompt does.

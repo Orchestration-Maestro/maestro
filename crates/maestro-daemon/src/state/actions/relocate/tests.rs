@@ -114,7 +114,7 @@ fn recovery_restores_a_removed_source_workspace_with_its_identity() {
         state.parse_pane_id(&format!("{}:p1", previous.id)),
         Some((0, pane))
     );
-    assert!(state.session_dirty);
+    assert!(state.take_session_dirty());
 }
 
 #[test]
@@ -162,5 +162,5 @@ fn recovery_adds_a_tab_to_a_surviving_workspace() {
     assert_eq!(workspace.tabs[1].custom_name.as_deref(), Some("logs"));
     assert_eq!(workspace.tabs[1].terminal_id(pane), Some(&terminal));
     assert_eq!(state.topology.workspaces.len(), 1);
-    assert!(state.session_dirty);
+    assert!(state.take_session_dirty());
 }

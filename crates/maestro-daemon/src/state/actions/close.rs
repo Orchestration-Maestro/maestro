@@ -56,10 +56,11 @@ impl DaemonState {
             return true;
         }
         self.clear_selection();
-        self.session_dirty = true;
-        if let Some((index, pane)) = focused {
-            self.close_pane_in_workspace(index, pane);
-        }
+        self.edit_topology(|state| {
+            if let Some((index, pane)) = focused {
+                state.close_pane_in_workspace(index, pane);
+            }
+        });
         false
     }
 
@@ -94,20 +95,21 @@ impl DaemonState {
             return true;
         }
         self.clear_selection();
-        self.session_dirty = true;
-        let Some(index) = self.active else {
-            return false;
-        };
-        let Some(workspace) = self.topology.workspaces.get_mut(index) else {
-            return false;
-        };
-        if workspace.tabs.len() <= 1 {
-            self.selected = index;
-            self.close_selected_workspace();
-            return false;
-        }
-        let tab = workspace.active_tab;
-        self.retire_tab(index, tab);
+        self.edit_topology(|state| {
+            let Some(index) = state.active else {
+                return;
+            };
+            let Some(workspace) = state.topology.workspaces.get_mut(index) else {
+                return;
+            };
+            if workspace.tabs.len() <= 1 {
+                state.selected = index;
+                state.close_selected_workspace();
+                return;
+            }
+            let tab = workspace.active_tab;
+            state.retire_tab(index, tab);
+        });
         false
     }
 
@@ -121,34 +123,36 @@ impl DaemonState {
             .and_then(|index| self.topology.workspaces.get(index))
             .map(|workspace| workspace.id.clone());
         self.clear_selection();
-        self.session_dirty = true;
-        let indices = self.workspace_close_indices(self.selected);
-        let panes = indices
-            .iter()
-            .flat_map(|index| &self.topology.workspaces[*index].tabs)
-            .flat_map(|tab| tab.panes.keys().copied())
-            .collect();
-        let terminals = indices
-            .iter()
-            .flat_map(|index| &self.topology.workspaces[*index].tabs)
-            .flat_map(|tab| tab.panes.values())
-            .map(|pane| pane.attached_terminal_id.clone())
-            .collect();
-        self.remove_action_pane_records(&panes);
-        for index in indices.into_iter().rev() {
-            self.topology.workspaces.remove(index);
-        }
-        self.remove_unattached_terminal_ids(terminals);
-        self.selected = active
-            .and_then(|id| {
-                self.topology
-                    .workspaces
-                    .iter()
-                    .position(|workspace| workspace.id == id)
-            })
-            .unwrap_or(self.selected)
-            .min(self.topology.workspaces.len().saturating_sub(1));
-        self.active = (!self.topology.workspaces.is_empty()).then_some(self.selected);
+        self.edit_topology(|state| {
+            let indices = state.workspace_close_indices(state.selected);
+            let panes = indices
+                .iter()
+                .flat_map(|index| &state.topology.workspaces[*index].tabs)
+                .flat_map(|tab| tab.panes.keys().copied())
+                .collect();
+            let terminals = indices
+                .iter()
+                .flat_map(|index| &state.topology.workspaces[*index].tabs)
+                .flat_map(|tab| tab.panes.values())
+                .map(|pane| pane.attached_terminal_id.clone())
+                .collect();
+            state.remove_action_pane_records(&panes);
+            for index in indices.into_iter().rev() {
+                state.topology.workspaces.remove(index);
+            }
+            state.remove_unattached_terminal_ids(terminals);
+            state.selected = active
+                .and_then(|id| {
+                    state
+                        .topology
+                        .workspaces
+                        .iter()
+                        .position(|workspace| workspace.id == id)
+                })
+                .unwrap_or(state.selected)
+                .min(state.topology.workspaces.len().saturating_sub(1));
+            state.active = (!state.topology.workspaces.is_empty()).then_some(state.selected);
+        });
     }
     /// Retains a parent-group confirmation request without changing topology.
     pub(crate) fn confirm_implicit_worktree_group_close(&mut self, index: usize) -> bool {
