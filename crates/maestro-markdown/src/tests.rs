@@ -13,6 +13,7 @@ mod fixture_corpus;
 mod html_progress;
 mod inline_depth;
 mod link_windows;
+mod list_adoption;
 pub(crate) use crate::test_support::nodes;
 mod opener_work;
 mod paragraph_progress;
@@ -101,8 +102,10 @@ pub(crate) struct Work {
     pub(crate) framing_bytes: usize,
     /// Actual quote framing line visits.
     pub(crate) quote_lines: usize,
-    /// Actual list continuation line visits.
+    /// Continuation lines decided one at a time.
     pub(crate) list_lines: usize,
+    /// Continuation lines an item took from the line records its enclosing item kept.
+    pub(crate) list_adopted: usize,
     /// Item stop rule sets compiled for a prefix and grammar not yet seen.
     pub(crate) list_rules: usize,
     /// Borrowed source windows created.
@@ -161,6 +164,24 @@ pub(crate) struct Work {
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
     pub(crate) static WORK: RefCell<Work> = RefCell::default();
+}
+
+thread_local! {
+    /// Whether items take recorded aligned lines as a run, which a witness may turn off.
+    static ADOPTING: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
+
+/// Whether items take recorded aligned lines as a run.
+pub(crate) fn adopting() -> bool {
+    ADOPTING.get()
+}
+
+/// Run `case` with every item admitting its continuation lines one at a time.
+pub(crate) fn line_by_line<T>(case: impl FnOnce() -> T) -> T {
+    ADOPTING.set(false);
+    let output = case();
+    ADOPTING.set(true);
+    output
 }
 
 /// Clear the counters and ask for the retained frame measurement.

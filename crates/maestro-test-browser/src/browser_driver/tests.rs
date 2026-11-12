@@ -140,7 +140,7 @@ fn inventory_rejects_empty_invalid_duplicate_and_extra_names() {
         [
             ("execution", 27),
             ("loading", 70),
-            ("contributions", 196),
+            ("contributions", 189),
             ("canvas", 165)
         ]
     );
@@ -290,7 +290,6 @@ const CONTRIBUTION_SOURCES: &[&str] = &[
     "agent_interface_browser.rs",
     "theme_toggle_browser.rs",
     "chat_panel_browser.rs",
-    "chat_example_browser.rs",
 ];
 
 /// Read only declarations exported with the authored browser-binding attribute.

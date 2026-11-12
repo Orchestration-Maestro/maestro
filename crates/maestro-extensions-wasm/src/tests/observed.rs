@@ -34,13 +34,6 @@ pub fn gate() -> (Hold, oneshot::Receiver<()>, oneshot::Sender<()>) {
     )
 }
 
-/// Holds exactly the next native wait and exposes its entry and release.
-pub fn hold(observed: &mut Observed) -> (oneshot::Receiver<()>, oneshot::Sender<()>) {
-    let (gate, entered, open) = gate();
-    observed.hold_next_idle(gate);
-    (entered, open)
-}
-
 /// Reports that a held operation is pending and waits until the driver lets it continue.
 pub async fn pause(hold: Option<Hold>) {
     if let Some(Hold { started, open }) = hold {
@@ -74,14 +67,6 @@ impl Session {
             Ok(self.cwd.clone())
         }
     }
-}
-
-/// One tool registration the guest attempted, whether or not the host admitted it.
-pub struct Attempt {
-    /// The metadata document the guest sent.
-    pub metadata: String,
-    /// How many transcript lines the host recorded before the attempt.
-    pub position: usize,
 }
 
 /// Lines the host observed, the identities the extension dropped, how many resources the host
@@ -130,8 +115,6 @@ pub struct Observed {
     pub handed_over: Vec<u32>,
     /// Authored tool metadata in registration order.
     pub tools: Vec<String>,
-    /// Tool registrations the guest attempted, admitted or not, in attempt order.
-    pub attempts: Vec<Attempt>,
     pub schemas: Vec<(String, String, u32)>,
     pub schema_request_bytes: usize,
     pub schema_response_bytes: usize,
@@ -198,23 +181,11 @@ impl Observed {
         self.live = self.live.saturating_sub(1);
     }
 
-    /// Every callback identity this isolated host issued, including those already dropped.
-    pub fn identities(&self) -> std::ops::RangeInclusive<u32> {
-        1..=self.next
-    }
-
     /// Hands out a fresh callback identity.
     pub fn next_identity(&mut self) -> u32 {
         self.next += 1;
         self.lend();
         self.next
-    }
-
-    /// Identities the controlled host still owns, including widget style callbacks.
-    pub fn live_identities(&self) -> Vec<u32> {
-        (1..=self.next)
-            .filter(|id| !self.dropped.contains(id))
-            .collect()
     }
 
     /// Records that the extension dropped an identity.
@@ -253,10 +224,6 @@ impl Observed {
             name: String,
         }
         let Named { name } = serde_json::from_str(metadata).map_err(|e| e.to_string())?;
-        self.attempts.push(Attempt {
-            metadata: metadata.into(),
-            position: self.transcript.len(),
-        });
         if let Some(error) = self.registrations.refusal() {
             return Err(error);
         }
@@ -360,15 +327,6 @@ impl Observed {
     pub fn take_registration(&mut self, name: &str) -> Option<u32> {
         let position = self.order.iter().position(|(queued, _)| queued == name)?;
         self.order.remove(position).map(|(_, key)| key)
-    }
-
-    /// Every key registered under `name`, in registration order.
-    pub fn registrations(&self, name: &str) -> Vec<u32> {
-        self.order
-            .iter()
-            .filter(|(queued, _)| queued == name)
-            .map(|(_, key)| *key)
-            .collect()
     }
 
     /// Takes the registration next in line for release, in registration order, then the

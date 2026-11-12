@@ -1,6 +1,41 @@
 //! The actual component's retained call and result renderers.
 use super::*;
-use maestro_app::{ToolRenderResultLike, ToolRenderResultOptions, ToolRendererState};
+use maestro_app::{
+    ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResultLike,
+    ToolRenderResultOptions, ToolRendererState,
+};
+use std::cell::RefCell;
+
+/// Supplies the ordinary retained row environment, not a replacement rendering engine.
+fn context<'a>(
+    args: &'a Value,
+    rows: &'a ToolRendererState,
+) -> ToolRenderContext<'a, ToolRendererState> {
+    ToolRenderContext {
+        args: Some(args),
+        tool_call_id: "subagent-render".into(),
+        invalidate: Rc::new(|| {}),
+        environment: Rc::new(ToolRenderEnvironment {
+            runtime: maestro_tui::test_support::manual_runtime::ManualRuntime::new().handle(),
+            readme_path: String::new(),
+            live_theme: crate::support::theme(),
+            highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
+            terminal_image: maestro_tui::TerminalImage::default(),
+        }),
+        last_component: None,
+        state: Rc::new(RefCell::new(rows.clone())),
+        renderer_state: Some(rows),
+        cwd: "/work".into(),
+        phase: ToolRenderPhase {
+            execution_started: true,
+            args_complete: true,
+            is_partial: false,
+        },
+        expanded: true,
+        show_images: false,
+        is_error: false,
+    }
+}
 
 /// Supplies literal child observations, not a second rendering implementation.
 fn details(mode: &str) -> Value {
@@ -33,7 +68,7 @@ pub(super) fn rendered(
         .renderer_binding()
         .unwrap();
     let rows = ToolRendererState::default();
-    let context = crate::tic_tac_toe_example::renderers::context(args, &rows);
+    let context = context(args, &rows);
     let prepared = binding
         .render_result
         .expect("subagent result renderer")
@@ -107,7 +142,7 @@ fn subagent_renderers_show_calls_full_outputs_usage_and_live_progress() {
             let session = loaded(&root, local).await;
             let args = json!({"chain":[{"agent":"role","task":"inspect {previous}"},{"agent":"next","task":"continue"}],"agentScope":"both"});
             let rows = ToolRendererState::default();
-            let context = crate::tic_tac_toe_example::renderers::context(&args, &rows);
+            let context = context(&args, &rows);
             let binding = session
                 .get_tool_definition("subagent")
                 .unwrap()
@@ -210,7 +245,7 @@ fn subagent_call_previews_bound_single_parallel_and_chain_arguments() {
                 ),
             ] {
                 let rows = ToolRendererState::default();
-                let context = crate::tic_tac_toe_example::renderers::context(&args, &rows);
+                let context = context(&args, &rows);
                 let call = binding.render_call.as_ref().unwrap()(
                     Some(&args),
                     &crate::support::theme(),

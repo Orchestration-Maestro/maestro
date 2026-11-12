@@ -1,5 +1,8 @@
 //! Item-local source selections and monotone continuation history.
-use super::Marker;
+use super::{
+    Marker,
+    record::{BodyLine, LineEnds, Shape},
+};
 use crate::{
     MarkedOptions,
     lexer::Child,
@@ -9,34 +12,28 @@ use crate::{
 use maestro_text::{is_whitespace_scalar, truncate_utf16};
 use std::rc::Rc;
 
-/// The line ends an item recorded while it admitted its body, so a list inside that body
-/// frames each physical line without scanning it again.
-#[derive(Clone)]
-pub(crate) struct LineEnds {
-    /// Logical end of each terminated body line, terminator included, in ascending order.
-    ends: Rc<Vec<usize>>,
-    /// Start of the framed operand within the recorded body.
-    base: usize,
+/// One recorded line an item admits as aligned.
+struct Taken {
+    /// Start of the line in the operand.
+    start: usize,
+    /// End of the line in the operand, terminator included.
+    end: usize,
+    /// Leading spaces dedented from the line.
+    cut: usize,
+    /// Spelling of the line once dedented.
+    shape: Shape,
 }
 
-impl LineEnds {
-    /// The same line ends for an operand that starts `offset` bytes later.
-    pub(crate) fn after(&self, offset: usize) -> Self {
-        Self {
-            ends: Rc::clone(&self.ends),
-            base: self.base + offset,
-        }
-    }
-
-    /// End of the physical line that starts at `offset` in an operand of `length` bytes,
-    /// which is where a scan for its terminator would stop.
-    pub(super) fn line_end(&self, offset: usize, length: usize) -> usize {
-        let start = self.base + offset;
-        let index = self.ends.partition_point(|end| *end <= start);
-        self.ends
-            .get(index)
-            .map_or(length, |end| (end - self.base).min(length))
-    }
+/// The last non-blank line of an admitted run and the history measured at it.
+struct Boundary {
+    /// Position of the line in the run.
+    index: usize,
+    /// Semantic body through the line's last non-whitespace scalar.
+    body_end: usize,
+    /// Raw through the same scalar.
+    raw_end: usize,
+    /// Whether a blank line precedes the boundary.
+    blank: bool,
 }
 
 /// History at the last non-whitespace raw boundary, before final-list trimming.
@@ -120,6 +117,17 @@ impl Accumulated {
         }
     }
 
+    /// Retain a shared splice after every piece admitted so far, without visiting its bytes.
+    fn extend(&mut self, piece: Segmented) {
+        if piece.len() == 0 {
+            return;
+        }
+        if let Some(last) = self.last.take() {
+            self.pending.append(last);
+        }
+        self.pending.segmented(piece);
+    }
+
     /// Logical bytes accumulated so far.
     fn len(&self) -> usize {
         self.value.len() + self.pending.len() + self.last.as_ref().map_or(0, |last| last.text.len())
@@ -165,8 +173,10 @@ pub(super) struct ItemLines {
     raw: Accumulated,
     /// Dedented spelling selected from the same shared source.
     body: Accumulated,
-    /// Logical end of each terminated line of `body`, the only places it holds a terminator.
-    ends: Rc<Vec<usize>>,
+    /// Each terminated line of `body`, the only places it holds a terminator.
+    ends: Rc<Vec<BodyLine>>,
+    /// Spelling of the final line of `body`, recorded once its terminator is admitted.
+    shape: Shape,
     /// Final admitted line, whose terminator separates it from the next.
     tail: ScopeSource,
     /// Raw end before trailing whitespace, which the list trims from its final item.
@@ -204,6 +214,7 @@ impl ItemLines {
         let body = first.select(std::iter::once(start..first.text.len()));
         let rules = crate::rules::item_stops(marker.indent, options);
         let previous_stops = rules.ends_lazy(&first.text);
+        let shape = Shape::of(&body.text);
         let trimmed = History {
             body_end: body.text.trim_end_matches(is_whitespace_scalar).len(),
             blank,
@@ -217,6 +228,7 @@ impl ItemLines {
             raw: source.clone().into(),
             body: body.into(),
             ends: Rc::default(),
+            shape,
             tail: source.clone(),
             raw_end: source.text.trim_end_matches(is_whitespace_scalar).len(),
             blank,
@@ -243,7 +255,7 @@ impl ItemLines {
         self.body.truncate(self.trimmed.body_end);
         let kept = self
             .ends
-            .partition_point(|end| *end <= self.trimmed.body_end);
+            .partition_point(|line| line.end <= self.trimmed.body_end);
         Rc::make_mut(&mut self.ends).truncate(kept);
         let padding_end = separator.text.len() - usize::from(separator.text.ends_with('\n'));
         let mut padding = separator.select(std::iter::once(0..padding_end));
@@ -251,6 +263,7 @@ impl ItemLines {
             padding = padding.replace("\t", "    ");
         }
         self.body.push(padding);
+        self.shape = Shape::Other;
         self.tail = separator;
         self.blank = self.trimmed.blank;
         self.previous_stops = self.trimmed.previous_stops;
@@ -285,19 +298,14 @@ impl ItemLines {
         }
         let measured = original.replace("\t", "    ");
         let start = truncate_utf16(&measured.text, self.indent).len();
-        if let Some(last) = self.tail.text.len().checked_sub(1) {
-            self.body
-                .push(self.tail.select(std::iter::once(last..last + 1)));
-            if self.tail.text.ends_with('\n') {
-                Rc::make_mut(&mut self.ends).push(self.body.len());
-            }
-        }
+        self.separate();
         let content = if aligned {
             measured.select(std::iter::once(start..measured.text.len()))
         } else {
             original
         };
         let body_end = self.body.len() + content.text.trim_end_matches(is_whitespace_scalar).len();
+        self.shape = Shape::of(&content.text);
         self.body.push(content);
         self.previous_stops = self.rules.ends_lazy(&measured.text[start..]);
         self.blank |= empty;
@@ -312,6 +320,138 @@ impl ItemLines {
             },
         );
         true
+    }
+
+    /// Admit, as one run, the aligned lines the enclosing item recorded from `offset` of
+    /// `source`, returning the bytes taken.
+    ///
+    /// Each line gets the verdict `append` gives an aligned line, from its recorded
+    /// spelling instead of its text; the first line that is not aligned, is spelled
+    /// with a tab or reaches past the operand ends the run.
+    pub(super) fn adopt(&mut self, source: &Segmented, lines: &LineEnds, offset: usize) -> usize {
+        #[cfg(test)]
+        if !crate::tests::adopting() {
+            return 0;
+        }
+        if !matches!(self.phase, Phase::Open) {
+            return 0;
+        }
+        let mut start = offset;
+        let mut run = Vec::new();
+        for (end, shape) in lines.recorded(offset, source.len()) {
+            let Some((cut, shape)) = shape.dedent(self.indent) else {
+                break;
+            };
+            let cut = match shape {
+                Shape::Blank => (end - 1 - start).min(self.indent),
+                _ => cut,
+            };
+            run.push(Taken {
+                start,
+                end,
+                cut,
+                shape,
+            });
+            start = end;
+        }
+        let Some(last) = run.last() else {
+            return 0;
+        };
+        let taken = last.end - offset;
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.list_adopted += run.len());
+        self.admit_run(source, &run);
+        taken
+    }
+
+    /// Admit the lines of one run in the order and with the history `append` would give them.
+    fn admit_run(&mut self, source: &Segmented, run: &[Taken]) {
+        self.separate();
+        let raw_before = self.raw.len();
+        let origin = run[0].start;
+        let mut text = None;
+        for (index, line) in run.iter().enumerate() {
+            let terminated = index + 1 < run.len();
+            let piece = source.select(line.start + line.cut..line.end - usize::from(!terminated));
+            let body_before = self.body.len();
+            self.body.extend(piece);
+            if terminated {
+                Rc::make_mut(&mut self.ends).push(BodyLine {
+                    end: self.body.len(),
+                    shape: line.shape,
+                });
+            }
+            match line.shape {
+                Shape::Blank => self.blank = true,
+                Shape::Text {
+                    trimmed,
+                    columns: _,
+                } => {
+                    text = Some(Boundary {
+                        index,
+                        body_end: body_before + trimmed,
+                        raw_end: raw_before + line.start - origin + trimmed + line.cut,
+                        blank: self.blank,
+                    });
+                }
+                Shape::Other => {}
+            }
+        }
+        self.raw
+            .extend(source.select(origin..run[run.len() - 1].end));
+        self.settle_run(source, run, text);
+    }
+
+    /// Record the history the final lines of an admitted run leave behind.
+    fn settle_run(&mut self, source: &Segmented, run: &[Taken], text: Option<Boundary>) {
+        let line = |index: usize| {
+            let line = &run[index];
+            source.select(line.start..line.end).materialize()
+        };
+        let last = run.len() - 1;
+        let tail = line(last);
+        let stops = |line: &ScopeSource, cut: usize| {
+            self.rules.ends_lazy(&line.text[cut..line.text.len() - 1])
+        };
+        self.previous_stops = stops(&tail, run[last].cut);
+        if let Some(boundary) = text {
+            let kept = if boundary.index == last {
+                tail.clone()
+            } else {
+                line(boundary.index)
+            };
+            self.raw_end = boundary.raw_end;
+            self.trimmed = History {
+                body_end: boundary.body_end,
+                blank: boundary.blank,
+                previous_stops: stops(&kept, run[boundary.index].cut),
+                phase: Phase::Open,
+                line: kept,
+                padding: Padding::Expanded,
+            };
+        }
+        let before = if last == 0 {
+            self.suffix[1].clone()
+        } else {
+            line(last - 1)
+        };
+        self.suffix = [before, tail.clone()];
+        self.shape = run[last].shape;
+        self.tail = tail;
+    }
+
+    /// Admit the terminator of the final line and record that line ahead of the next one.
+    fn separate(&mut self) {
+        if let Some(last) = self.tail.text.len().checked_sub(1) {
+            self.body
+                .push(self.tail.select(std::iter::once(last..last + 1)));
+            if self.tail.text.ends_with('\n') {
+                Rc::make_mut(&mut self.ends).push(BodyLine {
+                    end: self.body.len(),
+                    shape: self.shape,
+                });
+            }
+        }
     }
 
     /// Retain admitted raw and its trimmed boundary without scanning the growing prefix.

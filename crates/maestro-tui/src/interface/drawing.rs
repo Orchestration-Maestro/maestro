@@ -176,8 +176,9 @@ pub(super) fn differential(
     let line_diff = row_delta(hardware_row, move_target);
     buffer.push_str(&move_rows(line_diff));
     buffer.push_str(if changes.append_start { "\r\n" } else { "\r" });
-    let render_end = changes.last.min(lines.len() - 1);
-    for (offset, line) in lines[changes.first..=render_end].iter().enumerate() {
+    let rows = changes.drawn_rows(lines.len());
+    let render_end = rows.end - 1;
+    for (offset, line) in lines[rows].iter().enumerate() {
         if offset > 0 {
             buffer.push_str("\r\n");
         }
