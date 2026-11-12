@@ -281,7 +281,12 @@ static POOLS: LazyLock<Mutex<HashMap<PoolKey, Arc<Senders>>>> = LazyLock::new(Mu
 type PoolKey = (Option<Url>, bool);
 
 /// The shared senders of requests that go through `proxy` over HTTP/1 only when `http1`.
+/// Requests routed by a proxy script keep their own: the script's interpreter holds a worker
+/// that the end of a runtime waits for, so it must not outlive its request.
 fn pool(proxy: Option<&Url>, http1: bool) -> Arc<Senders> {
+    if proxy.is_some_and(|proxy| proxy.scheme().starts_with("pac+")) {
+        return Arc::default();
+    }
     let mut pools = POOLS.lock().unwrap_or_else(PoisonError::into_inner);
     Arc::clone(pools.entry((proxy.cloned(), http1)).or_default())
 }
