@@ -1,14 +1,41 @@
 //! Native HTTP resources live on the existing local capability owner.
 use super::{
-    Admission, Capability, Lease, Registry, SignalEndpoint, native_resources::Reader, pump::State,
+    Admission, Capability, Lease, Registry, SignalEndpoint, held::NativeResponse,
+    native_resources::Reader, pump::State,
 };
 use maestro_extensions::native_io;
-use std::sync::{Arc, mpsc::Sender};
+use std::sync::Arc;
 use tokio::sync::oneshot;
 
 /// Store-safe ownership of one original response.
 #[derive(Clone)]
 pub struct Response(pub(crate) Arc<Lease>);
+impl Response {
+    /// Reads the native status without consuming the body.
+    pub(crate) fn status(&self) -> Result<u16, String> {
+        self.0
+            .run::<NativeResponse, _>(|response, _| Ok(response.status()))
+    }
+    /// Reads the original native reason phrase.
+    pub(crate) fn status_text(&self) -> Result<String, String> {
+        self.0
+            .run::<NativeResponse, _>(|response, _| Ok(response.status_text()))
+    }
+    /// Reads the normalized response header pairs.
+    pub(crate) fn headers(&self) -> Result<Vec<(String, String)>, String> {
+        self.0
+            .run::<NativeResponse, _>(|response, _| Ok(response.headers()))
+    }
+    /// Acquires the original consuming body with independent resource ownership.
+    pub(crate) fn body(&self) -> Result<Option<Reader>, String> {
+        self.0.run::<NativeResponse, _>(|response, registry| {
+            response
+                .body()
+                .map(|body| registry.reader(body))
+                .transpose()
+        })
+    }
+}
 /// Supplied HTTP operands with a retained original signal endpoint.
 pub(crate) struct Fetch {
     /// Literal destination.
@@ -30,14 +57,6 @@ pub(crate) enum Request {
     Json(oneshot::Sender<Result<String, String>>, Admission),
     /// Collects the original body through its native response owner.
     Text(oneshot::Sender<Result<String, String>>, Admission),
-    /// Reads the native status without consuming the body.
-    Status(Sender<Result<u16, String>>),
-    /// Original native reason phrase.
-    StatusText(Sender<Result<String, String>>),
-    /// Normalized response header pairs.
-    Headers(Sender<Result<Vec<(String, String)>, String>>),
-    /// Original consuming body with independent resource ownership.
-    Body(Sender<Result<Option<Reader>, String>>),
 }
 impl State {
     /// Serves HTTP operations after releasing the capability-table borrow.
@@ -74,24 +93,6 @@ impl State {
                     ),
                     admission,
                 );
-            }
-            Request::Status(reply) => {
-                let _ = reply.send(response.map(|response| response.status()));
-            }
-            Request::StatusText(reply) => {
-                let _ = reply.send(response.map(|response| response.status_text()));
-            }
-            Request::Headers(reply) => {
-                let _ = reply.send(response.map(|response| response.headers()));
-            }
-            Request::Body(reply) => {
-                let result = response.and_then(|response| {
-                    response
-                        .body()
-                        .map(|body| self.registry.reader(body))
-                        .transpose()
-                });
-                let _ = reply.send(result);
             }
             Request::Fetch(_, reply, _) => {
                 let _ = reply.send(Err("operation requires native I/O".into()));

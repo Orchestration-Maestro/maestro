@@ -5,16 +5,18 @@
     clippy::excessive_nesting
 )]
 use crate::{
+    bindings::maestro::extension::host::HostCustomClose,
     callback_imports::{CallbackView, retain},
+    context_imports::add_resource,
     custom_reads::{CloseEndpoint, Options, Request, Source},
     guest_calls::Callback,
+    import_route::{Route, push},
+    lifecycle::State,
     overlay_reads::OptionsEndpoint,
+    read_imports::{endpoint, forwards, release},
     ui_reads::{Dialog, Endpoint},
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Resource},
-};
+use wasmtime::component::{ComponentType, Lift, LinkerInstance, Resource};
 
 /// Canonical placement: a borrowed record or an authored resolver.
 #[derive(ComponentType, Lift)]
@@ -59,18 +61,10 @@ impl WireOptions {
         })
     }
 }
-/// Installs the close resource and the asynchronous custom operation.
+/// Installs the asynchronous custom operation.
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, CloseEndpoint>(host, "custom-close")?;
-    host.func_wrap(
-        "[method]custom-close.close",
-        |mut store: StoreContextMut<'_, T>, (this,): (Resource<CloseEndpoint>,)| {
-            let close = store.data_mut().ctx().table.get(&this)?.clone();
-            Ok((crate::import_route::push(store.data_mut(), close.close())?,))
-        },
-    )?;
     host.func_wrap_concurrent("[method]extension-ui-context.custom", |accessor, (ui, factory, options): (Resource<Endpoint>, Resource<Callback>, Option<WireOptions>)| {
         Box::pin(async move {
             let (ui, request) = accessor.with(|mut access| {
@@ -83,4 +77,24 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             Ok((ui.dialog(|reply| Dialog::Custom(request, reply), None, None).await,))
         })
     })
+}
+
+impl HostCustomClose for State {
+    fn close(&mut self, this: Resource<CloseEndpoint>) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.close();
+        push(self, route)
+    }
+
+    fn drop(&mut self, this: Resource<CloseEndpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards the close operation of a custom component to its trait implementation.
+pub(crate) fn add_close(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, CloseEndpoint>(host, "custom-close")?;
+    forwards! { host, "custom-close", HostCustomClose, CloseEndpoint,
+        "close" => close();
+    }
+    Ok(())
 }

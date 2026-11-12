@@ -292,7 +292,7 @@ job (deliveries 62–64). It holds no code, and the skill loader and package dis
 - **Growth.** A delivery points only at skills already delivered; later deliveries add their pointers and
   router arms.
 
-Not copied, each listed once: other hosts' hook, plugin, command and tool-map files; the always-on router
+Not copied, each listed once: other hosts' hook, extension, command and tool-map files; the always-on router
 injection; Node and shell helper scripts, except one shell template; styling and diagram scripts loaded from a
 CDN; external agent command lines; the option-page server's live reload, click log and reach from another
 machine; the source packs' unfinished, language-specific and host-specific skills; the one-time repository
@@ -396,7 +396,7 @@ Results match the reference. These mechanisms are replaced, each listed once:
 
 ## Out of scope
 
-- **Other hosts.** Other agents' hook files, plugin folders and status-line scripts in the packages and skill packs.
+- **Other hosts.** Other agents' hook files, extension folders and status-line scripts in the packages and skill packs.
 - **Reference examples.** The task-list, questionnaire, question and notification examples of the reference agent
   are separate example deliveries of the port specification.
 - **Rebuilt browser apps.** Plan review's two built browser apps are served as data, not rebuilt.

@@ -374,6 +374,7 @@ fn single_name_owner(name: &str) -> Option<&'static str> {
     let owner = match name {
         "Listeners" => "maestro-listeners",
         "NumberFormatter" | "OpenXmlPackage" | "WorkbookError" => "maestro-office",
+        "ObjectNode" | "Relation" => "maestro-schema-validator",
         "serialize_json_line" | "JsonlLineSplitter" => "maestro-json",
         "serialize_rpc_response" => "maestro-protocol",
         "session_transcripts" => "maestro-session-reports",

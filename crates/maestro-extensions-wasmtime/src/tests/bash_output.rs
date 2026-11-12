@@ -80,3 +80,15 @@ fn dropping_an_output_consumer_retires_its_retained_guest_key() {
             worker.join().unwrap();
         });
 }
+
+#[test]
+fn released_output_rejects_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let (endpoint, output) = pump.registry().bash_output().unwrap();
+    let lease = endpoint.0.clone();
+    drop(output);
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [endpoint.on_data(vec![0]).unwrap_err()]
+    });
+    assert_eq!(errors, ["extension bash-output resource ended"]);
+}

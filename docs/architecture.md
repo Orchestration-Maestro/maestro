@@ -396,16 +396,30 @@ itself still passes,
 as do agent directory paths such as `~/.maestro/agent`, and a local page that never
 ships stays out of the check.
 
-Names say what the code does, so another project's library and product words stay out
-of them. The check reads each Rust identifier and each file and directory name that version
-control tracks under `crates/` and `docs/`; string literals and comments are not read. It
-splits a name at non-alphanumerics and case changes, and a denied word matches when its
-segments appear in order, ignoring case: `ssf_load`, `SsfLoad` and `ssf-notes.md` hold
-`ssf`, while `successful` and `plugins` hold nothing. A hit names the file, the line and
-the word. `DENIED` in `crates/maestro-test-conventions/src/leaked_words.rs` is the one list
-to edit when a word joins it. `EXEMPT` beside it holds the names a user, a provider or a
-stored file carries, each with its reason; a row that matches no name is reported, so an
-exemption cannot outlive its need.
+Public text is Maestro's own, so another project's names and words stay out of it. The
+check reads each Rust identifier, string literal, doc comment and other comment in the
+members' sources, each Markdown page that version control tracks under `docs/`, and each
+tracked file and directory name under `crates/` and `docs/`. It splits the text at
+non-alphanumerics and case changes into words and checks two lists in
+`crates/maestro-test-conventions/src/leaked_words.rs`:
+
+- `DENIED` holds generic library and product words, readable. A word of one or more
+  segments joined by `_` matches when its segments sit next to each other, joined by `_`,
+  `-` or a case change alone and ignoring case. A longer word never matches: a denied word
+  `quartz` is found in `quartz_load`, `QuartzLoad` and `quartz-notes.md`, not in `quartzite`.
+- `HASHED` holds the 64-bit FNV-1a hash of the lowercase form of other projects' own names,
+  so the repository never spells them. A word matches when its hash does. A short name that
+  is also an ordinary word stays off the list, and this scan does not check it.
+
+A hit names the file, the line, what holds the word (identifier, string literal, doc
+comment, comment, documentation page, or file or directory name) and the word as the text
+spells it. The diagnostic names `DENIED` and `HASHED` as the lists to edit.
+
+`EXEMPT` beside them holds the places a user, a provider, a stored file or a detected
+program carries a word, each with its path, word (a hashed word by its hash in `0x` and
+sixteen hex digits) and reason. The deny list's own file holds each readable word, so the
+check adds one row per `DENIED` word for it. A row that matches nothing, including one whose
+path left the tree, is reported, so an exemption cannot outlive its need.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio

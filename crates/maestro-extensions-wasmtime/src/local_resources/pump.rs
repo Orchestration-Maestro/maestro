@@ -2,7 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Cancellation, Model, ReadonlySessionManager};
+use maestro_extensions::{Cancellation, Model};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -206,14 +206,10 @@ impl State {
             Message::HostOperation(call) => self.host_operation(call),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
-            Message::Signal(id, request) => self.signal(id, request),
-            Message::Writer(id, request) => self.write(id, request),
-            Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
             message @ (Message::OAuthLogin(..)
             | Message::OAuthRefresh(..)
             | Message::OAuthProvider(..)
             | Message::OAuthInteraction(..)) => self.oauth(message),
-            Message::Credentials(id, request) => self.credentials(id, request),
             Message::CredentialLogin(id, provider, controls, reply, admission) => {
                 self.start_credential_login(id, (provider, controls), reply, admission);
             }
@@ -225,9 +221,7 @@ impl State {
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
-            Message::Footer(id, request) => self.footer(id, request),
             Message::Widgets(message) => self.widgets(message),
-            Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
             Message::Http(id, request) => self.http(id, request),
             Message::Watch(id, request) => self.watch(id, request),
@@ -438,33 +432,6 @@ impl State {
         } else {
             request.reject("extension UI resource ended");
         }
-    }
-
-    /// Applies a mutation to the original setup owner, never to its reader.
-    fn write(&self, id: u64, request: crate::writer_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Writer(session)) = capability.as_deref() {
-            request.answer(&mut session.borrow_mut());
-        } else {
-            request.reject("extension writable session resource ended");
-        }
-    }
-
-    /// Gives the reader its own identity before releasing the writer's capability.
-    fn writer_reader(
-        &self,
-        id: u64,
-        reply: &std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
-    ) {
-        let capability = self.registry.capability(id);
-        let result = match capability.as_deref() {
-            Some(Capability::Writer(session)) => {
-                let reader: Rc<RefCell<dyn ReadonlySessionManager>> = session.clone();
-                self.registry.history(reader)
-            }
-            _ => Err("extension writable session resource ended".to_owned()),
-        };
-        let _ = reply.send(result);
     }
 }
 

@@ -4457,8 +4457,6 @@ dependencies = [
  "hyper-rustls",
  "hyper-util",
  "icu_collator",
- "icu_normalizer",
- "idna",
  "if-addrs",
  "image 0.24.9",
  "indexmap 2.14.2",
@@ -4472,12 +4470,12 @@ dependencies = [
  "maestro-path",
  "maestro-realpath",
  "maestro-request",
+ "maestro-schema-validator",
  "maestro-test-directory",
  "maestro-test-fixtures",
  "maestro-test-process",
  "maestro-test-tracing",
  "maestro-text",
- "num-bigint 0.4.8",
  "num-traits",
  "percent-encoding",
  "rand 0.10.3",
@@ -4496,7 +4494,6 @@ dependencies = [
  "tokio-tungstenite",
  "tower-service",
  "tracing",
- "unicode-segmentation",
  "url",
  "uuid",
  "wasm-bindgen",
@@ -4717,6 +4714,28 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "maestro-schema-validator"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "icu_normalizer",
+ "idna",
+ "maestro-dependencies",
+ "maestro-json",
+ "maestro-request",
+ "maestro-text",
+ "num-bigint 0.4.8",
+ "num-traits",
+ "percent-encoding",
+ "regress",
+ "ryu-js",
+ "serde",
+ "serde_json",
+ "unicode-segmentation",
+ "url",
 ]
 
 [[package]]
