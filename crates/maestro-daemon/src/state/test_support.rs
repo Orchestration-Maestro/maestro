@@ -16,8 +16,6 @@ pub mod layout_commands;
 pub mod pane_close;
 /// Helpers that the pane commands tests share between the integration program and the unit tests.
 pub mod pane_commands;
-/// Helpers that the pane input tests share between the integration program and the unit tests.
-pub mod pane_input;
 /// Helpers that the pane metadata tests share between the integration program and the unit tests.
 pub mod pane_metadata;
 /// Helpers that the pane move tests share between the integration program and the unit tests.

@@ -25,7 +25,7 @@ fn a_focused_move_splits_at_the_ratio_and_focuses_the_moved_pane() {
 #[test]
 fn a_focused_move_returns_copy_mode_to_the_moved_pane() {
     let mut app = two_tabs().unwrap();
-    let source = root_pane(&app, 0);
+    let source = root_pane(&app, 0).unwrap();
     app.state.copy_mode = Some(CopyModeState {
         pane_id: source,
         selection: None,
@@ -80,7 +80,7 @@ fn a_legacy_tab_spelling_survives_the_removal_of_the_source_workspace() {
 #[test]
 fn moving_a_pane_to_a_new_tab_of_another_workspace_renumbers_it_there() {
     let mut app = daemon_with_workspaces(&["/issue", "/other"]).unwrap();
-    let source = root_pane(&app, 0);
+    let source = root_pane(&app, 0).unwrap();
     split_pane(&mut app, 0, source, SplitDirection::Right).unwrap();
     let destination = json!({"type": "new_tab", "workspace_id": "w2"});
     let moved = move_of(request(&mut app, moving("w1:p1", &destination, false))).unwrap();

@@ -36,7 +36,7 @@ fn terminal_of(app: &App, pane: PaneId) -> maestro_workspace::terminal_id::Termi
 #[test]
 fn export_describes_the_focused_tab_as_a_portable_tree() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     let right = split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     let layout = &mut app.state.topology.workspaces[0].tabs[0].layout;
     layout.focus_pane(root);
@@ -66,7 +66,7 @@ fn export_describes_the_focused_tab_as_a_portable_tree() {
 #[test]
 fn export_carries_the_zoom_and_the_launch_command_of_a_pane() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     let terminal = terminal_of(&app, root);
     app.state.terminals.get_mut(&terminal).unwrap().launch_argv =
@@ -102,7 +102,7 @@ fn export_refuses_a_target_that_is_missing_or_ambiguous() {
 #[test]
 fn a_split_ratio_change_is_answered_and_published() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     let wire = json!({"type": "layout.set_split_ratio", "path": [], "ratio": 0.72});
     let layout = adjusted(request(&mut app, wire)).unwrap();
@@ -132,7 +132,7 @@ fn a_split_ratio_for_a_missing_split_is_refused_without_a_change() {
             "{path}"
         );
     }
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     let wire = json!({"type": "layout.set_split_ratio", "path": [true], "ratio": 0.72});
     assert_eq!(

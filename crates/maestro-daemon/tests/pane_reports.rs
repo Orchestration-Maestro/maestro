@@ -27,12 +27,12 @@ fn anchored_under(app: &mut App, source: &str) {
         "agent": "pi", "agent_session_path": SESSION, "session_start_source": "startup",
         "seq": 1
     });
-    accepted(app, session);
+    accepted(app, session).unwrap();
     let mut working = report(source, "pi", "working");
     working["message"] = json!("thinking");
     working["agent_session_path"] = json!(SESSION);
     working["seq"] = json!(2);
-    accepted(app, working);
+    accepted(app, working).unwrap();
 }
 /// A state report for the first pane.
 fn report(source: &str, agent: &str, state: &str) -> Value {
@@ -48,7 +48,7 @@ fn blank_agent() -> Result<ResponseResult, ErrorBody> {
 #[test]
 fn a_custom_agent_report_becomes_the_effective_agent_and_state() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    accepted(&mut app, report("custom:hermes", "hermes", "working"));
+    accepted(&mut app, report("custom:hermes", "hermes", "working")).unwrap();
     let reported = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(reported.agent.as_deref(), Some("hermes"));
     assert_eq!(reported.agent_status, AgentStatus::Working);
@@ -72,7 +72,7 @@ fn a_session_report_alone_keeps_the_state_and_records_the_identity() {
         "agent": " Pi ", "agent_session_path": SESSION, "session_start_source": "startup",
         "seq": 1
     });
-    accepted(&mut app, session);
+    accepted(&mut app, session).unwrap();
     let after = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(after.agent_status, before.agent_status);
     assert_eq!(
@@ -83,7 +83,7 @@ fn a_session_report_alone_keeps_the_state_and_records_the_identity() {
 #[test]
 fn agent_labels_are_normalized_and_a_blank_one_is_refused() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    accepted(&mut app, report("custom:claude", " Claude-Code ", "idle"));
+    accepted(&mut app, report("custom:claude", " Claude-Code ", "idle")).unwrap();
     assert_eq!(
         pane_record(&mut app, "w1:p1").unwrap().agent.as_deref(),
         Some("claude")
@@ -118,7 +118,7 @@ fn a_report_for_a_missing_pane_is_refused() {
 #[test]
 fn a_report_publishes_the_agent_and_its_status() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    accepted(&mut app, report("custom:hermes", "hermes", "working"));
+    accepted(&mut app, report("custom:hermes", "hermes", "working")).unwrap();
     assert_eq!(
         event_names(&app, 0).unwrap(),
         ["pane_agent_detected", "pane_agent_status_changed"]
@@ -131,7 +131,7 @@ fn clearing_authority_restores_the_detected_state() {
     anchored(&mut app);
     let mut blocked = report("maestro:pi", "pi", "blocked");
     blocked["seq"] = json!(3);
-    accepted(&mut app, blocked);
+    accepted(&mut app, blocked).unwrap();
     assert_eq!(
         pane_record(&mut app, "w1:p1").unwrap().agent_status,
         AgentStatus::Blocked
@@ -139,7 +139,7 @@ fn clearing_authority_restores_the_detected_state() {
     let clear = json!({
         "type": "pane.clear_agent_authority", "pane_id": "w1:p1", "source": "maestro:pi", "seq": 4
     });
-    accepted(&mut app, clear);
+    accepted(&mut app, clear).unwrap();
     let restored = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(restored.agent.as_deref(), Some("pi"));
     assert_eq!(restored.agent_status, AgentStatus::Working);
@@ -147,19 +147,19 @@ fn clearing_authority_restores_the_detected_state() {
 #[test]
 fn releasing_a_custom_integration_clears_its_agent_but_an_official_release_keeps_the_process() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    accepted(&mut app, report("custom:hermes", "hermes", "working"));
+    accepted(&mut app, report("custom:hermes", "hermes", "working")).unwrap();
     let release = json!({
         "type": "pane.release_agent", "pane_id": "w1:p1", "source": "custom:hermes",
         "agent": "hermes"
     });
-    accepted(&mut app, release);
+    accepted(&mut app, release).unwrap();
     assert_eq!(pane_record(&mut app, "w1:p1").unwrap().agent, None);
     let mut official = piloted();
     anchored(&mut official);
     let release = json!({
         "type": "pane.release_agent", "pane_id": "w1:p1", "source": "maestro:pi", "agent": "pi"
     });
-    accepted(&mut official, release);
+    accepted(&mut official, release).unwrap();
     let kept = pane_record(&mut official, "w1:p1").unwrap();
     assert_eq!(kept.agent.as_deref(), Some("pi"));
     assert_eq!(kept.agent_status, AgentStatus::Working);
@@ -169,10 +169,10 @@ fn a_stale_sequence_is_ignored() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let mut fresh = report("custom:hermes", "hermes", "working");
     fresh["seq"] = json!(5);
-    accepted(&mut app, fresh);
+    accepted(&mut app, fresh).unwrap();
     let mut stale = report("custom:hermes", "hermes", "blocked");
     stale["seq"] = json!(3);
-    accepted(&mut app, stale);
+    accepted(&mut app, stale).unwrap();
     assert_eq!(
         pane_record(&mut app, "w1:p1").unwrap().agent_status,
         AgentStatus::Working
@@ -195,7 +195,7 @@ fn a_session_report_under_the_legacy_source_records_the_identity() {
         "agent": "pi", "agent_session_path": SESSION, "session_start_source": "startup",
         "seq": 1
     });
-    accepted(&mut app, session);
+    accepted(&mut app, session).unwrap();
     assert_eq!(
         pane_record(&mut app, "w1:p1").unwrap().agent_session,
         Some(pi_session())
@@ -217,7 +217,7 @@ fn an_official_release_under_the_legacy_source_keeps_the_process() {
         "type": "pane.release_agent", "pane_id": "w1:p1", "source": "herdr:pi", "agent": "pi",
         "seq": 3
     });
-    accepted(&mut app, release);
+    accepted(&mut app, release).unwrap();
     let kept = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(kept.agent.as_deref(), Some("pi"));
     assert_eq!(kept.agent_status, AgentStatus::Working);

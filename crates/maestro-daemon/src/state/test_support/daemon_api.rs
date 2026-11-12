@@ -30,8 +30,15 @@ pub fn report(
 
 /// The tokens workspace `w1` currently holds.
 #[must_use]
-pub fn tokens(app: &App) -> HashMap<String, String> {
-    app.state.topology.workspaces[0].metadata_tokens.values()
+pub fn tokens(app: &App) -> Option<HashMap<String, String>> {
+    Some(
+        app.state
+            .topology
+            .workspaces
+            .first()?
+            .metadata_tokens
+            .values(),
+    )
 }
 
 /// The token values of `pairs`.

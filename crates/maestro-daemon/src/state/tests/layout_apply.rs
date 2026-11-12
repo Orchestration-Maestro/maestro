@@ -163,7 +163,7 @@ fn a_new_layout_tab_follows_the_directory_of_the_focused_pane() {
             follow(app);
             add_workspaces(app, &["/tabs"]).unwrap();
             let focused = Scratch::new().unwrap();
-            let root = root_pane(app, 0);
+            let root = root_pane(app, 0).unwrap();
             set_cwd(app, root, focused.path());
             applied(answer(app, apply_wire(&sleeper(), &json!({}))).await);
             assert_eq!(app.state.topology.workspaces[0].tabs.len(), 2);
@@ -179,7 +179,7 @@ fn a_replacing_layout_follows_the_directory_of_the_replaced_tab() {
             follow(app);
             add_workspaces(app, &["/tabs"]).unwrap();
             let (active, background) = (Scratch::new().unwrap(), Scratch::new().unwrap());
-            let root = root_pane(app, 0);
+            let root = root_pane(app, 0).unwrap();
             set_cwd(app, root, active.path());
             let replaced = add_tab(app, 0).unwrap();
             set_cwd(app, replaced, background.path());
@@ -226,7 +226,7 @@ fn replacing_a_tab_drops_the_action_records_of_its_panes() {
         "layout_apply::replacing_a_tab_drops_the_action_records_of_its_panes",
         async |app| {
             add_workspaces(app, &["/tabs"]).unwrap();
-            let replaced = root_pane(app, 0);
+            let replaced = root_pane(app, 0).unwrap();
             app.state.action_panes.insert(
                 replaced,
                 ActionPaneRecord {
@@ -275,7 +275,7 @@ fn a_leaf_that_cannot_start_rolls_the_whole_layout_back() {
         "layout_apply::a_leaf_that_cannot_start_rolls_the_whole_layout_back",
         async |app| {
             add_workspaces(app, &["/tabs"]).unwrap();
-            let original = root_pane(app, 0);
+            let original = root_pane(app, 0).unwrap();
             let missing = Scratch::new().unwrap().path().join("missing");
             let broken = json!({"type": "pane", "cwd": missing, "command": ["/bin/sleep", "60"]});
             let trees = [

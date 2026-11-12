@@ -62,6 +62,8 @@ fn each_seeded_workspace_names_its_first_tab_root() {
     let seeded: Vec<_> = (0..20)
         .map(|index| app.seed_workspace(&format!("/w{index}")).unwrap())
         .collect();
-    let found: Vec<_> = (0..20).map(|index| root_pane(&app, index)).collect();
+    let found: Vec<_> = (0..20)
+        .map(|index| root_pane(&app, index).unwrap())
+        .collect();
     assert_eq!(found, seeded);
 }

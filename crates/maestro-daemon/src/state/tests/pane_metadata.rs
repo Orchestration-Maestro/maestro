@@ -14,7 +14,7 @@ use std::{
 };
 /// The retained state of the first pane's terminal.
 fn terminal_of(app: &mut App) -> &TerminalState {
-    let root = root_pane(app, 0);
+    let root = root_pane(app, 0).unwrap();
     let id = app.state.topology.workspaces[0].terminal_id(root).unwrap();
     &app.state.terminals[id]
 }
@@ -29,7 +29,7 @@ fn update(agent: Option<Agent>, state: AgentState, process_exited: bool) -> Dete
 }
 /// Feeds the first pane's terminal a detection of `update` at `at`.
 fn observe(app: &mut App, update: DetectedStateUpdate, at: Instant) {
-    let root = root_pane(app, 0);
+    let root = root_pane(app, 0).unwrap();
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root)
         .unwrap()
@@ -48,7 +48,7 @@ fn tokens_patch_and_clear_without_touching_the_presentation() {
         json!({"tokens": {"summary": "reviewing auth", "model": "opus"}}),
     )
     .unwrap();
-    accepted(&mut app, set);
+    accepted(&mut app, set).unwrap();
     let expected = |pairs: &[(&str, &str)]| {
         pairs
             .iter()
@@ -64,7 +64,7 @@ fn tokens_patch_and_clear_without_touching_the_presentation() {
         json!({"tokens": {"summary": "done", "model": null}}),
     )
     .unwrap();
-    accepted(&mut app, patch);
+    accepted(&mut app, patch).unwrap();
     assert_eq!(tokens(&mut app).unwrap(), expected(&[("summary", "done")]));
     assert!(terminal_of(&mut app).agent_metadata.is_empty());
 }
@@ -74,13 +74,13 @@ fn a_report_ignored_after_the_process_exit_does_not_advance_the_sequence() {
     detect(&mut app, Agent::Pi, AgentState::Idle);
     let initial =
         titled(json!({"source": "custom:pi-metadata", "agent": "pi", "seq": 100})).unwrap();
-    accepted(&mut app, initial);
+    accepted(&mut app, initial).unwrap();
     let initial_tokens = report(
         "custom:pi-tokens",
         json!({"agent": "pi", "tokens": {"generation": "old"}, "seq": 100}),
     )
     .unwrap();
-    accepted(&mut app, initial_tokens);
+    accepted(&mut app, initial_tokens).unwrap();
     let exit_at = Instant::now() + Duration::from_millis(1);
     observe(
         &mut app,
@@ -93,24 +93,25 @@ fn a_report_ignored_after_the_process_exit_does_not_advance_the_sequence() {
         "source": "custom:pi-metadata", "agent": "pi", "title": "stale", "seq": 200
     }))
     .unwrap();
-    accepted(&mut app, stale);
+    accepted(&mut app, stale).unwrap();
     accepted(
         &mut app,
         titled(json!({"source": "maestro:pi", "seq": 200})).unwrap(),
-    );
+    )
+    .unwrap();
     let back = update(Some(Agent::Pi), AgentState::Idle, false);
     observe(&mut app, back, exit_at + Duration::from_millis(2));
     let fresh = titled(json!({
         "source": "custom:pi-metadata", "agent": "pi", "title": "fresh", "seq": 1
     }))
     .unwrap();
-    accepted(&mut app, fresh);
+    accepted(&mut app, fresh).unwrap();
     let fresh_tokens = report(
         "custom:pi-tokens",
         json!({"agent": "pi", "tokens": {"generation": "new"}, "seq": 1}),
     )
     .unwrap();
-    accepted(&mut app, fresh_tokens);
+    accepted(&mut app, fresh_tokens).unwrap();
     let retained = terminal_of(&mut app);
     let title = retained.agent_metadata["custom:pi-metadata"]
         .title
@@ -132,20 +133,21 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
             json!({"title": "new", "tokens": {"summary": "new"}, "seq": 10}),
         )
         .unwrap();
-        accepted(&mut app, newest);
+        accepted(&mut app, newest).unwrap();
         let older = report(
             stale,
             json!({"title": "old", "tokens": {"summary": "old"}, "seq": 9}),
         )
         .unwrap();
-        accepted(&mut app, older);
+        accepted(&mut app, older).unwrap();
         let kept = pane_record(&mut app, "w1:p1").unwrap();
         assert_eq!(kept.title.as_deref(), Some("new"), "{fresh} then {stale}");
         assert_eq!(kept.tokens["summary"], "new", "{fresh} then {stale}");
         accepted(
             &mut app,
             report(stale, json!({"title": "newer", "seq": 11})).unwrap(),
-        );
+        )
+        .unwrap();
         assert_eq!(
             pane_record(&mut app, "w1:p1").unwrap().title.as_deref(),
             Some("newer")
@@ -167,14 +169,14 @@ fn a_legacy_guard_spelling_is_ignored_after_the_process_exit_without_advancing_t
         "source": "custom:meta", "applies_to_source": "herdr:claude", "title": "stale", "seq": 200
     }))
     .unwrap();
-    accepted(&mut app, stale);
+    accepted(&mut app, stale).unwrap();
     let back = update(Some(Agent::Claude), AgentState::Idle, false);
     observe(&mut app, back, exit_at + Duration::from_millis(2));
     let fresh = titled(json!({
         "source": "custom:meta", "applies_to_source": "maestro:claude", "title": "fresh", "seq": 1
     }))
     .unwrap();
-    accepted(&mut app, fresh);
+    accepted(&mut app, fresh).unwrap();
     let title = terminal_of(&mut app).agent_metadata["custom:meta"]
         .title
         .as_deref();

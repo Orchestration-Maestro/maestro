@@ -25,7 +25,7 @@ fn input_to_a_pane_that_cannot_be_written_to_is_refused() {
 #[test]
 fn input_routing_changes_only_the_named_pane() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let target = root_pane(&app, 0);
+    let target = root_pane(&app, 0).unwrap();
     let other = split_pane(&mut app, 0, target, SplitDirection::Right).unwrap();
     let routed = |app: &App, pane| {
         app.state.topology.workspaces[0]

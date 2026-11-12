@@ -41,9 +41,12 @@ pub fn two_tabs() -> Result<App, String> {
 
 /// The terminal identity of the root pane of the workspace at `workspace`.
 fn root_terminal(app: &App, workspace: usize) -> Result<String, String> {
-    let root = root_pane(app, workspace);
-    app.state.topology.workspaces[workspace]
-        .terminal_id(root)
+    let root = root_pane(app, workspace).ok_or("the workspace has no root pane")?;
+    app.state
+        .topology
+        .workspaces
+        .get(workspace)
+        .and_then(|found| found.terminal_id(root))
         .map(ToString::to_string)
         .ok_or_else(|| "the root pane has no terminal".to_owned())
 }
@@ -69,7 +72,7 @@ pub fn into_the_second_tab() -> Result<(App, PaneMoveResult, String), String> {
 /// Returns why the daemon could not be built or the move was not answered.
 pub fn across_workspaces() -> Result<(App, PaneMoveResult, String), String> {
     let mut app = daemon_with_workspaces(&["/issue", "/other"])?;
-    let source = root_pane(&app, 0);
+    let source = root_pane(&app, 0).ok_or("the daemon has no first pane")?;
     let terminal = root_terminal(&app, 0)?;
     app.state.handle_app_event(AppEvent::AgentProcessDetected {
         pane_id: source,

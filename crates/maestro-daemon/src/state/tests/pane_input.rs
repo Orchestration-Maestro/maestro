@@ -2,11 +2,15 @@
 //! input commands, with the bytes observed by a real shell.
 use crate::state::App;
 use crate::state::test_support::api::{answer, failure, root_pane};
-use crate::state::test_support::pane_input::send_keys;
 use crate::state::tests::support::live::{run_in_pane, wait_for_line, with_live_daemon};
 use maestro_protocol::schema::ResponseResult;
 use maestro_workspace::terminal_id::TerminalId;
 use serde_json::json;
+/// Sends `keys` to `pane` and checks that the daemon accepted them.
+async fn send_keys(app: &mut App, pane: &str, keys: &[&str]) {
+    let wire = json!({"type": "pane.send_keys", "pane_id": pane, "keys": keys});
+    assert_eq!(answer(app, wire).await, Ok(ResponseResult::Ok {}));
+}
 /// Makes the child enable bracketed paste before it reads.
 const BRACKETED_PASTE: &str = "printf '\\033[?2004h'; ";
 /// Makes the child push the kitty keyboard protocol flags 7 before it reads.
@@ -24,7 +28,7 @@ async fn watching(app: &mut App, count: usize, preamble: &str) -> (String, Termi
     else {
         panic!("expected a created workspace: {created:?}");
     };
-    let pane = root_pane(app, 0);
+    let pane = root_pane(app, 0).unwrap();
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
@@ -167,7 +171,7 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
             let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
                 panic!("expected a created workspace: {created:?}");
             };
-            let root = crate::state::test_support::api::root_pane(app, 0);
+            let root = crate::state::test_support::api::root_pane(app, 0).unwrap();
             let terminal = app.state.topology.workspaces[0]
                 .terminal_id(root)
                 .unwrap()

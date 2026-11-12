@@ -19,8 +19,9 @@ pub fn swap_of(result: Result<ResponseResult, ErrorBody>) -> Result<PaneSwapResu
 
 /// The leaves of the first tab of the first workspace, in layout order.
 #[must_use]
-pub fn leaves(app: &App) -> Vec<PaneId> {
-    app.state.topology.workspaces[0].tabs[0].layout.pane_ids()
+pub fn leaves(app: &App) -> Option<Vec<PaneId>> {
+    let tab = app.state.topology.workspaces.first()?.tabs.first()?;
+    Some(tab.layout.pane_ids())
 }
 
 /// Asks for a swap of `source` and `target` and returns the answer.

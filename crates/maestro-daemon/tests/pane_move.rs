@@ -76,7 +76,7 @@ fn a_moved_pane_answers_to_its_old_handle_but_is_only_an_agent_target_by_its_new
 #[test]
 fn moving_a_pane_to_a_new_tab_wraps_the_same_terminal() {
     let mut app = daemon_with_workspaces(&["/issue"]).unwrap();
-    let source = root_pane(&app, 0);
+    let source = root_pane(&app, 0).unwrap();
     let right = split_pane(&mut app, 0, source, SplitDirection::Right).unwrap();
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(source)
@@ -141,7 +141,7 @@ fn moving_the_only_pane_to_a_new_tab_keeps_its_workspace() {
     let workspace = &app.state.topology.workspaces[0];
     assert_eq!(workspace.tabs.len(), 1);
     assert_eq!(workspace.active_tab, 0);
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     assert_eq!(app.state.public_pane_id(0, root).as_deref(), Some("w1:p1"));
 }
 #[test]
@@ -190,7 +190,7 @@ fn a_zoomed_tab_refuses_a_move_and_names_both_layouts() {
     );
     assert_eq!(app.state.topology.workspaces[0].tabs.len(), 2);
     app.state.topology.workspaces[0].tabs[1].zoomed = false;
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     let split = split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     let destination = into_tab("w1:t2", None, "right");

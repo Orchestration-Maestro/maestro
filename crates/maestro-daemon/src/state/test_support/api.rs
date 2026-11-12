@@ -131,7 +131,9 @@ pub fn join_group(app: &mut App, index: usize, key: &str, linked: bool) {
 /// Reports that fallback detection saw `agent` in `state` on the first pane of the first
 /// workspace.
 pub fn detect(app: &mut App, agent: Agent, state: AgentState) {
-    let pane_id = root_pane(app, 0);
+    let Some(pane_id) = root_pane(app, 0) else {
+        return;
+    };
     app.handle_internal_event(AppEvent::StateChanged {
         pane_id,
         agent: Some(agent),
@@ -145,7 +147,9 @@ pub fn detect(app: &mut App, agent: Agent, state: AgentState) {
 
 /// Gives the first pane of the first workspace a recognized agent process with fallback `state`.
 pub fn pilot(app: &mut App, state: AgentState) {
-    let pane_id = root_pane(app, 0);
+    let Some(pane_id) = root_pane(app, 0) else {
+        return;
+    };
     app.handle_internal_event(AppEvent::AgentProcessDetected {
         pane_id,
         agent: Agent::Pi,
@@ -156,8 +160,9 @@ pub fn pilot(app: &mut App, state: AgentState) {
 
 /// The root pane of the first tab of the workspace at `workspace`.
 #[must_use]
-pub fn root_pane(app: &App, workspace: usize) -> PaneId {
-    app.state.topology.workspaces[workspace].tabs[0].root_pane
+pub fn root_pane(app: &App, workspace: usize) -> Option<PaneId> {
+    let tab = app.state.topology.workspaces.get(workspace)?.tabs.first()?;
+    Some(tab.root_pane)
 }
 
 /// The layout `layout.export` answers with for the active tab, or for `tab_id`.
@@ -211,7 +216,7 @@ pub fn focused_pane_id(app: &mut App, workspace: usize) -> Result<String, String
 /// Returns why the daemon or the split could not be built.
 pub fn pair() -> Result<(App, PaneId, PaneId), String> {
     let mut app = daemon_with_workspaces(&["/one"])?;
-    let left = root_pane(&app, 0);
+    let left = root_pane(&app, 0).ok_or("the daemon has no first pane")?;
     let right = split_pane(&mut app, 0, left, SplitDirection::Right)
         .ok_or("the first pane was not split")?;
     Ok((app, left, right))
@@ -242,11 +247,14 @@ pub fn command(wire: Value) -> Result<RpcCommand, String> {
 
 /// Answers `wire`, which must succeed with the plain acknowledgement.
 ///
-/// # Panics
-/// Panics when the answer is not the plain acknowledgement.
-pub fn accepted(app: &mut App, wire: Value) {
+/// # Errors
+/// Returns the wire text and the answer that was not the plain acknowledgement.
+pub fn accepted(app: &mut App, wire: Value) -> Result<(), String> {
     let text = wire.to_string();
-    assert_eq!(request(app, wire), Ok(ResponseResult::Ok {}), "{text}");
+    match request(app, wire) {
+        Ok(ResponseResult::Ok {}) => Ok(()),
+        other => Err(format!("{text}: {other:?}")),
+    }
 }
 
 /// The pane record `pane.get` returns for the pane the workspace owns.

@@ -24,7 +24,7 @@ fn split_of(result: Result<ResponseResult, ErrorBody>) -> PaneInfo {
 /// Returns the first tab's root, the background tab's root and the background tab's focused pane.
 fn background_tab(app: &mut App) -> (PaneId, PaneId, PaneId) {
     add_workspaces(app, &["/tabs"]).unwrap();
-    let active = root_pane(app, 0);
+    let active = root_pane(app, 0).unwrap();
     let target = add_tab(app, 0).unwrap();
     let focused = split_pane(app, 0, target, SplitDirection::Right).unwrap();
     app.state.topology.workspaces[0].tabs[1]

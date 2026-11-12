@@ -32,27 +32,27 @@ fn tokens_ignore_the_agent_guard_of_the_presentation() {
         json!({"agent": "codex", "tokens": {"summary": "global"}}),
     )
     .unwrap();
-    accepted(&mut app, wire);
+    accepted(&mut app, wire).unwrap();
     assert_eq!(tokens(&mut app).unwrap()["summary"], "global");
     assert_eq!(pane_record(&mut app, "w1:p1").unwrap().title, None);
 }
 #[test]
 fn presentation_and_tokens_share_one_sequence_per_source() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    accepted(&mut app, titled(json!({"seq": 10})).unwrap());
+    accepted(&mut app, titled(json!({"seq": 10})).unwrap()).unwrap();
     let stale = report(
         "user:metadata.test-1",
         json!({"tokens": {"summary": "stale"}, "seq": 9}),
     )
     .unwrap();
-    accepted(&mut app, stale);
+    accepted(&mut app, stale).unwrap();
     assert!(tokens(&mut app).unwrap().is_empty());
     let fresh = report(
         "user:metadata.test-1",
         json!({"tokens": {"summary": "fresh"}, "seq": 11}),
     )
     .unwrap();
-    accepted(&mut app, fresh);
+    accepted(&mut app, fresh).unwrap();
     assert_eq!(tokens(&mut app).unwrap()["summary"], "fresh");
 }
 #[test]
@@ -64,19 +64,19 @@ fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
         "agent": "pi", "agent_session_path": "/sessions/pi.jsonl",
         "session_start_source": "startup", "seq": 1
     });
-    accepted(&mut app, session);
+    accepted(&mut app, session).unwrap();
     let hook = json!({
         "type": "pane.report_agent", "pane_id": "w1:p1", "source": "maestro:pi", "agent": "pi",
         "state": "working", "agent_session_path": "/sessions/pi.jsonl", "seq": 2
     });
-    accepted(&mut app, hook);
+    accepted(&mut app, hook).unwrap();
     let wire = json!({
         "type": "pane.report_metadata", "pane_id": "w1:p1", "source": "user:pi-display",
         "agent": "pi", "applies_to_source": "maestro:pi", "title": "Refactor auth",
         "display_agent": "Pi auth", "state_labels": {"working": "deep in the mines"},
         "tokens": {"summary": "reviewing auth", "model": "opus"}
     });
-    accepted(&mut app, wire);
+    accepted(&mut app, wire).unwrap();
     let reported = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(reported.agent.as_deref(), Some("pi"));
     assert_eq!(reported.title.as_deref(), Some("Refactor auth"));
@@ -94,7 +94,7 @@ fn text_is_cleaned_and_state_labels_are_matched_without_case() {
         "agent": "pi", "title": long, "state_labels": {" Working ": "  busy\u{7}bee "}
     }))
     .unwrap();
-    accepted(&mut app, wire);
+    accepted(&mut app, wire).unwrap();
     let reported = pane_record(&mut app, "w1:p1").unwrap();
     let title = reported.title.unwrap();
     assert!(
@@ -117,7 +117,7 @@ fn presentation_text_and_token_values_are_cleaned_alike() {
     for (raw, kept) in cases {
         let wire =
             titled(json!({"agent": "pi", "title": raw, "tokens": {"summary": raw}})).unwrap();
-        accepted(&mut app, wire);
+        accepted(&mut app, wire).unwrap();
         let reported = pane_record(&mut app, "w1:p1").unwrap();
         assert_eq!(reported.title.as_deref(), Some(kept.as_str()), "{raw:?}");
         assert_eq!(reported.tokens["summary"], kept, "{raw:?}");
@@ -125,7 +125,7 @@ fn presentation_text_and_token_values_are_cleaned_alike() {
     let blank = " \u{7}\n ";
     let wire =
         titled(json!({"agent": "pi", "title": blank, "tokens": {"summary": blank}})).unwrap();
-    accepted(&mut app, wire);
+    accepted(&mut app, wire).unwrap();
     let reported = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(reported.title, Some("a".repeat(79)));
     assert!(reported.tokens.is_empty());
@@ -133,7 +133,7 @@ fn presentation_text_and_token_values_are_cleaned_alike() {
 #[test]
 fn a_documented_source_and_the_longest_lifetime_are_accepted() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    accepted(&mut app, titled(json!({"ttl_ms": MAX_TTL_MS})).unwrap());
+    accepted(&mut app, titled(json!({"ttl_ms": MAX_TTL_MS})).unwrap()).unwrap();
 }
 #[test]
 fn a_malformed_source_is_refused() {
@@ -221,7 +221,8 @@ fn a_pane_holds_at_most_thirty_two_tokens_and_a_source_list_is_bounded() {
         accepted(
             &mut app,
             report("user:fill", json!({"tokens": tokens})).unwrap(),
-        );
+        )
+        .unwrap();
     }
     let one_more = report("user:fill", json!({"tokens": {"overflow": "v"}})).unwrap();
     assert_eq!(
@@ -239,7 +240,7 @@ fn a_pane_holds_at_most_thirty_two_tokens_and_a_source_list_is_bounded() {
             json!({"tokens": {"k": "v"}, "seq": 1}),
         )
         .unwrap();
-        accepted(&mut other, wire);
+        accepted(&mut other, wire).unwrap();
     }
     let wire = report("user:s32", json!({"tokens": {"k": "v"}, "seq": 1})).unwrap();
     assert_eq!(
@@ -254,8 +255,8 @@ fn a_pane_holds_at_most_thirty_two_tokens_and_a_source_list_is_bounded() {
 fn a_token_change_publishes_the_complete_pane_record_once() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let wire = report("user:metadata.test-1", json!({"tokens": {"summary": "a"}})).unwrap();
-    accepted(&mut app, wire.clone());
-    accepted(&mut app, wire);
+    accepted(&mut app, wire.clone()).unwrap();
+    accepted(&mut app, wire).unwrap();
     let published: Vec<PaneInfo> = events_after(&app, 0)
         .into_iter()
         .filter_map(|event| match event {
@@ -272,7 +273,7 @@ fn a_presentation_change_publishes_the_agent_status_with_its_title() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     detect(&mut app, Agent::Pi, AgentState::Working);
     let sequence = app.event_hub().current_sequence();
-    accepted(&mut app, titled(json!({"agent": "pi"})).unwrap());
+    accepted(&mut app, titled(json!({"agent": "pi"})).unwrap()).unwrap();
     let titles: Vec<Option<String>> = events_after(&app, sequence)
         .into_iter()
         .filter_map(|event| match event {

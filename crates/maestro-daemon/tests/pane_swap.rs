@@ -20,7 +20,7 @@ fn swapping_an_unfocused_source_updates_the_last_pane_history() {
         app.state.topology.workspaces[0].focused_pane_id(),
         Some(source)
     );
-    assert_eq!(leaves(&app), [target, focused, source]);
+    assert_eq!(leaves(&app).unwrap(), [target, focused, source]);
     app.state.last_pane();
     assert_eq!(
         app.state.topology.workspaces[0].focused_pane_id(),
@@ -35,11 +35,11 @@ fn a_directional_swap_exchanges_the_pane_with_its_neighbour() {
     assert!(swap.changed);
     assert_eq!(swap.source_pane_id, "w1:p1");
     assert_eq!(swap.target_pane_id.as_deref(), Some("w1:p2"));
-    assert_eq!(leaves(&app), [right, left]);
+    assert_eq!(leaves(&app).unwrap(), [right, left]);
     let wire = json!({"type": "pane.swap", "direction": "left"});
     let swap = swap_of(request(&mut app, wire)).unwrap();
     assert!(swap.changed, "the focused pane is the source by default");
-    assert_eq!(leaves(&app), [left, right]);
+    assert_eq!(leaves(&app).unwrap(), [left, right]);
     assert_eq!(
         event_names(&app, 0).unwrap(),
         ["layout_updated", "layout_updated"]
@@ -87,7 +87,7 @@ fn swapping_a_pane_with_itself_is_a_no_op() {
     let swap = swap_named(&mut app, "w1:p1", "w1-1").unwrap();
     assert!(!swap.changed);
     assert_eq!(swap.reason, Some(PaneSwapReason::SamePane));
-    assert_eq!(leaves(&app), [left, right]);
+    assert_eq!(leaves(&app).unwrap(), [left, right]);
 }
 #[test]
 fn a_swap_names_either_a_direction_or_both_ends() {

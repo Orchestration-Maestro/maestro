@@ -15,6 +15,7 @@ mod daemon_ids;
 mod daemon_runtime;
 mod daemon_session;
 mod daemon_state;
+mod helper_failures;
 mod layout_apply;
 mod layout_commands;
 mod pane_close;

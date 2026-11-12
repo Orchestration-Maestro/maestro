@@ -32,7 +32,7 @@ fn export_names_its_tab_directly_or_through_one_of_its_panes() {
 #[test]
 fn a_split_ratio_change_reaches_a_nested_split_by_its_path() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     let right = split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     split_pane(&mut app, 0, right, SplitDirection::Down).unwrap();
     let wire = json!({"type": "layout.set_split_ratio", "path": [true], "ratio": 0.3});
@@ -49,7 +49,7 @@ fn a_split_ratio_change_reaches_a_nested_split_by_its_path() {
 #[test]
 fn a_split_ratio_is_kept_within_the_range_a_split_allows() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     for (requested, kept) in [(5.0, 0.9), (-1.0, 0.1)] {
         let wire = json!({"type": "layout.set_split_ratio", "path": [], "ratio": requested});
@@ -63,7 +63,7 @@ fn a_split_ratio_is_kept_within_the_range_a_split_allows() {
 #[test]
 fn a_split_ratio_that_is_not_finite_is_refused() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
+    let root = root_pane(&app, 0).unwrap();
     split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     for ratio in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
         let command = RpcCommand::LayoutSetSplitRatio(LayoutSetSplitRatioParams {

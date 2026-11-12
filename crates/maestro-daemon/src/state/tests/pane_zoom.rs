@@ -32,8 +32,8 @@ fn zooming_toggles_the_focused_pane_and_publishes_the_layout() {
 #[test]
 fn zooming_a_background_pane_focuses_it_and_keeps_the_last_pane_history() {
     let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
-    let first = root_pane(&app, 0);
-    let target = root_pane(&app, 1);
+    let first = root_pane(&app, 0).unwrap();
+    let target = root_pane(&app, 1).unwrap();
     split_pane(&mut app, 1, target, SplitDirection::Right).unwrap();
     assert_eq!(app.state.active, Some(0));
     let wire = json!({"type": "pane.zoom", "pane_id": "w2:p1", "mode": "on"});
@@ -56,12 +56,12 @@ fn zooming_a_background_pane_focuses_it_and_keeps_the_last_pane_history() {
 #[test]
 fn zooming_a_pane_returns_copy_mode_to_that_pane() {
     let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
-    let source = root_pane(&app, 0);
+    let source = root_pane(&app, 0).unwrap();
     let other = split_pane(&mut app, 0, source, SplitDirection::Right).unwrap();
     app.state.topology.workspaces[0].tabs[0]
         .layout
         .focus_pane(other);
-    let target = root_pane(&app, 1);
+    let target = root_pane(&app, 1).unwrap();
     split_pane(&mut app, 1, target, SplitDirection::Right).unwrap();
     app.state.active = Some(1);
     app.state.selected = 1;

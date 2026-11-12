@@ -28,7 +28,7 @@ async fn printed(app: &mut App, script: &str, marker: &str) -> (String, PaneInfo
     else {
         panic!("expected a created workspace: {created:?}");
     };
-    let pane = crate::state::test_support::api::root_pane(app, 0);
+    let pane = crate::state::test_support::api::root_pane(app, 0).unwrap();
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()

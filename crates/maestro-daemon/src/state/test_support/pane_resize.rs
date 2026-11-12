@@ -22,7 +22,7 @@ pub fn resize_of(result: Result<ResponseResult, ErrorBody>) -> Result<PaneResize
 /// Returns why the daemon or the split could not be built.
 pub fn pair() -> Result<(App, PaneId, PaneId), String> {
     let mut app = daemon_with_workspaces(&["/one"])?;
-    let left = root_pane(&app, 0);
+    let left = root_pane(&app, 0).ok_or("the daemon has no first pane")?;
     let right = split_pane_focused(&mut app, 0, left, SplitDirection::Right, true)
         .ok_or("the first pane was not split")?;
     Ok((app, left, right))

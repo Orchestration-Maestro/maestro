@@ -19,7 +19,7 @@ fn swapping_two_named_panes_keeps_the_source_focused_and_returns_the_layout() {
     assert_eq!(swap.focused_pane_id, swap.source_pane_id);
     assert_eq!(swap.layout.focused_pane_id, swap.source_pane_id);
     assert_eq!(swap.layout.panes.len(), 2);
-    assert_eq!(leaves(&app), [right, left]);
+    assert_eq!(leaves(&app).unwrap(), [right, left]);
     assert_eq!(
         app.state.topology.workspaces[0].focused_pane_id(),
         Some(left)

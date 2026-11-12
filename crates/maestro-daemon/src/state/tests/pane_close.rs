@@ -12,7 +12,7 @@ use serde_json::json;
 #[test]
 fn closing_a_split_pane_keeps_its_tab_and_publishes_the_layout() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let left = root_pane(&app, 0);
+    let left = root_pane(&app, 0).unwrap();
     let right = split_pane(&mut app, 0, left, SplitDirection::Right).unwrap();
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(right)

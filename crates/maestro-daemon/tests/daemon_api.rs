@@ -31,13 +31,13 @@ fn workspace_tokens_patch_clear_and_publish_current_values() {
         Ok(ResponseResult::Ok {})
     );
     let expected = values(&[("summary", "reviewing auth"), ("jj_status", "2 changes")]);
-    assert_eq!(tokens(&app), expected);
+    assert_eq!(tokens(&app).unwrap(), expected);
     let second = json!({"summary": "done", "jj_status": null});
     assert_eq!(
         report(&mut app, "user:test", &second, &json!({})),
         Ok(ResponseResult::Ok {})
     );
-    assert_eq!(tokens(&app), values(&[("summary", "done")]));
+    assert_eq!(tokens(&app).unwrap(), values(&[("summary", "done")]));
     // Reporting the same values again changes nothing and publishes nothing.
     let same = json!({"summary": "done"});
     assert_eq!(
@@ -49,7 +49,7 @@ fn workspace_tokens_patch_clear_and_publish_current_values() {
         report(&mut app, "user:test", &cleared, &json!({})),
         Ok(ResponseResult::Ok {})
     );
-    assert!(tokens(&app).is_empty());
+    assert!(tokens(&app).unwrap().is_empty());
     assert_eq!(
         published(&app, 0),
         [expected, values(&[("summary", "done")]), HashMap::new()]
@@ -88,7 +88,7 @@ fn workspace_token_expiry_publishes_the_remaining_snapshot() {
             app.handle_scheduled_tasks(next, &paths).await;
             assert!(published(&app, sequence).is_empty());
             assert_eq!(
-                tokens(&app),
+                tokens(&app).unwrap(),
                 values(&[("lasting", "kept"), ("summary", "temporary")])
             );
             now = next;
@@ -103,11 +103,11 @@ fn workspace_token_expiry_publishes_the_remaining_snapshot() {
         .await;
         assert!(published(&app, sequence).is_empty());
         assert_eq!(
-            tokens(&app),
+            tokens(&app).unwrap(),
             values(&[("lasting", "kept"), ("summary", "temporary")])
         );
         app.handle_scheduled_tasks(deadline, &paths).await;
-        assert_eq!(tokens(&app), values(&[("lasting", "kept")]));
+        assert_eq!(tokens(&app).unwrap(), values(&[("lasting", "kept")]));
         assert_eq!(published(&app, sequence), [values(&[("lasting", "kept")])]);
         app.handle_scheduled_tasks(deadline + Duration::from_secs(1), &paths)
             .await;
@@ -133,10 +133,10 @@ fn token_values_strip_controls_and_empty_values_clear() {
         ("controlled", &"x".repeat(80)),
         ("kept", "keep"),
     ]);
-    assert_eq!(tokens(&app), expected);
+    assert_eq!(tokens(&app).unwrap(), expected);
     let clear = json!({"summary": null, "padded": " \n ", "long": "\u{0}\u{7}", "controlled": ""});
     assert!(report(&mut app, "user:test", &clear, &json!({})).is_ok());
-    assert_eq!(tokens(&app), values(&[("kept", "keep")]));
+    assert_eq!(tokens(&app).unwrap(), values(&[("kept", "keep")]));
 }
 #[test]
 fn token_reports_reject_invalid_keys_and_excess_updates() {
@@ -178,7 +178,7 @@ fn token_reports_reject_invalid_keys_and_excess_updates() {
             "{patch}"
         );
     }
-    assert!(tokens(&app).is_empty());
+    assert!(tokens(&app).unwrap().is_empty());
     assert!(
         app.state.topology.workspaces[0]
             .metadata_token_sequences
@@ -188,7 +188,7 @@ fn token_reports_reject_invalid_keys_and_excess_updates() {
     let accepted = json!({"x".repeat(32): "value", "ok_key-2": "v"});
     assert!(report(&mut app, "user:test", &accepted, &json!({})).is_ok());
     assert!(report(&mut app, "user:test", &Value::Object(sixteen), &json!({})).is_ok());
-    assert_eq!(tokens(&app).len(), 18);
+    assert_eq!(tokens(&app).unwrap().len(), 18);
 }
 #[test]
 fn metadata_source_and_ttl_boundaries_keep_error_order() {
@@ -250,7 +250,7 @@ fn metadata_source_and_ttl_boundaries_keep_error_order() {
         request(&mut app, missing),
         source("metadata source must not be empty")
     );
-    assert!(tokens(&app).is_empty());
+    assert!(tokens(&app).unwrap().is_empty());
     assert_boundary_sources_and_lifetimes_apply(&mut app, &token);
 }
 /// Sources and lifetimes on the accepted side of each boundary apply without tracking a
@@ -285,7 +285,7 @@ fn metadata_capacity_and_sequences_are_transactional() {
         .collect();
     assert!(report(&mut app, "user:a", &Value::Object(full), &json!({})).is_ok());
     assert!(report(&mut app, "user:b", &Value::Object(more), &json!({})).is_ok());
-    assert_eq!(tokens(&app).len(), 32);
+    assert_eq!(tokens(&app).unwrap().len(), 32);
     let limit = failure(
         "metadata_token_limit",
         "workspace metadata may contain at most 32 tokens",
@@ -310,7 +310,7 @@ fn metadata_capacity_and_sequences_are_transactional() {
         )
         .is_ok()
     );
-    assert_eq!(tokens(&app).len(), 32);
+    assert_eq!(tokens(&app).unwrap().len(), 32);
     // Sequences: a stale or repeated report changes nothing; a newer one applies.
     for (seq, value, applied) in [(2, "stale", false), (1, "older", false), (3, "newer", true)] {
         assert_eq!(
@@ -322,7 +322,7 @@ fn metadata_capacity_and_sequences_are_transactional() {
             ),
             Ok(ResponseResult::Ok {})
         );
-        assert_eq!(tokens(&app)["c"] == value, applied, "{seq}");
+        assert_eq!(tokens(&app).unwrap()["c"] == value, applied, "{seq}");
     }
     assert_eq!(
         app.state.topology.workspaces[0].metadata_token_sequences["user:c"],
@@ -333,7 +333,7 @@ fn metadata_capacity_and_sequences_are_transactional() {
         report(&mut app, "user:c", &json!({"z": "v"}), &json!({"seq": 1})),
         Ok(ResponseResult::Ok {})
     );
-    assert!(!tokens(&app).contains_key("z"));
+    assert!(!tokens(&app).unwrap().contains_key("z"));
     assert_eq!(published(&app, sequence).len(), 2);
     assert_sequence_source_capacity();
 }
@@ -360,7 +360,7 @@ fn assert_sequence_source_capacity() {
         report(&mut app, "s32", &json!({"k": "late"}), &json!({"seq": 1})),
         sources
     );
-    assert_eq!(tokens(&app)["k"], "31");
+    assert_eq!(tokens(&app).unwrap()["k"], "31");
     assert!(report(&mut app, "s32", &json!({"k": "unsequenced"}), &json!({})).is_ok());
     assert_eq!(
         app.state.topology.workspaces[0]
