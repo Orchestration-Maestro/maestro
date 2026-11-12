@@ -4,11 +4,11 @@ use super::admission::{
 };
 use maestro_app::markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node};
 use maestro_app::{
-    browser::script_scheme,
     is_whitespace_scalar,
     markup::{EscapeMode, escape_into},
     normalize_to_lf,
 };
+use maestro_office::script_scheme;
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
 use std::{fmt::Write as _, ops::Range};
 
@@ -394,7 +394,7 @@ impl Writer<'_, '_> {
         };
         // A refused target keeps the label; with escaping on, an angle autolink keeps its source.
         let href = utf8_percent_encode(href, URL_SAFE).to_string();
-        let refused = maestro_app::browser::executable(&href);
+        let refused = maestro_office::executable(&href);
         if refused && escape_html && meta.link_type == markdown::LinkType::Autolink {
             escape_authored(node, out);
             return;

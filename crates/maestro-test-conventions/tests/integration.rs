@@ -14,6 +14,7 @@ mod duplicates;
 mod fixture_includes;
 mod integration_tests;
 mod json_dependencies;
+mod leaked_words;
 mod lib_tests;
 mod message_renderer_ownership;
 mod package_crates;

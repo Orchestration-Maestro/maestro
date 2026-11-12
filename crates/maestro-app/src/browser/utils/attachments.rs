@@ -1,8 +1,8 @@
 //! Image and document attachment records and loading.
-use crate::browser::docx_preview::{DocxError, OpenXmlPackage, Options, decode_text};
-use crate::browser::ssf::{self, Ssf, WorkbookError};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
+use maestro_office::spreadsheet::{self, NumberFormatter, WorkbookError};
+use maestro_office::wordprocessing::{DocxError, OpenXmlPackage, Options, decode_text};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, fmt};
 
@@ -368,16 +368,17 @@ fn attachment_text(
 
 /// Extract ordered workbook sheets as formatted CSV inside literal wrappers.
 fn process_excel(bytes: &[u8], name: &str) -> Result<String, WorkbookError> {
-    let mut ssf = Ssf::default();
-    let mut workbook = ssf::read(bytes, name, &mut ssf)?;
+    let mut formatter = NumberFormatter::default();
+    let mut workbook = spreadsheet::read(bytes, name, &mut formatter)?;
     let mut output = String::new();
     let mut append =
         |text: &str| append_extracted_text(&mut output, text).map_err(WorkbookError::Output);
     append(&format!("<excel filename=\"{name}\">"))?;
     for (index, (name, sheet)) in workbook.sheets.iter_mut().enumerate() {
-        let csv = sheet
-            .as_mut()
-            .map_or_else(|_| String::new(), |sheet| ssf::sheet_to_csv(sheet, &ssf));
+        let csv = sheet.as_mut().map_or_else(
+            |_| String::new(),
+            |sheet| spreadsheet::sheet_to_csv(sheet, &formatter),
+        );
         append(&format!(
             "\n<sheet name=\"{name}\" index=\"{}\">\n",
             index + 1

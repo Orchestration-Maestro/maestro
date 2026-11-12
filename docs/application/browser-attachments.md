@@ -26,7 +26,7 @@ Word recognition uses the exact wordprocessing MIME or a case-insensitive
 `.docx` suffix. PowerPoint recognition uses the exact presentation MIME or a
 case-insensitive `.pptx` suffix. Earlier PDF/Word recognition wins;
 presentation recognition precedes spreadsheet recognition. The separate
-[Word property preparation](document-formats.md#word-default-properties-and-conditional-table-styles)
+[Word property preparation](../office.md#word-default-properties-and-conditional-table-styles)
 reads table layout and indentation without rendering; attachment text comes from
 the Word extraction below.
 Transport/body errors retain the original
@@ -67,7 +67,7 @@ are scoped to the operation.
 
 Word documents retain the original bytes/name/size, use the canonical
 wordprocessing MIME and have extracted text without a preview. The
-[shared package reader](document-formats.md#word-package-reader) supplies the
+[shared package reader](../office.md#word-package-reader) supplies the
 typed body through `WordDocument::document_body`. Body elements keep document
 order and are joined by LF, dropping empty results. A paragraph contributes its
 inline text concatenated without added separators; hyperlinks, smart tags,
@@ -89,7 +89,7 @@ matches must handle this variant.
 
 Presentation documents retain the original bytes/name/size, use the canonical
 presentation MIME and have extracted text without a preview. The
-[shared package reader](document-formats.md#word-package-reader) supplies selected
+[shared package reader](../office.md#word-package-reader) supplies selected
 parts. Slides are numerically ordered with stable ties; labels are their one-based
 selected positions, including omitted blank parts. Notes follow slides in numeric
 order and retain the filename's digit spelling in `[Slide <digits> notes]:` headings.
@@ -112,7 +112,7 @@ Spreadsheet recognition uses exact XLSX/Excel MIME strings or case-insensitive
 are retained; other matches use the canonical XLSX MIME. Reading follows the
 bytes: XLSX and binary XLS are supported, including XLSX bytes with an `.xls`
 name. The binary reader uses each cell's number format and declared sheet bounds
-through the [shared workbook reader](document-formats.md). Binary formula and array
+through the [shared workbook reader](../office.md). Binary formula and array
 metadata, decoded rich-string text and hyperlink targets use the same retained
 cells and writers. Binary empty-text caches remain empty in extraction rather
 than falling back to formula text; previews reuse the existing escaping and safe
@@ -122,7 +122,7 @@ Spreadsheet documents retain original bytes/name/size and have no preview.
 The literal `<excel filename="NAME">` wrapper contains workbook-ordered sheets,
 each `\n<sheet name="NAME" index="N">\nCSV\n</sheet>`, followed by
 `\n</excel>`. Names are not escaped; indices start at one and include empty
-sheets. [Default CSV serialization](document-formats.md#default-csv) uses the
+sheets. [Default CSV serialization](../office.md#default-csv) uses the
 shared workbook formatter. Extracted output above 512 MiB returns a processing
 error. Processing failures return `AttachmentError::Excel`,
 display `Failed to process Excel: ` before the diagnostic and expose the retained

@@ -1,12 +1,12 @@
 # Document-format libraries
 
-The application's [Word package reader](../application/document-formats.md#word-package-reader)
+The [Word package reader](../office.md#word-package-reader) in `maestro-office`
 and [presentation attachment extraction](../application/browser-attachments.md#loading)
 share one package reader using these existing lockfile packages on native and browser targets:
 
 | Package | Pin | Direct features | License choice |
 |---|---|---|---|
-| zip | 9.0.5 | defaults off; `deflate-flate2` | MIT |
+| zip | 9.0.5 | defaults off; `deflate-flate2-zlib-rs` | MIT |
 | indexmap | 2.14.2 | defaults (`std`); ordered package-name identity | MIT |
 | roxmltree | 0.21.1 | defaults off; `std`, `positions` | MIT |
 | url | 2.5.8 | defaults | MIT |
@@ -16,10 +16,11 @@ The resolved archive closure on both targets is crc32fast 1.5.2, cfg-if 1.0.5,
 flate2 1.1.10, miniz_oxide 0.9.1, adler2 2.0.1, simd-adler32 0.3.10,
 indexmap 2.14.2, equivalent 1.0.2, hashbrown 0.17.1, allocator-api2 0.2.21,
 foldhash 0.2.0, serde_core 1.0.229 and memchr 2.8.3. Choose MIT for their
-MIT/Apache-2.0 alternatives. The existing image/png dependency enables flate2's
-Rust backend on both targets; package reading itself adds no zlib or zlib-rs
-feature. The PDF engine below enables zlib-rs through its image decoder. roxmltree
-reuses memchr 2.8.3 and borrows its input rather than requiring a second XML tree.
+MIT/Apache-2.0 alternatives. Package reading picks flate2's zlib-rs backend
+through the zip feature `deflate-flate2-zlib-rs`, so the office crate builds
+alone for the browser. The PDF engine below also enables zlib-rs through its
+image decoder. roxmltree reuses memchr 2.8.3 and borrows its input rather than
+requiring a second XML tree.
 
 The shared ZIP closure also enables `deflate`, `deflate-flate2-zlib-rs` and
 `deflate-zopfli` through the spreadsheet parser. It reuses zlib-rs 0.6.8 (Zlib),

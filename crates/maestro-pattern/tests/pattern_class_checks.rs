@@ -1,6 +1,6 @@
 //! Character-class behavior through package matching.
 
-use maestro_pattern::minimatch;
+use maestro_pattern::matches_glob;
 use std::collections::BTreeMap;
 
 /// Replays the group's recorded public-operation results.
@@ -14,7 +14,7 @@ fn check_group(name: &str) {
         let (pattern, input, expected): (String, String, bool) =
             serde_json::from_value(row.clone()).unwrap();
         assert_eq!(
-            minimatch(&input, &pattern),
+            matches_glob(&input, &pattern),
             Ok(expected),
             "{name} case {index}"
         );

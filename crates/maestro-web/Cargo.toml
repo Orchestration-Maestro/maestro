@@ -21,6 +21,7 @@ base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 url = "=2.5.8"
 percent-encoding = "=2.3.2"
 maestro-app = { path = "../maestro-app" }
+maestro-office = { path = "../maestro-office" }
 maestro-theme = { path = "../maestro-theme" }
 serde.workspace = true
 serde_json.workspace = true

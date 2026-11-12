@@ -1,6 +1,6 @@
 //! Word package text extraction.
 use super::append_document_text;
-use crate::browser::docx_preview::{
+use maestro_office::wordprocessing::{
     DocxError, DomType, OpenXmlElementData, OpenXmlElementTree, Options, WordDocument,
 };
 use std::borrow::Cow;
