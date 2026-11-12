@@ -42,7 +42,7 @@ macro_rules! endpoints {
     )+};
 }
 endpoints! { oauth_reads => OAuthProvider, builtin_reads => Builtin, api_reads => Api, context_reads => Read,
-writer_reads => Writer, credential_reads => Credentials }
+credential_reads => Credentials }
 
 /// Clones an original resource endpoint before invoking its native owner.
 pub(crate) fn resource<T: WasiView, E: ReadEndpoint>(

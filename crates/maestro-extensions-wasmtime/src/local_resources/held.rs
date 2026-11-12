@@ -72,6 +72,14 @@ held!(
     Capability::History(history) => history
 );
 
+held!(
+    /// The writable session the setup callback received.
+    Writer,
+    std::rc::Rc<std::cell::RefCell<maestro_extensions::SessionManager>>,
+    "extension writable session resource ended",
+    Capability::Writer(session) => session
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,

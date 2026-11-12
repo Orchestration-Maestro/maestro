@@ -123,13 +123,6 @@ pub(crate) enum Message {
     ),
     /// Uses the original retained cancellation, not the current context signal.
     Signal(u64, signals::Request),
-    /// Mutates the original writable session supplied to setup.
-    Writer(u64, crate::writer_reads::Request),
-    /// Acquires an independent live reader from the writable setup capability.
-    WriterReader(
-        u64,
-        std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
-    ),
     /// Runs the retained provider's native authorization with original interaction.
     OAuthLogin(
         u64,
