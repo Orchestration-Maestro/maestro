@@ -29,7 +29,7 @@ mod bitmap_allocator;
 
 mod ref_counted_set;
 
-mod hash_map;
+mod map_layout;
 
 pub mod size;
 

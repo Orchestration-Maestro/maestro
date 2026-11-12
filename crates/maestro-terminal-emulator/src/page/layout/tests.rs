@@ -280,14 +280,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 375_520,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 8256 },
             grapheme_map_start: 383_776,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 10_768,
                 capacity: 512,
             },
             string_alloc_start: 394_544,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 2056 },
             hyperlink_map_start: 396_752,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 912,
                 capacity: 128,
             },
@@ -330,14 +330,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 520,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 1032 },
             grapheme_map_start: 1552,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 1360,
                 capacity: 64,
             },
             string_alloc_start: 2912,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 2056 },
             hyperlink_map_start: 5120,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 912,
                 capacity: 128,
             },
@@ -380,14 +380,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 0,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 0 },
             grapheme_map_start: 0,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 16,
                 capacity: 0,
             },
             string_alloc_start: 16,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 0 },
             hyperlink_map_start: 16,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 16,
                 capacity: 0,
             },
@@ -430,14 +430,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 408,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 0 },
             grapheme_map_start: 408,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 16,
                 capacity: 0,
             },
             string_alloc_start: 424,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 2056 },
             hyperlink_map_start: 2632,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 464,
                 capacity: 64,
             },
@@ -482,7 +482,7 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
                 total_size: 4_328_521_728,
             },
             grapheme_map_start: 38_689_783_808,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 5_637_144_592,
                 capacity: 268_435_456,
             },
@@ -491,7 +491,7 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
                 total_size: 4_311_744_512,
             },
             hyperlink_map_start: 48_638_756_880,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 229_392,
                 capacity: 32_768,
             },
@@ -534,14 +534,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 375_520,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 8256 },
             grapheme_map_start: 383_776,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 10_768,
                 capacity: 512,
             },
             string_alloc_start: 394_544,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 2056 },
             hyperlink_map_start: 396_752,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 912,
                 capacity: 128,
             },
@@ -584,14 +584,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 520,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 1032 },
             grapheme_map_start: 1552,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 1360,
                 capacity: 64,
             },
             string_alloc_start: 2912,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 2056 },
             hyperlink_map_start: 5120,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 912,
                 capacity: 128,
             },
@@ -634,14 +634,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 0,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 0 },
             grapheme_map_start: 0,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 16,
                 capacity: 0,
             },
             string_alloc_start: 16,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 0 },
             hyperlink_map_start: 16,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 16,
                 capacity: 0,
             },
@@ -684,14 +684,14 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
             grapheme_alloc_start: 408,
             grapheme_alloc: crate::bitmap_allocator::Layout { total_size: 0 },
             grapheme_map_start: 408,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 16,
                 capacity: 0,
             },
             string_alloc_start: 424,
             string_alloc: crate::bitmap_allocator::Layout { total_size: 2056 },
             hyperlink_map_start: 2632,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 464,
                 capacity: 64,
             },
@@ -736,7 +736,7 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
                 total_size: 4_328_521_728,
             },
             grapheme_map_start: 38_689_783_808,
-            grapheme_map: crate::hash_map::Layout {
+            grapheme_map: crate::map_layout::Layout {
                 total_size: 5_637_144_592,
                 capacity: 268_435_456,
             },
@@ -745,7 +745,7 @@ const LAYOUTS: &[(u64, Capacity, Layout)] = &[
                 total_size: 4_311_744_512,
             },
             hyperlink_map_start: 48_638_756_880,
-            hyperlink_map: crate::hash_map::Layout {
+            hyperlink_map: crate::map_layout::Layout {
                 total_size: 229_392,
                 capacity: 32_768,
             },

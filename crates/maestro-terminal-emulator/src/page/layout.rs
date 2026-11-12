@@ -1,6 +1,6 @@
 //! Page capacity and logical byte accounting, independent of native allocations.
 
-use crate::{bitmap_allocator::BitmapAllocator, hash_map, ref_counted_set};
+use crate::{bitmap_allocator::BitmapAllocator, map_layout, ref_counted_set};
 
 /// Number of addressable columns and rows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -68,7 +68,7 @@ pub struct Layout {
     /// Cluster map byte offset.
     pub(crate) grapheme_map_start: u64,
     /// Cluster map's logical regions.
-    pub(crate) grapheme_map: hash_map::Layout,
+    pub(crate) grapheme_map: map_layout::Layout,
     /// String allocator byte offset.
     pub(crate) string_alloc_start: u64,
     /// String allocator's logical regions.
@@ -76,7 +76,7 @@ pub struct Layout {
     /// Hyperlink map byte offset.
     pub(crate) hyperlink_map_start: u64,
     /// Hyperlink map's logical regions.
-    pub(crate) hyperlink_map: hash_map::Layout,
+    pub(crate) hyperlink_map: map_layout::Layout,
     /// Hyperlink set byte offset.
     pub(crate) hyperlink_set_start: u64,
     /// Hyperlink set's logical regions.
@@ -92,14 +92,14 @@ pub(crate) fn layout_for_page_size(capacity: Capacity, page_size: u64) -> Layout
     let grapheme_alloc = BitmapAllocator::<16>::layout(u64::from(capacity.grapheme_bytes));
     let grapheme_alloc_start = (styles_start + styles.total_size).next_multiple_of(8);
     let count = u64::from(capacity.grapheme_bytes).div_ceil(16);
-    let grapheme_map = hash_map::layout(count, 4, 16, 8, 100);
+    let grapheme_map = map_layout::layout(count, 4, 16, 8, 100);
     let grapheme_map_start = (grapheme_alloc_start + grapheme_alloc.total_size).next_multiple_of(8);
     let string_alloc = BitmapAllocator::<32>::layout(u64::from(capacity.string_bytes));
     let string_alloc_start = (grapheme_map_start + grapheme_map.total_size).next_multiple_of(8);
     let hyperlink_count = u64::from(capacity.hyperlink_bytes) / 48;
     let hyperlink_set = ref_counted_set::layout(hyperlink_count, 48, 8);
     let hyperlink_set_start = (string_alloc_start + string_alloc.total_size).next_multiple_of(8);
-    let hyperlink_map = hash_map::layout(hyperlink_count * 16, 4, 2, 2, 80);
+    let hyperlink_map = map_layout::layout(hyperlink_count * 16, 4, 2, 2, 80);
     let hyperlink_map_start = (hyperlink_set_start + hyperlink_set.total_size).next_multiple_of(4);
     Layout {
         total_size: (hyperlink_map_start + hyperlink_map.total_size).next_multiple_of(page_size),
