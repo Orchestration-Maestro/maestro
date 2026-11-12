@@ -115,7 +115,7 @@ impl DaemonPaths {
         api_override: Option<&str>,
         client_override: Option<&str>,
     ) -> std::path::PathBuf {
-        maestro_ipc::socket_paths::client_socket_path(
+        crate::service::local_socket::paths::client_socket_path(
             explicit.map(std::path::Path::new),
             api_override,
             client_override,

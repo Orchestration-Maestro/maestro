@@ -145,7 +145,8 @@ algorithm, and the facades add no crate-graph edge (delivery 1).
 The full-user host gives components the user's network (name lookup, connect, listen) and detached child processes.
 While the native terminal's queued output runs, component stdout goes through the same ordered queue,
 so it never splits a host frame. Other modes and regular-file destinations inherit stdout.
-Local sockets arrive through `maestro-ipc`, the one local-socket owner (delivery 59).
+Local sockets arrive through the daemon's `service::local_socket` module, the one
+local-socket owner (delivery 59).
 
 ### Guest files
 
@@ -459,8 +460,7 @@ Results match the reference. These mechanisms are replaced, each listed once:
 - **R07.** Add: "Maestro's own packages are component guests specified in [Maestro packages](packages.md)."
 - **Crates and delivery order.** Add a *Package crates* table listing each package crate and shared library with
   its one job, outside the layer numbers. Add `maestro-mcp-server` (present MCP server operations; `maestro-app`;
-  layer 5) and add it to `maestro`'s allowed dependencies. Add `maestro-ipc` to `maestro-extensions-wasmtime`'s
-  allowed dependencies (delivery 59).
+  layer 5) and add it to `maestro`'s allowed dependencies.
 - **Completion and explicit later scope.** Replace "added MCP/supervisor capabilities remain later owner phases"
   with "Maestro's packages follow [Maestro packages](packages.md)."
 

@@ -766,8 +766,8 @@ daemon noun; completion output is buffered before writing to the caller.
 
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
-`crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
-herdr v0.8.2 under Apache-2.0. The topology derives from layout, metadata tokens,
+`crates/maestro-daemon/src/service/local_socket/`, and the topology in
+`crates/maestro-workspace/` derive from herdr v0.8.2 under Apache-2.0. The topology derives from layout, metadata tokens,
 pane state, terminal identity, workspace, tab and git label/status modules.
 Snapshot records and supplied-path storage derive from the persistence modules;
 the byte-replacement helper in `crates/maestro-lock/` derives from persistence

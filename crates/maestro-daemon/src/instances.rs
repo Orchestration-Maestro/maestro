@@ -294,7 +294,7 @@ pub use stop::stop_session;
 /// Probe the existing local socket owner without a second transport or stop protocol.
 #[cfg(unix)]
 fn is_running_at(path: &std::path::Path) -> bool {
-    path.exists() && maestro_ipc::local_socket::connect_local_stream(path).is_ok()
+    path.exists() && crate::service::local_socket::connect_local_stream(path).is_ok()
 }
 
 #[cfg(test)]

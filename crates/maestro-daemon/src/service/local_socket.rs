@@ -1,5 +1,8 @@
 //! Filesystem local sockets with caller-owned names and cleanup identity.
 
+/// Client-socket path selection from caller-supplied observations.
+pub mod paths;
+
 use rustix::io::Errno;
 use rustix::net::{SocketAddrUnix, connect};
 use socket2::{Domain, Socket, Type};
@@ -14,7 +17,7 @@ pub type LocalListener = interprocess::local_socket::Listener;
 /// The owned duplex stream returned by the local-socket library.
 pub type LocalStream = interprocess::local_socket::Stream;
 /// The library's stream operations, including its native send and receive timeouts.
-pub use interprocess::local_socket::traits::Stream as LocalStreamExt;
+pub(crate) use interprocess::local_socket::traits::Stream as LocalStreamExt;
 /// The owned listener of the library's Tokio adapter.
 pub type AsyncLocalListener = interprocess::local_socket::tokio::Listener;
 /// The owned duplex stream of the library's Tokio adapter.
@@ -57,7 +60,10 @@ pub fn connect_local_stream(path: &Path) -> io::Result<LocalStream> {
 /// # Errors
 /// Returns path or connection errors, or timed-out while the accept queue stays full on Linux;
 /// Apple kernels return connection-refused instead.
-pub fn connect_local_stream_until(path: &Path, deadline: Instant) -> io::Result<LocalStream> {
+pub(crate) fn connect_local_stream_until(
+    path: &Path,
+    deadline: Instant,
+) -> io::Result<LocalStream> {
     let address = SocketAddrUnix::new(path)?;
     let fd = nonblocking_local_socket()?;
     loop {

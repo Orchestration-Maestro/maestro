@@ -17,7 +17,7 @@ pub use health::{RuntimeStatus, read_runtime_status_at};
 
 /// The native local-socket operations the API server uses.
 #[cfg(unix)]
-pub use maestro_ipc::local_socket as socket;
+pub mod local_socket;
 
 use maestro_protocol::{
     rpc_types::RpcCommand,
