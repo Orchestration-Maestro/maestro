@@ -6,7 +6,7 @@ use std::{collections::HashSet, time::Instant};
 
 impl<C: FnMut() -> u128> DaemonState<C> {
     /// Earliest settling or launch deadline across the retained terminal owners.
-    pub fn next_managed_agent_deadline(&self) -> Option<Instant> {
+    pub(crate) fn next_managed_agent_deadline(&self) -> Option<Instant> {
         self.terminals
             .values()
             .filter_map(TerminalState::next_managed_agent_deadline)
