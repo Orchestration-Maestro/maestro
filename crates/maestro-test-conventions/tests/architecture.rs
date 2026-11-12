@@ -2545,6 +2545,10 @@ fn extension_and_rpc_test_edges_are_native() {
         ("maestro-rpc", "maestro-models"),
         ("maestro-rpc", "maestro-session"),
         ("maestro-rpc", "maestro-tools"),
+        ("maestro", "maestro-catalog"),
+        ("maestro", "maestro-credentials"),
+        ("maestro", "maestro-json"),
+        ("maestro", "maestro-session"),
     ] {
         let workspace = Workspace::new();
         workspace.foundation(&[owner, target]);

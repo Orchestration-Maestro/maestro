@@ -1,10 +1,10 @@
 //! A supplied adapter failure follows a real native pipe prefix through the production host.
 #![cfg(test)]
 use crate::support::Root;
-use maestro_app::ReadonlySessionManager;
 use maestro_extensions_wasmtime::native_io::{
     ChildProcess, ExitStatus, IoFuture, NativeIo, Readable, SpawnOptions, Writable,
 };
+use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -116,14 +116,14 @@ impl Readable for FailedRead {
 }
 /// The controlled catalog never asks to execute a credential command.
 struct NoCommands;
-impl maestro_app::ConfigValueOperations for NoCommands {
+impl maestro_credentials::ConfigValueOperations for NoCommands {
     fn execute(&self, _: &str) -> Option<Vec<u8>> {
         panic!("no configured command requested")
     }
 }
 
 /// Loads each component with the supplied native capability.
-fn loader(io: Rc<dyn NativeIo>) -> maestro_app::ModuleLoader<maestro_app::Local> {
+fn loader(io: Rc<dyn NativeIo>) -> maestro_extensions::ModuleLoader<maestro_models::Local> {
     Rc::new(move |path: &str| {
         Box::pin(std::future::ready(Ok(Some(
             maestro_extensions_wasmtime::artifact_factory_with_io(
@@ -147,20 +147,22 @@ pub(crate) async fn session(
     io: Rc<dyn NativeIo>,
 ) -> Rc<maestro_app::AgentSession> {
     root.models("http://127.0.0.1:1/v1");
-    let auth = Arc::new(maestro_app::AuthStorage::in_memory(
-        maestro_app::AuthStorageData::default(),
+    let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(
+        maestro_credentials::AuthStorageData::default(),
     ));
     let registry = Arc::new(
-        maestro_app::ModelRegistry::create(
+        maestro_catalog::ModelRegistry::create(
             auth.clone(),
             root.path("agent/models.json").display().to_string(),
-            maestro_app::SharedHandle::new(NoCommands),
+            maestro_models::SharedHandle::new(NoCommands),
         )
         .unwrap(),
     );
     let model = registry.find("startup", "controlled").unwrap();
-    let mut resources =
-        maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(Rc::clone(local), loader(io));
+    let mut resources = maestro_app::ResourceLoaderOptions::<maestro_models::Local>::new(
+        Rc::clone(local),
+        loader(io),
+    );
     resources
         .additional_extension_paths
         .push(std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap());
@@ -179,10 +181,10 @@ pub(crate) async fn session(
         custom_tools: Vec::new(),
         resources: maestro_app::SessionResources::Default(Box::new(resources)),
         session_manager: Some(Rc::new(RefCell::new(
-            maestro_app::SessionManager::in_memory(Some(&cwd)).unwrap(),
+            maestro_session::SessionManager::in_memory(Some(&cwd)).unwrap(),
         ))),
         settings_manager: Some(Rc::new(RefCell::new(
-            maestro_app::SettingsManager::in_memory(maestro_app::Settings::default()),
+            maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default()),
         ))),
         session_start_event: None,
         theme: maestro_theme::LiveTheme::default(),

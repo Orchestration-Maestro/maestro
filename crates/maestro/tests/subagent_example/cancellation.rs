@@ -59,7 +59,7 @@ impl NativeIo for Launches {
 }
 
 /// Cancels the original signal if a fixture assertion unwinds early.
-struct AbortOnDrop(maestro_app::Cancellation);
+struct AbortOnDrop(maestro_models::Cancellation);
 impl Drop for AbortOnDrop {
     fn drop(&mut self) {
         self.0.abort();
@@ -69,7 +69,7 @@ impl Drop for AbortOnDrop {
 /// Completes once four distinct children have blocked their signal and reported readiness.
 fn progress(
     send: tokio::sync::oneshot::Sender<()>,
-) -> maestro_app::AgentToolUpdateCallback<Value, maestro_app::Local> {
+) -> maestro_extensions::AgentToolUpdateCallback<Value, maestro_models::Local> {
     let send = RefCell::new(Some(send));
     Rc::new(move |partial| {
         let details = partial.details.unwrap();
@@ -122,7 +122,7 @@ fn subagent_parallel_limit_and_abort_reach_every_owned_child() {
                 children: RefCell::new(Vec::new()),
             });
             let session = crate::native_io::faults::session(&root, &local, launches.clone()).await;
-            let signal = maestro_app::Cancellation::new();
+            let signal = maestro_models::Cancellation::new();
             let _abort = AbortOnDrop(signal.clone());
             let aborted = signal.clone();
             let (send, ready) = tokio::sync::oneshot::channel();
@@ -155,7 +155,7 @@ fn subagent_parallel_limit_and_abort_reach_every_owned_child() {
 
 /// A signal cancelled before admission still terminates the newly owned child.
 async fn preaborted(session: &Rc<AgentSession>, launches: &Launches) {
-    let preaborted = maestro_app::Cancellation::new();
+    let preaborted = maestro_models::Cancellation::new();
     preaborted.abort();
     let result = invoked(
         session,

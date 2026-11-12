@@ -42,6 +42,10 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-models"),
     ("maestro-chat", "maestro-tui-crossterm"),
     ("maestro", "maestro-lock"),
+    ("maestro", "maestro-catalog"),
+    ("maestro", "maestro-credentials"),
+    ("maestro", "maestro-json"),
+    ("maestro", "maestro-session"),
     ("maestro-theme", "maestro-realpath"),
 ];
 

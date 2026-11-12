@@ -2,13 +2,13 @@
 #[path = "maestro-model-account/console.rs"]
 mod console;
 
-use maestro_app::presentation_data::{get_oauth_provider, get_oauth_providers};
+use maestro_models::{get_oauth_provider, get_oauth_providers};
 use std::{error::Error, sync::Arc};
 
 /// Run the standalone account grammar, not session startup.
 fn main() {
     let status = execute().unwrap_or_else(|error| {
-        maestro_app::diagnostics::write_stderr_line(&format!("Error: {error}"));
+        maestro_agent::diagnostics::write_stderr_line(&format!("Error: {error}"));
         1
     });
     std::process::exit(status);

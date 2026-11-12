@@ -884,7 +884,10 @@ callback registrations in the shared listener collection. It permits no normal o
 build edge.
 `maestro` to `maestro-lock`, declared as a native, non-optional development
 dependency, serializes the executable's file-trigger test on the shared host
-fixture. It permits no normal or build edge.
+fixture. `maestro` to `maestro-catalog`, `maestro-credentials`, `maestro-json` and
+`maestro-session`, declared the same way, let the executable's tests build real
+catalogs, credentials, JSON fixtures and sessions. These edges permit no normal or
+build edge.
 `maestro-theme` to `maestro-realpath`, declared as a native, non-optional
 development dependency, resolves the browser author example's watched roots. It
 permits no normal or build edge.
