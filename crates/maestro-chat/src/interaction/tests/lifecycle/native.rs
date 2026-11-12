@@ -180,13 +180,13 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
     let gate = install_tracked(directory);
     super::super::controlled_search_programs(directory);
     let guard =
-        super::super::SearchGuard::new(directory, &std::env::var_os("PATH").unwrap_or_default());
+        super::super::search_guard(directory, &std::env::var_os("PATH").unwrap_or_default());
     let mut child = TestProcess::current(test)
         .unwrap()
         .env_clear()
         .case(case)
         .nocapture()
-        .env("PATH", &guard.path)
+        .env("PATH", guard.path())
         .env(&*super::super::ENV_AGENT_DIR, directory)
         .temp_dir(directory)
         .current_dir(directory)

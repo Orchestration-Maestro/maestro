@@ -4150,7 +4150,7 @@ fn author_setup(root: &Path, profile: &Path) -> Output {
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
         .env("CARGO", root.join("cargo"));
-    crate::recipe_support::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     command.output().unwrap()
 }
 

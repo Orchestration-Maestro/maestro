@@ -1561,7 +1561,7 @@ fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
 
 /// `command` in the environment of a shard that runs from the fixture checkout.
 fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: bool) -> Command {
-    crate::recipe_support::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
     }
@@ -1680,7 +1680,7 @@ fn browser_command(root: &Path, archived: bool) -> Command {
 fn setup_command() -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command.args(["nextest-setup", "author-component"]);
-    crate::recipe_support::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     command
 }
 
@@ -1703,7 +1703,7 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
             .current_dir(root)
             .env("CARGO", root.join("cargo"))
             .env("NEXTEST_ENV", &environment);
-        crate::recipe_support::without_prepared_bundles(&mut command);
+        maestro_test_process::without_prepared_bundles(&mut command);
         command
     };
     assert_success(&setup().output().unwrap());
@@ -1761,9 +1761,12 @@ fn prepared_cargo_checks_relocate_without_a_build_toolchain() {
     fs::rename(root.join("target/test-setup"), &moved).unwrap();
     let environment = root.join("cargo-checks-env");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_development"))
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command
         .args(["nextest-setup", "cargo-checks"])
-        .current_dir(root)
+        .current_dir(root);
+    maestro_test_process::without_prepared_bundles(&mut command);
+    let output = command
         .env("CARGO", root.join("missing-cargo"))
         .env("TEST_ARCHIVE", "1")
         .env("TEST_PREPARE_OUTPUT", &moved)
@@ -1805,9 +1808,12 @@ fn prepared_cargo_checks_track_their_package_inputs() {
         let original = fs::read(&path).unwrap();
         fs::write(&path, b"changed input").unwrap();
         let environment = root.join("cargo-checks-env");
-        let output = Command::new(env!("CARGO_BIN_EXE_development"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+        command
             .args(["nextest-setup", "cargo-checks"])
-            .current_dir(root)
+            .current_dir(root);
+        maestro_test_process::without_prepared_bundles(&mut command);
+        let output = command
             .env("CARGO", root.join("missing-cargo"))
             .env("TEST_ARCHIVE", "1")
             .env("TEST_PREPARE_OUTPUT", &bundle)
@@ -1839,9 +1845,12 @@ fn prepared_cargo_checks_ignore_packages_outside_their_closure() {
     ] {
         fs::write(root.join(source), b"changed source").unwrap();
     }
-    let output = Command::new(env!("CARGO_BIN_EXE_development"))
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command
         .args(["nextest-setup", "cargo-checks"])
-        .current_dir(root)
+        .current_dir(root);
+    maestro_test_process::without_prepared_bundles(&mut command);
+    let output = command
         .env("CARGO", root.join("missing-cargo"))
         .env("TEST_ARCHIVE", "1")
         .env("TEST_PREPARE_OUTPUT", root.join("target/test-setup"))
@@ -1895,9 +1904,12 @@ fn prepared_cargo_checks_refuse_stale_inputs_and_artifacts() {
     for (mutate, expected) in mutations {
         mutate();
         let environment = root.join("cargo-checks-env");
-        let output = Command::new(env!("CARGO_BIN_EXE_development"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+        command
             .args(["nextest-setup", "cargo-checks"])
-            .current_dir(root)
+            .current_dir(root);
+        maestro_test_process::without_prepared_bundles(&mut command);
+        let output = command
             .env("CARGO", root.join("missing-cargo"))
             .env("TEST_ARCHIVE", "1")
             .env("TEST_PREPARE_OUTPUT", &bundle)
@@ -1941,9 +1953,12 @@ fn native_fixture_archive_refuses_missing_stale_and_incompatible_artifacts() {
             _ => unreachable!(),
         }
         let environment = root.join("native-env");
-        let output = Command::new(env!("CARGO_BIN_EXE_development"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+        command
             .args(["nextest-setup", "native-fixture"])
-            .current_dir(root)
+            .current_dir(root);
+        maestro_test_process::without_prepared_bundles(&mut command);
+        let output = command
             .env("CARGO", root.join("missing-cargo"))
             .env("NEXTEST_ENV", &environment)
             .env("TEST_ARCHIVE", "1")

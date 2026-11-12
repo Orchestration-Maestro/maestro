@@ -39,6 +39,8 @@ mod quality;
 mod real_paths;
 /// Repeated documentation and test source layout checks.
 mod repetition;
+/// Prepared-bundle clearing in test setup children.
+mod setup_children;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
 /// Standard error diagnostics outside tests.
@@ -129,6 +131,12 @@ mod tracked_scripts;
 /// accepted. `maestro-test-directory` is the only member outside the check: its
 /// accessor is the one place that reads the platform directory itself.
 ///
+/// A test that starts the development setup tool clears the prepared bundle its run inherits:
+/// every test-owned source spelling `nextest-setup` in a string literal applies
+/// `maestro_test_process::without_prepared_bundles` to that command, directly or through a
+/// function of the same source that does. The check reads the written syntax, so it does not
+/// expand macros or follow an entry named by a constant declared outside a function.
+///
 /// A test that reads `docs/` or `assets/` at run time must have that directory
 /// routed to its package in `test_inputs` of `.github/ci.toml`. A read is a string literal
 /// that climbs out of the crate directory into the directory, or one that joins the
@@ -172,6 +180,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| time_limits::check(&members),
         &|| duplicates::check(&members),
         &|| temp_directories::check(&members),
+        &|| setup_children::check(&members),
         &|| real_paths::check(&members),
         &|| standard_error::check(&members),
         &|| test_input_routes::check(root, &members),

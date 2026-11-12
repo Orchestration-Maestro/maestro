@@ -1342,8 +1342,11 @@ names. Cargo's `--example prepare_author_component` target name stays the same o
 
 A test that starts a setup child which reads a prepared-bundle input the test does not supply
 clears it (`TEST_PREPARE_BASE`, `TEST_PREPARE_OUTPUT` and `TEST_ARCHIVE`) through
-`recipe_support::without_prepared_bundles`, so a bundle a machine exports for CI cannot change
-what the test reads.
+`maestro_test_process::without_prepared_bundles` from the test-support owner, so a bundle a
+machine exports for CI cannot change what the test reads, in this crate or in any other. The
+conventions check reads every test source that spells `nextest-setup`, so a setup child added
+without that helper fails the conventions run. The check follows the helper directly or through
+a function of the same source, reading the written syntax without expanding macros.
 
 Every development command that runs a child exits with that child's status. A child ended by
 a signal has no exit code, so the tool prints the native status on standard error, such as
@@ -1555,13 +1558,18 @@ The tool-factory suite in `maestro-tools` and the factory-construction test in
 test that receives the exports: add a test to it when the test calls
 `install_search_program`.
 
-The chat crate's isolated test children get stub `fd` and `rg` programs in their
-binary directory. A child that starts the interactive mode then neither downloads a
-search program nor runs one found on `PATH`. A test that supplies the child's `PATH`
-skips the stubs and installs whatever programs it needs. Every child's `PATH` also
-carries a guard `fd` and `rg` ahead of its first directory outside the child's root,
-unless its `PATH` names no such directory. If the child runs one, its test fails and
-names the program, whether or not the machine has `fd` or `rg` installed.
+Test children get stub `fd` and `rg` programs in their binary directory, from one
+helper in `maestro-test-process`: `install_stub_search_programs`. The chat crate's
+isolated children and the executable crate's `Root::command` children use it. A child
+that starts the interactive mode then neither downloads a search program nor runs one
+found on `PATH`. A test that supplies the child's `PATH` skips the stubs and installs
+whatever programs it needs.
+
+`SearchGuard`, from the same crate, wraps a child's `PATH`: it places a guard `fd` and
+`rg` ahead of the first directory outside the child's root, unless the `PATH` names no
+such directory. If the child runs one, the test fails and names the program, whether or
+not the machine has `fd` or `rg` installed. The chat harness asserts it after each
+isolated child. A `Root` asserts it when it is dropped.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
@@ -2738,10 +2746,13 @@ override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
 the selected child; it proves the same prologue and reaps a failed start. It never
-signals that child: it closes the child's pipes and waits for the child to exit by
-itself. Settings helpers select supplied complete nested identities with `named`
-and request a process-count limit through `setup`, keeping reports separate from
-exit status checks.
+signals that child: it closes the child's input and standard output and waits for
+it to exit by itself. The child's standard error stays open until it ends, and the
+failure then carries what the child wrote there, so it says why the selected test
+did not start; a platform that reads a pipe only by waiting for it keeps no
+standard error. Settings helpers select supplied complete nested identities with
+`named` and request a process-count limit through `setup`, keeping reports separate
+from exit status checks.
 
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
@@ -2781,7 +2792,9 @@ and loads a prepared component passes `run_agent_directory()` as
 compiling the component again. A test that gives an executable its own agent
 directory links the run's cache into it first with
 `maestro_test_process::link_files`, as the root-command harness in
-`crates/maestro/tests/support/mod.rs` and the tool-override example tests do.
+`crates/maestro/tests/support/mod.rs` and the tool-override example tests do. An entry that
+a writer renames away during the link is left out, and the test that needs that component
+compiles it.
 Test code that proves a diagnostic path survives a closed standard error uses
 `maestro_test_process::run_with_broken_stderr`, which runs the case in a child whose
 standard error is a pipe with no reader, and `maestro_test_process::wait_for_broken_stderr`,
