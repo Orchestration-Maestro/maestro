@@ -299,7 +299,7 @@ fn pane_osc_debug_tracker_recovers_after_oversized_payload() {
 #[test]
 fn pane_default_color_tracker_detects_split_osc_11_sequences() {
     let pane = super::super::display::PaneTerminal::new(
-        maestro_terminal::Terminal::new(20, 5, 0).unwrap(),
+        maestro_terminal_emulator::Terminal::new(20, 5, 0).unwrap(),
     );
     let id = maestro_workspace::tiling::PaneId::from_raw(1);
     pane.process_pty_bytes(id, 0, b"\x1b]11;rgb:11/22", || None);
@@ -323,7 +323,7 @@ fn pane_default_color_tracker_detects_split_osc_11_sequences() {
 #[test]
 fn pane_default_color_tracker_ignores_osc_queries() {
     let pane = super::super::display::PaneTerminal::new(
-        maestro_terminal::Terminal::new(20, 5, 0).unwrap(),
+        maestro_terminal_emulator::Terminal::new(20, 5, 0).unwrap(),
     );
     let id = maestro_workspace::tiling::PaneId::from_raw(1);
     pane.process_pty_bytes(id, 0, b"\x1b]10;?\x1b\\\x1b]11;?\x07", || None);

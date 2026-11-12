@@ -2991,7 +2991,7 @@ a hang or runaway memory as a finding.
 | --- | --- |
 | `markdown` | `maestro_markdown::parse_with_options` with every caller grammar, then the terminal `Markdown` component rendering an assistant reply at width 80 |
 | `frontmatter` | `maestro_resources::parse_frontmatter`, which the skill and prompt loaders call |
-| `terminal-escapes` | `maestro_terminal::Terminal::write` for program output and `maestro_tui::StdinBuffer::process` for keyboard input, with the same bytes |
+| `terminal-escapes` | `maestro_terminal_emulator::Terminal::write` for program output and `maestro_tui::StdinBuffer::process` for keyboard input, with the same bytes |
 | `protocol-frames` | `maestro_protocol::frames::read_message`, decoding consecutive client and server frames |
 | `tool-call-arguments` | `maestro_models::parsed_arguments` |
 | `sandbox-lowering` | `maestro_web::components::sandboxed_iframe::lowering::{program, provider}` for supplied bodies and provider expressions |

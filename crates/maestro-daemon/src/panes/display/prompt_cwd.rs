@@ -1,6 +1,6 @@
 //! Windows shell prompt cwd observations over retained text.
 use super::{PaneCore, PaneTerminal, reads::full_range};
-use maestro_terminal::{Coordinate, Point, page_list::Direction, screens::Key};
+use maestro_terminal_emulator::{Coordinate, Point, page_list::Direction, screens::Key};
 use std::path::PathBuf;
 
 impl PaneTerminal {

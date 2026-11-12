@@ -5,7 +5,7 @@ use crate::{
     panes::input::key_event,
 };
 use maestro_protocol::frames::ClientKeyKind;
-use maestro_terminal::input::key_encode::KeyEncoder;
+use maestro_terminal_emulator::input::key_encode::KeyEncoder;
 
 impl PaneTerminal {
     /// Encode grouped presses at the destination; a release is encoded once.

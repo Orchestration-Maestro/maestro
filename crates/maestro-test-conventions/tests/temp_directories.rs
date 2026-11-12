@@ -227,7 +227,7 @@ fn extensions_wasmtime_names_an_uncreated_trace() {
 #[test]
 fn terminal_upload_writes_the_platform_directory() {
     check(
-        "maestro-terminal",
+        "maestro-terminal-emulator",
         "tests/graphics_placements.rs",
         "//! Graphics placements.\n\n#[test]\nfn uploads_a_raw_pixel_through_the_apc_route() {\n    let path = std::env::temp_dir().join(\"maestro-graphics-placement.rgba\");\n    std::fs::write(&path, [255, 0, 0, 255]).unwrap();\n}\n",
         &[5],

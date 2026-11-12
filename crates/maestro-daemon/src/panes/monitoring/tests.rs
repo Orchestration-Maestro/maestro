@@ -61,7 +61,7 @@ fn config() -> (DetectionTaskConfig, tokio::sync::mpsc::Receiver<AppEvent>) {
             pane_id: PaneId::from_raw(42),
             child_pid: Arc::new(AtomicU32::new(0)),
             terminal: Arc::new(PaneTerminal::new(
-                maestro_terminal::Terminal::new(80, 24, 100).unwrap(),
+                maestro_terminal_emulator::Terminal::new(80, 24, 100).unwrap(),
             )),
             detection_content_seq: Arc::new(AtomicU64::new(0)),
             control: Arc::new(DetectionControl::default()),

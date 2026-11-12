@@ -2,7 +2,7 @@
 use super::PaneTerminal;
 use crate::ingress::mouse::Position;
 use maestro_protocol::frames::{ClientMouseButton, ClientMouseKind};
-use maestro_terminal::{
+use maestro_terminal_emulator::{
     Mode, Terminal,
     input::{
         key_mods::Mods,

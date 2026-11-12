@@ -10,7 +10,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-realpath", &["maestro-path"]),
     ("maestro-listeners", &[]),
     ("maestro-protocol", &[]),
-    ("maestro-terminal", &["maestro-text", "maestro-realpath"]),
+    (
+        "maestro-terminal-emulator",
+        &["maestro-text", "maestro-realpath"],
+    ),
     (
         "maestro-workspace",
         &[
@@ -36,7 +39,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         &[
             "maestro-protocol",
             "maestro-process",
-            "maestro-terminal",
+            "maestro-terminal-emulator",
             "maestro-workspace",
             "maestro-detection",
             "maestro-settings",
@@ -251,7 +254,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-workspace",
             "maestro-protocol",
             "maestro-daemon",
-            "maestro-terminal",
+            "maestro-terminal-emulator",
             "maestro-markdown",
             "maestro-office",
             "maestro-models",

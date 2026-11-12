@@ -747,7 +747,7 @@ SOFTWARE.
 ## herdr workspace daemon
 
 Terminal construction, state reads, palette updates and effective-colour rules in
-`crates/maestro-terminal/` derive from the terminal wrapper in herdr v0.8.2
+`crates/maestro-terminal-emulator/` derive from the terminal wrapper in herdr v0.8.2
 under Apache-2.0. The implementation uses owned Rust screen storage instead of
 foreign-library handles.
 
@@ -828,7 +828,7 @@ terminal, OSC, cursor, input, XTGETTCAP, selection and render profiler sources
 under the same license. Changes include one locked concrete terminal, reuse of
 engine reads and encoders, supplied process facts and time observations, and
 caller-owned rendering and scheduling. Semantic character-key policy in
-`crates/maestro-terminal/src/input/key_encode/` derives from the input encoder;
+`crates/maestro-terminal-emulator/src/input/key_encode/` derives from the input encoder;
 keyboard-stack replay in `src/kitty/key.rs` and `src/formatting/vt.rs` derives from
 the pane keyboard tracker. The encoder retains Unicode codepoints rather than
 truncating unmapped control characters to a byte.
@@ -1149,7 +1149,7 @@ SOFTWARE.
 The terminal codepoint-width interface, page storage, character mappings,
 VT/OSC and colour/SGR decoders, byte transition table, embedded X11 colour-name
 data, image command parser, image-media loader and their fixtures in
-`crates/maestro-terminal` derive from the Ghostty terminal engine. Changes: ported to safe Rust under Maestro names, with
+`crates/maestro-terminal-emulator` derive from the Ghostty terminal engine. Changes: ported to safe Rust under Maestro names, with
 compiled Unicode properties, scalar-only text, packed records, owned style,
 cluster and link tables, owned I/O and Rust codecs; the width fixture projects
 widths into runs. Temporary-file containment and shared-memory range validation
@@ -1182,7 +1182,7 @@ SOFTWARE.
 ## Terminal Unicode rules
 
 The terminal Unicode property derivation and tailored grapheme-boundary rules in
-`crates/maestro-terminal/src/unicode/` derive from uucode 0.2.0.
+`crates/maestro-terminal-emulator/src/unicode/` derive from uucode 0.2.0.
 Changes: ported to safe Rust using compiled Unicode properties, retaining terminal
 cell widths, boundary results and sequence context rather than the original table
 layout. The property and transition fixtures retain captured values from these
@@ -1214,7 +1214,7 @@ SOFTWARE.
 
 ## Terminal emoji variation data
 
-The 371 bases in `crates/maestro-terminal/src/unicode/variation.rs` derive from
+The 371 bases in `crates/maestro-terminal-emulator/src/unicode/variation.rs` derive from
 Unicode 17.0 `emoji-variation-sequences.txt`, dated 2025-01-30. The data is
 stored as inclusive ranges rather than paired selector rows.
 
