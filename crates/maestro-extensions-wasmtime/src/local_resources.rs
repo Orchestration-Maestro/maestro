@@ -6,8 +6,7 @@
 )]
 use crate::context_reads::{Endpoint, Owner, Request};
 use maestro_extensions::{
-    Cancellation, ExtensionUIContext, Model, ModelRegistry, ReadonlySessionManager,
-    ResolvedRequestAuth, SharedHandle,
+    Cancellation, ExtensionUIContext, Model, ModelRegistry, ReadonlySessionManager, SharedHandle,
 };
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
@@ -23,6 +22,7 @@ pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
 mod footer;
+pub(crate) mod held;
 pub(crate) mod host_operations;
 pub(crate) mod http;
 pub(crate) mod local_bash;
@@ -43,6 +43,13 @@ pub(crate) use synchronous::Completion;
 
 /// Local admitted work never moves to the component's Store thread.
 pub(crate) type Work = std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>;
+
+/// A call that runs on the local owner against one capability and answers its caller inline.
+pub(crate) type RunCall = Box<dyn FnOnce(Option<&Capability>, &Registry) + Send>;
+
+/// A call that starts work on the local owner against one capability and settles its caller
+/// when the work ends.
+pub(crate) type AdmitCall = Box<dyn FnOnce(Option<&Capability>, &Registry) -> Work + Send>;
 
 /// Typed requests and final resource releases arriving from the Store thread.
 pub(crate) enum Message {
@@ -109,8 +116,6 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<(), String>>,
         Admission,
     ),
-    /// Starts an admitted command operation without blocking request consumption.
-    Command(u64, crate::command_reads::Request, Admission),
     /// Creates one independently owned cancellation on this local owner.
     NewSignal(
         Option<Cancellation>,
@@ -162,22 +167,6 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
         Admission,
     ),
-    /// Reads the original live catalog, not a captured descriptor list.
-    Catalog(u64, crate::catalog_reads::Request),
-    /// Resolves credentials using the caller's effects without blocking other requests.
-    Auth(
-        u64,
-        Box<Model>,
-        tokio::sync::oneshot::Sender<Result<ResolvedRequestAuth, String>>,
-        Admission,
-    ),
-    /// Resolves a key through the original catalog's credential and config owners.
-    ProviderKey(
-        u64,
-        String,
-        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
-        Admission,
-    ),
     /// Reads one retained node of an already-built tree.
     Node(u64, crate::tree_reads::Request),
     /// Sends through the original creating session, even after guarded reads retire.
@@ -209,6 +198,10 @@ pub(crate) enum Message {
     Http(u64, http::Request),
     /// Native watch registration and explicit close on the same owner.
     Watch(u64, watches::Request),
+    /// Runs a call on the local owner against one capability and answers inline.
+    Run(u64, RunCall),
+    /// Starts the work a call selects on the local owner and keeps the admission until it settles.
+    Admit(u64, AdmitCall, Admission),
     /// Final release of an independently retained capability.
     Release(u64),
 }

@@ -1,7 +1,6 @@
 //! Nested admissions first-poll outside the pending set's active native callback.
 use crate::read_imports::ReadEndpoint;
 use crate::{
-    command_reads::Request,
     context_reads::{Owner, Request as Read},
     local_resources::{Completion, Pump, Registry},
     tests::runner,
@@ -34,7 +33,7 @@ fn nested_admission_starts_before_native_callback_returns_and_wakes_after_stagin
             let nested_context = endpoint.clone();
             let nested = std::thread::spawn(move || {
                 let completion = incoming.recv().unwrap();
-                let mut work = Box::pin(nested_context.command(Request::Wait));
+                let mut work = Box::pin(nested_context.wait_for_idle());
                 let mut context = std::task::Context::from_waker(std::task::Waker::noop());
                 assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
                 assert_eq!(nested_context.read(Read::Cwd).unwrap(), "/nested-admission");
@@ -49,7 +48,7 @@ fn nested_admission_starts_before_native_callback_returns_and_wakes_after_stagin
                 tokio::runtime::Builder::new_current_thread()
                     .build()
                     .unwrap()
-                    .block_on(endpoint.command(Request::Wait))
+                    .block_on(endpoint.wait_for_idle())
                     .unwrap();
             });
             assert!(pump.answer_next().await);

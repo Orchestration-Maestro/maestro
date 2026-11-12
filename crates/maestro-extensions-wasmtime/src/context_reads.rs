@@ -185,21 +185,5 @@ impl Owner {
 #[derive(Clone)]
 pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
 
-impl Endpoint {
-    /// Awaits admitted work without blocking the Store's concurrent accessor.
-    pub(crate) async fn command<T>(
-        &self,
-        request: impl FnOnce(
-            tokio::sync::oneshot::Sender<Result<T, String>>,
-        ) -> crate::command_reads::Request,
-    ) -> Result<T, String> {
-        self.0
-            .request_async(|id, reply, admission| {
-                crate::local_resources::Message::Command(id, request(reply), admission)
-            })
-            .await
-    }
-}
-
 #[cfg(test)]
 mod tests;

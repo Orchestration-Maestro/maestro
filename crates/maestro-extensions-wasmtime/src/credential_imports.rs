@@ -5,7 +5,6 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    catalog_reads,
     credential_reads::{Endpoint, Request},
     read_imports::{
         ReadEndpoint, add_operand, add_read, add_routed, add_routed_operand, operand, resource,
@@ -23,23 +22,6 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     crate::oauth_imports::add_to_linker(host)?;
     crate::context_imports::add_resource::<T, Endpoint>(host, "auth-storage")?;
-    host.func_wrap(
-        "[method]model-registry.auth-storage",
-        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<catalog_reads::Endpoint>,)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let result = endpoint
-                .read(catalog_reads::Request::Credentials)
-                .and_then(|owner| {
-                    store
-                        .data_mut()
-                        .ctx()
-                        .table
-                        .push(owner)
-                        .map_err(|error| error.to_string())
-                });
-            Ok((result,))
-        },
-    )?;
     add_callbacks(host)?;
     add_reads(host)?;
     add_mutations(host)?;

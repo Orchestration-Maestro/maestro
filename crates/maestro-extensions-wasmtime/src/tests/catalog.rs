@@ -60,23 +60,28 @@ async fn retained_catalog(command: bool) {
 
 /// Exact lookup operands and owned decoding preserve absence and authored strings.
 fn observe(catalog: &catalog_reads::Endpoint) {
-    use catalog_reads::Request as Read;
-    let all: Value = serde_json::from_str(&catalog.read(Read::All).unwrap()).unwrap();
+    let all: Value = serde_json::from_str(&catalog.get_all().unwrap()).unwrap();
     assert_eq!(all.as_array().unwrap().len(), 1);
     assert_eq!(all[0]["id"], " \u{feff}\u{85} model ");
-    let available: Value = serde_json::from_str(&catalog.read(Read::Available).unwrap()).unwrap();
+    let available: Value = serde_json::from_str(&text(catalog.get_available())).unwrap();
     assert_eq!(available, json!([]));
     let found = catalog
-        .read(|reply| Read::Find("fixture".into(), " \u{feff}\u{85} model ".into(), reply))
+        .find("fixture".into(), " \u{feff}\u{85} model ".into())
         .unwrap()
         .unwrap();
     assert_eq!(serde_json::from_str::<Value>(&found).unwrap(), all[0]);
     assert_eq!(
-        catalog
-            .read(|reply| Read::Find("fixture".into(), "model".into(), reply))
-            .unwrap(),
+        catalog.find("fixture".into(), "model".into()).unwrap(),
         None
     );
+}
+
+/// The text a finished route settles with.
+fn text(mut route: crate::import_route::Route) -> String {
+    match route.next() {
+        Err(Ok(crate::import_route::Value::Text(text))) => text,
+        _ => panic!("expected a text result"),
+    }
 }
 
 #[test]
@@ -103,27 +108,21 @@ async fn released_catalog() {
     }
     drop(admission);
     pump.serve().await;
-    worker.join().unwrap();
+    let outcomes = worker.join().unwrap();
+    assert_eq!(outcomes, ["extension catalog resource ended"; 4]);
 }
 
-/// Each operation kind settles with the text of the ended catalog.
-fn ended_operations(endpoint: &catalog_reads::Endpoint) {
-    const ENDED: &str = "extension catalog resource ended";
-    assert_eq!(
-        endpoint.read(catalog_reads::Request::All),
-        Err(ENDED.into())
-    );
-    let refresh = endpoint.route(catalog_reads::Request::Refresh);
-    assert_eq!(refresh.result(), Err(ENDED.into()));
+/// The failure each operation kind settles with: read, route, authentication and provider key.
+fn ended_operations(endpoint: &catalog_reads::Endpoint) -> [String; 4] {
+    let read = endpoint.get_all().unwrap_err();
+    let route = endpoint.refresh().result().unwrap_err();
     let model = model_support::model("ended").read().unwrap().clone();
-    tokio::runtime::Builder::new_current_thread()
+    let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
-        .unwrap()
-        .block_on(async {
-            assert_eq!(endpoint.auth(model).await.err().as_deref(), Some(ENDED));
-            assert_eq!(
-                endpoint.provider_key("fixture".into()).await,
-                Err(ENDED.into())
-            );
-        });
+        .unwrap();
+    let auth = runtime.block_on(endpoint.auth(model)).err().unwrap();
+    let key = runtime
+        .block_on(endpoint.provider_key("fixture".into()))
+        .unwrap_err();
+    [read, route, auth, key]
 }

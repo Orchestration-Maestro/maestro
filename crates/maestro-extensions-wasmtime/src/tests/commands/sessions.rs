@@ -1,9 +1,9 @@
 //! Session-changing requests preserve outer records, raw operands and native failures.
 use crate::{
-    command_reads::Request,
+    bindings::maestro::extension::host::NewSessionCommandData,
     context_reads::{Endpoint, Owner},
     local_resources::Pump,
-    session_calls::{NewSession, NewSessionData, Switch},
+    session_calls::{NewSession, Switch},
 };
 use maestro_extensions::ExtensionCommandContextActions;
 use std::{cell::RefCell, rc::Rc};
@@ -58,7 +58,7 @@ async fn requests(endpoint: Endpoint) {
     for options in [None, Some(Switch { with_session: None })] {
         assert!(
             endpoint
-                .command(|reply| Request::Switch(" /session\u{85} ".into(), options, reply))
+                .switch_session(" /session\u{85} ".into(), options)
                 .await
                 .unwrap()
                 .cancelled
@@ -70,10 +70,10 @@ async fn requests(endpoint: Endpoint) {
 async fn new_sessions(endpoint: &Endpoint) {
     for data in [
         None,
-        Some(NewSessionData {
+        Some(NewSessionCommandData {
             parent_session: None,
         }),
-        Some(NewSessionData {
+        Some(NewSessionCommandData {
             parent_session: Some(" /parent\u{feff} ".into()),
         }),
     ] {
@@ -82,13 +82,7 @@ async fn new_sessions(endpoint: &Endpoint) {
             setup: None,
             with_session: None,
         };
-        assert!(
-            endpoint
-                .command(|reply| Request::NewSession(options, reply))
-                .await
-                .unwrap()
-                .cancelled
-        );
+        assert!(endpoint.new_session(options).await.unwrap().cancelled);
     }
 }
 
@@ -102,12 +96,7 @@ async fn forks(endpoint: &Endpoint) {
     ] {
         assert_eq!(
             endpoint
-                .command(|reply| Request::Fork(
-                    "  e\u{feff}\u{85} ".into(),
-                    data.map(str::to_owned),
-                    None,
-                    reply
-                ))
+                .fork("  e\u{feff}\u{85} ".into(), data.map(str::to_owned), None)
                 .await
                 .unwrap_err(),
             "native fork failure"
@@ -115,7 +104,7 @@ async fn forks(endpoint: &Endpoint) {
     }
     assert!(
         endpoint
-            .command(|reply| Request::Fork("ignored".into(), Some("not JSON".into()), None, reply))
+            .fork("ignored".into(), Some("not JSON".into()), None)
             .await
             .is_err()
     );

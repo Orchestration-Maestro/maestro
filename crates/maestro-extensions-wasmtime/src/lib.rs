@@ -82,7 +82,6 @@ mod schema_reads;
 mod schema_registration;
 mod schema_wire;
 mod session_calls;
-mod session_imports;
 mod signal_imports;
 mod stream_calls;
 mod stream_imports;
