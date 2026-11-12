@@ -1,4 +1,9 @@
 //! Canonical UI imports delegate through the existing typed local request pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::Callback,
     local_resources::SignalEndpoint,

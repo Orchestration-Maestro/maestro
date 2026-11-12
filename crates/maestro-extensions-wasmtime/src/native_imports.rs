@@ -1,4 +1,9 @@
 //! Canonical native resources forward typed bytes through the existing local pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     api_imports::ApiView,
     context_imports::add_resource,

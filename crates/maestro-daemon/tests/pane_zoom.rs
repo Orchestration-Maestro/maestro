@@ -1,9 +1,10 @@
 //! Pane zoom through the daemon's handler: modes, focus changes and no-ops.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, daemon_with_workspaces, event_names, events_after, failure, pair, request, root_pane,
+    daemon_with_workspaces, event_names, events_after, failure, pair, request, root_pane,
     split_pane,
 };
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::{CopyModeState, Mode};
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{
@@ -20,7 +21,7 @@ fn zoom_of(result: Result<ResponseResult, ErrorBody>) -> PaneZoomResult {
 }
 
 /// The layout carried by the last published event.
-fn last_layout(app: &TestApp) -> maestro_protocol::schema::PaneLayoutSnapshot {
+fn last_layout(app: &App) -> maestro_protocol::schema::PaneLayoutSnapshot {
     match events_after(app, 0).pop() {
         Some(EventData::LayoutUpdated { layout }) => layout,
         other => panic!("expected a layout event last: {other:?}"),

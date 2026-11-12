@@ -2,9 +2,10 @@
 //! input commands, with the bytes observed by a real shell.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, answer, daemon_with_workspaces, failure, request, root_pane, run_in_pane, split_pane,
+    answer, daemon_with_workspaces, failure, request, root_pane, run_in_pane, split_pane,
     wait_for_line, with_live_daemon,
 };
+use maestro_daemon::state::App;
 use maestro_protocol::schema::{ResponseResult, SplitDirection};
 use maestro_workspace::terminal_id::TerminalId;
 use serde_json::json;
@@ -19,7 +20,7 @@ const KITTY_KEYBOARD: &str = "printf '\\033[>7u'; ";
 ///
 /// `preamble` runs in the shell first. Returns the pane handle and its terminal.
 /// Readiness starts on a fresh line even when the shell prints its prompt after input echo.
-async fn watching(app: &mut TestApp, count: usize, preamble: &str) -> (String, TerminalId) {
+async fn watching(app: &mut App, count: usize, preamble: &str) -> (String, TerminalId) {
     let created = answer(app, json!({"type": "workspace.create"})).await;
     let Ok(ResponseResult::WorkspaceCreated {
         root_pane: created_pane,
@@ -42,7 +43,7 @@ async fn watching(app: &mut TestApp, count: usize, preamble: &str) -> (String, T
 }
 
 /// The bytes the watched pane received, as space-separated hex.
-async fn received(app: &TestApp, terminal: &TerminalId) -> String {
+async fn received(app: &App, terminal: &TerminalId) -> String {
     let text = wait_for_line(app, terminal, "GOT ").await;
     text.lines()
         .find_map(|line| line.strip_prefix("GOT "))
@@ -52,7 +53,7 @@ async fn received(app: &TestApp, terminal: &TerminalId) -> String {
 }
 
 /// Sends `keys` to `pane` and checks that the daemon accepted them.
-async fn send_keys(app: &mut TestApp, pane: &str, keys: &[&str]) {
+async fn send_keys(app: &mut App, pane: &str, keys: &[&str]) {
     let wire = json!({"type": "pane.send_keys", "pane_id": pane, "keys": keys});
     assert_eq!(answer(app, wire).await, Ok(ResponseResult::Ok {}));
 }
@@ -236,7 +237,7 @@ fn input_routing_changes_only_the_named_pane() {
     let mut app = daemon_with_workspaces(&["/one"]);
     let target = root_pane(&app, 0);
     let other = split_pane(&mut app, 0, target, SplitDirection::Right);
-    let routed = |app: &TestApp, pane| {
+    let routed = |app: &App, pane| {
         app.state.topology.workspaces[0]
             .pane_state(pane)
             .unwrap()

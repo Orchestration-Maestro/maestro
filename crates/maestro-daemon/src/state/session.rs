@@ -23,7 +23,7 @@ enum SessionSaveJob {
     },
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Settles captured history before clearing an accepted persistence disable.
     pub(super) fn finish_history_reload(&mut self, paths: &DaemonPaths) {
         self.take_config_reloaded_from_disk();

@@ -1,4 +1,9 @@
 //! Canonical tree-node resources retaining their original captured native tree.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::read_imports::ReadEndpoint;
 use crate::read_imports::add_read;
 use crate::{

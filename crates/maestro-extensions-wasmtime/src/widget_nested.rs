@@ -1,5 +1,10 @@
 //! Host widgets inside other components, whose rendering returns their authored functions'
 //! failures.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::paints::Failure;
 use crate::widget_reads::Widget;
 use maestro_extensions::presentation::Focusable;

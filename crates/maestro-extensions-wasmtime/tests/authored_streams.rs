@@ -1,5 +1,10 @@
 //! Authored values cross the production host only as retained resources.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::Local;
 use serde_json::{Value, json};
 use std::rc::Rc;

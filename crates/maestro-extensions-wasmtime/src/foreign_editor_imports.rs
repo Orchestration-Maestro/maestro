@@ -1,5 +1,10 @@
 //! Canonical imports of the editor factories other extensions set, and of the editors they
 //! build.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::callback_imports::{CallbackView, optional, retain};
 use crate::guest_calls::Callback;
 use crate::import_route::push;

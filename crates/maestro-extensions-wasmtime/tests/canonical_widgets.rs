@@ -1,5 +1,10 @@
 //! Host widgets a component builds without a UI render through the toolkit widgets.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{ExtensionRunner, Local, create_event_bus_for};
 use maestro_tui::{
     Box as Boxed, Component, Container, Markdown, MarkdownOptions, MarkdownTheme, Spacer,

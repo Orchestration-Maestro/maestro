@@ -1,4 +1,9 @@
 //! Typed primitive context requests between the Store thread and its local owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Registry, SignalEndpoint, UiEndpoint};
 use maestro_extensions::{ContextUsage, ExtensionCommandContext, ExtensionContext};
 use std::sync::{Arc, mpsc};
@@ -179,22 +184,6 @@ impl Owner {
 /// Send-only endpoint retained by the Store rather than an unsendable domain context.
 #[derive(Clone)]
 pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
-
-impl Endpoint {
-    /// Awaits admitted work without blocking the Store's concurrent accessor.
-    pub(crate) async fn command<T>(
-        &self,
-        request: impl FnOnce(
-            tokio::sync::oneshot::Sender<Result<T, String>>,
-        ) -> crate::command_reads::Request,
-    ) -> Result<T, String> {
-        self.0
-            .request_async(|id, reply, admission| {
-                crate::local_resources::Message::Command(id, request(reply), admission)
-            })
-            .await
-    }
-}
 
 #[cfg(test)]
 mod tests;

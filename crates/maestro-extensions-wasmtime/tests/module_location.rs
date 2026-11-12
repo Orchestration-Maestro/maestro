@@ -1,5 +1,10 @@
 //! Each loaded component instance reads the location of the artifact it was loaded from.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::components::{loader, local, place};
 use maestro_extensions::{
     ExtensionRunner, LoadExtensionsResult, Local, ResourcesDiscoverReason, create_event_bus_for,

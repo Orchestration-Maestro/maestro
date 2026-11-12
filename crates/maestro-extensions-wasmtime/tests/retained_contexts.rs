@@ -1,5 +1,10 @@
 //! Suspended canonical commands retain independently acquired native capabilities.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::types::ExtensionUIContextPort;
 use maestro_extensions::{
     ExtensionCommandContextActions, ExtensionContextActions, ExtensionExecution, ExtensionRunner,

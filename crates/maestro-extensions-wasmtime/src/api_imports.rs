@@ -1,4 +1,9 @@
 //! Canonical API imports use the original facade through the single local pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::api_reads::{Endpoint, Request};
 use crate::read_imports::ReadEndpoint;
 use crate::read_imports::{add_read, add_routed_operand};

@@ -92,7 +92,8 @@ runtime responsibility.
 
 `maestro-workspace` models workspaces, tabs, split layouts and pane viewport
 state. A `WorkspaceTopology` owns the collection and one identity allocator.
-Its clock is supplied by the caller; separate owners have independent counters.
+Its clock is supplied by the caller and retained as a boxed closure, so no owner
+of a topology names a clock type; separate owners have independent counters.
 
 Workspace handles and public tab and pane numbers stay stable when tabs move.
 Closed numbers are not reused. Restore admission reserves saved numeric

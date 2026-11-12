@@ -3,7 +3,7 @@
 use super::App;
 use crate::settings::titles::{WindowTitlePart, WindowTitleTemplate, WindowTitleToken};
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Parses the configured template, resolving the server hostname once when used.
     pub fn configure_window_title(&mut self, template: &str) {
         self.window_title_template =

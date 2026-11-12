@@ -1,5 +1,10 @@
 //! Returned model invocations keep their own hooks and cancellation after registration release.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 mod overlap;
 mod producer;
 

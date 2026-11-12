@@ -1,5 +1,10 @@
 //! Factory-level semantic JSON witnesses for every arbitrary payload family.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{ExtensionExecution, ExtensionRunner, Local, types::ExtensionHandle};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};

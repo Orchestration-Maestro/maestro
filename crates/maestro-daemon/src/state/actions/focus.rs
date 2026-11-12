@@ -3,7 +3,7 @@
 use crate::state::model::{DaemonState, Mode, PaneFocusTarget};
 use maestro_workspace::tiling::PaneId;
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Selects a workspace and marks the panes in its active tab seen.
     pub fn switch_workspace(&mut self, index: usize) {
         let Some(workspace) = self.topology.workspaces.get(index) else {

@@ -541,14 +541,14 @@ fn test_layout_and_file_attributes_are_checked() {
 fn generated_exclusions_keep_exact_owner_and_path() {
     let body = copied(&";".repeat(30));
     for (name, path) in [
-        ("maestro-models", "src/catalog/models_generated/records.rs"),
+        ("maestro-models-catalog", "src/provider_openai.rs"),
         ("maestro-extensions-wasm", "src/bindings.rs"),
     ] {
         assert!(check(&[member(name, &[(path, body.clone())])]).is_ok());
     }
     // A generated owner stays excluded while its bodies carry test attributes.
     for (name, path) in [
-        ("maestro-models", "src/catalog/models_generated/records.rs"),
+        ("maestro-models-catalog", "src/provider_openai.rs"),
         ("maestro-extensions-wasm", "src/bindings.rs"),
     ] {
         let body = format!("#[cfg(test)]\n{body}");
@@ -556,16 +556,11 @@ fn generated_exclusions_keep_exact_owner_and_path() {
     }
     for (name, path) in [
         ("maestro-settings", "src/bindings.rs"),
-        (
-            "maestro-settings",
-            "src/catalog/models_generated/records.rs",
-        ),
+        ("maestro-settings", "src/provider_openai.rs"),
         ("maestro-extensions-wasm", "src/handwritten.rs"),
         ("maestro-models", "src/catalog/other.rs"),
-        (
-            "maestro-models",
-            "src/catalog/models_generated_extra/records.rs",
-        ),
+        ("maestro-models", "src/provider_openai.rs"),
+        ("maestro-models-catalog", "tests/provider_openai.rs"),
     ] {
         let body = if name == "maestro-extensions-wasm" {
             format!(

@@ -4,7 +4,7 @@ use super::super::{reads::ReadRequest, responses::pane_not_found};
 use crate::state::App;
 use maestro_protocol::schema::{ErrorBody, PaneReadParams, ResponseResult};
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Reads the named pane's screen.
     ///
     /// # Errors

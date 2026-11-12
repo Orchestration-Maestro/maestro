@@ -1,5 +1,10 @@
 //! Factory metadata reaches the production runtime and its original callback frame.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 
 use maestro_extensions::{
     ComponentHandle, EventBusController, EventError, ExtensionRunner, ExtensionUIContext,

@@ -5,6 +5,7 @@
 use crate::config_support;
 
 use config_support::{block_on, fixture, put};
+use maestro_daemon::state::App;
 use maestro_daemon::{
     settings::model::{
         AgentPanelSortConfig, ConfigReloadStatus, NewTerminalCwdConfig, ShellModeConfig,
@@ -16,7 +17,7 @@ use serde_json::json;
 use std::{path::Path, time::Instant};
 
 /// Verify accepted launch policy and independent background checks together.
-fn assert_launch_and_check_preferences(app: &config_support::TestApp) {
+fn assert_launch_and_check_preferences(app: &App) {
     assert_eq!(app.config.terminal.default_shell, "nu");
     assert_eq!(app.config.terminal.shell_mode, ShellModeConfig::NonLogin);
     assert_eq!(app.config.terminal.new_cwd, NewTerminalCwdConfig::Home);
@@ -37,7 +38,7 @@ fn assert_launch_and_check_preferences(app: &config_support::TestApp) {
 }
 
 /// Verify the explicit reload's diagnostic and notification feedback.
-fn assert_reload_feedback(app: &config_support::TestApp) {
+fn assert_reload_feedback(app: &App) {
     assert!(app.state.config_diagnostic.is_none());
     assert!(app.state.request_client_config_reload.0);
     let toast = app.state.toast.as_ref().unwrap();

@@ -1,86 +1,27 @@
-//! Canonical catalog imports preserve current descriptors and exact lookup operands.
-use crate::read_imports::{
-    ReadEndpoint, add_operand, add_read, add_routed, add_routed_operand, operand, resource,
-};
+//! Canonical catalog imports: the generated resource traits over the original local catalog.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
-    catalog_reads::{Endpoint, Request},
-    context_imports::add_resource,
+    bindings::maestro::extension::host::{
+        HostModelRegistry, HostModelRegistryWithStore, RequestAuth, ResolvedRequestAuth,
+    },
+    catalog_reads::Endpoint,
+    import_route::{Route, push},
+    lifecycle::State,
+    provider_registration::Wire,
 };
 use wasmtime::{
     StoreContextMut,
-    component::{ComponentType, LinkerInstance, Lower, Resource},
+    component::{Accessor, HasSelf, LinkerInstance, Resource, ResourceType},
 };
+use wasmtime_wasi::WasiView;
 
-/// Defines catalog reads and credential resolution through the original local owner.
-pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
-    host: &mut LinkerInstance<'_, T>,
-) -> wasmtime::Result<()> {
-    add_resource::<T, Endpoint>(host, "model-registry")?;
-    add_metadata(host)?;
-    add_mutations(host)?;
-    add_provider_key(host)?;
-    add_read(
-        host,
-        "[method]model-registry.get-all",
-        Request::All,
-        resource::<T, Endpoint>,
-    )?;
-    add_routed(
-        host,
-        "[method]model-registry.get-available",
-        Request::Available,
-        resource::<T, Endpoint>,
-    )?;
-    host.func_wrap(
-        "[method]model-registry.find",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, provider, id): (Resource<Endpoint>, String, String)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((endpoint.read(|reply| Request::Find(provider, id, reply)),))
-        },
-    )?;
-    host.func_wrap_concurrent(
-        "[method]model-registry.get-api-key-and-headers",
-        |accessor, (resource, model): (Resource<Endpoint>, String)| {
-            Box::pin(async move {
-                let endpoint = accessor.with(|mut access| {
-                    Ok::<_, wasmtime::Error>(access.get().ctx().table.get(&resource)?.clone())
-                })?;
-                let result = match crate::writer_reads::decode(&model) {
-                    Ok(model) => endpoint.auth(model).await.map(ResolvedRequestAuth::from),
-                    Err(error) => Err(error),
-                };
-                Ok((result,))
-            })
-        },
-    )?;
-    Ok(())
-}
-
-/// Canonical authentication retains optional key, endpoint and header values.
-#[derive(ComponentType, Lower)]
-#[component(record)]
-struct RequestAuth {
-    /// Selected key, absent when no source supplies one.
-    #[component(name = "api-key")]
-    api_key: Option<String>,
-    /// Resolved provider endpoint.
-    #[component(name = "base-url")]
-    base_url: Option<String>,
-    /// Supplied ordered headers, retaining the absent/present distinction.
-    headers: Option<Vec<(String, String)>>,
-}
-
-/// Credential denial is data, distinct from a catchable import conversion error.
-#[derive(ComponentType, Lower)]
-#[component(variant)]
-enum ResolvedRequestAuth {
-    /// Native resolution completed successfully.
-    #[component(name = "ok")]
-    Ok(RequestAuth),
-    /// Native resolution returned its original failure text.
-    #[component(name = "error")]
-    Error(String),
+/// Clones the catalog endpoint a guest handle names before native code runs.
+fn endpoint(state: &mut State, this: &Resource<Endpoint>) -> wasmtime::Result<Endpoint> {
+    Ok(state.ctx().table.get(this)?.clone())
 }
 
 impl From<maestro_extensions::ResolvedRequestAuth> for ResolvedRequestAuth {
@@ -100,88 +41,281 @@ impl From<maestro_extensions::ResolvedRequestAuth> for ResolvedRequestAuth {
     }
 }
 
-/// Links current metadata and model-authentication predicates.
-fn add_metadata<T: crate::callback_imports::CallbackView + 'static>(
-    host: &mut LinkerInstance<'_, T>,
-) -> wasmtime::Result<()> {
-    add_read(
-        host,
-        "[method]model-registry.get-error",
-        Request::Error,
-        resource::<T, Endpoint>,
-    )?;
-    add_routed_operand(
-        host,
-        "[method]model-registry.get-provider-auth-status",
-        Request::Status,
-        operand::<T, Endpoint, String>,
-    )?;
-    add_operand(
-        host,
-        "[method]model-registry.get-provider-display-name",
-        Request::Display,
-        operand::<T, Endpoint, String>,
-    )?;
-    add_routed_operand(
-        host,
-        "[method]model-registry.has-configured-auth",
-        Request::HasConfiguredAuth,
-        operand::<T, Endpoint, String>,
-    )?;
-    add_routed_operand(
-        host,
-        "[method]model-registry.is-using-oauth",
-        Request::IsUsingOAuth,
-        operand::<T, Endpoint, String>,
-    )?;
-    Ok(())
+impl HostModelRegistry for State {
+    fn auth_storage(
+        &mut self,
+        this: Resource<Endpoint>,
+    ) -> wasmtime::Result<Result<Resource<crate::credential_reads::Endpoint>, String>> {
+        let catalog = endpoint(self, &this)?;
+        Ok(catalog.credentials().and_then(|owner| {
+            self.ctx()
+                .table
+                .push(owner)
+                .map_err(|error| error.to_string())
+        }))
+    }
+
+    fn get_all(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<Result<String, String>> {
+        Ok(endpoint(self, &this)?.get_all())
+    }
+
+    fn get_available(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.get_available();
+        push(self, route)
+    }
+
+    fn find(
+        &mut self,
+        this: Resource<Endpoint>,
+        provider: String,
+        model_id: String,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(endpoint(self, &this)?.find(provider, model_id))
+    }
+
+    fn refresh(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.refresh();
+        push(self, route)
+    }
+
+    fn get_error(
+        &mut self,
+        this: Resource<Endpoint>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(endpoint(self, &this)?.get_error())
+    }
+
+    fn has_configured_auth(
+        &mut self,
+        this: Resource<Endpoint>,
+        model: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.has_configured_auth(model);
+        push(self, route)
+    }
+
+    fn get_provider_auth_status(
+        &mut self,
+        this: Resource<Endpoint>,
+        provider: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.get_provider_auth_status(provider);
+        push(self, route)
+    }
+
+    fn get_provider_display_name(
+        &mut self,
+        this: Resource<Endpoint>,
+        provider: String,
+    ) -> wasmtime::Result<Result<String, String>> {
+        Ok(endpoint(self, &this)?.get_provider_display_name(provider))
+    }
+
+    fn is_using_oauth(
+        &mut self,
+        this: Resource<Endpoint>,
+        model: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.is_using_oauth(model);
+        push(self, route)
+    }
+
+    fn register_provider(
+        &mut self,
+        this: Resource<Endpoint>,
+        name: String,
+        config: String,
+        callbacks: Wire,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let callbacks = crate::provider_registration::retain(self, &name, callbacks)?;
+        let route = endpoint(self, &this)?.register_provider(name, config, callbacks);
+        push(self, route)
+    }
+
+    fn unregister_provider(
+        &mut self,
+        this: Resource<Endpoint>,
+        name: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.unregister_provider(name);
+        push(self, route)
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        self.ctx().table.delete(this)?;
+        Ok(())
+    }
 }
-/// Mutates this catalog directly, never the extension's registration queue.
-fn add_mutations<T: crate::callback_imports::CallbackView + 'static>(
-    host: &mut LinkerInstance<'_, T>,
-) -> wasmtime::Result<()> {
-    add_routed(
-        host,
-        "[method]model-registry.refresh",
-        Request::Refresh,
-        resource::<T, Endpoint>,
+
+impl HostModelRegistryWithStore<State> for HasSelf<State> {
+    async fn get_api_key_and_headers(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Endpoint>,
+        model: String,
+    ) -> wasmtime::Result<Result<ResolvedRequestAuth, String>> {
+        let catalog = accessor.with(|mut access| endpoint(access.get(), &this))?;
+        Ok(match crate::writer_reads::decode(&model) {
+            Ok(model) => catalog.auth(model).await.map(ResolvedRequestAuth::from),
+            Err(error) => Err(error),
+        })
+    }
+
+    async fn get_api_key_for_provider(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Endpoint>,
+        provider: String,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        let catalog = accessor.with(|mut access| endpoint(access.get(), &this))?;
+        Ok(catalog.provider_key(provider).await)
+    }
+}
+
+/// Registers the catalog resource's destructor and every method as a forward to the traits.
+pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    host.resource(
+        "model-registry",
+        ResourceType::host::<Endpoint>(),
+        |mut store, key| HostModelRegistry::drop(store.data_mut(), Resource::new_own(key)),
     )?;
-    add_routed_operand(
-        host,
-        "[method]model-registry.unregister-provider",
-        Request::Unregister,
-        operand::<T, Endpoint, String>,
-    )?;
+    add_reads(host)?;
+    add_routes(host)?;
     host.func_wrap(
         "[method]model-registry.register-provider",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, name, config, callbacks): (
-            Resource<Endpoint>,
-            String,
-            String,
-            crate::provider_registration::Wire,
-        )| {
-            let callbacks =
-                crate::provider_registration::retain(store.data_mut(), &name, callbacks)?;
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Register(name, config, callbacks, reply));
-            Ok((crate::import_route::push(store.data_mut(), route)?,))
+        |mut store: StoreContextMut<'_, State>,
+         (this, name, config, callbacks): (Resource<Endpoint>, String, String, Wire)| {
+            Ok((HostModelRegistry::register_provider(
+                store.data_mut(),
+                this,
+                name,
+                config,
+                callbacks,
+            )?,))
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]model-registry.get-api-key-and-headers",
+        |accessor, (this, model): (Resource<Endpoint>, String)| {
+            Box::pin(async move {
+                Ok((
+                    <HasSelf<State> as HostModelRegistryWithStore<State>>::get_api_key_and_headers(
+                        accessor, this, model,
+                    )
+                    .await?,
+                ))
+            })
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]model-registry.get-api-key-for-provider",
+        |accessor, (this, provider): (Resource<Endpoint>, String)| {
+            Box::pin(async move {
+                Ok((
+                    <HasSelf<State> as HostModelRegistryWithStore<State>>::get_api_key_for_provider(
+                        accessor, this, provider,
+                    )
+                    .await?,
+                ))
+            })
         },
     )
 }
-/// Resolves the provider key on the original local catalog without blocking other requests.
-fn add_provider_key<T: crate::callback_imports::CallbackView + 'static>(
-    host: &mut LinkerInstance<'_, T>,
-) -> wasmtime::Result<()> {
-    host.func_wrap_concurrent(
-        "[method]model-registry.get-api-key-for-provider",
-        |accessor, (resource, provider): (Resource<Endpoint>, String)| {
-            Box::pin(async move {
-                let endpoint = accessor.with(|mut access| {
-                    Ok::<_, wasmtime::Error>(access.get().ctx().table.get(&resource)?.clone())
-                })?;
-                Ok((endpoint.provider_key(provider).await,))
-            })
+
+/// Forwards the methods that answer on the Store thread without a route.
+fn add_reads(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "[method]model-registry.auth-storage",
+        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
+            Ok((HostModelRegistry::auth_storage(store.data_mut(), this)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.get-all",
+        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
+            Ok((HostModelRegistry::get_all(store.data_mut(), this)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.find",
+        |mut store: StoreContextMut<'_, State>,
+         (this, provider, model_id): (Resource<Endpoint>, String, String)| {
+            Ok((HostModelRegistry::find(
+                store.data_mut(),
+                this,
+                provider,
+                model_id,
+            )?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.get-error",
+        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
+            Ok((HostModelRegistry::get_error(store.data_mut(), this)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.get-provider-display-name",
+        |mut store: StoreContextMut<'_, State>, (this, provider): (Resource<Endpoint>, String)| {
+            Ok((HostModelRegistry::get_provider_display_name(
+                store.data_mut(),
+                this,
+                provider,
+            )?,))
+        },
+    )
+}
+
+/// Forwards the methods that return a route for the guest to drive.
+fn add_routes(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    host.func_wrap(
+        "[method]model-registry.get-available",
+        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
+            Ok((HostModelRegistry::get_available(store.data_mut(), this)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.refresh",
+        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
+            Ok((HostModelRegistry::refresh(store.data_mut(), this)?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.has-configured-auth",
+        |mut store: StoreContextMut<'_, State>, (this, model): (Resource<Endpoint>, String)| {
+            Ok((HostModelRegistry::has_configured_auth(
+                store.data_mut(),
+                this,
+                model,
+            )?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.get-provider-auth-status",
+        |mut store: StoreContextMut<'_, State>, (this, provider): (Resource<Endpoint>, String)| {
+            Ok((HostModelRegistry::get_provider_auth_status(
+                store.data_mut(),
+                this,
+                provider,
+            )?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.is-using-oauth",
+        |mut store: StoreContextMut<'_, State>, (this, model): (Resource<Endpoint>, String)| {
+            Ok((HostModelRegistry::is_using_oauth(
+                store.data_mut(),
+                this,
+                model,
+            )?,))
+        },
+    )?;
+    host.func_wrap(
+        "[method]model-registry.unregister-provider",
+        |mut store: StoreContextMut<'_, State>, (this, name): (Resource<Endpoint>, String)| {
+            Ok((HostModelRegistry::unregister_provider(
+                store.data_mut(),
+                this,
+                name,
+            )?,))
         },
     )
 }

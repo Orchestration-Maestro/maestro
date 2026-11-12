@@ -3,7 +3,7 @@
 use super::App;
 use crate::terminal_theme::HostAppearance;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Updates an observed default colour, inferring appearance only before an explicit report.
     pub fn update_host_terminal_theme(
         &mut self,

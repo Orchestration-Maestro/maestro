@@ -1,5 +1,10 @@
 //! Retained terminal capabilities reach the real frame writer.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 
 use maestro_extensions::{
     EventError, ExtensionUIContext, ExtensionWidgetOptions,

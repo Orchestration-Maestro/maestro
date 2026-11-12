@@ -1,4 +1,9 @@
 //! Retained UI requests use the extension's original local receiver.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Message};
 use maestro_extensions::{
     ExtensionUIContext, ExtensionWidgetOptions, WorkingIndicatorOptions,
@@ -299,7 +304,7 @@ fn settle<T: 'static>(
 
 /// Store-safe ownership of the originally acquired local UI.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
     /// Admits one dialog on the original local owner and waits for its answer.

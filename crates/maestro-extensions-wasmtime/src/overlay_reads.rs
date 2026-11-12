@@ -1,4 +1,9 @@
 //! Retained overlay options and handles on the existing local widget request owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::Handle,
     import_route::Value,
@@ -80,7 +85,7 @@ pub(crate) enum OverlayMessage {
 
 /// Store-safe ownership of the original native options record.
 #[derive(Clone)]
-pub(crate) struct OptionsEndpoint(pub(crate) Arc<Lease>);
+pub struct OptionsEndpoint(pub(crate) Arc<Lease>);
 impl OptionsEndpoint {
     /// Reads or changes placement without invoking extension callbacks.
     pub(crate) fn read<T>(
@@ -98,7 +103,7 @@ impl OptionsEndpoint {
 
 /// Store-safe ownership of a shown overlay's native handle.
 #[derive(Clone)]
-pub(crate) struct HandleEndpoint(pub(crate) Arc<Lease>);
+pub struct HandleEndpoint(pub(crate) Arc<Lease>);
 impl HandleEndpoint {
     /// Runs one request; focus changes may call back into this instance.
     pub(crate) fn request(&self, request: HandleRequest) -> crate::import_route::Route {

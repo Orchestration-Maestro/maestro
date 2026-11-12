@@ -1,4 +1,9 @@
 //! Native login callbacks remain callable through the original local pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     local_resources::{Admission, Lease, Message, Registry, SignalEndpoint},
     oauth_callbacks::Phase,
@@ -12,7 +17,7 @@ use wasmtime::{
 
 /// Original interaction, retained independently by each guest callback capture.
 #[derive(Clone)]
-pub(crate) struct Interaction {
+pub struct Interaction {
     /// Native callbacks, never reconstructed from JSON.
     callbacks: OAuthCallbacks,
     /// Pump admission shared with the original registered provider.

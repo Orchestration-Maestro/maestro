@@ -127,7 +127,7 @@ pub async fn generate_models(
     let gateway = fetch_ai_gateway_models(fetch, output, errors).await?;
     let catalog = assemble([dev, router, gateway]);
     emit::write_catalog(&catalog, destination)?;
-    writeln!(output, "Generated src/catalog/models_generated/")?;
+    writeln!(output, "Generated crates/maestro-models-catalog/src/")?;
     print_statistics(&catalog, output)
 }
 /// Report only emitted winners, retaining the provider reporting order.

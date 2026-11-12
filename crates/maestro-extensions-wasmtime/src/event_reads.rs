@@ -1,4 +1,9 @@
 //! Event imports use the supplied facade's original native bus.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     api_reads::Endpoint,
     guest_calls::Handle,

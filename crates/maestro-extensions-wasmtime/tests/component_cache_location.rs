@@ -1,5 +1,10 @@
 //! The compiled-code cache lives below the agent directory the installation names.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::components::{files_below, load_empty_component};
 use maestro_test_directory::Scratch;
 use maestro_test_process::{AGENT_DIRECTORY, TestProcess, selection};

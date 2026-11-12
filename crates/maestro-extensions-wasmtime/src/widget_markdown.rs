@@ -1,4 +1,9 @@
 //! Markdown styles a host widget calls, from the guest's operands and the lent theme.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::paints::{Failure, HighlightFn};
 use crate::local_resources::Registry;
 use crate::widget_reads::{BaseStyle, Highlighting, Paint, Styles};

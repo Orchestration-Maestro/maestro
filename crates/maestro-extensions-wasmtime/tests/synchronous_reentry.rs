@@ -1,6 +1,11 @@
 //! Native code that calls back into the component it is serving, while that component waits
 //! in a synchronous host call, gets the result and order the reference produces.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::retained_components::{loaded_on, view};
 use maestro_extensions::{
     Cancellation, CompactOptions, EventBus, ExtensionActions, ExtensionContextActions,

@@ -1,5 +1,10 @@
 //! Local executors and prepared native fixtures for native component tests.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 
 use std::path::{Path, PathBuf};
 

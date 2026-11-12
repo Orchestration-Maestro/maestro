@@ -550,11 +550,14 @@ fn module_repetition_lint_cannot_be_weakened() {
 #[test]
 fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
     let workspace = Workspace::new();
+    workspace.member("models-catalog", "maestro-models-catalog", "");
     workspace.member("models", "maestro-models", "");
-    workspace.list(&[("maestro-models", "core")]);
-    let source = workspace.root.path().join("crates/models/src");
-    let generated = source.join("catalog/models_generated");
-    std::fs::create_dir_all(&generated).unwrap();
+    workspace.list(&[
+        ("maestro-models-catalog", "core"),
+        ("maestro-models", "core"),
+    ]);
+    let generated = workspace.root.path().join("crates/models-catalog/src");
+    let handwritten = workspace.root.path().join("crates/models/src");
     let file = generated.join("provider.rs");
     std::fs::write(
         &file,
@@ -565,7 +568,7 @@ fn generated_model_catalog_is_exempt_from_the_hand_written_line_limit() {
     )
     .unwrap();
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    std::fs::rename(&file, source.join("provider.rs")).unwrap();
+    std::fs::rename(&file, handwritten.join("provider.rs")).unwrap();
     assert!(
         check_workspace(workspace.root.path())
             .unwrap_err()
@@ -591,9 +594,19 @@ fn redundant_clone_cannot_be_weakened() {
 
 #[test]
 fn generated_extension_bindings_keep_the_only_lint_exception() {
+    generated_bindings_keep_the_only_lint_exception("maestro-extensions-wasm");
+}
+
+#[test]
+fn host_generated_extension_bindings_keep_the_only_lint_exception() {
+    generated_bindings_keep_the_only_lint_exception("maestro-extensions-wasmtime");
+}
+
+/// Both crates that generate bindings from the interface files share one exception.
+fn generated_bindings_keep_the_only_lint_exception(name: &str) {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm"]);
-    let root = workspace.root.path().join("crates/maestro-extensions-wasm");
+    workspace.foundation(&[name]);
+    let root = workspace.root.path().join("crates").join(name);
     let manifest = root.join("Cargo.toml");
     let baseline = std::fs::read_to_string(&manifest).unwrap();
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
@@ -639,7 +652,7 @@ fn generated_extension_bindings_keep_the_only_lint_exception() {
     }
     std::fs::write(&manifest, &baseline).unwrap();
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    reject_widened_sources(&workspace, &root);
+    reject_widened_sources(&workspace, &root, name);
 }
 
 /// The restoring attribute every handwritten guest file starts with.
@@ -687,7 +700,7 @@ fn widened_sources() -> Vec<(&'static str, String, &'static str)> {
     ]
 }
 
-fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
+fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path, name: &str) {
     let write = |relative: &str, contents: &str| {
         std::fs::write(root.join(relative), contents).unwrap();
     };
@@ -715,7 +728,7 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
     }
     std::fs::create_dir(root.join("tests")).unwrap();
     write("tests/helper.rs", "");
-    workspace.integration("maestro-extensions-wasm");
+    workspace.integration(name);
     write("tests/integration.rs", &format!("{FORBID}mod helper;\n"));
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(

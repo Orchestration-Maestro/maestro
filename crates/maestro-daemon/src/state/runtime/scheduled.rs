@@ -7,7 +7,7 @@ use super::super::{
 use crate::locations::DaemonPaths;
 use std::time::{Duration, Instant};
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Consumes due current-capability deadlines without creating another timer or loop.
     pub async fn handle_scheduled_tasks(&mut self, now: Instant, paths: &DaemonPaths) -> bool {
         self.finish_history_reload(paths);

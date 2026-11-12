@@ -191,7 +191,7 @@ fn admit(terminal: &mut TerminalState, report: &ValidReport) -> Result<bool, Err
         })
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Applies a reporter's presentation overrides and token patch to the named pane.
     ///
     /// A stale sequence, or a report that follows the exit of the agent it names, is

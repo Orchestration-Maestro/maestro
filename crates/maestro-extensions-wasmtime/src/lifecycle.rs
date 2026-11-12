@@ -1,4 +1,9 @@
 //! One per-extension Store owns entry, cached faults and quiescent destruction.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     api_reads::Endpoint,
     guest_calls::{Call, Callbacks},
@@ -179,7 +184,6 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::tree_imports::add_to_linker(&mut host)?;
     crate::writer_imports::add_to_linker(&mut host)?;
     crate::replaced_imports::add_to_linker(&mut host)?;
-    crate::session_imports::add_to_linker(&mut host)?;
     crate::effect_imports::add_to_linker(&mut host)?;
     crate::event_imports::add_to_linker(&mut host)?;
     crate::signal_imports::add_to_linker(&mut host)?;

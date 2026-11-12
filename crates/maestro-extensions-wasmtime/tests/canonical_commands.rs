@@ -1,5 +1,10 @@
 //! Canonical command imports execute against the native application bindings.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{ExtensionCommandContextActions, ExtensionRunner, Local};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

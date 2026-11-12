@@ -4,7 +4,7 @@ use crate::state::model::{DaemonState, Mode};
 use maestro_workspace::tiling::PaneId;
 use std::collections::HashSet;
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Applies pane death without closing the other workspaces in its repository group.
     pub fn handle_pane_died(&mut self, pane: PaneId) {
         self.pending_agent_notifications.remove(&pane);

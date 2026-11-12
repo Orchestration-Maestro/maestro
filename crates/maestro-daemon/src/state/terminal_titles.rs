@@ -14,7 +14,7 @@ pub struct TerminalTitleChanges {
     pub stripped_changed: bool,
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Reports whether any configured sidebar row consumes the changed title form.
     #[must_use]
     pub fn terminal_title_sidebar_changed(&self, changes: &TerminalTitleChanges) -> bool {

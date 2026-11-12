@@ -19,10 +19,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 /// Captures owned topology and pane launch metadata without retaining daemon borrows.
 #[must_use]
-pub fn capture<C: FnMut() -> u128>(
-    state: &DaemonState<C>,
-    runtimes: &TerminalRuntimeRegistry,
-) -> SessionSnapshot {
+pub fn capture(state: &DaemonState, runtimes: &TerminalRuntimeRegistry) -> SessionSnapshot {
     SessionSnapshot {
         version: SNAPSHOT_VERSION,
         workspaces: state

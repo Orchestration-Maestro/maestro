@@ -219,8 +219,8 @@ fn extensions_wasmtime_names_an_uncreated_trace() {
     check(
         "maestro-extensions-wasmtime",
         "tests/canonical_commands.rs",
-        "//! Canonical fixtures.\n\n#[test]\nfn binds_before_the_jsonl_trace_exists() {\n    let file = std::env::temp_dir().join(\"maestro-canonical.jsonl\");\n    assert!(!file.exists());\n}\n",
-        &[5],
+        "//! Canonical fixtures.\n#![forbid(clippy::pedantic, clippy::too_many_arguments, clippy::excessive_nesting)]\n\n#[test]\nfn binds_before_the_jsonl_trace_exists() {\n    let file = std::env::temp_dir().join(\"maestro-canonical.jsonl\");\n    assert!(!file.exists());\n}\n",
+        &[6],
     );
 }
 

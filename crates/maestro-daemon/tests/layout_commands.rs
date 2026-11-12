@@ -4,12 +4,13 @@
 
 use crate::support::{
     api::{
-        TestApp, add_tab, answer_command, daemon_with_workspaces, events_after, failure, request,
-        root_pane, split_pane,
+        add_tab, answer_command, daemon_with_workspaces, events_after, failure, request, root_pane,
+        split_pane,
     },
     layouts::{balanced, chain, shell, sleeper, split},
     runtime::block_on,
 };
+use maestro_daemon::state::App;
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,
@@ -52,7 +53,7 @@ fn leaf(pane_id: &str, cwd: &str, label: Option<&str>) -> LayoutNode {
 /// A workspace whose first tab holds one pane and whose second tab splits two.
 ///
 /// Returns the daemon with the panes of the second tab: its root and the one split off it.
-fn two_tabs() -> (TestApp, PaneId, PaneId) {
+fn two_tabs() -> (App, PaneId, PaneId) {
     let mut app = daemon_with_workspaces(&["/one"]);
     let root = add_tab(&mut app, 0);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
@@ -60,7 +61,7 @@ fn two_tabs() -> (TestApp, PaneId, PaneId) {
 }
 
 /// The terminal of `pane` in the first workspace.
-fn terminal_of(app: &TestApp, pane: PaneId) -> maestro_workspace::terminal_id::TerminalId {
+fn terminal_of(app: &App, pane: PaneId) -> maestro_workspace::terminal_id::TerminalId {
     app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
@@ -288,7 +289,7 @@ fn a_split_ratio_names_its_tab_directly_or_through_one_of_its_panes() {
 }
 
 /// The tab count, terminal count and event count that a refused apply must leave as they were.
-fn footprint(app: &TestApp) -> (usize, usize, usize, bool) {
+fn footprint(app: &App) -> (usize, usize, usize, bool) {
     (
         app.state.topology.workspaces[0].tabs.len(),
         app.state.terminals.len(),

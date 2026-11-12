@@ -1,4 +1,9 @@
 //! Store-safe requests to native factory results in the existing capability registry.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     builtin_tools,
     local_resources::{Lease, Message, SignalEndpoint},
@@ -7,7 +12,7 @@ use std::sync::{Arc, mpsc::Sender};
 
 /// Independently retained native tool identity.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 /// Synchronous reads of the original native definition.
 pub(crate) enum Request {

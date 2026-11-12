@@ -68,7 +68,7 @@ pub enum SidebarWidthSource {
 }
 
 /// Mutable workspace data retained independently of attached clients.
-pub struct DaemonState<C> {
+pub struct DaemonState {
     /// Whether the shared daemon loop should finish its owned shutdown.
     pub should_quit: maestro_protocol::shared::Flag,
     /// Live expanded sidebar width, independently resizable from its configured default.
@@ -110,7 +110,7 @@ pub struct DaemonState<C> {
     /// Printable spacing between status segments.
     pub(crate) tab_bar_right_separator: String,
     /// Sole owner of workspace topology and public identity allocation.
-    pub topology: WorkspaceTopology<C>,
+    pub topology: WorkspaceTopology,
     /// Retained terminal metadata keyed by the attached terminal identity.
     pub terminals: HashMap<TerminalId, TerminalState>,
     /// Compiled detection snapshot shared with pane runtimes.
@@ -173,10 +173,14 @@ pub struct DaemonState<C> {
     pub pane_infos: Vec<PaneInfo>,
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Creates empty daemon state using accepted settings and an identity clock.
     #[must_use]
-    pub fn new(config: &Config, clock: C, manifests: Arc<RwLock<ManifestCache>>) -> Self {
+    pub fn new(
+        config: &Config,
+        clock: impl FnMut() -> u128 + 'static,
+        manifests: Arc<RwLock<ManifestCache>>,
+    ) -> Self {
         let (sidebar_min, sidebar_max) = config.sidebar_bounds();
         let theme_runtime = ThemeRuntimeConfig::new(config, true);
         let agent_manifest_summaries = manifests

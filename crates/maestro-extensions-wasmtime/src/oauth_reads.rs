@@ -1,4 +1,9 @@
 //! OAuth calls use the retained implementation, not a later registry lookup.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::Lease;
 use maestro_extensions::OAuthProviderHandle;
 use std::{
@@ -60,7 +65,7 @@ impl Request {
 }
 /// Store-safe ownership of one independently retained provider.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
     /// Starts authorization on the original native owner.

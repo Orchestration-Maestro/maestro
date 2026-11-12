@@ -1,4 +1,9 @@
 //! Retained custom presentation operands use the original native UI and widget owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{
         Handle,
@@ -115,7 +120,7 @@ fn resolve(
 
 /// Store-safe ownership of the native accepted-close operation.
 #[derive(Clone)]
-pub(crate) struct CloseEndpoint(pub(crate) Arc<Lease>);
+pub struct CloseEndpoint(pub(crate) Arc<Lease>);
 impl CloseEndpoint {
     /// Calls the native close operation through the existing reentrant route.
     pub(crate) fn close(&self) -> crate::import_route::Route {

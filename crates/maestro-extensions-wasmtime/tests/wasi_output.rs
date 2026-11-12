@@ -1,5 +1,10 @@
 //! Supplied versus inherited byte output through real component standard interfaces.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::wasi_support::{COMPONENT, Harness, run};
 use maestro_extensions_wasmtime::artifact_factory_with_stdout;
 use maestro_test_process::{TestProcess, selection};

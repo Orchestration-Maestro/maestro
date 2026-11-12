@@ -7,7 +7,7 @@ use maestro_protocol::{
     shared::Flag,
 };
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Applies a zoom mode to the tab of the named or focused pane, focusing that pane.
     ///
     /// A request that changes neither zoom nor focus publishes nothing.

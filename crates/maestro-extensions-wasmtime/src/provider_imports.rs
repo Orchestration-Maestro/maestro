@@ -1,4 +1,9 @@
 //! Awaited native hook resources preserve the caller's original invocation family.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::CallbackView,
     guest_calls::Callback,

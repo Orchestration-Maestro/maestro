@@ -1,4 +1,9 @@
 //! Canonical resources returned by the real native built-in factories.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     builtin_reads::{Endpoint, Execution, Request},
     callback_imports::CallbackView,

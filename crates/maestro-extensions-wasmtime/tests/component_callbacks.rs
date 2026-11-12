@@ -1,5 +1,10 @@
 //! Retained component views keep their operands, live state and callback scope.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{ComponentHandle, EventError, MessageRenderOptions, MessageRendererCall};
 use serde_json::{Value, json};
 use std::rc::Rc;

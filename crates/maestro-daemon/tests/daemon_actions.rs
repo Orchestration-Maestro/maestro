@@ -8,12 +8,8 @@ use support::{assert_identity_invariants, populate_terminals};
 use maestro_daemon::{settings::model::Config, state::model::DaemonState};
 
 /// Creates pure workspace topology with an active first workspace.
-fn app_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
-    let mut state = DaemonState::new(
-        &Config::default(),
-        (|| 0) as fn() -> u128,
-        support::manifest_cache(),
-    );
+fn app_with_workspaces(names: &[&str]) -> DaemonState {
+    let mut state = DaemonState::new(&Config::default(), || 0, support::manifest_cache());
     for name in names {
         state
             .topology
@@ -31,7 +27,7 @@ fn app_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
 }
 
 /// Reads display names in current topology order.
-fn names<C: FnMut() -> u128>(state: &DaemonState<C>) -> Vec<String> {
+fn names(state: &DaemonState) -> Vec<String> {
     state
         .topology
         .workspaces
@@ -164,10 +160,7 @@ fn daemon_switch_workspace_updates_active_and_selected() {
 }
 
 /// Adds a right-hand pane using the topology's consuming runtime callback.
-fn split(
-    state: &mut DaemonState<fn() -> u128>,
-    workspace: usize,
-) -> maestro_workspace::tiling::PaneId {
+fn split(state: &mut DaemonState, workspace: usize) -> maestro_workspace::tiling::PaneId {
     let target = state.topology.workspaces[workspace]
         .focused_pane_id()
         .unwrap();
@@ -215,10 +208,7 @@ fn daemon_removing_background_pane_preserves_last_pane_history() {
 }
 
 /// Creates a second tab through the sole topology allocator.
-fn add_tab(
-    state: &mut DaemonState<fn() -> u128>,
-    workspace: usize,
-) -> maestro_workspace::tiling::PaneId {
+fn add_tab(state: &mut DaemonState, workspace: usize) -> maestro_workspace::tiling::PaneId {
     state
         .topology
         .create_tab_with_runtime(workspace, |_, _| Ok(()))
@@ -584,7 +574,7 @@ fn daemon_state_changed_idle_in_background_marks_unseen() {
 
 /// Reports the same screen-state envelope used by the background detector.
 fn report_state(
-    state: &mut DaemonState<fn() -> u128>,
+    state: &mut DaemonState,
     pane: maestro_workspace::tiling::PaneId,
     next: maestro_detection::agents::AgentState,
 ) -> Vec<maestro_daemon::state::actions::PaneStateUpdate> {
@@ -800,7 +790,7 @@ fn daemon_delayed_background_waiting_is_cleared_when_pane_dies() {
 
 /// Feeds supplied screen signals through the same event consumer as detection.
 fn report_detected(
-    state: &mut DaemonState<fn() -> u128>,
+    state: &mut DaemonState,
     pane: maestro_workspace::tiling::PaneId,
     update: maestro_daemon::terminal::model::DetectedStateUpdate,
 ) -> Vec<maestro_daemon::state::actions::PaneStateUpdate> {
@@ -817,7 +807,7 @@ fn report_detected(
 
 /// Reports process acquisition before any screen-state event.
 fn detect_agent(
-    state: &mut DaemonState<fn() -> u128>,
+    state: &mut DaemonState,
     pane: maestro_workspace::tiling::PaneId,
     agent: maestro_detection::agents::Agent,
 ) {
@@ -871,7 +861,7 @@ fn daemon_first_idle_after_process_detection_is_not_completion() {
 
 /// Acquisition suppression ends when the actual detected process exits.
 fn assert_acquired_process_exit_is_completion(
-    state: &mut DaemonState<fn() -> u128>,
+    state: &mut DaemonState,
     pane: maestro_workspace::tiling::PaneId,
 ) {
     use maestro_daemon::{state::actions::CompletionPolicy, terminal::model::DetectedStateUpdate};
@@ -1757,7 +1747,7 @@ fn daemon_close_pane_last_pane_closes_active_workspace_not_selected_workspace() 
 }
 
 /// Assigns supplied repository-group membership without invoking later discovery effects.
-fn mark_worktree(state: &mut DaemonState<fn() -> u128>, index: usize, linked: bool) {
+fn mark_worktree(state: &mut DaemonState, index: usize, linked: bool) {
     state.topology.workspaces[index].worktree_space =
         Some(maestro_workspace::spaces::WorktreeSpaceMembership {
             key: "repo-key".into(),

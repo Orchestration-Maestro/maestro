@@ -30,7 +30,12 @@ for unrepresentable member names.
 
 `parse_streaming_json(Option<&str>)` returns a JSON value from the accumulated
 prefix. It tries strict original, strict repaired, partial original and partial
-repaired input, in that order. Missing, blank or unusable input yields `{}`.
+repaired input, in that order. The two strict readings run only when the text ends
+the way a complete JSON text does: in `}`, `]`, `"`, a digit, `e` or `l`, before
+any JSON whitespace. Text that ends otherwise cannot be complete, so the result is
+the same without them, and a long argument streamed in small fragments avoids two
+full passes over the text received so far per fragment. Missing, blank or unusable
+input yields `{}`.
 Strict scalar values, including null, remain values; partial root null yields
 `{}`. Containers preserve completed members and useful nested prefixes without
 inventing values for unfinished keys. Quoted delimiters and completed escapes

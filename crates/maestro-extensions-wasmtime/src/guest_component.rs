@@ -1,4 +1,9 @@
 //! Retained Local components expose guest failures through the existing fallible render path.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{
         Call, Handle,

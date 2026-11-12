@@ -30,7 +30,7 @@ use crate::terminal::owners::TerminalRuntimeRegistry;
 use model::DaemonState;
 
 /// Retained daemon state with the sole owners of its live terminal processes.
-pub struct App<C> {
+pub struct App {
     /// Parsed outer-title format with the server hostname resolved at configuration time.
     window_title_template: Option<(crate::settings::titles::WindowTitleTemplate, String)>,
     /// Earliest capture time for the next debounced session save.
@@ -72,7 +72,7 @@ pub struct App<C> {
     /// Caller-supplied process entry and shared runtime adapters.
     pub launch: construction::PaneLaunchInputs,
     /// Mutable workspace metadata and notification decisions.
-    pub state: DaemonState<C>,
+    pub state: DaemonState,
     /// Live process owners keyed by durable terminal identity.
     pub terminal_runtimes: TerminalRuntimeRegistry,
     /// Shared publication history for state transitions and pane exits.

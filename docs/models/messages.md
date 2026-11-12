@@ -172,16 +172,16 @@ endpoint's host plays no part.
 
 ## Stream
 
-The body is read as server-sent events with this protocol's own framing; no event-stream library is
-involved. Lines end at `\r\n`, `\r` or `\n`: a carriage return ends its line at once and a line feed
-right after it, even in the next chunk, belongs to the same ending. Raw decoding uses
-the shared [streaming text decoder](../text.md). Bytes that are not valid UTF-8
-become U+FFFD, a character cut by the end of a chunk is completed by the next one (or becomes U+FFFD
-when the body ends there), and one byte-order mark is dropped from the start of the stream (a second
-one stays). A blank line dispatches the event collected so far when it has a nonempty `event` name
-or a `data` line, and the end of the body dispatches a last line and event. One space after the
-colon of a field is dropped, `data` lines are joined by `\n`, the latest `event` field wins, and
-comments and other fields are ignored but kept for diagnostics.
+The body is read as server-sent events by the shared reader in `maestro-models`, with the framing
+this protocol selects; no event-stream library is involved. Lines end at `\r\n`, `\r` or `\n`: a
+carriage return ends its line at once and a line feed right after it, even in the next chunk,
+belongs to the same ending. Raw decoding uses the shared [streaming text decoder](../text.md). Bytes
+that are not valid UTF-8 become U+FFFD, a character cut by the end of a chunk is completed by the
+next one (or becomes U+FFFD when the body ends there), and one byte-order mark is dropped from the
+start of the stream (a second one stays). A blank line dispatches the event collected so far when it
+has a nonempty `event` name or a `data` line, and the end of the body dispatches a last line and
+event. One space after the colon of a field is dropped, `data` lines are joined by `\n`, the latest
+`event` field wins, and comments and other fields are ignored but kept for diagnostics.
 
 Only events named `message_start`, `message_delta`, `message_stop`, `content_block_start`,
 `content_block_delta` and `content_block_stop` are read as JSON; an `error` event ends the call with

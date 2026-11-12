@@ -20,18 +20,22 @@ struct IdAllocator {
     workspace: usize,
 }
 /// Workspace collection with one allocator and a caller-supplied microsecond clock.
-pub struct WorkspaceTopology<C> {
+pub struct WorkspaceTopology {
     /// Workspaces in display order.
     pub workspaces: Vec<Workspace>,
     /// Identity domains shared across that collection.
     allocator: IdAllocator,
-    /// Clock evaluated when allocating a terminal identity.
-    clock: C,
+    /// Clock evaluated when allocating a terminal identity, owned as a boxed closure so the
+    /// caller's clock type does not reach a topology owner or anything that retains one.
+    clock: Box<dyn FnMut() -> u128>,
 }
-impl<C: FnMut() -> u128> WorkspaceTopology<C> {
+impl WorkspaceTopology {
     /// Create an independent topology with a supplied terminal-identity clock.
+    ///
+    /// The clock is retained boxed, so callers pass any closure that returns microseconds and
+    /// nothing that holds a topology names that closure's type.
     #[must_use]
-    pub fn new(clock: C) -> Self {
+    pub fn new(clock: impl FnMut() -> u128 + 'static) -> Self {
         Self {
             workspaces: Vec::new(),
             allocator: IdAllocator {
@@ -39,7 +43,7 @@ impl<C: FnMut() -> u128> WorkspaceTopology<C> {
                 terminal: 1,
                 workspace: 1,
             },
-            clock,
+            clock: Box::new(clock),
         }
     }
     /// Allocate a pane identity shared by this owner's workspaces and tabs.

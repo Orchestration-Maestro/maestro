@@ -1,4 +1,9 @@
 //! Theme requests read the original live publication on the local owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{local_resources::Lease, theme_imports::ColorMode};
 use maestro_extensions::{LiveTheme, SourceInfo, Theme, ThemeBg, ThemeColor};
 use std::{
@@ -159,4 +164,4 @@ impl Request {
 
 /// Store-safe identity retaining the original live theme until its final consumer.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);

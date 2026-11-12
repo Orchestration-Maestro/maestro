@@ -1,5 +1,10 @@
 //! Editors built with another extension's editor factory, served on the local owner through
 //! their editor operations.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::Handle;
 use crate::guest_calls::editors::TextCallbackEndpoint;
 use crate::local_resources::Lease;
@@ -156,4 +161,4 @@ pub(crate) struct ForeignBuild {
 
 /// Store-safe identity of an editor factory another extension set.
 #[derive(Clone)]
-pub(crate) struct FactoryEndpoint(pub(crate) Arc<Lease>);
+pub struct FactoryEndpoint(pub(crate) Arc<Lease>);

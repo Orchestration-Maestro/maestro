@@ -13,7 +13,7 @@ const COPY_FEEDBACK_DURATION: std::time::Duration = std::time::Duration::from_se
 /// Maximum internal observations processed in one responsive loop pass.
 const APP_EVENT_DRAIN_LIMIT: usize = 64;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Drains one bounded internal-event batch without starving the next loop operation.
     pub fn drain_internal_events(&mut self) -> bool {
         self.drain_internal_events_up_to(APP_EVENT_DRAIN_LIMIT).1

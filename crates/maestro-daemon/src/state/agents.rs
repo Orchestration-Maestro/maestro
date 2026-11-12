@@ -4,7 +4,7 @@ use super::App;
 use maestro_protocol::schema::AgentInfo;
 use maestro_workspace::tiling::PaneId;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Collects agents in workspace, tab and layout order.
     pub async fn collect_agent_infos(&self) -> Vec<AgentInfo> {
         let mut agents = Vec::new();

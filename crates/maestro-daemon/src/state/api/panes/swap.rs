@@ -27,7 +27,7 @@ fn invalid_swap(message: &str) -> ErrorBody {
     api_error("invalid_pane_swap", message)
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Exchanges two panes of one tab, or the pane and its neighbour in a direction.
     ///
     /// The source ends up focused. A swap that cannot happen is answered, not refused.

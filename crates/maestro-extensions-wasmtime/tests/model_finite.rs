@@ -1,5 +1,10 @@
 //! Guest aliases preserve finite data at native consumers and retain opaque local owners.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_models::*;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};

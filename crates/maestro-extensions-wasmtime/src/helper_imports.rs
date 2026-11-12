@@ -1,4 +1,9 @@
 //! Synchronous helper calls delegate to the native domain without retaining guest operands.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use wasmtime::{StoreContextMut, component::LinkerInstance};
 
 /// Installs ordinary helper calls on the canonical host interface.

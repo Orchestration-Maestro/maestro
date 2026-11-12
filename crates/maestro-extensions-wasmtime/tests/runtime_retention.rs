@@ -1,5 +1,10 @@
 //! Replacement targets keep their own ownership while a later replacement runs.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     CommandContextOperations, ExtensionCommandContextActions, ExtensionContextActions,
     ExtensionExecution, ExtensionRunner, Local, NewSessionHandler, ReplacedSessionContext,

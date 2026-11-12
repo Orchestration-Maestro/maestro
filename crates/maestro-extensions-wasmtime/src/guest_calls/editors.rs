@@ -245,7 +245,7 @@ pub(crate) struct EditorCall<H = Handle> {
 
 /// Store-safe identity of a text callback lent to an authored editor.
 #[derive(Clone)]
-pub(crate) struct TextCallbackEndpoint(pub(crate) std::sync::Arc<crate::local_resources::Lease>);
+pub struct TextCallbackEndpoint(pub(crate) std::sync::Arc<crate::local_resources::Lease>);
 
 impl TextCallbackEndpoint {
     /// Runs the callback; its native code may call back into this instance.

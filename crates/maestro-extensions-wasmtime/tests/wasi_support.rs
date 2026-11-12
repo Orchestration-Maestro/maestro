@@ -1,5 +1,10 @@
 //! Real artifact instances and owned observations shared by standard-interface tests.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::components::TracedBus;
 use maestro_extensions::{
     ExtensionFactory, ExtensionRunner, Local, ResourcesDiscoverReason, create_extension_runtime,

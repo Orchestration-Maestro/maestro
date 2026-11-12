@@ -1,5 +1,10 @@
 //! Custom factories and their results run through the production artifact adapter.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     EventError, ExtensionUIContext,
     presentation::SizeValue,

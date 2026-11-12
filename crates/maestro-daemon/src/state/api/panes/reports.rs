@@ -18,7 +18,7 @@ pub(super) fn reported_agent_label(agent: &str) -> Result<String, ErrorBody> {
     normalize_reported_agent_label(agent).ok_or_else(invalid_agent)
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Applies an integration's reported state, with its session identity when it is an
     /// official source.
     ///

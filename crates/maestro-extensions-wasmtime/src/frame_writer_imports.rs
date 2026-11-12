@@ -1,4 +1,9 @@
 //! Canonical frame writer imports: the writer widget of a lent terminal and its requests.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::{CallbackView, retain},
     frame_writer::WireRequest,

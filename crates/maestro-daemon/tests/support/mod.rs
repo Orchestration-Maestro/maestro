@@ -8,7 +8,7 @@ pub mod spawning;
 use maestro_daemon::state::model::DaemonState;
 
 /// Admit terminal metadata for each pane using its topology-owned identity.
-pub fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {
+pub fn populate_terminals(state: &mut DaemonState) {
     for workspace in &state.topology.workspaces {
         for pane in workspace.tabs.iter().flat_map(|tab| tab.panes.values()) {
             state
@@ -25,7 +25,7 @@ pub fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {
 }
 
 /// Check topology identity, focus and metadata membership after each mutation.
-pub fn assert_identity_invariants<C: FnMut() -> u128>(state: &DaemonState<C>) {
+pub fn assert_identity_invariants(state: &DaemonState) {
     use std::collections::HashSet;
     assert_navigation_invariants(state);
     let mut workspaces = HashSet::new();
@@ -52,7 +52,7 @@ pub fn assert_identity_invariants<C: FnMut() -> u128>(state: &DaemonState<C>) {
 }
 
 /// Navigation positions are valid for both empty and populated topology.
-fn assert_navigation_invariants<C: FnMut() -> u128>(state: &DaemonState<C>) {
+fn assert_navigation_invariants(state: &DaemonState) {
     if state.topology.workspaces.is_empty() {
         assert_eq!(state.active, None);
         assert_eq!(state.selected, 0);

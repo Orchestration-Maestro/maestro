@@ -5,7 +5,7 @@ use maestro_protocol::schema::{LayoutDescription, LayoutNode, LayoutPane};
 use maestro_workspace::tiling::{Node, PaneId};
 use std::collections::HashMap;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Describes a tab's tree with the launch facts of each pane; `None` when the tab is gone.
     pub(super) fn layout_description(
         &self,

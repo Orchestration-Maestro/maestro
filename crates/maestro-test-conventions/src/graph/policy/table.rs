@@ -70,9 +70,11 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-text",
         ],
     ),
+    ("maestro-models-catalog", &["maestro-request"]),
     (
         "maestro-models",
         &[
+            "maestro-models-catalog",
             "maestro-cancellation",
             "maestro-request",
             "maestro-text",

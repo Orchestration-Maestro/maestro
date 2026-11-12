@@ -1,6 +1,11 @@
 //! Compiled bytes persist across loads without making the component cache mandatory.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::components::{files_below, load_empty_component};
 use super::example_process::record;
 use maestro_extensions_wasmtime::{component_cache, component_engine};

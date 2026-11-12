@@ -1,5 +1,10 @@
 //! Real DNS, outbound sockets, listeners and pending consumer release.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::wasi_support::{COMPONENT, Harness, run};
 use futures_util::future::{Either, select};
 use serde_json::json;

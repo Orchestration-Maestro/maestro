@@ -1,10 +1,11 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group,
-    request, with_live_daemon, workspace_ids,
+    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
+    with_live_daemon, workspace_ids,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, WorkspaceInfo};
@@ -36,7 +37,7 @@ fn reported(result: Result<ResponseResult, maestro_protocol::schema::ErrorBody>)
 }
 
 /// The identities of the active and selected workspaces.
-fn navigation(app: &TestApp) -> (Option<String>, String) {
+fn navigation(app: &App) -> (Option<String>, String) {
     let workspaces = &app.state.topology.workspaces;
     (
         app.state.active.map(|index| workspaces[index].id.clone()),
@@ -72,7 +73,7 @@ fn workspace_targets_preserve_ids_aliases_and_missing_errors() {
 
 /// Every command naming a missing, malformed or out-of-range workspace fails with its
 /// exact text and changes neither order, focus nor events.
-fn assert_missing_workspaces_change_nothing(app: &mut TestApp) {
+fn assert_missing_workspaces_change_nothing(app: &mut App) {
     let get = |id: &str| json!({"type": "workspace.get", "workspace_id": id});
     let sequence = app.event_hub.current_sequence();
     for missing in ["w2", "", "w_", "wx", "w_9", "9", "0", "w_0"] {
@@ -329,7 +330,7 @@ fn daemon_read_only_api_requests_do_not_force_rerender() {
 }
 
 /// A shell configuration whose new panes start in `policy`'s directory.
-fn with_policy(app: &mut TestApp, policy: NewTerminalCwdConfig) {
+fn with_policy(app: &mut App, policy: NewTerminalCwdConfig) {
     app.config.terminal.new_cwd = policy;
 }
 

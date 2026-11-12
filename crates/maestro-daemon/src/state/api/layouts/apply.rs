@@ -9,7 +9,7 @@ use maestro_protocol::{
 use maestro_workspace::tiling::{PaneId, SplitRequest};
 use std::path::PathBuf;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Starts one process per leaf of the requested tree in a new tab of the named, owning or
     /// active workspace. A named tab is closed once the new one stands, and the new tab is
     /// activated when asked or when it replaces the active tab.

@@ -1,5 +1,5 @@
 //! Independently admitted work outlives a cancelled importer and its last resource.
-use crate::{command_reads::Request, context_reads::Owner, local_resources::Pump, tests::runner};
+use crate::{context_reads::Owner, local_resources::Pump, tests::runner};
 use maestro_extensions::ExtensionCommandContextActions;
 use std::{
     cell::RefCell,
@@ -38,7 +38,7 @@ fn cancelled_import_does_not_revoke_its_admitted_operation() {
                 .registry()
                 .context(Owner::Command(runner.create_command_context()))
                 .unwrap();
-            let mut waiting = Box::pin(endpoint.command(Request::Wait));
+            let mut waiting = Box::pin(endpoint.wait_for_idle());
             let mut context = Context::from_waker(Waker::noop());
             assert!(waiting.as_mut().poll(&mut context).is_pending());
             drop(waiting);
