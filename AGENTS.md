@@ -165,7 +165,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, raw CR/LF byte-line framing, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
-  pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
+  pretty text, raw-value reading, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown

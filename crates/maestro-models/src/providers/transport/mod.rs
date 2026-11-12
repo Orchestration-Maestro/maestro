@@ -1,5 +1,6 @@
 //! Replaceable HTTP transport with the shared request, retry and failure policy.
 
+mod base64_text;
 mod body;
 mod client;
 mod failure;
@@ -27,8 +28,12 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 
-use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
+use maestro_cancellation::Cancellation;
+use maestro_request::diagnostics::DiagnosticErrorInfo;
 
+use crate::BoxFuture;
+
+pub(crate) use base64_text::FORGIVING;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use body::buffered;
 pub use body::collect_body;
@@ -53,7 +58,7 @@ pub(crate) use retry::{RequestPolicy, RetryStatuses, send_with_policy};
 pub(crate) use retry::{request_timeout, send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::spawn_detached;
-pub use runtime::{Raced, race, unit_random};
+pub use runtime::{Raced, race, timestamp_now, unit_random};
 pub(crate) use server_sent_events::{ServerSentEvent, SseMessages, SseOptions};
 
 /// One HTTP attempt: method, final URL, lowercase headers and body bytes.

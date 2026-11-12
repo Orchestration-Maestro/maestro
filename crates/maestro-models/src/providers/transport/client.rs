@@ -12,7 +12,8 @@ use futures_util::StreamExt;
 
 use super::headers::{client_pairs, response_record};
 use super::{FetchError, HttpBody, HttpRequest, HttpResponse};
-use crate::{BoxFuture, DiagnosticErrorInfo};
+use crate::BoxFuture;
+use maestro_request::diagnostics::DiagnosticErrorInfo;
 
 /// Send one attempt with the shared client.
 pub(super) fn fetch<B: Into<Option<Vec<u8>>> + Send + 'static>(

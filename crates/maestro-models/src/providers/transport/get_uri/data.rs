@@ -2,8 +2,8 @@
 
 use base64::Engine as _;
 
+use super::super::FORGIVING;
 use super::{Cache, Failure, Source, notmodified::NotModified};
-use crate::providers::base64_text::FORGIVING;
 
 /// Decode the selected data URL after comparing its exact identity.
 pub(super) fn load(uri: &url::Url, cache: Option<&Cache>) -> Result<Source, Failure> {

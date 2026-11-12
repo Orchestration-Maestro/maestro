@@ -5,7 +5,7 @@ use std::pin::pin;
 use std::task::Poll;
 use std::time::Duration;
 
-use crate::Cancellation;
+use maestro_cancellation::Cancellation;
 
 /// How racing work against a timer and a cancellation signal ended, by [`race`]'s polling priority.
 pub enum Raced<T> {
@@ -126,6 +126,24 @@ pub(crate) fn spawn_detached(task: impl Future<Output = ()> + Send + 'static) ->
 pub(crate) fn spawn_detached(task: impl Future<Output = ()> + 'static) -> bool {
     wasm_bindgen_futures::spawn_local(task);
     true
+}
+
+/// Return the current timestamp as milliseconds since the Unix epoch.
+#[must_use]
+pub fn timestamp_now() -> f64 {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or_else(
+                |error| -(error.duration().as_secs_f64() * 1000.0).ceil(),
+                |elapsed| (elapsed.as_secs_f64() * 1000.0).floor(),
+            )
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now()
+    }
 }
 
 /// Draw a number in `[0, 1)`.

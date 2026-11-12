@@ -6,9 +6,10 @@ use std::time::Duration;
 use super::failure::Ending;
 use super::failure::status_failure;
 use super::headers::normalize_request;
-use super::runtime::{Raced, race, sleep, unit_random};
-use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, decode_utf8};
-use crate::{Cancellation, ProviderExecution, StreamOptions};
+use super::runtime::{Raced, race, sleep, timestamp_now, unit_random};
+use super::{Fetch, FetchError, HttpRequest, HttpResponse, RequestFailure, decode_utf8};
+use maestro_cancellation::Cancellation;
+use maestro_request::types::{StreamOptionSlots, StreamOptions};
 
 /// Milliseconds a response may take to start before the attempt times out.
 const DEFAULT_TIMEOUT_MS: f64 = 600_000.0;
@@ -131,8 +132,7 @@ fn milliseconds(text: &str) -> Option<Duration> {
 fn until_date(text: &str) -> Option<Duration> {
     let date = httpdate::parse_http_date(text.trim()).ok()?;
     let target = date.duration_since(std::time::UNIX_EPOCH).ok()?;
-    let now = Duration::try_from_secs_f64(crate::records::diagnostics::timestamp_now() / 1000.0)
-        .unwrap_or_default();
+    let now = Duration::try_from_secs_f64(timestamp_now() / 1000.0).unwrap_or_default();
     Some(target.saturating_sub(now))
 }
 
@@ -197,9 +197,9 @@ async fn read_text(
 /// Fails on a header that breaks the Fetch Standard's header rules (see
 /// [`HttpRequest::headers`]), invalid timeout or retry settings, cancellation, exhausted
 /// retries and non-success responses.
-pub(crate) async fn send<E: ProviderExecution>(
+pub(crate) async fn send<E: StreamOptionSlots>(
     request: HttpRequest,
-    options: &StreamOptions<E>,
+    options: &StreamOptions<E, Fetch>,
 ) -> Result<HttpResponse, RequestFailure> {
     send_with_status_error(request, options, status_failure).await
 }
@@ -209,9 +209,9 @@ pub(crate) async fn send<E: ProviderExecution>(
 ///
 /// # Errors
 /// Fails as [`send`] does.
-pub(crate) async fn send_with_status_error<E: ProviderExecution>(
+pub(crate) async fn send_with_status_error<E: StreamOptionSlots>(
     request: HttpRequest,
-    options: &StreamOptions<E>,
+    options: &StreamOptions<E, Fetch>,
     format_error: fn(u16, &str) -> RequestFailure,
 ) -> Result<HttpResponse, RequestFailure> {
     let timeout = request_timeout(options.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
@@ -234,7 +234,7 @@ pub(crate) async fn send_with_status_error<E: ProviderExecution>(
 /// Send through the single attempt loop with the caller's protocol policy.
 pub(crate) async fn send_with_policy(
     mut request: HttpRequest,
-    fetch: super::Fetch,
+    fetch: Fetch,
     policy: RequestPolicy,
     format_error: fn(u16, &str) -> RequestFailure,
 ) -> Result<HttpResponse, RequestFailure> {

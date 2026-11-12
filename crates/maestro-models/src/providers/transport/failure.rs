@@ -3,9 +3,11 @@
 use serde_json::value::RawValue;
 use url::Url;
 
+use maestro_json::is_raw_truthy as is_truthy;
+use maestro_json::raw_value::{compact_raw, member, raw_json};
+use maestro_request::diagnostics::DiagnosticErrorInfo;
+
 use super::FetchError;
-use crate::DiagnosticErrorInfo;
-use crate::providers::json_text::{compact_raw, is_truthy, member, raw_json};
 
 /// How the attempt loop gave up, for callers that classify the failure without reading its text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

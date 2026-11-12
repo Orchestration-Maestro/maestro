@@ -16,7 +16,7 @@ use super::wire::{
 };
 use crate::parameters::json_parse::is_blank;
 use crate::projection::normalize_tool_call_id;
-use crate::providers::base64_text::FORGIVING;
+use crate::providers::transport::FORGIVING;
 use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantContent, AssistantMessage, Message as Turn, Model, Tool as ContextTool, ToolChoice,

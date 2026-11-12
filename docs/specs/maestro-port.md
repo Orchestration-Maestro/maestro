@@ -522,7 +522,7 @@ observers of each signal. Only models and the terminal toolkit may depend on it.
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
 lexical comparison, markup escaping, CSS string serialization, locale construction, optional locale-number
 formatting shared by transcript components, author-written number prefixes with half-up rounding, and URI component encoding. JSON owns JSON boundary
-semantics: object acceptance, canonical keys, truth, selected-value display, compact and pretty text, and JSONL line framing.
+semantics: object acceptance, canonical keys, truth, selected-value display, compact and pretty text, raw-value reading and JSONL line framing.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
 only on `maestro-request`: entry defines session interchange records, including the
 `ForkPosition`, `NavigateTreeOptions` and generic `CompactionResult<T>` shared by native generation and guest authoring; tool defines
