@@ -1,9 +1,8 @@
 //! Lent host styles, highlighting and callbacks end with their capabilities.
-use super::Pump;
+use super::ended_endpoint;
 use crate::{
     guest_calls::editors::TextCallbackEndpoint,
     local_resources::{Capability, Lease},
-    tests::ended_errors,
     widget_lists::{RowStyleEndpoint, SubmenuDoneEndpoint},
     widget_reads::{HighlighterEndpoint, StyleEndpoint},
 };
@@ -15,10 +14,7 @@ fn ended<E: Send + 'static>(
     endpoint: fn(Arc<Lease>) -> E,
     operation: impl FnOnce(E) -> String + Send + 'static,
 ) -> String {
-    let (pump, admission) = Pump::new(crate::tests::support::widgets());
-    let lease = pump.registry().insert(capability).unwrap();
-    let endpoint = endpoint(lease.clone());
-    let [error] = ended_errors(lease, pump, admission, move || [operation(endpoint)]);
+    let [error] = ended_endpoint(capability, endpoint, move |endpoint| [operation(endpoint)]);
     error
 }
 

@@ -189,10 +189,7 @@ fn released_credentials_reject(endpoint: crate::credential_reads::Endpoint, mut 
                     endpoint.list().result(),
                     Err("extension credential resource ended".into())
                 );
-                match valid.list().next() {
-                    Err(Ok(crate::import_route::Value::Lines(names))) => Ok(names),
-                    _ => Err("unexpected route outcome".to_owned()),
-                }
+                valid.list().lines()
             });
             assert!(pump.answer_next().await);
             assert!(pump.answer_next().await);

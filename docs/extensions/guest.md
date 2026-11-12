@@ -289,8 +289,8 @@ handle the guest passed. These resources run on this route:
   assistant stream.
 
 For the credential owner, the child process, the byte reader, the HTTP response and the
-assistant stream, the synchronous methods run this way. Their asynchronous methods, and the free functions
-that create resources, are still registered by hand and move with the linker switch.
+assistant stream, the synchronous methods run this way. Their asynchronous methods, and every
+free function, are still registered by hand.
 A retained capability names the entry it lends and the text its callers receive once
 it has ended.
 

@@ -1,9 +1,6 @@
 //! A native watch registration ends with its capability.
-use super::Pump;
-use crate::{
-    local_resources::{Capability, watches::Watcher},
-    tests::ended_errors,
-};
+use super::ended_endpoint;
+use crate::local_resources::{Capability, watches::Watcher};
 use maestro_extensions::native_io::FsWatcher;
 use std::rc::Rc;
 
@@ -18,14 +15,10 @@ impl FsWatcher for Quiet {
 
 #[test]
 fn released_watch_rejects_with_its_ended_text() {
-    let (pump, admission) = Pump::new(crate::tests::support::widgets());
-    let lease = pump
-        .registry()
-        .insert(Capability::NativeWatcher(Rc::new(Quiet)))
-        .unwrap();
-    let watcher = Watcher(lease.clone());
-    let errors = ended_errors(lease, pump, admission, move || {
-        [watcher.close().unwrap_err()]
-    });
+    let errors = ended_endpoint(
+        Capability::NativeWatcher(Rc::new(Quiet)),
+        Watcher,
+        |watcher| [watcher.close().unwrap_err()],
+    );
     assert_eq!(errors, ["native watch resource ended"]);
 }

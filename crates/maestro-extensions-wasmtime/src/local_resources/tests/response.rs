@@ -1,9 +1,6 @@
 //! A native HTTP response ends with its capability.
-use super::Pump;
-use crate::{
-    local_resources::{Capability, http::Response},
-    tests::ended_errors,
-};
+use super::ended_endpoint;
+use crate::local_resources::{Capability, http::Response};
 use maestro_extensions::native_io::{IoFuture, Readable, Response as NativeResponse};
 use std::rc::Rc;
 
@@ -38,19 +35,17 @@ impl NativeResponse for Fixed {
 
 #[test]
 fn released_response_rejects_every_kind_of_operation_with_its_ended_text() {
-    let (pump, admission) = Pump::new(crate::tests::support::widgets());
-    let lease = pump
-        .registry()
-        .insert(Capability::NativeResponse(Rc::new(Fixed)))
-        .unwrap();
-    let response = Response(lease.clone());
-    let errors = ended_errors(lease, pump, admission, move || {
-        [
-            response.status().unwrap_err(),
-            response.status_text().unwrap_err(),
-            response.headers().unwrap_err(),
-            response.body().err().unwrap(),
-        ]
-    });
+    let errors = ended_endpoint(
+        Capability::NativeResponse(Rc::new(Fixed)),
+        Response,
+        |response| {
+            [
+                response.status().unwrap_err(),
+                response.status_text().unwrap_err(),
+                response.headers().unwrap_err(),
+                response.body().err().unwrap(),
+            ]
+        },
+    );
     assert_eq!(errors, ["native response resource ended"; 4]);
 }

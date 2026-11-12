@@ -1,11 +1,8 @@
 //! A native child and its byte reader end with their capabilities.
-use super::Pump;
-use crate::{
-    local_resources::{
-        Capability,
-        native_resources::{Child, Reader},
-    },
-    tests::ended_errors,
+use super::ended_endpoint;
+use crate::local_resources::{
+    Capability,
+    native_resources::{Child, Reader},
 };
 use maestro_extensions::native_io::{ChildProcess, ExitStatus, IoFuture, Readable, Writable};
 use std::rc::Rc;
@@ -59,13 +56,7 @@ impl ChildProcess for Detached {
 
 #[test]
 fn released_child_rejects_every_kind_of_operation_with_its_ended_text() {
-    let (pump, admission) = Pump::new(crate::tests::support::widgets());
-    let lease = pump
-        .registry()
-        .insert(Capability::NativeChild(Rc::new(Detached)))
-        .unwrap();
-    let child = Child(lease.clone());
-    let errors = ended_errors(lease, pump, admission, move || {
+    let errors = ended_endpoint(Capability::NativeChild(Rc::new(Detached)), Child, |child| {
         [
             child.pid().unwrap_err(),
             child.stdin().err().unwrap(),
@@ -79,14 +70,10 @@ fn released_child_rejects_every_kind_of_operation_with_its_ended_text() {
 
 #[test]
 fn released_reader_rejects_close_with_its_ended_text() {
-    let (pump, admission) = Pump::new(crate::tests::support::widgets());
-    let lease = pump
-        .registry()
-        .insert(Capability::NativeReader(Rc::new(Drained)))
-        .unwrap();
-    let reader = Reader(lease.clone());
-    let errors = ended_errors(lease, pump, admission, move || {
-        [reader.close().unwrap_err()]
-    });
+    let errors = ended_endpoint(
+        Capability::NativeReader(Rc::new(Drained)),
+        Reader,
+        |reader| [reader.close().unwrap_err()],
+    );
     assert_eq!(errors, ["native byte resource ended"]);
 }

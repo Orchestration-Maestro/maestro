@@ -10,17 +10,33 @@ mod stream;
 mod synchronous;
 mod watch;
 mod worker;
-use super::Pump;
+use super::{Capability, Lease, Pump};
 use crate::{
     context_reads::{Owner, Request},
-    tests::runner,
+    tests::{ended_errors, runner},
 };
 use maestro_extensions::{
     ExtensionContextActions, ExtensionExecution, Local, types::ProviderActions,
 };
-use std::{rc::Rc, sync::mpsc};
+use std::{
+    rc::Rc,
+    sync::{Arc, mpsc},
+};
 mod ui_host {
     pub use maestro_extensions::test_support::Named;
+}
+
+/// Lends `capability` to the endpoint `endpoint` builds, releases it, and returns the failures
+/// `operations` settles with on the ended endpoint.
+pub(super) fn ended_endpoint<E: Send + 'static, const N: usize>(
+    capability: Capability,
+    endpoint: fn(Arc<Lease>) -> E,
+    operations: impl FnOnce(E) -> [String; N] + Send + 'static,
+) -> [String; N] {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let lease = pump.registry().insert(capability).unwrap();
+    let endpoint = endpoint(lease.clone());
+    ended_errors(lease, pump, admission, move || operations(endpoint))
 }
 
 #[test]
