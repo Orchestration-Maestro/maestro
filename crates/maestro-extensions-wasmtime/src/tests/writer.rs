@@ -1,4 +1,5 @@
 //! Writable setup capabilities operate on the original session, not a copied reader.
+use super::ended_errors;
 use crate::read_imports::ReadEndpoint;
 use crate::{
     history_reads,
@@ -148,4 +149,37 @@ fn branch_records(writer: &Endpoint, reader: &history_reads::Endpoint, id: Strin
             .read(|reply| Request::Message("{".into(), reply))
             .is_err()
     );
+}
+
+#[test]
+fn released_writer_rejects_every_kind_of_operation_with_its_ended_text() {
+    let history = Rc::new(RefCell::new(
+        SessionManager::in_memory(Some("/ended-writer")).unwrap(),
+    ));
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let writer = pump.registry().writable(history).unwrap();
+    let lease = writer.0.clone();
+    let errors = ended_errors(lease, pump, admission, move || {
+        [
+            writer.read(Request::Persisted).unwrap_err(),
+            writer.read(Request::ResetLeaf).unwrap_err(),
+            writer
+                .read(|reply| Request::SetFile("/ended".into(), reply))
+                .unwrap_err(),
+            writer
+                .read(|reply| Request::NewSession(None, reply))
+                .unwrap_err(),
+            writer
+                .read(|reply| Request::Message("{}".into(), reply))
+                .unwrap_err(),
+            writer
+                .read(|reply| Request::Model("provider".into(), "id".into(), reply))
+                .unwrap_err(),
+            writer
+                .read(|reply| Request::Summary(None, "summary".into(), (None, None), reply))
+                .unwrap_err(),
+            writer.reader().err().unwrap(),
+        ]
+    });
+    assert_eq!(errors, ["extension writable session resource ended"; 8]);
 }
