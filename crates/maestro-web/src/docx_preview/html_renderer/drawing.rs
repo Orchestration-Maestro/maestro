@@ -1,7 +1,7 @@
 //! Drawing boxes, their images, and alternate format chunks.
 use super::{CssStyle, HtmlRenderer, render_style_values};
 use crate::docx_preview::html_element::HtmlElement;
-use maestro_office::docx_preview::OpenXmlElementTree;
+use maestro_office::wordprocessing::OpenXmlElementTree;
 
 impl<'a> HtmlRenderer<'a> {
     /// Render a drawing as an inline box holding its content, then its own declarations.

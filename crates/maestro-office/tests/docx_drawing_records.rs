@@ -1,10 +1,10 @@
 //! Complete owned drawing records through the public Word parser.
 #![cfg(test)]
 use crate::body_tree;
-use crate::docx_support;
-use docx_support::{XmlInput, cases};
-use maestro_office::docx_preview::DocxError;
+use crate::word_support;
+use maestro_office::wordprocessing::DocxError;
 use serde_json::json;
+use word_support::{XmlInput, cases};
 
 /// Replay complete independent graph expectations after releasing input owners.
 fn check(name: &str) {
@@ -12,7 +12,7 @@ fn check(name: &str) {
         .into_iter()
         .enumerate()
     {
-        let tree = docx_support::framed(&case.input);
+        let tree = word_support::framed(&case.input);
         if case.expected.get("error_kind").is_some() {
             assert!(matches!(tree, Err(DocxError::Xml { .. })), "case {index}");
             assert_eq!(case.expected, json!({"error_kind":"Xml"}));

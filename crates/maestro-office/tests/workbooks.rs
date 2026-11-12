@@ -1,7 +1,9 @@
 //! File-backed public workbook projections.
 #![cfg(test)]
 use crate::workbook_fixture::Bounds;
-use maestro_office::ssf::{self, CellFormatOptions, CellValue, ExcelDataType, Ssf, WorkbookError};
+use maestro_office::spreadsheet::{
+    self, CellFormatOptions, CellValue, ExcelDataType, Ssf, WorkbookError,
+};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -83,7 +85,7 @@ fn check(file: &str) {
         serde_json::from_slice(&std::fs::read(path.join(format!("{file}.json"))).unwrap()).unwrap();
     assert_eq!(case.file, file);
     let mut ssf = Ssf::default();
-    let result = ssf::read(&std::fs::read(path.join(file)).unwrap(), file, &mut ssf);
+    let result = spreadsheet::read(&std::fs::read(path.join(file)).unwrap(), file, &mut ssf);
     match case.expected {
         Outcome::Error { error } => {
             let error_value = result.unwrap_err();
@@ -94,7 +96,13 @@ fn check(file: &str) {
         Outcome::Ok { ok } => check_book(result.unwrap(), case.record.unwrap(), ok, file, &ssf),
     }
 }
-fn check_book(mut book: ssf::WorkBook, record: Record, ok: Expected, file: &str, ssf: &Ssf) {
+fn check_book(
+    mut book: spreadsheet::WorkBook,
+    record: Record,
+    ok: Expected,
+    file: &str,
+    ssf: &Ssf,
+) {
     assert_eq!(record.file, file);
     assert_eq!(book.date1904, record.date1904);
     assert_eq!(book.ssf, record.ssf.into_iter().collect::<BTreeMap<_, _>>());
@@ -110,7 +118,7 @@ fn check_book(mut book: ssf::WorkBook, record: Record, ok: Expected, file: &str,
             .unwrap()
             .as_mut()
             .unwrap();
-        assert_eq!(sheet.range.map(ssf::encode_range), expected.range);
+        assert_eq!(sheet.range.map(spreadsheet::encode_range), expected.range);
         assert_eq!(
             sheet.merges,
             expected
@@ -137,7 +145,7 @@ fn check_book(mut book: ssf::WorkBook, record: Record, ok: Expected, file: &str,
     }
 }
 
-fn check_cell(cell: &mut ssf::CellObject, expected: &Cell, ssf: &Ssf) {
+fn check_cell(cell: &mut spreadsheet::CellObject, expected: &Cell, ssf: &Ssf) {
     let kind = match cell.t.unwrap() {
         ExcelDataType::Number => "n",
         ExcelDataType::Text => "s",
@@ -152,7 +160,7 @@ fn check_cell(cell: &mut ssf::CellObject, expected: &Cell, ssf: &Ssf) {
     assert_eq!(cell.f, expected.f);
     assert_eq!(cell.array_formula, expected.array_formula);
     assert_scalar(
-        &ssf::format_cell(Some(cell), None, &CellFormatOptions::default(), ssf),
+        &spreadsheet::format_cell(Some(cell), None, &CellFormatOptions::default(), ssf),
         &expected.text.scalar(),
     );
     assert_eq!(cell.w, expected.w_after_format);
@@ -168,7 +176,7 @@ fn workbook_sheet_order_and_scalar_text() {
 
 #[test]
 fn workbook_numeric_codes_and_custom_sections() {
-    ssf_support::run("workbook_numeric_codes_and_custom_sections");
+    spreadsheet_format_support::run("workbook_numeric_codes_and_custom_sections");
     for file in [
         "formats.xlsx",
         "custom.xlsx",
@@ -276,7 +284,7 @@ fn workbook_string_escapes_decode_once_without_redecoding_shared_text() {
 }
 
 use crate::legacy_workbook_support;
-use crate::ssf_support;
+use crate::spreadsheet_format_support;
 
 #[test]
 fn workbook_legacy_values_follow_formats_and_declared_bounds() {
@@ -294,7 +302,7 @@ fn workbook_legacy_projection_preserves_order_merges_epoch_and_raw_text() {
 
 #[test]
 fn workbook_legacy_general_does_not_consume_active_format_zero() {
-    ssf_support::run("workbook_legacy_general_does_not_consume_active_format_zero");
+    spreadsheet_format_support::run("workbook_legacy_general_does_not_consume_active_format_zero");
 }
 
 #[test]
@@ -304,7 +312,7 @@ fn workbook_legacy_reader_failure_keeps_workbook_context() {
 
 #[test]
 fn workbook_format_code_escapes_share_one_decoder() {
-    ssf_support::run("workbook_format_code_escapes_share_one_decoder");
+    spreadsheet_format_support::run("workbook_format_code_escapes_share_one_decoder");
 }
 
 fn assert_scalar(actual: &CellValue, expected: &CellValue) {
@@ -321,7 +329,7 @@ fn assert_scalar(actual: &CellValue, expected: &CellValue) {
 fn workbook_numeric_values_follow_decimal_prefix_rules() {
     check("numeric-prefixes.xlsx");
     let mut ssf = Ssf::default();
-    let book = ssf::read(
+    let book = spreadsheet::read(
         &legacy_workbook_support::bytes("numeric-prefixes.xlsx"),
         "numeric-prefixes.xlsx",
         &mut ssf,
@@ -369,10 +377,10 @@ fn check_error(error: &Error, error_value: &WorkbookError) {
 }
 
 /// Read a qualified byte fixture through the public workbook boundary.
-fn partial_book(file: &str) -> Result<ssf::WorkBook, WorkbookError> {
+fn partial_book(file: &str) -> Result<spreadsheet::WorkBook, WorkbookError> {
     let bytes = crate::workbook_fixture::bytes(file);
     let mut ssf = Ssf::default();
-    let book = ssf::read(&bytes, file, &mut ssf)?;
+    let book = spreadsheet::read(&bytes, file, &mut ssf)?;
     assert!(!book.date1904);
     assert_eq!(*ssf.get_table().read().unwrap(), book.ssf);
     Ok(book)
@@ -477,7 +485,7 @@ fn workbook_many_sheet_results_keep_input_order() {
         }
     }
     let bytes = include_bytes!("fixtures/spreadsheet/operand-grammar.xlsx");
-    let book = ssf::read(bytes, "largest.xlsx", &mut Ssf::default()).unwrap();
+    let book = spreadsheet::read(bytes, "largest.xlsx", &mut Ssf::default()).unwrap();
     assert_eq!(book.sheets.len(), 433);
     assert!(book.sheets.values().all(Result::is_ok));
 }

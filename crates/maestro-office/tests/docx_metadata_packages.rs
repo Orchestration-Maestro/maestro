@@ -1,11 +1,11 @@
 //! Eager semantic preparation through the package reader.
 #![cfg(test)]
 use crate::body_tree;
-use crate::docx_support;
 use crate::metadata;
-use docx_support::cases;
-use maestro_office::docx_preview::{Options, WordDocument};
+use crate::word_support;
+use maestro_office::wordprocessing::{Options, WordDocument};
 use serde::Deserialize;
+use word_support::cases;
 /// Composed package operation input.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -33,7 +33,7 @@ fn document_prepares_metadata_and_comments_without_rendering() {
 }
 /// Replay the composed public operation, including alias and release actions.
 fn check(name: &str) {
-    use maestro_office::docx_preview::DocxError;
+    use maestro_office::wordprocessing::DocxError;
     for case in cases::<Input>(include_str!("fixtures/docx/metadata-packages.json"), name) {
         let bytes = std::fs::read(
             concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/docx/").to_owned()

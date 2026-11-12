@@ -1,14 +1,14 @@
 //! Owned Word element parsing.
 #![cfg(test)]
 use crate::body_tree;
-use crate::docx_support;
-use docx_support::{XmlInput, cases};
-use maestro_office::docx_preview::{
+use crate::word_support;
+use maestro_office::wordprocessing::{
     DocxError, OwnedXmlElement, parse_paragraph, parse_run, parse_xml_string,
 };
 use serde::Deserialize;
 use serde_json::json;
 use std::fmt::Write;
+use word_support::{XmlInput, cases};
 
 /// Replay every case owned by one behavior.
 fn check(name: &str) {
@@ -21,7 +21,7 @@ fn check(name: &str) {
             assert_eq!(case.expected, json!({"error_kind":"Xml"}));
             continue;
         }
-        let tree = docx_support::framed(&case.input).unwrap();
+        let tree = word_support::framed(&case.input).unwrap();
         let observed = body_tree::graph(&tree);
         assert_eq!(observed, case.expected);
     }
@@ -160,7 +160,7 @@ struct FontInput {
 }
 #[test]
 fn font_family_enclosure_uses_shared_whitespace() {
-    use maestro_office::docx_preview::OpenXmlElementData;
+    use maestro_office::wordprocessing::OpenXmlElementData;
     for case in cases::<FontInput>(
         include_str!("fixtures/docx/fonts.json"),
         "font_family_enclosure_uses_shared_whitespace",
@@ -224,7 +224,7 @@ fn owned_xml_slices_keep_source_and_namespaces() {
     );
     let tree = parse_run(&owned, false).unwrap();
     let root = &tree.nodes[tree.roots[0]];
-    let maestro_office::docx_preview::OpenXmlElementData::Run { properties, .. } = &root.data
+    let maestro_office::wordprocessing::OpenXmlElementData::Run { properties, .. } = &root.data
     else {
         panic!("run missing")
     };
@@ -237,7 +237,7 @@ fn owned_xml_slices_keep_source_and_namespaces() {
 
 #[test]
 fn parsed_tree_survives_source_release() {
-    use maestro_office::docx_preview::OpenXmlElementData as Data;
+    use maestro_office::wordprocessing::OpenXmlElementData as Data;
     let tree = {
         let source =
             "<w:p xmlns:w=\"urn:w\"><w:pPr><w:pStyle val=\"outer\"/></w:pPr><w:r><w:rPr><w:rStyle val=\"inner\"/></w:rPr><w:t>kept</w:t><w:commentReference id=\"kept-id\"/></w:r><w:hyperlink id=\"link\"/></w:p>"
@@ -284,7 +284,7 @@ fn parsed_tree_survives_source_release() {
 
 #[test]
 fn simple_fields_read_standard_lock_before_alias() {
-    use maestro_office::docx_preview::OpenXmlElementData as Data;
+    use maestro_office::wordprocessing::OpenXmlElementData as Data;
     for (attributes, expected) in [
         ("w:fldLock=\"true\" w:lock=\"false\"", true),
         ("w:fldLock=\"false\" w:lock=\"true\"", false),
@@ -302,7 +302,7 @@ fn simple_fields_read_standard_lock_before_alias() {
 
 #[test]
 fn complex_fields_read_standard_lock_before_alias() {
-    use maestro_office::docx_preview::OpenXmlElementData as Data;
+    use maestro_office::wordprocessing::OpenXmlElementData as Data;
     for (attributes, expected) in [
         ("w:fldLock=\"true\" w:lock=\"false\"", true),
         ("w:fldLock=\"false\" w:lock=\"true\"", false),
@@ -320,7 +320,7 @@ fn complex_fields_read_standard_lock_before_alias() {
 
 #[test]
 fn invalid_symbol_fonts_escape_style_element_delimiters() {
-    use maestro_office::docx_preview::OpenXmlElementData as Data;
+    use maestro_office::wordprocessing::OpenXmlElementData as Data;
     let xml = parse_xml_string("<r><sym font=\"A&lt;B\"/></r>", true).unwrap();
     let tree = parse_run(&OwnedXmlElement::new(xml.root()), false).unwrap();
     assert!(

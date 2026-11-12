@@ -1,11 +1,11 @@
 //! Owned section records through the existing paragraph and body operations.
 #![cfg(test)]
 use crate::body_tree;
-use crate::docx_support;
-use docx_support::{XmlInput, cases};
-use maestro_office::docx_preview::{
+use crate::word_support;
+use maestro_office::wordprocessing::{
     DocxError, OwnedXmlElement, parse_body_elements, parse_document_file, parse_xml_string,
 };
+use word_support::{XmlInput, cases};
 
 /// Compare complete owned results after releasing input owners.
 fn check(name: &str) {
@@ -14,7 +14,7 @@ fn check(name: &str) {
             .into_iter()
             .enumerate()
     {
-        let tree = docx_support::framed(&case.input).unwrap();
+        let tree = word_support::framed(&case.input).unwrap();
         assert_eq!(body_tree::full_graph(&tree), case.expected, "case {index}");
     }
 }

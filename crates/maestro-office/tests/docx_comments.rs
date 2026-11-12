@@ -1,10 +1,10 @@
 //! Comment factories, shared records and typed markers.
 #![cfg(test)]
 use crate::body_tree;
-use crate::docx_support;
 use crate::metadata;
-use docx_support::{XmlInput, cases};
-use maestro_office::docx_preview::{CommentsPart, OwnedXmlElement, parse_xml_string};
+use crate::word_support;
+use maestro_office::wordprocessing::{CommentsPart, OwnedXmlElement, parse_xml_string};
+use word_support::{XmlInput, cases};
 #[test]
 fn comments_preserve_metadata_order_and_duplicate_ids() {
     for case in cases::<XmlInput>(
@@ -87,7 +87,8 @@ fn comment_extensions_preserve_links_and_nullable_flags() {
     ) {
         assert_eq!(case.input.operation, "extensions");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
-        let part = maestro_office::docx_preview::CommentsExtendedPart::parse_xml(&xml, xml.root());
+        let part =
+            maestro_office::wordprocessing::CommentsExtendedPart::parse_xml(&xml, xml.root());
         assert_eq!(metadata::extensions(&part), case.expected);
     }
 }
@@ -96,7 +97,8 @@ fn check_extensions(name: &str) {
     for case in cases::<XmlInput>(include_str!("fixtures/docx/comments.json"), name) {
         assert_eq!(case.input.operation, "extensions");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
-        let part = maestro_office::docx_preview::CommentsExtendedPart::parse_xml(&xml, xml.root());
+        let part =
+            maestro_office::wordprocessing::CommentsExtendedPart::parse_xml(&xml, xml.root());
         assert_eq!(metadata::extensions(&part), case.expected);
     }
 }
@@ -117,7 +119,7 @@ fn comment_extension_lookup_shares_retained_record() {
         assert_eq!(case.input.operation, "extension_alias");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
         let mut part =
-            maestro_office::docx_preview::CommentsExtendedPart::parse_xml(&xml, xml.root());
+            maestro_office::wordprocessing::CommentsExtendedPart::parse_xml(&xml, xml.root());
         let handle = std::sync::Arc::clone(&part.comment_map["A"]);
         let same = std::sync::Arc::ptr_eq(&handle, &part.comments[0]);
         {
@@ -147,7 +149,7 @@ fn comment_body_errors_fail_the_enclosing_part() {
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
         assert!(matches!(
             CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root()), false),
-            Err(maestro_office::docx_preview::DocxError::Xml { .. })
+            Err(maestro_office::wordprocessing::DocxError::Xml { .. })
         ));
         assert_eq!(
             case.expected,
@@ -157,12 +159,12 @@ fn comment_body_errors_fail_the_enclosing_part() {
 }
 #[test]
 fn comment_markers_keep_kind_id_and_inline_order() {
-    use maestro_office::docx_preview::OpenXmlElementData as Data;
+    use maestro_office::wordprocessing::OpenXmlElementData as Data;
     for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comment_markers_keep_kind_id_and_inline_order",
     ) {
-        let tree = docx_support::framed(&case.input).unwrap();
+        let tree = word_support::framed(&case.input).unwrap();
         assert!(tree.nodes.iter().any(|n| matches!(
             n.data,
             Data::CommentReference(_) | Data::CommentRangeStart(_) | Data::CommentRangeEnd(_)

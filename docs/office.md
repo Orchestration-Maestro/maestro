@@ -8,19 +8,19 @@ touches no file, clock or network, so the same code runs natively and in the bro
 Read a workbook, then write one sheet as CSV:
 
 ```rust
-use maestro_office::ssf::{self, Ssf};
+use maestro_office::spreadsheet::{self, Ssf};
 
 let mut format = Ssf::default();
-let mut book = ssf::read(&bytes, "book.xlsx", &mut format)?;
+let mut book = spreadsheet::read(&bytes, "book.xlsx", &mut format)?;
 if let Some(Ok(sheet)) = book.sheets.get_mut("Sheet1") {
-    let csv = ssf::sheet_to_csv(sheet, &format);
+    let csv = spreadsheet::sheet_to_csv(sheet, &format);
 }
 ```
 
 Open a Word package the same way:
 
 ```rust
-use maestro_office::docx_preview::{Options, WordDocument};
+use maestro_office::wordprocessing::{Options, WordDocument};
 
 let document = WordDocument::load(&bytes, Options::default())?;
 ```
@@ -31,7 +31,7 @@ check, `maestro_office::executable`, which refuses script and active-document UR
 
 ## Spreadsheet values and workbooks
 
-The crate exposes `maestro_office::ssf` for scalar spreadsheet
+The crate exposes `maestro_office::spreadsheet` for scalar spreadsheet
 formatting, in-memory XLSX/XLS reading and HTML table projection. These operations
 prepare owned data and markup; they do not mount a native preview or write files.
 
@@ -90,7 +90,7 @@ including empty codes, and leaves the same-owner table unchanged.
 the current table slot without changing earlier handles; XLS retains that slot.
 Both readers repair the producer date code `d.m` to `d\.m` before loading it;
 direct `Ssf::load` calls preserve the supplied code.
-`WorkBook::ssf` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
+`WorkBook::spreadsheet` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
 `WorkBook::sheets` stores a `Result<WorkSheet, WorkbookError>` for each named sheet.
 An XLSX sheet decoding failure retains its typed error and discards partial cells,
@@ -254,7 +254,7 @@ The initial cell's formatted `ID` is quoted. No custom CSV options are exposed.
 
 ## Word package reader
 
-`maestro_office::docx_preview::WordDocument::load` opens supplied archive
+`maestro_office::wordprocessing::WordDocument::load` opens supplied archive
 bytes. It checks recognized XML parts before returning, including property and
 comment parts; missing parts and unknown relationship types are tolerated. It
 also prepares [metadata and comments](#word-metadata-and-comments) eagerly. This
@@ -323,7 +323,7 @@ unsupported semantic kinds retain `data: None`.
 
 ## Owned Word element tree
 
-`maestro_office::docx_preview::{parse_body_elements, parse_paragraph,
+`maestro_office::wordprocessing::{parse_body_elements, parse_paragraph,
 parse_run}` parse an `OwnedXmlElement` selection into an `OpenXmlElementTree`.
 Their `ignore_width` flag suppresses cell widths in every property group; table
 widths remain.
@@ -382,7 +382,7 @@ extractor. Package loading remains separate from element parsing.
 
 ## Word background and borders
 
-`maestro_office::docx_preview::{parse_background, parse_border_properties}`
+`maestro_office::wordprocessing::{parse_background, parse_border_properties}`
 consume borrowed XML selections. Background parsing returns a new ordered style
 map. Border parsing updates the supplied map from immediate top, bottom, left and
 right children; start/end alias left/right. Replacing a side retains its insertion
@@ -397,7 +397,7 @@ dispatcher; they do not render a document.
 
 ## Word default properties and conditional table styles
 
-`maestro_office::docx_preview::parse_default_properties` updates supplied
+`maestro_office::wordprocessing::parse_default_properties` updates supplied
 ordered CSS maps from immediate property children. It handles alignment, colors,
 font size and families, underline, indentation, paragraph spacing, cell margins,
 row height and table layout. The optional child map receives table borders and
@@ -427,7 +427,7 @@ neither operation renders a preview.
 
 ## Word styles and auxiliary parts
 
-`maestro_office::docx_preview` exposes `StylesPart`, `ThemePart`,
+`maestro_office::wordprocessing` exposes `StylesPart`, `ThemePart`,
 `HeaderPart`, `FooterPart`, `FootnotesPart`, `EndnotesPart` and `SettingsPart`.
 Their `parse_xml` factories prepare owned records separately from package
 loading; headers, footers and notes reuse the ordinary body parser with the
@@ -456,7 +456,7 @@ application factories.
 
 ## Word numbering and embedded fonts
 
-`maestro_office::docx_preview::lists::NumberingPart::parse_xml` returns
+`maestro_office::wordprocessing::lists::NumberingPart::parse_xml` returns
 ordered raw definitions, concrete references, overrides and nullable picture
 slots, plus an owned concrete level sequence. Each matching concrete instance
 keeps its identifier; ordered level/start overrides affect that instance only.
@@ -485,7 +485,7 @@ footers. A malformed part fails the load with `DocxError`, so rendering itself
 cannot fail. `WordPreview::render` returns the styles, the pages and the resource
 styles one rendering composes; `render_sections` returns the pages alone, with the
 object URLs their nodes name.
-`docx_preview::Options` defaults to the `docx` class namespace, XML declaration
+`maestro_office::wordprocessing::Options` defaults to the `docx` class namespace, XML declaration
 trimming, page-break detection, ignored last-rendered page breaks, kept page
 sizes, rendered headers, footers and note lists, the page wrapper, loaded fonts,
 object URLs and rendered alternate chunks. The reading options decide the URL

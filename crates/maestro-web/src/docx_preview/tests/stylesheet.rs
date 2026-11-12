@@ -1,7 +1,7 @@
 //! Document styles as rules under the class namespace.
 use super::check_preview;
 use crate::docx_preview::html_renderer::{Styles, steps_taken};
-use maestro_office::docx_preview::{StylesPart, parse_xml_string};
+use maestro_office::wordprocessing::{StylesPart, parse_xml_string};
 
 #[test]
 fn document_styles_emit_inherited_linked_default_and_repeated_rules() {

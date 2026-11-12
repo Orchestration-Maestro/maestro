@@ -1,7 +1,7 @@
 //! Controlled numbering and embedded-font observations.
 #![cfg(test)]
-use crate::docx_support::cases;
-use maestro_office::docx_preview::{
+use crate::word_support::cases;
+use maestro_office::wordprocessing::{
     parse_xml_string,
     typefaces::{EmbedFontType, FontTablePart},
 };
@@ -64,7 +64,7 @@ fn check(name: &str) {
             } => {
                 let part = {
                     let xml = parse_xml_string(&source, false).unwrap();
-                    maestro_office::docx_preview::lists::NumberingPart::parse_xml(
+                    maestro_office::wordprocessing::lists::NumberingPart::parse_xml(
                         &xml,
                         xml.root(),
                         ignore_width,

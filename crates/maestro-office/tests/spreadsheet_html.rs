@@ -81,7 +81,7 @@ fn workbook_preview_hyperlinks_keep_ranges_fragments_and_stubs() {
 
 #[test]
 fn sheet_tables_share_raw_date_spelling_with_failed_cell_formats() {
-    use maestro_office::ssf::*;
+    use maestro_office::spreadsheet::*;
     let ssf = Ssf::default();
     let _ = ssf.load("[", Some(999));
     let mut cell = CellObject {
@@ -111,7 +111,7 @@ fn sheet_tables_share_raw_date_spelling_with_failed_cell_formats() {
 
 #[test]
 fn sheet_tables_keep_numeric_format_selector_metadata() {
-    use maestro_office::ssf::*;
+    use maestro_office::spreadsheet::*;
     let mut sheet = WorkSheet {
         cells: [(
             "A1".into(),

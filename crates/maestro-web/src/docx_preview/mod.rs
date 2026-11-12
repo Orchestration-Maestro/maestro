@@ -19,9 +19,9 @@ mod utils;
 pub use browser::{RenderedDocument, render_async, render_document};
 pub use html_element::{HtmlContent, HtmlElement, Namespace};
 use html_renderer::{HtmlRenderer, Styles, process_element};
-use maestro_office::docx_preview::lists::NumberingPart;
-use maestro_office::docx_preview::typefaces::{FontDeclaration, FontTablePart};
-use maestro_office::docx_preview::{
+use maestro_office::wordprocessing::lists::NumberingPart;
+use maestro_office::wordprocessing::typefaces::{FontDeclaration, FontTablePart};
+use maestro_office::wordprocessing::{
     DmlTheme, DocxError, EndnotesPart, FooterPart, FootnotesPart, HeaderPart, IDomNumbering,
     OpenXmlElementTree, Options as PackageOptions, OwnedXmlElement, Part, PartKind, StylesPart,
     ThemePart, WmlBaseNote, WordBody, WordDocument, XmlParser, parse_document_file,

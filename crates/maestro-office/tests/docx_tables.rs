@@ -1,8 +1,8 @@
 //! Word tables, rows, cells and inline wrappers in the owned element tree.
 #![cfg(test)]
 use crate::body_tree;
-use crate::docx_support::{self, XmlInput, cases};
-use maestro_office::docx_preview::{
+use crate::word_support::{self, XmlInput, cases};
+use maestro_office::wordprocessing::{
     CommentsPart, EndnotesPart, FooterPart, FootnotesPart, HeaderPart, OpenXmlElementData as Data,
     OpenXmlElementTree, Options, OwnedXmlElement, WordDocument, parse_body_elements,
     parse_paragraph, parse_run, parse_xml_string,
@@ -11,7 +11,7 @@ use maestro_office::docx_preview::{
 /// Replay every recorded case owned by one behavior.
 fn check(name: &str) {
     for case in cases::<XmlInput>(include_str!("fixtures/docx/tables.json"), name) {
-        let tree = docx_support::framed(&case.input).unwrap();
+        let tree = word_support::framed(&case.input).unwrap();
         assert_eq!(
             body_tree::full_graph(&tree),
             case.expected,

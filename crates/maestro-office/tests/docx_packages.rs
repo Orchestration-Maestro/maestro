@@ -1,10 +1,10 @@
 //! Package loading through the public Word reader.
 #![cfg(test)]
-use crate::docx_support;
-use docx_support::cases;
-use maestro_office::docx_preview::{DocxError, Options, Relationship, WordDocument};
+use crate::word_support;
+use maestro_office::wordprocessing::{DocxError, Options, Relationship, WordDocument};
 use serde::Deserialize;
 use serde_json::{Value, json};
+use word_support::cases;
 
 /// Supplied package and optional follow-up operations.
 #[derive(Deserialize)]

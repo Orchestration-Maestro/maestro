@@ -1,12 +1,12 @@
 //! Typed Word metadata through public factories.
 #![cfg(test)]
-use crate::docx_support;
 use crate::metadata;
-use docx_support::{XmlInput, cases};
-use maestro_office::docx_preview::{
+use crate::word_support;
+use maestro_office::wordprocessing::{
     CorePropsPart, CustomPropsPart, DocxError, ExtendedPropsPart, parse_xml_string,
 };
 use serde_json::json;
+use word_support::{XmlInput, cases};
 /// Dispatch by recorded operation and compare the complete public result.
 fn check(name: &str) {
     for case in cases::<XmlInput>(include_str!("fixtures/docx/metadata.json"), name) {

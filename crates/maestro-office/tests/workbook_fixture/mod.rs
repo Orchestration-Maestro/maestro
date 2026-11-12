@@ -1,5 +1,5 @@
 //! Shared workbook fixture bytes and recorded cell ranges.
-use maestro_office::ssf;
+use maestro_office::spreadsheet;
 use serde::Deserialize;
 
 pub fn bytes(file: &str) -> Vec<u8> {
@@ -26,13 +26,13 @@ pub struct Bounds {
 }
 impl Bounds {
     /// The same extent as a reader range.
-    pub fn range(&self) -> ssf::Range {
-        ssf::Range {
-            s: ssf::CellAddress {
+    pub fn range(&self) -> spreadsheet::Range {
+        spreadsheet::Range {
+            s: spreadsheet::CellAddress {
                 r: self.s.r,
                 c: self.s.c,
             },
-            e: ssf::CellAddress {
+            e: spreadsheet::CellAddress {
                 r: self.e.r,
                 c: self.e.c,
             },

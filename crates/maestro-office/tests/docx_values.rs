@@ -1,10 +1,10 @@
 //! Word scalar conversion behavior.
 #![cfg(test)]
-use crate::docx_support;
-use docx_support::cases;
-use maestro_office::docx_preview::{LengthUsage, convert_boolean, convert_length};
+use crate::word_support;
+use maestro_office::wordprocessing::{LengthUsage, convert_boolean, convert_length};
 use serde::Deserialize;
 use serde_json::json;
+use word_support::cases;
 
 /// Scalar arguments from the controlled corpus.
 #[derive(Deserialize)]

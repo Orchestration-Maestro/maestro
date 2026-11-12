@@ -1,7 +1,7 @@
 //! Ordered Word formatting observations through the consuming parsers.
 #![cfg(test)]
 use indexmap::IndexMap;
-use maestro_office::docx_preview::{
+use maestro_office::wordprocessing::{
     DefaultPropertiesOptions, parse_default_properties, parse_table_style, parse_xml_string,
 };
 use serde::Deserialize;
@@ -140,7 +140,7 @@ fn observe_default(
     let mut style: IndexMap<_, _> = style.into_iter().collect();
     let mut child_style: Option<IndexMap<_, _>> = child_style.map(|s| s.into_iter().collect());
     let mut seen = Vec::new();
-    let mut callback = |element: maestro_office::docx_preview::XmlElement<'_, '_>,
+    let mut callback = |element: maestro_office::wordprocessing::XmlElement<'_, '_>,
                         style: &mut IndexMap<String, Option<String>>| {
         seen.push(Seen {
             name: element.local_name().into(),
@@ -371,7 +371,7 @@ fn default_dispatch_uses_local_names_and_first_attributes() {
 
 #[test]
 fn producer_table_properties_keep_layout_and_zero_indent() {
-    use maestro_office::docx_preview::{Options, WordDocument};
+    use maestro_office::wordprocessing::{Options, WordDocument};
     let document = WordDocument::load(
         include_bytes!("fixtures/docx/packages/table-contracts.docx"),
         Options::default(),

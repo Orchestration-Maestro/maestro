@@ -1,12 +1,12 @@
 //! Borrowed Word XML queries.
 #![cfg(test)]
-use crate::docx_support;
-use docx_support::cases;
-use maestro_office::docx_preview::{
+use crate::word_support;
+use maestro_office::wordprocessing::{
     DocxError, LengthUsage, XmlElement, XmlParser, parse_xml_string,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
+use word_support::cases;
 
 /// XML or numeric-attribute arguments.
 #[derive(Deserialize)]

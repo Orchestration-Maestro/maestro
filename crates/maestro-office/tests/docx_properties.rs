@@ -1,6 +1,6 @@
 //! Word background and border property observations.
 #![cfg(test)]
-use maestro_office::docx_preview::{parse_background, parse_border_properties, parse_xml_string};
+use maestro_office::wordprocessing::{parse_background, parse_border_properties, parse_xml_string};
 use serde::Deserialize;
 
 /// One complete consumer observation.

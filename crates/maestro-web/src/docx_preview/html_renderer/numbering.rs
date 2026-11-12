@@ -4,7 +4,7 @@ use super::stylesheet::{contained_values, create_style_element, identifier, styl
 use crate::docx_preview::PartRecords;
 use crate::docx_preview::html_element::{HtmlElement, contained};
 use indexmap::IndexMap;
-use maestro_office::docx_preview::{IDomNumbering, Numbering, NumberingPicBullet};
+use maestro_office::wordprocessing::{IDomNumbering, Numbering, NumberingPicBullet};
 use std::fmt::Write as _;
 
 impl HtmlRenderer<'_> {

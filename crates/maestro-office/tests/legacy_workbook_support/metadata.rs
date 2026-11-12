@@ -1,6 +1,6 @@
 //! Retained binary metadata and complete writer observations.
 use super::Scalar;
-use maestro_office::ssf::{self, Ssf};
+use maestro_office::spreadsheet::{self, Ssf};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -64,7 +64,7 @@ struct View {
 pub fn run(test: &str) {
     let cases: Vec<Case> = serde_json::from_str(
         &std::fs::read_to_string(format!(
-            "{}/tests/fixtures/ssf/legacy_metadata.json",
+            "{}/tests/fixtures/spreadsheet_formatting/legacy_metadata.json",
             env!("CARGO_MANIFEST_DIR")
         ))
         .expect("recorded fixture"),
@@ -74,14 +74,14 @@ pub fn run(test: &str) {
     for case in cases.iter().filter(|case| case.test == test) {
         count += 1;
         let mut ssf = Ssf::default();
-        let result = ssf::read(&super::bytes(&case.file), &case.file, &mut ssf);
+        let result = spreadsheet::read(&super::bytes(&case.file), &case.file, &mut ssf);
         match &case.expected {
             Outcome::Book { ok } => check_book(result.unwrap(), ok, &ssf),
             Outcome::Error { error } => {
                 assert_eq!(error.kind, "Reader");
                 assert!(case.file.ends_with(&error.workbook));
                 let error = result.unwrap_err();
-                assert!(matches!(error, ssf::WorkbookError::Reader(_)));
+                assert!(matches!(error, spreadsheet::WorkbookError::Reader(_)));
                 assert!(error.to_string().contains(&case.file));
             }
         }
@@ -89,24 +89,24 @@ pub fn run(test: &str) {
     assert!(count > 0, "missing corpus group");
 }
 
-fn check_book(mut book: ssf::WorkBook, expected: &Book, ssf: &Ssf) {
+fn check_book(mut book: spreadsheet::WorkBook, expected: &Book, ssf: &Ssf) {
     check_sheets(&book, &expected.sheets);
     for view in &expected.views {
         let sheet = book.sheets.get_mut(&view.name).unwrap().as_mut().unwrap();
-        assert_eq!(ssf::sheet_to_csv(sheet, ssf), view.csv);
+        assert_eq!(spreadsheet::sheet_to_csv(sheet, ssf), view.csv);
         assert_eq!(
-            ssf::sheet_to_html(sheet, &format!("sheet-{}", view.name), ssf),
+            spreadsheet::sheet_to_html(sheet, &format!("sheet-{}", view.name), ssf),
             view.html
         );
         check_sheets(&book, &expected.sheets);
     }
 }
-fn check_sheets(book: &ssf::WorkBook, expected: &[Sheet]) {
+fn check_sheets(book: &spreadsheet::WorkBook, expected: &[Sheet]) {
     assert_eq!(book.sheets.len(), expected.len());
     for ((name, actual), expected) in book.sheets.iter().zip(expected) {
         let actual = actual.as_ref().unwrap();
         assert_eq!(name, &expected.name);
-        assert_eq!(actual.range.map(ssf::encode_range), expected.range);
+        assert_eq!(actual.range.map(spreadsheet::encode_range), expected.range);
         assert_eq!(actual.cells.len(), expected.cells.len());
         for ((address, cell), expected) in actual.cells.iter().zip(&expected.cells) {
             assert_eq!(address, &expected.address);
@@ -115,12 +115,12 @@ fn check_sheets(book: &ssf::WorkBook, expected: &[Sheet]) {
     }
 }
 
-fn check_cell(cell: &ssf::CellObject, expected: &Cell) {
+fn check_cell(cell: &spreadsheet::CellObject, expected: &Cell) {
     let kind = match cell.t.unwrap() {
-        ssf::ExcelDataType::Number => "n",
-        ssf::ExcelDataType::Boolean => "b",
-        ssf::ExcelDataType::Text => "s",
-        ssf::ExcelDataType::Error => "e",
+        spreadsheet::ExcelDataType::Number => "n",
+        spreadsheet::ExcelDataType::Boolean => "b",
+        spreadsheet::ExcelDataType::Text => "s",
+        spreadsheet::ExcelDataType::Error => "e",
         _ => panic!("unexpected cell type"),
     };
     assert_eq!(kind, expected.t);

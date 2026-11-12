@@ -1,6 +1,6 @@
 //! Strict independent spreadsheet corpus consumers.
 #![cfg(test)]
-use maestro_office::ssf::*;
+use maestro_office::spreadsheet::*;
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;

@@ -1,7 +1,7 @@
 //! Page composition: section groups, page breaks, and page and section elements.
 use super::{Children, HtmlRenderer, render_style_values};
 use crate::docx_preview::html_element::HtmlElement;
-use maestro_office::docx_preview::{
+use maestro_office::wordprocessing::{
     OpenXmlElement, OpenXmlElementData as Data, OpenXmlElementTree, ParagraphProperties,
     SectionProperties,
 };

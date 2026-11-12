@@ -1,6 +1,6 @@
 //! Complete observations of legacy workbook reads and live format tables.
 use crate::workbook_fixture::Bounds;
-use maestro_office::ssf::{self, CellFormatOptions, CellValue, Ssf};
+use maestro_office::spreadsheet::{self, CellFormatOptions, CellValue, Ssf};
 use serde::Deserialize;
 use std::{collections::BTreeMap, sync::Arc};
 
@@ -106,11 +106,17 @@ struct Sequence {
 pub use crate::workbook_fixture::bytes;
 
 pub fn run(ids: &[&str]) {
-    run_cases(ids, include_str!("../fixtures/ssf/legacy_workbooks.json"));
+    run_cases(
+        ids,
+        include_str!("../fixtures/spreadsheet_formatting/legacy_workbooks.json"),
+    );
 }
 
 pub fn run_binary(ids: &[&str]) {
-    run_cases(ids, include_str!("../fixtures/ssf/binary_workbooks.json"));
+    run_cases(
+        ids,
+        include_str!("../fixtures/spreadsheet_formatting/binary_workbooks.json"),
+    );
 }
 
 fn run_cases(ids: &[&str], data: &str) {
@@ -141,7 +147,7 @@ fn run_cases(ids: &[&str], data: &str) {
 fn check_read(file: &str, expected: Outcome) {
     let mut ssf = Ssf::default();
     let alias = ssf.get_table();
-    let result = ssf::read(&bytes(file), file, &mut ssf);
+    let result = spreadsheet::read(&bytes(file), file, &mut ssf);
     match expected {
         Outcome::Read { ok } => {
             assert_eq!(Arc::ptr_eq(&alias, &ssf.get_table()), ok.same_table);
@@ -151,14 +157,14 @@ fn check_read(file: &str, expected: Outcome) {
             let actual = result.unwrap_err();
             assert_eq!(error.kind, "reader");
             assert_eq!(error.workbook, file);
-            assert!(matches!(actual, ssf::WorkbookError::Reader(_)));
+            assert!(matches!(actual, spreadsheet::WorkbookError::Reader(_)));
             assert!(actual.to_string().contains(file));
         }
         Outcome::Sequence { .. } => panic!("unexpected sequence"),
     }
 }
 
-fn check_book(book: ssf::WorkBook, expected: &Book, ssf: &Ssf) {
+fn check_book(book: spreadsheet::WorkBook, expected: &Book, ssf: &Ssf) {
     assert_eq!(book.date1904, expected.date1904);
     assert_eq!(
         book.ssf
@@ -172,7 +178,7 @@ fn check_book(book: ssf::WorkBook, expected: &Book, ssf: &Ssf) {
     for ((name, sheet), expected) in book.sheets.into_iter().zip(&expected.sheets) {
         let sheet = sheet.unwrap();
         assert_eq!(name, expected.name);
-        assert_eq!(sheet.range.map(ssf::encode_range), expected.range);
+        assert_eq!(sheet.range.map(spreadsheet::encode_range), expected.range);
         assert_eq!(
             sheet.merges,
             expected
@@ -189,12 +195,12 @@ fn check_book(book: ssf::WorkBook, expected: &Book, ssf: &Ssf) {
     }
 }
 
-fn check_cell(cell: &mut ssf::CellObject, expected: &Cell, ssf: &Ssf) {
+fn check_cell(cell: &mut spreadsheet::CellObject, expected: &Cell, ssf: &Ssf) {
     let kind = match cell.t.unwrap() {
-        ssf::ExcelDataType::Number => "n",
-        ssf::ExcelDataType::Text => "s",
-        ssf::ExcelDataType::Boolean => "b",
-        ssf::ExcelDataType::Error => "e",
+        spreadsheet::ExcelDataType::Number => "n",
+        spreadsheet::ExcelDataType::Text => "s",
+        spreadsheet::ExcelDataType::Boolean => "b",
+        spreadsheet::ExcelDataType::Error => "e",
         _ => panic!("unexpected cell classification"),
     };
     assert_eq!(kind, expected.r#type);
@@ -204,7 +210,7 @@ fn check_cell(cell: &mut ssf::CellObject, expected: &Cell, ssf: &Ssf) {
     assert!(cell.z.is_none());
     assert!(cell.xf.is_none());
     assert_eq!(cell.w, expected.w_after_read);
-    expected.text.check(&ssf::format_cell(
+    expected.text.check(&spreadsheet::format_cell(
         Some(cell),
         None,
         &CellFormatOptions::default(),
@@ -227,7 +233,7 @@ fn check_sequence(
             .map(|(k, v)| (k.parse::<u32>().unwrap(), v)),
     );
     assert_eq!(alias.read().unwrap()[&0], expected.initial_zero);
-    let book = ssf::read(&bytes(&files[0]), &files[0], &mut ssf).unwrap();
+    let book = spreadsheet::read(&bytes(&files[0]), &files[0], &mut ssf).unwrap();
     assert_eq!(Arc::ptr_eq(&alias, &ssf.get_table()), expected.same_table);
     assert_eq!(
         book.sheets["Data"].as_ref().unwrap().cells["A1"]
@@ -246,7 +252,7 @@ fn check_sequence(
         ssf.get_table().read().unwrap()[&999],
         expected.unrelated_format
     );
-    let book = ssf::read(&bytes(&files[1]), &files[1], &mut ssf).unwrap();
+    let book = spreadsheet::read(&bytes(&files[1]), &files[1], &mut ssf).unwrap();
     assert!(Arc::ptr_eq(&alias, &ssf.get_table()));
     assert_eq!(
         book.sheets["Old"].as_ref().unwrap().cells["A1"]

@@ -1,8 +1,8 @@
 //! Owned paragraph and run properties through public parsing operations.
 #![cfg(test)]
 use crate::body_tree;
-use crate::docx_support;
-use docx_support::{XmlInput, cases};
+use crate::word_support;
+use word_support::{XmlInput, cases};
 
 /// Compare complete owned results after releasing input owners.
 fn check(name: &str) {
@@ -13,7 +13,7 @@ fn check(name: &str) {
     .into_iter()
     .enumerate()
     {
-        let tree = docx_support::framed(&case.input).unwrap();
+        let tree = word_support::framed(&case.input).unwrap();
         assert_eq!(body_tree::full_graph(&tree), case.expected, "case {index}");
     }
 }

@@ -181,7 +181,7 @@ members, without persisting pointer identity or introducing a second record sche
 Assistant rows retain the application's existing shared assistant-message handle.
 
 Shared XLSX formula displacement belongs solely to the application's existing
-`browser::ssf::read::formulas` module. Classify maximal runs between operator
+`maestro_office::spreadsheet::read::formulas` module. Classify maximal runs between operator
 characters, whitespace and operand punctuation; every other character belongs to
 a run, including combining marks, `#`, `~`, `\` and `?`. Preserve quoted strings/sheet
 names (including doubled delimiters) and balanced bracket spans first. Then classify

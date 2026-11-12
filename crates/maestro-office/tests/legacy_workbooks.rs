@@ -4,10 +4,10 @@ use crate::legacy_workbook_support;
 
 #[test]
 fn legacy_producer_date_format_repairs_display_and_tables() {
-    use maestro_office::ssf::{self, CellValue, Ssf};
+    use maestro_office::spreadsheet::{self, CellValue, Ssf};
     let file = "legacy-producer-date.xls";
     let mut ssf = Ssf::default();
-    let book = ssf::read(&legacy_workbook_support::bytes(file), file, &mut ssf).unwrap();
+    let book = spreadsheet::read(&legacy_workbook_support::bytes(file), file, &mut ssf).unwrap();
     let cell = &book.sheets["Data"].as_ref().unwrap().cells["A1"];
     assert_eq!(cell.v, CellValue::Number(44927.0));
     assert_eq!(cell.w.as_deref(), Some("1.1"));
@@ -17,9 +17,9 @@ fn legacy_producer_date_format_repairs_display_and_tables() {
 
 #[test]
 fn legacy_biff5_empty_strings_keep_empty_cells_and_nonempty_controls() {
-    use maestro_office::ssf::{self, CellValue, Ssf};
+    use maestro_office::spreadsheet::{self, CellValue, Ssf};
     let file = "legacy-biff5-empty-string.xls";
-    let book = ssf::read(
+    let book = spreadsheet::read(
         &legacy_workbook_support::bytes(file),
         file,
         &mut Ssf::default(),
@@ -549,9 +549,9 @@ fn legacy_hyperlink_invalid_file_monikers_keep_reader_errors() {
 
 #[test]
 fn legacy_biff5_negative_relative_rows_keep_version_grid() {
-    use maestro_office::ssf::{self, CellValue, Ssf};
+    use maestro_office::spreadsheet::{self, CellValue, Ssf};
     let file = "metadata-fix-biff5-negative.xls";
-    let book = ssf::read(
+    let book = spreadsheet::read(
         &legacy_workbook_support::bytes(file),
         file,
         &mut Ssf::default(),
@@ -564,10 +564,10 @@ fn legacy_biff5_negative_relative_rows_keep_version_grid() {
 
 #[test]
 fn legacy_shifted_areas_keep_whole_rows_in_each_operand_class() {
-    use maestro_office::ssf::{self, CellValue, Ssf};
+    use maestro_office::spreadsheet::{self, CellValue, Ssf};
     for class in [45, 77, 109] {
         let file = format!("metadata-fix-shifted-area-{class}.xls");
-        let book = ssf::read(
+        let book = spreadsheet::read(
             &legacy_workbook_support::bytes(&file),
             &file,
             &mut Ssf::default(),
@@ -581,10 +581,10 @@ fn legacy_shifted_areas_keep_whole_rows_in_each_operand_class() {
 
 #[test]
 fn legacy_shared_areas_keep_whole_rows_in_each_operand_class() {
-    use maestro_office::ssf::{self, CellValue, Ssf};
+    use maestro_office::spreadsheet::{self, CellValue, Ssf};
     for class in [45, 77, 109] {
         let file = format!("metadata-fix-shared-area-{class}.xls");
-        let book = ssf::read(
+        let book = spreadsheet::read(
             &legacy_workbook_support::bytes(&file),
             &file,
             &mut Ssf::default(),
@@ -600,10 +600,10 @@ fn legacy_shared_areas_keep_whole_rows_in_each_operand_class() {
 
 #[test]
 fn legacy_unused_external_sheet_layouts_keep_ordinary_cells_readable() {
-    use maestro_office::ssf::{self, CellValue, Ssf};
+    use maestro_office::spreadsheet::{self, CellValue, Ssf};
     for layout in ["old", "marker", "new", "control"] {
         let file = format!("metadata-fix-extern-{layout}.xls");
-        let book = ssf::read(
+        let book = spreadsheet::read(
             &legacy_workbook_support::bytes(&file),
             &file,
             &mut Ssf::default(),
@@ -618,12 +618,14 @@ fn legacy_unused_external_sheet_layouts_keep_ordinary_cells_readable() {
 
 #[test]
 fn legacy_range_prefixes_keep_complete_expression_identity() {
-    use maestro_office::ssf::{self, Ssf};
-    let rows: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/ssf/legacy_range_prefixes.json")).unwrap();
+    use maestro_office::spreadsheet::{self, Ssf};
+    let rows: serde_json::Value = serde_json::from_str(include_str!(
+        "fixtures/spreadsheet_formatting/legacy_range_prefixes.json"
+    ))
+    .unwrap();
     for row in rows.as_array().unwrap() {
         let file = row["file"].as_str().unwrap();
-        let book = ssf::read(
+        let book = spreadsheet::read(
             &legacy_workbook_support::bytes(file),
             file,
             &mut Ssf::default(),
@@ -644,8 +646,8 @@ fn legacy_range_prefixes_keep_complete_expression_identity() {
 
 #[test]
 fn legacy_corrupt_sheet_stream_still_fails_workbook() {
-    use maestro_office::ssf::{self, CellValue, Ssf, WorkbookError};
-    let book = ssf::read(
+    use maestro_office::spreadsheet::{self, CellValue, Ssf, WorkbookError};
+    let book = spreadsheet::read(
         &crate::workbook_fixture::bytes("binary-mixed-valid.xls"),
         "valid.xls",
         &mut Ssf::default(),
@@ -659,7 +661,7 @@ fn legacy_corrupt_sheet_stream_still_fails_workbook() {
         book.sheets["Good"].as_ref().unwrap().cells["A1"].v,
         CellValue::Number(42.)
     );
-    let error = ssf::read(
+    let error = spreadsheet::read(
         &crate::workbook_fixture::bytes("binary-mixed-corrupt.xls"),
         "corrupt.xls",
         &mut Ssf::default(),

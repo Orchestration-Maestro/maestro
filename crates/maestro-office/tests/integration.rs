@@ -1,7 +1,7 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
-#[path = "docx_support/body_tree.rs"]
+#[path = "word_support/body_tree.rs"]
 mod body_tree;
 mod browser_decimal;
 mod docx_body;
@@ -16,24 +16,24 @@ mod docx_paragraph_properties;
 mod docx_parts;
 mod docx_properties;
 mod docx_section_properties;
-mod docx_support;
 mod docx_tables;
 mod docx_values;
 mod docx_xml;
-#[path = "docx_support/font_resources.rs"]
+#[path = "word_support/font_resources.rs"]
 mod font_resources;
 mod legacy_workbook_support;
 mod legacy_workbooks;
-#[path = "docx_support/metadata.rs"]
+#[path = "word_support/metadata.rs"]
 mod metadata;
-#[path = "docx_support/numbering.rs"]
+#[path = "word_support/numbering.rs"]
 mod numbering_observation;
+mod spreadsheet_detection;
+mod spreadsheet_format;
+mod spreadsheet_format_support;
 mod spreadsheet_html;
 mod spreadsheet_support;
-mod ssf_detection;
-mod ssf_format;
-mod ssf_support;
-mod ssf_values;
-mod ssf_writers;
+mod spreadsheet_values;
+mod spreadsheet_writers;
+mod word_support;
 mod workbook_fixture;
 mod workbooks;

@@ -1,9 +1,9 @@
 //! Recorded Word part preparation through public factories.
 #![cfg(test)]
 use crate::body_tree;
-#[path = "docx_support/parts.rs"]
+#[path = "word_support/parts.rs"]
 mod parts;
-use maestro_office::docx_preview::{
+use maestro_office::wordprocessing::{
     DocxError, EndnotesPart, FooterPart, FootnotesPart, HeaderPart, OwnedXmlElement, SettingsPart,
     StylesPart, ThemePart, parse_body_elements, parse_xml_string,
 };

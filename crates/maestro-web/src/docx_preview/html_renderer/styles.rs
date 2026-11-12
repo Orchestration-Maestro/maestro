@@ -1,6 +1,6 @@
 //! Style definitions resolved through their base chains: the paragraph values pages read and
 //! the substyles the stylesheet writes.
-use maestro_office::docx_preview::{IDomNumbering, IDomStyle, IDomSubStyle, Numbering};
+use maestro_office::wordprocessing::{IDomNumbering, IDomStyle, IDomSubStyle, Numbering};
 use std::collections::{HashMap, HashSet};
 
 // Base-chain steps this thread's resolver took, counted by the tests that prove one resolution

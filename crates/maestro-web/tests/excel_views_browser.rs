@@ -559,7 +559,7 @@ pub fn excel_mixed_sheet_roots_keep_selection_and_release_on_rewrite() {
 
 /// Keep quoted number-format attributes on the native table.
 fn literal_number_format() {
-    use maestro_office::ssf::{
+    use maestro_office::spreadsheet::{
         CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf, WorkSheet,
         sheet_to_html,
     };
