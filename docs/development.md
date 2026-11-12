@@ -2217,7 +2217,7 @@ Run the client corpus with its prepared native peers:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-rpc -E 'test(/rpc_transport/)'
+cargo nextest run --locked -p maestro-rpc -E 'test(/rpc_client/)'
 ```
 
 On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer

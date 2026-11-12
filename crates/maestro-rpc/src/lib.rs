@@ -4,14 +4,14 @@
 pub mod connection_runner;
 #[cfg(target_os = "linux")]
 pub mod daemon;
-pub mod rpc_transport;
+mod rpc_client;
 pub mod rpc_types;
 pub mod server;
 
 pub use connection_runner::{
     RpcConnectionOutcome, RpcModeOptions, RpcSessionOptions, run_rpc_connection,
 };
-pub use rpc_transport::{ModelInfo, RpcClient, RpcClientError, RpcClientOptions, RpcEventListener};
+pub use rpc_client::{ModelInfo, RpcClient, RpcClientError, RpcClientOptions, RpcEventListener};
 pub use rpc_types::{
     RpcCommand, RpcExtensionUIRequest, RpcExtensionUIResponse, RpcResponse, RpcSessionState,
 };

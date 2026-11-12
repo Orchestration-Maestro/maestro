@@ -400,7 +400,7 @@ Publish reusable adapter conformance from the owning leaf, not a forwarding test
 `maestro-protocol` owns the generic RPC envelopes, the workspace records, binary
 screen channel and generated JSON Schema, with no domain dependencies.
 `maestro-rpc::rpc_types` owns the session records, `maestro-rpc::connection_runner` the one
-connection runner and `maestro-rpc::rpc_transport` the client of a child process;
+connection runner and `maestro-rpc::RpcClient` the client of a child process;
 `maestro-rpc::run_rpc_mode` is the runner's standard-stream adapter. Session and workspace
 operations use one contract across stdio and daemon sockets; JSONL framing belongs to
 `maestro-json::lines`. Conventions keep protocol records in the RPC crate and the
