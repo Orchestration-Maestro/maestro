@@ -164,9 +164,9 @@ mod tracked_sizes;
 /// the application's platform opener. The whole-file token check includes fragments
 /// and nested groups; editor and clipboard process policies stay with their callers.
 ///
-/// A member whose production code spells a Tokio macro (`select!`, `join!`, `try_join!`, or the
-/// `main` or `test` attribute), by path or import, declares Tokio's `macros` feature among its
-/// normal dependencies. Test code and spellings of other crates are exempt, and each offending
+/// A member whose production code spells a Tokio macro (`select!`, `join!`, `try_join!`) by path
+/// or import, or the `main` or `test` attribute by path, declares Tokio's `macros` feature among
+/// its normal dependencies. Test code and spellings of other crates are exempt, and each offending
 /// line is reported.
 ///
 /// Production code may not define its own poison-tolerant lock acquisition. A free

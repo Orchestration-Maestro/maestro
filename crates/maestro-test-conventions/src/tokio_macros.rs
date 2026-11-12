@@ -99,7 +99,7 @@ impl Spellings {
     /// Record every import of a Tokio macro, whatever it is renamed to.
     pub(crate) fn import(&mut self, tree: &syn::UseTree) {
         for import in imports::flatten(tree) {
-            if let [first, .., last] = import.path.as_slice()
+            if let [first, last] = import.path.as_slice()
                 && *first == "tokio"
                 && MACROS.iter().any(|name| last == name)
             {

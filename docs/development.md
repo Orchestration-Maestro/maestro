@@ -685,8 +685,8 @@ uses, and two conventions checks cover part of that. One runs
 `cargo tree --target all -e features,normal,build -i tokio` for the `maestro`
 binary and fails if `test-util` appears. The other is part of the workspace
 conventions check: it fails when a member's production code spells `select!`,
-`join!`, `try_join!` or the `main` or `test` attribute from tokio, by path or
-import, without declaring `macros`.
+`join!` or `try_join!` from tokio, by path or import, or the `main` or `test`
+attribute from tokio, by path, without declaring `macros`.
 
 Regenerate after changing a dependency, its features or `Cargo.lock`:
 
