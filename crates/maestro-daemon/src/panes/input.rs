@@ -1,7 +1,7 @@
 //! Field projection from daemon input records into engine events.
 use crate::ingress::TerminalKey;
 use maestro_protocol::frames::{ClientKeyCode, ClientKeyKind};
-use maestro_terminal::input::keyboard::{Key, KeyAction, KeyEvent, Mods};
+use maestro_terminal_emulator::input::keyboard::{Key, KeyAction, KeyEvent, Mods};
 
 /// Project a semantic key without guessing a physical keyboard layout.
 pub(super) fn key_event(key: &TerminalKey) -> KeyEvent {
@@ -53,7 +53,7 @@ pub(super) fn encode_terminal_key(
     key: &TerminalKey,
     protocol: crate::ingress::KeyboardProtocol,
 ) -> Vec<u8> {
-    use maestro_terminal::{
+    use maestro_terminal_emulator::{
         input::key_encode::{KeyEncoder, KeyEncoding, OptionAsAlt},
         kitty::key::Flags,
     };
@@ -74,6 +74,6 @@ pub(super) fn encode_terminal_key(
     };
     encoder
         .modes
-        .set(maestro_terminal::Mode::AltEscPrefix, true);
+        .set(maestro_terminal_emulator::Mode::AltEscPrefix, true);
     encoder.encode(&key_event(key))
 }

@@ -115,7 +115,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-rpc",
     "maestro-session",
     "maestro-settings",
-    "maestro-terminal",
+    "maestro-terminal-emulator",
     "maestro-test-browser",
     "maestro-test-conventions",
     "maestro-test-process",
@@ -136,7 +136,7 @@ pub(crate) const TEST_TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-models",
     "maestro-process",
-    "maestro-terminal",
+    "maestro-terminal-emulator",
     "maestro-workspace",
 ];
 
@@ -247,7 +247,7 @@ pub(crate) fn required(name: &str) -> &'static [&'static str] {
         "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer" => {
             &["maestro-app"]
         }
-        "maestro-daemon" => &["maestro-terminal"],
+        "maestro-daemon" => &["maestro-terminal-emulator"],
         "maestro-tui-crossterm" => &["maestro-tui", "maestro-text"],
         name if exact(name) => rule(name).map_or(&[], |rule| rule.dependencies),
         _ => &[],

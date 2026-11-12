@@ -18,7 +18,7 @@ impl PaneCore {
             x: position.x,
             y: u16::try_from(position.y).ok()?,
             visible: cursor.visible,
-            shape: if self.terminal.cursor_style_is_default() {
+            shape: if self.terminal.is_cursor_style_default() {
                 0
             } else {
                 decscusr_cursor_shape(cursor.visual_style, cursor.blinking)
@@ -52,8 +52,11 @@ impl PaneTerminal {
 }
 
 /// Encode an explicit cursor appearance as its DECSCUSR parameter.
-pub(super) fn decscusr_cursor_shape(style: maestro_terminal::CursorStyle, blinking: bool) -> u8 {
-    use maestro_terminal::CursorStyle;
+pub(super) fn decscusr_cursor_shape(
+    style: maestro_terminal_emulator::CursorStyle,
+    blinking: bool,
+) -> u8 {
+    use maestro_terminal_emulator::CursorStyle;
     match (style, blinking) {
         (CursorStyle::Block | CursorStyle::BlockHollow, true) => 1,
         (CursorStyle::Block | CursorStyle::BlockHollow, false) => 2,

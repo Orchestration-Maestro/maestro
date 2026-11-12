@@ -11,7 +11,11 @@ use syn::ext::IdentExt;
 use crate::source::{Member, Source, imports::flatten};
 
 /// Domain crates whose frontend surface is selected by the application.
-const DOMAINS: &[&str] = &["maestro-daemon", "maestro-terminal", "maestro-markdown"];
+const DOMAINS: &[&str] = &[
+    "maestro-daemon",
+    "maestro-terminal-emulator",
+    "maestro-markdown",
+];
 
 /// Public names `maestro-credentials` offers; the crate names each one and adds no writer.
 const CREDENTIALS_NAMES: &[&str] = &[

@@ -1,6 +1,6 @@
 # Terminal emulator
 
-`maestro-terminal` is the layer-0 terminal emulator for workspace panes. It is
+`maestro-terminal-emulator` is the layer-0 terminal emulator for workspace panes. It is
 pure Rust, inherits the workspace's unsafe-code prohibition and has no build
 script or foreign toolchain. Its full contract is the
 [terminal emulator specification](specs/terminal-emulator.md).
@@ -75,7 +75,7 @@ affect them. Build another snapshot to read updated terminal state.
 
 ## Codepoint width
 
-[`maestro_terminal::unicode::codepoint_width`](https://docs.rs/maestro-terminal/latest/maestro_terminal/unicode/fn.codepoint_width.html)
+[`maestro_terminal_emulator::unicode::codepoint_width`](https://docs.rs/maestro-terminal-emulator/latest/maestro_terminal_emulator/unicode/fn.codepoint_width.html)
 returns a Unicode scalar's terminal width in cells: zero, one or two. It accepts
 `char`, so surrogate and out-of-range values cannot enter the interface.
 
@@ -414,7 +414,7 @@ the saved value remains the catalogue default until explicitly saved.
 
 `modes::ModeState` retains 41 modes, current values, saved values and reset
 defaults. `Mode::from_number` distinguishes ANSI and private numbers and returns
-`None` for an unsupported number. `get_report` and `Report::encode` produce
+`None` for an unsupported number. `report` and `Report::encode` produce
 mode reports, including unknown-number responses.
 
 `horizontal_tab` stops at the next tab destination or the right margin.
@@ -526,7 +526,7 @@ the terminal clear flag.
 continuation marks follow line transitions through the existing line owner.
 Explicit input persists until another shell phase; end-of-line input terminates
 on a line transition. Output beginning at column zero clears the current row's
-prompt mark. `cursor_is_at_prompt` recognizes primary prompt/input state and row
+prompt mark. `is_cursor_at_prompt` recognizes primary prompt/input state and row
 marks, but always returns false on alternate storage.
 
 Prompt redraw defaults to off, including after full reset. An explicit shell
@@ -568,7 +568,7 @@ invalid URI UTF-8 becomes replacement characters.
 
 `track_row` replaces the viewport row anchor and returns the previous anchor's
 current retained row, or `None` if no previous anchor survives.
-`cursor_style_is_default` distinguishes a default cursor style from an explicit
+`is_cursor_style_default` distinguishes a default cursor style from an explicit
 child setting.
 
 `kitty_keyboard_state_ansi` emits the retained extended modifier-key and keyboard
@@ -618,9 +618,9 @@ the stream without cloning it.
 The terminal handler applies cursor movement, edits, erasure, character sets,
 tabs, modes, screen switching, keyboard flags, rendition, hyperlinks and shell
 prompt phases through their existing owners. Storage errors stop the current
-action, not later input. `mouse_tracking_enabled` reads the tracking mode bits;
-`modify_other_keys_enabled` reads numeric extended modifier-key mode. Tracking
-bits and the selected mouse event or format remain independent.
+action, not later input. `is_mouse_tracking_enabled` reads the tracking mode
+bits; `is_modify_other_keys_enabled` reads numeric extended modifier-key mode.
+Tracking bits and the selected mouse event or format remain independent.
 
 Query and window requests are observable as typed stream actions. The terminal
 handler captures replies and colour effects, routes APC strings to image

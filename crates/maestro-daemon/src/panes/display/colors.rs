@@ -4,7 +4,7 @@ use super::{PaneCore, PaneTerminal};
 use crate::panes::osc::{DefaultColorEvent, DefaultColorQuery};
 use crate::terminal_theme::{DefaultColorKind, HostAppearance, TerminalTheme};
 use maestro_process::jobs::ForegroundJob;
-use maestro_terminal::{Terminal, color::Rgb, screens::Key};
+use maestro_terminal_emulator::{Terminal, color::Rgb, screens::Key};
 
 impl PaneTerminal {
     /// Refresh host colours without replacing child-owned dynamic or palette entries.
@@ -18,7 +18,7 @@ impl PaneTerminal {
         if foreground && background {
             core.transient_default_color_owner_pgid = None;
         }
-        let mut palette = maestro_terminal::color::DEFAULT;
+        let mut palette = maestro_terminal_emulator::color::DEFAULT;
         for (index, color) in theme.palette.iter().enumerate() {
             if let Some(color) = color {
                 palette[index] = rgb(*color);
@@ -40,7 +40,7 @@ impl PaneTerminal {
         &self,
         appearance: Option<HostAppearance>,
     ) -> Option<Vec<u8>> {
-        use maestro_terminal::device_status::ColorScheme;
+        use maestro_terminal_emulator::device_status::ColorScheme;
         let mut core = self.core.lock().ok()?;
         let pending = core.terminal.take_pty_reply();
         if !pending.is_empty() {
