@@ -198,6 +198,19 @@ impl TerminalState {
         false
     }
 
+    /// Restore a named managed agent in its active phase.
+    pub fn restore_managed_agent(&mut self, name: String, kind: Agent) {
+        self.set_agent_name(name);
+        self.agent_name_owner = Some(AgentNameOwner {
+            agent_label: maestro_detection::agents::agent_label(kind).to_string(),
+            session_ref: None,
+        });
+        self.managed_agent = Some(ManagedAgent {
+            kind,
+            phase: ManagedAgentPhase::Active,
+        });
+    }
+
     /// Clear the name, its session owner and managed launch state.
     pub(crate) fn clear_agent_name(&mut self) {
         self.agent_name = None;

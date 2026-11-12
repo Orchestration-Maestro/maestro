@@ -2,6 +2,7 @@
 use super::PaneRuntime;
 use crate::ingress::{KeyboardProtocol, TerminalKey};
 use crate::terminal_theme::HostAppearance;
+use std::time::Duration;
 use tokio::sync::mpsc::error::{SendError, TrySendError};
 
 /// Focus transition forwarded when the terminal requests it.
@@ -64,6 +65,22 @@ impl PaneRuntime {
         Some(self.encode_terminal_key(TerminalKey::new(key, 0)))
     }
 
+    /// Sends a paste using the destination's bracketed-paste mode.
+    ///
+    /// # Errors
+    /// Returns the encoded payload if the actor is closed.
+    pub async fn send_paste(&self, text: String) -> Result<(), SendError<Vec<u8>>> {
+        self.send_bytes(self.paste_payload(text)).await
+    }
+
+    /// Submits a paste without waiting for capacity.
+    ///
+    /// # Errors
+    /// Returns the encoded payload with the full or closed error.
+    pub fn try_send_paste(&self, text: String) -> Result<(), TrySendError<Vec<u8>>> {
+        self.try_send_bytes(self.paste_payload(text))
+    }
+
     /// Frames pasted text only when the child enabled paste delimiters.
     #[must_use]
     pub fn paste_payload(&self, text: String) -> Vec<u8> {
@@ -102,5 +119,17 @@ impl PaneRuntime {
                 .terminal
                 .apply_host_terminal_appearance(appearance)
         });
+    }
+
+    /// Submits delayed user input, retaining its task for runtime teardown.
+    pub fn send_bytes_after(&self, bytes: Vec<u8>, delay: Duration) {
+        let io = self.io.clone();
+        let task = tokio::spawn(async move {
+            tokio::time::sleep(delay).await;
+            if let Err(error) = io.write_user_input(bytes).await {
+                tracing::warn!(%error, "failed to send delayed pane input");
+            }
+        });
+        self.shared.retain_task(task);
     }
 }
