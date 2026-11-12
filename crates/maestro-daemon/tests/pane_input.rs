@@ -2,8 +2,8 @@
 //! input commands, with the bytes observed by a real shell.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    answer, daemon_with_workspaces, failure, request, root_pane, root_pane_of, run_in_pane,
-    split_pane, wait_for_line, with_live_daemon,
+    answer, daemon_with_workspaces, failure, request, root_pane, run_in_pane, split_pane,
+    wait_for_line, with_live_daemon,
 };
 use maestro_daemon::state::App;
 use maestro_protocol::schema::{ResponseResult, SplitDirection};
@@ -29,7 +29,7 @@ async fn watching(app: &mut App, count: usize, preamble: &str) -> (String, Termi
     else {
         panic!("expected a created workspace: {created:?}");
     };
-    let pane = root_pane_of(app, 0).await;
+    let pane = root_pane(app, 0);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
@@ -188,7 +188,7 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
             let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
                 panic!("expected a created workspace: {created:?}");
             };
-            let root = crate::support::api::root_pane_of(app, 0).await;
+            let root = crate::support::api::root_pane(app, 0);
             let terminal = app.state.topology.workspaces[0]
                 .terminal_id(root)
                 .unwrap()
@@ -236,7 +236,7 @@ fn input_to_a_pane_that_cannot_be_written_to_is_refused() {
 #[test]
 fn input_routing_changes_only_the_named_pane() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let target = root_pane(&mut app, 0);
+    let target = root_pane(&app, 0);
     let other = split_pane(&mut app, 0, target, SplitDirection::Right);
     let routed = |app: &App, pane| {
         app.state.topology.workspaces[0]

@@ -22,27 +22,10 @@ use maestro_workspace::{
 use serde_json::{Value, json};
 use std::{sync::Arc, time::Instant};
 
-/// Whether a change since the last probe awaits a session snapshot.
-///
-/// Probing reads the save mark and schedules the debounced save, so the deadline the
-/// daemon reports moves exactly when a mark was pending.
-pub fn marked(app: &mut App) -> bool {
-    let now = Instant::now();
-    let before = app.next_headless_loop_deadline(now, false);
-    app.sync_session_save_schedule();
-    app.next_headless_loop_deadline(now, false) != before
-}
-
-/// A daemon without workspaces, built from `config`, that schedules session saves.
-///
-/// The sidebar shows no repository rows, so no repository refresh competes with the
-/// session save for the loop deadline `marked` observes.
+/// A daemon without workspaces, built from `config`.
 pub fn daemon_with(config: &Config) -> App {
-    let mut config = config.clone();
-    config.ui.sidebar.spaces.rows.clear();
-    let (mut launch, receiver) = launch_inputs(&[], manifest_cache());
-    launch.no_session = false;
-    App::new(&config, || 0, launch, receiver, EventHub::default())
+    let (launch, receiver) = launch_inputs(&[], manifest_cache());
+    App::new(config, || 0, launch, receiver, EventHub::default())
 }
 
 /// A daemon without workspaces.
@@ -62,7 +45,7 @@ pub fn add_workspaces(app: &mut App, cwds: &[&str]) {
     for cwd in cwds {
         app.seed_workspace(cwd).unwrap();
     }
-    marked(app);
+    app.state.session_dirty = false;
 }
 
 /// Splits `target` in the workspace at `workspace` without a process or a focus change.
@@ -91,14 +74,14 @@ pub fn split_pane_focused(
         focus_new_pane,
     };
     let pane = app.seed_split(workspace, request).unwrap();
-    marked(app);
+    app.state.session_dirty = false;
     pane
 }
 
 /// Adds a tab without a process to the workspace at `workspace` and returns its root pane.
 pub fn add_tab(app: &mut App, workspace: usize) -> PaneId {
     let pane = app.seed_tab(workspace).unwrap();
-    marked(app);
+    app.state.session_dirty = false;
     pane
 }
 
@@ -114,7 +97,7 @@ pub fn join_group(app: &mut App, index: usize, key: &str, linked: bool) {
             is_linked_worktree: linked,
         },
     );
-    marked(app);
+    app.state.session_dirty = false;
 }
 
 /// Reports that fallback detection saw `agent` in `state` on the first pane of the first
@@ -143,46 +126,9 @@ pub fn pilot(app: &mut App, state: AgentState) {
     detect(app, Agent::Pi, state);
 }
 
-/// The root pane of the first tab of the workspace at `workspace`, read from the first pane
-/// the tab lists.
-///
-/// The seeds allocate a pane and a terminal together, so the number in the terminal's
-/// identity is the pane's allocator identity.
-pub fn root_pane(app: &mut App, workspace: usize) -> PaneId {
-    block_on(root_pane_of(app, workspace))
-}
-
-/// The root pane of the first tab of the workspace at `workspace`, from inside a running
-/// test runtime.
-pub async fn root_pane_of(app: &mut App, workspace: usize) -> PaneId {
-    let Ok(ResponseResult::WorkspaceList { workspaces }) =
-        answer(app, json!({"type": "workspace.list"})).await
-    else {
-        panic!("expected the workspaces");
-    };
-    let workspace_id = &workspaces[workspace].workspace_id;
-    let Ok(ResponseResult::TabList { tabs }) = answer(
-        app,
-        json!({"type": "tab.list", "workspace_id": workspace_id}),
-    )
-    .await
-    else {
-        panic!("expected the tabs");
-    };
-    let Ok(ResponseResult::PaneList { panes }) = answer(
-        app,
-        json!({"type": "pane.list", "workspace_id": workspace_id}),
-    )
-    .await
-    else {
-        panic!("expected the panes");
-    };
-    let pane = panes
-        .iter()
-        .find(|pane| pane.tab_id == tabs[0].tab_id)
-        .unwrap();
-    let number = pane.terminal_id.strip_prefix("term_").unwrap();
-    PaneId::from_raw(number.parse().unwrap())
+/// The root pane of the first tab of the workspace at `workspace`.
+pub fn root_pane(app: &App, workspace: usize) -> PaneId {
+    app.state.topology.workspaces[workspace].tabs[0].root_pane
 }
 
 /// The layout `layout.export` answers with for the active tab, or for `tab_id`.
@@ -220,7 +166,7 @@ pub fn focused_pane_id(app: &mut App, workspace: usize) -> String {
 /// A daemon with one workspace whose first tab holds a pane on the left and one on the right.
 pub fn pair() -> (App, PaneId, PaneId) {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&mut app, 0);
+    let left = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, left, SplitDirection::Right);
     (app, left, right)
 }
@@ -368,9 +314,7 @@ pub fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut App)) {
                     .display()
                     .to_string(),
             );
-            config.ui.sidebar.spaces.rows.clear();
-            let (mut launch, receiver) = launch_inputs(args, manifest_cache());
-            launch.no_session = false;
+            let (launch, receiver) = launch_inputs(args, manifest_cache());
             let mut app = App::new(&config, || 0, launch, receiver, EventHub::default());
             block_on(async {
                 body(&mut app).await;

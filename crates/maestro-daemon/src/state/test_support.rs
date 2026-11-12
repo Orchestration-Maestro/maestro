@@ -72,8 +72,8 @@ impl App {
 }
 
 impl super::model::DaemonState {
-    /// Admits terminal metadata for every pane that has none, as creation does.
-    fn admit_seeded_terminals(&mut self) {
+    /// Test setup: admits terminal metadata for every pane that has none, as creation does.
+    pub fn admit_seeded_terminals(&mut self) {
         let panes = self.topology.workspaces.iter().flat_map(|workspace| {
             workspace
                 .tabs

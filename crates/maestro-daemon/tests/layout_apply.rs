@@ -3,7 +3,7 @@
 #![cfg(target_os = "linux")]
 use crate::support::{
     api::{
-        add_tab, add_workspaces, answer, event_names, events_after, failure, marked, root_pane_of,
+        add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
         wait_for_line, with_live_daemon, workspace_ids_of,
     },
     layouts::{balanced, chain, shell, sleeper, split},
@@ -130,7 +130,7 @@ fn applying_a_layout_replaces_the_named_tab() {
             );
             assert_eq!(app.state.terminals.len(), 2);
             assert_eq!(app.terminal_runtimes.len(), 2);
-            assert!(marked(app));
+            assert!(app.state.session_dirty);
         },
     );
 }
@@ -173,7 +173,7 @@ fn a_new_layout_tab_follows_the_directory_of_the_focused_pane() {
             follow(app);
             add_workspaces(app, &["/tabs"]);
             let focused = Scratch::new().unwrap();
-            let root = root_pane_of(app, 0).await;
+            let root = root_pane(app, 0);
             set_cwd(app, root, focused.path());
             applied(answer(app, apply_wire(&sleeper(), &json!({}))).await);
             assert_eq!(app.state.topology.workspaces[0].tabs.len(), 2);
@@ -190,7 +190,7 @@ fn a_replacing_layout_follows_the_directory_of_the_replaced_tab() {
             follow(app);
             add_workspaces(app, &["/tabs"]);
             let (active, background) = (Scratch::new().unwrap(), Scratch::new().unwrap());
-            let root = root_pane_of(app, 0).await;
+            let root = root_pane(app, 0);
             set_cwd(app, root, active.path());
             let replaced = add_tab(app, 0);
             set_cwd(app, replaced, background.path());
@@ -239,7 +239,7 @@ fn replacing_a_tab_drops_the_action_records_of_its_panes() {
         "layout_apply::replacing_a_tab_drops_the_action_records_of_its_panes",
         async |app| {
             add_workspaces(app, &["/tabs"]);
-            let replaced = root_pane_of(app, 0).await;
+            let replaced = root_pane(app, 0);
             app.state.action_panes.insert(
                 replaced,
                 ActionPaneRecord {
@@ -282,7 +282,7 @@ async fn assert_rolled_back(app: &mut App, original: PaneId, wire: Value) {
     assert_eq!(app.state.terminals.len(), 1);
     assert!(app.terminal_runtimes.is_empty());
     assert!(events_after(app, 0).is_empty());
-    assert!(!marked(app));
+    assert!(!app.state.session_dirty);
 }
 
 #[test]
@@ -291,7 +291,7 @@ fn a_leaf_that_cannot_start_rolls_the_whole_layout_back() {
         "layout_apply::a_leaf_that_cannot_start_rolls_the_whole_layout_back",
         async |app| {
             add_workspaces(app, &["/tabs"]);
-            let original = root_pane_of(app, 0).await;
+            let original = root_pane(app, 0);
             let missing = Scratch::new().unwrap().path().join("missing");
             let broken = json!({"type": "pane", "cwd": missing, "command": ["/bin/sleep", "60"]});
             let trees = [

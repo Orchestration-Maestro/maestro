@@ -1,8 +1,7 @@
 //! Pane swap through the daemon's handler: explicit and directional swaps, no-ops and refusals.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_tab, daemon_with_workspaces, event_names, events_after, failure, marked, pair, request,
-    split_pane,
+    add_tab, daemon_with_workspaces, event_names, events_after, failure, pair, request, split_pane,
 };
 use maestro_daemon::state::App;
 use maestro_protocol::events::EventData;
@@ -47,7 +46,7 @@ fn swapping_two_named_panes_keeps_the_source_focused_and_returns_the_layout() {
         app.state.topology.workspaces[0].focused_pane_id(),
         Some(left)
     );
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
     assert_eq!(
         events_after(&app, 0),
         [EventData::LayoutUpdated {
@@ -103,7 +102,7 @@ fn a_directional_swap_without_a_neighbour_changes_nothing() {
     assert_eq!(swap.target_pane_id, None);
     assert_eq!(swap.layout.panes.len(), 1);
     assert!(events_after(&app, 0).is_empty());
-    assert!(!marked(&mut app));
+    assert!(!app.state.session_dirty);
 }
 
 #[test]

@@ -2,7 +2,7 @@
 #![cfg(target_os = "linux")]
 use crate::support::api::{
     answer_command, daemon_with_workspaces, event_names, events_after, failure, focused_pane_id,
-    marked, pane_layout, request, root_pane, split_pane_focused,
+    pane_layout, request, root_pane, split_pane_focused,
 };
 use crate::support::runtime::block_on;
 use maestro_daemon::state::App;
@@ -26,7 +26,7 @@ fn resize_of(result: Result<ResponseResult, ErrorBody>) -> PaneResizeResult {
 /// A one-workspace daemon whose first tab holds a pane on the left and the focused one on the right.
 fn pair() -> (App, PaneId, PaneId) {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&mut app, 0);
+    let left = root_pane(&app, 0);
     let right = split_pane_focused(&mut app, 0, left, SplitDirection::Right, true);
     (app, left, right)
 }
@@ -59,7 +59,7 @@ fn resizing_moves_the_nearest_divider_without_changing_focus() {
     assert_eq!(resize.layout.focused_pane_id, "w1:p2");
     assert!((resize.layout.splits[0].ratio - 0.6).abs() < f32::EPSILON);
     assert_eq!(focused_pane_id(&mut app, 0), "w1:p2");
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
     assert_eq!(
         events_after(&app, 0),
         [EventData::LayoutUpdated {
@@ -77,7 +77,7 @@ fn resizing_without_a_divider_to_move_reports_unchanged() {
     assert_eq!(resize.reason, Some(PaneResizeReason::Unchanged));
     assert_eq!(resize.pane_id, "w1:p1");
     assert_eq!(resize.focused_pane_id, "w1:p1");
-    assert!(!marked(&mut app));
+    assert!(!app.state.session_dirty);
     assert!(events_after(&app, 0).is_empty());
 }
 

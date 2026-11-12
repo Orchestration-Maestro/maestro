@@ -45,7 +45,7 @@ fn the_view_area_is_the_headless_surface_until_a_view_supplies_one() {
 #[test]
 fn a_layout_snapshot_lists_public_ids_cells_and_dividers() {
     let mut app = daemon_with_workspaces(&["/work"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
     let snapshot = app.pane_layout_snapshot(0, 0).unwrap();
     assert_eq!(snapshot.workspace_id, app.state.topology.workspaces[0].id);
@@ -75,7 +75,7 @@ fn a_layout_snapshot_lists_public_ids_cells_and_dividers() {
 #[test]
 fn nested_dividers_are_named_by_their_index_and_path() {
     let mut app = daemon_with_workspaces(&["/work"]);
-    let first = root_pane(&mut app, 0);
+    let first = root_pane(&app, 0);
     let second = split_pane(&mut app, 0, first, SplitDirection::Right);
     split_pane(&mut app, 0, second, SplitDirection::Down);
     split_pane(&mut app, 0, second, SplitDirection::Right);
@@ -94,7 +94,7 @@ fn a_layout_snapshot_applies_the_accepted_chrome() {
     config.ui.pane_borders = Flag(false);
     let mut app = daemon_with(&config);
     add_workspaces(&mut app, &["/work"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
     let snapshot = app.pane_layout_snapshot(0, 0).unwrap();
     let rects: Vec<_> = snapshot.panes.iter().map(|pane| pane.rect).collect();
@@ -105,7 +105,7 @@ fn a_layout_snapshot_applies_the_accepted_chrome() {
 #[test]
 fn a_layout_snapshot_reports_focus_and_zoom_of_its_tab() {
     let mut app = daemon_with_workspaces(&["/work"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
     app.state.topology.workspaces[0].tabs[0]
         .layout
@@ -132,7 +132,7 @@ fn a_one_cell_view_still_yields_a_snapshot() {
     config.server.headless_rows = 1;
     let mut app = daemon_with(&config);
     add_workspaces(&mut app, &["/work"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     split_pane(&mut app, 0, root, SplitDirection::Right);
     let snapshot = app.pane_layout_snapshot(0, 0).unwrap();
     assert_eq!(snapshot.area, cells(0, 0, 1, 1));
@@ -143,7 +143,7 @@ fn a_one_cell_view_still_yields_a_snapshot() {
 #[test]
 fn a_layout_update_publishes_the_complete_snapshot_once() {
     let mut app = daemon_with_workspaces(&["/work"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     split_pane(&mut app, 0, root, SplitDirection::Down);
     let expected = app.pane_layout_snapshot(0, 0).unwrap();
     app.emit_layout_updated_event(0, 0);
@@ -164,7 +164,7 @@ fn a_layout_update_for_a_missing_tab_publishes_nothing() {
 #[test]
 fn a_removal_reports_its_tab_only_while_panes_remain() {
     let mut app = daemon_with_workspaces(&["/work"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     assert_eq!(app.layout_update_target_after_pane_removal(0, root), None);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
     assert_eq!(
@@ -180,7 +180,7 @@ fn a_removal_reports_its_tab_only_while_panes_remain() {
 #[test]
 fn directional_targets_follow_the_served_geometry() {
     let mut app = daemon_with_workspaces(&["/work"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
     let below = split_pane(&mut app, 0, right, SplitDirection::Down);
     let target = |source, direction| app.directional_pane_target(0, 0, source, direction);

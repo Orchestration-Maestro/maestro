@@ -1,7 +1,7 @@
 //! Pane close through the daemon's handler: the pane, its tab or its workspace goes, with its terminal.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_tab, daemon_with_workspaces, events_after, failure, join_group, marked, request, root_pane,
+    add_tab, daemon_with_workspaces, events_after, failure, join_group, request, root_pane,
     split_pane, workspace_ids,
 };
 use maestro_daemon::state::App;
@@ -18,7 +18,7 @@ fn close(app: &mut App, pane: &str) -> Result<ResponseResult, maestro_protocol::
 #[test]
 fn closing_a_split_pane_keeps_its_tab_and_publishes_the_layout() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&mut app, 0);
+    let left = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, left, SplitDirection::Right);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(right)
@@ -30,7 +30,7 @@ fn closing_a_split_pane_keeps_its_tab_and_publishes_the_layout() {
         [left]
     );
     assert!(!app.state.terminals.contains_key(&terminal));
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
     assert_eq!(
         events_after(&app, 0),
         [

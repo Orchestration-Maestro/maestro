@@ -1,8 +1,8 @@
 //! Tab commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, marked,
-    request, run_in_pane, with_live_daemon, workspace_ids,
+    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
+    run_in_pane, with_live_daemon, workspace_ids,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_daemon::state::App;
@@ -158,13 +158,13 @@ fn tab_move_keeps_its_workspace_and_active_identity() {
             tabs,
         }]
     );
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
 }
 
 #[test]
 fn renaming_a_tab_updates_its_label_and_publishes_it() {
     let mut app = three_tabs();
-    marked(&mut app);
+    app.state.session_dirty = false;
     let rename = json!({"type": "tab.rename", "tab_id": "w1:t2", "label": "a much longer label"});
     let tab = reported(request(&mut app, rename));
     assert_eq!(
@@ -177,7 +177,7 @@ fn renaming_a_tab_updates_its_label_and_publishes_it() {
             .as_deref(),
         Some("a much longer label")
     );
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
     assert_eq!(
         events_after(&app, 0),
         [EventData::TabRenamed {
@@ -236,12 +236,12 @@ fn final_tab_close_publishes_tab_then_workspace() {
     let Ok(ResponseResult::WorkspaceInfo { workspace }) = request(&mut app, get) else {
         panic!("expected the workspace")
     };
-    marked(&mut app);
+    app.state.session_dirty = false;
     let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
     assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.terminals.len(), 1);
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
     assert!(workspace.worktree.as_ref().unwrap().is_linked_worktree);
     assert_eq!(
         events_after(&app, 0),
@@ -261,7 +261,7 @@ fn final_tab_close_publishes_tab_then_workspace() {
 #[test]
 fn final_tab_close_empties_the_daemon_and_clears_focus() {
     let mut app = daemon_with_workspaces(&["/only"]);
-    marked(&mut app);
+    app.state.session_dirty = false;
 
     let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
@@ -269,7 +269,7 @@ fn final_tab_close_empties_the_daemon_and_clears_focus() {
     assert!(app.state.topology.workspaces.is_empty());
     assert!(app.state.terminals.is_empty());
     assert_eq!(app.state.active, None);
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
 }
 
 #[test]

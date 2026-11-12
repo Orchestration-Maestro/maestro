@@ -4,8 +4,8 @@
 
 use crate::support::{
     api::{
-        add_tab, answer_command, daemon_with_workspaces, events_after, failure, marked, request,
-        root_pane, split_pane,
+        add_tab, answer_command, daemon_with_workspaces, events_after, failure, request, root_pane,
+        split_pane,
     },
     layouts::{balanced, chain, shell, sleeper, split},
     runtime::block_on,
@@ -71,7 +71,7 @@ fn terminal_of(app: &App, pane: PaneId) -> maestro_workspace::terminal_id::Termi
 #[test]
 fn export_describes_the_focused_tab_as_a_portable_tree() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
     let layout = &mut app.state.topology.workspaces[0].tabs[0].layout;
     layout.focus_pane(root);
@@ -102,7 +102,7 @@ fn export_describes_the_focused_tab_as_a_portable_tree() {
 #[test]
 fn export_carries_the_zoom_and_the_launch_command_of_a_pane() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     let terminal = terminal_of(&app, root);
     app.state.terminals.get_mut(&terminal).unwrap().launch_argv =
@@ -156,7 +156,7 @@ fn export_refuses_a_target_that_is_missing_or_ambiguous() {
 #[test]
 fn a_split_ratio_change_is_answered_and_published() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     split_pane(&mut app, 0, root, SplitDirection::Right);
     let wire = json!({"type": "layout.set_split_ratio", "path": [], "ratio": 0.72});
     let layout = adjusted(request(&mut app, wire));
@@ -164,7 +164,7 @@ fn a_split_ratio_change_is_answered_and_published() {
         panic!("the tab is split");
     };
     assert!((ratio - 0.72).abs() < f32::EPSILON);
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
     let events = events_after(&app, 0);
     assert!(
         matches!(
@@ -179,7 +179,7 @@ fn a_split_ratio_change_is_answered_and_published() {
 #[test]
 fn a_split_ratio_change_reaches_a_nested_split_by_its_path() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, root, SplitDirection::Right);
     split_pane(&mut app, 0, right, SplitDirection::Down);
     let wire = json!({"type": "layout.set_split_ratio", "path": [true], "ratio": 0.3});
@@ -197,7 +197,7 @@ fn a_split_ratio_change_reaches_a_nested_split_by_its_path() {
 #[test]
 fn a_split_ratio_is_kept_within_the_range_a_split_allows() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     split_pane(&mut app, 0, root, SplitDirection::Right);
     for (requested, kept) in [(5.0, 0.9), (-1.0, 0.1)] {
         let wire = json!({"type": "layout.set_split_ratio", "path": [], "ratio": requested});
@@ -219,21 +219,21 @@ fn a_split_ratio_for_a_missing_split_is_refused_without_a_change() {
             "{path}"
         );
     }
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     split_pane(&mut app, 0, root, SplitDirection::Right);
     let wire = json!({"type": "layout.set_split_ratio", "path": [true], "ratio": 0.72});
     assert_eq!(
         request(&mut app, wire),
         failure("split_not_found", "split path not found")
     );
-    assert!(!marked(&mut app));
+    assert!(!app.state.session_dirty);
     assert!(events_after(&app, 0).is_empty());
 }
 
 #[test]
 fn a_split_ratio_that_is_not_finite_is_refused() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let root = root_pane(&mut app, 0);
+    let root = root_pane(&app, 0);
     split_pane(&mut app, 0, root, SplitDirection::Right);
     for ratio in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
         let command = RpcCommand::LayoutSetSplitRatio(LayoutSetSplitRatioParams {
@@ -294,7 +294,7 @@ fn footprint(app: &mut App) -> (usize, usize, usize, bool) {
         app.state.topology.workspaces[0].tabs.len(),
         app.state.terminals.len(),
         events_after(app, 0).len(),
-        marked(app),
+        app.state.session_dirty,
     )
 }
 

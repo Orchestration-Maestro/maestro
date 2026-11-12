@@ -1,8 +1,8 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, marked,
-    request, with_live_daemon, workspace_ids, workspace_ids_of,
+    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
+    root_pane, with_live_daemon, workspace_ids, workspace_ids_of,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_daemon::state::App;
@@ -116,7 +116,7 @@ fn workspace_move_preserves_stable_identity_and_focus() {
     );
     assert_eq!(workspaces[2].number, 3);
     assert!(workspaces[2].focused);
-    assert!(marked(&mut app));
+    assert!(app.state.session_dirty);
 }
 
 #[test]
@@ -160,7 +160,7 @@ fn unchanged_workspace_order_emits_no_move() {
     }
     assert_eq!(workspace_ids(&mut app), ["w1", "w2", "w3"]);
     assert!(events_after(&app, 0).is_empty());
-    assert!(!marked(&mut app));
+    assert!(!app.state.session_dirty);
 }
 
 #[test]
@@ -472,4 +472,14 @@ fn workspace_creation_preserves_explicit_cwd_and_focus_policy() {
             assert!(events_after(app, sequence).is_empty());
         },
     );
+}
+
+#[test]
+fn the_root_pane_helper_names_the_seeded_pane_past_ten_terminals() {
+    let mut app = daemon_with_workspaces(&[]);
+    let seeded: Vec<_> = (0..20)
+        .map(|index| app.seed_workspace(&format!("/w{index}")).unwrap())
+        .collect();
+    let found: Vec<_> = (0..20).map(|index| root_pane(&app, index)).collect();
+    assert_eq!(found, seeded);
 }
