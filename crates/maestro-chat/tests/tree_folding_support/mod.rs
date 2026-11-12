@@ -160,8 +160,14 @@ pub fn group(name: &str) {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let _restore = registry::Restore(get_keybindings());
-    let raw: Value =
-        serde_json::from_str(include_str!("../fixtures/tree-folding-and-search.json")).unwrap();
+    let raw: Value = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/tree-folding-and-search.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let mut inputs = HashSet::new();
     for case in raw.as_array().unwrap() {
         assert!(

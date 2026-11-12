@@ -26,7 +26,7 @@ impl TerminalState {
             state: previous_state,
             presentation: previous_presentation,
         } = previous;
-        let state = if self.visible_blocker_overrides_hook() {
+        let state = if self.does_visible_blocker_override_hook() {
             AgentState::Blocked
         } else {
             self.hook_authority

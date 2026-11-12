@@ -21,7 +21,7 @@ impl PaneTerminal {
         bytes: &[u8],
         foreground_job: impl FnOnce() -> Option<ForegroundJob>,
     ) -> ProcessBytesResult {
-        crate::render_prof::counter("pty.bytes", u64::try_from(bytes.len()).unwrap_or(u64::MAX));
+        crate::render_profile::counter("pty.bytes", u64::try_from(bytes.len()).unwrap_or(u64::MAX));
         let Ok(mut core) = self.core.lock() else {
             tracing::error!(
                 pane = pane_id.raw(),
@@ -43,9 +43,9 @@ impl PaneTerminal {
         } else {
             Cow::Borrowed(bytes)
         };
-        let started = crate::render_prof::timer();
+        let started = crate::render_profile::timer();
         let terminal_responses = write_ordered(&mut core, &filtered, shell_pid, &foreground_job);
-        crate::render_prof::duration_since("pty.terminal_write", started);
+        crate::render_profile::duration_since("pty.terminal_write", started);
         let terminal_bells = core.terminal.take_bell_count();
         let clipboard_writes = core.terminal.take_clipboard_writes();
         let reported_cwd = core
@@ -206,7 +206,7 @@ impl PaneCore {
             None
         } else if graphics {
             Some(Duration::from_millis(20))
-        } else if cfg!(windows) && self.cursor_settle_state.pending() {
+        } else if cfg!(windows) && self.cursor_settle_state.is_pending() {
             Some(crate::panes::settlement::CURSOR_POSITION_SETTLE)
         } else {
             None
@@ -217,11 +217,11 @@ impl PaneCore {
 /// Record the rendering decisions without installing a background profiler loop.
 fn record_render_request(synchronized: bool, delay: Option<Duration>) {
     if synchronized {
-        crate::render_prof::event("pty.synchronized_output_suppressed");
+        crate::render_profile::event("pty.synchronized_output_suppressed");
     } else {
-        crate::render_prof::event("pty.request_render");
+        crate::render_profile::event("pty.request_render");
     }
     if delay.is_some() {
-        crate::render_prof::event("pty.request_render_delayed");
+        crate::render_profile::event("pty.request_render_delayed");
     }
 }

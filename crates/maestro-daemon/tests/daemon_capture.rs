@@ -3,13 +3,13 @@
 #![cfg(target_os = "linux")]
 
 use maestro_daemon::{
-    app::model::DaemonState,
-    persist::capture,
+    persistence::capture,
     settings::model::Config,
+    state::model::DaemonState,
     terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_workspace::{
-    persist::records::{LayoutSnapshot, SessionSnapshot},
+    persistence::records::{LayoutSnapshot, SessionSnapshot},
     spaces::WorktreeSpaceMembership,
     tiling::{PaneId, SplitRequest},
 };
@@ -481,7 +481,7 @@ async fn check_history(args: &[String], count: usize) {
             launch::PaneLaunchEnv,
             lifecycle::{AgentDetection, PaneRuntime},
         },
-        persist::capture_history,
+        persistence::capture_history,
     };
     let mut state = state(&["one"]);
     if count == 2 {
@@ -531,7 +531,7 @@ async fn check_history(args: &[String], count: usize) {
 #[cfg(unix)]
 fn assert_history(
     encoded: &str,
-    history: &maestro_workspace::persist::records::SessionHistorySnapshot,
+    history: &maestro_workspace::persistence::records::SessionHistorySnapshot,
     panes: &[PaneId],
     markers: &[&str],
 ) {

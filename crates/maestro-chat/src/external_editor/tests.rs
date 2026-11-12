@@ -46,8 +46,14 @@ struct Launch {
 }
 #[test]
 fn external_editor_windows_uses_shell_while_unix_executes_directly() {
-    let rows: Vec<Row> =
-        serde_json::from_str(include_str!("../../tests/fixtures/extension_editor.json")).unwrap();
+    let rows: Vec<Row> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/extension_editor.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let rows: Vec<_> = rows
         .into_iter()
         .filter(|row| {

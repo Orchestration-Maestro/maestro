@@ -18,6 +18,8 @@ mod config_scripts;
 mod documented_commands;
 /// Exact production function-body ownership.
 mod duplicates;
+/// Fixture size limits for test code that compiles its input.
+mod fixture_includes;
 /// Native fixture setup selection for declared test-process callers.
 mod fixture_selection;
 /// Binding manifest lint exceptions and generated extension source checks.
@@ -207,6 +209,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| standard_error::check(&members),
         &|| tokio_macros::check(&metadata, &members),
         &|| test_input_routes::check(root, &members),
+        &|| fixture_includes::check(&members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.
     pool::map(checks, |check| check())?.into_iter().collect()

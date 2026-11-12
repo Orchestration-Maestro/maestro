@@ -5,10 +5,10 @@
 use crate::support::{self, spawning};
 
 use maestro_daemon::{
-    app::{App, model::TabBarStatusSegment},
     events::AppEvent,
     service::event_hub::EventHub,
     settings::{model::Config, tabs::TabBarRightEntryConfig},
+    state::{App, model::TabBarStatusSegment},
 };
 use maestro_test_directory::temporary_root;
 use std::time::Instant;

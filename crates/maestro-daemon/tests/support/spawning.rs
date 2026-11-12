@@ -1,7 +1,7 @@
 //! Shared native launch adapters for daemon-owner tests.
 
 use maestro_daemon::{
-    app::construction::PaneLaunchInputs, events::AppEvent, render_signal::RenderSignal,
+    events::AppEvent, render_signal::RenderSignal, state::construction::PaneLaunchInputs,
     terminal_theme::TerminalTheme,
 };
 use maestro_process::terminal::{PtySetupEntry, jobs::ProcessDetectionMode};

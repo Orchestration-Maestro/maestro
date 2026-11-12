@@ -128,6 +128,29 @@ pub fn usage_totals<C: CustomAgentMessages>(messages: &[AgentMessage<C>]) -> Opt
     .then_some(totals)
 }
 
+/// What the drawn history depends on besides the content of its entries.
+///
+/// The history lists finished messages only, so a streamed update changes none of it.
+#[cfg(any(test, target_arch = "wasm32"))]
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct HistoryKey {
+    /// Entries in the shared history.
+    entries: usize,
+    /// Whether a response streams; assistant rows then hide their pending calls.
+    is_streaming: bool,
+    /// Calls waiting for their results.
+    pending: Rc<std::collections::HashSet<String>>,
+}
+#[cfg(any(test, target_arch = "wasm32"))]
+impl HistoryKey {
+    /// Whether the history must be drawn again: always, unless the event only streamed an update
+    /// and the history was drawn from these same operands.
+    #[must_use]
+    fn stale(&self, drawn: Option<&Self>, streamed: bool) -> bool {
+        !(streamed && drawn == Some(self))
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(target_arch = "wasm32")]

@@ -1453,7 +1453,11 @@ fn delimiter_runs_keep_caller_flanking_and_nesting() {
     observations::check_with_options(
         "delimiter-runs",
         1441,
-        include_str!("fixtures/delimiter_runs.json"),
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/delimiter_runs.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
         &delimiter_options(),
     );
 }
@@ -1464,7 +1468,11 @@ fn recursive_delimiter_windows_keep_inner_syntax() {
     observations::check_with_options(
         "delimiter-windows",
         13,
-        include_str!("fixtures/delimiter_runs.json"),
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/delimiter_runs.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
         &delimiter_options(),
     );
 }

@@ -5,7 +5,7 @@
 use crate::support::{runtime::block_on, spawning};
 
 use maestro_daemon::{
-    app::App, locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config,
+    locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config, state::App,
 };
 use std::{
     sync::{Arc, RwLock},
@@ -161,7 +161,7 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
     app.config_diagnostic_deadline = Some(past);
     app.state.config_diagnostic = Some("temporary diagnostic".into());
     app.copy_feedback_deadline = Some(past);
-    app.state.copy_feedback = Some(maestro_daemon::app::model::CopyFeedback {
+    app.state.copy_feedback = Some(maestro_daemon::state::model::CopyFeedback {
         message: "copied".into(),
     });
     app.launch

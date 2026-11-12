@@ -194,6 +194,13 @@ impl IsolatedSetup {
         }
     }
 
+    /// The variable and value a parent sets to start a child that is not a test with this
+    /// request, which the child applies through [`IsolatedSetup::apply_requested`].
+    #[must_use]
+    pub fn environment(self) -> (&'static str, String) {
+        (SETUP, self.encode())
+    }
+
     /// The request text this parent writes into the child's environment.
     pub(crate) fn encode(self) -> String {
         let mut entries: Vec<String> = Vec::new();
@@ -376,6 +383,14 @@ mod tests {
                 assert_effects_roundtrip(mask, processes);
             }
         }
+    }
+
+    #[test]
+    fn a_child_that_is_not_a_test_receives_the_request_it_applies() {
+        let request = IsolatedSetup::new().umask(0o022).file_size_continues();
+        let (name, text) = request.environment();
+        assert_eq!(name, "MAESTRO_TEST_SETUP");
+        assert_eq!(IsolatedSetup::parse(&text).unwrap(), request);
     }
 
     #[test]

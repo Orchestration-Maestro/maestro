@@ -4,7 +4,7 @@ use crate::support::api::{
     TestApp, add_tab, add_workspaces, answer, daemon_with_workspaces, failure, pair, request,
     root_pane, with_live_daemon,
 };
-use maestro_daemon::app::model::Mode;
+use maestro_daemon::state::model::Mode;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{
     AgentStatus, ErrorBody, PaneDirection, PaneFocusDirectionReason, PaneInfo, PaneLayoutSnapshot,

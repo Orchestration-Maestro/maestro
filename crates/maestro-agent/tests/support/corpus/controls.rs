@@ -152,8 +152,14 @@ fn calls(control: &Control) -> Vec<AssistantContent> {
 /// # Panics
 /// Panics for unread operands or mismatched source observations.
 pub async fn replay(ids: &[&str]) {
-    let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../../fixtures/control_cases.json")).unwrap();
+    let cases: Vec<Case> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/control_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let selected: Vec<_> = cases
         .into_iter()
         .filter(|case| ids.contains(&case.input["id"].as_str().unwrap()))

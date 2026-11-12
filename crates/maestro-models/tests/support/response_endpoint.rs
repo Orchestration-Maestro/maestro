@@ -22,8 +22,15 @@ use serde_json::{Value, json};
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, PoisonError};
 
-/// Reduced recorded cases.
-pub const FIXTURE: &str = include_str!("../fixtures/response_endpoint_cases.json");
+#[cfg(not(target_arch = "wasm32"))]
+/// Reduced recorded cases, read when the test runs.
+pub fn fixture() -> String {
+    let path = format!(
+        "{}/tests/fixtures/response_endpoint_cases.json",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    std::fs::read_to_string(path).expect("recorded cases")
+}
 #[cfg(not(target_arch = "wasm32"))]
 /// Finish event used by request-only cases.
 pub const COMPLETE: &str = "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r-final\",\"status\":\"completed\",\"usage\":{\"input_tokens\":1000000,\"output_tokens\":2000000,\"total_tokens\":3000000,\"input_tokens_details\":{\"cached_tokens\":250000}}}}\n\n";
@@ -197,7 +204,7 @@ pub async fn run_case(case: &Value) -> TestResult<Value> {
 #[cfg(not(target_arch = "wasm32"))]
 /// Run each query in an isolated child with its explicit environment.
 pub async fn assert_rows(test: &str) -> TestResult {
-    let decoded = crate::response_cases::rows(FIXTURE)?;
+    let decoded = crate::response_cases::rows(&fixture())?;
     let rows = crate::chat::rows(&serde_json::to_string(&decoded)?, test)?;
     for row in selected(test, &rows, crate::environment_rows::json_environment)? {
         compare(

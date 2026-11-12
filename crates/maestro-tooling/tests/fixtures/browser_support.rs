@@ -120,18 +120,15 @@ impl Browser {
         ));
         let mut browser = Self::prepare(Some(lane));
         browser.workspace.cache_at(&path);
-        // Restored mutable sources must be newer than any compiled edited version.
-        for source in [
-            browser.fixture("src/main.rs"),
-            browser.path("crates/maestro-web/src/lib.rs"),
-        ] {
-            fs::File::options()
-                .write(true)
-                .open(source)
-                .unwrap()
-                .set_modified(std::time::SystemTime::now())
-                .unwrap();
-        }
+        // The fixture source is replaced and built by tests of its own, so the restored copy must
+        // be newer than any compiled edited version. The library source is only ever built
+        // unchanged, and a newer copy would make every check lint it again.
+        fs::File::options()
+            .write(true)
+            .open(browser.fixture("src/main.rs"))
+            .unwrap()
+            .set_modified(std::time::SystemTime::now())
+            .unwrap();
         browser
     }
 
@@ -282,7 +279,7 @@ impl Browser {
             "rust-toolchain.toml",
             "clippy.toml",
         ] {
-            fs::copy(root.join(name), self.path(name)).unwrap();
+            copy_keeping_time(&root.join(name), &self.path(name));
         }
         for name in ["vendor", "docs"] {
             std::os::unix::fs::symlink(root.join(name), self.path(name)).unwrap();
@@ -291,11 +288,10 @@ impl Browser {
             let entry = entry.unwrap();
             let name = entry.file_name();
             if name == "maestro-tooling" {
-                fs::copy(
-                    entry.path().join("Cargo.toml"),
-                    self.path("crates/maestro-tooling/Cargo.toml"),
-                )
-                .unwrap();
+                copy_keeping_time(
+                    &entry.path().join("Cargo.toml"),
+                    &self.path("crates/maestro-tooling/Cargo.toml"),
+                );
                 std::os::unix::fs::symlink(
                     entry.path().join("src"),
                     self.path("crates/maestro-tooling/src"),
@@ -316,6 +312,20 @@ impl Browser {
             }
         }
     }
+}
+
+/// Copy a file with its modification time, so Cargo finds the copy as old as the original.
+///
+/// The library's compiled state lists the workspace manifest; a copy stamped with the time of the
+/// copy would be newer than that state and make every check compile the library again.
+fn copy_keeping_time(from: &Path, to: &Path) {
+    fs::copy(from, to).unwrap();
+    fs::File::options()
+        .write(true)
+        .open(to)
+        .unwrap()
+        .set_modified(fs::metadata(from).unwrap().modified().unwrap())
+        .unwrap();
 }
 
 pub use super::recipe_support::start_output;

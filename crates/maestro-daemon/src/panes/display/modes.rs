@@ -67,7 +67,7 @@ impl PaneTerminal {
 
     /// Whether the child requests reporting of ordinary keys.
     #[must_use]
-    pub fn keyboard_report_all_requested(&self) -> bool {
+    pub fn is_keyboard_report_all_requested(&self) -> bool {
         self.core.lock().is_ok_and(|core| {
             let protocol = KeyboardProtocol::from_kitty_flags(u16::from(
                 core.terminal.kitty_keyboard_flags().int(),
@@ -93,34 +93,34 @@ impl PaneTerminal {
 
     /// Whether paste delimiters are enabled.
     #[must_use]
-    pub fn bracketed_paste_enabled(&self) -> bool {
+    pub fn is_bracketed_paste_enabled(&self) -> bool {
         self.mode_enabled(Mode::BracketedPaste)
     }
     /// Whether focus transitions are enabled.
     #[must_use]
-    pub fn focus_reporting_enabled(&self) -> bool {
+    pub fn is_focus_reporting_enabled(&self) -> bool {
         self.mode_enabled(Mode::FocusEvent)
     }
     /// Whether any mouse tracking mode is enabled.
     #[must_use]
-    pub fn mouse_reporting_enabled(&self) -> bool {
+    pub fn is_mouse_reporting_enabled(&self) -> bool {
         self.core
             .lock()
             .is_ok_and(|core| core.terminal.mouse_tracking_enabled())
     }
     /// Whether mouse coordinates use pixels.
     #[must_use]
-    pub fn sgr_pixel_mouse_enabled(&self) -> bool {
+    pub fn is_sgr_pixel_mouse_enabled(&self) -> bool {
         self.mode_enabled(Mode::MouseFormatSgrPixels)
     }
     /// Whether synchronized output suppresses intermediate renders.
     #[must_use]
-    pub fn synchronized_output_active(&self) -> bool {
+    pub fn is_synchronized_output_active(&self) -> bool {
         self.mode_enabled(Mode::SynchronizedOutput)
     }
     /// Whether the alternate screen is selected.
     #[must_use]
-    pub fn alternate_screen_active(&self) -> bool {
+    pub fn is_alternate_screen_active(&self) -> bool {
         self.core
             .lock()
             .is_ok_and(|core| core.terminal.active_screen() == Key::Alternate)

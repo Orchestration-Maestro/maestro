@@ -15,8 +15,14 @@ fn grep_definition_keeps_schema_metadata_and_root_exports() {
         GrepToolOptions::default(),
         Arc::new(ToolsManager::new("/unused".into(), None)),
     );
-    let source: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/grep_cases.json")).unwrap();
+    let source: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/grep_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     assert_eq!(
         serde_json::json!({"name":tool.definition.name,"label":tool.label,"description":tool.definition.description,"parameters":tool.definition.parameters,"promptSnippet":tool.prompt_snippet}),
         source["cases"][0]["expected"]

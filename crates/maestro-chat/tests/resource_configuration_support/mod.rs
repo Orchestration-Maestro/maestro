@@ -21,16 +21,18 @@ pub fn group(name: &str) {
     }
     let _guard = super::keybindings::bindings_guard();
     let windows = name == "resource_windows_paths_keep_authored_relative_patterns";
+    let corpus = std::fs::read_to_string(format!(
+        "{}/tests/fixtures/resource_configuration.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .expect("recorded corpus");
     let (source, owners): (&str, &[&str]) = if windows {
         (
             include_str!("../fixtures/resource_configuration_windows.json"),
             &["resource_windows_paths_keep_authored_relative_patterns"],
         )
     } else {
-        (
-            include_str!("../fixtures/resource_configuration.json"),
-            &OWNERS,
-        )
+        (&corpus, &OWNERS)
     };
     let rows = super::selector::load(source);
     assert_eq!(rows.len(), if windows { 4 } else { 152 });
@@ -53,7 +55,13 @@ pub fn group(name: &str) {
 #[test]
 fn absolute_resource_patterns_do_not_depend_on_temporary_directory_spelling() {
     let _guard = super::keybindings::bindings_guard();
-    let rows = super::selector::load(include_str!("../fixtures/resource_configuration.json"));
+    let rows = super::selector::load(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/resource_configuration.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded corpus"),
+    );
     let (input, expected) = super::selector::cases::<Input, Expected>(
         rows,
         &OWNERS,

@@ -21,9 +21,18 @@ struct Case {
     #[serde(default)]
     counts: Option<serde_json::Value>,
 }
+/// The recorded generator corpus every case owner reads.
+fn corpus() -> Vec<Case> {
+    let text = std::fs::read_to_string(format!(
+        "{}/src/catalog_generation/generate_models/tests/corpus.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .expect("generator corpus");
+    serde_json::from_str(&text).expect("decodable generator corpus")
+}
 /// Compare complete metadata for all selected inputs.
 fn thinking_cases(name: &str) {
-    let cases: Vec<Case> = serde_json::from_str(include_str!("corpus.json")).unwrap();
+    let cases = corpus();
     let mut count = 0;
     for case in cases.into_iter().filter(|case| case.test == name) {
         assert_eq!(case.operation, "thinking");
@@ -53,7 +62,7 @@ fn thinking_metadata_does_not_require_reasoning() {
 
 /// Compare assembled descriptors and ordered provider counts.
 fn assembly_cases(name: &str) {
-    let cases: Vec<Case> = serde_json::from_str(include_str!("corpus.json")).unwrap();
+    let cases = corpus();
     let mut count = 0;
     for case in cases.into_iter().filter(|case| case.test == name) {
         assert_eq!(case.operation, "assemble");
@@ -218,7 +227,7 @@ fn unconditional_additions_are_first_wins_not_replacements() {
 #[test]
 fn source_emission_sorts_utf16_keys() {
     assembly_cases("source_emission_sorts_utf16_keys");
-    let cases: Vec<Case> = serde_json::from_str(include_str!("corpus.json")).unwrap();
+    let cases = corpus();
     let case = cases
         .into_iter()
         .find(|case| case.test == "source_emission_sorts_utf16_keys")

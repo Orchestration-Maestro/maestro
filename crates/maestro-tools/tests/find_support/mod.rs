@@ -24,11 +24,24 @@ use std::sync::{
 };
 /// Parse strict cases and reject repeated queries.
 pub fn cases(test: &str) -> Vec<Case> {
-    search_cases(include_str!("../fixtures/find_cases.json"), test)
+    search_cases(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/find_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+        test,
+    )
 }
 /// Use the recorded palette rather than a hard-coded color assignment.
 fn keys() -> Vec<String> {
-    search_keys(include_str!("../fixtures/find_cases.json"))
+    search_keys(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/find_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
 }
 /// Manager whose transport refuses and counts release fetches.
 pub fn manager(bin: String, counter: &Arc<AtomicUsize>) -> Arc<ToolsManager> {

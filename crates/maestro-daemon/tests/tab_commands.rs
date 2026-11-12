@@ -4,8 +4,8 @@ use crate::support::api::{
     TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group,
     request, run_in_pane, with_live_daemon, workspace_ids,
 };
-use maestro_daemon::app::model::Mode;
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
+use maestro_daemon::state::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, TabInfo};
 use serde_json::json;

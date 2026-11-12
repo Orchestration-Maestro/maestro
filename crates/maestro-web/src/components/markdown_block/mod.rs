@@ -45,6 +45,8 @@ struct Published {
     mounted: Rc<RefCell<Weak<browser::Mounted>>>,
     /// Successfully published reasoning presentation.
     thinking: bool,
+    /// Identity of the engine that highlighted the listings.
+    engine: *const (),
 }
 
 /// Native document width and padding policy.
@@ -148,6 +150,7 @@ impl MarkdownBlock {
             ),
             mounted,
             thinking: self.is_thinking,
+            engine: engine_id(view.highlighter),
             buttons,
             document,
             markup,
@@ -161,15 +164,10 @@ impl MarkdownBlock {
         ui: &mut egui::Ui,
         view: CodeBlockView<'_, F>,
     ) -> Result<egui::Response, ReadingUiError> {
-        let current = match &self.published {
-            Some(p) if p.key.0 == self.content && p.key.1 == self.escape_html => {
-                p.document.code.iter().try_fold(true, |current, code| {
-                    let html = Code::highlight(view.highlighter, &code.text, &code.language)?;
-                    Ok::<_, ReadingUiError>(current && html == code.html)
-                })?
-            }
-            _ => false,
-        };
+        let engine = engine_id(view.highlighter);
+        let current = self.published.as_ref().is_some_and(|p| {
+            p.key.0 == self.content && p.key.1 == self.escape_html && p.engine == engine
+        });
         let mut candidate = (!current).then(|| self.prepare(view)).transpose()?;
         let host = Rc::clone(self.host().map_err(ReadingUiError::Host)?);
         let Some(target) = candidate.as_mut().or(self.published.as_mut()) else {
@@ -236,6 +234,13 @@ impl MarkdownBlock {
             .filter(|(_, r)| r.as_ref().is_some_and(egui::Response::gained_focus))
             .for_each(|(index, _)| mounted.reveal(index));
     }
+}
+/// Identity of a syntax engine by address.
+///
+/// shortcut: an engine dropped and replaced at the same address looks unchanged; the page keeps
+/// one engine for its lifetime, so upgrade this to a shared handle if engines ever turn over.
+fn engine_id(engine: &dyn maestro_theme::SyntaxHighlighter) -> *const () {
+    std::ptr::from_ref(engine).cast()
 }
 /// Give each copy control its listing text and localized title, and measure it.
 fn sync_controls<F: ?Sized>(

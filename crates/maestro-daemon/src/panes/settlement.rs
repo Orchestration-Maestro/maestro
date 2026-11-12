@@ -100,7 +100,7 @@ impl CursorPositionSettleState {
 
     /// Whether a position is waiting to settle.
     #[must_use]
-    pub fn pending(&self) -> bool {
+    pub fn is_pending(&self) -> bool {
         self.candidate.is_some()
     }
 }

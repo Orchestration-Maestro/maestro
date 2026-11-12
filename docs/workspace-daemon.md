@@ -125,7 +125,7 @@ The topology API starts no terminal, background task or daemon listener. See the
 
 ## Retained daemon state
 
-`maestro_daemon::app::model::DaemonState` retains one `WorkspaceTopology`,
+`maestro_daemon::state::model::DaemonState` retains one `WorkspaceTopology`,
 terminal metadata, active and selected workspace positions, and historical pane
 aliases. Its supplied clock feeds the topology allocator. Pane-size estimation
 uses the first supplied pane rectangle, falling back to the configured headless
@@ -186,7 +186,7 @@ modifier aliases and shifted-key matching; shifted Tab normalizes to BackTab.
 
 ## Snapshot
 
-[`maestro_workspace::persist`](../crates/maestro-workspace/src/persist/mod.rs)
+[`maestro_workspace::persistence`](../crates/maestro-workspace/src/persistence/mod.rs)
 loads and saves version-1 topology at supplied paths. Owned records retain
 workspace/tab/pane names, public numbers, selection, working directories, split
 axes and resume provenance. Screen history is stored separately and can be
@@ -614,7 +614,7 @@ connection rules.
 ## Panes and layouts
 
 The pane commands and the `layout_updated` event read one projection of a tab,
-`maestro_daemon::app::layout`, available to attached clients. It combines the tab's
+`maestro_daemon::state::layout`, available to attached clients. It combines the tab's
 split tree, the view area and the pane chrome.
 
 - **View area.** `DaemonState::view_area` is the region panes are laid out in. With no
@@ -709,7 +709,7 @@ where the daemon application and native PTY runtime are built.
   anything, adds the new tab with the first leaf, then splits leaf by leaf in layout order
   through `spawn_split`, as `pane.split` does. A failure removes the new tab with
   `retire_tab_and_stop_panes`, the call `tab.close` makes: it releases the tab's terminals
-  and plugin records and stops their processes. The replaced tab is retired only after the
+  and action records and stops their processes. The replaced tab is retired only after the
   new tab stands. Stopping its processes applies the events that arrive meanwhile, which can
   close or move workspaces, so the apply looks its workspace up again by identity and fails
   with `layout_apply_failed` when the new tab is gone. `emit_tab_created_events` publishes every pane of the
@@ -787,11 +787,11 @@ retain their event, subsystem, outcome and operation-specific fields.
 
 ## Snapshot operations
 
-The live `app`, `tab` and `workspace` modules and `persist::capture` and
+The live `state`, `tab` and `workspace` modules and `persistence::capture` and
 `capture_history` use the Linux pane runtime and are available only on Linux.
 Snapshot save and clear operations remain available on other native targets.
 
-`persist::save`, `clear` and `clear_history` use `DaemonPaths` and the existing
+`persistence::save`, `clear` and `clear_history` use `DaemonPaths` and the existing
 workspace snapshot storage. They add no format or serializer. Save commits
 topology before separate history; absent history removes the history file.
 Only a completed combined save emits success. A history failure does not undo
@@ -813,13 +813,13 @@ The daemon can toggle zoom on the active split tab without changing its layout.
 A single-pane tab is unchanged; a zoom change marks the session dirty.
 
 Closing a pane or tab targets the active workspace, not the navigation selection.
-Detached terminal metadata and plugin records are removed through the same cleanup
+Detached terminal metadata and action records are removed through the same cleanup
 owner as workspace closes. Closing the last pane or tab of a parent repository
 group requests confirmation when enabled; closing a linked workspace leaves its
 checkout directory untouched. Agent completion can be published before removing
 the pane, while its identity and notification context are still available.
 
-`app::App` retains daemon state beside the existing terminal runtime registry.
+`state::App` retains daemon state beside the existing terminal runtime registry.
 Immediate workspace toasts use the first tab's live root directory for their
 context, falling back to terminal metadata and then the workspace identity.
 Delayed deliveries reread that directory at delivery time for both workspace and

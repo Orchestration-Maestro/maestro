@@ -10,15 +10,13 @@ mod startup;
 #[test]
 #[cfg(unix)]
 fn file_limit_is_restored_before_child_exit() {
-    startup::check_file_limit_restoration("file_limit_is_restored_before_child_exit");
+    startup::check_file_limit_restoration();
 }
 
 #[test]
 #[cfg(unix)]
 fn auth_conversion_through_a_dangling_link_creates_no_directory() {
-    startup::check_dangling_auth_link(
-        "auth_conversion_through_a_dangling_link_creates_no_directory",
-    );
+    startup::check_dangling_auth_link();
 }
 
 #[test]
@@ -235,26 +233,18 @@ fn session_moves_preserve_opaque_bytes() {
 #[test]
 #[cfg(unix)]
 fn session_links_follow_relocated_referents_alias_first() {
-    relocated_referent("session_links_follow_relocated_referents_alias_first", true);
+    relocated_referent(true);
 }
 
 #[test]
 #[cfg(unix)]
 fn session_links_follow_relocated_referents_referent_first() {
-    relocated_referent(
-        "session_links_follow_relocated_referents_referent_first",
-        false,
-    );
+    relocated_referent(false);
 }
 
 #[cfg(unix)]
-fn relocated_referent(name: &str, alias_first: bool) {
+fn relocated_referent(alias_first: bool) {
     use std::{fs, os::unix::fs::symlink};
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
-        println!("PROBE done");
-        return;
-    }
     let scratch = child::Scratch::new();
     let root = scratch.0.path();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
@@ -279,18 +269,7 @@ fn relocated_referent(name: &str, alias_first: bool) {
         })
         .expect("the directory enumerates the wanted role first");
     for _ in 0..2 {
-        child::probe(
-            maestro_test_process::TestProcess::current(name)
-                .unwrap()
-                .case("*"),
-            root,
-            &[
-                ("STARTUP_OPERATION", "sessions"),
-                ("MAESTRO_CODING_AGENT_DIR", "."),
-            ],
-            &[],
-        )
-        .expect("child starts");
+        startup::sessions(root, ".");
         for file in [alias, referent] {
             assert_eq!(
                 fs::read(root.join("sessions/--work--").join(file)).unwrap(),
@@ -313,12 +292,6 @@ fn relocated_referent(name: &str, alias_first: bool) {
 #[cfg(unix)]
 fn relative_session_link_replaces_a_dangling_destination() {
     use std::{fs, os::unix::fs::symlink};
-    let name = "relative_session_link_replaces_a_dangling_destination";
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
-        println!("PROBE done");
-        return;
-    }
     let scratch = child::Scratch::new();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
     fs::write(scratch.0.path().join("original.data"), body).unwrap();
@@ -327,21 +300,7 @@ fn relative_session_link_replaces_a_dangling_destination() {
     fs::create_dir_all(&directory).unwrap();
     symlink("missing.data", directory.join("alias.jsonl")).unwrap();
     for _ in 0..2 {
-        child::probe(
-            maestro_test_process::TestProcess::current(name)
-                .unwrap()
-                .case("*"),
-            scratch.0.path(),
-            &[
-                ("STARTUP_OPERATION", "sessions"),
-                (
-                    "MAESTRO_CODING_AGENT_DIR",
-                    scratch.0.path().to_str().unwrap(),
-                ),
-            ],
-            &[],
-        )
-        .expect("child starts");
+        startup::sessions(scratch.0.path(), scratch.0.path().to_str().unwrap());
         assert_eq!(
             fs::symlink_metadata(scratch.0.path().join("alias.jsonl"))
                 .unwrap_err()
@@ -369,12 +328,6 @@ fn unchanged_absolute_session_link_moves_by_rename() {
         fs,
         os::unix::fs::{MetadataExt, symlink},
     };
-    let name = "unchanged_absolute_session_link_moves_by_rename";
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
-        println!("PROBE done");
-        return;
-    }
     let scratch = child::Scratch::new();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
     let referent = scratch.0.path().join("original.data");
@@ -384,21 +337,7 @@ fn unchanged_absolute_session_link_moves_by_rename() {
     let identity = fs::symlink_metadata(&source).unwrap().ino();
     let destination = scratch.0.path().join("sessions/--work--/alias.jsonl");
     for _ in 0..2 {
-        child::probe(
-            maestro_test_process::TestProcess::current(name)
-                .unwrap()
-                .case("*"),
-            scratch.0.path(),
-            &[
-                ("STARTUP_OPERATION", "sessions"),
-                (
-                    "MAESTRO_CODING_AGENT_DIR",
-                    scratch.0.path().to_str().unwrap(),
-                ),
-            ],
-            &[],
-        )
-        .expect("child starts");
+        startup::sessions(scratch.0.path(), scratch.0.path().to_str().unwrap());
         assert_eq!(fs::symlink_metadata(&destination).unwrap().ino(), identity);
         assert_eq!(fs::read_link(&destination).unwrap(), referent);
         assert_eq!(fs::read(&destination).unwrap(), body);
@@ -413,11 +352,6 @@ fn unchanged_absolute_session_link_moves_by_rename() {
 #[test]
 #[cfg(unix)]
 fn session_link_resolution_matrix() {
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
-        println!("PROBE done");
-        return;
-    }
     for depth in 1..=3 {
         for payload in ["absolute", "relative", "absolute-relative"] {
             for moving in ["none", "final", "intermediate", "deep", "blocked"]
@@ -525,18 +459,7 @@ fn check_resolution_chain(
     let identity = fs::symlink_metadata(&paths[0]).unwrap().ino();
     let authored = fs::read_link(&paths[0]).unwrap();
     for _ in 0..2 {
-        child::probe(
-            maestro_test_process::TestProcess::current("session_link_resolution_matrix")
-                .unwrap()
-                .case("*"),
-            scratch.0.path(),
-            &[
-                ("STARTUP_OPERATION", "sessions"),
-                ("MAESTRO_CODING_AGENT_DIR", "."),
-            ],
-            &[],
-        )
-        .expect("child starts");
+        startup::sessions(scratch.0.path(), ".");
         for (index, path) in paths.iter().enumerate() {
             if index < paths.len() - 1 && path.extension().unwrap() == "data" && moving != "none" {
                 continue;
@@ -582,10 +505,6 @@ fn check_resolution_chain(
 #[cfg(unix)]
 fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
     use std::fs;
-    if std::env::var_os("STARTUP_OPERATION").is_some() {
-        maestro_app::configuration::conversion::migrate_sessions_from_agent_root().unwrap();
-        return;
-    }
     let (scratch, paths) = resolution_chain(2, "absolute", "blocked", 0);
     let alias = scratch
         .0
@@ -596,20 +515,7 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
         if call == 2 {
             fs::remove_file(paths[1].with_extension("jsonl.migrating")).unwrap();
         }
-        child::probe(
-            maestro_test_process::TestProcess::current(
-                "blocked_intermediate_retry_keeps_migrated_alias_readable",
-            )
-            .unwrap()
-            .case("*"),
-            scratch.0.path(),
-            &[
-                ("STARTUP_OPERATION", "sessions"),
-                ("MAESTRO_CODING_AGENT_DIR", "."),
-            ],
-            &[],
-        )
-        .expect("child starts");
+        startup::sessions(scratch.0.path(), ".");
         assert_eq!(
             fs::read(&alias).unwrap(),
             b"{\"type\":\"session\",\"cwd\":\"/work\"}\ntranscript"

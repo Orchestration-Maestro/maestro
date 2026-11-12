@@ -1,5 +1,5 @@
 //! Native session view nodes, rendering and reader-follow.
-use super::{AgentInterfaceProps, BrowserSession, Follow, usage_totals};
+use super::{AgentInterfaceProps, BrowserSession, Follow, HistoryKey, usage_totals};
 use crate::{
     MessageList, SharedAttachment, StreamingMessageContainer,
     browser::{
@@ -53,6 +53,8 @@ pub(super) struct Session<C: CustomAgentMessages + 'static> {
     content: Element,
     /// Stable history placement.
     list: RefCell<MountedContent>,
+    /// What the placed history was last drawn from.
+    drawn: RefCell<Option<HistoryKey>>,
     /// Parent of the stable history.
     history: Element,
     /// The streaming response.
@@ -226,6 +228,7 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
             usage_action,
             follow: Cell::default(),
             ended: Cell::new(false),
+            drawn: RefCell::default(),
             subscription: RefCell::default(),
             listeners: RefCell::default(),
             observation: RefCell::default(),
@@ -301,6 +304,11 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
     }
     /// Bring the transcript, the stream, the editor and the totals in line with the session.
     pub(super) fn render(&self) -> Result<(), ToolUiError> {
+        self.draw(false)
+    }
+    /// Bring the view in line with the session; `streamed` marks a streamed update, which leaves
+    /// the history alone while it was drawn from the same operands.
+    pub(super) fn draw(&self, streamed: bool) -> Result<(), ToolUiError> {
         let Some(session) = self.session() else {
             set_text_if_changed(&self.empty, &self.view.i18n.text("No session set")?);
             self.layout.remove();
@@ -311,7 +319,11 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
             append(&self.root, &self.layout)?;
         }
         let snapshot = Snapshot::read(&session, self.ended.get());
-        self.render_history(&session, &snapshot)?;
+        let key = snapshot.history_key();
+        if key.stale(self.drawn.borrow().as_ref(), streamed) {
+            self.render_history(&session, &snapshot)?;
+            self.drawn.replace(Some(key));
+        }
         self.render_stream(&session, &snapshot)?;
         self.render_editor(&session, snapshot.is_streaming)?;
         self.render_theme()?;
@@ -457,6 +469,8 @@ struct Snapshot {
     pending: Rc<HashSet<String>>,
     /// Summed assistant usage.
     totals: Option<maestro_app::Usage>,
+    /// Entries in the shared history.
+    entries: usize,
 }
 impl Snapshot {
     /// Read the session's live values without holding its state; an ended run is not streaming.
@@ -470,10 +484,23 @@ impl Snapshot {
             is_streaming: state.is_streaming() && !ended,
             pending: Rc::new(state.pending_tool_calls().iter().cloned().collect()),
             totals: None,
+            entries: 0,
         };
         drop(state);
-        let totals = usage_totals(&messages.read().unwrap_or_else(PoisonError::into_inner));
-        Self { totals, ..snapshot }
+        let messages = messages.read().unwrap_or_else(PoisonError::into_inner);
+        Self {
+            totals: usage_totals(&messages),
+            entries: messages.len(),
+            ..snapshot
+        }
+    }
+    /// The operands the history is drawn from, besides its entries' content.
+    fn history_key(&self) -> HistoryKey {
+        HistoryKey {
+            entries: self.entries,
+            is_streaming: self.is_streaming,
+            pending: Rc::clone(&self.pending),
+        }
     }
 }
 /// The session's tool results by call identifier.

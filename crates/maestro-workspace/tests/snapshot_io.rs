@@ -1,6 +1,6 @@
 //! Native supplied-path save, clear and diagnostic behavior.
 use super::support::snapshot::{Directory, capture, empty, history};
-use maestro_workspace::persist::{clear_path, load, load_history, save_to_paths};
+use maestro_workspace::persistence::{clear_path, load, load_history, save_to_paths};
 use serde_json::json;
 use std::{fs, path::Path};
 
