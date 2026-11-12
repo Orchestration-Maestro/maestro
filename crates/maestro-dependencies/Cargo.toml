@@ -63,6 +63,7 @@ yoke = { version = "0.8.3", features = ["derive"] }
 zerofrom = { version = "0.1.8", default-features = false, features = ["alloc", "derive"] }
 zerotrie = { version = "0.2.5", default-features = false, features = ["alloc", "yoke", "zerofrom"] }
 zerovec = { version = "0.11.8", default-features = false, features = ["alloc", "derive", "yoke"] }
+zlib-rs = { version = "0.6.8", default-features = false, features = ["std"] }
 
 [build-dependencies]
 allocator-api2 = { version = "0.2.21" }
@@ -118,6 +119,7 @@ tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [target.x86_64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -168,6 +170,7 @@ tracing = { version = "0.1.44" }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [target.aarch64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -200,6 +203,7 @@ iana-time-zone = { version = "0.1.65", default-features = false, features = ["fa
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
@@ -219,6 +223,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [target.x86_64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -251,6 +256,7 @@ iana-time-zone = { version = "0.1.65", default-features = false, features = ["fa
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
@@ -270,6 +276,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -314,6 +321,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 windows-sys = { version = "0.61.2", features = ["Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security_Authentication_Identity", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_SystemInformation", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
 winnow = { version = "1.0.4" }
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [target.x86_64-pc-windows-msvc.build-dependencies]
 fastrand = { version = "2.5.0" }

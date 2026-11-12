@@ -1,14 +1,13 @@
 //! Filesystem-pattern policy through the compiled matcher surface.
 #![cfg(test)]
-use maestro_pattern::{Minimatch, MinimatchOptions, ParseReturnFiltered, Platform, minimatch};
+use maestro_pattern::{GlobMatcher, GlobOptions, ParseReturnFiltered, Platform, matches_glob};
 
 /// Comments and leading negation are not enabled by filesystem consumers.
 #[test]
 fn filesystem_policy_keeps_hash_and_bang_as_syntax() {
     preparations(&["#*.ts", "!*.ts", "src/!(a)*.ts"]);
     for (pattern, positive) in [("#*.ts", "#a.ts"), ("!*.ts", "!a.ts"), ("!(a)*.ts", "b.ts")] {
-        let compiled =
-            Minimatch::new(pattern, MinimatchOptions::Filesystem(Platform::Posix)).unwrap();
+        let compiled = GlobMatcher::new(pattern, GlobOptions::Filesystem(Platform::Posix)).unwrap();
         let ParseReturnFiltered::Pattern(segment) = &compiled.set()[0][0] else {
             panic!("magic component must compile as a pattern");
         };
@@ -63,8 +62,7 @@ fn preparations(patterns: &[&str]) {
             "win32" => Platform::Windows,
             _ => panic!("unexpected platform"),
         };
-        let compiled =
-            Minimatch::new(&row.pattern, MinimatchOptions::Filesystem(platform)).unwrap();
+        let compiled = GlobMatcher::new(&row.pattern, GlobOptions::Filesystem(platform)).unwrap();
         assert_eq!(
             compiled.glob_parts(),
             row.expected.glob_parts,
@@ -104,8 +102,7 @@ fn compare_segment(actual: &ParseReturnFiltered, expected: &Segment, case: &str)
 #[test]
 fn filesystem_patterns_prepare_ordered_alternatives() {
     for platform in [Platform::Posix, Platform::Darwin, Platform::Windows] {
-        let compiled =
-            Minimatch::new("{a\n,b}*.ts", MinimatchOptions::Filesystem(platform)).unwrap();
+        let compiled = GlobMatcher::new("{a\n,b}*.ts", GlobOptions::Filesystem(platform)).unwrap();
         assert_eq!(compiled.glob_parts(), &[vec!["{a\n,b}*.ts"]]);
         let ParseReturnFiltered::Pattern(component) = &compiled.set()[0][0] else {
             panic!("expected literal brace prefix");
@@ -120,7 +117,7 @@ fn filesystem_patterns_prepare_ordered_alternatives() {
     ] {
         let pattern = format!("{{1..{end}}}*.ts");
         let compiled =
-            Minimatch::new(&pattern, MinimatchOptions::Filesystem(Platform::Posix)).unwrap();
+            GlobMatcher::new(&pattern, GlobOptions::Filesystem(Platform::Posix)).unwrap();
         assert_eq!(compiled.set().len(), length);
         assert_eq!(compiled.glob_parts().first().unwrap(), &["1*.ts"]);
         assert_eq!(compiled.glob_parts().last().unwrap(), &[last]);
@@ -155,7 +152,7 @@ fn filesystem_patterns_prepare_ordered_alternatives() {
 fn filesystem_case_selection_follows_platform_policy() {
     for platform in [Platform::Posix, Platform::Darwin, Platform::Windows] {
         let compiled =
-            Minimatch::new("*[![:alpha:]]", MinimatchOptions::Filesystem(platform)).unwrap();
+            GlobMatcher::new("*[![:alpha:]]", GlobOptions::Filesystem(platform)).unwrap();
         let ParseReturnFiltered::Pattern(component) = &compiled.set()[0][0] else {
             panic!("expected complement predicate");
         };
@@ -210,7 +207,7 @@ fn filesystem_patterns_reuse_corrected_group_and_scalar_semantics() {
     for row in rows {
         for platform in [Platform::Posix, Platform::Darwin, Platform::Windows] {
             let compiled =
-                Minimatch::new(&row.pattern, MinimatchOptions::Filesystem(platform)).unwrap();
+                GlobMatcher::new(&row.pattern, GlobOptions::Filesystem(platform)).unwrap();
             let result = match &compiled.set()[0][0] {
                 ParseReturnFiltered::Pattern(pattern) => pattern.test(&row.input),
                 ParseReturnFiltered::Literal(text) => *text == row.input,
@@ -235,27 +232,29 @@ fn default_matching_stays_independent_of_filesystem_policy() {
         ("a", "", false),
     ] {
         assert_eq!(
-            minimatch(input, pattern).unwrap(),
+            matches_glob(input, pattern).unwrap(),
             expected,
             "{pattern}: default policy"
         );
     }
-    assert!(!minimatch("a", &"a".repeat(65_536)).unwrap());
+    assert!(!matches_glob("a", &"a".repeat(65_536)).unwrap());
     assert_eq!(
-        minimatch("a", &"a".repeat(65_537)).unwrap_err().to_string(),
+        matches_glob("a", &"a".repeat(65_537))
+            .unwrap_err()
+            .to_string(),
         "pattern is too long"
     );
 }
 /// A folded literal does not acquire the dot exclusion of a wildcard.
 #[test]
 fn filesystem_casefold_keeps_literal_token_identity() {
-    let compiled = Minimatch::new(".Ab*", MinimatchOptions::Filesystem(Platform::Darwin)).unwrap();
+    let compiled = GlobMatcher::new(".Ab*", GlobOptions::Filesystem(Platform::Darwin)).unwrap();
     let ParseReturnFiltered::Pattern(pattern) = &compiled.set()[0][0] else {
         panic!("expected magic component");
     };
     assert!(pattern.test(".aBcd"));
     assert!(!pattern.test("aBcd"));
-    let compiled = Minimatch::new("*Ab", MinimatchOptions::Filesystem(Platform::Darwin)).unwrap();
+    let compiled = GlobMatcher::new("*Ab", GlobOptions::Filesystem(Platform::Darwin)).unwrap();
     let ParseReturnFiltered::Pattern(pattern) = &compiled.set()[0][0] else {
         panic!("expected magic component");
     };
@@ -284,8 +283,7 @@ fn filesystem_preparation_reaches_fixed_point_and_merges_borrowed_suffixes() {
             "win32" => Platform::Windows,
             _ => panic!("unknown platform"),
         };
-        let compiled =
-            Minimatch::new(&row.pattern, MinimatchOptions::Filesystem(platform)).unwrap();
+        let compiled = GlobMatcher::new(&row.pattern, GlobOptions::Filesystem(platform)).unwrap();
         assert_eq!(
             compiled.glob_parts(),
             row.expected,
@@ -304,7 +302,7 @@ fn filesystem_escaped_suffixes_use_decoded_tokens() {
             (r"*\.ts", "main.ts", "mainxts"),
             (r"?\.ts", "a.ts", "ab.ts"),
         ] {
-            let matcher = Minimatch::new(pattern, MinimatchOptions::Filesystem(platform)).unwrap();
+            let matcher = GlobMatcher::new(pattern, GlobOptions::Filesystem(platform)).unwrap();
             let ParseReturnFiltered::Pattern(segment) = &matcher.set()[0][0] else {
                 panic!("expected magic");
             };
@@ -318,7 +316,7 @@ fn filesystem_escaped_suffixes_use_decoded_tokens() {
 #[test]
 fn filesystem_preparation_keeps_literal_operands() {
     for platform in [Platform::Posix, Platform::Darwin, Platform::Windows] {
-        let compiled = Minimatch::new("Dir/Case", MinimatchOptions::Filesystem(platform)).unwrap();
+        let compiled = GlobMatcher::new("Dir/Case", GlobOptions::Filesystem(platform)).unwrap();
         assert_eq!(
             compiled.glob_parts(),
             [vec!["Dir".to_owned(), "Case".to_owned()]]
@@ -336,8 +334,8 @@ fn filesystem_preparation_keeps_literal_operands() {
         assert_eq!(literals, [Some("Dir"), Some("Case")]);
     }
     assert_eq!(
-        maestro_pattern::minimatch_with_nocase("dir/case", "Dir/Case", true),
+        maestro_pattern::matches_glob_with_nocase("dir/case", "Dir/Case", true),
         Ok(true)
     );
-    assert_eq!(minimatch("dir/case", "Dir/Case"), Ok(false));
+    assert_eq!(matches_glob("dir/case", "Dir/Case"), Ok(false));
 }

@@ -1,6 +1,7 @@
 //! Numeric display text for browser consumers.
 use super::localization::{I18n, I18nError};
-use maestro_app::{ModelCost, browser::strip_decimal};
+use maestro_app::ModelCost;
+use maestro_office::strip_decimal;
 
 /// Render a currency amount using four-place fixed number formatting.
 #[must_use]

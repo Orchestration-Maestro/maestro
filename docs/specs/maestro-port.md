@@ -181,7 +181,7 @@ members, without persisting pointer identity or introducing a second record sche
 Assistant rows retain the application's existing shared assistant-message handle.
 
 Shared XLSX formula displacement belongs solely to the application's existing
-`browser::ssf::read::formulas` module. Classify maximal runs between operator
+`maestro_office::spreadsheet::read::formulas` module. Classify maximal runs between operator
 characters, whitespace and operand punctuation; every other character belongs to
 a run, including combining marks, `#`, `~`, `\` and `?`. Preserve quoted strings/sheet
 names (including doubled delimiters) and balanced bracket spans first. Then classify
@@ -282,7 +282,7 @@ Home retains full drag/resize and per-card settings with keyboard-accessible ope
 
 ### Browser crate graph
 
-The web frontend remains one library, `maestro-web`, with required `maestro-app` and optional-used `maestro-theme` edges. No new workspace UI crate or frontend-to-frontend edge is introduced. The DOM component layer, browser-module loader, three renderer/contribution adapters, shell and offline viewer remain inside that frontend.
+The web frontend remains one library, `maestro-web`, with required `maestro-app` and `maestro-office` and optional-used `maestro-theme` edges. No new workspace UI crate or frontend-to-frontend edge is introduced. The DOM component layer, browser-module loader, three renderer/contribution adapters, shell and offline viewer remain inside that frontend.
 
 Package descriptor resolution remains `maestro-packages` work, coordinated by `maestro-app`; domain-neutral browser contribution records cross `maestro-protocol`. Native package code is not linked into the browser merely to expose a descriptor. Graph, workspace, terminal, identity and per-person record operations are reached through the application/protocol interfaces, never by importing a sibling frontend or a native service into a browser view. The daemon must not gain a reverse dependency on the application; its composed operation handlers are injected through the existing interface.
 
@@ -453,6 +453,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-protocol` | define the shared RPC protocol | — | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
+| `maestro-office` | read office documents | `maestro-text`, `maestro-json`, `maestro-lock` | 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-package`, `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
 | `maestro-models-catalog` | define the model catalog | `maestro-request` | below 0 |
@@ -480,12 +481,12 @@ as one portable build dependency and one portable development dependency.
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-resources`, `maestro-lock`, `maestro-realpath` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners`, `maestro-lock` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal-emulator`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal-emulator`, `maestro-markdown`, `maestro-office`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts (optional path utility) | `maestro-extensions`, `maestro-lock` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock` | 5 |
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
-| `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
+| `maestro-web` | present browser interactions | `maestro-app`, `maestro-office`, `maestro-theme` | 5 |
 | `maestro-session-reports` | summarize session files for developers | `maestro-app`, `maestro-models`, `maestro-session`, `maestro-resources`, `maestro-process`, `maestro-json`, `maestro-text`, `maestro-theme`, `maestro-listing` | 5 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
@@ -648,7 +649,7 @@ for canonical targets and the existing external `sha2 =0.11.0`, which shortens l
 and record names for long file names.
 Only theme and application may depend on watch. Every crate that holds shared state
 behind a `Mutex` or an `RwLock` may depend on lock: settings, credentials, workspace,
-detection, session, models, agent, tools, extensions, application, the daemon, the runtime
+detection, session, models, agent, tools, extensions, office, application, the daemon, the runtime
 adapter, the terminal adapter, the interactive frontend and the command-line frontend, and
 the composed executable crate only as a native development dependency
 so its tests serialize one shared native fixture. The dependency is portable, so the
@@ -812,7 +813,7 @@ dev-dependency checks, still applies. The guest authoring crate
 disposable directory owner
 (`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), process owner (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
-Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
+Markdown parser (`maestro-markdown`), office document reader (`maestro-office`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`), package records (`maestro-package`) and brand projection
 (`maestro-brand`) are excluded from this
@@ -1118,7 +1119,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 
 **Below layer 0:** `maestro-protocol` and `maestro-models-catalog` join the existing foundation leaves.
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`

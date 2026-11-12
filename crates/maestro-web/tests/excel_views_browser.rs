@@ -9,48 +9,52 @@ use wasm_bindgen::prelude::*;
 fn bytes(name: &str) -> &'static [u8] {
     match name {
         "legacy-links" => {
-            include_bytes!("../../maestro-app/tests/fixtures/workbooks/metadata-link-external.xls")
+            include_bytes!(
+                "../../maestro-office/tests/fixtures/workbooks/metadata-link-external.xls"
+            )
         }
         "legacy-rich" => include_bytes!(
-            "../../maestro-app/tests/fixtures/workbooks/metadata-rich-shared-and-inline.xls"
+            "../../maestro-office/tests/fixtures/workbooks/metadata-rich-shared-and-inline.xls"
         ),
         "legacy-shared" => include_bytes!(
-            "../../maestro-app/tests/fixtures/workbooks/metadata-shared-sheet-local.xls"
+            "../../maestro-office/tests/fixtures/workbooks/metadata-shared-sheet-local.xls"
         ),
         "mixed-first" => {
-            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-bad-first.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/workbooks/mixed-bad-first.xlsx")
         }
         "mixed-last" => {
-            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-bad-last.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/workbooks/mixed-bad-last.xlsx")
         }
         "mixed-literal" => {
-            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-literal-error.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/workbooks/mixed-literal-error.xlsx")
         }
         "mixed-control" => {
-            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-valid-control.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/workbooks/mixed-valid-control.xlsx")
         }
         "all-corrupt" => {
-            include_bytes!("../../maestro-app/tests/fixtures/workbooks/all-corrupt-two.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/workbooks/all-corrupt-two.xlsx")
         }
         "zero" => {
-            include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/zero-sheets.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/zero-sheets.xlsx")
         }
         "scroll" => include_bytes!("fixtures/excel/scroll.xlsx"),
         "two" => {
-            include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/two-sheets.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/two-sheets.xlsx")
         }
-        "rich" => include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/rich.xlsx"),
-        "merged" => include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/merged.xlsx"),
+        "rich" => include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/rich.xlsx"),
+        "merged" => {
+            include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/merged.xlsx")
+        }
         "links" => {
-            include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/active-links.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/active-links.xlsx")
         }
         "literal" => {
-            include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/literal-rich.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/literal-rich.xlsx")
         }
         "quoted" => {
-            include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/quoted-sheet.xlsx")
+            include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/quoted-sheet.xlsx")
         }
-        _ => include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/one-sheet.xlsx"),
+        _ => include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/one-sheet.xlsx"),
     }
 }
 /// Preserve the complete original byte input.
@@ -555,9 +559,9 @@ pub fn excel_mixed_sheet_roots_keep_selection_and_release_on_rewrite() {
 
 /// Keep quoted number-format attributes on the native table.
 fn literal_number_format() {
-    use maestro_app::browser::ssf::{
-        CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf, WorkSheet,
-        sheet_to_html,
+    use maestro_office::spreadsheet::{
+        CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, NumberFormatter, Range,
+        WorkSheet, sheet_to_html,
     };
     let mut sheet = WorkSheet {
         cells: [(
@@ -584,7 +588,11 @@ fn literal_number_format() {
     };
     let document = web_sys::window().unwrap().document().unwrap();
     let container = document.create_element("div").unwrap();
-    container.set_inner_html(&sheet_to_html(&mut sheet, "literal", &Ssf::default()));
+    container.set_inner_html(&sheet_to_html(
+        &mut sheet,
+        "literal",
+        &NumberFormatter::default(),
+    ));
     assert_eq!(
         container
             .query_selector("td")

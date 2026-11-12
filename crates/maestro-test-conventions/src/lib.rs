@@ -29,6 +29,8 @@ mod graph;
 /// Handwritten JavaScript in crate sources.
 /// Single-target integration-test packaging checks.
 mod integration_tests;
+/// Other projects' library and product words in identifiers and tracked names.
+mod leaked_words;
 /// Library test-target agreement with in-source tests.
 mod lib_tests;
 /// Native platform viewer ownership.
@@ -178,6 +180,14 @@ mod tracked_sizes;
 /// `maestro_lock::write` pass, discarded results included, and test code keeps its
 /// own helpers.
 ///
+/// Identifiers and the tracked file and directory names under `crates/` and `docs/` may not
+/// hold the library and product words of other projects. A name splits into segments at
+/// non-alphanumerics and case changes, and a denied word matches whole segments in order,
+/// ignoring case; string literals and comments are not names. Each hit is reported with its
+/// file, line and word. Diagnostics name `DENIED` in `leaked_words.rs`, the one list to edit
+/// when a word joins it; `EXEMPT` there holds the names a user, a provider or a stored file
+/// carries, each with its reason, and a row that matches no name is reported.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -210,6 +220,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| tokio_macros::check(&metadata, &members),
         &|| test_input_routes::check(root, &members),
         &|| fixture_includes::check(&members),
+        &|| leaked_words::check(root, &members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.
     pool::map(checks, |check| check())?.into_iter().collect()

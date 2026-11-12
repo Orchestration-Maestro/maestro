@@ -1,5 +1,5 @@
 //! Basic package pattern behavior through the public operation.
-use maestro_pattern::{PatternError, minimatch};
+use maestro_pattern::{PatternError, matches_glob};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -105,7 +105,7 @@ fn check(name: &str) {
     let cases = groups.remove(name).unwrap();
     assert!(!cases.is_empty());
     for (index, case) in cases.into_iter().enumerate() {
-        let result = minimatch(&case.input.materialize(), &case.pattern.materialize());
+        let result = matches_glob(&case.input.materialize(), &case.pattern.materialize());
         match case.expected {
             Expected::Match(expected) => assert_eq!(result, Ok(expected), "case {index}"),
             Expected::Error(expected) => {
@@ -219,28 +219,34 @@ fn brace_default_cap_selects_the_earlier_alternatives() {
 /// Star suffixes retain dot exclusion and decoded escape spelling.
 #[test]
 fn star_literal_suffixes_keep_dot_and_escape_rules() {
-    assert_eq!(minimatch("notes-final.txt", "***final.txt"), Ok(true));
-    assert_eq!(minimatch(".notes-final.txt", "*final.txt"), Ok(false));
-    assert_eq!(minimatch("notes-final.txt.bak", "*final.txt"), Ok(false));
-    assert_eq!(minimatch("notes*.txt", r"*\*.txt"), Ok(true));
-    assert_eq!(minimatch("notes.txt", r"*\*.txt"), Ok(false));
-    assert_eq!(minimatch("aaaaab", "***aaab"), Ok(true));
-    assert_eq!(minimatch("aaaaac", "*aaab"), Ok(false));
+    assert_eq!(matches_glob("notes-final.txt", "***final.txt"), Ok(true));
+    assert_eq!(matches_glob(".notes-final.txt", "*final.txt"), Ok(false));
+    assert_eq!(matches_glob("notes-final.txt.bak", "*final.txt"), Ok(false));
+    assert_eq!(matches_glob("notes*.txt", r"*\*.txt"), Ok(true));
+    assert_eq!(matches_glob("notes.txt", r"*\*.txt"), Ok(false));
+    assert_eq!(matches_glob("aaaaab", "***aaab"), Ok(true));
+    assert_eq!(matches_glob("aaaaac", "*aaab"), Ok(false));
 }
 
 /// One globstar anchors the tail while retaining directory and dot rules.
 #[test]
 fn single_globstar_anchors_tail_and_trailing_directory() {
-    assert_eq!(minimatch("root/branch/leaf/", "root/**/*"), Ok(true));
-    assert_eq!(minimatch("root/.branch/leaf/", "root/**/*"), Ok(false));
-    assert_eq!(minimatch("root/branch/.leaf", "root/**/.leaf"), Ok(true));
-    assert_eq!(minimatch("root/branch/.leaf/", "root/**/.leaf"), Ok(true));
-    assert_eq!(minimatch("root/branch/leaf", "root/**/.leaf"), Ok(false));
-    assert_eq!(minimatch("wrong/branch/.leaf", "root/**/.leaf"), Ok(false));
-    assert_eq!(minimatch("root/", "root/**/*"), Ok(false));
-    assert_eq!(minimatch("root", "root/**"), Ok(false));
-    assert_eq!(minimatch("root/", "root/**"), Ok(true));
-    assert_eq!(minimatch("a/x/.b", "**/a/**/.b"), Ok(true));
-    assert_eq!(minimatch("root/a/a/a/b", "root/**/a/a/b"), Ok(true));
-    assert_eq!(minimatch("root/a/a/a/c", "root/**/a/a/b"), Ok(false));
+    assert_eq!(matches_glob("root/branch/leaf/", "root/**/*"), Ok(true));
+    assert_eq!(matches_glob("root/.branch/leaf/", "root/**/*"), Ok(false));
+    assert_eq!(matches_glob("root/branch/.leaf", "root/**/.leaf"), Ok(true));
+    assert_eq!(
+        matches_glob("root/branch/.leaf/", "root/**/.leaf"),
+        Ok(true)
+    );
+    assert_eq!(matches_glob("root/branch/leaf", "root/**/.leaf"), Ok(false));
+    assert_eq!(
+        matches_glob("wrong/branch/.leaf", "root/**/.leaf"),
+        Ok(false)
+    );
+    assert_eq!(matches_glob("root/", "root/**/*"), Ok(false));
+    assert_eq!(matches_glob("root", "root/**"), Ok(false));
+    assert_eq!(matches_glob("root/", "root/**"), Ok(true));
+    assert_eq!(matches_glob("a/x/.b", "**/a/**/.b"), Ok(true));
+    assert_eq!(matches_glob("root/a/a/a/b", "root/**/a/a/b"), Ok(true));
+    assert_eq!(matches_glob("root/a/a/a/c", "root/**/a/a/b"), Ok(false));
 }
