@@ -6,16 +6,13 @@ use std::path::Path;
 /// Extensions of the script languages the repository does not track.
 const EXTENSIONS: [&str; 9] = ["js", "mjs", "cjs", "jsx", "ts", "tsx", "py", "sh", "ps1"];
 
-/// Tracked scripts that leave with the ticket that moves them.
-const PENDING: [&str; 1] = ["examples/sdk/rpc.py"];
-
 /// Fail when the index tracks a script file.
 ///
 /// Browser loaders come out of the build and live under `target/`; untracked files are
 /// not checked. A root without a `.git` entry has no index, so there is nothing to check.
 pub(crate) fn check(root: &Path) -> Result<(), String> {
     for path in tracked_files::paths(root)? {
-        if banned(&path) && !PENDING.contains(&path.as_str()) {
+        if banned(&path) {
             return Err(format!(
                 "{path}: the repository tracks no script files; write the logic in Rust and keep build output under target/"
             ));

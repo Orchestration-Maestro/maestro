@@ -53,14 +53,13 @@ fn tracked_script_files_are_rejected_in_every_banned_language() {
 }
 
 #[test]
-fn the_pending_example_is_the_only_tracked_script_accepted() {
+fn no_script_is_accepted_by_name() {
     let workspace = Workspace::with_text_member();
     script(&workspace, "examples/sdk/rpc.py", true);
-    check_workspace(workspace.root.path()).unwrap();
 
-    script(&workspace, "examples/sdk/other.py", true);
     let error = check_workspace(workspace.root.path()).unwrap_err();
-    assert!(error.contains("other.py"), "{error}");
+
+    assert!(error.contains("rpc.py"), "{error}");
 }
 
 #[test]
