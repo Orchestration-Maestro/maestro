@@ -2,7 +2,8 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::state::tests::support::{self, spawning};
+use crate::state::test_support::spawning;
+use crate::state::tests::support;
 
 use crate::{
     events::AppEvent,
@@ -16,7 +17,9 @@ use tokio::sync::mpsc;
 
 /// Supplies a daemon without launching any pane process.
 fn test_app() -> App {
-    let (launch, receiver) = spawning::launch_inputs(&[], support::manifest_cache());
+    let (launch, receiver) =
+        spawning::launch_inputs(&[], crate::state::test_support::manifest_cache().unwrap())
+            .unwrap();
     let mut app = App::new(
         &Config::default(),
         || 0,

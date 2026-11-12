@@ -2,7 +2,6 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::state::tests::support;
 use crate::{
     settings::model::Config, state::model::DaemonState, terminal::owners::TerminalRuntimeRegistry,
 };
@@ -19,7 +18,11 @@ const ALL: GitStatusRefreshDemand = GitStatusRefreshDemand {
 
 /// Retained state with one workspace per name, each rooted at its own directory.
 fn state_with_workspaces(names: &[&str]) -> DaemonState {
-    let mut state = DaemonState::new(&Config::default(), || 0, support::manifest_cache());
+    let mut state = DaemonState::new(
+        &Config::default(),
+        || 0,
+        crate::state::test_support::manifest_cache().unwrap(),
+    );
     for name in names {
         state
             .topology

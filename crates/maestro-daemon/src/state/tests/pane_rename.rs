@@ -1,7 +1,7 @@
 //! Pane renaming through the daemon's handler: the label and its publication.
 #![cfg(target_os = "linux")]
 use crate::state::App;
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     daemon_with_workspaces, events_after, failure, pane_record, request,
 };
 use maestro_protocol::{
@@ -40,8 +40,8 @@ fn updated_panes(app: &App) -> Vec<PaneInfo> {
 
 #[test]
 fn renaming_sets_trims_and_clears_the_label() {
-    let mut app = daemon_with_workspaces(&["/one"]);
-    let retained = |app: &mut App| pane_record(app, "w1:p1").label;
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
+    let retained = |app: &mut App| pane_record(app, "w1:p1").unwrap().label;
     app.state.session_dirty = false;
     let named = label_of(request(&mut app, rename(Some("reviewer"))));
     assert_eq!(named.as_deref(), Some("reviewer"));
@@ -58,7 +58,7 @@ fn renaming_sets_trims_and_clears_the_label() {
 
 #[test]
 fn a_rename_publishes_the_complete_pane_record_only_when_the_label_changes() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     request(&mut app, rename(Some("reviewer"))).unwrap();
     let published = updated_panes(&app);
     assert_eq!(published.len(), 1);
@@ -74,7 +74,7 @@ fn a_rename_publishes_the_complete_pane_record_only_when_the_label_changes() {
 
 #[test]
 fn renaming_a_missing_pane_is_refused_without_a_change() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let wire = json!({"type": "pane.rename", "pane_id": "w1:p9", "label": "x"});
     assert_eq!(
         request(&mut app, wire),

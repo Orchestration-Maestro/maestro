@@ -2,10 +2,10 @@
 #![cfg(target_os = "linux")]
 use crate::state::App;
 use crate::state::model::Mode;
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     add_tab, add_workspaces, answer, daemon_with_workspaces, failure, pair, request, root_pane,
-    with_live_daemon,
 };
+use crate::state::tests::support::live::with_live_daemon;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{
     AgentStatus, ErrorBody, PaneDirection, PaneFocusDirectionReason, PaneInfo, PaneLayoutSnapshot,
@@ -47,9 +47,9 @@ fn public(app: &App, workspace: usize, pane: PaneId) -> String {
 
 #[test]
 fn pane_listing_follows_workspace_tab_and_split_order() {
-    let (mut app, _, _) = pair();
-    add_tab(&mut app, 0);
-    add_workspaces(&mut app, &["/two"]);
+    let (mut app, _, _) = pair().unwrap();
+    add_tab(&mut app, 0).unwrap();
+    add_workspaces(&mut app, &["/two"]).unwrap();
     assert_eq!(
         listed(request(&mut app, json!({"type": "pane.list"}))),
         ["w1:p1", "w1:p2", "w1:p3", "w2:p1"]
@@ -67,7 +67,7 @@ fn pane_listing_follows_workspace_tab_and_split_order() {
 
 #[test]
 fn the_current_pane_prefers_the_caller_then_the_focus() {
-    let (mut app, left, right) = pair();
+    let (mut app, left, right) = pair().unwrap();
     let focused = reported(request(&mut app, json!({"type": "pane.current"})));
     assert_eq!(focused.pane_id, public(&app, 0, left));
     assert!(focused.focused);
@@ -83,7 +83,7 @@ fn the_current_pane_prefers_the_caller_then_the_focus() {
 
 #[test]
 fn the_current_pane_is_refused_without_a_caller_or_an_active_pane() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     let missing = json!({"type": "pane.current", "caller_pane_id": "missing"});
     assert_eq!(
         request(&mut app, missing),
@@ -98,7 +98,7 @@ fn the_current_pane_is_refused_without_a_caller_or_an_active_pane() {
 
 #[test]
 fn a_pane_is_read_by_any_accepted_spelling_and_a_missing_one_is_refused() {
-    let (mut app, _, right) = pair();
+    let (mut app, _, right) = pair().unwrap();
     for alias in ["w1:p2", "w1-2"] {
         let get = json!({"type": "pane.get", "pane_id": alias});
         assert_eq!(
@@ -115,8 +115,8 @@ fn a_pane_is_read_by_any_accepted_spelling_and_a_missing_one_is_refused() {
 
 #[test]
 fn focusing_a_pane_activates_its_tab_and_workspace() {
-    let mut app = daemon_with_workspaces(&["/one", "/two"]);
-    let target = add_tab(&mut app, 1);
+    let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
+    let target = add_tab(&mut app, 1).unwrap();
     let target_id = public(&app, 1, target);
     assert_eq!(app.state.active, Some(0));
     let focus = json!({"type": "pane.focus", "pane_id": target_id});
@@ -134,7 +134,7 @@ fn focusing_a_pane_activates_its_tab_and_workspace() {
 
 #[test]
 fn focusing_the_focused_pane_marks_a_finished_agent_seen() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let pane = root_pane(&app, 0);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
@@ -159,7 +159,7 @@ fn focusing_the_focused_pane_marks_a_finished_agent_seen() {
 
 #[test]
 fn focusing_a_missing_pane_is_refused_without_a_change() {
-    let (mut app, left, _) = pair();
+    let (mut app, left, _) = pair().unwrap();
     let focus = json!({"type": "pane.focus", "pane_id": "pane_missing"});
     assert_eq!(
         request(&mut app, focus),
@@ -173,8 +173,8 @@ fn focusing_a_missing_pane_is_refused_without_a_change() {
 
 #[test]
 fn a_layout_describes_the_tab_of_the_named_or_focused_pane() {
-    let (mut app, _, _) = pair();
-    add_tab(&mut app, 0);
+    let (mut app, _, _) = pair().unwrap();
+    add_tab(&mut app, 0).unwrap();
     let expected = app.pane_layout_snapshot(0, 0).unwrap();
     let named = json!({"type": "pane.layout", "pane_id": "w1:p2"});
     assert_eq!(layout_of(request(&mut app, named)), expected);
@@ -207,7 +207,7 @@ fn neighbour_of(app: &mut App, pane: &str, direction: &str) -> Option<String> {
 
 #[test]
 fn a_neighbour_is_the_pane_next_to_it_in_a_direction() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     assert_eq!(
         neighbour_of(&mut app, "w1:p1", "right").as_deref(),
         Some("w1:p2")
@@ -222,7 +222,7 @@ fn a_neighbour_is_the_pane_next_to_it_in_a_direction() {
 
 #[test]
 fn edges_tell_which_sides_of_the_view_a_pane_touches() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     for (pane, left, right) in [("w1:p1", true, false), ("w1:p2", false, true)] {
         let command = json!({"type": "pane.edges", "pane_id": pane});
         let Ok(ResponseResult::PaneEdges { edges }) = request(&mut app, command) else {
@@ -251,7 +251,7 @@ fn focus_toward(app: &mut App, pane: &str, direction: PaneDirection) -> Value {
 
 #[test]
 fn focus_moves_to_the_neighbour_in_a_direction() {
-    let (mut app, _, right) = pair();
+    let (mut app, _, right) = pair().unwrap();
     let focus = focus_toward(&mut app, "w1:p1", PaneDirection::Right);
     assert_eq!(focus["changed"], true);
     assert_eq!(focus.get("reason"), None);
@@ -267,7 +267,7 @@ fn focus_moves_to_the_neighbour_in_a_direction() {
 
 #[test]
 fn focus_stays_put_when_no_neighbour_lies_that_way() {
-    let (mut app, left, _) = pair();
+    let (mut app, left, _) = pair().unwrap();
     let focus = focus_toward(&mut app, "w1:p1", PaneDirection::Left);
     assert_eq!(focus["changed"], false);
     assert_eq!(
@@ -284,7 +284,7 @@ fn focus_stays_put_when_no_neighbour_lies_that_way() {
 
 #[test]
 fn process_info_needs_a_pane_with_a_process() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     let info = json!({"type": "pane.process_info", "pane_id": "w1:p1"});
     assert_eq!(
         request(&mut app, info),
@@ -329,7 +329,7 @@ fn a_new_tab_root_is_listed_with_its_terminal_and_tab() {
     with_live_daemon(
         "pane_commands::a_new_tab_root_is_listed_with_its_terminal_and_tab",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let created = answer(app, json!({"type": "tab.create"})).await;
             let Ok(ResponseResult::TabCreated { tab, root_pane }) = created else {
                 panic!("expected a created tab: {created:?}");

@@ -4,6 +4,34 @@
 //! terminal metadata behave as they do for a created workspace. Reads and assertions go
 //! through commands and events, never through these entries.
 
+/// A daemon answering workspace commands, with workspaces that need no live process.
+pub mod api;
+/// Native launch adapters for the daemon-owner tests.
+pub mod spawning;
+
+use std::sync::{Arc, RwLock};
+
+/// Drives one future on a current-thread runtime without test deadlines.
+///
+/// # Errors
+/// Returns why the runtime could not be built.
+pub fn run<T>(future: impl std::future::Future<Output = T>) -> std::io::Result<T> {
+    Ok(tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(future))
+}
+
+/// Builds one isolated detection snapshot for state and any pane runtimes under test.
+///
+/// # Errors
+/// Returns the validation error of an invalid bundled document.
+pub fn manifest_cache() -> Result<Arc<RwLock<maestro_detection::definitions::ManifestCache>>, String>
+{
+    maestro_detection::definitions::ManifestCache::new(None, None)
+        .map(|cache| Arc::new(RwLock::new(cache)))
+}
+
 use super::App;
 use crate::terminal::model::TerminalState;
 use maestro_workspace::{

@@ -429,7 +429,7 @@ fn capture_retains_restored_agent_session() {
 }
 
 #[cfg(unix)]
-use crate::state::tests::support::spawning;
+use crate::state::test_support::spawning;
 
 #[test]
 #[cfg(unix)]
@@ -487,7 +487,8 @@ async fn check_history(args: &[String], count: usize) {
     if count == 2 {
         split(&mut state);
     }
-    let (launch, mut receiver) = spawning::launch_inputs(args, Arc::clone(&state.manifests));
+    let (launch, mut receiver) =
+        spawning::launch_inputs(args, Arc::clone(&state.manifests)).unwrap();
     let mut runtimes = TerminalRuntimeRegistry::new();
     let panes = state.topology.workspaces[0].tabs[0].layout.pane_ids();
     let markers = if count == 1 {

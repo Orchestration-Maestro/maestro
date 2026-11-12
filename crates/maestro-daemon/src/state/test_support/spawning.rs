@@ -9,18 +9,22 @@ use std::{ffi::OsString, sync::Arc};
 use tokio::sync::{Notify, mpsc};
 
 /// Supplies the same existing pane runtime boundary used by native launches.
-pub(crate) fn launch_inputs(
+///
+/// # Errors
+/// Returns why the running executable cannot be named.
+pub fn launch_inputs(
     args: &[String],
     manifests: Arc<std::sync::RwLock<maestro_detection::definitions::ManifestCache>>,
-) -> (PaneLaunchInputs, mpsc::Receiver<AppEvent>) {
+) -> Result<(PaneLaunchInputs, mpsc::Receiver<AppEvent>), String> {
     let (events, receiver) = mpsc::channel(8);
-    (
+    Ok((
         PaneLaunchInputs {
             no_session: true,
             setup_entry: PtySetupEntry {
-                executable: std::env::current_exe().unwrap(),
+                executable: std::env::current_exe().map_err(|error| error.to_string())?,
                 args: args.iter().map(OsString::from).collect(),
             },
+            // No test connects to this socket, so it names a path that never exists.
             socket: "/nonexistent/maestro-daemon-state.sock".into(),
             executable: None,
             manifests,
@@ -32,5 +36,5 @@ pub(crate) fn launch_inputs(
             process_detection_mode: ProcessDetectionMode::Native,
         },
         receiver,
-    )
+    ))
 }

@@ -2,10 +2,10 @@
 //! input commands, with the bytes observed by a real shell.
 #![cfg(target_os = "linux")]
 use crate::state::App;
-use crate::state::tests::support::api::{
-    answer, daemon_with_workspaces, failure, request, root_pane, run_in_pane, split_pane,
-    wait_for_line, with_live_daemon,
+use crate::state::test_support::api::{
+    answer, daemon_with_workspaces, failure, request, root_pane, split_pane,
 };
+use crate::state::tests::support::live::{run_in_pane, wait_for_line, with_live_daemon};
 use maestro_protocol::schema::{ResponseResult, SplitDirection};
 use maestro_workspace::terminal_id::TerminalId;
 use serde_json::json;
@@ -188,7 +188,7 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
             let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
                 panic!("expected a created workspace: {created:?}");
             };
-            let root = crate::state::tests::support::api::root_pane(app, 0);
+            let root = crate::state::test_support::api::root_pane(app, 0);
             let terminal = app.state.topology.workspaces[0]
                 .terminal_id(root)
                 .unwrap()
@@ -220,7 +220,7 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
 
 #[test]
 fn input_to_a_pane_that_cannot_be_written_to_is_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     for command in ["pane.send_text", "pane.send_keys", "pane.send_input"] {
         for pane in ["w1:p1", "w1:p9"] {
             let wire = json!({"type": command, "pane_id": pane, "text": "x", "keys": ["a"]});
@@ -235,9 +235,9 @@ fn input_to_a_pane_that_cannot_be_written_to_is_refused() {
 
 #[test]
 fn input_routing_changes_only_the_named_pane() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let target = root_pane(&app, 0);
-    let other = split_pane(&mut app, 0, target, SplitDirection::Right);
+    let other = split_pane(&mut app, 0, target, SplitDirection::Right).unwrap();
     let routed = |app: &App, pane| {
         app.state.topology.workspaces[0]
             .pane_state(pane)

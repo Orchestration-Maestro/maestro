@@ -3,10 +3,11 @@
 use crate::settings::model::NewTerminalCwdConfig;
 use crate::state::App;
 use crate::state::model::Mode;
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
-    run_in_pane, with_live_daemon, workspace_ids,
+    workspace_ids,
 };
+use crate::state::tests::support::live::{run_in_pane, with_live_daemon};
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, TabInfo};
 use serde_json::json;
@@ -52,7 +53,7 @@ fn tab_ids(app: &App, index: usize) -> Vec<String> {
 
 /// A workspace with three tabs and a second workspace with one.
 fn three_tabs() -> App {
-    let mut app = daemon_with_workspaces(&["/tabs", "/other"]);
+    let mut app = daemon_with_workspaces(&["/tabs", "/other"]).unwrap();
     add_tabs(&mut app, 0, 2);
     app
 }
@@ -191,7 +192,7 @@ fn renaming_a_tab_updates_its_label_and_publishes_it() {
 #[test]
 fn single_moves_validate_insertion_boundaries() {
     let mut app = three_tabs();
-    add_workspaces(&mut app, &["/third"]);
+    add_workspaces(&mut app, &["/third"]).unwrap();
     for (index, (insert, order)) in [
         (0, ["w1:t1", "w1:t2", "w1:t3"]),
         (1, ["w1:t1", "w1:t2", "w1:t3"]),
@@ -223,14 +224,14 @@ fn single_moves_validate_insertion_boundaries() {
     assert!(request(&mut app, moved).is_ok());
     let moved = json!({"type": "workspace.move", "workspace_id": "w2", "insert_index": 3});
     assert!(request(&mut app, moved).is_ok());
-    assert_eq!(workspace_ids(&mut app), ["w1", "w3", "w2"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w1", "w3", "w2"]);
     assert_eq!(app.state.active, Some(0));
     assert_eq!(events_after(&app, 0).len(), 2);
 }
 
 #[test]
 fn final_tab_close_publishes_tab_then_workspace() {
-    let mut app = daemon_with_workspaces(&["/repo-issue", "/other"]);
+    let mut app = daemon_with_workspaces(&["/repo-issue", "/other"]).unwrap();
     join_group(&mut app, 0, "repo-key", true);
     let get = json!({"type": "workspace.get", "workspace_id": "w1"});
     let Ok(ResponseResult::WorkspaceInfo { workspace }) = request(&mut app, get) else {
@@ -239,7 +240,7 @@ fn final_tab_close_publishes_tab_then_workspace() {
     app.state.session_dirty = false;
     let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&mut app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w2"]);
     assert_eq!(app.state.terminals.len(), 1);
     assert!(app.state.session_dirty);
     assert!(workspace.worktree.as_ref().unwrap().is_linked_worktree);
@@ -260,7 +261,7 @@ fn final_tab_close_publishes_tab_then_workspace() {
 
 #[test]
 fn final_tab_close_empties_the_daemon_and_clears_focus() {
-    let mut app = daemon_with_workspaces(&["/only"]);
+    let mut app = daemon_with_workspaces(&["/only"]).unwrap();
     app.state.session_dirty = false;
 
     let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
@@ -290,7 +291,7 @@ fn tab_close_preserves_confirmation_and_terminal_ownership() {
         }]
     );
     // The last tab of a repository with linked worktrees asks before closing them all.
-    let mut app = daemon_with_workspaces(&["/repo", "/repo-one"]);
+    let mut app = daemon_with_workspaces(&["/repo", "/repo-one"]).unwrap();
     join_group(&mut app, 0, "repo-key", false);
     join_group(&mut app, 1, "repo-key", true);
     app.state.confirm_close.0 = true;
@@ -302,7 +303,7 @@ fn tab_close_preserves_confirmation_and_terminal_ownership() {
             "closing this tab would close a worktree group"
         )
     );
-    assert_eq!(workspace_ids(&mut app), ["w1", "w2"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w1", "w2"]);
     assert_eq!(app.state.terminals.len(), 2);
     assert_eq!(app.state.mode, Mode::ConfirmClose);
     assert!(events_after(&app, 0).is_empty());
@@ -321,7 +322,7 @@ fn daemon_tab_create_response_includes_root_pane() {
     with_live_daemon(
         "tab_commands::daemon_tab_create_response_includes_root_pane",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let focused = json!({"type": "tab.create", "focus": true, "label": "build"});
             let (tab, root_pane) = created(answer(app, focused).await);
             assert_eq!(
@@ -367,7 +368,7 @@ fn tab_creation_uses_the_focused_cached_directory() {
             std::fs::create_dir(&first).unwrap();
             std::fs::create_dir(&cached).unwrap();
             app.config.terminal.new_cwd = NewTerminalCwdConfig::Follow;
-            add_workspaces(app, &[first.to_str().unwrap()]);
+            add_workspaces(app, &[first.to_str().unwrap()]).unwrap();
             add_tabs(app, 0, 1);
             app.state.topology.workspaces[0].active_tab = 1;
             let tab = &app.state.topology.workspaces[0].tabs[1];
@@ -381,7 +382,7 @@ fn tab_creation_uses_the_focused_cached_directory() {
 
 #[test]
 fn launch_environment_rejects_equals_in_keys_before_spawning() {
-    let mut app = daemon_with_workspaces(&["/tabs"]);
+    let mut app = daemon_with_workspaces(&["/tabs"]).unwrap();
     for create in [
         json!({"type": "tab.create", "env": {"BAD=KEY": "value"}}),
         json!({"type": "workspace.create", "env": {"BAD=KEY": "value"}}),
@@ -391,7 +392,7 @@ fn launch_environment_rejects_equals_in_keys_before_spawning() {
             failure("invalid_env", "env key BAD=KEY must not contain '='")
         );
     }
-    assert_eq!(workspace_ids(&mut app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w1"]);
     assert_eq!(app.state.topology.workspaces[0].tabs.len(), 1);
     assert_eq!(app.state.topology.workspaces[0].next_public_tab_number, 2);
     assert!(events_after(&app, 0).is_empty());
@@ -402,7 +403,7 @@ fn launch_environment_reaches_the_root_pane() {
     with_live_daemon(
         "tab_commands::launch_environment_reaches_the_root_pane",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let create = json!({
                 "type": "tab.create",
                 "focus": true,

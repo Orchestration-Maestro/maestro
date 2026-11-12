@@ -3,10 +3,11 @@
 use crate::settings::model::NewTerminalCwdConfig;
 use crate::state::App;
 use crate::state::model::Mode;
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
-    with_live_daemon, workspace_ids, workspace_ids_of,
+    workspace_ids, workspace_ids_of,
 };
+use crate::state::tests::support::live::with_live_daemon;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, WorkspaceInfo};
 use serde_json::json;
@@ -47,7 +48,7 @@ fn navigation(app: &App) -> (Option<String>, String) {
 
 #[test]
 fn workspace_targets_preserve_ids_aliases_and_missing_errors() {
-    let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]);
+    let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]).unwrap();
     assert_eq!(
         listed(&request(&mut app, json!({"type": "workspace.list"}))),
         ["w1", "w2", "w3"]
@@ -89,19 +90,19 @@ fn assert_missing_workspaces_change_nothing(app: &mut App) {
         let close = json!({"type": "workspace.close", "workspace_id": missing});
         assert_eq!(request(app, close), expected, "{missing:?}");
     }
-    assert_eq!(workspace_ids(app), ["w3", "w1"]);
+    assert_eq!(workspace_ids(app).unwrap(), ["w3", "w1"]);
     assert_eq!(navigation(app).0.as_deref(), Some("w3"));
     assert!(events_after(app, sequence).is_empty());
 }
 
 #[test]
 fn workspace_move_preserves_stable_identity_and_focus() {
-    let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]);
+    let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]).unwrap();
     app.state.selected = 1;
     let moved = json!({"type": "workspace.move", "workspace_id": "w1", "insert_index": 3});
     let result = request(&mut app, moved);
     assert_eq!(listed(&result), ["w2", "w3", "w1"]);
-    assert_eq!(workspace_ids(&mut app), ["w2", "w3", "w1"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w2", "w3", "w1"]);
     assert_eq!(navigation(&app), (Some("w1".into()), "w2".into()));
     let Ok(ResponseResult::WorkspaceList { workspaces }) = result else {
         unreachable!()
@@ -121,7 +122,7 @@ fn workspace_move_preserves_stable_identity_and_focus() {
 
 #[test]
 fn workspace_block_moves_are_atomic_and_keep_request_order() {
-    let mut app = daemon_with_workspaces(&["/child", "/normal", "/parent", "/tail"]);
+    let mut app = daemon_with_workspaces(&["/child", "/normal", "/parent", "/tail"]).unwrap();
     app.state.active = Some(2);
     app.state.selected = 0;
     let block = json!({
@@ -131,7 +132,7 @@ fn workspace_block_moves_are_atomic_and_keep_request_order() {
     });
     let result = request(&mut app, block);
     assert_eq!(listed(&result), ["w2", "w3", "w1", "w4"]);
-    assert_eq!(workspace_ids(&mut app), ["w2", "w3", "w1", "w4"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w2", "w3", "w1", "w4"]);
     assert_eq!(navigation(&app), (Some("w3".into()), "w1".into()));
     let Ok(ResponseResult::WorkspaceList { workspaces }) = result else {
         unreachable!()
@@ -148,7 +149,7 @@ fn workspace_block_moves_are_atomic_and_keep_request_order() {
 
 #[test]
 fn unchanged_workspace_order_emits_no_move() {
-    let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]);
+    let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]).unwrap();
     for unchanged in [
         json!({"type": "workspace.move", "workspace_id": "w1", "insert_index": 0}),
         json!({"type": "workspace.move", "workspace_id": "w1", "insert_index": 1}),
@@ -158,14 +159,14 @@ fn unchanged_workspace_order_emits_no_move() {
         let result = request(&mut app, unchanged.clone());
         assert_eq!(listed(&result), ["w1", "w2", "w3"], "{unchanged}");
     }
-    assert_eq!(workspace_ids(&mut app), ["w1", "w2", "w3"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w1", "w2", "w3"]);
     assert!(events_after(&app, 0).is_empty());
     assert!(!app.state.session_dirty);
 }
 
 #[test]
 fn workspace_block_validation_is_atomic() {
-    let mut app = daemon_with_workspaces(&["/one", "/two", "/three", "/four"]);
+    let mut app = daemon_with_workspaces(&["/one", "/two", "/three", "/four"]).unwrap();
     let block = |ids: serde_json::Value, before: Option<&str>| json!({"type": "workspace.move_block", "workspace_ids": ids, "before_workspace_id": before});
     let failed = |message: &str| failure("workspace_move_block_failed", message);
     for (rejected, expected) in [
@@ -195,7 +196,7 @@ fn workspace_block_validation_is_atomic() {
         ),
     ] {
         assert_eq!(request(&mut app, rejected.clone()), expected, "{rejected}");
-        assert_eq!(workspace_ids(&mut app), ["w1", "w2", "w3", "w4"]);
+        assert_eq!(workspace_ids(&mut app).unwrap(), ["w1", "w2", "w3", "w4"]);
     }
     assert!(events_after(&app, 0).is_empty());
     for (accepted, order) in [
@@ -213,7 +214,7 @@ fn workspace_block_validation_is_atomic() {
 
 #[test]
 fn closing_a_linked_workspace_keeps_its_neighbours() {
-    let mut app = daemon_with_workspaces(&["/repo", "/repo-one", "/repo-two", "/other"]);
+    let mut app = daemon_with_workspaces(&["/repo", "/repo-one", "/repo-two", "/other"]).unwrap();
     join_group(&mut app, 0, "repo-key", false);
     join_group(&mut app, 1, "repo-key", true);
     join_group(&mut app, 2, "repo-key", true);
@@ -225,7 +226,7 @@ fn closing_a_linked_workspace_keeps_its_neighbours() {
         .collect();
     let close = json!({"type": "workspace.close", "workspace_id": "w2"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&mut app), ["w1", "w3", "w4"]);
+    assert_eq!(workspace_ids(&mut app).unwrap(), ["w1", "w3", "w4"]);
     assert_eq!(app.state.terminals.len(), 3);
     assert!(
         closed
@@ -237,7 +238,7 @@ fn closing_a_linked_workspace_keeps_its_neighbours() {
 
 #[test]
 fn workspace_close_publishes_the_final_worktree_snapshot() {
-    let mut app = daemon_with_workspaces(&["/repo-issue"]);
+    let mut app = daemon_with_workspaces(&["/repo-issue"]).unwrap();
     join_group(&mut app, 0, "repo-key", true);
     let get = json!({"type": "workspace.get", "workspace_id": "w1"});
     let Ok(ResponseResult::WorkspaceInfo { workspace: before }) = request(&mut app, get) else {
@@ -267,7 +268,7 @@ fn workspace_close_publishes_the_final_worktree_snapshot() {
 fn daemon_api_request_drains_all_pending_internal_events_before_reading_state() {
     use crate::events::AppEvent;
     use maestro_detection::agents::{Agent, AgentState};
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let (events, receiver) = tokio::sync::mpsc::channel(256);
     app.event_rx = receiver;
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
@@ -303,7 +304,7 @@ fn daemon_api_request_drains_all_pending_internal_events_before_reading_state() 
 
 #[test]
 fn daemon_read_only_api_requests_do_not_force_rerender() {
-    let mut app = daemon_with_workspaces(&["/one", "/two"]);
+    let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
     for read in [
         json!({"type": "workspace.list"}),
         json!({"type": "workspace.get", "workspace_id": "w1"}),
@@ -417,7 +418,7 @@ fn workspace_creation_follows_the_focused_pane_directory() {
             std::fs::create_dir(&first).unwrap();
             std::fs::create_dir(&focused).unwrap();
             with_policy(app, NewTerminalCwdConfig::Follow);
-            add_workspaces(app, &[first.to_str().unwrap()]);
+            add_workspaces(app, &[first.to_str().unwrap()]).unwrap();
             app.state
                 .topology
                 .create_tab_with_runtime(0, |_, _| Ok(()))
@@ -464,7 +465,7 @@ fn workspace_creation_preserves_explicit_cwd_and_focus_policy() {
             };
             assert_eq!(error.code, "workspace_create_failed");
             assert!(!error.message.is_empty());
-            assert_eq!(workspace_ids_of(app).await, ["w1", "w2"]);
+            assert_eq!(workspace_ids_of(app).await.unwrap(), ["w1", "w2"]);
             assert_eq!(
                 (app.state.terminals.len(), app.terminal_runtimes.len()),
                 (2, 2)

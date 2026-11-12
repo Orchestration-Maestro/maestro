@@ -9,7 +9,11 @@ use crate::{settings::model::Config, state::model::DaemonState};
 
 /// Creates pure workspace topology with an active first workspace.
 fn app_with_workspaces(names: &[&str]) -> DaemonState {
-    let mut state = DaemonState::new(&Config::default(), || 0, support::manifest_cache());
+    let mut state = DaemonState::new(
+        &Config::default(),
+        || 0,
+        crate::state::test_support::manifest_cache().unwrap(),
+    );
     for name in names {
         state
             .topology

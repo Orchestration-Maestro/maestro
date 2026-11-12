@@ -2,7 +2,7 @@
 //! sequences and publication.
 #![cfg(target_os = "linux")]
 use crate::state::App;
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     accepted, daemon_with_workspaces, detect, events_after, pane_record, pilot, request, root_pane,
 };
 use crate::terminal::model::{DetectedStateUpdate, TerminalState};
@@ -42,7 +42,7 @@ fn titled(fields: Value) -> Value {
 
 /// The tokens the first pane holds.
 fn tokens(app: &mut App) -> HashMap<String, String> {
-    pane_record(app, "w1:p1").tokens
+    pane_record(app, "w1:p1").unwrap().tokens
 }
 
 /// What the failure of `wire` is, by code and message.
@@ -87,7 +87,7 @@ fn observe(app: &mut App, update: DetectedStateUpdate, at: Instant) {
 
 #[test]
 fn tokens_patch_and_clear_without_touching_the_presentation() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let set = report(
         "user:metadata.test-1",
         json!({"tokens": {"summary": "reviewing auth", "model": "opus"}}),
@@ -114,7 +114,7 @@ fn tokens_patch_and_clear_without_touching_the_presentation() {
 
 #[test]
 fn tokens_ignore_the_agent_guard_of_the_presentation() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     detect(&mut app, Agent::Claude, AgentState::Working);
     let wire = report(
         "user:metadata.test-1",
@@ -122,12 +122,12 @@ fn tokens_ignore_the_agent_guard_of_the_presentation() {
     );
     accepted(&mut app, wire);
     assert_eq!(tokens(&mut app)["summary"], "global");
-    assert_eq!(pane_record(&mut app, "w1:p1").title, None);
+    assert_eq!(pane_record(&mut app, "w1:p1").unwrap().title, None);
 }
 
 #[test]
 fn presentation_and_tokens_share_one_sequence_per_source() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     accepted(&mut app, titled(json!({"seq": 10})));
     let stale = report(
         "user:metadata.test-1",
@@ -145,7 +145,7 @@ fn presentation_and_tokens_share_one_sequence_per_source() {
 
 #[test]
 fn a_report_ignored_after_the_process_exit_does_not_advance_the_sequence() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     detect(&mut app, Agent::Pi, AgentState::Idle);
     let initial = titled(json!({"source": "custom:pi-metadata", "agent": "pi", "seq": 100}));
     accepted(&mut app, initial);
@@ -196,7 +196,7 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
         ("maestro:claude", "herdr:claude"),
         ("herdr:claude", "maestro:claude"),
     ] {
-        let mut app = daemon_with_workspaces(&["/one"]);
+        let mut app = daemon_with_workspaces(&["/one"]).unwrap();
         detect(&mut app, Agent::Claude, AgentState::Idle);
         let newest = report(
             fresh,
@@ -208,7 +208,7 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
             json!({"title": "old", "tokens": {"summary": "old"}, "seq": 9}),
         );
         accepted(&mut app, older);
-        let kept = pane_record(&mut app, "w1:p1");
+        let kept = pane_record(&mut app, "w1:p1").unwrap();
         assert_eq!(kept.title.as_deref(), Some("new"), "{fresh} then {stale}");
         assert_eq!(kept.tokens["summary"], "new", "{fresh} then {stale}");
         accepted(
@@ -216,7 +216,7 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
             report(stale, json!({"title": "newer", "seq": 11})),
         );
         assert_eq!(
-            pane_record(&mut app, "w1:p1").title.as_deref(),
+            pane_record(&mut app, "w1:p1").unwrap().title.as_deref(),
             Some("newer")
         );
         let sources: Vec<_> = terminal_of(&mut app).agent_metadata.keys().collect();
@@ -226,7 +226,7 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
 
 #[test]
 fn a_legacy_guard_spelling_is_ignored_after_the_process_exit_without_advancing_the_sequence() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     detect(&mut app, Agent::Claude, AgentState::Idle);
     let exit_at = Instant::now() + Duration::from_millis(1);
     let exited = update(Some(Agent::Claude), AgentState::Idle, true);
@@ -251,7 +251,7 @@ fn a_legacy_guard_spelling_is_ignored_after_the_process_exit_without_advancing_t
 
 #[test]
 fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     pilot(&mut app, AgentState::Idle);
     let session = json!({
         "type": "pane.report_agent_session", "pane_id": "w1:p1", "source": "maestro:pi",
@@ -271,7 +271,7 @@ fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
         "tokens": {"summary": "reviewing auth", "model": "opus"}
     });
     accepted(&mut app, wire);
-    let reported = pane_record(&mut app, "w1:p1");
+    let reported = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(reported.agent.as_deref(), Some("pi"));
     assert_eq!(reported.title.as_deref(), Some("Refactor auth"));
     assert_eq!(reported.display_agent.as_deref(), Some("Pi auth"));
@@ -282,14 +282,14 @@ fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
 
 #[test]
 fn text_is_cleaned_and_state_labels_are_matched_without_case() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     detect(&mut app, Agent::Pi, AgentState::Idle);
     let long = format!("  tab\there {}  ", "x".repeat(100));
     let wire = titled(json!({
         "agent": "pi", "title": long, "state_labels": {" Working ": "  busy\u{7}bee "}
     }));
     accepted(&mut app, wire);
-    let reported = pane_record(&mut app, "w1:p1");
+    let reported = pane_record(&mut app, "w1:p1").unwrap();
     let title = reported.title.unwrap();
     assert!(
         title.starts_with("tabhere xxxx") && title.chars().count() == 80,
@@ -300,7 +300,7 @@ fn text_is_cleaned_and_state_labels_are_matched_without_case() {
 
 #[test]
 fn presentation_text_and_token_values_are_cleaned_alike() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     detect(&mut app, Agent::Pi, AgentState::Idle);
     let cases = [
         (
@@ -312,27 +312,27 @@ fn presentation_text_and_token_values_are_cleaned_alike() {
     for (raw, kept) in cases {
         let wire = titled(json!({"agent": "pi", "title": raw, "tokens": {"summary": raw}}));
         accepted(&mut app, wire);
-        let reported = pane_record(&mut app, "w1:p1");
+        let reported = pane_record(&mut app, "w1:p1").unwrap();
         assert_eq!(reported.title.as_deref(), Some(kept.as_str()), "{raw:?}");
         assert_eq!(reported.tokens["summary"], kept, "{raw:?}");
     }
     let blank = " \u{7}\n ";
     let wire = titled(json!({"agent": "pi", "title": blank, "tokens": {"summary": blank}}));
     accepted(&mut app, wire);
-    let reported = pane_record(&mut app, "w1:p1");
+    let reported = pane_record(&mut app, "w1:p1").unwrap();
     assert_eq!(reported.title, Some("a".repeat(79)));
     assert!(reported.tokens.is_empty());
 }
 
 #[test]
 fn a_documented_source_and_the_longest_lifetime_are_accepted() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     accepted(&mut app, titled(json!({"ttl_ms": MAX_TTL_MS})));
 }
 
 #[test]
 fn a_malformed_source_is_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let long = "a".repeat(81);
     for source in [
         "",
@@ -357,7 +357,7 @@ fn a_malformed_source_is_refused() {
 
 #[test]
 fn a_lifetime_outside_the_supported_range_is_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     for ttl in [0, MAX_TTL_MS + 1] {
         let (code, _) = refusal(&mut app, titled(json!({"ttl_ms": ttl})));
         assert_eq!(code, "invalid_metadata_ttl", "{ttl}");
@@ -366,7 +366,7 @@ fn a_lifetime_outside_the_supported_range_is_refused() {
 
 #[test]
 fn contradictory_or_empty_requests_are_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let conflict = "cannot set and clear the same metadata field";
     for wire in [
         titled(json!({"clear_title": true})),
@@ -387,7 +387,7 @@ fn contradictory_or_empty_requests_are_refused() {
 
 #[test]
 fn an_unknown_state_label_and_a_malformed_token_are_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let sleepy = titled(json!({"state_labels": {"sleepy": "zzz"}}));
     assert_eq!(
         refusal(&mut app, sleepy),
@@ -411,7 +411,7 @@ fn an_unknown_state_label_and_a_malformed_token_are_refused() {
 
 #[test]
 fn a_pane_holds_at_most_thirty_two_tokens_and_a_source_list_is_bounded() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     for batch in 0..2 {
         let tokens: HashMap<String, Value> = (0..16)
             .map(|n| (format!("key{batch}x{n}"), json!("v")))
@@ -427,7 +427,7 @@ fn a_pane_holds_at_most_thirty_two_tokens_and_a_source_list_is_bounded() {
         )
     );
     assert_eq!(tokens(&mut app).len(), 32);
-    let mut other = daemon_with_workspaces(&["/two"]);
+    let mut other = daemon_with_workspaces(&["/two"]).unwrap();
     for source in 0..32 {
         let wire = report(
             &format!("user:s{source}"),
@@ -447,7 +447,7 @@ fn a_pane_holds_at_most_thirty_two_tokens_and_a_source_list_is_bounded() {
 
 #[test]
 fn a_token_change_publishes_the_complete_pane_record_once() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let wire = report("user:metadata.test-1", json!({"tokens": {"summary": "a"}}));
     accepted(&mut app, wire.clone());
     accepted(&mut app, wire);
@@ -465,7 +465,7 @@ fn a_token_change_publishes_the_complete_pane_record_once() {
 
 #[test]
 fn a_presentation_change_publishes_the_agent_status_with_its_title() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     detect(&mut app, Agent::Pi, AgentState::Working);
     let sequence = app.event_hub().current_sequence();
     accepted(&mut app, titled(json!({"agent": "pi"})));

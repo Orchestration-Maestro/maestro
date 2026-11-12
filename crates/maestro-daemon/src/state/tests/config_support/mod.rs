@@ -16,7 +16,8 @@ pub fn fixture() -> (App, SettingsManager, Arc<InMemorySettingsStorage>) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = crate::state::tests::support::spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) =
+        crate::state::test_support::spawning::launch_inputs(&[], manifests).unwrap();
     let app = App::new(
         &Config::default(),
         || 0,

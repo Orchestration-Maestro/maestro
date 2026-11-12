@@ -32,7 +32,7 @@ fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
 }
 
 #[cfg(unix)]
-use crate::state::tests::support::spawning;
+use crate::state::test_support::spawning;
 
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
@@ -46,7 +46,7 @@ pub(crate) fn app_with_args(config: &Config, args: &[String]) -> crate::state::A
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = spawning::launch_inputs(args, manifests);
+    let (launch, receiver) = spawning::launch_inputs(args, manifests).unwrap();
     crate::state::App::new(
         config,
         || 0,
@@ -637,7 +637,7 @@ async fn live_shutdown_app(
     };
     let (mut app, pane) = target_app();
     let (launch, receiver) =
-        spawning::launch_inputs(args, std::sync::Arc::clone(&app.state.manifests));
+        spawning::launch_inputs(args, std::sync::Arc::clone(&app.state.manifests)).unwrap();
     app.launch = launch;
     app.event_rx = receiver;
     let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));

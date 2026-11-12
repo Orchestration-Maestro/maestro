@@ -2,12 +2,13 @@
 //! directories, limits, rollback, focus and publication.
 #![cfg(target_os = "linux")]
 use crate::state::App;
+use crate::state::test_support::api::{
+    add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
+    workspace_ids_of,
+};
 use crate::state::tests::support::{
-    api::{
-        add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
-        wait_for_line, with_live_daemon, workspace_ids_of,
-    },
     layouts::{balanced, chain, shell, sleeper, split},
+    live::{wait_for_line, with_live_daemon},
 };
 use crate::{
     settings::model::NewTerminalCwdConfig,
@@ -82,7 +83,7 @@ fn applying_a_layout_replaces_the_named_tab() {
     with_live_daemon(
         "layout_apply::applying_a_layout_replaces_the_named_tab",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let root = json!({
                 "type": "split", "direction": "right", "ratio": 0.7,
                 "first": {"type": "pane", "label": "editor"},
@@ -140,7 +141,7 @@ fn a_leaf_command_runs_with_its_directory_and_environment() {
     with_live_daemon(
         "layout_apply::a_leaf_command_runs_with_its_directory_and_environment",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let scratch = Scratch::new().unwrap();
             let reporter = install_leaf(scratch.path(), "reporter", "report-environment");
             let leaf = json!({
@@ -171,7 +172,7 @@ fn a_new_layout_tab_follows_the_directory_of_the_focused_pane() {
         "layout_apply::a_new_layout_tab_follows_the_directory_of_the_focused_pane",
         async |app| {
             follow(app);
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let focused = Scratch::new().unwrap();
             let root = root_pane(app, 0);
             set_cwd(app, root, focused.path());
@@ -188,11 +189,11 @@ fn a_replacing_layout_follows_the_directory_of_the_replaced_tab() {
         "layout_apply::a_replacing_layout_follows_the_directory_of_the_replaced_tab",
         async |app| {
             follow(app);
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let (active, background) = (Scratch::new().unwrap(), Scratch::new().unwrap());
             let root = root_pane(app, 0);
             set_cwd(app, root, active.path());
-            let replaced = add_tab(app, 0);
+            let replaced = add_tab(app, 0).unwrap();
             set_cwd(app, replaced, background.path());
             let wire = apply_wire(&sleeper(), &json!({"tab_id": "w1:t2"}));
             applied(answer(app, wire).await);
@@ -207,7 +208,7 @@ fn a_leaf_without_a_directory_starts_where_the_pane_it_splits_runs() {
     with_live_daemon(
         "layout_apply::a_leaf_without_a_directory_starts_where_the_pane_it_splits_runs",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let (first, other) = (Scratch::new().unwrap(), Scratch::new().unwrap());
             let root = split(
                 json!({"type": "pane", "cwd": first.path(), "command": ["/bin/sleep", "60"]}),
@@ -238,7 +239,7 @@ fn replacing_a_tab_drops_the_action_records_of_its_panes() {
     with_live_daemon(
         "layout_apply::replacing_a_tab_drops_the_action_records_of_its_panes",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let replaced = root_pane(app, 0);
             app.state.action_panes.insert(
                 replaced,
@@ -259,7 +260,7 @@ fn a_layout_may_hold_sixteen_levels_and_twenty_four_panes() {
     with_live_daemon(
         "layout_apply::a_layout_may_hold_sixteen_levels_and_twenty_four_panes",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             for (root, panes) in [(chain(16, &sleeper()), 16), (balanced(24, &sleeper()), 24)] {
                 let layout = applied(answer(app, apply_wire(&root, &json!({}))).await);
                 assert_eq!(leaves(&layout.root).len(), panes);
@@ -290,7 +291,7 @@ fn a_leaf_that_cannot_start_rolls_the_whole_layout_back() {
     with_live_daemon(
         "layout_apply::a_leaf_that_cannot_start_rolls_the_whole_layout_back",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let original = root_pane(app, 0);
             let missing = Scratch::new().unwrap().path().join("missing");
             let broken = json!({"type": "pane", "cwd": missing, "command": ["/bin/sleep", "60"]});
@@ -313,7 +314,7 @@ fn a_layout_activates_its_tab_when_asked_or_when_it_replaces_the_active_tab() {
     with_live_daemon(
         "layout_apply::a_layout_activates_its_tab_when_asked_or_when_it_replaces_the_active_tab",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             app.state.mode = Mode::Navigate;
             applied(answer(app, apply_wire(&sleeper(), &json!({}))).await);
             assert_eq!(app.state.topology.workspaces[0].active_tab, 0);
@@ -337,7 +338,7 @@ fn a_replaced_tab_keeps_its_name_unless_the_layout_names_one() {
     with_live_daemon(
         "layout_apply::a_replaced_tab_keeps_its_name_unless_the_layout_names_one",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             app.state.topology.workspaces[0].tabs[0].set_custom_name("build".into());
             applied(answer(app, apply_wire(&sleeper(), &json!({"tab_id": "w1:t1"}))).await);
             let name = |app: &App| app.state.topology.workspaces[0].tab_display_name(0);
@@ -357,7 +358,7 @@ fn a_leaf_label_is_trimmed_and_a_blank_one_is_ignored() {
     with_live_daemon(
         "layout_apply::a_leaf_label_is_trimmed_and_a_blank_one_is_ignored",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let root = split(
                 json!({"type": "pane", "label": "  editor  ", "command": ["/bin/sleep", "60"]}),
                 json!({"type": "pane", "label": "   ", "command": ["/bin/sleep", "60"]}),
@@ -377,7 +378,7 @@ fn a_layout_is_applied_to_the_named_workspace() {
     with_live_daemon(
         "layout_apply::a_layout_is_applied_to_the_named_workspace",
         async |app| {
-            add_workspaces(app, &["/one", "/two"]);
+            add_workspaces(app, &["/one", "/two"]).unwrap();
             let wire = apply_wire(&sleeper(), &json!({"workspace_id": "w2"}));
             let layout = applied(answer(app, wire).await);
             assert_eq!(layout.workspace_id, "w2");
@@ -399,11 +400,11 @@ fn applying_a_layout_publishes_the_closed_tab_the_new_tab_and_every_pane() {
     with_live_daemon(
         "layout_apply::applying_a_layout_publishes_the_closed_tab_the_new_tab_and_every_pane",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let root = split(sleeper(), sleeper());
             applied(answer(app, apply_wire(&root, &json!({"tab_id": "w1:t1"}))).await);
             assert_eq!(
-                event_names(app, 0),
+                event_names(app, 0).unwrap(),
                 [
                     "tab_closed",
                     "tab_created",
@@ -444,7 +445,7 @@ fn shell_leaves_start_the_configured_shell_without_a_launch_command() {
     with_live_daemon(
         "layout_apply::shell_leaves_start_the_configured_shell_without_a_launch_command",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let layout =
                 applied(answer(app, apply_wire(&split(shell(), shell()), &json!({}))).await);
             assert!(
@@ -564,7 +565,7 @@ fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
     with_live_daemon(
         "layout_apply::a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let scratch = Scratch::new().unwrap();
             let socket = scratch.path().join("hangup");
             Box::pin(relay_hangup(&socket, async {
@@ -582,7 +583,7 @@ fn a_replacement_that_exits_while_the_replaced_tab_stops_leaves_no_workspace() {
                     answer(app, replacement).await,
                     failure("layout_apply_failed", "new layout tab disappeared")
                 );
-                assert!(workspace_ids_of(app).await.is_empty());
+                assert!(workspace_ids_of(app).await.unwrap().is_empty());
             }))
             .await
             .unwrap();
@@ -595,7 +596,7 @@ fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout
     with_live_daemon(
         "layout_apply::a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout",
         async |app| {
-            add_workspaces(app, &["/first", "/second", "/third"]);
+            add_workspaces(app, &["/first", "/second", "/third"]).unwrap();
             let scratch = Scratch::new().unwrap();
             let socket = scratch.path().join("hangup");
             Box::pin(relay_hangup(&socket, async {
@@ -616,7 +617,7 @@ fn a_workspace_that_closes_while_the_replaced_tab_stops_does_not_move_the_layout
                     (layout.workspace_id.as_str(), layout.tab_id.as_str()),
                     ("w2", "w2:t3")
                 );
-                assert_eq!(workspace_ids_of(app).await, ["w2", "w3"]);
+                assert_eq!(workspace_ids_of(app).await.unwrap(), ["w2", "w3"]);
                 let closed: Vec<_> = events_after(app, 0)
                     .into_iter()
                     .filter_map(|event| match event {

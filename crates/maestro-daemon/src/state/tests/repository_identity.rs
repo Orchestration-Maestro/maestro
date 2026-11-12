@@ -1,7 +1,7 @@
 //! A created workspace retains the repository identity discovered at its directory.
 #![cfg(target_os = "linux")]
 
-use super::support::spawning;
+use crate::state::test_support::spawning;
 use crate::{settings::model::Config, state::App};
 use maestro_test_process::{TestProcess, run_alone};
 
@@ -40,7 +40,7 @@ async fn check_admitted_repository(args: &[String]) {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = spawning::launch_inputs(args, manifests);
+    let (launch, receiver) = spawning::launch_inputs(args, manifests).unwrap();
     let mut config = Config::default();
     config.terminal.default_shell = "/bin/sh".into();
     let mut app = App::new(

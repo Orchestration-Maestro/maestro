@@ -3,7 +3,7 @@
 #![cfg(target_os = "linux")]
 
 #[cfg(unix)]
-use crate::state::tests::support::spawning;
+use crate::state::test_support::spawning;
 
 use crate::{settings::model::Config, state::model::DaemonState};
 #[cfg(unix)]
@@ -128,7 +128,7 @@ fn target_app() -> (App, PaneId, TerminalId) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
     let mut app = App::new(
         &Config::default(),
         || 0,

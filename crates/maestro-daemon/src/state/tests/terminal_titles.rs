@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::state::tests::support::spawning;
+use crate::state::test_support::spawning;
 
 use crate::{service::event_hub::EventHub, settings::model::Config, state::App};
 use maestro_workspace::tiling::PaneId;
@@ -23,7 +23,7 @@ fn fixture(args: &[String]) -> (App, PaneId) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = spawning::launch_inputs(args, manifests);
+    let (launch, receiver) = spawning::launch_inputs(args, manifests).unwrap();
     let mut app = App::new(
         &Config::default(),
         || 0,
@@ -196,7 +196,7 @@ fn daemon_sidebar_redraws_only_for_the_configured_title_form() {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
     let mut app = App::new(
         &Config::default(),
         || 0,
@@ -264,7 +264,7 @@ async fn check_loop_projection(args: &[String]) {
     app.run(
         &crate::locations::DaemonPaths::new("/unused", None).unwrap(),
         &mut tokio::sync::mpsc::unbounded_channel().1,
-        &mut crate::state::tests::support::settings(),
+        &mut crate::state::test_support::api::settings(),
         async {
             while hub.current_sequence() == 0 {
                 tokio::task::yield_now().await;

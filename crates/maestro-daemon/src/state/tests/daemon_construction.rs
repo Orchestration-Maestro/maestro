@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::state::tests::support::spawning;
+use crate::state::test_support::spawning;
 
 use crate::{
     service::event_hub::EventHub,
@@ -16,7 +16,7 @@ fn app(config: &Config) -> App {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
     App::new(config, || 0, launch, receiver, EventHub::default())
 }
 
@@ -229,7 +229,7 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (mut launch, receiver) = spawning::launch_inputs(&[], manifests);
+    let (mut launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
     launch.appearance = Some(HostAppearance::Light);
     launch.theme = launch.theme.with_color(
         DefaultColorKind::Background,

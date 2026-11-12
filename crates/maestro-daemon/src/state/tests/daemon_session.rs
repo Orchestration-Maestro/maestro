@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::state::tests::support::spawning;
+use crate::state::test_support::spawning;
 use crate::tests::block_on;
 
 use crate::{
@@ -18,7 +18,7 @@ fn app() -> App {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
     App::new(
         &Config::default(),
         || 0,
@@ -179,7 +179,7 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
         .block_on(app.run(
             &paths,
             &mut tokio::sync::mpsc::unbounded_channel().1,
-            &mut crate::state::tests::support::settings(),
+            &mut crate::state::test_support::api::settings(),
             std::future::ready(()),
         ));
     assert!(app.state.should_quit.0);

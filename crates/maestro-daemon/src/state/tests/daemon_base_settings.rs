@@ -506,7 +506,8 @@ fn daemon_first_reload_retains_startup_area_document() {
     let manifests = Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = crate::state::tests::support::spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) =
+        crate::state::test_support::spawning::launch_inputs(&[], manifests).unwrap();
     let mut app = App::from_loaded(&loaded, || 0, launch, receiver, EventHub::default());
     storage
         .write_base_layer(

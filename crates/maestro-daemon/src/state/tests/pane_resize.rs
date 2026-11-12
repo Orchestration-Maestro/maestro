@@ -1,7 +1,7 @@
 //! Pane resize through the daemon's handler: which divider moves, by how much, and what is published.
 #![cfg(target_os = "linux")]
 use crate::state::App;
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     answer_command, daemon_with_workspaces, event_names, events_after, failure, focused_pane_id,
     pane_layout, request, root_pane, split_pane_focused,
 };
@@ -25,15 +25,15 @@ fn resize_of(result: Result<ResponseResult, ErrorBody>) -> PaneResizeResult {
 
 /// A one-workspace daemon whose first tab holds a pane on the left and the focused one on the right.
 fn pair() -> (App, PaneId, PaneId) {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let left = root_pane(&app, 0);
-    let right = split_pane_focused(&mut app, 0, left, SplitDirection::Right, true);
+    let right = split_pane_focused(&mut app, 0, left, SplitDirection::Right, true).unwrap();
     (app, left, right)
 }
 
 /// The ratio of the tab's only divider.
 fn ratio(app: &mut App) -> f32 {
-    pane_layout(app).splits[0].ratio
+    pane_layout(app).unwrap().splits[0].ratio
 }
 
 /// Resizes `pane` rightward by a decoded amount, which the wire form cannot carry.
@@ -58,7 +58,7 @@ fn resizing_moves_the_nearest_divider_without_changing_focus() {
     assert_eq!(resize.focused_pane_id, "w1:p2");
     assert_eq!(resize.layout.focused_pane_id, "w1:p2");
     assert!((resize.layout.splits[0].ratio - 0.6).abs() < f32::EPSILON);
-    assert_eq!(focused_pane_id(&mut app, 0), "w1:p2");
+    assert_eq!(focused_pane_id(&mut app, 0).unwrap(), "w1:p2");
     assert!(app.state.session_dirty);
     assert_eq!(
         events_after(&app, 0),
@@ -70,7 +70,7 @@ fn resizing_moves_the_nearest_divider_without_changing_focus() {
 
 #[test]
 fn resizing_without_a_divider_to_move_reports_unchanged() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let wire = json!({"type": "pane.resize", "direction": "left"});
     let resize = resize_of(request(&mut app, wire));
     assert!(!resize.changed);
@@ -95,7 +95,7 @@ fn a_resize_amount_defaults_ignores_sign_and_is_capped() {
         assert!((ratio(&mut app) - expected).abs() < 1e-5, "{amount:?}");
     }
     assert!(!resize_by(&mut app, Some(0.2)).changed);
-    assert_eq!(event_names(&app, 0), ["layout_updated"; 5]);
+    assert_eq!(event_names(&app, 0).unwrap(), ["layout_updated"; 5]);
 }
 
 #[test]

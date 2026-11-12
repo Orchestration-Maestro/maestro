@@ -2,7 +2,7 @@
 #![cfg(target_os = "linux")]
 use crate::state::App;
 use crate::state::model::{CopyModeState, Mode};
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     daemon_with_workspaces, event_names, events_after, failure, pair, request, root_pane,
     split_pane,
 };
@@ -30,7 +30,7 @@ fn last_layout(app: &App) -> maestro_protocol::schema::PaneLayoutSnapshot {
 
 #[test]
 fn zooming_toggles_the_focused_pane_and_publishes_the_layout() {
-    let (mut app, left, _) = pair();
+    let (mut app, left, _) = pair().unwrap();
     let zoom = zoom_of(request(&mut app, json!({"type": "pane.zoom"})));
     assert!(zoom.changed && zoom.zoom_changed && !zoom.focus_changed);
     assert_eq!(zoom.reason, None);
@@ -38,7 +38,7 @@ fn zooming_toggles_the_focused_pane_and_publishes_the_layout() {
     assert_eq!(zoom.focused_pane_id, zoom.pane_id);
     assert!(zoom.zoomed.0 && zoom.layout.zoomed);
     assert!(app.state.topology.workspaces[0].tabs[0].zoomed);
-    assert_eq!(event_names(&app, 0), ["layout_updated"]);
+    assert_eq!(event_names(&app, 0).unwrap(), ["layout_updated"]);
     assert_eq!(last_layout(&app), zoom.layout);
     assert!(app.state.session_dirty);
     let zoom = zoom_of(request(&mut app, json!({"type": "pane.zoom"})));
@@ -53,10 +53,10 @@ fn zooming_toggles_the_focused_pane_and_publishes_the_layout() {
 
 #[test]
 fn zooming_a_background_pane_focuses_it_and_keeps_the_last_pane_history() {
-    let mut app = daemon_with_workspaces(&["/one", "/two"]);
+    let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
     let first = root_pane(&app, 0);
     let target = root_pane(&app, 1);
-    split_pane(&mut app, 1, target, SplitDirection::Right);
+    split_pane(&mut app, 1, target, SplitDirection::Right).unwrap();
     assert_eq!(app.state.active, Some(0));
     let wire = json!({"type": "pane.zoom", "pane_id": "w2:p1", "mode": "on"});
     let zoom = zoom_of(request(&mut app, wire));
@@ -78,14 +78,14 @@ fn zooming_a_background_pane_focuses_it_and_keeps_the_last_pane_history() {
 
 #[test]
 fn zooming_a_pane_returns_copy_mode_to_that_pane() {
-    let mut app = daemon_with_workspaces(&["/one", "/two"]);
+    let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
     let source = root_pane(&app, 0);
-    let other = split_pane(&mut app, 0, source, SplitDirection::Right);
+    let other = split_pane(&mut app, 0, source, SplitDirection::Right).unwrap();
     app.state.topology.workspaces[0].tabs[0]
         .layout
         .focus_pane(other);
     let target = root_pane(&app, 1);
-    split_pane(&mut app, 1, target, SplitDirection::Right);
+    split_pane(&mut app, 1, target, SplitDirection::Right).unwrap();
     app.state.active = Some(1);
     app.state.selected = 1;
     app.state.mode = Mode::Terminal;
@@ -109,7 +109,7 @@ fn zooming_a_pane_returns_copy_mode_to_that_pane() {
 
 #[test]
 fn zooming_a_single_pane_changes_nothing() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let wire = json!({"type": "pane.zoom", "pane_id": "w1:p1", "mode": "toggle"});
     let zoom = zoom_of(request(&mut app, wire));
     assert!(!zoom.changed && !zoom.zoom_changed && !zoom.focus_changed);
@@ -122,7 +122,7 @@ fn zooming_a_single_pane_changes_nothing() {
 
 #[test]
 fn zoom_on_and_off_are_idempotent() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     for (mode, changed, reason, zoomed) in [
         ("on", true, None, true),
         ("on", false, Some(PaneZoomReason::AlreadyZoomed), true),
@@ -137,12 +137,15 @@ fn zoom_on_and_off_are_idempotent() {
         assert_eq!(zoom.reason, reason, "{mode}");
         assert_eq!(zoom.zoomed.0, zoomed, "{mode}");
     }
-    assert_eq!(event_names(&app, 0), ["layout_updated", "layout_updated"]);
+    assert_eq!(
+        event_names(&app, 0).unwrap(),
+        ["layout_updated", "layout_updated"]
+    );
 }
 
 #[test]
 fn an_idempotent_zoom_still_reports_the_focus_change() {
-    let (mut app, _, right) = pair();
+    let (mut app, _, right) = pair().unwrap();
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     let wire = json!({"type": "pane.zoom", "pane_id": "w1:p2", "mode": "on"});
     let zoom = zoom_of(request(&mut app, wire));
@@ -158,7 +161,7 @@ fn an_idempotent_zoom_still_reports_the_focus_change() {
 
 #[test]
 fn zooming_a_missing_pane_is_refused() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     for wire in [
         json!({"type": "pane.zoom", "pane_id": "w1:p9"}),
         json!({"type": "pane.zoom", "pane_id": "missing", "mode": "on"}),
@@ -177,7 +180,7 @@ fn zooming_a_missing_pane_is_refused() {
 
 #[test]
 fn each_seeded_workspace_names_its_first_tab_root() {
-    let mut app = daemon_with_workspaces(&[]);
+    let mut app = daemon_with_workspaces(&[]).unwrap();
     let seeded: Vec<_> = (0..20)
         .map(|index| app.seed_workspace(&format!("/w{index}")).unwrap())
         .collect();

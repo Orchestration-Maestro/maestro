@@ -3,10 +3,11 @@
 use crate::settings::model::NewTerminalCwdConfig;
 use crate::state::App;
 use crate::state::model::Mode;
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     add_tab, add_workspaces, answer, daemon_with_workspaces, event_names, events_after, failure,
-    request, root_pane, run_in_pane, split_pane, with_live_daemon,
+    request, root_pane, split_pane,
 };
+use crate::state::tests::support::live::{run_in_pane, with_live_daemon};
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirection};
 use maestro_workspace::tiling::PaneId;
@@ -25,10 +26,10 @@ fn split_of(result: Result<ResponseResult, ErrorBody>) -> PaneInfo {
 ///
 /// Returns the first tab's root, the background tab's root and the background tab's focused pane.
 fn background_tab(app: &mut App) -> (PaneId, PaneId, PaneId) {
-    add_workspaces(app, &["/tabs"]);
+    add_workspaces(app, &["/tabs"]).unwrap();
     let active = root_pane(app, 0);
-    let target = add_tab(app, 0);
-    let focused = split_pane(app, 0, target, SplitDirection::Right);
+    let target = add_tab(app, 0).unwrap();
+    let focused = split_pane(app, 0, target, SplitDirection::Right).unwrap();
     app.state.topology.workspaces[0].tabs[1]
         .layout
         .focus_pane(focused);
@@ -105,7 +106,7 @@ fn a_split_applies_the_ratio_and_the_right_click_routing() {
     with_live_daemon(
         "pane_split::a_split_applies_the_ratio_and_the_right_click_routing",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let wire = json!({
                 "type": "pane.split", "target_pane_id": "w1:p1", "direction": "right",
                 "ratio": 0.333, "right_click": "pane"
@@ -141,7 +142,7 @@ fn a_split_without_a_target_uses_the_focused_pane_of_the_workspace_or_the_active
     with_live_daemon(
         "pane_split::a_split_without_a_target_uses_the_focused_pane_of_the_workspace_or_the_active_one",
         async |app| {
-            add_workspaces(app, &["/one", "/two"]);
+            add_workspaces(app, &["/one", "/two"]).unwrap();
             let wire = json!({"type": "pane.split", "direction": "right"});
             assert_eq!(split_of(answer(app, wire).await).workspace_id, "w1");
             let wire = json!({"type": "pane.split", "direction": "right", "workspace_id": "w2"});
@@ -159,7 +160,7 @@ fn a_split_publishes_the_new_pane_and_its_layout() {
     with_live_daemon(
         "pane_split::a_split_publishes_the_new_pane_and_its_layout",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             app.state.session_dirty = false;
             let wire =
                 json!({"type": "pane.split", "target_pane_id": "w1:p1", "direction": "right"});
@@ -190,7 +191,7 @@ fn launch_inputs_reach_the_new_pane() {
     with_live_daemon(
         "pane_split::launch_inputs_reach_the_new_pane",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let scratch = maestro_test_directory::Scratch::new().unwrap();
             let wire = json!({
                 "type": "pane.split", "target_pane_id": "w1:p1", "direction": "right",
@@ -215,7 +216,7 @@ fn a_split_that_cannot_start_its_process_leaves_the_tab_alone() {
     with_live_daemon(
         "pane_split::a_split_that_cannot_start_its_process_leaves_the_tab_alone",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let missing = maestro_test_directory::Scratch::new()
                 .unwrap()
                 .path()
@@ -239,7 +240,7 @@ fn a_split_that_cannot_start_its_process_leaves_the_tab_alone() {
 
 #[test]
 fn a_split_of_a_missing_target_is_refused_before_a_process_starts() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     for wire in [
         json!({"type": "pane.split", "direction": "right", "target_pane_id": "w1:p9"}),
         json!({"type": "pane.split", "direction": "right", "workspace_id": "w9"}),
@@ -266,7 +267,7 @@ fn a_split_of_a_missing_target_is_refused_before_a_process_starts() {
 
 #[test]
 fn a_split_rejects_a_bad_launch_environment_before_a_process_starts() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let wire = json!({
         "type": "pane.split", "direction": "right", "env": {"BAD=KEY": "value"}
     });
@@ -286,7 +287,7 @@ fn a_pane_split_off_can_be_closed_and_releases_its_process() {
     with_live_daemon(
         "pane_split::a_pane_split_off_can_be_closed_and_releases_its_process",
         async |app| {
-            add_workspaces(app, &["/tabs"]);
+            add_workspaces(app, &["/tabs"]).unwrap();
             let wire =
                 json!({"type": "pane.split", "target_pane_id": "w1:p1", "direction": "right"});
             let pane = split_of(answer(app, wire).await);
@@ -299,7 +300,7 @@ fn a_pane_split_off_can_be_closed_and_releases_its_process() {
                 1
             );
             assert_eq!(
-                event_names(app, 0),
+                event_names(app, 0).unwrap(),
                 [
                     "pane_created",
                     "layout_updated",

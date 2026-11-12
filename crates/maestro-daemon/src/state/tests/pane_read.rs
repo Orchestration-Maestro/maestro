@@ -3,9 +3,8 @@
 #![cfg(target_os = "linux")]
 use crate::panes::display::TerminalReadSnapshot;
 use crate::state::App;
-use crate::state::tests::support::api::{
-    answer, daemon_with_workspaces, failure, request, run_in_pane, with_live_daemon,
-};
+use crate::state::test_support::api::{answer, daemon_with_workspaces, failure, request};
+use crate::state::tests::support::live::{run_in_pane, with_live_daemon};
 use maestro_protocol::schema::{
     ErrorBody, PaneInfo, PaneReadResult, ReadFormat, ReadSource, ResponseResult,
 };
@@ -32,7 +31,7 @@ async fn printed(app: &mut App, script: &str, marker: &str) -> (String, PaneInfo
     else {
         panic!("expected a created workspace: {created:?}");
     };
-    let pane = crate::state::tests::support::api::root_pane(app, 0);
+    let pane = crate::state::test_support::api::root_pane(app, 0);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
@@ -257,7 +256,7 @@ fn a_read_asks_for_at_most_one_thousand_lines() {
 
 #[test]
 fn a_pane_that_cannot_be_read_is_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     for pane in ["w1:p1", "w1:p9"] {
         let wire = json!({"type": "pane.read", "pane_id": pane, "source": "visible"});
         assert_eq!(

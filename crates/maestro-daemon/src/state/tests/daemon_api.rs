@@ -6,7 +6,7 @@ use crate::service::RequestMessage;
 use crate::settings::model::ToastDelivery;
 use crate::state::App;
 use crate::state::model::{ToastKind, ToastNotification};
-use crate::state::tests::support::api::{
+use crate::state::test_support::api::{
     daemon, daemon_with_workspaces, events_after, failure, request, settings,
 };
 use crate::tests::block_on;
@@ -21,7 +21,7 @@ use tokio::sync::{mpsc, oneshot};
 
 #[test]
 fn daemon_server_stop_request_sets_should_quit_flag() {
-    let mut app = daemon();
+    let mut app = daemon().unwrap();
     assert_eq!(
         request(&mut app, json!({"type": "server.stop"})),
         Ok(ResponseResult::Ok {})
@@ -29,7 +29,7 @@ fn daemon_server_stop_request_sets_should_quit_flag() {
     assert!(app.state.should_quit.0);
 
     // A stop arriving through the loop's request arm ends the run without its shutdown.
-    let mut app = daemon();
+    let mut app = daemon().unwrap();
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let paths = DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
     let (sender, mut requests) = mpsc::unbounded_channel();
@@ -50,7 +50,7 @@ fn daemon_server_stop_request_sets_should_quit_flag() {
 
 #[test]
 fn undelivered_families_use_one_source_fallback() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     for command in [
         json!({"type": "server.live_handoff"}),
         json!({"type": "client.window_title.clear"}),
@@ -72,7 +72,7 @@ fn undelivered_families_use_one_source_fallback() {
 
 /// A daemon delivering notifications through `delivery`.
 fn delivering(delivery: ToastDelivery) -> App {
-    let mut app = daemon();
+    let mut app = daemon().unwrap();
     app.state.toast_config.delivery = delivery;
     app
 }
@@ -122,7 +122,7 @@ fn notification_request_creates_workspace_toast_with_position() {
 #[test]
 fn notification_request_workspace_toast_expires() {
     let mut app = delivering(ToastDelivery::Workspace);
-    let paths = crate::state::tests::support::api::untouched_paths();
+    let paths = crate::state::test_support::api::untouched_paths().unwrap();
     assert_eq!(
         show(&mut app, "build failed", &json!({})),
         Ok(notified(NotificationShowReason::Shown))
@@ -359,7 +359,7 @@ fn published(app: &App, sequence: u64) -> Vec<HashMap<String, String>> {
 
 #[test]
 fn workspace_tokens_patch_clear_and_publish_current_values() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let first = json!({"summary": "reviewing auth", "jj_status": "2 changes"});
     assert_eq!(
         report(&mut app, "user:test", &first, &json!({})),
@@ -393,8 +393,8 @@ fn workspace_tokens_patch_clear_and_publish_current_values() {
 
 #[test]
 fn workspace_token_expiry_publishes_the_remaining_snapshot() {
-    let mut app = daemon_with_workspaces(&["/one"]);
-    let paths = crate::state::tests::support::api::untouched_paths();
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
+    let paths = crate::state::test_support::api::untouched_paths().unwrap();
     let lasting = json!({"lasting": "kept"});
     assert!(report(&mut app, "user:keep", &lasting, &json!({})).is_ok());
     let before = Instant::now();
@@ -453,7 +453,7 @@ fn workspace_token_expiry_publishes_the_remaining_snapshot() {
 
 #[test]
 fn token_values_strip_controls_and_empty_values_clear() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let set = json!({
         "summary": "  review\nready  ",
         "padded": "\u{85} a\u{0}b \u{85}",
@@ -477,7 +477,7 @@ fn token_values_strip_controls_and_empty_values_clear() {
 
 #[test]
 fn token_reports_reject_invalid_keys_and_excess_updates() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let invalid = |message: &str| failure("invalid_metadata_token", message);
     let too_many: serde_json::Map<String, Value> = (0..17)
         .map(|index| (format!("key{index}"), json!("value")))
@@ -530,7 +530,7 @@ fn token_reports_reject_invalid_keys_and_excess_updates() {
 
 #[test]
 fn metadata_source_and_ttl_boundaries_keep_error_order() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let token = json!({"summary": "x"});
     let source = |message: &str| failure("invalid_metadata_source", message);
     let ttl = |message: &str| failure("invalid_metadata_ttl", message);
@@ -616,7 +616,7 @@ fn assert_boundary_sources_and_lifetimes_apply(app: &mut App, token: &Value) {
 
 #[test]
 fn metadata_capacity_and_sequences_are_transactional() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let full: serde_json::Map<String, Value> = (0..16)
         .map(|index| (format!("a{index}"), json!("v")))
         .collect();
@@ -681,7 +681,7 @@ fn metadata_capacity_and_sequences_are_transactional() {
 /// Thirty-two sequenced sources are tracked; a thirty-third new one is refused, while an
 /// unsequenced report from it still applies.
 fn assert_sequence_source_capacity() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     for index in 0..32 {
         assert!(
             report(
@@ -727,8 +727,8 @@ fn configuration_reload_uses_the_retained_settings_owner() {
         })
         .unwrap();
     let mut manager = SettingsManager::from_storage(storage);
-    let mut app = daemon();
-    let paths = crate::state::tests::support::api::untouched_paths();
+    let mut app = daemon().unwrap();
+    let paths = crate::state::test_support::api::untouched_paths().unwrap();
     let reload = RpcCommand::ServerReloadConfig(EmptyParams {});
     let result = block_on(app.handle_api_request(reload, &mut manager, &paths));
     let Ok(ResponseResult::ConfigReload {
