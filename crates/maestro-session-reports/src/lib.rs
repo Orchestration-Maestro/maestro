@@ -16,7 +16,7 @@ pub mod tool_stats;
 
 use std::io;
 
-use crate::configuration::config;
+use maestro_app::configuration::config;
 
 /// The configured agent directory: `MAESTRO_CODING_AGENT_DIR` or its default.
 ///

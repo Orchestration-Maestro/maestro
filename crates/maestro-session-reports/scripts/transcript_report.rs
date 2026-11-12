@@ -1,13 +1,10 @@
 //! Write the recorded session transcripts and analyze them when asked.
-#[cfg(not(target_arch = "wasm32"))]
-use maestro_app::developer_tools::session_transcripts;
-#[cfg(not(target_arch = "wasm32"))]
+
+use maestro_session_reports::session_transcripts;
 use std::io::{self, Write as _};
-#[cfg(not(target_arch = "wasm32"))]
 use std::process::ExitCode;
 
 /// Supplies the argument, runtime and stream owners to the report.
-#[cfg(not(target_arch = "wasm32"))]
 fn main() -> io::Result<ExitCode> {
     let args: Vec<String> = std::env::args_os()
         .skip(1)
@@ -31,7 +28,3 @@ fn main() -> io::Result<ExitCode> {
         }
     }
 }
-
-/// The report has no browser entry effects.
-#[cfg(target_arch = "wasm32")]
-fn main() {}

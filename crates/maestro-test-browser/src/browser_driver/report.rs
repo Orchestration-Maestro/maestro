@@ -50,7 +50,7 @@ pub async fn run(checkout: &Path, executable: &Path, assets: &Path, work: &Path)
     let root = work.join("report");
     tokio::fs::create_dir(&root).await?;
     tokio::fs::copy(
-        checkout.join("crates/maestro-app/tests/fixtures/analysis/tool-report.html"),
+        checkout.join("crates/maestro-session-reports/tests/fixtures/analysis/tool-report.html"),
         root.join("index.html"),
     )
     .await?;

@@ -3,6 +3,8 @@
 
 use crate::analysis_fixtures::run_transcripts;
 #[cfg(unix)]
+use maestro_session_reports::session_transcripts;
+#[cfg(unix)]
 use maestro_test_process::with_environment;
 use maestro_test_process::with_isolated_home;
 use serde_json::Value;
@@ -443,6 +445,15 @@ const EVENTS: [&str; 8] = [
     r#"{"type":"turn_end"}"#,
 ];
 
+/// Install the prepared native fixture as `maestro` below `directory`, selected by `record`.
+#[cfg(unix)]
+fn install_child(directory: &str, record: &serde_json::Value) {
+    let aliases = std::path::Path::new(directory).join("bin");
+    std::fs::create_dir_all(&aliases).expect("the alias directory is creatable");
+    maestro_test_process::install_command(&aliases.join("maestro"), &record.to_string())
+        .expect("the native fixture installs");
+}
+
 /// Install a controlled `maestro` child below `directory` that prints the events and
 /// records its argv.
 #[cfg(unix)]
@@ -451,9 +462,8 @@ fn child(directory: &str, exit: u8, receipt: &str) {
     for event in EVENTS {
         let _ = writeln!(output, "{event}");
     }
-    crate::native::command(
-        std::path::Path::new(directory).join("bin").as_path(),
-        "maestro",
+    install_child(
+        directory,
         &serde_json::json!({
             "scenario": "output",
             "stdout": output.as_bytes(),
@@ -468,9 +478,8 @@ fn child(directory: &str, exit: u8, receipt: &str) {
 /// before it reports the recorded status.
 #[cfg(unix)]
 fn child_appending(directory: &str, path: &str, text: &str, exit: u8, receipt: &str) {
-    crate::native::command(
-        std::path::Path::new(directory).join("bin").as_path(),
-        "maestro",
+    install_child(
+        directory,
         &serde_json::json!({
             "scenario": "output",
             "stdout": b"".as_slice(),
@@ -684,9 +693,8 @@ fn held_child(
         r#"{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"first"}}"#,
         r#"{"type":"turn_end"}"#
     );
-    crate::native::command(
-        Path::new(base).join("bin").as_path(),
-        "maestro",
+    install_child(
+        base,
         &serde_json::json!({
             "scenario": "hold",
             "ready": log.path(),
@@ -732,7 +740,7 @@ fn analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_
                         pending: Vec::new(),
                         sender,
                     };
-                    crate::support::run_io(maestro_app::developer_tools::session_transcripts::main(
+                    crate::support::run_io(session_transcripts::main(
                         &arguments,
                         false,
                         &mut stdout,

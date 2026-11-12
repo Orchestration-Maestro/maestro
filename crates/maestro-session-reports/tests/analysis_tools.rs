@@ -8,6 +8,8 @@ use crate::analysis_fixtures::{
     opened, page_data, root, run_tools, scratch, with_controlled_viewer,
 };
 #[cfg(not(windows))]
+use maestro_session_reports::tool_stats;
+#[cfg(not(windows))]
 use maestro_test_process::with_environment;
 use serde_json::Value;
 #[cfg(not(windows))]
@@ -773,13 +775,8 @@ fn witness_viewer(test: &str, program: &'static str, platform: Option<&'static s
         let arguments = arguments(&["--sessions-dir", &sessions, "--output", &output]);
         let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
         let code = match platform {
-            None => maestro_app::developer_tools::tool_stats::main(
-                &arguments,
-                &clock,
-                &mut stdout,
-                &mut stderr,
-            ),
-            Some(platform) => maestro_app::developer_tools::tool_stats::main_with_opener(
+            None => tool_stats::main(&arguments, &clock, &mut stdout, &mut stderr),
+            Some(platform) => tool_stats::main_with_opener(
                 &arguments,
                 &clock,
                 &|page| maestro_app::utils::platform_opener(page, platform),

@@ -75,7 +75,7 @@ pub fn main(
     main_with_opener(
         args,
         now,
-        &|path| crate::utils::platform_opener(path, std::env::consts::OS),
+        &|path| maestro_app::utils::platform_opener(path, std::env::consts::OS),
         stdout,
         stderr,
     )

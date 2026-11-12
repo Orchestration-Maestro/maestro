@@ -80,6 +80,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-resources",
     "maestro-rpc",
     "maestro-session",
+    "maestro-session-reports",
     "maestro-settings",
     "maestro-test-conventions",
     "maestro-theme",
@@ -114,6 +115,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-resources",
     "maestro-rpc",
     "maestro-session",
+    "maestro-session-reports",
     "maestro-settings",
     "maestro-terminal",
     "maestro-test-browser",
@@ -213,6 +215,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-test-directory"
                 | "maestro-test-fixtures"
                 | "maestro-test-tracing"
+                | "maestro-session-reports"
                 | "maestro-tooling"
         ) {
             "dedicated"

@@ -359,6 +359,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-json"
     } else if name == "serialize_rpc_response" {
         "maestro-protocol"
+    } else if name == "session_transcripts" {
+        "maestro-session-reports"
     } else {
         return None;
     };
