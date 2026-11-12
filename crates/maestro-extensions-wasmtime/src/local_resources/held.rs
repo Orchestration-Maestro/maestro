@@ -14,33 +14,47 @@ pub(crate) trait Held {
     fn lend(capability: &Capability) -> Option<&Self::Target>;
 }
 
-/// The independently retained model catalog.
-pub(crate) struct Catalog;
+/// Declares one kind of retained capability: what it lends, its ended text and the entry that
+/// holds it.
+macro_rules! held {
+    ($(#[$doc:meta])* $name:ident, $target:ty, $ended:literal, $pattern:pat => $lent:expr) => {
+        $(#[$doc])*
+        pub(crate) struct $name;
 
-impl Held for Catalog {
-    type Target = SharedHandle<ModelRegistry>;
-    const ENDED: &'static str = "extension catalog resource ended";
-    fn lend(capability: &Capability) -> Option<&Self::Target> {
-        match capability {
-            Capability::Catalog(catalog) => Some(catalog),
-            _ => None,
+        impl Held for $name {
+            type Target = $target;
+            const ENDED: &'static str = $ended;
+            fn lend(capability: &Capability) -> Option<&Self::Target> {
+                match capability {
+                    $pattern => Some($lent),
+                    _ => None,
+                }
+            }
         }
-    }
+    };
 }
 
-/// The retained context that carries the session-replacing operations.
-pub(crate) struct SessionCommands;
-
-impl Held for SessionCommands {
-    type Target = ExtensionCommandContext;
-    const ENDED: &'static str = "extension command context resource ended";
-    fn lend(capability: &Capability) -> Option<&Self::Target> {
-        match capability {
-            Capability::Context(Owner::Command(context)) => Some(context),
-            _ => None,
-        }
-    }
-}
+held!(
+    /// The independently retained model catalog.
+    Catalog,
+    SharedHandle<ModelRegistry>,
+    "extension catalog resource ended",
+    Capability::Catalog(catalog) => catalog
+);
+held!(
+    /// The retained context that carries the session-replacing operations.
+    SessionCommands,
+    ExtensionCommandContext,
+    "extension command context resource ended",
+    Capability::Context(Owner::Command(context)) => context
+);
+held!(
+    /// The live theme the renderer lent.
+    Theme,
+    maestro_extensions::LiveTheme,
+    "extension theme resource ended",
+    Capability::Theme(theme) => theme
+);
 
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(

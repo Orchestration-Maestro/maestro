@@ -228,7 +228,6 @@ impl State {
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
             Message::Footer(id, request) => self.footer(id, request),
-            Message::Theme(id, request) => self.theme(id, request),
             Message::Widgets(message) => self.widgets(message),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
@@ -450,16 +449,6 @@ impl State {
             request.answer(ui, &self.registry);
         } else {
             request.reject("extension UI resource ended");
-        }
-    }
-
-    /// Serves the current theme after releasing the capability table borrow.
-    fn theme(&self, id: u64, request: crate::theme_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Theme(theme)) = capability.as_deref() {
-            request.answer(theme);
-        } else {
-            request.reject("extension theme resource ended");
         }
     }
 

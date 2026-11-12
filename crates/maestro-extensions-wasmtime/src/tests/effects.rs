@@ -188,7 +188,6 @@ fn drive_emitter(
 
 #[test]
 fn released_theme_rejects_every_kind_of_operation_with_its_ended_text() {
-    use crate::{read_imports::ReadEndpoint, theme_reads::Request};
     tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap()
@@ -212,17 +211,11 @@ fn released_theme_rejects_every_kind_of_operation_with_its_ended_text() {
             drop(release);
             let worker = std::thread::spawn(move || {
                 [
-                    endpoint.read(Request::Name).unwrap_err(),
-                    endpoint
-                        .read(|reply| Request::SetSourceInfo(None, reply))
-                        .unwrap_err(),
-                    endpoint
-                        .read(|reply| Request::Bold("text".into(), reply))
-                        .unwrap_err(),
-                    endpoint
-                        .read(|reply| Request::Fg("accent".into(), "text".into(), reply))
-                        .unwrap_err(),
-                    endpoint.read(Request::ColorMode).err().unwrap(),
+                    endpoint.name().unwrap_err(),
+                    endpoint.set_source_info(None).unwrap_err(),
+                    endpoint.bold("text".into()).unwrap_err(),
+                    endpoint.fg("accent".into(), "text".into()).unwrap_err(),
+                    endpoint.get_color_mode().unwrap_err(),
                 ]
             });
             for _ in 0..5 {

@@ -186,8 +186,6 @@ pub(crate) enum Message {
     Ui(u64, crate::ui_reads::Request),
     /// Admits one dialog on the originally acquired UI.
     Dialog(u64, crate::ui_reads::DialogRequest, Admission),
-    /// Reads or edits the independently retained live renderer theme.
-    Theme(u64, crate::theme_reads::Request),
     /// Reads or subscribes to the footer metadata lent to a footer factory.
     Footer(u64, crate::footer_data::Request),
     /// Builds, uses or lends host widgets and styles.
