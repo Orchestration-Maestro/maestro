@@ -191,8 +191,10 @@ Login refresh, role assumption, web identity, SSO credentials and named-session 
 refresh use conversation routing, including a supplied sender and
 [the conversation's proxy](#proxy-routing). Container and instance metadata stay direct,
 named role sources included, and do not use the supplied sender. Default connectors keep
-connection pools by SDK timeout settings and apply the SDK's connection and
-response-header deadlines. They apply no body-read deadline. A supplied sender keeps its
+connection pools by SDK timeout settings, shared by every request in the process that
+uses the same proxy and protocol, so a later turn reuses the connections an earlier one
+opened. Requests routed by a [proxy script](#proxy-routing) keep their own pools. The
+connectors apply the SDK's connection and response-header deadlines. They apply no body-read deadline. A supplied sender keeps its
 own timeout policy.
 
 ## Proxy routing
