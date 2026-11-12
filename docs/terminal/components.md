@@ -15,7 +15,7 @@ detection and retained image rendering, [key input](keys.md) for decoding and
 [keybindings](keybindings.md) for configurable actions.
 
 The crate root re-exports the component, container, widget, overlay, terminal, editor and
-completion names used below and in the widget guide, so every type here has one path:
+completion names used below and in the widget guide. For example:
 `maestro_tui::Component` is the trait, and supporting types such as `ComponentHandle`
 are root names too.
 

@@ -81,9 +81,7 @@ closure returns an error. Close leaves the artifact on disk and does not request
 filesystem durability.
 
 ```rust
-use maestro_tools::output::{
-    OutputAccumulator, OutputAccumulatorOptions,
-};
+use maestro_tools::{OutputAccumulator, OutputAccumulatorOptions};
 
 fn main() -> std::io::Result<()> {
     let mut output = OutputAccumulator::new(OutputAccumulatorOptions {
@@ -210,7 +208,7 @@ abbreviates nothing, so the path stays as given. It reads the home directory thr
 `replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
 carriage return. The tool paths forward to the [text leaf](text.md)'s terminal cleaners.
 `strip_ansi` removes what one cached expression matches (OSC strings up to
-their first terminator, and CSI-style introducers with parameters and a final byte; `a\u001b[2Qb` becomes `aQb`), and [`utils::shell::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
+their first terminator, and CSI-style introducers with parameters and a final byte; `a\u001b[2Qb` becomes `aQb`), and [`utils::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
 drops C0 controls except TAB, LF and CR and U+FFF9 to U+FFFB. `get_text_output` joins the
 cleaned text blocks with LF and, when the terminal cannot show images or they are hidden,
 appends one fallback line per image in order. `invalid_arg_text` styles `[invalid arg]`
