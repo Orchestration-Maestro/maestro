@@ -1,8 +1,7 @@
 ## Approved tool-argument libraries
 
-`maestro-schema-validator` uses these exact primitive pins for argument checking,
-without an additional public schema API. `maestro-models` keeps `num-traits`,
-`regress`, `url`, `percent-encoding`, `ryu-js` and `chrono` for its own code:
+`maestro-models` may use the following exact native primitive pins for argument
+checking, without an internal crate edge or an additional public schema API:
 
 - `num-bigint =0.4.8`, `num-traits =0.2.19`,
   `unicode-segmentation =1.13.3`, `regress =0.12.0`, `url =2.5.8`,

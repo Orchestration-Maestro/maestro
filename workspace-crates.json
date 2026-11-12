@@ -35,7 +35,6 @@
   "maestro-request": "core",
   "maestro-resources": "core",
   "maestro-rpc": "core",
-  "maestro-schema-validator": "core",
   "maestro-session": "core",
   "maestro-session-reports": "dedicated",
   "maestro-settings": "core",

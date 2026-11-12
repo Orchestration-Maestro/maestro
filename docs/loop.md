@@ -60,8 +60,7 @@ See [model streams](records.md#stream-ownership) for the model-owned stream cont
 Tools default to parallel execution. Explicit sequential configuration or a
 first-matching sequential tool declaration selects sequential execution for the
 batch. The first exactly named declaration is selected. Optional argument
-preparation precedes
-[argument validation](models/schema-validation.md). The callback
+preparation precedes [argument validation](models/arguments.md). The callback
 takes `&mut Value`; object mutations stay in the retained assistant call even
 if preparation or validation fails. Its returned value supplies validation
 without replacing the retained call. Before and after hooks and progress events
