@@ -1,5 +1,4 @@
 //! Workspace directories and labels observe the environment without an account fallback.
-#![cfg(target_os = "linux")]
 
 use crate::settings::model::NewTerminalCwdConfig;
 use crate::state::tests::window_title::app;

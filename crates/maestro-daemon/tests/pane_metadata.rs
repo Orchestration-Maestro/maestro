@@ -26,7 +26,7 @@ fn refusal(app: &mut App, wire: Value) -> (String, String) {
 #[test]
 fn tokens_ignore_the_agent_guard_of_the_presentation() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    detect(&mut app, Agent::Claude, AgentState::Working);
+    detect(&mut app, Agent::Claude, AgentState::Working).unwrap();
     let wire = report(
         "user:metadata.test-1",
         json!({"agent": "codex", "tokens": {"summary": "global"}}),
@@ -58,7 +58,7 @@ fn presentation_and_tokens_share_one_sequence_per_source() {
 #[test]
 fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    pilot(&mut app, AgentState::Idle);
+    pilot(&mut app, AgentState::Idle).unwrap();
     let session = json!({
         "type": "pane.report_agent_session", "pane_id": "w1:p1", "source": "maestro:pi",
         "agent": "pi", "agent_session_path": "/sessions/pi.jsonl",
@@ -88,7 +88,7 @@ fn presentation_fields_reach_the_pane_record_beside_the_tokens() {
 #[test]
 fn text_is_cleaned_and_state_labels_are_matched_without_case() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    detect(&mut app, Agent::Pi, AgentState::Idle);
+    detect(&mut app, Agent::Pi, AgentState::Idle).unwrap();
     let long = format!("  tab\there {}  ", "x".repeat(100));
     let wire = titled(json!({
         "agent": "pi", "title": long, "state_labels": {" Working ": "  busy\u{7}bee "}
@@ -106,7 +106,7 @@ fn text_is_cleaned_and_state_labels_are_matched_without_case() {
 #[test]
 fn presentation_text_and_token_values_are_cleaned_alike() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    detect(&mut app, Agent::Pi, AgentState::Idle);
+    detect(&mut app, Agent::Pi, AgentState::Idle).unwrap();
     let cases = [
         (
             format!("  tab\there {}  ", "x".repeat(100)),
@@ -271,7 +271,7 @@ fn a_token_change_publishes_the_complete_pane_record_once() {
 #[test]
 fn a_presentation_change_publishes_the_agent_status_with_its_title() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    detect(&mut app, Agent::Pi, AgentState::Working);
+    detect(&mut app, Agent::Pi, AgentState::Working).unwrap();
     let sequence = app.event_hub().current_sequence();
     accepted(&mut app, titled(json!({"agent": "pi"})).unwrap()).unwrap();
     let titles: Vec<Option<String>> = events_after(&app, sequence)

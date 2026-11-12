@@ -289,8 +289,8 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
 - **Daemon state stays inside the crate.** The fields of `App` and `DaemonState` are crate-private, apart
   from `App::state`, `App::config`, `App::launch`, `DaemonState::topology`, `DaemonState::manifests` and
   `DaemonState::sidebar_collapsed`. The integration program and the standard-stream adapter's tests read or
-  set the first five; `sidebar_collapsed` is start state the sidebar will read once it is wired (issue
-  #3703), so it stays public without an accessor. Each test sorts by what it reads. A test that answers
+  set the first five; `sidebar_collapsed` is start state the sidebar will read once it is wired, so it
+  stays public without an accessor. Each test sorts by what it reads. A test that answers
   through commands and events, or reads a public field, lives in the crate's one integration program. A test
   that asserts on state no command exposes (the save mark, terminal metadata, mode, copy mode, deadlines,
   launch and configuration values) or drives live panes through the private runtime table is a unit test

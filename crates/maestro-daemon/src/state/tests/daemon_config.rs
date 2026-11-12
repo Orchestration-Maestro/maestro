@@ -1,6 +1,4 @@
 //! Live daemon preferences retain independent areas through the settings owner.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::tests::config_support;
 

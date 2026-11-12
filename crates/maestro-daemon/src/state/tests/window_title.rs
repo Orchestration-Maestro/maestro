@@ -1,6 +1,4 @@
 //! Outer terminal titles use current workspace and focused pane metadata.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::tests::config_support;
 

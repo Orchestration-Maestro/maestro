@@ -129,11 +129,9 @@ pub fn join_group(app: &mut App, index: usize, key: &str, linked: bool) {
 }
 
 /// Reports that fallback detection saw `agent` in `state` on the first pane of the first
-/// workspace.
-pub fn detect(app: &mut App, agent: Agent, state: AgentState) {
-    let Some(pane_id) = root_pane(app, 0) else {
-        return;
-    };
+/// workspace. Returns `None` when there is no such pane.
+pub fn detect(app: &mut App, agent: Agent, state: AgentState) -> Option<()> {
+    let pane_id = root_pane(app, 0)?;
     app.handle_internal_event(AppEvent::StateChanged {
         pane_id,
         agent: Some(agent),
@@ -143,19 +141,19 @@ pub fn detect(app: &mut App, agent: Agent, state: AgentState) {
         process_exited: false,
         observed_at: Instant::now(),
     });
+    Some(())
 }
 
 /// Gives the first pane of the first workspace a recognized agent process with fallback `state`.
-pub fn pilot(app: &mut App, state: AgentState) {
-    let Some(pane_id) = root_pane(app, 0) else {
-        return;
-    };
+/// Returns `None` when there is no such pane.
+pub fn pilot(app: &mut App, state: AgentState) -> Option<()> {
+    let pane_id = root_pane(app, 0)?;
     app.handle_internal_event(AppEvent::AgentProcessDetected {
         pane_id,
         agent: Agent::Pi,
         observed_at: Instant::now(),
     });
-    detect(app, Agent::Pi, state);
+    detect(app, Agent::Pi, state)
 }
 
 /// The root pane of the first tab of the workspace at `workspace`.

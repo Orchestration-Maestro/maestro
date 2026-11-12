@@ -1,6 +1,4 @@
 //! Internal event delivery uses live retained terminal runtimes.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::test_support::spawning::launch_inputs;
 use crate::state::tests::support;

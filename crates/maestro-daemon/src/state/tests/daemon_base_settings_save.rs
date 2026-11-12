@@ -1,5 +1,4 @@
 //! Global configuration edits remain governed independently of project layers.
-#![cfg(all(test, target_os = "linux"))]
 
 use crate::settings::model::{ConfigReloadStatus, StatusIndicatorStyle};
 use crate::settings::test_support::layer;

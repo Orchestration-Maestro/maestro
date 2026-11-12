@@ -1,5 +1,4 @@
 //! A created workspace retains the repository identity discovered at its directory.
-#![cfg(target_os = "linux")]
 
 use crate::state::test_support::spawning;
 use crate::{settings::model::Config, state::App};

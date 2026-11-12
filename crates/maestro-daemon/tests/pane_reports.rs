@@ -13,7 +13,7 @@ const SESSION: &str = "/sessions/pi-session.jsonl";
 /// A daemon whose only pane runs a recognized agent process that looks idle.
 fn piloted() -> App {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    pilot(&mut app, AgentState::Idle);
+    pilot(&mut app, AgentState::Idle).unwrap();
     app
 }
 /// Anchors the official integration's authority with session and working-state reports.
@@ -127,7 +127,7 @@ fn a_report_publishes_the_agent_and_its_status() {
 #[test]
 fn clearing_authority_restores_the_detected_state() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    pilot(&mut app, AgentState::Working);
+    pilot(&mut app, AgentState::Working).unwrap();
     anchored(&mut app);
     let mut blocked = report("maestro:pi", "pi", "blocked");
     blocked["seq"] = json!(3);

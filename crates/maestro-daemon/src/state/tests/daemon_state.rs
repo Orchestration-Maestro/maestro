@@ -1,6 +1,4 @@
 //! Daemon geometry before the first attached view.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::tests::support;
 use support::assert_identity_invariants;

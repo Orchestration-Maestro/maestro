@@ -1,8 +1,9 @@
 //! Setup entries for tests that need a topology without live processes.
 //!
 //! Each entry runs through the owners production uses, so the save mark and the retained
-//! terminal metadata behave as they do for a created workspace. Reads and assertions go
-//! through commands and events, never through these entries.
+//! terminal metadata behave as they do for a created workspace. The readers here (`root_pane`,
+//! `leaves`, `tokens`) answer from the retained topology for fixtures that need an id, and the
+//! asserting helpers state the one outcome their name says.
 
 /// A daemon answering workspace commands, with workspaces that need no live process.
 pub mod api;

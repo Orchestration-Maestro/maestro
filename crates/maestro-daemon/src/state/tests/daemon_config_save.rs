@@ -1,6 +1,4 @@
 //! Workspace preference saves use captured settings edits before live application.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
 use crate::state::tests::config_support;
 

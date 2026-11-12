@@ -71,7 +71,7 @@ fn tokens_patch_and_clear_without_touching_the_presentation() {
 #[test]
 fn a_report_ignored_after_the_process_exit_does_not_advance_the_sequence() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    detect(&mut app, Agent::Pi, AgentState::Idle);
+    detect(&mut app, Agent::Pi, AgentState::Idle).unwrap();
     let initial =
         titled(json!({"source": "custom:pi-metadata", "agent": "pi", "seq": 100})).unwrap();
     accepted(&mut app, initial).unwrap();
@@ -127,7 +127,7 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
         ("herdr:claude", "maestro:claude"),
     ] {
         let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-        detect(&mut app, Agent::Claude, AgentState::Idle);
+        detect(&mut app, Agent::Claude, AgentState::Idle).unwrap();
         let newest = report(
             fresh,
             json!({"title": "new", "tokens": {"summary": "new"}, "seq": 10}),
@@ -159,7 +159,7 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
 #[test]
 fn a_legacy_guard_spelling_is_ignored_after_the_process_exit_without_advancing_the_sequence() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    detect(&mut app, Agent::Claude, AgentState::Idle);
+    detect(&mut app, Agent::Claude, AgentState::Idle).unwrap();
     let exit_at = Instant::now() + Duration::from_millis(1);
     let exited = update(Some(Agent::Claude), AgentState::Idle, true);
     observe(&mut app, exited, exit_at);
