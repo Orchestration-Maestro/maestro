@@ -85,10 +85,15 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         ],
     ),
     (
+        "maestro-schema-validator",
+        &["maestro-request", "maestro-json", "maestro-text"],
+    ),
+    (
         "maestro-models",
         &[
             "maestro-models-catalog",
             "maestro-http",
+            "maestro-schema-validator",
             "maestro-cancellation",
             "maestro-request",
             "maestro-text",

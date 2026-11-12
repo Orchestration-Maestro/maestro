@@ -254,7 +254,7 @@ Share registration lifetime handling and adapters where necessary, not one unive
 
 ### Runtime browser modules
 
-Use the package manifest's existing `maestro.contributions` resource. Data/template pages and cards remain supported. Add a renderer reference and optional browser-module descriptor to those contribution records; do not add another plugin manifest, installer or package-resolution path.
+Use the package manifest's existing `maestro.contributions` resource. Data/template pages and cards remain supported. Add a renderer reference and optional browser-module descriptor to those contribution records; do not add another extension manifest, installer or package-resolution path.
 
 The contribution record supplies its stable package/contribution identity, attachment-point reference, consumed/provided data contract, required host API references and route references when routable. A browser module descriptor locates a prepared module entry, its matching WebAssembly/binding assets and its registration export within the resolved package. The entry initializes the matched browser module and registers its elements and contributions against the supplied host interface. Installation/use never compiles Rust. Backend extension artifacts are not browser module artifacts.
 
@@ -455,9 +455,10 @@ as one portable build dependency and one portable development dependency.
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-office` | read office documents | `maestro-text`, `maestro-json`, `maestro-lock` | 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-package`, `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
-| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
+| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
 | `maestro-models-catalog` | define the model catalog | `maestro-request` | below 0 |
 | `maestro-http` | perform HTTP requests | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json` | below 0 |
+| `maestro-schema-validator` | validate values against a schema | `maestro-request`, `maestro-json`, `maestro-text` | below 0 |
 | `maestro-resources` | discover resources | `maestro-request`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-listing` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown`, `maestro-realpath` | 0 |
@@ -1087,7 +1088,7 @@ Defaults belong to the daemon. The daemon and multiplexer are native-only; brows
 builds already exclude native process crates.
 
 The workspace daemon, the multiplexer and their commands share the application's single setup. They
-keep no configuration file, plugin registry, state or log root, keybinding file, installer or update
+keep no configuration file, extension registry, state or log root, keybinding file, installer or update
 path of their own. Their preferences are members of the layered `settings.json` under `multiplexer`,
 `daemon` and `update`. The daemon reads and writes only the global scope. Multiplexer bindings and
 custom command bindings are members of `keybindings.json`. Action manifests are package content of
@@ -1123,7 +1124,7 @@ unchanged.
 
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
-**Below layer 0:** `maestro-protocol`, `maestro-models-catalog` and `maestro-http` join the existing foundation leaves.
+**Below layer 0:** `maestro-protocol`, `maestro-models-catalog`, `maestro-http` and `maestro-schema-validator` join the existing foundation leaves.
 
 1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
@@ -1209,7 +1210,7 @@ The record keeps the supplied JSON Schema value and, beside it, the kinds its au
 declared for individual nodes, keyed by JSON pointer; a node without an entry is plain
 and is never converted as an authored node. `SchemaKind` names the extensible kinds the
 schema builders produce. `Tool`, `Context` and `ToolInfo` default their schema operand to
-this owner, guest authoring re-exports it, and the model argument-validation owner is its
+this owner, guest authoring re-exports it, and `maestro-schema-validator` is its
 only converter. Inside that owner the supplied schema is indexed once: a data-only
 document holds each authored node's kind against the node's identity, a small context owns
 only the named definitions visible on the current conversion call path, and each stage and

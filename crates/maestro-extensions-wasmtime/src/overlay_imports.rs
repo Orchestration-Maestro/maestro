@@ -5,24 +5,27 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    callback_imports::CallbackView,
+    api_imports::ApiView,
+    bindings::maestro::extension::host::HostOverlayOptions,
+    callback_imports::{CallbackView, optional},
+    context_imports::add_resource,
     guest_calls::Callback,
+    lifecycle::State,
     local_resources::Message,
-    overlay_reads::{
-        HandleEndpoint, HandleRequest, OptionsEndpoint, OptionsRequest, OverlayMessage, Visibility,
-    },
+    overlay_reads::{HandleEndpoint, HandleRequest, OptionsEndpoint, OverlayMessage},
+    read_imports::{endpoint, forwards, release},
     widget_reads::WidgetMessage,
 };
 use wasmtime::{
     StoreContextMut,
     component::{LinkerInstance, Resource},
 };
+use wasmtime_wasi::WasiView;
 
-/// Installs the retained options constructor and placement operations.
+/// Installs the retained options constructor and the shown overlay's handle.
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, OptionsEndpoint>(host, "overlay-options")?;
     host.func_wrap(
         "new-overlay-options",
         |mut store: StoreContextMut<'_, T>, (encoded,): (String,)| {
@@ -38,56 +41,6 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             Ok((result,))
         },
     )?;
-    host.func_wrap(
-        "[method]overlay-options.get",
-        |mut store: StoreContextMut<'_, T>, (this,): (Resource<OptionsEndpoint>,)| {
-            let options = store.data_mut().ctx().table.get(&this)?.clone();
-            Ok((options.read(OptionsRequest::Get),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]overlay-options.set",
-        |mut store: StoreContextMut<'_, T>,
-         (this, encoded): (Resource<OptionsEndpoint>, String)| {
-            let options = store.data_mut().ctx().table.get(&this)?.clone();
-            Ok((options.read(|reply| OptionsRequest::Set(encoded, reply)),))
-        },
-    )?;
-    shared(host)
-}
-
-/// Installs sharing and visibility of an options record and the shown overlay's handle.
-fn shared<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]overlay-options.share",
-        |mut store: StoreContextMut<'_, T>, (this,): (Resource<OptionsEndpoint>,)| {
-            let options = store.data_mut().ctx().table.get(&this)?.clone();
-            let shared = options
-                .read(OptionsRequest::Share)
-                .map_err(wasmtime::Error::msg)?;
-            Ok((store.data_mut().ctx().table.push(shared)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]overlay-options.set-visible",
-        |mut store: StoreContextMut<'_, T>,
-         (this, visible): (Resource<OptionsEndpoint>, Option<Resource<Callback>>)| {
-            let store = store.data_mut();
-            let options = store.ctx().table.get(&this)?.clone();
-            let visible = crate::callback_imports::optional(store, visible.as_ref())?;
-            let result = store.api().0.request(|api, reply| {
-                Message::Widgets(WidgetMessage::Overlay(OverlayMessage::Visible(
-                    Visibility {
-                        api,
-                        options,
-                        visible,
-                        reply,
-                    },
-                )))
-            });
-            Ok((result,))
-        },
-    )?;
     crate::context_imports::add_resource::<T, HandleEndpoint>(host, "overlay-handle")?;
     host.func_wrap(
         "[method]overlay-handle.request",
@@ -100,4 +53,55 @@ fn shared<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmti
             )?,))
         },
     )
+}
+
+impl HostOverlayOptions for State {
+    fn get(&mut self, this: Resource<OptionsEndpoint>) -> wasmtime::Result<Result<String, String>> {
+        Ok(endpoint(self, &this)?.get())
+    }
+
+    fn set(
+        &mut self,
+        this: Resource<OptionsEndpoint>,
+        placement: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(endpoint(self, &this)?.set(placement))
+    }
+
+    fn share(
+        &mut self,
+        this: Resource<OptionsEndpoint>,
+    ) -> wasmtime::Result<Resource<OptionsEndpoint>> {
+        let shared = endpoint(self, &this)?
+            .share()
+            .map_err(wasmtime::Error::msg)?;
+        Ok(self.ctx().table.push(shared)?)
+    }
+
+    fn set_visible(
+        &mut self,
+        this: Resource<OptionsEndpoint>,
+        visible: Option<Resource<Callback>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        let options = endpoint(self, &this)?;
+        let visible = optional(self, visible.as_ref())?;
+        let api = self.api().clone();
+        Ok(options.set_visible(api, visible))
+    }
+
+    fn drop(&mut self, this: Resource<OptionsEndpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards every overlay options method to its trait implementation.
+pub(crate) fn add_options(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, OptionsEndpoint>(host, "overlay-options")?;
+    forwards! { host, "overlay-options", HostOverlayOptions, OptionsEndpoint,
+        "get" => get();
+        "set" => set(placement: String);
+        "share" => share();
+        "set-visible" => set_visible(visible: Option<Resource<Callback>>);
+    }
+    Ok(())
 }

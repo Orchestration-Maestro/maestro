@@ -6,7 +6,10 @@
 )]
 use crate::guest_calls::Handle;
 use crate::guest_calls::paints::Failure;
-use crate::local_resources::{Lease, Message, Registry};
+use crate::local_resources::{
+    Lease, Message, Registry,
+    held::{LentHighlighter, LentStyle},
+};
 use maestro_extensions::presentation::{
     Box as Boxed, Container, ExtensionWidgets, Markdown, MarkdownOptions, Spacer, Text,
     TextDecoration,
@@ -151,8 +154,6 @@ pub(crate) enum WidgetMessage {
     Request(u64, Request),
     /// Builds a widget for the extension whose API has this identity.
     New(u64, Build, Reply<WidgetEndpoint>),
-    /// A request on the lent style or highlighting with this identity.
-    Lent(u64, Lent),
     /// Lends the live theme's Markdown styles and highlighting.
     LendTheme(Reply<LentTheme>),
     /// Lends the live theme's selection list styles in field order.
@@ -164,8 +165,6 @@ pub(crate) enum WidgetMessage {
         crate::keys_reads::KeysBuild,
         Reply<crate::keys_reads::KeysEndpoint>,
     ),
-    /// A request on the keybindings manager with this identity.
-    Keys(u64, crate::keys_reads::KeysRequest),
     /// A keybinding hint.
     Hint(crate::keys_reads::Hint, Reply<String>),
     /// Lends the live theme's editor border and selection list styles in field order.
@@ -191,32 +190,6 @@ pub(crate) type LentSettings = (
     String,
     StyleEndpoint,
 );
-
-/// One request on a lent host style or highlighting.
-pub(crate) enum Lent {
-    /// Applies the style.
-    Style(String, Reply<String>),
-    /// Runs the highlighting.
-    Highlight(String, Option<String>, Reply<Vec<String>>),
-    /// Applies a row style to text of a row that is selected or not.
-    Row(String, bool, Reply<String>),
-    /// Closes a submenu with its chosen value, or without one.
-    Done(Option<String>, Reply<()>),
-    /// Runs a lent text callback.
-    Text(String, Reply<()>),
-}
-
-impl Lent {
-    /// Returns a catchable failure.
-    pub(crate) fn reject(self, error: &str) {
-        let error = error.to_owned();
-        match self {
-            Self::Style(_, reply) | Self::Row(_, _, reply) => drop(reply.send(Err(error))),
-            Self::Highlight(_, _, reply) => drop(reply.send(Err(error))),
-            Self::Done(_, reply) | Self::Text(_, reply) => drop(reply.send(Err(error))),
-        }
-    }
-}
 
 /// The toolkit widget behind one host widget.
 pub(crate) enum Kind {
@@ -606,9 +579,7 @@ pub struct HighlighterEndpoint(pub(crate) Arc<Lease>);
 impl StyleEndpoint {
     /// Applies the style.
     pub(crate) fn apply(&self, text: String) -> Result<String, String> {
-        self.0.request(|id, reply| {
-            Message::Widgets(WidgetMessage::Lent(id, Lent::Style(text, reply)))
-        })
+        self.0.run::<LentStyle, _>(move |style, _| Ok(style(&text)))
     }
 }
 
@@ -619,9 +590,8 @@ impl HighlighterEndpoint {
         code: String,
         lang: Option<String>,
     ) -> Result<Vec<String>, String> {
-        self.0.request(|id, reply| {
-            Message::Widgets(WidgetMessage::Lent(id, Lent::Highlight(code, lang, reply)))
-        })
+        self.0
+            .run::<LentHighlighter, _>(move |highlight, _| Ok(highlight(&code, lang.as_deref())))
     }
 }
 

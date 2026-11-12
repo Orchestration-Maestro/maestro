@@ -360,12 +360,6 @@ pub(crate) enum Operation {
         crate::native_renders::Render,
         std::sync::mpsc::Sender<Result<crate::import_route::Value, String>>,
     ),
-    /// Uses one original retained native component.
-    Component(
-        u64,
-        crate::native_renders::ComponentRequest,
-        std::sync::mpsc::Sender<Result<crate::import_route::Value, String>>,
-    ),
 }
 impl State {
     /// Dispatches one native built-in operation without adding another request receiver.
@@ -388,9 +382,6 @@ impl State {
             }
             Operation::Render(id, render, reply) => {
                 let _ = reply.send(self.builtin_render(id, render));
-            }
-            Operation::Component(id, request, reply) => {
-                let _ = reply.send(self.native_component(id, request));
             }
         }
     }

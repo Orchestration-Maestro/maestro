@@ -25,7 +25,7 @@ fn global_registry_is_lazy_shared_replaceable_and_restorable() {
     assert!(get_keybindings().matches("\x07", "tui.input.submit"));
     let mut definitions = TUI_KEYBINDINGS.clone();
     definitions.push((
-        "plugin.run".into(),
+        "extension.run".into(),
         KeybindingDefinition {
             default_keys: KeybindingKeys::Single("enter".into()),
             description: None,
@@ -36,7 +36,7 @@ fn global_registry_is_lazy_shared_replaceable_and_restorable() {
     let held = get_keybindings();
     supplied.set_user_bindings(vec![
         (
-            "plugin.run".into(),
+            "extension.run".into(),
             Some(KeybindingKeys::Single("ctrl+x".into())),
         ),
         (
@@ -44,10 +44,10 @@ fn global_registry_is_lazy_shared_replaceable_and_restorable() {
             Some(KeybindingKeys::Single("ctrl+x".into())),
         ),
     ]);
-    assert!(get_keybindings().matches("\x18", "plugin.run"));
-    assert!(held.matches("\x18", "plugin.run"));
+    assert!(get_keybindings().matches("\x18", "extension.run"));
+    assert!(held.matches("\x18", "extension.run"));
     set_keybindings(KeybindingsManager::new(TUI_KEYBINDINGS.clone(), vec![]));
-    assert!(held.matches("\x18", "plugin.run"));
+    assert!(held.matches("\x18", "extension.run"));
     let corpus: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/binding_cases.json")).unwrap();
     let expected = &corpus["cases"]
@@ -63,7 +63,7 @@ fn global_registry_is_lazy_shared_replaceable_and_restorable() {
         .collect();
     assert_eq!(serde_json::json!(conflicts), expected["heldConflicts"]);
     assert_eq!(
-        serde_json::json!(get_keybindings().get_keys("plugin.run")),
+        serde_json::json!(get_keybindings().get_keys("extension.run")),
         expected["newLacksCustom"]
     );
     assert_eq!(
