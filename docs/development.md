@@ -1866,7 +1866,9 @@ reports, and `--exit-write PATH` then writes 4096 bytes to `PATH`. A test starts
 command: it needs no libtest arguments and starts in milliseconds where the whole
 `maestro-app` test program takes tens. The test sets `MAESTRO_CODING_AGENT_DIR` and its working
 directory, and passes `IsolatedSetup::environment` for effects such as continuing past the
-file-size limit. Preparation builds the child once, like the other fixtures.
+file-size limit. Preparation builds the child once, like the other fixtures. It keeps its own
+record, keyed on the crates `maestro-app` builds on, so an edit to one of them rebuilds the
+child alone and an edit to the native fixture's crates leaves it staged.
 To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
 add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
 `.config/nextest.toml`. Adding fixture tests inside a declared caller needs no

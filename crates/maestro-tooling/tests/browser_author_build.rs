@@ -292,10 +292,10 @@ fn browser_check_repairs_formatting() {
     }
 }
 
-/// A lane that has linted the library once lints it again from its compiled state.
+/// The first check of a lane, which the lane's graph already linted, does not lint the library
+/// again.
 #[test]
 fn browser_check_reuses_the_compiled_library_of_the_lane() {
-    success(&Browser::cached().run("browser-check"));
     let output = Browser::cached().run("browser-check");
     success(&output);
     let log = String::from_utf8_lossy(&output.stderr);
