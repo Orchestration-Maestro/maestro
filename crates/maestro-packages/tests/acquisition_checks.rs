@@ -104,7 +104,7 @@ fn npm_command_selection_runs_after_progress() {
     let error = block_on(fixture.manager.install("npm:pkg", None)).unwrap_err();
     assert_eq!(
         error.to_string(),
-        "Invalid npmCommand: first array entry must be a non-empty command"
+        "Invalid npmCommand: the first array entry must hold a non-empty command"
     );
     assert_eq!(
         fixture.phases(),

@@ -17,7 +17,7 @@ pub(super) const OPTIONS: &[(&str, &str)] = &[
     ),
     (
         "append-system-prompt",
-        "Append text or file contents to the system prompt (can be used multiple times)",
+        "Append text or a file's contents to the system prompt (can be used multiple times)",
     ),
     ("mode", "Output mode: text (default), json, or rpc"),
     ("print", "Non-interactive mode: process prompt and exit"),
@@ -40,11 +40,11 @@ pub(super) const OPTIONS: &[(&str, &str)] = &[
     ),
     (
         "no-builtin-tools",
-        "Disable built-in tools by default but keep extension/custom tools enabled",
+        "Disable built-in tools by default; extension and custom tools stay enabled",
     ),
     (
         "tools",
-        "Comma-separated allowlist of tool names to enable\n                                 Applies to built-in, extension, and custom tools",
+        "Comma-separated allowlist of tool names to enable\n                                 Covers built-in tools, extension tools and custom tools.",
     ),
     (
         "thinking",

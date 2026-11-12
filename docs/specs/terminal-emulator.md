@@ -177,7 +177,7 @@ two kinds of handler: the terminal's and recording handlers in tests.
 All are already locked. `icu_properties` 2.3.0 (compiled data) supplies Unicode 17
 properties; `base64` 0.23.1 decodes clipboard payloads strictly and image payloads with
 indifferent padding; `flate2` 1.1.10 (zlib-rs) decompresses images; `png` 0.17.16 decodes
-PNG; `rustix` 1.1.5 with `shm` opens and unlinks shared-memory objects on Unix. Image
+PNG; `rustix` 1.1.6 with `shm` opens and unlinks shared-memory objects on Unix. Image
 fingerprints use the standard library's hasher. `num-traits` 0.2.19 supplies checked
 floating-point intensity conversion.
 

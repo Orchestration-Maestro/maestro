@@ -97,7 +97,7 @@ fn assert_statistics(catalog: &super::Catalog, expected: &[Model], counts: &[(St
     let mut output = Vec::new();
     super::print_statistics(catalog, &mut output).unwrap();
     let mut report = format!(
-        "\nModel Statistics:\n  Total tool-capable models: {}\n  Reasoning-capable models: {}\n",
+        "\nModel Statistics:\n  Models with tool support: {}\n  Models with reasoning: {}\n",
         expected.len(),
         expected.iter().filter(|model| model.reasoning).count()
     );

@@ -1799,7 +1799,7 @@ fn assert_pending_answer(answer: &Value, succeeded: bool) {
         assert_eq!(answer["errors"].as_array().unwrap().len(), 1);
         assert_eq!(
             answer["errors"][0]["message"],
-            json!("Failed to refresh OAuth token for author-pending")
+            json!("Could not refresh the OAuth token for author-pending")
         );
     }
 }

@@ -3045,7 +3045,7 @@
       "model_index": null,
       "thinking_level": null,
       "warning": null,
-      "error": "No models available. Check your installation or add models to models.json."
+      "error": "No models loaded. Check the installation, or add them to models.json."
     }
   },
   {
@@ -10211,7 +10211,7 @@
       "model_index": null,
       "thinking_level": null,
       "warning": null,
-      "error": "No models available. Check your installation or add models to models.json."
+      "error": "No models loaded. Check the installation, or add them to models.json."
     }
   },
   {
@@ -10307,7 +10307,7 @@
       "model_index": null,
       "thinking_level": null,
       "warning": null,
-      "error": "Unknown provider \"UNKNOWN\". Use --list-models to see available providers/models."
+      "error": "Unknown provider \"UNKNOWN\". See --list-models for the available providers and models."
     }
   },
   {
@@ -10403,7 +10403,7 @@
       "model_index": null,
       "thinking_level": null,
       "warning": null,
-      "error": "Unknown provider \" openai \". Use --list-models to see available providers/models."
+      "error": "Unknown provider \" openai \". See --list-models for the available providers and models."
     }
   },
   {
@@ -11736,7 +11736,7 @@
       "model_index": null,
       "thinking_level": null,
       "warning": null,
-      "error": "Model \"never-found\" not found. Use --list-models to see available models."
+      "error": "Model \"never-found\" not found. See --list-models for the available models."
     }
   },
   {
@@ -11885,7 +11885,7 @@
       "model_index": null,
       "thinking_level": null,
       "warning": null,
-      "error": "Model \" gpt \" not found. Use --list-models to see available models."
+      "error": "Model \" gpt \" not found. See --list-models for the available models."
     }
   },
   {
@@ -13149,7 +13149,7 @@
       "model_index": null,
       "thinking_level": null,
       "warning": null,
-      "error": "Unknown provider \"unknown\"provider\\\\\". Use --list-models to see available providers/models."
+      "error": "Unknown provider \"unknown\"provider\\\\\". See --list-models for the available providers and models."
     }
   },
   {

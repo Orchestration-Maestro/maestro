@@ -50,8 +50,8 @@
     "statusText": "",
     "now": 1700000000000,
     "expected": {
-      "message": "You have hit your ChatGPT usage limit.",
-      "friendlyMessage": "You have hit your ChatGPT usage limit."
+      "message": "Your ChatGPT usage limit is reached.",
+      "friendlyMessage": "Your ChatGPT usage limit is reached."
     }
   },
   {
@@ -70,7 +70,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan)."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan)."
     }
   },
   {
@@ -80,7 +80,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -90,7 +90,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -100,7 +100,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -110,7 +110,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~1 min."
     }
   },
   {
@@ -120,7 +120,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~1 min."
     }
   },
   {
@@ -130,7 +130,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~2 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~2 min."
     }
   },
   {
@@ -140,7 +140,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan)."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan)."
     }
   },
   {
@@ -150,7 +150,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -160,7 +160,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -170,7 +170,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -180,7 +180,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~1 min."
     }
   },
   {
@@ -190,7 +190,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~1 min."
     }
   },
   {
@@ -200,7 +200,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~2 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~2 min."
     }
   },
   {
@@ -210,7 +210,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan)."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan)."
     }
   },
   {
@@ -220,7 +220,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -230,7 +230,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -240,7 +240,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~0 min."
     }
   },
   {
@@ -250,7 +250,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~1 min."
     }
   },
   {
@@ -260,7 +260,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~1 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~1 min."
     }
   },
   {
@@ -270,7 +270,7 @@
     "now": 1700000000000,
     "expected": {
       "message": "server detail",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (plus plan). Try again in ~2 min."
+      "friendlyMessage": "Your ChatGPT usage limit is reached (plus plan). Try again in ~2 min."
     }
   },
   {
@@ -342,8 +342,8 @@
     "statusText": "",
     "now": 1700000000000,
     "expected": {
-      "message": "You have hit your ChatGPT usage limit.",
-      "friendlyMessage": "You have hit your ChatGPT usage limit."
+      "message": "Your ChatGPT usage limit is reached.",
+      "friendlyMessage": "Your ChatGPT usage limit is reached."
     }
   },
   {
@@ -397,8 +397,8 @@
     "statusText": "",
     "now": 1700000000000,
     "expected": {
-      "message": "You have hit your ChatGPT usage limit.",
-      "friendlyMessage": "You have hit your ChatGPT usage limit."
+      "message": "Your ChatGPT usage limit is reached.",
+      "friendlyMessage": "Your ChatGPT usage limit is reached."
     }
   },
   {
@@ -407,8 +407,8 @@
     "statusText": "",
     "now": 1700000000000,
     "expected": {
-      "message": "You have hit your ChatGPT usage limit.",
-      "friendlyMessage": "You have hit your ChatGPT usage limit."
+      "message": "Your ChatGPT usage limit is reached.",
+      "friendlyMessage": "Your ChatGPT usage limit is reached."
     }
   },
   {
@@ -417,8 +417,8 @@
     "statusText": "",
     "now": 1700000000000,
     "expected": {
-      "message": "You have hit your ChatGPT usage limit (team plan).",
-      "friendlyMessage": "You have hit your ChatGPT usage limit (team plan)."
+      "message": "Your ChatGPT usage limit is reached (team plan).",
+      "friendlyMessage": "Your ChatGPT usage limit is reached (team plan)."
     }
   }
 ]

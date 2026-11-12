@@ -71,8 +71,9 @@ mod support;
 #[path = "support/example_process.rs"]
 mod example_process;
 
-#[path = "../../maestro-extensions/tests/support/model.rs"]
-mod model_support;
+mod model_support {
+    pub use maestro_extensions::test_support::model;
+}
 
 /// The shared silent command operations the adapter's witnesses bind.
 mod context_actions {

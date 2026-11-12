@@ -33,7 +33,7 @@ pub fn resolve_cli_model(
         .clone();
     if all.is_empty() {
         return failure(
-            "No models available. Check your installation or add models to models.json.".into(),
+            "No models loaded. Check the installation, or add them to models.json.".into(),
         );
     }
     let providers: HashMap<_, _> = all
@@ -46,7 +46,7 @@ pub fn resolve_cli_model(
     let explicit = options.cli_provider.filter(|value| !value.is_empty());
     if let Some(value) = explicit.filter(|value| !providers.contains_key(&value.to_lowercase())) {
         return failure(format!(
-            r#"Unknown provider "{value}". Use --list-models to see available providers/models."#
+            r#"Unknown provider "{value}". See --list-models for the available providers and models."#
         ));
     }
     select_input(input, explicit, &providers, &all, compare_model_ids)
@@ -115,7 +115,7 @@ fn select_input(
         return custom_model(provider, pattern, &candidates);
     }
     failure(format!(
-        r#"Model "{input}" not found. Use --list-models to see available models."#
+        r#"Model "{input}" not found. See --list-models for the available models."#
     ))
 }
 /// Parse model input without dropping invalid suffixes.
@@ -174,7 +174,7 @@ fn custom_model(
         .or_else(|| candidates.first());
     let Some(base) = base else {
         return failure(format!(
-            r#"Model "{provider}/{pattern}" not found. Use --list-models to see available models."#
+            r#"Model "{provider}/{pattern}" not found. See --list-models for the available models."#
         ));
     };
     let mut model = base.read().unwrap_or_else(PoisonError::into_inner).clone();

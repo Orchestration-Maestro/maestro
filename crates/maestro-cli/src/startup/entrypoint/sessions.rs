@@ -75,7 +75,7 @@ fn open_selection(resolved: ResolvedSession) -> SessionSelection {
     }
 }
 
-/// Resolve a session argument to a file.
+/// Resolve a session argument into a file path.
 ///
 /// An argument naming a path is used as written. Otherwise the current project's
 /// sessions are searched first and only then every project, keeping the first match of
