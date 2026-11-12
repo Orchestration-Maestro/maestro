@@ -135,7 +135,8 @@ fn extension_flag_values_follow_declared_types() {
             });
             assert_eq!(observed, case.expected, "case {name}");
         }
-    });
+    })
+    .unwrap();
 }
 
 /// A provider with one complete model, or a model list without an endpoint.
@@ -207,71 +208,71 @@ fn provider_registrations_apply_individually_and_clear() {
             });
             assert_eq!(observed, case.expected);
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
 fn services_bind_auth_catalog_settings_and_resources() {
-    with_isolated_home(
-        "services_bind_auth_catalog_settings_and_resources",
-        |base| {
-            let case = services_case("services_bind_auth_models_settings_and_resources");
-            let root = Root::new(base, &case.name);
-            let model = json!({
-                "id": "file-model", "name": "File", "reasoning": false, "input": ["text"],
-                "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
-                "contextWindow": 1000, "maxTokens": 100,
-            });
-            let files = [
-                (
-                    "agent/auth.json",
-                    json!({"custom-provider": {"type": "api_key", "key": "FILE_KEY"}}),
-                ),
-                (
-                    "agent/models.json",
-                    json!({"providers": {"custom-provider": {
-                        "baseUrl": "https://example.test/v1", "apiKey": "MODELS_KEY",
-                        "api": "openai-completions", "models": [model],
-                    }}}),
-                ),
-                (
-                    "project/.maestro/settings.json",
-                    json!({"defaultThinkingLevel": "low"}),
-                ),
-            ];
-            for (path, document) in files {
-                let path = format!("{}/{path}", root.path);
-                std::fs::create_dir_all(std::path::Path::new(&path).parent().unwrap()).unwrap();
-                std::fs::write(path, document.to_string()).unwrap();
-            }
-            std::fs::create_dir_all(root.fill("$ROOT/agent/skills")).unwrap();
-            let skill = "---\nname: service-skill\ndescription: s\n---\nSkill content here.";
-            std::fs::write(root.fill("$ROOT/agent/skills/s.md"), skill).unwrap();
-            let observed = on_task_set(|local| async {
-                let mut options = options(&root, local, Vec::new());
-                options.auth_storage = None;
-                let services = create_agent_session_services(options).await.unwrap();
-                let api_key = match services.auth_storage.get("custom-provider") {
-                    Some(AuthCredential::ApiKey(credential)) => Some(credential.key),
-                    _ => None,
-                };
-                let model = (services
-                    .model_registry
-                    .find("custom-provider", "file-model"))
-                .map(|model| model.read().unwrap().id.clone());
-                let settings = services.settings_manager.borrow();
-                let skills = services.resource_loader.get_skills();
-                root.normalize(&json!({
-                    "cwd": services.cwd, "agentDir": services.agent_dir, "apiKey": api_key,
-                    "model": model, "registryError": services.model_registry.get_error(),
-                    "thinking": settings.get_default_thinking_level().map(Value::from),
-                    "skills": skills.skills.iter().map(|s| &s.name).collect::<Vec<_>>(),
-                    "diagnostics": diagnostics(&services.diagnostics),
-                }))
-            });
-            assert_eq!(observed, case.expected);
-        },
-    );
+    let test = "services_bind_auth_catalog_settings_and_resources";
+    with_isolated_home(test, |base| {
+        let case = services_case("services_bind_auth_models_settings_and_resources");
+        let root = Root::new(base, &case.name);
+        let model = json!({
+            "id": "file-model", "name": "File", "reasoning": false, "input": ["text"],
+            "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+            "contextWindow": 1000, "maxTokens": 100,
+        });
+        let files = [
+            (
+                "agent/auth.json",
+                json!({"custom-provider": {"type": "api_key", "key": "FILE_KEY"}}),
+            ),
+            (
+                "agent/models.json",
+                json!({"providers": {"custom-provider": {
+                    "baseUrl": "https://example.test/v1", "apiKey": "MODELS_KEY",
+                    "api": "openai-completions", "models": [model],
+                }}}),
+            ),
+            (
+                "project/.maestro/settings.json",
+                json!({"defaultThinkingLevel": "low"}),
+            ),
+        ];
+        for (path, document) in files {
+            let path = format!("{}/{path}", root.path);
+            std::fs::create_dir_all(std::path::Path::new(&path).parent().unwrap()).unwrap();
+            std::fs::write(path, document.to_string()).unwrap();
+        }
+        std::fs::create_dir_all(root.fill("$ROOT/agent/skills")).unwrap();
+        let skill = "---\nname: service-skill\ndescription: s\n---\nSkill content here.";
+        std::fs::write(root.fill("$ROOT/agent/skills/s.md"), skill).unwrap();
+        let observed = on_task_set(|local| async {
+            let mut options = options(&root, local, Vec::new());
+            options.auth_storage = None;
+            let services = create_agent_session_services(options).await.unwrap();
+            let api_key = match services.auth_storage.get("custom-provider") {
+                Some(AuthCredential::ApiKey(credential)) => Some(credential.key),
+                _ => None,
+            };
+            let model = (services
+                .model_registry
+                .find("custom-provider", "file-model"))
+            .map(|model| model.read().unwrap().id.clone());
+            let settings = services.settings_manager.borrow();
+            let skills = services.resource_loader.get_skills();
+            root.normalize(&json!({
+                "cwd": services.cwd, "agentDir": services.agent_dir, "apiKey": api_key,
+                "model": model, "registryError": services.model_registry.get_error(),
+                "thinking": settings.get_default_thinking_level().map(Value::from),
+                "skills": skills.skills.iter().map(|s| &s.name).collect::<Vec<_>>(),
+                "diagnostics": diagnostics(&services.diagnostics),
+            }))
+        });
+        assert_eq!(observed, case.expected);
+    })
+    .unwrap();
 }
 
 /// Without an agent directory the services use the environment-selected one.
@@ -300,7 +301,8 @@ fn omitted_agent_dir_uses_the_environment_root() {
                 json!({"agentDir": "$ROOT/env-agent"})
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 /// Supplied credentials, settings and catalog are the services' own handles.
@@ -323,7 +325,8 @@ fn supplied_services_are_reused() {
             assert!(Rc::ptr_eq(&services.settings_manager, &settings));
             assert!(Arc::ptr_eq(&services.model_registry, &catalog));
         });
-    });
+    })
+    .unwrap();
 }
 
 /// A catalog the services create themselves runs configured key commands.
@@ -356,7 +359,8 @@ fn native_services_resolve_configured_command_keys() {
         };
         assert!(api_key.as_deref().eq(&Some("resolved")));
         assert!(headers.is_none());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -411,5 +415,5 @@ fn extension_catalog_defaults_are_available_during_factory_loading() {
                 Some(json!({"model":"default-model", "key":"later-key"}))
             );
         },
-    );
+    ).unwrap();
 }

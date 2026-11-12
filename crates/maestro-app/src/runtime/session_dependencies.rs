@@ -29,7 +29,7 @@ use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_session::SessionManager;
 use maestro_settings::SettingsManager;
 use maestro_theme::LiveTheme;
-use maestro_tools::utils::environment::get_shell_config;
+use maestro_tools::utils::get_shell_config;
 use std::sync::RwLock;
 use std::{cell::RefCell, collections::HashMap, io, rc::Rc, sync::Arc};
 

@@ -8,7 +8,7 @@ pub(crate) use crate::tree;
 use bindings::{Binding, bindings};
 use filter_mode::mode;
 use maestro_app::presentation_data::bindings::KEYBINDINGS;
-use maestro_chat::components::tree_picker::{SessionTreeNode, TreeList};
+use maestro_chat::{SessionTreeNode, TreeList};
 use maestro_tui::{KeybindingsManager, get_keybindings, set_keybindings};
 use recorded_registry::{Operation, apply_operation};
 use registry::{REGISTRY, Restore};

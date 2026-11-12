@@ -319,6 +319,20 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         &["maestro-app", "maestro-office", "maestro-theme"],
     ),
     (
+        "maestro-session-reports",
+        &[
+            "maestro-app",
+            "maestro-models",
+            "maestro-session",
+            "maestro-resources",
+            "maestro-process",
+            "maestro-json",
+            "maestro-text",
+            "maestro-theme",
+            "maestro-listing",
+        ],
+    ),
+    (
         "maestro",
         &[
             "maestro-theme",

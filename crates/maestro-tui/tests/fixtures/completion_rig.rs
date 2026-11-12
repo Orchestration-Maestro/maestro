@@ -3,14 +3,12 @@
 use crate::editor_host::{self as support, manual_runtime::ManualRuntime};
 use crate::fixtures::providers::item;
 use maestro_cancellation::Cancellation;
-use maestro_tui::candidates::{
-    CompletionError, CompletionOptions, CompletionResult, CursorPosition,
-};
-use maestro_tui::interface::TuiRuntime;
+use maestro_tui::TuiRuntime;
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Component, Editor,
-    EditorOptions, EditorTheme, Focusable, TUI, interface::InputHandler,
+    EditorOptions, EditorTheme, Focusable, InputHandler, TUI,
 };
+use maestro_tui::{CompletionError, CompletionOptions, CompletionResult, CursorPosition};
 use std::{
     cell::{Cell, RefCell},
     future::Future,

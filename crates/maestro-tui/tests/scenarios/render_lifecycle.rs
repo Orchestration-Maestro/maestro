@@ -4,8 +4,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
-use maestro_tui::interface::{ChildArray, ComponentHandle};
 use maestro_tui::{CURSOR_MARKER, Component, Container, TUI, TerminalImage};
+use maestro_tui::{ChildArray, ComponentHandle};
 
 use crate::scenarios::support::checks::succeeds;
 use crate::scenarios::support::components::{Cached, Probe};

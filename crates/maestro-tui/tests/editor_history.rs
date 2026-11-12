@@ -113,7 +113,7 @@ fn maestro_editor_undo_returns_to_the_state_before_any_history_step() {
 
 #[test]
 fn history_callbacks_observe_committed_selection() {
-    use maestro_tui::{Editor, EditorOptions, interface::InputHandler};
+    use maestro_tui::{Editor, EditorOptions, InputHandler};
     use std::{cell::RefCell, rc::Rc};
     let _guard = support::globals();
     let (tui, _, _) = support::host(24);

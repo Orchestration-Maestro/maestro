@@ -1,11 +1,9 @@
 //! Typed attachment inputs and complete public observations.
 #![cfg(test)]
-use maestro_tui::candidates::{
-    AutocompleteOperations, CompletionOptions, CursorPosition, DirectoryEntry,
-};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
 };
+use maestro_tui::{AutocompleteOperations, CompletionOptions, CursorPosition, DirectoryEntry};
 use serde::Deserialize;
 use std::cell::{Cell, RefCell};
 use std::cmp::Ordering;

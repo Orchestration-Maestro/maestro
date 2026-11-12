@@ -1,7 +1,7 @@
 # Native tool factories
 
 `maestro_tools` exposes the native factories at the crate root and in
-[`maestro_tools::registry`](../crates/maestro-tools/src/registry.rs). They are unavailable
+[`tools`](../crates/maestro-tools/src/tools.rs). They are unavailable
 on `wasm32` targets.
 
 ```rust
@@ -60,12 +60,12 @@ execution, validation, rendering or acquisition policy.
 Delegated behavior is documented in [read and definitions](tools-read.md),
 [edit](tools-edit.md), [shell operations](tools-process.md) and
 [file search](tools-search.md). Existing whole-file write and truncation helpers
-are also named re-exports from `maestro_tools::registry`; they remain owned by their
+are also named re-exports from the crate root; they remain owned by their
 individual modules.
 
 ## Renderer projections
 
-[`ToolRendererBinding`](../crates/maestro-tools/src/renderers.rs) clones only
+[`ToolRendererBinding`](../crates/maestro-tools/src/renderer_binding.rs) clones only
 renderer handles and shell policy, never executable definitions. Custom definitions
 use `from_definition`; native `ToolDef::renderer_binding` projects factory raw slots.
 Each row supplies a `ToolRendererState`: the same concrete state type shares its
@@ -101,7 +101,7 @@ converted into `ToolRenderResultBinding` with `Into::into`.
 ## Caller-local construction
 
 Root factory names and explicit `::<C>` calls keep their thread-safe defaults.
-`maestro_tools::local` (also `registry::local` and each factory owner's `local`
+`maestro_tools::local` (also `tools::local` and each factory owner's `local`
 module) constructs the same definitions with `Rc` callbacks and local futures.
 Choose the namespace before construction; an erased tool is not converted between
 execution families. `ToolDefinitionRecord` and `ToolDefRecord` are the common

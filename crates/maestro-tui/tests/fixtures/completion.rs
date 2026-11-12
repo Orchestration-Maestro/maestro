@@ -5,9 +5,9 @@ use std::cmp::Ordering;
 use std::io;
 use std::rc::Rc;
 
-use maestro_tui::candidates::CursorPosition;
-use maestro_tui::candidates::NativeAutocompleteOperations;
-use maestro_tui::candidates::{
+use maestro_tui::CursorPosition;
+use maestro_tui::NativeAutocompleteOperations;
+use maestro_tui::{
     ArgumentCompletions, AutocompleteOperations, Command, DirectoryEntry, DirectoryEntryKind,
 };
 use maestro_tui::{AutocompleteItem, SlashCommand};
@@ -220,10 +220,10 @@ pub fn commands(trace: &Trace) -> Vec<Command> {
 /// # Panics
 /// Panics when the observed result or effects differ.
 pub fn run_suggestions(cases: &[SuggestionCase]) {
-    use maestro_tui::candidates::{CompletionOptions, CursorPosition};
     use maestro_tui::{
         AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
     };
+    use maestro_tui::{CompletionOptions, CursorPosition};
     for case in cases {
         if cfg!(windows) && case.lines.iter().any(|line| line.contains('\\')) {
             // A recorded `\` is literal text on POSIX hosts and a separator on Windows.

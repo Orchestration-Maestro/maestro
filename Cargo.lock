@@ -4668,6 +4668,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-session-reports"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "indexmap 2.14.2",
+ "maestro-app",
+ "maestro-dependencies",
+ "maestro-json",
+ "maestro-listing",
+ "maestro-models",
+ "maestro-path",
+ "maestro-process",
+ "maestro-resources",
+ "maestro-session",
+ "maestro-test-directory",
+ "maestro-test-process",
+ "maestro-text",
+ "maestro-theme",
+ "num-traits",
+ "ryu-js",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "maestro-settings"
 version = "0.1.0"
 dependencies = [

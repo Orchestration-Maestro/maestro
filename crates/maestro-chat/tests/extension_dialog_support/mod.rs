@@ -649,7 +649,7 @@ impl Component for Dialog {
     fn invalidate(&self) {
         self.component().invalidate();
     }
-    fn input_handler(&self) -> Option<&dyn maestro_tui::interface::InputHandler> {
+    fn input_handler(&self) -> Option<&dyn maestro_tui::InputHandler> {
         self.component().input_handler()
     }
     fn focusable(&self) -> Option<&dyn maestro_tui::Focusable> {

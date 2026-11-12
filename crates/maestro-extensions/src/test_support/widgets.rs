@@ -7,11 +7,10 @@ use maestro_theme::{
     get_markdown_theme, get_select_list_theme, get_settings_list_theme, paint,
 };
 use maestro_tui::{
-    CancellableLoader, Cancellation, Component, Container, Editor, EditorOptions, EditorTheme,
-    KeybindingsConfig, KeybindingsManager, Loader, Markdown, MarkdownOptions, MarkdownTheme,
-    SelectListTheme, SettingsListTheme, TUI, TUI_KEYBINDINGS, TerminalImage,
-    editor_component::BorderColor,
-    interface::{ComponentHandle, InputHandler},
+    CancellableLoader, Cancellation, Component, ComponentHandle, Container, Editor, EditorOptions,
+    EditorTheme, InputHandler, KeybindingsConfig, KeybindingsManager, Loader, Markdown,
+    MarkdownOptions, MarkdownTheme, SelectListTheme, SettingsListTheme, TUI, TUI_KEYBINDINGS,
+    TerminalImage, editor_component::BorderColor,
 };
 
 use super::editor::CustomEditor;

@@ -34,7 +34,7 @@ fn grep_definition_keeps_schema_metadata_and_root_exports() {
             && tool.execution_mode.is_none()
     );
     assert_eq!(
-        serde_json::to_value(maestro_tools::search::matching::GrepToolDetails {
+        serde_json::to_value(maestro_tools::GrepToolDetails {
             truncation: None,
             match_limit_reached: None,
             lines_truncated: None

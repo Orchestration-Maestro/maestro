@@ -369,7 +369,8 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 | `crates/maestro-models/scripts/`, `crates/maestro-models/tests/support/`, `crates/maestro-catalog/tests/support/` | catalog and fixture generators, browser smoke checks |
 | `crates/maestro-theme/scripts/` | theme generation and browser author inputs |
 | `crates/maestro-tui-crossterm/tests/support/` | terminal development programs |
-| `crates/maestro-app/scripts/*_report.rs`, `count_prompt_tokens.rs` | cost, usage, tool, transcript and prompt-token reports |
+| `crates/maestro-session-reports/scripts/` | cost, usage, tool and transcript reports |
+| `crates/maestro-app/scripts/count_prompt_tokens.rs` | prompt-token report |
 
 **What users see.** Nothing moves in their installation: `examples/` ships in its package directory, beside the README and the documentation. `get_examples_path` resolves it, and the default system prompt names it. Documentation links examples by relative path. The links resolve in an installation and in a set-up source checkout.
 
@@ -485,6 +486,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock` | 5 |
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-office`, `maestro-theme` | 5 |
+| `maestro-session-reports` | summarize session files for developers | `maestro-app`, `maestro-models`, `maestro-session`, `maestro-resources`, `maestro-process`, `maestro-json`, `maestro-text`, `maestro-theme`, `maestro-listing` | 5 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
 
@@ -915,6 +917,10 @@ See [Rust test children](test-processes.md) for the complete contract.
 Its native helpers also provide loopback servers and their recorded-request header
 lookup, completed child probes, executable installation, child-build toolchain
 selection and the caller-owned local executor its witnesses drive native futures on.
+A case that reads process variables runs in one cleared child through
+`with_isolated_home`, which gives it a scratch home and the caller's variable
+edits, or through `with_environment` and `with_environment_without` when it adds
+or clears named variables.
 
 On Unix the owner applies each isolated child's typed native setup at that child's
 entry: a file creation umask, a process-count limit, a nonterminating file-size
@@ -931,7 +937,8 @@ incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
-`maestro-resources`, `maestro-rpc`, `maestro-session`, `maestro-settings`,
+`maestro-resources`, `maestro-rpc`, `maestro-session`,
+`maestro-session-reports`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`,
 `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
@@ -970,7 +977,8 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-extensions-wasm`, `maestro-extensions-wasmtime`,
 `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
-`maestro-session`, `maestro-settings`, `maestro-terminal-emulator`, `maestro-test-browser`,
+`maestro-session`, `maestro-session-reports`, `maestro-settings`,
+`maestro-terminal-emulator`, `maestro-test-browser`,
 `maestro-test-conventions`, `maestro-test-process`,
 `maestro-theme`, `maestro-tooling`, `maestro-tools`, `maestro-tui`,
 `maestro-tui-crossterm`, `maestro-watch` and
@@ -1115,7 +1123,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
 5. **Layer 4:** `maestro-app`, `maestro-extensions-wasmtime`
-6. **Layer 5:** `maestro-chat`, `maestro-cli`, `maestro-rpc`, `maestro-web`, `maestro-multiplexer`
+6. **Layer 5:** `maestro-chat`, `maestro-cli`, `maestro-rpc`, `maestro-web`, `maestro-multiplexer`, `maestro-session-reports`
 7. **Layer 6:** `maestro`
 
 ## Completion and explicit later scope

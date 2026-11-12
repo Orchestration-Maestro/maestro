@@ -52,7 +52,8 @@ fn source_run_loads_the_shipped_themes() {
             assert!(matches!(changed, ThemeChangeResult::Success));
             assert_eq!(state.theme().get().unwrap().name(), Some("light"));
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -79,7 +80,7 @@ fn custom_theme_export_resolves_variable_aliases() {
                 expected
             );
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -103,7 +104,8 @@ fn custom_theme_export_converts_indexed_colors_and_omits_empty_values() {
             state.get_theme_export_colors(Some("custom-export-recursive")),
             expected
         );
-    });
+    })
+    .unwrap();
 }
 
 /// A watch error on the selected custom theme's directory closes the watch and keeps the
@@ -126,5 +128,6 @@ fn resolved_custom_theme_watch_errors_leave_child_alive() {
             let live = state.theme().get().unwrap();
             assert_eq!(live.name(), Some("custom-test"));
         },
-    );
+    )
+    .unwrap();
 }

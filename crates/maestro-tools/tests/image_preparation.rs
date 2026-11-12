@@ -5,9 +5,7 @@ use support::TestResult;
 
 use base64::Engine;
 use maestro_tools::utils::image_convert::convert_to_png;
-use maestro_tools::utils::images::{
-    ImageResizeOptions, ResizedImage, format_dimension_note, resize_image,
-};
+use maestro_tools::utils::{ImageResizeOptions, ResizedImage, format_dimension_note, resize_image};
 use serde::Deserialize;
 use support::cases;
 

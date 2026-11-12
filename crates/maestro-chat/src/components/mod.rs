@@ -16,18 +16,19 @@ pub mod extension_widgets;
 
 pub mod countdown_timer;
 
-pub mod loading;
+pub(crate) mod bordered_loader;
 
 pub mod custom_editor;
 
 pub mod session_selector_search;
-pub mod tree_picker;
+pub(crate) mod tree_selector;
 
-pub mod authored;
+pub(crate) mod user_message;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod status;
-
+pub(crate) mod footer;
+#[cfg(not(target_arch = "wasm32"))]
+pub use footer::Environment;
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor, paint};
 use maestro_tui::{
     Component, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TerminalImage,
@@ -60,16 +61,15 @@ fn mark_zone(mut lines: Vec<String>) -> Vec<String> {
     lines
 }
 
-pub mod response;
+pub(crate) mod assistant_message;
 
-pub mod history_summary;
+pub(crate) mod branch_summary_message;
 
-pub mod custom_content;
+pub(crate) mod custom_message;
 
+pub(crate) mod compaction_summary_message;
 #[cfg(not(target_arch = "wasm32"))]
-pub mod invocation;
-
-pub mod context_summary;
+pub(crate) mod skill_invocation_message;
 
 /// Shared constructor inputs and Markdown composition for transcript widgets.
 struct MessageRendering {
@@ -142,7 +142,7 @@ impl MessageRendering {
     }
 }
 
-pub mod reasoning;
+pub(crate) mod thinking_selector;
 
 /// Composes the shared bounded-column list between live borders.
 fn bordered_select_list(
@@ -162,16 +162,17 @@ fn bordered_select_list(
     (container, list)
 }
 
-pub mod images;
+pub(crate) mod show_images_selector;
 
-pub mod appearance;
+pub(crate) mod theme_selector;
 
-pub mod history;
+pub(crate) mod user_message_selector;
+pub use user_message_selector::{UserMessageItem, UserMessageList, UserMessageSelectorOptions};
 
-pub mod models;
+pub(crate) mod model_selector;
 pub mod oauth_selector;
 
-pub mod extensions;
+pub(crate) mod extension_selector;
 
 /// Builds padded dialog chrome and its live countdown title updater.
 fn dialog_chrome(
@@ -224,7 +225,7 @@ fn dialog_chrome(
 fn dialog_countdown(
     timeout: Option<f64>,
     tui: Option<&maestro_tui::TUI>,
-    runtime: Rc<dyn maestro_tui::interface::TuiRuntime>,
+    runtime: Rc<dyn maestro_tui::TuiRuntime>,
     update: Rc<dyn Fn(f64)>,
     cancel: Rc<dyn Fn()>,
 ) -> Option<countdown_timer::CountdownTimer> {
@@ -236,7 +237,7 @@ fn dialog_countdown(
         })
 }
 
-pub mod extension_prompt;
+pub(crate) mod extension_input;
 
 /// Builds the shared bounded primary-column list.
 fn bounded_select_list(
@@ -257,12 +258,12 @@ fn bounded_select_list(
     ))
 }
 
-pub mod preferences;
+pub(crate) mod settings_selector;
+pub use settings_selector::ThemeCallback;
 
-pub mod authentication;
 #[cfg(not(target_arch = "wasm32"))]
-pub mod extension_composer;
-
+pub(crate) mod extension_editor;
+pub(crate) mod login_dialog;
 #[cfg(test)]
 mod tests;
 
@@ -286,8 +287,8 @@ fn shorten_path_with_home(
     home.map_or_else(|| path.to_owned(), |home| shorten(path, &home))
 }
 
-pub mod session_picker;
-pub mod shell_output;
+pub(crate) mod bash_execution;
+pub(crate) mod session_selector;
 /// Navigates a nonempty captured view, releasing its borrow before redraw.
 fn navigate_list<T>(
     selected: &Cell<usize>,
@@ -307,10 +308,15 @@ fn navigate_list<T>(
     redraw();
 }
 
-pub mod scoped_selection;
-pub use scoped_selection::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
+pub(crate) mod scoped_models_selector;
+pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
 
-pub mod tool_output;
+pub(crate) mod tool_execution;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod configuration;
+pub(crate) mod config_selector;
+#[cfg(not(target_arch = "wasm32"))]
+pub use config_selector::{
+    ComponentOptions, ConfigSelectorCallbacks, ConfigSelectorComponent, ResourceItem, ResourceList,
+    ResourceToggle, ResourceType,
+};

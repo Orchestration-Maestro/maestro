@@ -23,14 +23,6 @@ mod agent_session_runtime_checks;
 mod agent_session_runtime_events_checks;
 mod agent_session_stats_checks;
 mod agent_session_tree_navigation_checks;
-mod analysis_cost;
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "support/analysis_fixtures.rs"]
-mod analysis_fixtures;
-mod analysis_shared;
-mod analysis_tools;
-mod analysis_transcripts;
-mod analysis_usage;
 mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
@@ -81,9 +73,6 @@ mod helper_launches;
 mod hold_unchecked_text_checks;
 mod install_reporting;
 mod installation_kind;
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "support/isolated_home.rs"]
-mod isolated_home;
 mod javascript_execution;
 mod lm_studio_discovery;
 #[cfg(not(target_arch = "wasm32"))]

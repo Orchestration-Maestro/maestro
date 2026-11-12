@@ -8,10 +8,7 @@ use crate::{
 };
 use maestro_chat::components::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
-use maestro_tui::{
-    Component, Focusable,
-    interface::{InputHandler, LocalFuture},
-};
+use maestro_tui::{Component, Focusable, InputHandler, LocalFuture};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{

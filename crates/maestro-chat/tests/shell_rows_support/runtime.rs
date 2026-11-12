@@ -1,6 +1,6 @@
 //! Observes scheduling at the existing host boundary.
 use super::manual_runtime::{ManualRuntime, ms};
-use maestro_tui::interface::{RenderCallback, RenderTimer, TuiRuntime};
+use maestro_tui::{RenderCallback, RenderTimer, TuiRuntime};
 use std::{cell::Cell, rc::Rc, time::Duration};
 /// Counts only the animation continuations and coalesced writer requests.
 #[derive(Default)]
@@ -56,10 +56,10 @@ impl TuiRuntime for Observer {
             active,
         })
     }
-    fn spawn_local(&self, future: maestro_tui::interface::LocalFuture) {
+    fn spawn_local(&self, future: maestro_tui::LocalFuture) {
         self.clock.spawn_local(future);
     }
-    fn log_context(&self) -> maestro_tui::interface::LogContext {
+    fn log_context(&self) -> maestro_tui::LogContext {
         self.clock.log_context()
     }
 }

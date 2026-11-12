@@ -352,18 +352,23 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-request"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
         "maestro-entry"
-    } else if name == "Listeners" {
-        "maestro-listeners"
-    } else if matches!(name, "NumberFormatter" | "OpenXmlPackage" | "WorkbookError") {
-        "maestro-office"
     } else if input_presenter_record(name) {
         "maestro-app"
-    } else if matches!(name, "serialize_json_line" | "JsonlLineSplitter") {
-        "maestro-json"
-    } else if name == "serialize_rpc_response" {
-        "maestro-protocol"
     } else {
-        return None;
+        return single_name_owner(name);
+    };
+    Some(owner)
+}
+
+/// The crate that owns a declaration known by its exact name alone.
+fn single_name_owner(name: &str) -> Option<&'static str> {
+    let owner = match name {
+        "Listeners" => "maestro-listeners",
+        "NumberFormatter" | "OpenXmlPackage" | "WorkbookError" => "maestro-office",
+        "serialize_json_line" | "JsonlLineSplitter" => "maestro-json",
+        "serialize_rpc_response" => "maestro-protocol",
+        "session_transcripts" => "maestro-session-reports",
+        _ => return None,
     };
     Some(owner)
 }

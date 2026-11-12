@@ -7,7 +7,7 @@ mutation queue are described in [file-changing tools](tools-edit.md).
 
 ## Limits and selection
 
-[`output::limits`](../crates/maestro-tools/src/output/limits.rs) owns the limits
+[`output::truncate`](../crates/maestro-tools/src/output/truncate.rs) owns the limits
 and accounting. `TruncationOptions::default()` independently selects 2000
 newline-separated entries and 51200 UTF-8 bytes. Explicit zero stays zero;
 `usize::MAX` leaves the corresponding budget unbounded for native-sized text.
@@ -56,13 +56,13 @@ serialization and number-formatting dependencies.
 
 ## Native streaming
 
-[`output::accumulation`](../crates/maestro-tools/src/output/accumulation.rs)
+[`output::output_accumulator`](../crates/maestro-tools/src/output/output_accumulator.rs)
 provides `OutputAccumulator`, `OutputAccumulatorOptions` and `OutputSnapshot` on
 native targets. Construction does not create a file. Append accepts raw bytes;
 finish flushes pending UTF-8 once without closing the artifact. Raw decoding uses
 the shared [streaming text primitive](text.md). Snapshots observe
 selected decoded text without finishing decoding; selection is owned by
-[`output::limits`](../crates/maestro-tools/src/output/limits.rs).
+[`output::truncate`](../crates/maestro-tools/src/output/truncate.rs).
 
 Streamed line counts include completed lines plus one nonempty open line. Empty
 streams have zero lines. For 4,000 newline-terminated lines, bash retains lines
@@ -81,9 +81,7 @@ closure returns an error. Close leaves the artifact on disk and does not request
 filesystem durability.
 
 ```rust
-use maestro_tools::output::accumulation::{
-    OutputAccumulator, OutputAccumulatorOptions,
-};
+use maestro_tools::{OutputAccumulator, OutputAccumulatorOptions};
 
 fn main() -> std::io::Result<()> {
     let mut output = OutputAccumulator::new(OutputAccumulatorOptions {
@@ -108,7 +106,7 @@ fn main() -> std::io::Result<()> {
 
 ## Inline image preparation
 
-[`utils::images`](../crates/maestro-tools/src/utils/images.rs) owns
+[`utils::image_resize`](../crates/maestro-tools/src/utils/image_resize.rs) owns
 independent defaults: width and height 2000, base64 byte cap 4718592, and first
 JPEG quality 80. It retains authored data and MIME when oriented dimensions fit
 inclusive bounds and the authored text is strictly below the byte cap. Otherwise
@@ -130,7 +128,7 @@ decoding and orientation before PNG encoding; an undecodable input has no result
 The shared decoder accepts standard or URL-safe, padded or unpadded base64 with
 ASCII whitespace. Fitting input keeps its authored spelling.
 
-[`utils::image_metadata`](../crates/maestro-tools/src/utils/image_metadata.rs)
+[`utils::exif_orientation`](../crates/maestro-tools/src/utils/exif_orientation.rs)
 selects the first primary JPEG/WebP orientation retained by the metadata reader,
 including optional WebP EXIF prefixes and padded chunks. A retained unreadable or
 out-of-range value leaves pixels unchanged. Metadata decoding follows the
@@ -141,7 +139,7 @@ Pixel decoding, Lanczos3 resampling and encoding are delegated to the
 
 ```rust
 use maestro_models::ImageContent;
-use maestro_tools::utils::images::{ImageResizeOptions, resize_image};
+use maestro_tools::utils::{ImageResizeOptions, resize_image};
 
 let image = ImageContent {
     data: "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7".into(),
@@ -210,7 +208,7 @@ abbreviates nothing, so the path stays as given. It reads the home directory thr
 `replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
 carriage return. The tool paths forward to the [text leaf](text.md)'s terminal cleaners.
 `strip_ansi` removes what one cached expression matches (OSC strings up to
-their first terminator, and CSI-style introducers with parameters and a final byte; `a\u001b[2Qb` becomes `aQb`), and [`utils::environment::sanitize_binary_output`](../crates/maestro-tools/src/utils/environment.rs)
+their first terminator, and CSI-style introducers with parameters and a final byte; `a\u001b[2Qb` becomes `aQb`), and [`utils::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
 drops C0 controls except TAB, LF and CR and U+FFF9 to U+FFFB. `get_text_output` joins the
 cleaned text blocks with LF and, when the terminal cannot show images or they are hidden,
 appends one fallback line per image in order. `invalid_arg_text` styles `[invalid arg]`
@@ -231,7 +229,7 @@ the failure records and the cancellation guard that every native tool's operatio
 
 ## Read tool
 
-[`reading`](../crates/maestro-tools/src/reading/mod.rs) is native-only.
+[`read`](../crates/maestro-tools/src/read/mod.rs) is native-only.
 `create_read_tool_definition` and `create_read_tool` take a working directory and
 `ReadToolOptions`: `auto_resize_images` (absent means `true`) and optional
 `ReadOperations` (`read_file`, `access` and an optional `detect_image_mime_type`
@@ -292,7 +290,7 @@ with `offset` (one-based) and `limit`, both finite numbers handled like JavaScri
 slice bounds: fractions truncate toward zero and a negative end counts from the
 end. A selection that reaches the end of the file keeps the final newline. The
 caller limit applies first, then
-[`truncate_head`](../crates/maestro-tools/src/output/limits.rs) with the default
+[`truncate_head`](../crates/maestro-tools/src/output/truncate.rs) with the default
 2000 lines and 50 KB. The result is plain text with a continuation notice when
 lines remain, `details` holds the truncation record only when the default limits
 cut the text, and an offset past the last line fails with the line count. When the
