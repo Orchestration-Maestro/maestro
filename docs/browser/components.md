@@ -192,6 +192,10 @@ is the draft cleared and the prompt started, carrying the original attachments
 as a user message with attachments. A finished response moves into the history
 once and leaves the streaming area.
 
+While a response streams, each update redraws the streaming area only. The history
+stays as drawn until an entry arrives, the response ends or a pending tool call
+finishes.
+
 The transcript follows new content until the reader scrolls up from a nonzero
 offset more than 50 px from the bottom; coming within 10 px resumes it, and a
 shrinking viewport is ignored as relayout. `set_auto_scroll` sets it directly and

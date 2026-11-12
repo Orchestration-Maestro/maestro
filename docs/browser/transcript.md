@@ -179,6 +179,8 @@ set its public properties. Markdown starts empty, not thinking and with escaping
 on; code starts with empty code and language. Both render through
 `CodeBlockView`, which borrows one frame's localization, brand presentation,
 syntax engine and containing-modal identity and is never retained.
+A redraw highlights the code again only when the content, the escaping or the
+syntax engine differs from the last published one.
 Portable Markdown controls retain code listings; the browser owns the document
 HTML and generated listing-slot attribute.
 

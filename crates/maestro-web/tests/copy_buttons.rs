@@ -241,3 +241,79 @@ fn markdown_block_copies_current_native_listing_after_replacement() {
     assert_eq!(canvas.host.removed.borrow().len(), 1);
     assert_eq!(canvas.host.live(), 0);
 }
+
+/// Engine that classifies every label and counts the listings it highlights.
+#[derive(Default)]
+struct Counting(std::cell::Cell<usize>);
+impl maestro_theme::SyntaxHighlighter for Counting {
+    fn supports_language(&self, _: &str) -> bool {
+        true
+    }
+    fn highlight(
+        &self,
+        code: &str,
+        _: &str,
+    ) -> Result<Vec<maestro_theme::SyntaxSpan>, Box<dyn std::error::Error + Send + Sync>> {
+        self.0.set(self.0.get() + 1);
+        Ok(vec![maestro_theme::SyntaxSpan {
+            range: 0..code.len(),
+            color: None,
+        }])
+    }
+}
+
+/// Draw `block` once with `engine`.
+fn draw_markdown(
+    canvas: &mut Canvas,
+    block: &mut maestro_web::components::markdown_block::MarkdownBlock,
+    engine: &Counting,
+) {
+    use maestro_web::components::source::CodeBlockView;
+    copy_button_support::draw(
+        &canvas.context,
+        &mut canvas.paint,
+        vec![],
+        (egui::Rect::EVERYTHING, true),
+        |ui, i18n, presentation| {
+            block
+                .render(
+                    ui,
+                    CodeBlockView {
+                        i18n,
+                        presentation,
+                        highlighter: engine,
+                        modal: None,
+                    },
+                )
+                .unwrap()
+        },
+    );
+}
+
+/// Unchanged content is highlighted once, however many frames draw it.
+#[test]
+fn markdown_block_highlights_unchanged_code_once_across_draws() {
+    let mut canvas = Canvas::new();
+    let mut block =
+        maestro_web::components::markdown_block::MarkdownBlock::new(canvas.host.clone());
+    block.content = "```rust\nlet a = 1;\n```\n\n```js\nlet b = 2;\n```".into();
+    let engine = Counting::default();
+    for _ in 0..10 {
+        draw_markdown(&mut canvas, &mut block, &engine);
+    }
+    assert_eq!(engine.0.get(), 2, "two listings, highlighted when prepared");
+    block.content.push_str("\n\n```c\nint c;\n```");
+    draw_markdown(&mut canvas, &mut block, &engine);
+    assert_eq!(
+        engine.0.get(),
+        5,
+        "changed content prepares every listing again"
+    );
+    let other = Counting::default();
+    draw_markdown(&mut canvas, &mut block, &other);
+    assert_eq!(
+        other.0.get(),
+        3,
+        "a different engine highlights the listings again"
+    );
+}

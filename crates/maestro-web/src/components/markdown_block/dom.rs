@@ -30,6 +30,8 @@ struct Shown {
     codes: Vec<Code>,
     /// Mounted listings in document order.
     listings: Vec<Listing>,
+    /// Engine that highlighted `codes`.
+    highlighter: Rc<dyn maestro_theme::SyntaxHighlighter>,
 }
 /// Root state: the last successfully published document, if any.
 type Published = RefCell<Option<Shown>>;
@@ -107,6 +109,7 @@ impl MarkdownBlock {
             key: (self.content.clone(), self.escape_html),
             codes,
             listings,
+            highlighter: Rc::clone(&view.highlighter),
         })
     }
     /// Define the `markdown-block` element once for the page.
@@ -126,18 +129,24 @@ impl MarkdownBlock {
         .map_err(|error| host_error(&error).into())
     }
 }
-/// Re-highlight every retained listing with the supplied engine, then refresh them in place.
+/// Refresh the retained listings in place, highlighting them again only when the page's engine
+/// is not the one that highlighted them.
 ///
 /// A highlighting failure changes nothing.
 fn refresh(shown: &mut Shown, view: &DomView, title: &str) -> Result<(), ToolUiError> {
-    let html = shown
-        .codes
-        .iter()
-        .map(|code| Code::highlight(&*view.highlighter, &code.text, &code.language))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(ToolUiError::reading)?;
-    for ((code, html), listing) in shown.codes.iter_mut().zip(html).zip(&shown.listings) {
-        code.html = html;
+    if !Rc::ptr_eq(&shown.highlighter, &view.highlighter) {
+        let html = shown
+            .codes
+            .iter()
+            .map(|code| Code::highlight(&*view.highlighter, &code.text, &code.language))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(ToolUiError::reading)?;
+        for (code, html) in shown.codes.iter_mut().zip(html) {
+            code.html = html;
+        }
+        shown.highlighter = Rc::clone(&view.highlighter);
+    }
+    for (code, listing) in shown.codes.iter().zip(&shown.listings) {
         listing.update(view, code, title)?;
     }
     Ok(())

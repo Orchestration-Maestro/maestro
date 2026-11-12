@@ -4,7 +4,7 @@ use maestro_app::browser::components::records::CustomAgentMessages as BrowserMes
 use maestro_app::{
     Agent, AgentMessage, CustomAgentMessages, DiagnosticErrorInfo, Local, NoCustomMessages, Usage,
 };
-use std::{future::Future, pin::Pin, rc::Rc};
+use std::{collections::HashSet, future::Future, pin::Pin, rc::Rc};
 
 /// The browser-local conversation a view shows.
 pub type BrowserSession<C = NoCustomMessages> = Agent<BrowserMessages<C>, Local>;
@@ -126,6 +126,27 @@ pub fn usage_totals<C: CustomAgentMessages>(messages: &[AgentMessage<C>]) -> Opt
     .iter()
     .any(|count| *count != 0.0 && !count.is_nan())
     .then_some(totals)
+}
+
+/// What the drawn history depends on besides the content of its entries.
+///
+/// The history lists finished messages only, so a streamed update changes none of it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HistoryKey {
+    /// Entries in the shared history.
+    pub entries: usize,
+    /// Whether a response streams; assistant rows then hide their pending calls.
+    pub is_streaming: bool,
+    /// Calls waiting for their results.
+    pub pending: Rc<HashSet<String>>,
+}
+impl HistoryKey {
+    /// Whether the history must be drawn again: always, unless the event only streamed an update
+    /// and the history was drawn from these same operands.
+    #[must_use]
+    pub fn stale(&self, drawn: Option<&Self>, streamed: bool) -> bool {
+        !(streamed && drawn == Some(self))
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
