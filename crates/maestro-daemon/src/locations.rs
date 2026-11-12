@@ -232,7 +232,7 @@ pub fn action_path_component(value: &str) -> String {
         component.push_str("%2E");
     }
     if component.is_empty() {
-        return "%plugin".to_string();
+        return "%action".to_string();
     }
     if has_windows_reserved_stem_for_path_component(&component) {
         component = format!("%{component}");
