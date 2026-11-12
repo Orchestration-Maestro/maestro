@@ -7,23 +7,6 @@ pub mod spawning;
 
 use maestro_daemon::state::model::DaemonState;
 
-/// Admit terminal metadata for each pane using its topology-owned identity.
-pub fn populate_terminals(state: &mut DaemonState) {
-    for workspace in &state.topology.workspaces {
-        for pane in workspace.tabs.iter().flat_map(|tab| tab.panes.values()) {
-            state
-                .terminals
-                .entry(pane.attached_terminal_id.clone())
-                .or_insert_with(|| {
-                    maestro_daemon::terminal::model::TerminalState::new(
-                        pane.attached_terminal_id.clone(),
-                        workspace.identity_cwd.clone(),
-                    )
-                });
-        }
-    }
-}
-
 /// Check topology identity, focus and metadata membership after each mutation.
 pub fn assert_identity_invariants(state: &DaemonState) {
     use std::collections::HashSet;

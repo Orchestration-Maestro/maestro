@@ -24,10 +24,10 @@ impl DaemonState {
                     .then(|| id.clone())
             })
             .collect();
+        self.mark_session_dirty_if(!changed.is_empty());
         if changed.is_empty() {
             return Vec::new();
         }
-        self.session_dirty = true;
         self.topology
             .workspaces
             .iter()

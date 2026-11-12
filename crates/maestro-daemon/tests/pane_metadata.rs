@@ -55,10 +55,9 @@ fn refusal(app: &mut App, wire: Value) -> (String, String) {
 }
 
 /// The retained state of the first pane's terminal.
-fn terminal_of(app: &App) -> &TerminalState {
-    let id = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(app, 0))
-        .unwrap();
+fn terminal_of(app: &mut App) -> &TerminalState {
+    let root = root_pane(app, 0);
+    let id = app.state.topology.workspaces[0].terminal_id(root).unwrap();
     &app.state.terminals[id]
 }
 
@@ -74,8 +73,9 @@ fn update(agent: Option<Agent>, state: AgentState, process_exited: bool) -> Dete
 
 /// Feeds the first pane's terminal a detection of `update` at `at`.
 fn observe(app: &mut App, update: DetectedStateUpdate, at: Instant) {
+    let root = root_pane(app, 0);
     let terminal = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(app, 0))
+        .terminal_id(root)
         .unwrap()
         .clone();
     app.state
@@ -109,7 +109,7 @@ fn tokens_patch_and_clear_without_touching_the_presentation() {
     );
     accepted(&mut app, patch);
     assert_eq!(tokens(&mut app), expected(&[("summary", "done")]));
-    assert!(terminal_of(&app).agent_metadata.is_empty());
+    assert!(terminal_of(&mut app).agent_metadata.is_empty());
 }
 
 #[test]
@@ -181,7 +181,7 @@ fn a_report_ignored_after_the_process_exit_does_not_advance_the_sequence() {
         json!({"agent": "pi", "tokens": {"generation": "new"}, "seq": 1}),
     );
     accepted(&mut app, fresh_tokens);
-    let retained = terminal_of(&app);
+    let retained = terminal_of(&mut app);
     let title = retained.agent_metadata["custom:pi-metadata"]
         .title
         .as_deref();
@@ -219,7 +219,7 @@ fn legacy_and_canonical_source_spellings_share_one_sequence() {
             pane_record(&mut app, "w1:p1").title.as_deref(),
             Some("newer")
         );
-        let sources: Vec<_> = terminal_of(&app).agent_metadata.keys().collect();
+        let sources: Vec<_> = terminal_of(&mut app).agent_metadata.keys().collect();
         assert_eq!(sources, ["maestro:claude"], "{fresh} then {stale}");
     }
 }
@@ -243,7 +243,7 @@ fn a_legacy_guard_spelling_is_ignored_after_the_process_exit_without_advancing_t
         "source": "custom:meta", "applies_to_source": "maestro:claude", "title": "fresh", "seq": 1
     }));
     accepted(&mut app, fresh);
-    let title = terminal_of(&app).agent_metadata["custom:meta"]
+    let title = terminal_of(&mut app).agent_metadata["custom:meta"]
         .title
         .as_deref();
     assert_eq!(title, Some("fresh"));
@@ -467,8 +467,9 @@ fn a_token_change_publishes_the_complete_pane_record_once() {
 fn a_presentation_change_publishes_the_agent_status_with_its_title() {
     let mut app = daemon_with_workspaces(&["/one"]);
     detect(&mut app, Agent::Pi, AgentState::Working);
+    let sequence = app.event_hub().current_sequence();
     accepted(&mut app, titled(json!({"agent": "pi"})));
-    let titles: Vec<Option<String>> = events_after(&app, 0)
+    let titles: Vec<Option<String>> = events_after(&app, sequence)
         .into_iter()
         .filter_map(|event| match event {
             EventData::PaneAgentStatusChanged { title, .. } => Some(title),

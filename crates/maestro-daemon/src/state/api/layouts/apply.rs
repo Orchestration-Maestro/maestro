@@ -45,14 +45,15 @@ impl App {
         let (workspace, tab) = self
             .applied_tab(&workspace_id, root_pane)
             .ok_or_else(|| api_error("layout_apply_failed", "new layout tab disappeared"))?;
-        if let Some(name) = name {
-            self.state.topology.workspaces[workspace].tabs[tab].set_custom_name(name);
-        }
-        if params.focus || replaced_was_active {
-            self.state.switch_workspace_tab(workspace, tab);
-            self.state.mode = Mode::Terminal;
-        }
-        self.state.session_dirty = true;
+        self.state.edit_topology(|state| {
+            if let Some(name) = name {
+                state.topology.workspaces[workspace].tabs[tab].set_custom_name(name);
+            }
+            if params.focus || replaced_was_active {
+                state.switch_workspace_tab(workspace, tab);
+                state.mode = Mode::Terminal;
+            }
+        });
         self.emit_tab_created_events(workspace, tab).await;
         let layout = self
             .layout_description(workspace, tab)

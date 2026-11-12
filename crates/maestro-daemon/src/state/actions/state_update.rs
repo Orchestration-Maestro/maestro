@@ -140,16 +140,21 @@ impl DaemonState {
         let managed_changed = terminal.reconcile_managed_agent_at(now, false);
         let suppress = terminal.finish_agent_process_acquisition();
         let name_changed = terminal.agent_name != previous_name;
-        self.session_dirty |= mutation.session_ref_changed || managed_changed || name_changed;
+        let dirty = mutation.session_ref_changed || managed_changed || name_changed;
         let change = mutation.effective_state_change.or_else(|| {
             (mutation.agent_released || name_changed)
                 .then(|| terminal.unchanged_effective_state_change_at(now))
-        })?;
+        });
+        let Some(change) = change else {
+            self.mark_session_dirty_if(dirty);
+            return None;
+        };
         let suppress_completion = change.state == AgentState::Idle && (pending || suppress);
         if change.previous_state != change.state {
             self.next_agent_state_change_seq += 1;
             terminal.last_agent_state_change_seq = Some(self.next_agent_state_change_seq);
         }
+        self.mark_session_dirty_if(dirty);
         let seen = self.apply_pane_state_change(workspace, pane, &change, suppress_completion)?;
         let mut result = PaneStateUpdate::from_change(workspace, pane, previous_seen, change);
         result.seen = seen;

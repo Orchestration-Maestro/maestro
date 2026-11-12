@@ -32,8 +32,9 @@ impl App {
             ));
         }
         let record = self.workspace_info(workspace);
-        let closed_workspace = self.state.close_pane_in_workspace(workspace, pane);
-        self.state.session_dirty = true;
+        let closed_workspace = self
+            .state
+            .edit_topology(|state| state.close_pane_in_workspace(workspace, pane));
         self.shutdown_detached_terminal_runtimes().await;
         self.event_hub.push(EventData::PaneClosed {
             pane_id,

@@ -72,9 +72,7 @@ impl DaemonState {
             reason,
             zoomed: record.zoomed,
         };
-        if outcome.changed {
-            self.session_dirty = true;
-        }
+        self.mark_session_dirty_if(outcome.changed);
         Some(outcome)
     }
 }
