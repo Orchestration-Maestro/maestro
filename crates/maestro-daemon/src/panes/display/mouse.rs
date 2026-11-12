@@ -47,26 +47,6 @@ impl PaneTerminal {
         self.encode_mouse_event(kind, position, modifiers)
     }
 
-    /// Encode a wheel direction using the child's current report format.
-    #[must_use]
-    pub fn encode_mouse_wheel(
-        &self,
-        kind: ClientMouseKind,
-        position: Position,
-        modifiers: u8,
-    ) -> Option<Vec<u8>> {
-        if !matches!(
-            kind,
-            ClientMouseKind::ScrollUp
-                | ClientMouseKind::ScrollDown
-                | ClientMouseKind::ScrollLeft
-                | ClientMouseKind::ScrollRight
-        ) {
-            return None;
-        }
-        self.encode_mouse_event(kind, position, modifiers)
-    }
-
     /// Observe modes and geometry atomically before encoding one report.
     fn encode_mouse_event(
         &self,
