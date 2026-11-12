@@ -95,7 +95,6 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
-mod executable_schemas;
 #[path = "support/ftp_server.rs"]
 mod ftp_server;
 mod handoff_tool_ids;
@@ -194,8 +193,6 @@ mod root_routes;
 mod routed_cache_write;
 #[path = "support/runtime.rs"]
 mod runtime;
-mod schema_checker_qualification;
-mod schema_diagnostics;
 mod scripted_model_invocation;
 mod simple_model_options;
 #[path = "support/socks.rs"]

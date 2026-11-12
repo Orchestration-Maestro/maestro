@@ -1,0 +1,37 @@
+[package]
+autotests = false
+name = "maestro-schema-validator"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-json = { path = "../maestro-json" }
+maestro-request = { path = "../maestro-request" }
+maestro-text = { path = "../maestro-text" }
+serde_json.workspace = true
+regress = "=0.12.0"
+ryu-js.workspace = true
+num-traits.workspace = true
+num-bigint.workspace = true
+url = "=2.5.8"
+idna = "=1.1.0"
+chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+unicode-segmentation = "=1.13.3"
+percent-encoding.workspace = true
+icu_normalizer = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
+
+[dev-dependencies]
+maestro-request = { path = "../maestro-request", features = ["test-support"] }
+serde.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
+[lints]
+workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
