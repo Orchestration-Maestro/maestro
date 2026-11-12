@@ -29,6 +29,7 @@ mod temp_directories;
 mod test_directories;
 mod test_input_routes;
 mod time_limits;
+mod tokio_macros;
 mod tracked_scripts;
 mod tracked_sizes;
 
