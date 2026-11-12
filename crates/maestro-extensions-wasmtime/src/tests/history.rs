@@ -142,34 +142,17 @@ fn observe_entries(reader: &history_reads::Endpoint, id: &str) {
 
 #[test]
 fn released_history_rejects_every_kind_of_operation_with_its_ended_text() {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let (_, history) = session::runner_session("/ended-history");
-            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
-            let reader = pump.registry().history(history).unwrap();
-            let release = reader
-                .0
-                .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
-            assert!(pump.answer_next().await);
-            drop(release);
-            let worker = std::thread::spawn(move || {
-                [
-                    reader.get_cwd().unwrap_err(),
-                    reader.get_entry("id".into()).unwrap_err(),
-                    reader.get_branch(None).unwrap_err(),
-                    reader.get_tree().err().unwrap(),
-                ]
-            });
-            for _ in 0..4 {
-                assert!(pump.answer_next().await);
-            }
-            drop(admission);
-            pump.serve().await;
-            assert_eq!(
-                worker.join().unwrap(),
-                ["extension history resource ended"; 4]
-            );
-        });
+    let (_, history) = session::runner_session("/ended-history");
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let reader = pump.registry().history(history).unwrap();
+    let lease = reader.0.clone();
+    let errors = ended_errors(lease, pump, admission, move || {
+        [
+            reader.get_cwd().unwrap_err(),
+            reader.get_entry("id".into()).unwrap_err(),
+            reader.get_branch(None).unwrap_err(),
+            reader.get_tree().err().unwrap(),
+        ]
+    });
+    assert_eq!(errors, ["extension history resource ended"; 4]);
 }

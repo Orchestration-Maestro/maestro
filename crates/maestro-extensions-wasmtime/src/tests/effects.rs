@@ -188,44 +188,27 @@ fn drive_emitter(
 
 #[test]
 fn released_theme_rejects_every_kind_of_operation_with_its_ended_text() {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let theme = maestro_theme::Theme::new(
-                [],
-                [],
-                maestro_theme::ColorMode::Truecolor,
-                maestro_theme::ThemeOptions::default(),
-            )
-            .unwrap();
-            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
-            let endpoint = pump
-                .registry()
-                .theme(maestro_extensions::LiveTheme::from_theme(Rc::new(theme)))
-                .unwrap();
-            let release = endpoint
-                .0
-                .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
-            assert!(pump.answer_next().await);
-            drop(release);
-            let worker = std::thread::spawn(move || {
-                [
-                    endpoint.name().unwrap_err(),
-                    endpoint.set_source_info(None).unwrap_err(),
-                    endpoint.bold("text".into()).unwrap_err(),
-                    endpoint.fg("accent".into(), "text".into()).unwrap_err(),
-                    endpoint.get_color_mode().unwrap_err(),
-                ]
-            });
-            for _ in 0..5 {
-                assert!(pump.answer_next().await);
-            }
-            drop(admission);
-            pump.serve().await;
-            assert_eq!(
-                worker.join().unwrap(),
-                ["extension theme resource ended"; 5]
-            );
-        });
+    let theme = maestro_theme::Theme::new(
+        [],
+        [],
+        maestro_theme::ColorMode::Truecolor,
+        maestro_theme::ThemeOptions::default(),
+    )
+    .unwrap();
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let endpoint = pump
+        .registry()
+        .theme(maestro_extensions::LiveTheme::from_theme(Rc::new(theme)))
+        .unwrap();
+    let lease = endpoint.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [
+            endpoint.name().unwrap_err(),
+            endpoint.set_source_info(None).unwrap_err(),
+            endpoint.bold("text".into()).unwrap_err(),
+            endpoint.fg("accent".into(), "text".into()).unwrap_err(),
+            endpoint.get_color_mode().unwrap_err(),
+        ]
+    });
+    assert_eq!(errors, ["extension theme resource ended"; 5]);
 }
