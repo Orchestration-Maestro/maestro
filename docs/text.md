@@ -28,7 +28,10 @@ stable sorting and comparator lifetime.
 - **Owned UTF-8 decoding.** `lossy_string` takes owned bytes and keeps their buffer
   when they are valid; otherwise it decodes them lossily. It keeps a byte-order mark.
   Process output and Office package entries share it.
-- **Environment flags.** `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
+- **Environment reads and flags.** `environment_variable` reads one variable as
+  text and replaces bytes that are not UTF-8 with U+FFFD; absent names read as no
+  value. Terminal, application, chat and theme code share it.
+  `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
   `true` or `yes` without trimming; absent values are false. Tools and packages share it.
   `is_offline_selected` returns a caller's offline selection, or reads `MAESTRO_OFFLINE`
   through that rule when the selection is absent.

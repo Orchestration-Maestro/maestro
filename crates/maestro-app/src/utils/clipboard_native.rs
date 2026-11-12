@@ -50,8 +50,9 @@ fn default_clipboard<T: ClipboardModule>(
 #[cfg(any(target_os = "macos", target_os = "linux", windows))]
 mod native {
     use super::{ClipboardModule, LocalBoxFuture, default_clipboard, io};
-    use crate::utils::copying::{ClipboardOperations as _, NativeClipboardOperations, environment};
+    use crate::utils::copying::{ClipboardOperations as _, NativeClipboardOperations};
     use clipboard_rs::{Clipboard as _, ClipboardContext, ContentFormat, common::RustImage as _};
+    use maestro_text::environment_variable;
 
     /// Stateless bridge: each operation owns its context.
     struct NativeClipboard;
@@ -82,9 +83,11 @@ mod native {
         static MODULE: std::sync::OnceLock<Option<NativeClipboard>> = std::sync::OnceLock::new();
         MODULE
             .get_or_init(|| {
-                default_clipboard(NativeClipboardOperations.platform(), environment, || {
-                    Some(NativeClipboard)
-                })
+                default_clipboard(
+                    NativeClipboardOperations.platform(),
+                    environment_variable,
+                    || Some(NativeClipboard),
+                )
             })
             .as_ref()
             .map(|module| module as &dyn ClipboardModule)
