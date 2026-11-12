@@ -287,11 +287,17 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
   change that must be saved goes through `DaemonState::edit_topology`, which sets the save mark;
   `take_session_dirty` is the one production reader.
 - **Daemon state stays inside the crate.** The fields of `App` and `DaemonState` are crate-private, apart
-  from `App::state`, `App::config`, `App::launch`, `DaemonState::topology` and `DaemonState::manifests`,
-  which the standard-stream adapter's tests still set up. A test that asserts on state no command exposes
-  (the save mark, terminal metadata, mode, copy mode, deadlines, launch and configuration values) is a unit
-  test under `state::tests`, beside the module that owns the state. Tests of the shared sockets, repositories
-  and child entries stay in the crate's one integration program.
+  from `App::state`, `App::config`, `App::launch`, `DaemonState::topology`, `DaemonState::manifests` and
+  `DaemonState::sidebar_collapsed`. The integration program and the standard-stream adapter's tests read or
+  set the first five; `sidebar_collapsed` is start state the sidebar will read once it is wired (issue
+  #3703), so it stays public without an accessor. Each test sorts by what it reads. A test that answers
+  through commands and events, or reads a public field, lives in the crate's one integration program. A test
+  that asserts on state no command exposes (the save mark, terminal metadata, mode, copy mode, deadlines,
+  launch and configuration values) or drives live panes through the private runtime table is a unit test
+  under `state::tests`, beside the module that owns the state. The command driver, the launch inputs and any
+  helper both places call live once in the `test-support` feature and return a result instead of panicking;
+  a helper that needs the development-only crates stays with the side that uses it. Every test keeps its
+  platform gate.
 - **Harness floors.** A test that needs a later harness, such as the server's own test harness, lands with
   that harness.
 - **PTY children in tests.** Tests that spawn PTY children use `maestro-test-process` to run a named test as
