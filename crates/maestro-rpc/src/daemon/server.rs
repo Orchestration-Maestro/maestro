@@ -1,16 +1,16 @@
 //! The API socket: its private listener, the connections it accepts and the removal of the
 //! socket it bound.
-use maestro_app::LineTooLarge;
 use maestro_app::connection_runner::{
     JsonlLineReader, RpcInput, RpcLineReader, RpcOutput, WorkspaceOperations,
 };
-use maestro_app::daemon_api::{
+use maestro_app::{RpcModeOptions, run_rpc_connection};
+use maestro_daemon::service::local_socket::{
     AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketClaim, SocketFileIdentity,
     bind_async_local_listener, is_connection_closed_error, prepare_socket_path,
     remove_socket_file_if_owned, restrict_socket_permissions, socket_file_identity,
     split_async_stream,
 };
-use maestro_app::{RpcModeOptions, run_rpc_connection};
+use maestro_json::lines::LineTooLarge;
 use std::path::{Path, PathBuf};
 use std::{convert::Infallible, future::Future, io, pin::Pin, rc::Rc, time::Duration};
 use tokio::io::AsyncRead;

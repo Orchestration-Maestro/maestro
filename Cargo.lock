@@ -4648,11 +4648,22 @@ dependencies = [
 name = "maestro-rpc"
 version = "0.1.0"
 dependencies = [
+ "maestro-agent",
  "maestro-app",
+ "maestro-daemon",
  "maestro-dependencies",
+ "maestro-export",
+ "maestro-extensions",
+ "maestro-json",
+ "maestro-models",
+ "maestro-process",
+ "maestro-protocol",
+ "maestro-session",
+ "maestro-settings",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-theme",
+ "maestro-tools",
  "maestro-tui-crossterm",
  "serde_json",
  "tokio",

@@ -3,18 +3,22 @@
 #![cfg(unix)]
 use maestro_app::configuration::config::get_theme_directories;
 use maestro_app::connection_runner::{RpcFuture, WorkspaceEventSink, WorkspaceOperations};
-use maestro_app::rpc_types::{workspace, workspace_schema};
 use maestro_app::{
     AgentSessionRuntime, CreateAgentSessionFromServicesOptions, CreateAgentSessionRuntimeFactory,
     CreateAgentSessionRuntimeOptions, CreateAgentSessionRuntimeResult,
-    CreateAgentSessionServicesOptions, ExtensionFactory, Local, ModuleLoader,
-    NativeExportOperations, ResourceLoaderOptions, RpcModeOptions, SessionManager,
-    ToolRenderEnvironment, create_agent_session_from_services, create_agent_session_runtime,
+    CreateAgentSessionServicesOptions, ResourceLoaderOptions, RpcModeOptions,
+    create_agent_session_from_services, create_agent_session_runtime,
     create_agent_session_services,
 };
+use maestro_export::NativeExportOperations;
+use maestro_extensions::{ExtensionFactory, ModuleLoader};
+use maestro_models::Local;
+use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
 use maestro_rpc::{NativeRpcProcess, run_rpc_mode};
+use maestro_session::SessionManager;
 use maestro_test_process::{CheckedChild, CheckedStdout, TestProcess};
 use maestro_theme::{SyntectHighlighter, ThemeState};
+use maestro_tools::ToolRenderEnvironment;
 use serde_json::Value;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{ExitStatus, Stdio};

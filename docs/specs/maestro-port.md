@@ -857,9 +857,11 @@ component-factory width synchronously; it adds no new production layer crossing.
 These edges permit no normal or build dependencies.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
-`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
+`maestro-rpc` to `maestro-theme`, `maestro-tui-crossterm`, `maestro-export`,
+`maestro-extensions`, `maestro-models`, `maestro-session` and `maestro-tools`, declared as native
 development dependencies, let the standard-stream child tests build the real export
-rendering environment; the adapter's normal dependencies are `maestro-app` and the lower crates its table row lists.
+rendering environment and drive real sessions; the adapter's normal dependencies are
+`maestro-app` and the lower crates its table row lists.
 `maestro-chat` to `maestro-models`, declared as a non-optional native development
 dependency, lets interactive-mode tests drive a real session through the scripted
 provider and enables the models test-support feature for tests only.
