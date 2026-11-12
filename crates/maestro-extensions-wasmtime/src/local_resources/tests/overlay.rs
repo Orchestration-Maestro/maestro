@@ -1,10 +1,9 @@
 //! Overlay options end with their capability.
 use super::Pump;
 use crate::{
-    local_resources::{Capability, Message, overlays::Placement},
-    overlay_reads::{OptionsEndpoint, OptionsRequest, OverlayMessage, Visibility},
+    local_resources::{Capability, overlays::Placement},
+    overlay_reads::OptionsEndpoint,
     tests::ended_errors,
-    widget_reads::WidgetMessage,
 };
 use maestro_extensions::{Local, create_extension_runtime};
 use std::{cell::RefCell, rc::Rc};
@@ -25,23 +24,10 @@ fn released_overlay_options_reject_every_kind_of_operation_with_their_ended_text
     let options = OptionsEndpoint(lease.clone());
     let errors = ended_errors(lease, pump, admission, move || {
         [
-            options.read(OptionsRequest::Get).unwrap_err(),
-            options
-                .read(|reply| OptionsRequest::Set("{}".into(), reply))
-                .unwrap_err(),
-            options.read(OptionsRequest::Share).err().unwrap(),
-            api.0
-                .request(|api, reply| {
-                    Message::Widgets(WidgetMessage::Overlay(OverlayMessage::Visible(
-                        Visibility {
-                            api,
-                            options,
-                            visible: None,
-                            reply,
-                        },
-                    )))
-                })
-                .unwrap_err(),
+            options.get().unwrap_err(),
+            options.set("{}".into()).unwrap_err(),
+            options.share().err().unwrap(),
+            options.set_visible(api, None).unwrap_err(),
         ]
     });
     assert_eq!(errors, ["extension overlay options resource ended"; 4]);

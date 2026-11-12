@@ -7,31 +7,10 @@
 use crate::{
     guest_calls::Handle,
     import_route::Value,
-    local_resources::{Lease, Message},
+    local_resources::{Lease, Message, held::Options},
     widget_reads::{Reply, WidgetMessage},
 };
 use std::sync::Arc;
-
-/// Placement operations on one retained options record.
-pub(crate) enum OptionsRequest {
-    /// Reads current placement.
-    Get(Reply<String>),
-    /// Replaces placement without changing visibility policy.
-    Set(String, Reply<()>),
-    /// Lends another owner of the same record.
-    Share(Reply<OptionsEndpoint>),
-}
-impl OptionsRequest {
-    /// Settles an unavailable options owner.
-    pub(crate) fn reject(self, error: &str) {
-        let error = error.to_owned();
-        match self {
-            Self::Get(reply) => drop(reply.send(Err(error))),
-            Self::Set(_, reply) => drop(reply.send(Err(error))),
-            Self::Share(reply) => drop(reply.send(Err(error))),
-        }
-    }
-}
 
 /// One operation on a shown overlay.
 #[derive(Clone, Copy, wasmtime::component::ComponentType, wasmtime::component::Lift)]
@@ -57,26 +36,10 @@ pub(crate) enum HandleRequest {
     IsFocused,
 }
 
-/// Replaces or removes the authored visibility check of one options record.
-pub(crate) struct Visibility {
-    /// The extension API whose bus the check runs on.
-    pub(crate) api: u64,
-    /// The options record.
-    pub(crate) options: OptionsEndpoint,
-    /// The authored check, absent to remove it.
-    pub(crate) visible: Option<Handle>,
-    /// Acknowledges the replacement.
-    pub(crate) reply: Reply<()>,
-}
-
 /// Overlay requests share the widget pump and resource table.
 pub(crate) enum OverlayMessage {
     /// Creates one shared options record.
     NewOptions(String, Reply<OptionsEndpoint>),
-    /// Operates on the options record with this identity.
-    Options(u64, OptionsRequest),
-    /// Replaces an options record's visibility check.
-    Visible(Visibility),
     /// Operates on the shown overlay with this identity.
     Handle(u64, HandleRequest, Reply<Value>),
 }
@@ -85,16 +48,40 @@ pub(crate) enum OverlayMessage {
 #[derive(Clone)]
 pub struct OptionsEndpoint(pub(crate) Arc<Lease>);
 impl OptionsEndpoint {
-    /// Reads or changes placement without invoking extension callbacks.
-    pub(crate) fn read<T>(
+    /// Reads current placement.
+    pub(crate) fn get(&self) -> Result<String, String> {
+        self.0.run::<Options, _>(|placement, _| {
+            crate::overlay_layout::encode(&placement.options.borrow())
+        })
+    }
+
+    /// Replaces placement without changing visibility policy.
+    pub(crate) fn set(&self, encoded: String) -> Result<(), String> {
+        self.0.run::<Options, _>(move |placement, _| {
+            let mut replacement = crate::overlay_layout::decode(&encoded)?;
+            replacement
+                .visible
+                .clone_from(&placement.options.borrow().visible);
+            let previous = placement.options.replace(replacement);
+            drop(previous);
+            Ok(())
+        })
+    }
+
+    /// Lends another owner of the same record.
+    pub(crate) fn share(&self) -> Result<OptionsEndpoint, String> {
+        self.0
+            .run::<Options, _>(|placement, registry| registry.lend_placement(placement.clone()))
+    }
+
+    /// Replaces or removes the authored visibility check of this record.
+    pub(crate) fn set_visible(
         &self,
-        request: impl FnOnce(Reply<T>) -> OptionsRequest,
-    ) -> Result<T, String> {
-        self.0.request(|id, reply| {
-            Message::Widgets(WidgetMessage::Overlay(OverlayMessage::Options(
-                id,
-                request(reply),
-            )))
+        api: crate::api_reads::Endpoint,
+        visible: Option<Handle>,
+    ) -> Result<(), String> {
+        self.0.run::<Options, _>(move |placement, registry| {
+            registry.set_visible(placement, &api, visible)
         })
     }
 }

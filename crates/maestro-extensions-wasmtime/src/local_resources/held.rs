@@ -211,6 +211,14 @@ held!(
     Capability::Text(callback) => callback
 );
 
+held!(
+    /// The placement record of an overlay.
+    Options,
+    super::overlays::Placement,
+    "extension overlay options resource ended",
+    Capability::OverlayOptions(placement) => placement
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
