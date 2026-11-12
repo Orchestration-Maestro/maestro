@@ -125,6 +125,11 @@ const EXEMPT: &[Exemption] = &[
         reason: "the source prefix alias a workspace peer sends, asserted on the wire",
     },
     Exemption {
+        path: "crates/maestro-daemon/src/state/tests/pane_metadata.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the source prefix alias a workspace peer sends, asserted",
+    },
+    Exemption {
         path: "crates/maestro-daemon/tests/pane_reports.rs",
         word: "0xe4e16546141832fe",
         reason: "the source prefix alias a workspace peer sends, asserted on the wire",
