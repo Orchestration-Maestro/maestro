@@ -16,7 +16,6 @@ pub(crate) struct Rule {
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-credentials"),
     ("maestro-tui-crossterm", "maestro-brand"),
-    ("maestro-extensions-wasm", "maestro-listing"),
 ];
 
 /// Permitted development edges that only a native, non-optional declaration may use.
@@ -47,7 +46,7 @@ pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
 }
 
 /// Internal build edges permitted beyond the production table.
-pub(crate) const BUILD: &[(&str, &str)] = &[("maestro-extensions-wasm", "maestro-listing")];
+pub(crate) const BUILD: &[(&str, &str)] = &[];
 
 /// Whether the policy permits this internal build edge between the two crates.
 pub(crate) fn permitted_build(from: &str, to: &str) -> bool {
@@ -74,7 +73,6 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
-    "maestro-ipc",
     "maestro-lock",
     "maestro-models",
     "maestro-packages",
@@ -84,7 +82,6 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-session",
     "maestro-settings",
     "maestro-test-conventions",
-    "maestro-test-terminal",
     "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
@@ -109,7 +106,6 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
-    "maestro-ipc",
     "maestro-listing",
     "maestro-lock",
     "maestro-models",
@@ -123,7 +119,6 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-test-browser",
     "maestro-test-conventions",
     "maestro-test-process",
-    "maestro-test-terminal",
     "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
@@ -132,12 +127,6 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-watch",
     "maestro-workspace",
 ];
-
-/// Native owner of the recording terminal and manual runtime every scenario needs.
-pub(crate) const TEST_TERMINAL: &str = "maestro-test-terminal";
-
-/// Declared consumers of the shared terminal scenario effects.
-pub(crate) const TEST_TERMINAL_CALLERS: &[&str] = &["maestro-cli"];
 
 /// Native owner of scoped tracing subscribers that see every callsite.
 pub(crate) const TEST_TRACING: &str = "maestro-test-tracing";
@@ -171,7 +160,6 @@ pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str
         TEST_FIXTURES => Some(TEST_FIXTURE_CALLERS),
         TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
         TEST_TRACING => Some(TEST_TRACING_CALLERS),
-        TEST_TERMINAL => Some(TEST_TERMINAL_CALLERS),
         _ => None,
     }
 }
@@ -203,7 +191,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-cancellation"
                 | "maestro-request"
                 | "maestro-extensions-wasm"
-                | "maestro-test-terminal"
                 | "maestro-text"
                 | "maestro-json"
                 | "maestro-entry"
@@ -225,7 +212,6 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-test-process"
                 | "maestro-test-directory"
                 | "maestro-test-fixtures"
-                | "maestro-test-terminal"
                 | "maestro-test-tracing"
                 | "maestro-tooling"
         ) {
@@ -251,7 +237,6 @@ pub(crate) fn exact(name: &str) -> bool {
             | "maestro-rpc"
             | "maestro-web"
             | "maestro-tui-crossterm"
-            | "maestro-test-terminal"
     )
 }
 

@@ -123,7 +123,7 @@ pub struct HostPlacement {
 
 /// Uploaded pixel identity: what the host must already hold for a source.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct ImageSignature {
+pub(crate) struct ImageSignature {
     /// Image width in pixels.
     pub image_width: u32,
     /// Image height in pixels.

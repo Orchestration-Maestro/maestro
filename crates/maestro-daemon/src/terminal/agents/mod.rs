@@ -22,7 +22,7 @@ pub struct AgentMetadata {
     /// Presentation labels indexed by execution state text.
     pub state_labels: HashMap<String, String>,
     /// Observation time of the retained report.
-    pub reported_at: Instant,
+    pub(crate) reported_at: Instant,
     /// Last update time of the title field.
     title_reported_at: Option<Instant>,
     /// Last update time of the display-agent field.

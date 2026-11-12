@@ -6,7 +6,7 @@ mod quote;
 use crate::parse::Extension;
 use crate::{Alignment, BlockToken, Cell, Definition, Document, Kind, MarkedOptions, Node, Table};
 use crate::{
-    helpers,
+    delimiters,
     inline::ScopeKey,
     rules,
     source::{ScopeSource, Segmented, Source},
@@ -284,8 +284,8 @@ impl<'a, E> Lexer<'a, E> {
         if !delimiter.contains(['|', ':']) {
             return None;
         }
-        let headers = helpers::cell_ranges(&source.text[matched.header.clone()]);
-        let alignments: Vec<_> = helpers::split_cells(delimiter, None)
+        let headers = delimiters::cell_ranges(&source.text[matched.header.clone()]);
+        let alignments: Vec<_> = delimiters::split_cells(delimiter, None)
             .into_iter()
             .map(|cell| match (cell.starts_with(':'), cell.ends_with(':')) {
                 (true, true) => Alignment::Center,
@@ -317,7 +317,7 @@ impl<'a, E> Lexer<'a, E> {
             header,
             rows,
             alignments,
-            authored: helpers::rtrim(&source.text[..matched.consumed], '\n').to_owned(),
+            authored: delimiters::rtrim(&source.text[..matched.consumed], '\n').to_owned(),
         };
         Some((
             matched.consumed,
@@ -332,7 +332,7 @@ impl<'a, E> Lexer<'a, E> {
         count: usize,
         output: &mut BlockTokens,
     ) -> Vec<Cell> {
-        let ranges = helpers::cell_ranges(source.text[row.clone()].trim_end_matches('\n'));
+        let ranges = delimiters::cell_ranges(source.text[row.clone()].trim_end_matches('\n'));
         (0..count)
             .map(|index| {
                 let range = ranges.get(index).map_or(row.end..row.end, |range| {

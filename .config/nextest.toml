@@ -14,7 +14,7 @@ command = "target/test-setup/development nextest-setup author-component"
 
 [[profile.default.scripts]]
 # Native searches and tooling's search setup tests copy the programs this setup exports.
-filter = "(package(maestro-tooling) & test(/^author_setup::(author_search_setups_|archived_author_setup_exports_search_programs_|local_author_setup_resolves_search_pins_|preparation_rejects_an_unavailable_search_pin)/)) | package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro-tools) & test(/^((find|grep)_execution|maestro_tool_factories)::/)) | (package(maestro-app) & test(/^tools_search_checks::/)) | (package(maestro-tui) & test(/^native_attachment_completion::native_(attachment_search_|literal_queries_|filename_records_)/)) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(host_operations::) | test(/_example::/)))"
+filter = "(package(maestro-tooling) & test(/^author_setup::(author_search_setups_|archived_author_setup_exports_search_programs_|local_author_setup_resolves_search_pins_|preparation_rejects_an_unavailable_search_pin)/)) | package(maestro-extensions-wasm) | package(maestro-extensions-wasmtime) | (package(maestro-tools) & test(/^((find|grep)_execution|maestro_tool_factories)::/)) | (package(maestro-app) & test(/^tools_search_checks::/)) | (package(maestro-tui) & test(/^native_attachment_completion::native_(attachment_search_|literal_queries_|filename_records_)/)) | (package(maestro) & (test(component_stdout::) | test(model_streams::) | test(native_io::) | test(startup_modes::) | test(host_operations::) | test(subagent_example::)))"
 setup = "author-component"
 
 [scripts.setup.cargo-checks]
@@ -42,7 +42,6 @@ package(=maestro)
 | package(=maestro-extensions)
 | package(=maestro-extensions-wasm)
 | package(=maestro-extensions-wasmtime)
-| package(=maestro-ipc)
 | package(=maestro-lock)
 | package(=maestro-models)
 | package(=maestro-packages)
@@ -53,7 +52,6 @@ package(=maestro)
 | package(=maestro-settings)
 | package(=maestro-test-conventions)
 | package(=maestro-test-process)
-| package(=maestro-test-terminal)
 | package(=maestro-theme)
 | package(=maestro-tooling)
 | package(=maestro-tools)
@@ -211,10 +209,6 @@ filter = "package(=maestro-models) & test(=browser_build::maestro_browser_enviro
 priority = 89
 
 [[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasmtime) & test(=git_checkpoint_example::git_checkpoint_component_requires_checkpoint_ui_and_yes)"
-priority = 88
-
-[[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_assets_follow_relative_selected_identity)"
 priority = 87
 
@@ -235,10 +229,6 @@ filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author
 priority = 82
 
 [[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::trigger_compact_example::trigger_compact_component_matches_host_requests)"
-priority = 81
-
-[[profile.default.overrides]]
 filter = "package(=maestro-test-conventions) & test(=architecture::real_workspace_obeys_crate_rules)"
 priority = 80
 
@@ -247,16 +237,8 @@ filter = "package(=maestro-tooling) & test(=browser_author_build::browser_build_
 priority = 79
 
 [[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::shutdown_example::shutdown_component_runs_every_registration)"
-priority = 78
-
-[[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_included_files_rebuild_without_source_changes)"
 priority = 77
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_layers_restore_branch_instructions_without_reapplying_settings)"
-priority = 76
 
 [[profile.default.overrides]]
 filter = "package(=maestro-markdown) & test(=tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth)"
@@ -265,10 +247,6 @@ priority = 75
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_example_development_serves_rebuilt_external_assets)"
 priority = 73
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::protected_paths_example::protected_paths_component_matches_the_hook)"
-priority = 72
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=build_recipes::maestro_selected_watch_rebuilds_cargo_configuration)"
@@ -283,44 +261,16 @@ filter = "package(=maestro-extensions-wasmtime) & test(=asynchronous_reentry::ro
 priority = 69
 
 [[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::notify_example::notify_component_windows_command_is_controlled)"
-priority = 68
-
-[[profile.default.overrides]]
 filter = "package(=maestro-markdown) & test(=tests::container_depth::deep_indented_list_parses_on_a_small_stack)"
 priority = 67
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::permission_gate_example::permission_gate_component_preserves_patterns_and_decisions)"
-priority = 66
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::model_status_example::model_status_component_runs_selection_hook)"
-priority = 65
 
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_unrelated_workspace_bump_keeps_fixture_lock)"
 priority = 64
 
 [[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::status_line_example::status_line_component_preserves_count_after_host_rejection)"
-priority = 63
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_controls_apply_arrow_and_letter_turns)"
-priority = 62
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::component_driver::message_renderer_example::message_renderer_truncates_numeric_timestamps)"
-priority = 61
-
-[[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=authored_streams::ending_without_a_result_keeps_observation_pending)"
 priority = 60
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasmtime) & test(=git_checkpoint_example::git_checkpoint_component_clears_checkpoints_but_keeps_current_entry)"
-priority = 59
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=asynchronous_reentry::routed_retained_setup_runs_its_prefix_before_its_first_poll_returns)"
@@ -331,22 +281,6 @@ filter = "package(=maestro-extensions-wasm) & test(=tests::component_driver::sch
 priority = 57
 
 [[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::titlebar_spinner_example::titlebar_spinner_component_runs_lifecycle)"
-priority = 56
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::pirate_example::pirate_factories_keep_separate_state)"
-priority = 55
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::space_invaders_example::space_invaders_resume_redraws_current_controls_without_losing_save)"
-priority = 54
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::space_invaders_example::space_invaders_ticks_match_reference_movement_fire_and_collisions)"
-priority = 53
-
-[[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=compilation_cache::component_load_populates_the_user_compilation_cache)"
 priority = 52
 
@@ -355,24 +289,8 @@ filter = "package(=maestro-test-conventions) & test(=boundaries::runtime_depende
 priority = 51
 
 [[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::questionnaire_example::questionnaire_retains_supplied_question_metadata)"
-priority = 50
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::questionnaire_example::questionnaire_headless_and_empty_return_errors)"
-priority = 49
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries)"
-priority = 48
-
-[[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec)"
 priority = 46
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_startup_flag_is_applied_before_returning_and_overrides_saved_name)"
-priority = 45
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends)"
@@ -381,10 +299,6 @@ priority = 44
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_factories::builtin_factory_construction_is_lazy_and_fresh)"
 priority = 43
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::snake_example::snake_headless_command_requires_interactive_mode)"
-priority = 42
 
 [[profile.default.overrides]]
 filter = "package(=maestro-extensions-wasmtime) & test(=tests::builtin_operations::builtin_read_options_preserve_reverse_operations)"
@@ -401,7 +315,3 @@ priority = 39
 [[profile.default.overrides]]
 filter = "package(=maestro-tooling) & test(=browser_author_build::browser_author_projection_failure_prevents_dependent_build)"
 priority = 38
-
-[[profile.default.overrides]]
-filter = "package(=maestro-extensions-wasm) & test(=tests::preset_example::preset_cycles_restore_original_settings_and_persist_cleared_branch_state)"
-priority = 37

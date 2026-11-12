@@ -10,6 +10,9 @@ use std::{
 /// The project and user configuration directory name.
 pub const CONFIG_DIR_NAME: &str = ".maestro";
 
+/// The home directory as text.
+pub use maestro_path::home_directory;
+
 /// Classify local paths, excluding the known lowercase package and URL prefixes.
 pub fn is_local_path(value: &str) -> bool {
     let value = value.trim_matches(text_whitespace);
@@ -70,22 +73,6 @@ pub(crate) fn resolve_explicit_path(path: &str, cwd: &str, home: &str) -> io::Re
     }
 }
 
-/// The home directory as a native path: on Unix the `HOME` variable as set, an empty one
-/// included, otherwise the account entry.
-#[must_use]
-pub fn native_home_directory() -> Option<PathBuf> {
-    maestro_path::native_homedir()
-}
-
-/// The home directory as text.
-///
-/// # Errors
-/// Returns a not-found error when the host knows no home directory, or an invalid-data one
-/// when the home directory is not valid UTF-8.
-pub fn home_directory() -> io::Result<String> {
-    home_directory_text(native_home_directory())
-}
-
 /// The package home: a nonempty `HOME` on any platform, otherwise the native home.
 ///
 /// The native fallback preserves an empty Unix `HOME`; other resource callers keep
@@ -94,25 +81,12 @@ pub fn home_directory() -> io::Result<String> {
 /// # Errors
 /// Returns a not-found error for an unknown home, or invalid-data for non-UTF-8 bytes.
 pub fn package_home_directory() -> io::Result<String> {
-    home_directory_text(
+    maestro_path::home_directory_text(
         std::env::var_os("HOME")
             .filter(|value| !value.is_empty())
             .map(PathBuf::from)
-            .or_else(native_home_directory),
+            .or_else(maestro_path::native_homedir),
     )
-}
-
-/// Convert one observed native home with the resource path boundary's diagnostics.
-fn home_directory_text(home: Option<PathBuf>) -> io::Result<String> {
-    home.ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
-        .into_os_string()
-        .into_string()
-        .map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                "home directory is not valid UTF-8",
-            )
-        })
 }
 
 /// Compare preserved target spelling against a root resolved from the process

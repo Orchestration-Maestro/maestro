@@ -6,7 +6,8 @@ mod retention;
 
 #[cfg(target_os = "linux")]
 pub(crate) use reload::apply_loaded;
-pub use reload::{config_diagnostic_summary, load_config, load_live_config, reload_config};
+pub use reload::config_diagnostic_summary;
+pub use reload::{load_config, load_live_config, reload_config};
 
 use std::{cell::RefCell, path::Path};
 

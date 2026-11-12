@@ -3956,7 +3956,6 @@ dependencies = [
  "maestro-watch",
  "maestro-workspace",
  "num-traits",
- "percent-encoding",
  "rand 0.10.3",
  "regex",
  "roxmltree",
@@ -4055,7 +4054,6 @@ dependencies = [
  "maestro-lock",
  "maestro-test-directory",
  "maestro-test-process",
- "maestro-test-terminal",
  "maestro-theme",
  "maestro-tui",
  "maestro-tui-crossterm",
@@ -4092,9 +4090,9 @@ name = "maestro-daemon"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "interprocess",
  "maestro-dependencies",
  "maestro-detection",
- "maestro-ipc",
  "maestro-json",
  "maestro-lock",
  "maestro-path",
@@ -4113,6 +4111,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.0",
+ "socket2",
  "time",
  "tokio",
  "tracing",
@@ -4299,7 +4298,6 @@ dependencies = [
  "maestro-extensions-wasmtime",
  "maestro-json",
  "maestro-listeners",
- "maestro-listing",
  "maestro-models",
  "maestro-package",
  "maestro-request",
@@ -4341,19 +4339,6 @@ dependencies = [
  "tokio",
  "wasmtime",
  "wasmtime-wasi",
-]
-
-[[package]]
-name = "maestro-ipc"
-version = "0.1.0"
-dependencies = [
- "interprocess",
- "maestro-dependencies",
- "maestro-lock",
- "maestro-test-directory",
- "maestro-test-process",
- "rustix",
- "socket2",
 ]
 
 [[package]]
@@ -4672,7 +4657,6 @@ dependencies = [
  "maestro-json",
  "maestro-lock",
  "maestro-path",
- "maestro-resources",
  "maestro-test-directory",
  "maestro-test-process",
  "rustix",
@@ -4789,19 +4773,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-test-terminal"
-version = "0.1.0"
-dependencies = [
- "maestro-dependencies",
- "maestro-test-directory",
- "maestro-test-process",
- "maestro-tui",
- "serde",
- "serde_json",
- "vt100",
-]
-
-[[package]]
 name = "maestro-test-tracing"
 version = "0.1.0"
 dependencies = [
@@ -4819,6 +4790,7 @@ dependencies = [
  "icu_locale_core",
  "icu_locale_fallback",
  "maestro-dependencies",
+ "percent-encoding",
  "regex",
  "serde",
  "serde_json",
@@ -4935,7 +4907,6 @@ dependencies = [
  "maestro-markdown",
  "maestro-path",
  "maestro-process",
- "maestro-resources",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -4949,6 +4920,7 @@ dependencies = [
  "tracing",
  "unicode-segmentation",
  "unicode-width",
+ "vt100",
 ]
 
 [[package]]

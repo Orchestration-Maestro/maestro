@@ -15,7 +15,7 @@ impl Handler<'_> {
                 .terminal
                 .effects
                 .pty_reply
-                .extend_from_slice(b"\x1bP>|libghostty\x1b\\"),
+                .extend_from_slice(b"\x1bP>|maestro\x1b\\"),
             QueryAction::RequestMode(mode) => self.mode_report(mode.tag()),
             QueryAction::RequestModeUnknown(tag) => self.mode_report(tag),
             QueryAction::KittyKeyboardQuery => {

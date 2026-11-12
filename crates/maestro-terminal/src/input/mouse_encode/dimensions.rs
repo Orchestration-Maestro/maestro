@@ -48,7 +48,7 @@ pub struct ScreenSize {
 impl ScreenSize {
     /// Remove padding, saturating at zero for an undersized surface.
     #[must_use]
-    pub fn sub_padding(self, padding: Padding) -> Self {
+    pub(crate) fn sub_padding(self, padding: Padding) -> Self {
         Self {
             width: self
                 .width

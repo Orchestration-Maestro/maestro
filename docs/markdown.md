@@ -133,12 +133,14 @@ in about 0.1 s, 2,000 in about 0.3 s and 4,000 in about 1.3 s. A reply that
 reopens a quoted list on every repeat goes three containers deeper each time; in
 a release build it reaches depth 385 in about 0.1 s and depth 769 in about 0.4 s.
 
-A nested list finds its lines at the ends its enclosing item recorded, so no
-level scans a line again for its terminator, and a line already at the item's
-indent skips the stop rules. Every level that holds an indented line also holds
-that line's indentation, so finding and testing an indented list's lines takes
-work in proportion to its source bytes. A lazy continuation line carries no
-indentation, and each open level admits it again.
+A nested list reads its lines from what its enclosing item recorded: where each
+line ends and how it is spelled. A run of lines at the item's indent is taken in
+one step, with no stop rules and no second measurement, so a list indented 300
+levels decides about two lines per level instead of every line at every level.
+Each level still keeps its own view of every line it holds, so those views grow
+with the square of the depth, but no decision does. A lazy continuation line, a
+line spelled with a tab and a line short of the indent are decided one at a
+time, and each open level admits them again.
 
 The constant stays small. Quote recognition copies each operand byte once while
 its prefix grows, and each growth step matches again only from the start of the

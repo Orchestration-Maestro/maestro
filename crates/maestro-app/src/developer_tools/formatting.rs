@@ -1,7 +1,7 @@
 //! Column padding and number spelling shared by the report rows.
 
-use crate::utils::numbers::round;
 use maestro_text::numbers::LocaleNumberFormat;
+use maestro_text::numeric::round;
 
 /// The number of UTF-16 code units in `value`, as string padding counts it.
 pub(crate) fn units(value: &str) -> usize {

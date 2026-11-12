@@ -19,10 +19,8 @@ use std::{
 pub use crate::settings::model::AgentPanelSortConfig as AgentPanelSort;
 
 mod notification;
-pub use notification::{
-    AgentNotificationDelivery, CopyFeedback, PendingAgentNotification, ToastKind,
-    ToastNotification, ToastTarget,
-};
+pub use notification::{AgentNotificationDelivery, PendingAgentNotification};
+pub use notification::{CopyFeedback, ToastKind, ToastNotification, ToastTarget};
 mod theme;
 pub use theme::ThemeRuntimeConfig;
 mod selection;
@@ -110,7 +108,7 @@ pub struct DaemonState<C> {
     /// Ordered retained right-side status segments.
     pub tab_bar_right: Vec<TabBarStatusSegment>,
     /// Printable spacing between status segments.
-    pub tab_bar_right_separator: String,
+    pub(crate) tab_bar_right_separator: String,
     /// Sole owner of workspace topology and public identity allocation.
     pub topology: WorkspaceTopology<C>,
     /// Retained terminal metadata keyed by the attached terminal identity.
@@ -152,7 +150,7 @@ pub struct DaemonState<C> {
     /// Delayed transitions revalidated before delivery.
     pub pending_agent_notifications: HashMap<PaneId, PendingAgentNotification>,
     /// Sequence shared by effective agent state changes.
-    pub next_agent_state_change_seq: u64,
+    pub(crate) next_agent_state_change_seq: u64,
     /// Whether implicit parent-group closes require confirmation.
     pub confirm_close: maestro_protocol::shared::Flag,
     /// Current interaction context.
@@ -164,7 +162,7 @@ pub struct DaemonState<C> {
     /// Pending drag geometry cleared with its selection.
     pub selection_autoscroll: Option<SelectionAutoscroll>,
     /// Previous logical focus for last-pane navigation.
-    pub previous_pane_focus: Option<PaneFocusTarget>,
+    pub(crate) previous_pane_focus: Option<PaneFocusTarget>,
     /// Historical numeric spellings mapped to their retained pane identity.
     pub pane_id_aliases: HashMap<u32, PaneId>,
     /// Historical public spellings mapped to their retained pane identity.

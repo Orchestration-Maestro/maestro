@@ -43,7 +43,7 @@ impl Screen {
 
     /// Borrow the final cell of the preceding row using that page's stored width.
     #[must_use]
-    pub fn cursor_cell_end_of_prev(&mut self) -> Option<&mut Cell> {
+    pub(crate) fn cursor_cell_end_of_prev(&mut self) -> Option<&mut Cell> {
         if self.cursor.y == 0 {
             return None;
         }
@@ -54,7 +54,7 @@ impl Screen {
 
     /// Borrow a preceding cursor row without moving the cursor.
     #[must_use]
-    pub fn cursor_row_up(&mut self, n: u16) -> Option<&mut Row> {
+    pub(crate) fn cursor_row_up(&mut self, n: u16) -> Option<&mut Row> {
         if n > self.cursor.y {
             return None;
         }
@@ -273,7 +273,7 @@ impl Screen {
     }
 
     /// Mark the current row dirty without setting the whole-page dirty flag.
-    pub fn cursor_mark_dirty(&mut self) {
+    pub(crate) fn cursor_mark_dirty(&mut self) {
         if let Ok(pin) = self.cursor_pin() {
             pin.mark_dirty(&mut self.pages);
         }

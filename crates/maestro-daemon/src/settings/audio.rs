@@ -14,9 +14,9 @@ pub struct SoundConfig {
     /// Shared authored mp3 path.
     pub path: Option<String>,
     /// Authored mp3 path for completion notifications.
-    pub done_path: Option<String>,
+    pub(crate) done_path: Option<String>,
     /// Authored mp3 path for request notifications.
-    pub request_path: Option<String>,
+    pub(crate) request_path: Option<String>,
     /// Per-agent overrides.
     pub agents: AgentSoundOverrides,
 }
@@ -129,7 +129,7 @@ pub struct AgentSoundOverrides {
     /// Sound preference for the `open_code` catalog entry.
     pub open_code: AgentSoundSetting,
     /// Sound preference for the `github_copilot` catalog entry.
-    pub github_copilot: AgentSoundSetting,
+    pub(crate) github_copilot: AgentSoundSetting,
     /// Sound preference for the `kimi` catalog entry.
     pub kimi: AgentSoundSetting,
     /// Sound preference for the `kiro` catalog entry.

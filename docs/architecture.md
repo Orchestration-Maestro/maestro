@@ -84,7 +84,7 @@ these permissions for normal, build, optional and foreign-target declarations.
 
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
-The binary composition root, conventions checker, terminal scenario harness,
+The binary composition root, conventions checker,
 checked test-process owner, disposable test-directory owner, test tracing owner,
 portable fixture owner, repository tooling and the feature unifier
 (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
@@ -102,10 +102,9 @@ foundation utility `maestro-path` is also a leaf. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
 checks the table against the enforced graph policy. Frontend dependency requirements
 follow the [specification's dependency boundary](specs/maestro-port.md#common-semantic-and-boundary-contract).
-Other crates may use a subset of their specification row, except the terminal adapter
-and terminal scenario harness: both require the toolkit. The adapter also requires
-`maestro-text`; an absent required toolkit or text owner fails. The scenario harness
-may not import text.
+Other crates may use a subset of their specification row, except the terminal
+adapter, which requires the toolkit and `maestro-text`; an absent required toolkit
+or text owner fails.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do
@@ -135,10 +134,8 @@ exact caller list of its
 [directory contract](specs/maestro-port.md#test-directory-owner) and no outgoing
 domain or utility edge. The tracing owner
 follows the same checks with its own five callers; see the
-[tracing contract](specs/maestro-port.md#test-tracing-owner). The scenario harness
-reexports the recording terminal and manual runtime from
-`maestro-tui::test_support`; the harness itself admits only `maestro-cli` under
-the same native development rules. The portable fixture owner has six exact
+[tracing contract](specs/maestro-port.md#test-tracing-owner). The portable fixture
+owner has six exact
 development callers, listed in its
 [fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
 be portable or target-specific; normal/build edges and outgoing domain or utility
@@ -192,10 +189,7 @@ The listing leaf `maestro-listing` is declared core below layer 0 with no worksp
 dependencies, including `maestro-path`. It owns directory listing: one directory's
 entries, sorted by file name on every platform. Only resources, theme, the toolkit,
 tools, session, repository tooling and the application may depend on it, on native
-targets; they keep kind filtering, name decoding and any further ordering. The
-guest crate declares it as one build dependency for its build script, and
-guest-authoring examples as one portable development dependency from
-`maestro-extensions-wasm`; a normal dependency stays forbidden.
+targets; they keep kind filtering, name decoding and any further ordering.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
@@ -423,13 +417,6 @@ inside functions are compared. Unparsed fragments produce no candidates;
 compound configurations are not evaluated. There is no baseline, allowlist or
 suppression attribute.
 
-The shipped extension example tests share their document decoding and
-registration release in `src/tests/example_support.rs`. That release also asserts
-the names the caller expects the host to have admitted and that nothing stays
-lent. A per-example test beside it that writes the decode or the release walk
-inline is rejected with its file and line, wherever the copy sits: a bare call, a
-macro argument, a closure or a method.
-
 Conventions reject a platform temporary directory that any member's test code
 names itself. Test-owned code is a test file layout and every item inside an
 inherited `cfg(test)` context, closures and macro arguments included; the
@@ -609,6 +596,8 @@ modules in that root; support modules stay in their existing directories. The
 conventions check covers every workspace member, new crates included: a member
 with top-level integration-test sources needs `autotests = false` and exactly
 one test target, the runnable `integration` target at `tests/integration.rs`.
+A library target that holds in-source tests keeps `[lib] test` on; one with none sets
+`test = false`, and the conventions check rejects either mismatch.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring

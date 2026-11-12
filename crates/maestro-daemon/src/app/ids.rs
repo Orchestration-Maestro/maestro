@@ -91,7 +91,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 
     /// Forgets the historical numeric spelling that a newly admitted pane identity reuses.
-    pub fn remove_alias_shadowed_by_new_pane(&mut self, pane: PaneId) {
+    pub(crate) fn remove_alias_shadowed_by_new_pane(&mut self, pane: PaneId) {
         self.pane_id_aliases.remove(&pane.raw());
     }
 

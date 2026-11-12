@@ -68,6 +68,7 @@ pub mod list_support;
 mod native_attachment_completion;
 mod native_completion;
 mod path_completion;
+mod scenarios;
 mod selection_lists;
 mod settings_panel;
 mod stdin_sequences;

@@ -6,6 +6,9 @@ license.workspace = true
 repository.workspace = true
 autotests = false
 
+[lib]
+test = false
+
 [dependencies]
 ryu-js.workspace = true
 serde.workspace = true

@@ -207,7 +207,7 @@ impl Placement {
 
 /// Pixel rectangles positioning a placeholder fragment from a retained origin.
 #[derive(Clone, Copy, Debug)]
-pub struct RenderPlacement {
+pub(crate) struct RenderPlacement {
     /// Horizontal destination offset within the first cell.
     pub offset_x: u32,
     /// Vertical destination offset within the first cell.

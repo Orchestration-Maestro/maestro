@@ -56,6 +56,45 @@ pub(crate) fn check_file(
     check_prefix(test, &seen, &[], status)
 }
 
+/// What an ended child already wrote into `pipe`.
+///
+/// The direct child has ended, so its own bytes are in the pipe. A descendant that
+/// inherited the write end can outlive it, so the read takes only the bytes already there
+/// instead of waiting for every writer to close the pipe.
+fn already_written(mut pipe: ChildStderr) -> Vec<u8> {
+    if !reads_without_waiting(&pipe) {
+        return Vec::new();
+    }
+    let mut bytes = Vec::new();
+    let mut buffer = [0; 512];
+    loop {
+        match pipe.read(&mut buffer) {
+            Ok(0) => return bytes,
+            Ok(count) => bytes.extend_from_slice(&buffer[..count]),
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => (),
+            Err(_) => return bytes,
+        }
+    }
+}
+
+/// Report whether `pipe` reads without waiting for a writer, so an empty read returns.
+#[cfg(unix)]
+fn reads_without_waiting(pipe: &ChildStderr) -> bool {
+    rustix::fs::fcntl_getfl(pipe)
+        .and_then(|flags| rustix::fs::fcntl_setfl(pipe, flags | rustix::fs::OFlags::NONBLOCK))
+        .is_ok()
+}
+
+/// Report whether `pipe` reads without waiting for a writer, so an empty read returns.
+///
+/// shortcut: this platform reads a pipe only by waiting for it, where a descendant that
+/// inherited the write end could hold the reap open, so a failed start keeps no standard
+/// error here; upgrade when the platform can poll the pipe.
+#[cfg(not(unix))]
+fn reads_without_waiting(_pipe: &ChildStderr) -> bool {
+    false
+}
+
 /// Standard output of a live child whose start prologue was read and is replayed first.
 ///
 /// Dropping it closes the parent's read end of the pipe.
@@ -151,20 +190,25 @@ impl CheckedChild {
         })
     }
 
-    /// Close every pipe to the direct child, then reap it once it ends on its own, for a
+    /// Close the child's input and output pipes, then reap it once it ends on its own, for a
     /// failed start.
     ///
-    /// A child that reads its input or writes its output gets the end of input or a broken
-    /// pipe, so it exits by itself. It is never signalled: a coverage build writes the child's profile as it
+    /// A child that reads its input gets the end of input, and one that writes its output gets
+    /// a broken pipe, so it exits by itself. Its standard error stays open. It is never signalled: a coverage build writes the child's profile as it
     /// exits, and a signal landing during that write would cut the profile.
+    ///
+    /// The child's standard error stays open until it has ended, then the failure carries
+    /// what it wrote there, so it says why it did not start.
     fn reap(test: &str, mut child: Child, seen: &[u8], message: &str) -> TestProcessError {
-        drop((child.stdin.take(), child.stdout.take(), child.stderr.take()));
-        match child.wait() {
-            Ok(status) => {
-                TestProcessError::new(test, format!("{message} ({status})")).with_streams(seen, &[])
-            }
+        let error_pipe = child.stderr.take();
+        drop((child.stdin.take(), child.stdout.take()));
+        let ended = child.wait();
+        let stderr = error_pipe.map_or_else(Vec::new, already_written);
+        match ended {
+            Ok(status) => TestProcessError::new(test, format!("{message} ({status})"))
+                .with_streams(seen, &stderr),
             Err(cause) => TestProcessError::new(test, message)
-                .with_streams(seen, &[])
+                .with_streams(seen, &stderr)
                 .caused_by(cause),
         }
     }
@@ -243,5 +287,27 @@ mod tests {
             "child {pid} did not end on its own: {error}"
         );
         assert!(!alive(pid), "child {pid} was not reaped");
+    }
+
+    #[test]
+    fn a_child_that_fails_the_start_reports_what_it_wrote_to_standard_error() {
+        // A test binary given an option it does not know says why on standard error, then
+        // exits before it prints the start banner.
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
+            .arg("--no-such-option")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        let error = CheckedChild::start("proof::tests::unknown_option", command.spawn().unwrap())
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("did not start exactly"), "{error}");
+        assert!(
+            error.contains("no-such-option"),
+            "the failure dropped what the child wrote: {error}"
+        );
     }
 }

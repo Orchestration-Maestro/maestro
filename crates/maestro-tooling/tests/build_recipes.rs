@@ -1696,7 +1696,10 @@ fn maestro_commit_subject_limit_counts_the_whole_line() {
 fn maestro_setup_keeps_pins_and_existing_hooks() {
     let workspace = Workspace::new();
     assert!(workspace.run("setup").status.success());
-    assert_eq!(workspace.log(), "mise install\nmise exec|--|prek|install\n");
+    assert_eq!(
+        workspace.log(),
+        "mise install\nmise exec|--|prek|install\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|examples\n"
+    );
     hooks(&workspace);
     assert!(
         Command::new("prek")

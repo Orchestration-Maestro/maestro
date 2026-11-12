@@ -115,7 +115,7 @@ impl DaemonPaths {
         api_override: Option<&str>,
         client_override: Option<&str>,
     ) -> std::path::PathBuf {
-        maestro_ipc::socket_paths::client_socket_path(
+        crate::service::local_socket::paths::client_socket_path(
             explicit.map(std::path::Path::new),
             api_override,
             client_override,
@@ -232,7 +232,7 @@ pub fn action_path_component(value: &str) -> String {
         component.push_str("%2E");
     }
     if component.is_empty() {
-        return "%plugin".to_string();
+        return "%action".to_string();
     }
     if has_windows_reserved_stem_for_path_component(&component) {
         component = format!("%{component}");

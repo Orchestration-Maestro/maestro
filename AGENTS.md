@@ -217,10 +217,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   dependencies, including the path utility. It lists one directory's entries sorted
   by file name on every platform. Only resources, theme, the toolkit, tools,
   session, repository tooling and the application may depend on it, on native
-  targets; callers keep kind filtering, name decoding and further ordering. The
-  guest crate declares it as one build dependency for its build script, and
-  guest-authoring examples as one portable development dependency from
-  `maestro-extensions-wasm`; a normal dependency stays forbidden.
+  targets; callers keep kind filtering, name decoding and further ordering.
 - `maestro-realpath` is a declared core leaf below layer 0 depending only on
   `maestro-path`. It resolves a native path to its real path; on Windows it
   returns the ordinary form (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes
@@ -303,7 +300,7 @@ extraction issues.
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
-conventions checker, terminal scenario harness, checked test-process owner,
+conventions checker, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
@@ -311,7 +308,7 @@ no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
 optional utility and the unifier. Sparse workspaces need
 no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
-requires toolkit and text, and the scenario harness requires toolkit only. The
+requires toolkit and text. The
 utility edge never supplies a required edge. The daemon requires the terminal
 engine. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic. The internal development
@@ -337,14 +334,12 @@ executable's file-trigger test on the shared host fixture, the native-only,
 non-optional `maestro-theme` to `maestro-realpath` development edge for the
 browser author example's watched roots,
 and the native, non-optional dev-dependencies
-of the twenty-eight declared callers on `maestro-test-process`, the owner of
+of the twenty-seven declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
-the required toolkit/text set. The scenario harness reexports the recording terminal and manual runtime from
-`maestro-tui::test_support`. The harness itself remains a native development
-dependency of `maestro-cli` only.
+the required toolkit/text set.
 
 The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
 creation and cleanup. Its only internal edges are the native unifier and
@@ -622,6 +617,8 @@ modules in that root; support modules stay in their existing directories. The
 conventions check covers every workspace member, new crates included: a member
 with top-level integration-test sources needs `autotests = false` and exactly
 one test target, the runnable `integration` target at `tests/integration.rs`.
+A library target that holds in-source tests keeps `[lib] test` on; one with none sets
+`test = false`, and the conventions check rejects either mismatch.
 
 Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
 which keeps the supplied JSON Schema value beside the kinds its author declared for
