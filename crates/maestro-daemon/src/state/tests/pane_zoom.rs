@@ -1,11 +1,11 @@
 //! Pane zoom through the daemon's handler: modes, focus changes and no-ops.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::state::App;
+use crate::state::model::{CopyModeState, Mode};
+use crate::state::tests::support::api::{
     daemon_with_workspaces, event_names, events_after, failure, pair, request, root_pane,
     split_pane,
 };
-use maestro_daemon::state::App;
-use maestro_daemon::state::model::{CopyModeState, Mode};
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{
     ErrorBody, PaneZoomReason, PaneZoomResult, ResponseResult, SplitDirection,

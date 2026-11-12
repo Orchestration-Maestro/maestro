@@ -2,11 +2,11 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::api::{
+use crate::settings::model::Config;
+use crate::state::App;
+use crate::state::tests::support::api::{
     add_workspaces, daemon_with, daemon_with_workspaces, root_pane, split_pane,
 };
-use maestro_daemon::settings::model::Config;
-use maestro_daemon::state::App;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{PaneDirection, PaneLayoutRect, SplitDirection};
 use maestro_protocol::shared::Flag;

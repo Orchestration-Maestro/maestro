@@ -1,11 +1,11 @@
 //! Pane input through the daemon's handler: right-click routing and the text, key and combined
 //! input commands, with the bytes observed by a real shell.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::state::App;
+use crate::state::tests::support::api::{
     answer, daemon_with_workspaces, failure, request, root_pane, run_in_pane, split_pane,
     wait_for_line, with_live_daemon,
 };
-use maestro_daemon::state::App;
 use maestro_protocol::schema::{ResponseResult, SplitDirection};
 use maestro_workspace::terminal_id::TerminalId;
 use serde_json::json;
@@ -188,7 +188,7 @@ fn input_a_busy_pane_cannot_take_is_reported_as_a_send_failure() {
             let Ok(ResponseResult::WorkspaceCreated { root_pane, .. }) = created else {
                 panic!("expected a created workspace: {created:?}");
             };
-            let root = crate::support::api::root_pane(app, 0);
+            let root = crate::state::tests::support::api::root_pane(app, 0);
             let terminal = app.state.topology.workspaces[0]
                 .terminal_id(root)
                 .unwrap()

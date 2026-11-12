@@ -1,11 +1,11 @@
 //! Pane metadata reports through the daemon's handler: validation, tokens, presentation,
 //! sequences and publication.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::state::App;
+use crate::state::tests::support::api::{
     accepted, daemon_with_workspaces, detect, events_after, pane_record, pilot, request, root_pane,
 };
-use maestro_daemon::state::App;
-use maestro_daemon::terminal::model::{DetectedStateUpdate, TerminalState};
+use crate::terminal::model::{DetectedStateUpdate, TerminalState};
 use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_protocol::{
     events::EventData,

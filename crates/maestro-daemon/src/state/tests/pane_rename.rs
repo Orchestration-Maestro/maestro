@@ -1,7 +1,9 @@
 //! Pane renaming through the daemon's handler: the label and its publication.
 #![cfg(target_os = "linux")]
-use crate::support::api::{daemon_with_workspaces, events_after, failure, pane_record, request};
-use maestro_daemon::state::App;
+use crate::state::App;
+use crate::state::tests::support::api::{
+    daemon_with_workspaces, events_after, failure, pane_record, request,
+};
 use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, PaneInfo, ResponseResult},

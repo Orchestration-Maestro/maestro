@@ -1,15 +1,15 @@
 //! Layout apply through the daemon's handler with live processes: replacement, launch inputs,
 //! directories, limits, rollback, focus and publication.
 #![cfg(target_os = "linux")]
-use crate::support::{
+use crate::state::App;
+use crate::state::tests::support::{
     api::{
         add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
         wait_for_line, with_live_daemon, workspace_ids_of,
     },
     layouts::{balanced, chain, shell, sleeper, split},
 };
-use maestro_daemon::state::App;
-use maestro_daemon::{
+use crate::{
     settings::model::NewTerminalCwdConfig,
     state::model::{ActionPaneRecord, Mode},
 };
@@ -524,7 +524,7 @@ fn release_after_hangup(listener: &UnixListener) -> io::Result<()> {
 fn hangup_relay_reports_closed_stream() {
     let scratch = Scratch::new().unwrap();
     let socket = scratch.path().join("hangup");
-    let error = crate::support::runtime::block_on(relay_hangup(&socket, async {
+    let error = crate::tests::block_on(relay_hangup(&socket, async {
         drop(UnixStream::connect(&socket).unwrap());
     }))
     .unwrap_err();

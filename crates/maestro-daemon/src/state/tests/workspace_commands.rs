@@ -1,12 +1,12 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::settings::model::NewTerminalCwdConfig;
+use crate::state::App;
+use crate::state::model::Mode;
+use crate::state::tests::support::api::{
     add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
     with_live_daemon, workspace_ids, workspace_ids_of,
 };
-use maestro_daemon::settings::model::NewTerminalCwdConfig;
-use maestro_daemon::state::App;
-use maestro_daemon::state::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, WorkspaceInfo};
 use serde_json::json;
@@ -265,7 +265,7 @@ fn workspace_close_publishes_the_final_worktree_snapshot() {
 
 #[test]
 fn daemon_api_request_drains_all_pending_internal_events_before_reading_state() {
-    use maestro_daemon::events::AppEvent;
+    use crate::events::AppEvent;
     use maestro_detection::agents::{Agent, AgentState};
     let mut app = daemon_with_workspaces(&["/one"]);
     let (events, receiver) = tokio::sync::mpsc::channel(256);
@@ -321,7 +321,7 @@ fn daemon_read_only_api_requests_do_not_force_rerender() {
     let (events, receiver) = tokio::sync::mpsc::channel(8);
     app.event_rx = receiver;
     events
-        .try_send(maestro_daemon::events::AppEvent::ClipboardWrite {
+        .try_send(crate::events::AppEvent::ClipboardWrite {
             content: b"copied".to_vec(),
         })
         .unwrap();

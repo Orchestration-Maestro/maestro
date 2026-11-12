@@ -2,15 +2,15 @@
 //! clamping and publication.
 #![cfg(target_os = "linux")]
 
-use crate::support::{
+use crate::state::App;
+use crate::state::tests::support::{
     api::{
         add_tab, answer_command, daemon_with_workspaces, events_after, failure, request, root_pane,
         split_pane,
     },
     layouts::{balanced, chain, shell, sleeper, split},
-    runtime::block_on,
 };
-use maestro_daemon::state::App;
+use crate::tests::block_on;
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,

@@ -1,9 +1,9 @@
 //! Agent reports through the daemon's handler: state, session identity, authority and release.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::state::App;
+use crate::state::tests::support::api::{
     accepted, daemon_with_workspaces, event_names, failure, pane_record, pilot, request,
 };
-use maestro_daemon::state::App;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{AgentSessionInfo, AgentStatus, ErrorBody, ResponseResult};
 use maestro_protocol::shared::AgentSessionRefKind;

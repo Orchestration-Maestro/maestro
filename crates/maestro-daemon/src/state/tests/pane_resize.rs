@@ -1,11 +1,11 @@
 //! Pane resize through the daemon's handler: which divider moves, by how much, and what is published.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::state::App;
+use crate::state::tests::support::api::{
     answer_command, daemon_with_workspaces, event_names, events_after, failure, focused_pane_id,
     pane_layout, request, root_pane, split_pane_focused,
 };
-use crate::support::runtime::block_on;
-use maestro_daemon::state::App;
+use crate::tests::block_on;
 use maestro_protocol::events::EventData;
 use maestro_protocol::rpc_types::RpcCommand;
 use maestro_protocol::schema::{

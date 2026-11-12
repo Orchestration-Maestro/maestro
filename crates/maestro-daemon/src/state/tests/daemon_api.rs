@@ -1,15 +1,15 @@
 //! The daemon's workspace command handler and its arm in the daemon loop: server control,
 //! notifications, workspace metadata and the one fallback.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::locations::DaemonPaths;
+use crate::service::RequestMessage;
+use crate::settings::model::ToastDelivery;
+use crate::state::App;
+use crate::state::model::{ToastKind, ToastNotification};
+use crate::state::tests::support::api::{
     daemon, daemon_with_workspaces, events_after, failure, request, settings,
 };
-use crate::support::runtime::block_on;
-use maestro_daemon::locations::DaemonPaths;
-use maestro_daemon::service::RequestMessage;
-use maestro_daemon::settings::model::ToastDelivery;
-use maestro_daemon::state::App;
-use maestro_daemon::state::model::{ToastKind, ToastNotification};
+use crate::tests::block_on;
 use maestro_protocol::events::EventData;
 use maestro_protocol::rpc_types::RpcCommand;
 use maestro_protocol::schema::{EmptyParams, NotificationShowReason, ResponseResult};
@@ -122,7 +122,7 @@ fn notification_request_creates_workspace_toast_with_position() {
 #[test]
 fn notification_request_workspace_toast_expires() {
     let mut app = delivering(ToastDelivery::Workspace);
-    let paths = crate::support::api::untouched_paths();
+    let paths = crate::state::tests::support::api::untouched_paths();
     assert_eq!(
         show(&mut app, "build failed", &json!({})),
         Ok(notified(NotificationShowReason::Shown))
@@ -394,7 +394,7 @@ fn workspace_tokens_patch_clear_and_publish_current_values() {
 #[test]
 fn workspace_token_expiry_publishes_the_remaining_snapshot() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let paths = crate::support::api::untouched_paths();
+    let paths = crate::state::tests::support::api::untouched_paths();
     let lasting = json!({"lasting": "kept"});
     assert!(report(&mut app, "user:keep", &lasting, &json!({})).is_ok());
     let before = Instant::now();
@@ -728,7 +728,7 @@ fn configuration_reload_uses_the_retained_settings_owner() {
         .unwrap();
     let mut manager = SettingsManager::from_storage(storage);
     let mut app = daemon();
-    let paths = crate::support::api::untouched_paths();
+    let paths = crate::state::tests::support::api::untouched_paths();
     let reload = RpcCommand::ServerReloadConfig(EmptyParams {});
     let result = block_on(app.handle_api_request(reload, &mut manager, &paths));
     let Ok(ResponseResult::ConfigReload {
@@ -748,7 +748,7 @@ fn configuration_reload_uses_the_retained_settings_owner() {
             .any(|message| message.contains("daemon.headlessCols"))
     );
     assert_eq!(app.state.toast_config.delivery, ToastDelivery::Workspace);
-    let defaults = maestro_daemon::settings::model::Config::default();
+    let defaults = crate::settings::model::Config::default();
     assert_eq!(app.state.headless_size, defaults.headless_size());
     // The accepted delivery now governs a later notification request.
     assert_eq!(

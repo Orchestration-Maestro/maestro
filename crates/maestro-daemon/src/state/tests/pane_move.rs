@@ -1,13 +1,13 @@
 //! Pane move through the daemon's handler: destinations, identity, focus, events and refusals.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::events::AppEvent;
+use crate::state::App;
+use crate::state::model::{CopyModeState, Mode};
+use crate::state::terminal_targets::TerminalTargetError;
+use crate::state::tests::support::api::{
     add_tab, daemon_with_workspaces, event_names, events_after, failure, join_group, request,
     root_pane, split_pane, workspace_ids,
 };
-use maestro_daemon::events::AppEvent;
-use maestro_daemon::state::App;
-use maestro_daemon::state::model::{CopyModeState, Mode};
-use maestro_daemon::state::terminal_targets::TerminalTargetError;
 use maestro_detection::agents::Agent;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{

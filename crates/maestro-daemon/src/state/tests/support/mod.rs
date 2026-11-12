@@ -1,9 +1,12 @@
 //! Shared daemon state admission and invariant observations.
 
+pub(crate) mod api;
+pub(crate) mod layouts;
 pub(crate) mod spawning;
 
+pub(crate) use api::settings;
+
 use crate::state::model::DaemonState;
-use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use std::sync::Arc;
 
 /// Check topology identity, focus and metadata membership after each mutation.
@@ -65,9 +68,4 @@ pub(crate) fn manifest_cache()
     Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ))
-}
-
-/// A settings owner over an empty in-memory document.
-pub(crate) fn settings() -> SettingsManager {
-    SettingsManager::from_storage(Arc::new(InMemorySettingsStorage::new()))
 }

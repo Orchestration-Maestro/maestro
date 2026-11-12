@@ -1,11 +1,11 @@
 //! Pane reads through the daemon's handler: the shared snapshot clipping, sources, formats and
 //! the record a read answers with.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::panes::display::TerminalReadSnapshot;
+use crate::state::App;
+use crate::state::tests::support::api::{
     answer, daemon_with_workspaces, failure, request, run_in_pane, with_live_daemon,
 };
-use maestro_daemon::panes::display::TerminalReadSnapshot;
-use maestro_daemon::state::App;
 use maestro_protocol::schema::{
     ErrorBody, PaneInfo, PaneReadResult, ReadFormat, ReadSource, ResponseResult,
 };
@@ -32,7 +32,7 @@ async fn printed(app: &mut App, script: &str, marker: &str) -> (String, PaneInfo
     else {
         panic!("expected a created workspace: {created:?}");
     };
-    let pane = crate::support::api::root_pane(app, 0);
+    let pane = crate::state::tests::support::api::root_pane(app, 0);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()

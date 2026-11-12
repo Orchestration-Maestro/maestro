@@ -1,11 +1,11 @@
 //! Pane topology commands through the daemon's handler: reads, focus and neighbours.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
+use crate::state::App;
+use crate::state::model::Mode;
+use crate::state::tests::support::api::{
     add_tab, add_workspaces, answer, daemon_with_workspaces, failure, pair, request, root_pane,
     with_live_daemon,
 };
-use maestro_daemon::state::App;
-use maestro_daemon::state::model::Mode;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{
     AgentStatus, ErrorBody, PaneDirection, PaneFocusDirectionReason, PaneInfo, PaneLayoutSnapshot,
