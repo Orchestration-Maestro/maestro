@@ -18,9 +18,6 @@ use std::{
     rc::Rc,
 };
 
-/// A shown overlay's native handle, shared with the host.
-pub(crate) type SharedHandle = Rc<RefCell<Box<dyn OverlayHandle>>>;
-
 /// The native placement record and the error reporter its first custom consumer binds.
 #[derive(Clone)]
 pub(crate) struct Placement {
@@ -141,13 +138,7 @@ fn visible(
 }
 
 /// Runs one request on a shown overlay's native handle.
-fn handled(
-    handle: &RefCell<Box<dyn OverlayHandle>>,
-    request: HandleRequest,
-) -> Result<Value, String> {
-    let mut handle = handle
-        .try_borrow_mut()
-        .map_err(|_| "the overlay handle is already in use".to_owned())?;
+fn handled(handle: &OverlayHandle, request: HandleRequest) -> Result<Value, String> {
     Ok(match request {
         HandleRequest::Hide => {
             handle.hide().map_err(|error| error.to_string())?;
@@ -192,7 +183,7 @@ impl super::Registry {
             .map(OptionsEndpoint)
     }
     /// Lends a shown overlay's native handle.
-    pub(crate) fn overlay_handle(&self, handle: SharedHandle) -> Result<HandleEndpoint, String> {
+    pub(crate) fn overlay_handle(&self, handle: OverlayHandle) -> Result<HandleEndpoint, String> {
         self.insert(Capability::OverlayHandle(handle))
             .map(HandleEndpoint)
     }

@@ -29,9 +29,6 @@ use std::{
     rc::Rc,
 };
 
-/// A shown overlay's handle, shared by host and extension.
-type SharedOverlay = Rc<RefCell<Box<dyn OverlayHandle>>>;
-
 /// The toolkit and theme operands every UI callback receives.
 struct Operands {
     /// The real terminal this fixture writes to.
@@ -180,8 +177,8 @@ fn families<E: ExtensionExecution>(api: &ExtensionAPI<E>, operands: &Operands) -
         },
         handle: {
             let seen = seen.clone();
-            api.ui_callback(move |handle: SharedOverlay, _| {
-                handle.borrow_mut().set_hidden(true);
+            api.ui_callback(move |handle: OverlayHandle, _| {
+                handle.set_hidden(true);
                 mark(&seen, "handle");
                 Ok(())
             })
@@ -248,7 +245,7 @@ fn toolkit_keybindings() -> ExtensionKeybindings {
 fn invoke_all(
     built: &Families,
     operands: &Operands,
-    overlay: &SharedOverlay,
+    overlay: &OverlayHandle,
     done: CustomDone<String>,
     close: CustomClose,
 ) {
@@ -294,8 +291,8 @@ fn invoke_all(
     assert_eq!(editor.get_text(), "typed");
     let resolved = built.resolver.call(()).unwrap();
     assert_eq!(resolved.borrow().min_width, Some(7));
-    built.handle.call(Rc::clone(overlay)).unwrap();
-    assert!(overlay.borrow().is_hidden());
+    built.handle.call(overlay.clone()).unwrap();
+    assert!(overlay.is_hidden());
     let ready = built
         .custom
         .call((operands.tui.clone(), theme.clone(), keys.clone(), done))
@@ -326,12 +323,10 @@ fn family_case<E: ExtensionExecution>(loaded: &Loaded<E>) {
     let closed = Rc::new(Cell::new(false));
     let gate = closed.clone();
     let close: CustomClose = Rc::new(move || Ok(!gate.replace(true)));
-    let overlay = Rc::new(RefCell::new(
-        operands
-            .tui
-            .show_overlay(Rc::new(Input::new()), None)
-            .unwrap(),
-    ));
+    let overlay = operands
+        .tui
+        .show_overlay(Rc::new(Input::new()), None)
+        .unwrap();
     invoke_all(&built, &operands, &overlay, done, close);
     assert_eq!(*committed.borrow(), ["committed"]);
     assert!(closed.get());

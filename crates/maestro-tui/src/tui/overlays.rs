@@ -4,7 +4,7 @@ use std::cell::{Cell, RefCell};
 use std::io;
 use std::rc::Rc;
 
-use super::{ComponentHandle, OverlayHandle, OverlayOptions, TUI};
+use super::{ComponentHandle, OverlayOptions, TUI};
 
 /// A component target with immutable fallback data.
 #[derive(Clone)]
@@ -51,9 +51,13 @@ pub(super) struct Entry {
     pub order: Cell<usize>,
 }
 
-/// Controls one entry while keeping its owner alive.
-struct Handle {
-    /// Owner shared with every writer clone.
+/// Controls one shown overlay while keeping its owner alive.
+///
+/// Cloning shares the same entry: every clone controls the overlay the writer retains,
+/// and dropping the last one does not remove it.
+#[derive(Clone)]
+pub struct OverlayHandle {
+    /// The writer that retains the entry.
     tui: TUI,
     /// The controlled identity, retained even after removal.
     entry: Rc<Entry>,
@@ -76,7 +80,7 @@ impl TUI {
         &self,
         component: ComponentHandle,
         options: Option<Rc<RefCell<OverlayOptions>>>,
-    ) -> io::Result<Box<dyn OverlayHandle>> {
+    ) -> io::Result<OverlayHandle> {
         let entry = Rc::new(Entry {
             capture: Rc::new(Capture {
                 component,
@@ -96,10 +100,10 @@ impl TUI {
             return Err(error);
         }
         self.request_render(false);
-        Ok(Box::new(Handle {
+        Ok(OverlayHandle {
             tui: self.clone(),
             entry,
-        }))
+        })
     }
 
     /// Removes the last-created overlay; an empty stack does nothing.
@@ -296,12 +300,17 @@ impl TUI {
     }
 }
 
-impl OverlayHandle for Handle {
-    fn hide(&mut self) -> io::Result<()> {
+impl OverlayHandle {
+    /// Removes the overlay for good.
+    ///
+    /// # Errors
+    /// Returns cursor-hiding errors after removal and any applicable focus restoration.
+    pub fn hide(&self) -> io::Result<()> {
         self.tui.remove_overlay(&self.entry)
     }
 
-    fn set_hidden(&mut self, hidden: bool) {
+    /// Changes temporary hiding. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
+    pub fn set_hidden(&self, hidden: bool) {
         if !self.tui.attached(&self.entry) || self.entry.hidden.replace(hidden) == hidden {
             return;
         }
@@ -317,11 +326,14 @@ impl OverlayHandle for Handle {
         self.tui.request_render(false);
     }
 
-    fn is_hidden(&self) -> bool {
+    /// Whether the overlay is temporarily hidden.
+    #[must_use]
+    pub fn is_hidden(&self) -> bool {
         self.entry.hidden.get()
     }
 
-    fn focus(&mut self) {
+    /// Requests focus and visual raising. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
+    pub fn focus(&self) {
         if !self.tui.focus_available(&self.entry) {
             return;
         }
@@ -333,7 +345,8 @@ impl OverlayHandle for Handle {
         self.tui.request_render(false);
     }
 
-    fn unfocus(&mut self) {
+    /// Yields component focus. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
+    pub fn unfocus(&self) {
         if !self.tui.attached(&self.entry) || !self.is_focused() {
             return;
         }
@@ -341,7 +354,9 @@ impl OverlayHandle for Handle {
         self.tui.request_render(false);
     }
 
-    fn is_focused(&self) -> bool {
+    /// Whether the component identity currently owns focus, even after detachment.
+    #[must_use]
+    pub fn is_focused(&self) -> bool {
         self.tui.overlay_focused(&self.entry)
     }
 }

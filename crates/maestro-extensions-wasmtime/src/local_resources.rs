@@ -369,7 +369,7 @@ enum Capability {
     /// Shared native overlay placement and its bound error reporter.
     OverlayOptions(overlays::Placement),
     /// A shown overlay's native handle, shared with the host.
-    OverlayHandle(overlays::SharedHandle),
+    OverlayHandle(maestro_extensions::presentation::OverlayHandle),
     /// Original custom-component close operation.
     CustomClose(maestro_extensions::types::CustomClose),
     /// Original terminal lent to a component factory, with the reporter of failures of the
