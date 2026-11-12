@@ -1,9 +1,7 @@
 //! Initial daemon presentation preferences come from the accepted configuration.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
+use crate::state::test_support::api::daemon_with;
 use crate::state::test_support::spawning;
-
 use crate::{
     service::event_hub::EventHub,
     settings::model::{AgentPanelSortConfig, Config},
@@ -11,51 +9,44 @@ use crate::{
 };
 use std::sync::{Arc, RwLock};
 
-/// Constructs the real daemon owner without creating a workspace or native child.
-fn app(config: &Config) -> App {
-    let manifests = Arc::new(RwLock::new(
-        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
-    ));
-    let (launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
-    App::new(config, || 0, launch, receiver, EventHub::default())
-}
-
 #[test]
 fn construction_uses_configured_agent_panel_sort() {
     let mut config = Config::default();
     config.ui.agent_panel_sort = AgentPanelSortConfig::Priority;
     assert_eq!(
-        app(&config).state.agent_panel_sort,
+        daemon_with(&config).unwrap().state.agent_panel_sort,
         AgentPanelSort::Priority
     );
 }
-
 #[test]
 fn construction_uses_configured_sidebar_state() {
     let mut config = Config::default();
     config.ui.sidebar_start_collapsed.0 = true;
-    assert!(app(&config).state.sidebar_collapsed.0);
+    assert!(daemon_with(&config).unwrap().state.sidebar_collapsed.0);
 }
-
 #[test]
 fn construction_uses_redraw_on_focus_gained_config() {
     let mut config = Config::default();
     config.ui.redraw_on_focus_gained.0 = false;
-    assert!(!app(&config).state.redraw_on_focus_gained.0);
+    assert!(!daemon_with(&config).unwrap().state.redraw_on_focus_gained.0);
 }
-
 #[test]
 fn construction_uses_workspace_name_prompt_config() {
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
-    assert!(app(&config).state.prompt_new_workspace_name.0);
+    assert!(
+        daemon_with(&config)
+            .unwrap()
+            .state
+            .prompt_new_workspace_name
+            .0
+    );
 }
-
 #[test]
 fn pending_workspace_creation_blocks_default_until_cancelled() {
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -71,13 +62,12 @@ fn pending_workspace_creation_blocks_default_until_cancelled() {
             assert!(app.state.pending_workspace_create_cwd.is_none());
         });
 }
-
 #[test]
 fn pending_creation_follows_navigation_selection_before_active_terminal() {
     use crate::{state::model::Mode, terminal::model::TerminalState};
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     for cwd in ["/selected-first", "/selected-second"] {
         let (pane, ()) = app
             .state
@@ -118,13 +108,12 @@ fn pending_creation_follows_navigation_selection_before_active_terminal() {
             );
         });
 }
-
 #[test]
 fn pending_creation_retains_current_and_authored_directory_policies() {
     use crate::settings::model::NewTerminalCwdConfig;
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     let current = std::env::current_dir().unwrap();
     let home = std::env::var_os("HOME");
     let tilde = home.as_ref().map_or_else(
@@ -153,25 +142,23 @@ fn pending_creation_retains_current_and_authored_directory_policies() {
             }
         });
 }
-
 #[test]
 fn construction_keeps_manual_theme_policy() {
     let mut config = Config::default();
     config.theme.name = Some("tokyo-night".into());
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     assert!(!app.state.theme_runtime.auto_switch);
     assert_eq!(app.state.theme_name, "tokyo-night");
     assert!(!app.set_host_terminal_appearance(crate::terminal_theme::HostAppearance::Light, true,));
     assert_eq!(app.state.theme_name, "tokyo-night");
 }
-
 #[test]
 fn construction_selects_sibling_theme_for_explicit_host_appearance() {
     use crate::terminal_theme::HostAppearance;
     let mut config = Config::default();
     config.theme.name = Some("tokyo-night".into());
     config.theme.auto_switch = true;
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     assert_eq!(app.state.theme_name, "tokyo-night");
     assert!(app.set_host_terminal_appearance(HostAppearance::Light, true));
     assert_eq!(app.state.theme_name, "tokyo-night-day");
@@ -179,7 +166,6 @@ fn construction_selects_sibling_theme_for_explicit_host_appearance() {
     assert!(app.set_host_terminal_appearance(HostAppearance::Dark, true));
     assert_eq!(app.state.theme_name, "tokyo-night");
 }
-
 #[test]
 fn construction_retains_custom_overrides_when_selecting_active_theme() {
     use crate::{settings::appearance::CustomThemeColors, terminal_theme::HostAppearance};
@@ -191,20 +177,19 @@ fn construction_retains_custom_overrides_when_selecting_active_theme() {
         ..CustomThemeColors::default()
     });
     config.ui.accent = "red".into();
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     assert!(app.set_host_terminal_appearance(HostAppearance::Light, true));
     assert_eq!(app.state.theme_name, "gruvbox-light");
     assert_eq!(app.state.theme_runtime.custom, config.theme.custom);
     assert!(app.state.theme_runtime.legacy_accent.is_none());
 }
-
 #[test]
 fn daemon_inferred_background_appearance_does_not_override_explicit_report() {
     use crate::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
     let mut config = Config::default();
     config.theme.name = Some("catppuccin".into());
     config.theme.auto_switch = true;
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     app.set_host_terminal_appearance(HostAppearance::Dark, true);
     let background = RgbColor {
         r: 255,
@@ -220,7 +205,6 @@ fn daemon_inferred_background_appearance_does_not_override_explicit_report() {
     assert_eq!(app.state.host_terminal_theme.background, Some(background));
     assert!(!app.update_host_terminal_theme(DefaultColorKind::Background, background));
 }
-
 #[test]
 fn construction_shares_supplied_host_observations_with_later_launches() {
     use crate::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
@@ -249,52 +233,12 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
     assert_eq!(app.launch.theme.background, Some(background));
     assert!(app.launch.render_dirty.is_pending());
 }
-
-#[test]
-fn theme_siblings_preserve_aliases_custom_names_and_authored_pair_overrides() {
-    use crate::{state::model::ThemeRuntimeConfig, terminal_theme::HostAppearance};
-    let mut config = Config::default();
-    config.theme.auto_switch = true;
-    for (name, dark, light) in [
-        ("Catppuccin Mocha", "catppuccin", "catppuccin-latte"),
-        ("tokyonight-day", "tokyo-night", "tokyo-night-day"),
-        ("gruvbox-dark", "gruvbox", "gruvbox-light"),
-        ("onelight", "one-dark", "one-light"),
-        ("solarized_dark", "solarized", "solarized-light"),
-        ("lotus", "kanagawa", "kanagawa-lotus"),
-        ("dawn", "rose-pine", "rose-pine-dawn"),
-        ("NORD", "NORD", "NORD"),
-        ("authored", "authored", "authored"),
-    ] {
-        config.theme.name = Some(name.into());
-        let runtime = ThemeRuntimeConfig::new(&config, true);
-        assert_eq!(runtime.effective_name(None), dark);
-        assert_eq!(runtime.effective_name(Some(HostAppearance::Light)), light);
-        assert_eq!(runtime.manual_name, name);
-    }
-    config.theme.dark_name = Some("authored-dark".into());
-    config.theme.light_name = Some("authored-light".into());
-    config.ui.accent = "red".into();
-    let runtime = ThemeRuntimeConfig::new(&config, true);
-    assert_eq!(runtime.effective_name(None), "authored-dark");
-    assert_eq!(
-        runtime.effective_name(Some(HostAppearance::Light)),
-        "authored-light"
-    );
-    assert_eq!(runtime.legacy_accent.as_deref(), Some("red"));
-    assert!(
-        ThemeRuntimeConfig::new(&config, false)
-            .legacy_accent
-            .is_none()
-    );
-}
-
 #[test]
 fn background_inference_selects_theme_until_explicit_appearance_is_reported() {
     use crate::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
     let mut config = Config::default();
     config.theme.auto_switch = true;
-    let mut app = app(&config);
+    let mut app = daemon_with(&config).unwrap();
     let white = RgbColor {
         r: 255,
         g: 255,
@@ -315,14 +259,4 @@ fn background_inference_selects_theme_until_explicit_appearance_is_reported() {
         Some(HostAppearance::Light)
     );
     assert!(app.state.host_terminal_appearance_explicit.0);
-}
-
-#[test]
-fn daemon_app_new_falls_back_to_default_bounds_on_inverted_config() {
-    let mut config = Config::default();
-    config.ui.sidebar_min_width = 50;
-    config.ui.sidebar_max_width = 30;
-    let app = app(&config);
-    assert_eq!(app.config.ui.sidebar_min_width, 18);
-    assert_eq!(app.config.ui.sidebar_max_width, 36);
 }

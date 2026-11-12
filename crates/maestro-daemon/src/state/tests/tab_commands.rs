@@ -1,5 +1,4 @@
 //! Tab commands through the daemon's handler: targets, ordering, close and creation.
-#![cfg(target_os = "linux")]
 use crate::settings::model::NewTerminalCwdConfig;
 use crate::state::App;
 use crate::state::model::Mode;
@@ -12,7 +11,6 @@ use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, TabInfo};
 use serde_json::json;
 use std::path::PathBuf;
-
 /// Adds `count` tabs without processes to the workspace at `index`.
 fn add_tabs(app: &mut App, index: usize, count: usize) {
     for _ in 0..count {
@@ -24,7 +22,6 @@ fn add_tabs(app: &mut App, index: usize, count: usize) {
     }
     app.state.admit_seeded_terminals();
 }
-
 /// The tab identities a list result holds, in order.
 fn listed(result: &Result<ResponseResult, ErrorBody>) -> Vec<String> {
     match result {
@@ -32,7 +29,6 @@ fn listed(result: &Result<ResponseResult, ErrorBody>) -> Vec<String> {
         other => panic!("expected a tab list: {other:?}"),
     }
 }
-
 /// The tab a single-tab result reports.
 fn reported(result: Result<ResponseResult, ErrorBody>) -> TabInfo {
     match result {
@@ -40,7 +36,6 @@ fn reported(result: Result<ResponseResult, ErrorBody>) -> TabInfo {
         other => panic!("expected a tab: {other:?}"),
     }
 }
-
 /// The public tab identities of the workspace at `index`, in display order.
 fn tab_ids(app: &App, index: usize) -> Vec<String> {
     let workspace = &app.state.topology.workspaces[index];
@@ -50,14 +45,12 @@ fn tab_ids(app: &App, index: usize) -> Vec<String> {
         .map(|tab| format!("{}:t{}", workspace.id, tab.number))
         .collect()
 }
-
 /// A workspace with three tabs and a second workspace with one.
 fn three_tabs() -> App {
     let mut app = daemon_with_workspaces(&["/tabs", "/other"]).unwrap();
     add_tabs(&mut app, 0, 2);
     app
 }
-
 #[test]
 fn tab_targets_and_creation_preserve_source_policy() {
     let mut app = three_tabs();
@@ -91,7 +84,6 @@ fn tab_targets_and_creation_preserve_source_policy() {
     assert_missing_tabs_change_nothing(&mut app);
     assert_creation_targets_resolve_before_spawning(&mut app);
 }
-
 /// Every command naming a missing tab fails with its exact text and publishes nothing.
 fn assert_missing_tabs_change_nothing(app: &mut App) {
     let sequence = app.event_hub.current_sequence();
@@ -109,7 +101,6 @@ fn assert_missing_tabs_change_nothing(app: &mut App) {
     }
     assert!(events_after(app, sequence).is_empty());
 }
-
 /// Creation targets are resolved before any child starts.
 fn assert_creation_targets_resolve_before_spawning(app: &mut App) {
     let create = json!({"type": "tab.create", "workspace_id": "w9"});
@@ -130,7 +121,6 @@ fn assert_creation_targets_resolve_before_spawning(app: &mut App) {
     assert_eq!(app.terminal_runtimes.len(), 0);
     assert_eq!(tab_ids(app, 0), ["w1:t1", "w1:t2", "w1:t3"]);
 }
-
 #[test]
 fn tab_move_keeps_its_workspace_and_active_identity() {
     let mut app = three_tabs();
@@ -161,7 +151,6 @@ fn tab_move_keeps_its_workspace_and_active_identity() {
     );
     assert!(app.state.session_dirty);
 }
-
 #[test]
 fn renaming_a_tab_updates_its_label_and_publishes_it() {
     let mut app = three_tabs();
@@ -188,7 +177,6 @@ fn renaming_a_tab_updates_its_label_and_publishes_it() {
         }]
     );
 }
-
 #[test]
 fn single_moves_validate_insertion_boundaries() {
     let mut app = three_tabs();
@@ -228,7 +216,6 @@ fn single_moves_validate_insertion_boundaries() {
     assert_eq!(app.state.active, Some(0));
     assert_eq!(events_after(&app, 0).len(), 2);
 }
-
 #[test]
 fn final_tab_close_publishes_tab_then_workspace() {
     let mut app = daemon_with_workspaces(&["/repo-issue", "/other"]).unwrap();
@@ -258,7 +245,6 @@ fn final_tab_close_publishes_tab_then_workspace() {
         ]
     );
 }
-
 #[test]
 fn final_tab_close_empties_the_daemon_and_clears_focus() {
     let mut app = daemon_with_workspaces(&["/only"]).unwrap();
@@ -272,7 +258,6 @@ fn final_tab_close_empties_the_daemon_and_clears_focus() {
     assert_eq!(app.state.active, None);
     assert!(app.state.session_dirty);
 }
-
 #[test]
 fn tab_close_preserves_confirmation_and_terminal_ownership() {
     let mut app = three_tabs();
@@ -308,7 +293,6 @@ fn tab_close_preserves_confirmation_and_terminal_ownership() {
     assert_eq!(app.state.mode, Mode::ConfirmClose);
     assert!(events_after(&app, 0).is_empty());
 }
-
 /// The created records of a `tab.create` result.
 fn created(result: Result<ResponseResult, ErrorBody>) -> (TabInfo, PaneInfo) {
     match result {
@@ -316,7 +300,6 @@ fn created(result: Result<ResponseResult, ErrorBody>) -> (TabInfo, PaneInfo) {
         other => panic!("expected a created tab: {other:?}"),
     }
 }
-
 #[test]
 fn daemon_tab_create_response_includes_root_pane() {
     with_live_daemon(
@@ -357,7 +340,6 @@ fn daemon_tab_create_response_includes_root_pane() {
         },
     );
 }
-
 #[test]
 fn tab_creation_uses_the_focused_cached_directory() {
     with_live_daemon(
@@ -379,25 +361,6 @@ fn tab_creation_uses_the_focused_cached_directory() {
         },
     );
 }
-
-#[test]
-fn launch_environment_rejects_equals_in_keys_before_spawning() {
-    let mut app = daemon_with_workspaces(&["/tabs"]).unwrap();
-    for create in [
-        json!({"type": "tab.create", "env": {"BAD=KEY": "value"}}),
-        json!({"type": "workspace.create", "env": {"BAD=KEY": "value"}}),
-    ] {
-        assert_eq!(
-            request(&mut app, create),
-            failure("invalid_env", "env key BAD=KEY must not contain '='")
-        );
-    }
-    assert_eq!(workspace_ids(&mut app).unwrap(), ["w1"]);
-    assert_eq!(app.state.topology.workspaces[0].tabs.len(), 1);
-    assert_eq!(app.state.topology.workspaces[0].next_public_tab_number, 2);
-    assert!(events_after(&app, 0).is_empty());
-}
-
 #[test]
 fn launch_environment_reaches_the_root_pane() {
     with_live_daemon(

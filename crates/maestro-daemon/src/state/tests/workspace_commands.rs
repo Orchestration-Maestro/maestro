@@ -1,5 +1,4 @@
 //! Workspace commands through the daemon's handler: targets, ordering, close and creation.
-#![cfg(target_os = "linux")]
 use crate::settings::model::NewTerminalCwdConfig;
 use crate::state::App;
 use crate::state::model::Mode;
@@ -7,28 +6,12 @@ use crate::state::test_support::api::{
     add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
     workspace_ids, workspace_ids_of,
 };
+use crate::state::test_support::workspace_commands::listed;
 use crate::state::tests::support::live::with_live_daemon;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, WorkspaceInfo};
 use serde_json::json;
 use std::path::PathBuf;
-
-/// The workspace identities a list result holds, in order.
-fn listed(result: &Result<ResponseResult, maestro_protocol::schema::ErrorBody>) -> Vec<String> {
-    match result {
-        Ok(ResponseResult::WorkspaceList { workspaces }) => ids_of(workspaces),
-        other => panic!("expected a workspace list: {other:?}"),
-    }
-}
-
-/// The identities of `workspaces`, in order.
-fn ids_of(workspaces: &[WorkspaceInfo]) -> Vec<String> {
-    workspaces
-        .iter()
-        .map(|workspace| workspace.workspace_id.clone())
-        .collect()
-}
-
 /// The identity a single-workspace result reports.
 fn reported(result: Result<ResponseResult, maestro_protocol::schema::ErrorBody>) -> String {
     match result {
@@ -36,7 +19,6 @@ fn reported(result: Result<ResponseResult, maestro_protocol::schema::ErrorBody>)
         other => panic!("expected a workspace: {other:?}"),
     }
 }
-
 /// The identities of the active and selected workspaces.
 fn navigation(app: &App) -> (Option<String>, String) {
     let workspaces = &app.state.topology.workspaces;
@@ -45,12 +27,11 @@ fn navigation(app: &App) -> (Option<String>, String) {
         workspaces[app.state.selected].id.clone(),
     )
 }
-
 #[test]
 fn workspace_targets_preserve_ids_aliases_and_missing_errors() {
     let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]).unwrap();
     assert_eq!(
-        listed(&request(&mut app, json!({"type": "workspace.list"}))),
+        listed(&request(&mut app, json!({"type": "workspace.list"}))).unwrap(),
         ["w1", "w2", "w3"]
     );
     for alias in ["w2", "w_2", "2"] {
@@ -58,7 +39,10 @@ fn workspace_targets_preserve_ids_aliases_and_missing_errors() {
         assert_eq!(reported(request(&mut app, get)), "w2", "{alias}");
     }
     let moved = json!({"type": "workspace.move", "workspace_id": "w1", "insert_index": 3});
-    assert_eq!(listed(&request(&mut app, moved)), ["w2", "w3", "w1"]);
+    assert_eq!(
+        listed(&request(&mut app, moved)).unwrap(),
+        ["w2", "w3", "w1"]
+    );
     // Stable ids follow the workspace; positional aliases follow the display order.
     let get = |id: &str| json!({"type": "workspace.get", "workspace_id": id});
     assert_eq!(reported(request(&mut app, get("w1"))), "w1");
@@ -71,7 +55,6 @@ fn workspace_targets_preserve_ids_aliases_and_missing_errors() {
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
     assert_missing_workspaces_change_nothing(&mut app);
 }
-
 /// Every command naming a missing, malformed or out-of-range workspace fails with its
 /// exact text and changes neither order, focus nor events.
 fn assert_missing_workspaces_change_nothing(app: &mut App) {
@@ -94,14 +77,13 @@ fn assert_missing_workspaces_change_nothing(app: &mut App) {
     assert_eq!(navigation(app).0.as_deref(), Some("w3"));
     assert!(events_after(app, sequence).is_empty());
 }
-
 #[test]
 fn workspace_move_preserves_stable_identity_and_focus() {
     let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]).unwrap();
     app.state.selected = 1;
     let moved = json!({"type": "workspace.move", "workspace_id": "w1", "insert_index": 3});
     let result = request(&mut app, moved);
-    assert_eq!(listed(&result), ["w2", "w3", "w1"]);
+    assert_eq!(listed(&result).unwrap(), ["w2", "w3", "w1"]);
     assert_eq!(workspace_ids(&mut app).unwrap(), ["w2", "w3", "w1"]);
     assert_eq!(navigation(&app), (Some("w1".into()), "w2".into()));
     let Ok(ResponseResult::WorkspaceList { workspaces }) = result else {
@@ -119,7 +101,6 @@ fn workspace_move_preserves_stable_identity_and_focus() {
     assert!(workspaces[2].focused);
     assert!(app.state.session_dirty);
 }
-
 #[test]
 fn workspace_block_moves_are_atomic_and_keep_request_order() {
     let mut app = daemon_with_workspaces(&["/child", "/normal", "/parent", "/tail"]).unwrap();
@@ -131,7 +112,7 @@ fn workspace_block_moves_are_atomic_and_keep_request_order() {
         "before_workspace_id": "w_4",
     });
     let result = request(&mut app, block);
-    assert_eq!(listed(&result), ["w2", "w3", "w1", "w4"]);
+    assert_eq!(listed(&result).unwrap(), ["w2", "w3", "w1", "w4"]);
     assert_eq!(workspace_ids(&mut app).unwrap(), ["w2", "w3", "w1", "w4"]);
     assert_eq!(navigation(&app), (Some("w3".into()), "w1".into()));
     let Ok(ResponseResult::WorkspaceList { workspaces }) = result else {
@@ -146,7 +127,6 @@ fn workspace_block_moves_are_atomic_and_keep_request_order() {
         }]
     );
 }
-
 #[test]
 fn unchanged_workspace_order_emits_no_move() {
     let mut app = daemon_with_workspaces(&["/one", "/two", "/three"]).unwrap();
@@ -157,61 +137,12 @@ fn unchanged_workspace_order_emits_no_move() {
         json!({"type": "workspace.move_block", "workspace_ids": ["w3"]}),
     ] {
         let result = request(&mut app, unchanged.clone());
-        assert_eq!(listed(&result), ["w1", "w2", "w3"], "{unchanged}");
+        assert_eq!(listed(&result).unwrap(), ["w1", "w2", "w3"], "{unchanged}");
     }
     assert_eq!(workspace_ids(&mut app).unwrap(), ["w1", "w2", "w3"]);
     assert!(events_after(&app, 0).is_empty());
     assert!(!app.state.session_dirty);
 }
-
-#[test]
-fn workspace_block_validation_is_atomic() {
-    let mut app = daemon_with_workspaces(&["/one", "/two", "/three", "/four"]).unwrap();
-    let block = |ids: serde_json::Value, before: Option<&str>| json!({"type": "workspace.move_block", "workspace_ids": ids, "before_workspace_id": before});
-    let failed = |message: &str| failure("workspace_move_block_failed", message);
-    for (rejected, expected) in [
-        (
-            block(json!([]), None),
-            failed("workspace_ids must not be empty"),
-        ),
-        (
-            block(json!(["w1", "1"]), None),
-            failed("workspace 1 appears more than once"),
-        ),
-        (
-            block(json!(["w_2", "w2"]), None),
-            failed("workspace w2 appears more than once"),
-        ),
-        (
-            block(json!(["w1", "w9"]), None),
-            failure("workspace_not_found", "workspace w9 not found"),
-        ),
-        (
-            block(json!(["w1"]), Some("w9")),
-            failure("workspace_not_found", "workspace w9 not found"),
-        ),
-        (
-            block(json!(["w1", "w3"]), Some("3")),
-            failed("before_workspace_id must not be part of workspace_ids"),
-        ),
-    ] {
-        assert_eq!(request(&mut app, rejected.clone()), expected, "{rejected}");
-        assert_eq!(workspace_ids(&mut app).unwrap(), ["w1", "w2", "w3", "w4"]);
-    }
-    assert!(events_after(&app, 0).is_empty());
-    for (accepted, order) in [
-        (block(json!(["w4"]), Some("w1")), ["w4", "w1", "w2", "w3"]),
-        (block(json!(["w4"]), None), ["w1", "w2", "w3", "w4"]),
-        (
-            block(json!(["w3", "w1"]), Some("w2")),
-            ["w3", "w1", "w2", "w4"],
-        ),
-    ] {
-        assert_eq!(listed(&request(&mut app, accepted)), order);
-    }
-    assert_eq!(events_after(&app, 0).len(), 3);
-}
-
 #[test]
 fn closing_a_linked_workspace_keeps_its_neighbours() {
     let mut app = daemon_with_workspaces(&["/repo", "/repo-one", "/repo-two", "/other"]).unwrap();
@@ -235,7 +166,6 @@ fn closing_a_linked_workspace_keeps_its_neighbours() {
     );
     assert_eq!(navigation(&app).0.as_deref(), Some("w1"));
 }
-
 #[test]
 fn workspace_close_publishes_the_final_worktree_snapshot() {
     let mut app = daemon_with_workspaces(&["/repo-issue"]).unwrap();
@@ -263,7 +193,6 @@ fn workspace_close_publishes_the_final_worktree_snapshot() {
         }]
     );
 }
-
 #[test]
 fn daemon_api_request_drains_all_pending_internal_events_before_reading_state() {
     use crate::events::AppEvent;
@@ -301,7 +230,6 @@ fn daemon_api_request_drains_all_pending_internal_events_before_reading_state() 
     );
     assert!(app.event_rx.try_recv().is_err());
 }
-
 #[test]
 fn daemon_read_only_api_requests_do_not_force_rerender() {
     let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
@@ -329,12 +257,10 @@ fn daemon_read_only_api_requests_do_not_force_rerender() {
     assert!(request(&mut app, json!({"type": "workspace.list"})).is_ok());
     assert!(app.launch.render_dirty.is_pending());
 }
-
 /// A shell configuration whose new panes start in `policy`'s directory.
 fn with_policy(app: &mut App, policy: NewTerminalCwdConfig) {
     app.config.terminal.new_cwd = policy;
 }
-
 /// The created records of a `workspace.create` result.
 fn created(
     result: Result<ResponseResult, maestro_protocol::schema::ErrorBody>,
@@ -352,7 +278,6 @@ fn created(
         other => panic!("expected a created workspace: {other:?}"),
     }
 }
-
 #[test]
 fn daemon_workspace_create_response_includes_initial_tab_and_root_pane() {
     with_live_daemon(
@@ -407,7 +332,6 @@ fn daemon_workspace_create_response_includes_initial_tab_and_root_pane() {
         },
     );
 }
-
 #[test]
 fn workspace_creation_follows_the_focused_pane_directory() {
     with_live_daemon(
@@ -437,7 +361,6 @@ fn workspace_creation_follows_the_focused_pane_directory() {
         },
     );
 }
-
 #[test]
 fn workspace_creation_preserves_explicit_cwd_and_focus_policy() {
     with_live_daemon(

@@ -1,41 +1,20 @@
 //! Layout export and split ratio through the daemon's handler: targets, the portable tree,
 //! clamping and publication.
-#![cfg(target_os = "linux")]
 
 use crate::state::App;
 use crate::state::test_support::api::{
-    add_tab, answer_command, daemon_with_workspaces, events_after, failure, request, root_pane,
-    split_pane,
+    answer_command, daemon_with_workspaces, events_after, failure, request, root_pane, split_pane,
 };
+use crate::state::test_support::layout_commands::{adjusted, exported, two_tabs};
 use crate::state::tests::support::layouts::{balanced, chain, shell, sleeper, split};
 use crate::tests::block_on;
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,
-    schema::{
-        ErrorBody, LayoutApplyParams, LayoutDescription, LayoutNode, LayoutPane,
-        LayoutSetSplitRatioParams, ResponseResult, SplitDirection,
-    },
+    schema::{LayoutApplyParams, LayoutDescription, LayoutNode, LayoutPane, SplitDirection},
 };
 use maestro_workspace::tiling::PaneId;
 use serde_json::json;
-
-/// The layout an export answers with.
-fn exported(result: Result<ResponseResult, ErrorBody>) -> LayoutDescription {
-    match result {
-        Ok(ResponseResult::LayoutExport { layout }) => layout,
-        other => panic!("expected an exported layout: {other:?}"),
-    }
-}
-
-/// The layout a ratio change answers with.
-fn adjusted(result: Result<ResponseResult, ErrorBody>) -> LayoutDescription {
-    match result {
-        Ok(ResponseResult::LayoutSplitRatioSet { layout }) => layout,
-        other => panic!("expected the adjusted layout: {other:?}"),
-    }
-}
-
 /// An exported pane leaf in `cwd` with its public handle.
 fn leaf(pane_id: &str, cwd: &str, label: Option<&str>) -> LayoutNode {
     LayoutNode::Pane {
@@ -47,17 +26,6 @@ fn leaf(pane_id: &str, cwd: &str, label: Option<&str>) -> LayoutNode {
         },
     }
 }
-
-/// A workspace whose first tab holds one pane and whose second tab splits two.
-///
-/// Returns the daemon with the panes of the second tab: its root and the one split off it.
-fn two_tabs() -> (App, PaneId, PaneId) {
-    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = add_tab(&mut app, 0).unwrap();
-    let right = split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
-    (app, root, right)
-}
-
 /// The terminal of `pane` in the first workspace.
 fn terminal_of(app: &App, pane: PaneId) -> maestro_workspace::terminal_id::TerminalId {
     app.state.topology.workspaces[0]
@@ -65,7 +33,6 @@ fn terminal_of(app: &App, pane: PaneId) -> maestro_workspace::terminal_id::Termi
         .unwrap()
         .clone()
 }
-
 #[test]
 fn export_describes_the_focused_tab_as_a_portable_tree() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -81,7 +48,7 @@ fn export_describes_the_focused_tab_as_a_portable_tree() {
         .unwrap()
         .set_manual_label("tests");
     assert_eq!(
-        exported(request(&mut app, json!({"type": "layout.export"}))),
+        exported(request(&mut app, json!({"type": "layout.export"}))).unwrap(),
         LayoutDescription {
             workspace_id: "w1".into(),
             tab_id: "w1:t1".into(),
@@ -96,7 +63,6 @@ fn export_describes_the_focused_tab_as_a_portable_tree() {
         }
     );
 }
-
 #[test]
 fn export_carries_the_zoom_and_the_launch_command_of_a_pane() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -105,7 +71,7 @@ fn export_carries_the_zoom_and_the_launch_command_of_a_pane() {
     let terminal = terminal_of(&app, root);
     app.state.terminals.get_mut(&terminal).unwrap().launch_argv =
         Some(vec!["just".into(), "dev".into()]);
-    let layout = exported(request(&mut app, json!({"type": "layout.export"})));
+    let layout = exported(request(&mut app, json!({"type": "layout.export"}))).unwrap();
     assert!(layout.zoomed);
     let LayoutNode::Pane { pane } = layout.root else {
         panic!("a single pane exports as a leaf");
@@ -113,26 +79,9 @@ fn export_carries_the_zoom_and_the_launch_command_of_a_pane() {
     assert_eq!(pane.command, Some(vec!["just".into(), "dev".into()]));
     assert!(pane.env.is_empty());
 }
-
-#[test]
-fn export_names_its_tab_directly_or_through_one_of_its_panes() {
-    let (mut app, _, _) = two_tabs();
-    let default = exported(request(&mut app, json!({"type": "layout.export"})));
-    assert_eq!(default.tab_id, "w1:t1");
-    for wire in [
-        json!({"type": "layout.export", "tab_id": "w1:t2"}),
-        json!({"type": "layout.export", "pane_id": "w1:p3"}),
-    ] {
-        let layout = exported(request(&mut app, wire.clone()));
-        assert_eq!(layout.tab_id, "w1:t2", "{wire}");
-        assert_eq!(layout.focused_pane_id, "w1:p2", "{wire}");
-        assert!(matches!(layout.root, LayoutNode::Split { .. }), "{wire}");
-    }
-}
-
 #[test]
 fn export_refuses_a_target_that_is_missing_or_ambiguous() {
-    let (mut app, _, _) = two_tabs();
+    let (mut app, _, _) = two_tabs().unwrap();
     for wire in [
         json!({"type": "layout.export", "tab_id": "w1:t9"}),
         json!({"type": "layout.export", "pane_id": "w1:p9"}),
@@ -150,14 +99,13 @@ fn export_refuses_a_target_that_is_missing_or_ambiguous() {
         failure("layout_not_found", "layout target not found")
     );
 }
-
 #[test]
 fn a_split_ratio_change_is_answered_and_published() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let root = root_pane(&app, 0);
     split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
     let wire = json!({"type": "layout.set_split_ratio", "path": [], "ratio": 0.72});
-    let layout = adjusted(request(&mut app, wire));
+    let layout = adjusted(request(&mut app, wire)).unwrap();
     let LayoutNode::Split { ratio, .. } = layout.root else {
         panic!("the tab is split");
     };
@@ -173,39 +121,6 @@ fn a_split_ratio_change_is_answered_and_published() {
         "{events:?}"
     );
 }
-
-#[test]
-fn a_split_ratio_change_reaches_a_nested_split_by_its_path() {
-    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
-    let right = split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
-    split_pane(&mut app, 0, right, SplitDirection::Down).unwrap();
-    let wire = json!({"type": "layout.set_split_ratio", "path": [true], "ratio": 0.3});
-    let layout = adjusted(request(&mut app, wire));
-    let LayoutNode::Split { ratio, second, .. } = layout.root else {
-        panic!("the tab is split");
-    };
-    let LayoutNode::Split { ratio: nested, .. } = *second else {
-        panic!("the second child is split");
-    };
-    assert!((ratio - 0.5).abs() < f32::EPSILON);
-    assert!((nested - 0.3).abs() < f32::EPSILON);
-}
-
-#[test]
-fn a_split_ratio_is_kept_within_the_range_a_split_allows() {
-    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
-    split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
-    for (requested, kept) in [(5.0, 0.9), (-1.0, 0.1)] {
-        let wire = json!({"type": "layout.set_split_ratio", "path": [], "ratio": requested});
-        let LayoutNode::Split { ratio, .. } = adjusted(request(&mut app, wire)).root else {
-            panic!("the tab is split");
-        };
-        assert!((ratio - kept).abs() < f32::EPSILON, "{requested}");
-    }
-}
-
 #[test]
 fn a_split_ratio_for_a_missing_split_is_refused_without_a_change() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -227,65 +142,6 @@ fn a_split_ratio_for_a_missing_split_is_refused_without_a_change() {
     assert!(!app.state.session_dirty);
     assert!(events_after(&app, 0).is_empty());
 }
-
-#[test]
-fn a_split_ratio_that_is_not_finite_is_refused() {
-    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let root = root_pane(&app, 0);
-    split_pane(&mut app, 0, root, SplitDirection::Right).unwrap();
-    for ratio in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
-        let command = RpcCommand::LayoutSetSplitRatio(LayoutSetSplitRatioParams {
-            tab_id: None,
-            pane_id: None,
-            path: Vec::new(),
-            ratio,
-        });
-        let result = block_on(answer_command(&mut app, command));
-        assert_eq!(
-            result,
-            failure("invalid_ratio", "ratio must be finite"),
-            "{ratio}"
-        );
-    }
-    assert!(events_after(&app, 0).is_empty());
-}
-
-#[test]
-fn a_split_ratio_names_its_tab_directly_or_through_one_of_its_panes() {
-    let (mut app, _, _) = two_tabs();
-    for (target, tab) in [
-        (json!({"tab_id": "w1:t2"}), "w1:t2"),
-        (json!({"pane_id": "w1:p3"}), "w1:t2"),
-    ] {
-        let mut wire = json!({"type": "layout.set_split_ratio", "path": [], "ratio": 0.4});
-        wire.as_object_mut()
-            .unwrap()
-            .extend(target.as_object().unwrap().clone());
-        assert_eq!(adjusted(request(&mut app, wire)).tab_id, tab, "{target}");
-    }
-    let published = events_after(&app, 0);
-    assert!(
-        published.iter().all(|event| matches!(
-            event,
-            EventData::LayoutUpdated { layout } if layout.tab_id == "w1:t2"
-        )) && published.len() == 2,
-        "{published:?}"
-    );
-    for wire in [
-        json!({"type": "layout.set_split_ratio", "path": [], "ratio": 0.4, "tab_id": "w1:t9"}),
-        json!({
-            "type": "layout.set_split_ratio", "path": [], "ratio": 0.4,
-            "tab_id": "w1:t1", "pane_id": "w1:p1"
-        }),
-    ] {
-        assert_eq!(
-            request(&mut app, wire.clone()),
-            failure("layout_not_found", "layout target not found"),
-            "{wire}"
-        );
-    }
-}
-
 /// The tab count, terminal count and event count that a refused apply must leave as they were.
 fn footprint(app: &mut App) -> (usize, usize, usize, bool) {
     (
@@ -295,7 +151,6 @@ fn footprint(app: &mut App) -> (usize, usize, usize, bool) {
         app.state.session_dirty,
     )
 }
-
 #[test]
 fn applying_to_a_target_that_is_missing_or_ambiguous_is_refused_before_a_process_starts() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -335,7 +190,6 @@ fn applying_to_a_target_that_is_missing_or_ambiguous_is_refused_before_a_process
     );
     assert_eq!(footprint(&mut app), before);
 }
-
 #[test]
 fn a_leaf_that_cannot_be_launched_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -366,7 +220,6 @@ fn a_leaf_that_cannot_be_launched_is_refused_before_anything_is_created() {
     }
     assert_eq!(footprint(&mut app), before);
 }
-
 #[test]
 fn a_layout_split_that_is_not_finite_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -392,7 +245,6 @@ fn a_layout_split_that_is_not_finite_is_refused_before_anything_is_created() {
     );
     assert_eq!(footprint(&mut app), before);
 }
-
 #[test]
 fn a_layout_deeper_than_sixteen_levels_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -407,7 +259,6 @@ fn a_layout_deeper_than_sixteen_levels_is_refused_before_anything_is_created() {
     }
     assert_eq!(footprint(&mut app), before);
 }
-
 #[test]
 fn a_layout_of_more_than_twenty_four_panes_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();

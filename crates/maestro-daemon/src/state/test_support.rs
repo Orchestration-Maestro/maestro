@@ -6,12 +6,20 @@
 
 /// A daemon answering workspace commands, with workspaces that need no live process.
 pub mod api;
+/// Helpers that the daemon api tests share between the integration program and the unit tests.
+pub mod daemon_api;
+/// Helpers that the layout commands tests share between the integration program and the unit tests.
+pub mod layout_commands;
 /// Helpers that the pane close tests share between the integration program and the unit tests.
 pub mod pane_close;
 /// Helpers that the pane commands tests share between the integration program and the unit tests.
 pub mod pane_commands;
 /// Helpers that the pane input tests share between the integration program and the unit tests.
 pub mod pane_input;
+/// Helpers that the pane metadata tests share between the integration program and the unit tests.
+pub mod pane_metadata;
+/// Helpers that the pane move tests share between the integration program and the unit tests.
+pub mod pane_move;
 /// Helpers that the pane read tests share between the integration program and the unit tests.
 pub mod pane_read;
 /// Helpers that the pane rename tests share between the integration program and the unit tests.
@@ -24,6 +32,8 @@ pub mod pane_swap;
 pub mod pane_zoom;
 /// Native launch adapters for the daemon-owner tests.
 pub mod spawning;
+/// Helpers that the workspace commands tests share between the integration program and the unit tests.
+pub mod workspace_commands;
 
 use std::sync::{Arc, RwLock};
 

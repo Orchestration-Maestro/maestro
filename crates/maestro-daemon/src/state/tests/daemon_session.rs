@@ -1,53 +1,27 @@
 //! Debounced persistence owns captured jobs and completes the final writer.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
-use crate::state::test_support::spawning;
+use crate::state::test_support::api::daemon;
 use crate::tests::block_on;
-
-use crate::{
-    locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config, state::App,
-};
-use std::{
-    sync::{Arc, RwLock},
-    time::{Duration, Instant},
-};
-
-/// Constructs an empty daemon without starting a child or reading host settings.
-fn app() -> App {
-    let manifests = Arc::new(RwLock::new(
-        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
-    ));
-    let (launch, receiver) = spawning::launch_inputs(&[], manifests).unwrap();
-    App::new(
-        &Config::default(),
-        || 0,
-        launch,
-        receiver,
-        EventHub::default(),
-    )
-}
-
+use crate::{locations::DaemonPaths, service::event_hub::EventHub};
+use std::time::{Duration, Instant};
 /// Owns an isolated root for one named daemon's persistence paths.
 fn paths() -> (maestro_test_directory::Scratch, DaemonPaths) {
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let paths = DaemonPaths::new(directory.path().to_str().unwrap(), Some("session-test")).unwrap();
     (directory, paths)
 }
-
 #[test]
 fn daemon_session_dirty_flag_schedules_debounced_save() {
-    let mut app = app();
+    let mut app = daemon().unwrap();
     app.launch.no_session = false;
     app.state.session_dirty = true;
     app.sync_session_save_schedule();
     assert!(!app.state.session_dirty);
     assert!(app.session_save_deadline.is_some());
 }
-
 #[test]
 fn daemon_next_loop_deadline_includes_session_save_deadline() {
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let now = Instant::now();
     app.session_save_deadline = Some(now + Duration::from_secs(2));
     app.next_resize_poll = now + Duration::from_secs(5);
@@ -57,10 +31,9 @@ fn daemon_next_loop_deadline_includes_session_save_deadline() {
         app.session_save_deadline
     );
 }
-
 #[test]
 fn daemon_headless_next_loop_deadline_ignores_resize_poll() {
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let now = Instant::now();
     app.next_resize_poll = now + Duration::from_millis(100);
     app.session_save_deadline = Some(now + Duration::from_secs(2));
@@ -70,27 +43,24 @@ fn daemon_headless_next_loop_deadline_ignores_resize_poll() {
         app.session_save_deadline
     );
 }
-
 #[test]
 fn daemon_headless_next_loop_deadline_returns_none_when_resize_poll_is_only_deadline() {
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let now = Instant::now();
     app.next_resize_poll = now.checked_sub(Duration::from_millis(1)).unwrap();
     assert_eq!(app.next_headless_loop_deadline(now, false), None);
 }
-
 #[test]
 fn daemon_due_session_save_deadline_is_cleared() {
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     app.session_save_deadline = Some(Instant::now().checked_sub(Duration::from_secs(1)).unwrap());
     block_on(app.handle_scheduled_tasks(Instant::now(), &paths));
     assert!(app.session_save_deadline.is_none());
 }
-
 #[test]
 fn daemon_due_session_save_starts_background_writer() {
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let (_directory, paths) = paths();
     app.launch.no_session = false;
     app.state
@@ -105,11 +75,10 @@ fn daemon_due_session_save_starts_background_writer() {
     assert!(std::path::Path::new(&paths.snapshot_path()).exists());
     std::fs::remove_dir_all(paths.data_dir()).unwrap();
 }
-
 #[test]
 fn daemon_background_session_save_reschedules_when_writer_is_busy() {
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     app.launch.no_session = false;
     let (release, wait) = std::sync::mpsc::channel();
     app.session_save_thread = Some(std::thread::spawn(move || {
@@ -122,11 +91,10 @@ fn daemon_background_session_save_reschedules_when_writer_is_busy() {
     app.launch.no_session = true;
     app.save_session_now(&paths);
 }
-
 #[test]
 fn daemon_final_session_save_joins_background_writer_before_returning() {
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let (release, wait) = std::sync::mpsc::channel();
     let (done, received) = std::sync::mpsc::channel();
     app.session_save_thread = Some(std::thread::spawn(move || {
@@ -141,23 +109,10 @@ fn daemon_final_session_save_joins_background_writer_before_returning() {
     received.try_recv().unwrap();
     assert!(app.session_save_thread.is_none());
 }
-
-#[test]
-fn daemon_hidden_render_attempt_keeps_presentation_cadence_available() {
-    let mut app = app();
-    let first = Instant::now();
-    app.record_render_attempt(first, true);
-    let hidden = first + Duration::from_millis(16);
-    app.record_render_attempt(hidden, false);
-    let echo = hidden + Duration::from_millis(1);
-    assert!(!app.can_render_now(echo));
-    assert!(app.can_present_now(echo));
-}
-
 #[test]
 fn run_consumes_due_work_and_queued_observations_before_final_save() {
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let past = Instant::now().checked_sub(Duration::from_secs(1)).unwrap();
     app.config_diagnostic_deadline = Some(past);
     app.state.config_diagnostic = Some("temporary diagnostic".into());
@@ -189,11 +144,10 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
     assert_eq!(app.state.update_available.as_deref(), Some("9.9.9"));
     assert!(app.session_save_thread.is_none());
 }
-
 #[test]
 fn unchanged_toasts_keep_their_original_deadline_and_expire_exactly_once() {
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     app.state.toast_config.delivery = crate::settings::model::ToastDelivery::Workspace;
     let update = || crate::events::AppEvent::UpdateReady {
         version: "9.9.9".into(),
@@ -213,10 +167,9 @@ fn unchanged_toasts_keep_their_original_deadline_and_expire_exactly_once() {
     assert!(app.toast_deadline.is_none());
     assert!(!block_on(app.handle_scheduled_tasks(deadline, &paths)));
 }
-
 #[test]
 fn disabled_dirty_saves_stay_idle_and_an_empty_enabled_save_removes_both_files() {
-    let mut app = app();
+    let mut app = daemon().unwrap();
     app.state.session_dirty = true;
     app.sync_session_save_schedule();
     assert!(!app.state.session_dirty);
@@ -233,12 +186,11 @@ fn disabled_dirty_saves_stay_idle_and_an_empty_enabled_save_removes_both_files()
     assert!(!std::path::Path::new(&paths.history_path()).exists());
     std::fs::remove_dir_all(paths.data_dir()).unwrap();
 }
-
 #[test]
 fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
     use crate::terminal::model::AgentMetadataReport;
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     // No sidebar row asks for repository status, so no refresh deadline joins the metadata ones.
     app.config.ui.sidebar.spaces.rows = Vec::new();
     let (pane, ()) = app
@@ -292,12 +244,11 @@ fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
     assert_metadata_expiry_events(&app.event_hub);
     assert_eq!(app.next_headless_loop_deadline(deadline, false), None);
 }
-
 #[test]
 fn scheduled_managed_timeout_publishes_the_changed_pane() {
     use crate::terminal::model::{ManagedAgentLaunch, TerminalState};
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let (pane, ()) = app
         .state
         .topology
@@ -332,7 +283,6 @@ fn scheduled_managed_timeout_publishes_the_changed_pane() {
             ))
     );
 }
-
 /// Observes all three metadata publications after the scheduled consuming operation.
 fn assert_metadata_expiry_events(hub: &EventHub) {
     use maestro_protocol::events::EventData;
@@ -346,12 +296,11 @@ fn assert_metadata_expiry_events(hub: &EventHub) {
     assert!(events.iter().any(|(_, event)| matches!(event, EventData::PaneUpdated { pane } if pane.tokens.is_empty() && pane.revision > 0)));
     assert!(events.iter().any(|(_, event)| matches!(event, EventData::WorkspaceMetadataUpdated { workspace } if workspace.tokens.is_empty())));
 }
-
 #[test]
 fn simultaneous_metadata_and_managed_expiry_still_publishes_the_managed_pane() {
     use crate::terminal::model::{AgentMetadataReport, ManagedAgentLaunch, TerminalState};
     let (_directory, paths) = paths();
-    let mut app = app();
+    let mut app = daemon().unwrap();
     let (pane, ()) = app
         .state
         .topology
