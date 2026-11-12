@@ -13,7 +13,7 @@ pub enum Request {
 
 /// Resolve a request number in the plain or question-mark namespace.
 #[must_use]
-pub fn req_from_int(value: u16, question: bool) -> Option<Request> {
+pub(crate) fn req_from_int(value: u16, question: bool) -> Option<Request> {
     match (value, question) {
         (5, false) => Some(Request::OperatingStatus),
         (6, false) => Some(Request::CursorPosition),

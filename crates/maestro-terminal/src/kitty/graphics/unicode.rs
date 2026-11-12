@@ -242,7 +242,7 @@ impl Placement {
     ///
     /// # Errors
     /// Returns an error for missing prototypes or fragments outside the grid.
-    pub fn render_placement(
+    pub(crate) fn render_placement(
         &self,
         storage: &ImageStorage,
         image: &Image,

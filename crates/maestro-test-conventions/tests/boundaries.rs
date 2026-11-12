@@ -1531,7 +1531,7 @@ fn interactive_session_setup_rejects_bypasses() {
         assert_setup_rejected(&workspace, &path, relative);
         std::fs::remove_file(&path).unwrap();
     }
-    workspace.in_source_tests("maestro-chat", false);
+    workspace.library_test_target("maestro-chat", false);
     for spelling in DUPLICATE_SETUP_SPELLINGS {
         let path = source(
             &workspace,

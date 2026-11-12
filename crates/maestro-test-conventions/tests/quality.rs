@@ -102,7 +102,7 @@ fn guest_crate_cannot_omit_its_qualified_lint_table() {
 fn test_files_and_trailing_test_modules_do_not_count() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     workspace.list(&[("maestro-tui", "core")]);
     let root = workspace.root.path().join("crates/tui");
     let tests = "// Technical.\n".repeat(501);
@@ -142,7 +142,7 @@ fn test_files_and_trailing_test_modules_do_not_count() {
 fn multiple_trailing_test_modules_do_not_count() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.path().join("crates/tui/src/lib.rs");
     std::fs::write(
@@ -186,7 +186,7 @@ fn lint_inheritance_uses_the_manifest_table() {
 fn test_modules_with_extra_attributes_do_not_count_as_production() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     workspace.list(&[("maestro-tui", "core")]);
     let root = workspace.root.path().join("crates/tui/src");
     std::fs::write(root.join("tests.rs"), "").unwrap();
@@ -217,7 +217,7 @@ fn test_modules_with_extra_attributes_do_not_count_as_production() {
 fn nested_test_items_do_not_count_as_production() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.path().join("crates/tui/src/lib.rs");
     std::fs::write(&path, format!(
@@ -335,7 +335,7 @@ fn forbidden_lint_groups_cannot_be_downgraded() {
 fn production_sharing_lines_with_test_items_still_counts() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.path().join("crates/tui/src/lib.rs");
     let mut items = String::new();
@@ -359,7 +359,7 @@ fn production_sharing_lines_with_test_items_still_counts() {
 fn five_hundred_production_lines_with_separate_test_module_pass() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.path().join("crates/tui/src/lib.rs");
     let mut items = String::new();
@@ -378,7 +378,7 @@ fn leading_byte_order_mark_preserves_production_count() {
 fn assert_production_count_unchanged(vary: fn(&str) -> String) {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     workspace.list(&[("maestro-tui", "core")]);
     let path = workspace.root.path().join("crates/tui/src/lib.rs");
     let mut production = String::new();
@@ -838,7 +838,7 @@ fn associated_test_spans_preserve_production_boundaries() {
     for (prefix, gated) in cases {
         let workspace = Workspace::new();
         workspace.member("tui", "maestro-tui", "");
-        workspace.in_source_tests("tui", true);
+        workspace.library_test_target("tui", true);
         workspace.list(&[("maestro-tui", "core")]);
         let path = workspace
             .root

@@ -3,6 +3,7 @@
 
 mod directory_observations;
 mod drive_prefix;
+mod home_directory;
 mod path_behavior;
 mod slash_spelling;
 mod tilde;

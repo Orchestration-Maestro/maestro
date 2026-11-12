@@ -212,7 +212,7 @@ impl TerminalState {
     }
 
     /// Clear the name, its session owner and managed launch state.
-    pub fn clear_agent_name(&mut self) {
+    pub(crate) fn clear_agent_name(&mut self) {
         self.agent_name = None;
         self.agent_name_owner = None;
         self.managed_agent = None;

@@ -115,11 +115,11 @@ pub struct UiConfig {
     /// Force a full host-terminal redraw when the outer terminal regains focus. Default: true.
     pub redraw_on_focus_gained: Flag,
     /// Lines to scroll per mouse wheel notch. Default: 3.
-    pub mouse_scroll_lines: Option<NonZeroUsize>,
+    pub(crate) mouse_scroll_lines: Option<NonZeroUsize>,
     /// Ask for confirmation before closing a workspace. Default: true.
     pub confirm_close: Flag,
     /// Ask for a tab name before creating a new tab. Default: true.
-    pub prompt_new_tab_name: Flag,
+    pub(crate) prompt_new_tab_name: Flag,
     /// Ask for a workspace name before interactive creation. Default: false.
     pub prompt_new_workspace_name: Flag,
     /// Draw borders around split panes. Default: true.
@@ -127,19 +127,19 @@ pub struct UiConfig {
     /// Draw borders along the outside edge of the pane area. Default: true.
     pub pane_outer_borders: Flag,
     /// Draw interactive scrollbars beside terminal panes. Default: true.
-    pub pane_scrollbars: Flag,
+    pub(crate) pane_scrollbars: Flag,
     /// Keep split panes visually separated instead of sharing divider borders. Default: true.
     pub pane_gaps: Flag,
     /// Show agent labels in split pane borders when no manual pane label is set. Default: false.
     pub show_agent_labels_on_pane_borders: Flag,
     /// Hide the tab row when the workspace has one tab. Default: false.
-    pub hide_tab_bar_when_single_tab: Flag,
+    pub(crate) hide_tab_bar_when_single_tab: Flag,
     /// Desktop tab row placement. Default: top.
-    pub tab_bar_position: TabBarPositionConfig,
+    pub(crate) tab_bar_position: TabBarPositionConfig,
     /// Ordered entries shown at the right edge of the desktop tab row. Empty by default.
     pub tab_bar_right: Vec<TabBarRightEntryConfig>,
     /// Text inserted between visible right-side tab bar entries. Default: one space.
-    pub tab_bar_right_separator: String,
+    pub(crate) tab_bar_right_separator: String,
     /// Format for the outer terminal window title. Empty leaves the title alone.
     /// Default: "{hostname}: {workspace}".
     pub window_title: String,

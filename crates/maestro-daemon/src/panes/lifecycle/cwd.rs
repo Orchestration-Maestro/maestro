@@ -22,7 +22,7 @@ impl PaneRuntime {
     ///
     /// # Errors
     /// Returns the join error when `read` panics or the runtime shuts down first.
-    pub async fn observe_processes<T: Send + 'static>(
+    pub(crate) async fn observe_processes<T: Send + 'static>(
         &self,
         read: impl FnOnce(u32, ProcessDetectionMode) -> T + Send + 'static,
     ) -> Result<Option<T>, JoinError> {
@@ -47,7 +47,7 @@ impl PaneRuntime {
     }
 
     /// Uses a traversable foreground leader directory, falling back to the pane cwd.
-    pub async fn follow_cwd(&self) -> Option<PathBuf> {
+    pub(crate) async fn follow_cwd(&self) -> Option<PathBuf> {
         self.io
             .foreground_process_group_id()
             .await

@@ -67,7 +67,7 @@ impl Page {
     }
 
     /// Remove a cell's link reference; refresh row metadata separately after the batch.
-    pub fn clear_hyperlink(&mut self, position: CellPosition) {
+    pub(crate) fn clear_hyperlink(&mut self, position: CellPosition) {
         let index = self.cell_index(position);
         if let Some(id) = self.hyperlink_map.remove(&index) {
             self.release_hyperlink(id);
@@ -76,7 +76,7 @@ impl Page {
     }
 
     /// Clear the row flag when no addressable cell retains a hyperlink.
-    pub fn update_row_hyperlink_flag(&mut self, y: u16) {
+    pub(crate) fn update_row_hyperlink_flag(&mut self, y: u16) {
         if !self.get_cells(y).iter().any(|cell| cell.hyperlink()) {
             self.get_row_mut(y).set_hyperlink(false);
         }

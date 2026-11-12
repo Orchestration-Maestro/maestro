@@ -1,10 +1,26 @@
-//! Real filesystem sockets through the public native transport.
+//! Real filesystem sockets through the daemon's native transport.
+#![cfg(unix)]
 
-use super::support::Directory;
 use interprocess::local_socket::traits::Listener as _;
-use maestro_ipc::local_socket as local;
+use maestro_daemon::service::local_socket as local;
 use std::fs;
 use std::io::{self, Read, Write};
+use std::path::Path;
+
+/// Own a newly created test directory until its socket handles have dropped.
+struct Directory(maestro_test_directory::Scratch);
+
+impl Directory {
+    /// Create a unique directory without replacing an existing entry.
+    fn new() -> Self {
+        Self(maestro_test_directory::Scratch::new_socket().unwrap())
+    }
+
+    /// The directory this test owns.
+    fn path(&self) -> &Path {
+        self.0.path()
+    }
+}
 
 #[test]
 fn socket_transport_connects_and_preserves_file_ownership() {
@@ -133,7 +149,7 @@ fn socket_permissions_are_owner_only() {
         0o600
     );
     fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).unwrap();
-    maestro_ipc::socket_paths::restrict_socket_permissions(&path).unwrap();
+    maestro_daemon::service::local_socket::paths::restrict_socket_permissions(&path).unwrap();
     assert_eq!(
         fs::metadata(&path).unwrap().permissions().mode() & 0o777,
         0o600
@@ -207,7 +223,8 @@ fn socket_prepare_rejects_live_listener_with_busy_text() {
     assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
     assert_eq!(error.to_string(), "caller busy message");
     assert_eq!(calls.get(), 1);
-    let error = maestro_ipc::socket_paths::prepare_socket_path(&path).unwrap_err();
+    let error =
+        maestro_daemon::service::local_socket::paths::prepare_socket_path(&path).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
     assert_eq!(
         error.to_string(),
@@ -228,7 +245,7 @@ fn socket_prepare_removes_stale_file() {
     let path = directory.path().join("stale.sock");
     drop(local::bind_local_listener(&path).unwrap());
     assert!(path.exists());
-    drop(maestro_ipc::socket_paths::prepare_socket_path(&path).unwrap());
+    drop(maestro_daemon::service::local_socket::paths::prepare_socket_path(&path).unwrap());
     assert!(!path.exists());
     let _rebound = local::bind_local_listener(&path).unwrap();
     assert!(path.exists());

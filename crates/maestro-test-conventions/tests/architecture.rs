@@ -2403,7 +2403,6 @@ fn test_process_inventory_matches_foundation_contract() {
 fn workspace_daemon_owners_are_core() {
     for name in [
         "maestro-protocol",
-        "maestro-ipc",
         "maestro-terminal",
         "maestro-workspace",
         "maestro-detection",
@@ -2737,7 +2736,6 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
-    "maestro-ipc",
     "maestro-listing",
     "maestro-lock",
     "maestro-models",

@@ -1,17 +1,16 @@
 //! Integer prefixes and rounding shared by documents, spreadsheets and reports.
 
-use maestro_text::is_whitespace_scalar;
+use crate::is_whitespace_scalar;
 
 /// Read a base-ten integer prefix, as an explicit decimal argument does.
-#[cfg(not(target_arch = "wasm32"))]
 #[must_use]
-pub(crate) fn decimal_integer_prefix(value: &str) -> f64 {
+pub fn decimal_integer_prefix(value: &str) -> f64 {
     integer(value, 10, false)
 }
 
 /// Read a signed integer prefix with optional hexadecimal notation.
 #[must_use]
-pub(crate) fn integer_prefix(value: &str, radix: u32) -> f64 {
+pub fn integer_prefix(value: &str, radix: u32) -> f64 {
     integer(value, radix, true)
 }
 
@@ -43,7 +42,7 @@ fn integer(value: &str, radix: u32, hexadecimal: bool) -> f64 {
 /// Round to the nearest integer, moving an exact half toward positive infinity
 /// and keeping the sign of a rounded negative zero.
 #[must_use]
-pub(crate) fn round(value: f64) -> f64 {
+pub fn round(value: f64) -> f64 {
     let floor = value.floor();
     let rounded = if value - floor >= 0.5 {
         floor + 1.0

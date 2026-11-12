@@ -31,7 +31,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
 
     /// Whether closing `pane` would leave its workspace without any pane.
     #[must_use]
-    pub fn close_pane_would_close_workspace(&self, workspace: usize, pane: PaneId) -> bool {
+    pub(crate) fn close_pane_would_close_workspace(&self, workspace: usize, pane: PaneId) -> bool {
         self.topology
             .workspaces
             .get(workspace)

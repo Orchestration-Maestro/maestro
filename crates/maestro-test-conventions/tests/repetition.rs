@@ -115,7 +115,7 @@ fn duplicate_assertions_remain_review_judgement() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     std::fs::write(
         workspace.root.path().join("crates/tui/src/lib.rs"),
         "#[test]\nfn sample() {\n assert_eq!(value, 3);\n assert_eq!( value , 3 );\n}\n",
@@ -249,7 +249,7 @@ fn source_test_module_declarations_require_local_convention() {
         "mod tests {}",
         "#[cfg(test)] mod helpers {}",
     ] {
-        workspace.in_source_tests("tui", declaration.contains("cfg(test)"));
+        workspace.library_test_target("tui", declaration.contains("cfg(test)"));
         std::fs::write(&path, declaration).unwrap();
         match check_workspace(workspace.root.path()) {
             Ok(()) => failures.push(format!("accepted invalid declaration: {declaration}")),
@@ -283,7 +283,7 @@ fn source_test_only_files_require_recognized_layout() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.list(&[("maestro-tui", "core")]);
-    workspace.in_source_tests("tui", true);
+    workspace.library_test_target("tui", true);
     let path = workspace
         .root
         .path()
@@ -341,7 +341,7 @@ fn nested_test_module_declarations_follow_layout_conventions() {
         "trait X { fn outer() { BODY } }",
     ] {
         for declaration in ["#[cfg(test)] mod helpers {}", "mod tests {}"] {
-            workspace.in_source_tests("tui", declaration.contains("cfg(test)"));
+            workspace.library_test_target("tui", declaration.contains("cfg(test)"));
             std::fs::write(&path, enclosing.replace("BODY", declaration)).unwrap();
             let error = check_workspace(workspace.root.path()).unwrap_err();
             assert!(error.contains(&format!("{}:1:", path.display())), "{error}");

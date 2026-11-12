@@ -2,7 +2,7 @@
 use super::{Block, capture};
 use crate::{
     Kind, MarkedOptions,
-    helpers::rtrim,
+    delimiters::rtrim,
     rules,
     source::{Segmented, Source},
 };

@@ -68,7 +68,7 @@ impl Screen {
     ///
     /// # Panics
     /// Panics if the range lies outside the selected page row.
-    pub fn clear_unprotected_cells(&mut self, node: NodeId, y: u16, columns: Range<u16>) {
+    pub(crate) fn clear_unprotected_cells(&mut self, node: NodeId, y: u16, columns: Range<u16>) {
         if columns.is_empty() {
             return;
         }

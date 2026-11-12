@@ -79,8 +79,8 @@ impl Workspace {
         fs::write(self.root.path().join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = {{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }}\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = {{ level = \"forbid\", priority = -1 }}\nmodule_name_repetitions = \"forbid\"\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
     }
 
-    /// Set whether the member's library holds tests in its `src`, which decides its test target.
-    pub fn in_source_tests(&self, directory: &str, tests: bool) {
+    /// Write the member's `[lib] test` setting: `true` keeps the library test executable, `false` skips it.
+    pub fn library_test_target(&self, directory: &str, tests: bool) {
         let path = self
             .root
             .path()
@@ -240,12 +240,12 @@ pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &st
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(&path, contents).unwrap();
     if contains_tests(relative, contents) {
-        workspace.in_source_tests(member, true);
+        workspace.library_test_target(member, true);
     }
     path
 }
 
-/// Whether an authored library source holds tests: a test layout, gate or attribute.
+/// Whether an authored library source holds tests: a test layout, a `#[cfg(test)]` gate or a `#[test]` attribute.
 fn contains_tests(relative: &str, contents: &str) -> bool {
     relative.starts_with("src/")
         && (contents.contains("#[cfg(test)]")

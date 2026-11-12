@@ -1,9 +1,9 @@
 //! File-pattern matching and directory-scoped ignore decisions.
 
+mod glob;
 /// Ordered ignore rules with literal directory scopes.
 pub mod ignore;
-mod minimatch;
-pub use minimatch::{
+pub use glob::{
     Minimatch, MinimatchOptions, MmRegExp, ParseReturnFiltered, PatternError, Platform, minimatch,
     minimatch_with_nocase,
 };

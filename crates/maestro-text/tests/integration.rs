@@ -6,6 +6,7 @@ mod flag_rules;
 mod locale_rules;
 mod newline_rules;
 mod number_formatting;
+mod numeric;
 mod text_rules;
 mod utf8_decoding;
 mod utf8_streaming;
@@ -17,3 +18,4 @@ mod date_time_selection;
 mod shell_quote;
 
 mod terminal_controls;
+mod uri;

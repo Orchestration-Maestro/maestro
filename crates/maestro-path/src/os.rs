@@ -1,4 +1,6 @@
-//! Native home-directory selection and its supplied-observation helper.
+//! Native home-directory selection, its supplied-observation helper and its text form.
+
+use std::{io, path::PathBuf};
 
 /// The supplied `home` when present, otherwise what `account` gives.
 ///
@@ -27,4 +29,30 @@ pub fn native_homedir() -> Option<std::path::PathBuf> {
             .map(std::path::PathBuf::from),
         std::env::home_dir,
     )
+}
+
+/// The home directory as text.
+///
+/// # Errors
+/// Returns a not-found error when the host knows no home directory, or an invalid-data one
+/// when the home directory is not valid UTF-8.
+pub fn home_directory() -> io::Result<String> {
+    home_directory_text(native_homedir())
+}
+
+/// Convert one observed native home into its text.
+///
+/// # Errors
+/// Returns a not-found error for an unknown home, or an invalid-data one for bytes that are
+/// not valid UTF-8.
+pub fn home_directory_text(home: Option<PathBuf>) -> io::Result<String> {
+    home.ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))?
+        .into_os_string()
+        .into_string()
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "home directory is not valid UTF-8",
+            )
+        })
 }
