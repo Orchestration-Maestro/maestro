@@ -58,3 +58,21 @@ fn maestro_plain_json_null_and_number_like_text_remain_valid() {
         assert!(result.event.is_ok());
     }
 }
+
+/// Counts how often the encoder asks it to serialize.
+struct Walks<'a>(&'a std::cell::Cell<u32>);
+
+impl Serialize for Walks<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.set(self.0.get() + 1);
+        serializer.serialize_f64(1.5)
+    }
+}
+
+#[test]
+fn encoding_checks_and_prints_in_one_walk() {
+    let walks = std::cell::Cell::new(0);
+    let text = crate::types::finite::encode_value(&Walks(&walks)).unwrap();
+    assert_eq!(text, "1.5");
+    assert_eq!(walks.get(), 1);
+}

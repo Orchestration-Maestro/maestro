@@ -33,13 +33,17 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
 }
 
 impl<E: ExtensionExecution> ExtensionRunner<E> {
-    /// Copies initial message payloads once, then chains mutable edits and replacements.
+    /// Returns the messages as they are when no extension listens; otherwise copies the
+    /// initial message payloads once, then chains mutable edits and replacements.
     /// # Errors
     /// Returns an error-listener failure.
     pub async fn emit_context<C: CustomAgentMessages + Clone + 'static>(
         &self,
         messages: &[AgentMessage<C>],
     ) -> Result<Vec<AgentMessage<C>>, EventError> {
+        if !self.has_handlers("context") {
+            return Ok(messages.to_vec());
+        }
         let context = self.create_context();
         let mut cursor = HandlerCursor::default();
         let mut event = ContextEvent {

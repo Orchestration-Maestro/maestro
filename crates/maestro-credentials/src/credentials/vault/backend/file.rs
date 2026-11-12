@@ -4,7 +4,8 @@ use maestro_lock::{CreationMode, WriteLock};
 use std::fs::{self, OpenOptions, TryLockError};
 use std::io::{self, ErrorKind};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::sync::Mutex;
+use std::time::{Duration, SystemTime};
 
 /// Number of waits before scheduled acquisition gives up on contention.
 const LOCK_WAITS: u32 = 10;
@@ -22,6 +23,49 @@ pub struct FileAuthStorageBackend {
     draw: fn() -> f64,
     /// Blocking wait used by synchronous rereads.
     wait: fn(Duration),
+    /// The text last read under the lock, with the file identity it was read at.
+    remembered: Mutex<Option<(FileIdentity, String)>>,
+}
+
+/// What an edited, replaced or restored credential file changes: its size, modification time
+/// and, where the platform reports them, device, inode and change time. Maestro writes the
+/// file in place, so the inode stays; the change time moves with every write, at the
+/// filesystem's timestamp resolution, and cannot be set back, which separates an edit that
+/// restores the old modification time. Writes inside one timestamp tick look the same, and
+/// so do equal-size edits where the platform reports no change time.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FileIdentity {
+    /// Size in bytes.
+    len: u64,
+    /// Modification time at the platform's resolution.
+    modified: SystemTime,
+    /// Device and inode numbers, absent where the platform has none.
+    node: Option<(u64, u64)>,
+    /// Change time as seconds and nanoseconds, absent where the platform has none.
+    changed: Option<(i64, i64)>,
+}
+
+impl FileIdentity {
+    /// The identity of the file at `path`, following links; `None` when it cannot be read.
+    fn of(path: &Path) -> Option<Self> {
+        let metadata = fs::metadata(path).ok()?;
+        #[cfg(unix)]
+        let (node, changed) = {
+            use std::os::unix::fs::MetadataExt;
+            (
+                Some((metadata.dev(), metadata.ino())),
+                Some((metadata.ctime(), metadata.ctime_nsec())),
+            )
+        };
+        #[cfg(not(unix))]
+        let (node, changed) = (None, None);
+        Some(Self {
+            len: metadata.len(),
+            modified: metadata.modified().ok()?,
+            node,
+            changed,
+        })
+    }
 }
 
 impl FileAuthStorageBackend {
@@ -32,6 +76,7 @@ impl FileAuthStorageBackend {
             auth_path: auth_path.to_owned(),
             draw: maestro_models::unit_random,
             wait: std::thread::sleep,
+            remembered: Mutex::new(None),
         }
     }
 
@@ -176,9 +221,23 @@ fn publish(holder: WriteLock, text: &str) -> io::Result<()> {
 }
 
 impl AuthStorageBackend for FileAuthStorageBackend {
+    /// Returns the remembered text while the file keeps the identity it was read at, without
+    /// locking; otherwise reads it again under the lock.
     fn read_waiting(&self) -> Result<Option<String>, AuthStorageError> {
+        let path = Path::new(&self.auth_path);
+        let unchanged = FileIdentity::of(path).and_then(|now| {
+            let remembered = maestro_lock::lock(&self.remembered);
+            let (seen, text) = remembered.as_ref()?;
+            (*seen == now).then(|| text.clone())
+        });
+        if unchanged.is_some() {
+            return Ok(unchanged);
+        }
         let _lock = self.acquire_waiting()?;
-        self.read().map_err(Into::into)
+        let identity = FileIdentity::of(path);
+        let text = self.read()?;
+        *maestro_lock::lock(&self.remembered) = identity.zip(text.clone());
+        Ok(text)
     }
 
     fn with_lock(

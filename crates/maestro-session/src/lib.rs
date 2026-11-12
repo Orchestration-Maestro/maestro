@@ -24,9 +24,10 @@ pub mod summarization;
 pub use summarization::{
     CompactionDetails, CompactionPreparation, CompactionSettings, ContextUsageEstimate,
     CutPointResult, DEFAULT_COMPACTION_SETTINGS, FileOperations, calculate_context_tokens,
-    compute_file_lists, create_file_ops, estimate_context_tokens, estimate_tokens,
-    extract_file_ops_from_message, find_cut_point, find_turn_start_index, format_file_operations,
-    get_last_assistant_usage, prepare_compaction, serialize_conversation, should_compact,
+    compute_file_lists, create_file_ops, estimate_context_tokens, estimate_message_context_tokens,
+    estimate_tokens, extract_file_ops_from_message, find_cut_point, find_turn_start_index,
+    format_file_operations, get_last_assistant_usage, prepare_compaction, serialize_conversation,
+    should_compact,
 };
 pub use summarization::{
     CompactionResult, GeneratedSummary, SummaryOptions, compact, generate_summary,

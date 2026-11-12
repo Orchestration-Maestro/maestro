@@ -55,6 +55,7 @@ mod lifecycle;
 mod local_bash_imports;
 mod local_resources;
 mod native_imports;
+mod object_text;
 mod watch_imports;
 /// Native capability contract accepted by the artifact factory.
 pub use maestro_extensions::native_io;
