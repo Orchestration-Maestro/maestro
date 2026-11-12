@@ -1,7 +1,7 @@
 # Terminal emulator
 
-This specification defines `maestro-terminal-emulator`, the pure-Rust terminal emulator that runs
-inside every workspace pane. The foundation changes are listed in
+This specification defines `maestro-terminal-emulator`, the pure-Rust terminal emulator
+that runs inside every workspace pane. The foundation changes are listed in
 [Amendment to the foundation specification](#amendment-to-the-foundation-specification),
 and the terms in [Glossary](#glossary) are also defined in [the glossary](../../CONTEXT.md).
 
@@ -35,10 +35,10 @@ native engine needs foreign code, which Maestro forbids.
 
 ## Solution
 
-`maestro-terminal-emulator` is a concrete deep module with one job, emulating terminals. Its public
-interface is the reference engine's library exports, restricted to the in-scope subset:
-`Terminal`, `RenderState`, the formatters, `Selection`, the key, mouse and focus encoders,
-the codepoint width function and the image-protocol types. The binding layer the
+`maestro-terminal-emulator` is a concrete deep module with one job, emulating terminals.
+Its public interface is the reference engine's library exports, restricted to the in-scope
+subset: `Terminal`, `RenderState`, the formatters, `Selection`, the key, mouse and focus
+encoders, the codepoint width function and the image-protocol types. The binding layer the
 reference exposes for foreign callers, and the workspace reference's wrapper over it,
 cancel out: each behaviour they add becomes a method on the type that owns it. There is no
 port trait: one implementation needs no seam.
@@ -87,12 +87,13 @@ Each row exists in Maestro; none falls below the reference.
 
 ### Placement
 
-`maestro-terminal-emulator` sits at layer 0. Its only internal dependency is `maestro-text`, whose
-`Utf8Stream` is the PTY byte decoder, reused unchanged. It inherits the workspace lints,
-including `unsafe_code = "forbid"`, and has no build script. The workspace daemon depends on
-it directly. Frontends reach the items they need (the codepoint width, the host cell size
-and the regular-file image command) through re-exports in `maestro-app`, added by the first
-frontend delivery that uses one; no frontend depends on the emulator directly.
+`maestro-terminal-emulator` sits at layer 0. Its only internal dependency is
+`maestro-text`, whose `Utf8Stream` is the PTY byte decoder, reused unchanged. It
+inherits the workspace lints, including `unsafe_code = "forbid"`, and has no build
+script. The workspace daemon depends on it directly. Frontends reach the items they need
+(the codepoint width, the host cell size and the regular-file image command) through
+re-exports in `maestro-app`, added by the first frontend delivery that uses one; no
+frontend depends on the emulator directly.
 
 ### Module map
 
@@ -295,9 +296,9 @@ Each item is unreachable from every workspace path or replaced by a Maestro owne
 
 ## Glossary
 
-- **Terminal emulator:** The pure-Rust engine in `maestro-terminal-emulator` that parses a pane
-  terminal's output, keeps its screens and byte-bounded scrollback, and encodes its keyboard,
-  mouse and focus input.
+- **Terminal emulator:** The pure-Rust engine in `maestro-terminal-emulator` that parses a
+  pane terminal's output, keeps its screens and byte-bounded scrollback, and encodes its
+  keyboard, mouse and focus input.
 - **Scrollback limit:** The bytes of page storage a pane terminal keeps beyond its active
   screen; zero disables history.
 - **Terminal effects:** What a write hands back to the caller: PTY replies, the bell count,
@@ -321,10 +322,10 @@ In `docs/specs/maestro-port.md`:
    `maestro-terminal-ghostty` row; drop it from the `maestro` row.
 3. Workspace daemon: the first paragraph says the executable always wires the daemon and
    the multiplexer and requires direct application and multiplexer dependencies; replace the
-   unsafe-exception paragraph with: "`maestro-terminal-emulator` is a pure-Rust terminal emulator,
-   specified in [terminal emulator](terminal-emulator.md): no foreign code, no build script
-   and no unsafe code. The existing guest-authoring generated-binding lint exception is
-   unchanged."
+   unsafe-exception paragraph with: "`maestro-terminal-emulator` is a pure-Rust terminal
+   emulator, specified in [terminal emulator](terminal-emulator.md): no foreign code,
+   no build script and no unsafe code. The existing guest-authoring generated-binding
+   lint exception is unchanged."
 4. Crate order, layer 1: drop `maestro-terminal-ghostty`.
 
 Elsewhere: `workspace-crates.json` drops the adapter; `AGENTS.md` and

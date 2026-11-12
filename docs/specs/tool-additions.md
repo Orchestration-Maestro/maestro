@@ -383,8 +383,8 @@ Reads:
   It reuses `maestro-shell`, which the package crates may depend on, and reads the
   repository through the host's process capability.
 - **Interactive commands.** The pseudo-terminal comes from `maestro-process`. The
-  screen comes from `maestro-terminal-emulator`, the one emulator, through its styled rows and
-  key encoder; `maestro-tools` gains that edge. The bash tool reaches the overlay
+  screen comes from `maestro-terminal-emulator`, the one emulator, through its styled
+  rows and key encoder; `maestro-tools` gains that edge. The bash tool reaches the overlay
   through a small port that `maestro-app` supplies from the extension UI's custom
   overlay path when the session has a UI.
 - **Nested AGENTS.md.** `maestro-resources` lists the files, pruned by
