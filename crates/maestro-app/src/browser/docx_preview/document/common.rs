@@ -66,7 +66,7 @@ pub fn convert_boolean(value: Option<&str>, default_value: Option<bool>) -> Opti
     }
 }
 
-pub(crate) use crate::utils::numbers::integer_prefix;
+pub(crate) use maestro_text::numeric::integer_prefix;
 
 /// Read a decimal floating-point prefix, including an exponent when complete.
 pub(crate) fn float_prefix(value: &str) -> f64 {

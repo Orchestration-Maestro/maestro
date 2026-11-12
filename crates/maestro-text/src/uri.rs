@@ -14,6 +14,7 @@ const COMPONENT_ENCODING: &AsciiSet = &NON_ALPHANUMERIC
     .remove(b')');
 
 /// Encode the authored UTF-8 target as a URI component.
-pub(crate) fn encode_uri_component(text: &str) -> String {
+#[must_use]
+pub fn encode_uri_component(text: &str) -> String {
     utf8_percent_encode(text, COMPONENT_ENCODING).to_string()
 }
