@@ -29,5 +29,6 @@ mod test_directories;
 mod test_input_routes;
 mod time_limits;
 mod tracked_scripts;
+mod tracked_sizes;
 
 mod test_budget;

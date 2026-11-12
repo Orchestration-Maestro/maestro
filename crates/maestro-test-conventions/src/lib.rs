@@ -53,7 +53,12 @@ mod test_budget;
 mod test_input_routes;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
+/// Files the repository index tracks.
+mod tracked_files;
+/// Tracked script files.
 mod tracked_scripts;
+/// Tracked files above the size limit.
+mod tracked_sizes;
 
 /// Checks names, membership, dependencies and bounded source/build ownership.
 ///
@@ -164,6 +169,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     config_scripts::check(root)?;
     documented_commands::check(root)?;
     tracked_scripts::check(root)?;
+    tracked_sizes::check(root)?;
     let (metadata, packages) = graph::check(root)?;
     fixture_selection::check(root, &metadata)?;
     let members = source::load(&metadata)?;
