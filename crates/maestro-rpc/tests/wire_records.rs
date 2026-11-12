@@ -115,7 +115,7 @@ fn typed_command_union_keeps_workspace_requests() {
             "{request}"
         );
         let written = serde_json::to_value(&command).unwrap();
-        let workspace: maestro_protocol::rpc_types::Request =
+        let workspace: maestro_protocol::envelopes::Request =
             serde_json::from_value(request.clone()).unwrap();
         assert_eq!(
             written,

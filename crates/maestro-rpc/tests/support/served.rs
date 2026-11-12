@@ -11,7 +11,7 @@ use maestro_app::{
 use maestro_export::NativeExportOperations;
 use maestro_extensions::{ExtensionFactory, ModuleLoader};
 use maestro_models::Local;
-use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_protocol::{envelopes as workspace, schema as workspace_schema};
 use maestro_rpc::connection_runner::{RpcFuture, WorkspaceEventSink, WorkspaceOperations};
 use maestro_rpc::{NativeRpcProcess, RpcModeOptions, run_rpc_mode};
 use maestro_session::SessionManager;

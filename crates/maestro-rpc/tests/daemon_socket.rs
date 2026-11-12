@@ -17,7 +17,7 @@ use maestro_daemon::{
     },
     terminal_theme::TerminalTheme,
 };
-use maestro_protocol::rpc_types::{Request, RpcResponse};
+use maestro_protocol::envelopes::{Request, RpcResponse};
 use maestro_protocol::schema::{
     AgentManifestInfo, AgentStatus, ErrorBody, ResponseResult, ServerCapabilities, TabInfo,
     WorkspaceInfo,
@@ -516,7 +516,7 @@ fn ordinary_dispatch_has_no_five_second_deadline() {
         );
         assert!(matches!(
             committed.command,
-            maestro_protocol::rpc_types::RpcCommand::WorkspaceList(_)
+            maestro_protocol::envelopes::RpcCommand::WorkspaceList(_)
         ));
     });
 }

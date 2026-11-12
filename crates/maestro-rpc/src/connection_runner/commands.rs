@@ -14,7 +14,7 @@ use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSes
 use maestro_extensions::{ForkPosition, InputSource};
 use maestro_lock::read;
 use maestro_models::ImageContent;
-use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_protocol::{envelopes as workspace, schema as workspace_schema};
 use maestro_session::Presence;
 use maestro_session::message_records::UserMessageDelivery;
 use maestro_session::session_manager::ReadonlySessionManager;

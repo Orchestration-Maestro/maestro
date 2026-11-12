@@ -13,7 +13,7 @@ use maestro_app::agent_session::AgentSession;
 use maestro_app::utils::scheduling::start_now;
 use maestro_json::lines::JsonlLineSplitter;
 use maestro_json::object::names;
-use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_protocol::{envelopes as workspace, schema as workspace_schema};
 use serde_json::Value;
 use std::{
     cell::RefCell,

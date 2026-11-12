@@ -7,7 +7,7 @@ the single command set served on stdio, daemon sockets and SDK connections.
 
 ## Commands and responses
 
-`rpc_types::Request` has an optional string `id`, a `type` command discriminator
+`envelopes::Request` has an optional string `id`, a `type` command discriminator
 and typed parameter fields at the top level, for example:
 
 ```json
@@ -23,7 +23,7 @@ and typed parameter fields at the top level, for example:
 RPC crate composes them with the 29 session commands under the same `type` tag in
 `maestro_rpc::rpc_types::RpcCommand`, which also owns the session responses, session
 events and extension dialog records; see the [JSONL protocol](rpc.md). Both
-response families write their envelope through `rpc_types::serialize_rpc_response`.
+response families write their envelope through `envelopes::serialize_rpc_response`.
 There is no second command registry here. Frontends import the contracts from
 `maestro_protocol` and the session records from `maestro_rpc`.
 

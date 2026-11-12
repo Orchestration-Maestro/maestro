@@ -34,7 +34,7 @@ fn action_manifest_link_ignores_obsolete_source_and_defaults_enabled() {
 #[test]
 /// Exercise the shared public wire or binary codec.
 fn workspace_responses_preserve_correlations_and_open_error_codes() {
-    use maestro_protocol::rpc_types::RpcResponse;
+    use maestro_protocol::envelopes::RpcResponse;
     for raw in [
         r#"{"id":"w1","type":"response","command":"workspace.create","success":true,"data":{"type":"ok"}}"#,
         r#"{"type":"response","command":"workspace.create","success":false,"error":"unavailable","code":"future_failure_kind"}"#,
@@ -138,7 +138,7 @@ fn assert_fields_preserved(input: &serde_json::Value, output: &serde_json::Value
 #[test]
 /// Every workspace command preserves its parameters and correlates both outcomes.
 fn all_workspace_commands_and_correlated_responses_round_trip() {
-    use maestro_protocol::rpc_types::RpcResponse;
+    use maestro_protocol::envelopes::RpcResponse;
     use maestro_protocol::schema::{ErrorBody, ResponseResult};
     let requests = corpus().requests;
     assert_eq!(requests.len(), 92);
@@ -255,7 +255,7 @@ fn local_git_and_npm_sources_round_trip() {
 #[test]
 /// Success and failure markers are required, with the typed payload for their branch.
 fn workspace_responses_reject_conflicting_or_legacy_shapes() {
-    use maestro_protocol::rpc_types::RpcResponse;
+    use maestro_protocol::envelopes::RpcResponse;
     for value in [
         serde_json::json!({"id":"old", "result":{"type":"ok"}}),
         serde_json::json!({"type":"response","command":"ping","success":true,"error":"failed","code":"no"}),

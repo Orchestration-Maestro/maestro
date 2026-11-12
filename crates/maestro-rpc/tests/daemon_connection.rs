@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::rpc_connection::until_idle;
 use crate::support::session_harness::on_paused_task_set;
-use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_protocol::{envelopes as workspace, schema as workspace_schema};
 use maestro_rpc::connection_runner::{
     JsonlLineReader, RpcFuture, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, WorkspaceEventSink,
     WorkspaceOperations,

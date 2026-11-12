@@ -10,7 +10,7 @@ use maestro_extensions::{
 };
 use maestro_models::Local;
 use maestro_process::TerminationSignal;
-use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_protocol::{envelopes as workspace, schema as workspace_schema};
 use maestro_rpc::connection_runner::{
     RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcOutput, RpcProcessPort, WorkspaceEventSink,
     WorkspaceOperations,
