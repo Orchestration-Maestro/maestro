@@ -142,7 +142,7 @@ pub enum OverlayOptionsSource {
     Resolver(OverlayOptionsResolver),
 }
 /// Receives the shown overlay's handle, shared with the host.
-pub type OverlayHandleCallback = UIHostCall<Rc<RefCell<Box<dyn OverlayHandle>>>, ()>;
+pub type OverlayHandleCallback = UIHostCall<OverlayHandle, ()>;
 
 /// Options for a custom component.
 #[derive(Clone, Default)]
