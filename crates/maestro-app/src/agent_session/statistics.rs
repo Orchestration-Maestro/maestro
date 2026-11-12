@@ -1,14 +1,11 @@
 //! Session statistics, context usage and the last answer's text.
-use super::{
-    AgentSession, SessionStats, SessionStatsTokens,
-    state::{message_records, thrown},
-};
+use super::{AgentSession, SessionStats, SessionStatsTokens, state::thrown};
 use maestro_agent::AgentMessage;
 use maestro_extensions::{ContextUsage, ExtensionExecution};
 use maestro_lock::read;
 use maestro_models::{AssistantContent, DiagnosticErrorInfo, StopReason};
 use maestro_session::{
-    estimate_context_tokens, get_last_assistant_usage, get_latest_compaction_entry,
+    estimate_message_context_tokens, get_last_assistant_usage, get_latest_compaction_entry,
     session_manager::ReadonlySessionManager,
 };
 
@@ -77,8 +74,9 @@ impl<E: ExtensionExecution> AgentSession<E> {
                 percent: None,
             }));
         }
-        let records = message_records(&read(&self.messages()))?;
-        let tokens = estimate_context_tokens(&records).map_err(thrown)?.tokens;
+        let tokens = estimate_message_context_tokens(&read(&self.messages()))
+            .map_err(thrown)?
+            .tokens;
         Ok(Some(ContextUsage {
             tokens: Some(tokens),
             context_window,
