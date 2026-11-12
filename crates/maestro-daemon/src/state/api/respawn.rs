@@ -53,8 +53,8 @@ impl App {
         if let Some(terminal) = self.state.terminals.get_mut(&terminal_id) {
             terminal.clear_agent_runtime_identity_after_respawn();
         }
-        self.state.focus_pane_in_workspace(workspace, *pane_id);
-        self.state.session_dirty = true;
+        self.state
+            .edit_topology(|state| state.focus_pane_in_workspace(workspace, *pane_id));
         self.overlay_panes.remove(pane_id);
         self.launch.render_dirty.request_generic();
         self.launch.render_notify.notify_one();

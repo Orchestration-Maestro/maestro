@@ -37,7 +37,7 @@ impl App {
 
     /// Debounces dirty observations without scheduling disabled persistence.
     pub fn sync_session_save_schedule(&mut self) {
-        if std::mem::take(&mut self.state.session_dirty) && !self.launch.no_session {
+        if self.state.take_session_dirty() && !self.launch.no_session {
             self.session_save_deadline = Some(Instant::now() + SESSION_SAVE_DEBOUNCE);
         }
     }

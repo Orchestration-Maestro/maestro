@@ -167,22 +167,21 @@ impl App {
                     )
                 })?;
         self.terminal_runtimes.insert(terminal.id.clone(), runtime);
-        self.state.terminals.insert(terminal.id.clone(), terminal);
-        self.state.remove_alias_shadowed_by_new_pane(pane);
-        let index = self.state.topology.workspaces.len() - 1;
-        crate::workspace::admit_git_identity(
-            &mut self.state.topology.workspaces[index],
-            home.as_deref(),
-        );
-        crate::diagnostics::workspace_created(
-            &self.state.topology.workspaces[index].id,
-            pane.raw(),
-        );
-        if focus || self.state.active.is_none() {
-            self.state.switch_workspace(index);
-            self.state.mode = Mode::Terminal;
-        }
-        self.state.session_dirty = true;
+        let index = self.state.edit_topology(|state| {
+            state.terminals.insert(terminal.id.clone(), terminal);
+            state.remove_alias_shadowed_by_new_pane(pane);
+            let index = state.topology.workspaces.len() - 1;
+            crate::workspace::admit_git_identity(
+                &mut state.topology.workspaces[index],
+                home.as_deref(),
+            );
+            crate::diagnostics::workspace_created(&state.topology.workspaces[index].id, pane.raw());
+            if focus || state.active.is_none() {
+                state.switch_workspace(index);
+                state.mode = Mode::Terminal;
+            }
+            index
+        });
         Ok(index)
     }
 

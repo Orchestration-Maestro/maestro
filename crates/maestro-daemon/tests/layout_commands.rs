@@ -289,7 +289,7 @@ fn a_split_ratio_names_its_tab_directly_or_through_one_of_its_panes() {
 }
 
 /// The tab count, terminal count and event count that a refused apply must leave as they were.
-fn footprint(app: &App) -> (usize, usize, usize, bool) {
+fn footprint(app: &mut App) -> (usize, usize, usize, bool) {
     (
         app.state.topology.workspaces[0].tabs.len(),
         app.state.terminals.len(),
@@ -301,7 +301,7 @@ fn footprint(app: &App) -> (usize, usize, usize, bool) {
 #[test]
 fn applying_to_a_target_that_is_missing_or_ambiguous_is_refused_before_a_process_starts() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let before = footprint(&app);
+    let before = footprint(&mut app);
     for (target, code, message) in [
         (
             json!({"tab_id": "w1:t9"}),
@@ -335,13 +335,13 @@ fn applying_to_a_target_that_is_missing_or_ambiguous_is_refused_before_a_process
         request(&mut app, json!({"type": "layout.apply", "root": shell()})),
         failure("workspace_not_found", "no active workspace")
     );
-    assert_eq!(footprint(&app), before);
+    assert_eq!(footprint(&mut app), before);
 }
 
 #[test]
 fn a_leaf_that_cannot_be_launched_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let before = footprint(&app);
+    let before = footprint(&mut app);
     let empty_command = json!({"type": "pane", "command": []});
     let bad_env = json!({"type": "pane", "env": {"BAD=KEY": "value"}});
     for (root, message) in [
@@ -366,13 +366,13 @@ fn a_leaf_that_cannot_be_launched_is_refused_before_anything_is_created() {
             "{message}"
         );
     }
-    assert_eq!(footprint(&app), before);
+    assert_eq!(footprint(&mut app), before);
 }
 
 #[test]
 fn a_layout_split_that_is_not_finite_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let before = footprint(&app);
+    let before = footprint(&mut app);
     let leaf = || LayoutNode::Pane {
         pane: LayoutPane::default(),
     };
@@ -392,13 +392,13 @@ fn a_layout_split_that_is_not_finite_is_refused_before_anything_is_created() {
         block_on(answer_command(&mut app, command)),
         failure("invalid_layout", "split ratio must be finite")
     );
-    assert_eq!(footprint(&app), before);
+    assert_eq!(footprint(&mut app), before);
 }
 
 #[test]
 fn a_layout_deeper_than_sixteen_levels_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let before = footprint(&app);
+    let before = footprint(&mut app);
     for leaves in [17, 20] {
         let wire = json!({"type": "layout.apply", "root": chain(leaves, &sleeper())});
         assert_eq!(
@@ -407,17 +407,17 @@ fn a_layout_deeper_than_sixteen_levels_is_refused_before_anything_is_created() {
             "{leaves}"
         );
     }
-    assert_eq!(footprint(&app), before);
+    assert_eq!(footprint(&mut app), before);
 }
 
 #[test]
 fn a_layout_of_more_than_twenty_four_panes_is_refused_before_anything_is_created() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let before = footprint(&app);
+    let before = footprint(&mut app);
     let wire = json!({"type": "layout.apply", "root": balanced(25, &sleeper())});
     assert_eq!(
         request(&mut app, wire),
         failure("invalid_layout", "layout has more than 24 panes")
     );
-    assert_eq!(footprint(&app), before);
+    assert_eq!(footprint(&mut app), before);
 }

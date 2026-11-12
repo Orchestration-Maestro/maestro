@@ -44,8 +44,9 @@ fn two_tabs() -> App {
 /// together with the terminal identity the pane had before.
 fn into_the_second_tab() -> (App, PaneMoveResult, String) {
     let mut app = two_tabs();
+    let root = root_pane(&app, 0);
     let terminal = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(&app, 0))
+        .terminal_id(root)
         .unwrap()
         .to_string();
     let mut destination = into_tab("w1:t2", Some("w1:p2"), "right");
@@ -161,7 +162,7 @@ fn across_workspaces() -> (App, PaneMoveResult, String) {
 
 #[test]
 fn moving_a_pane_across_workspaces_gives_it_the_target_workspaces_handle() {
-    let (app, moved, terminal) = across_workspaces();
+    let (mut app, moved, terminal) = across_workspaces();
     assert!(moved.changed);
     assert_eq!(moved.previous_pane_id, "w1:p1");
     assert_eq!(moved.previous_workspace_id, "w1");
@@ -171,7 +172,7 @@ fn moving_a_pane_across_workspaces_gives_it_the_target_workspaces_handle() {
     assert_eq!(moved.pane.workspace_id, "w2");
     assert_eq!(moved.pane.tab_id, "w2:t1");
     assert_eq!(moved.pane.terminal_id, terminal);
-    assert_eq!(workspace_ids(&app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.active, Some(0));
 }
 
@@ -200,7 +201,7 @@ fn a_legacy_tab_spelling_survives_the_removal_of_the_source_workspace() {
         (moved.pane.workspace_id.as_str(), moved.pane.tab_id.as_str()),
         ("w2", "w2:t1")
     );
-    assert_eq!(workspace_ids(&app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.active, Some(0));
     assert_eq!(app.state.selected, 0);
 }
@@ -270,14 +271,12 @@ fn moving_the_only_pane_to_a_new_tab_keeps_its_workspace() {
         (tab.tab_id.as_str(), tab.label.as_str()),
         ("w1:t2", "again")
     );
-    assert_eq!(workspace_ids(&app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w1"]);
     let workspace = &app.state.topology.workspaces[0];
     assert_eq!(workspace.tabs.len(), 1);
     assert_eq!(workspace.active_tab, 0);
-    assert_eq!(
-        app.state.public_pane_id(0, root_pane(&app, 0)).as_deref(),
-        Some("w1:p1")
-    );
+    let root = root_pane(&app, 0);
+    assert_eq!(app.state.public_pane_id(0, root).as_deref(), Some("w1:p1"));
 }
 
 #[test]
@@ -301,8 +300,9 @@ fn moving_a_pane_to_a_new_tab_of_another_workspace_renumbers_it_there() {
 /// terminal identity the pane had before.
 fn promoted() -> (App, PaneMoveResult, String) {
     let mut app = daemon_with_workspaces(&["/issue"]);
+    let root = root_pane(&app, 0);
     let terminal = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(&app, 0))
+        .terminal_id(root)
         .unwrap()
         .to_string();
     let destination = json!({"type": "new_workspace", "label": "promoted", "tab_label": "main"});
