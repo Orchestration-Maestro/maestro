@@ -1,7 +1,7 @@
 //! Flat group ownership and authored delimiter scanning.
 
 use super::{Ast, Token};
-use crate::minimatch::brace_expressions::class_boundary;
+use crate::glob::brace_expressions::class_boundary;
 use std::ops::Range;
 
 /// Cardinality of an authored group.
@@ -50,7 +50,7 @@ pub(super) struct Group {
 }
 
 /// Flat syntax with one retained authored component.
-pub(in crate::minimatch) struct Groups {
+pub(in crate::glob) struct Groups {
     /// Original bytes, used only for fallback.
     pub(super) source: String,
     /// Groups in opening-delimiter order.

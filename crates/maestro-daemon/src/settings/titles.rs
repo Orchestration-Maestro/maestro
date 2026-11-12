@@ -18,13 +18,13 @@ pub fn sanitize_window_title_text(value: &str) -> Option<String> {
 
 /// Returns the default outer terminal window-title format.
 #[must_use]
-pub fn default_window_title() -> String {
+pub(crate) fn default_window_title() -> String {
     "{hostname}: {workspace}".to_string()
 }
 
 /// Returns a configuration diagnostic for an invalid window-title template.
 #[must_use]
-pub fn window_title_diagnostics(template: &str) -> Option<String> {
+pub(crate) fn window_title_diagnostics(template: &str) -> Option<String> {
     WindowTitleTemplate::parse(template)
         .err()
         .map(|err| format!("multiplexer.windowTitle {err}; leaving the outer terminal title alone"))

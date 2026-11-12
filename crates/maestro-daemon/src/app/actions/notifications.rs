@@ -208,7 +208,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 
     /// Resolves the first tab's current terminal directory through shared workspace labels.
-    pub fn workspace_label_from_terminals(&self, workspace: usize) -> Option<String> {
+    pub(crate) fn workspace_label_from_terminals(&self, workspace: usize) -> Option<String> {
         let workspace = self.topology.workspaces.get(workspace)?;
         Some(crate::workspace::display_name_from_terminals(
             workspace,

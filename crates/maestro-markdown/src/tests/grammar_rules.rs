@@ -60,7 +60,7 @@ fn cases(symbol: &str) -> impl Iterator<Item = Case> {
 fn cell_splitting_preserves_escape_parity_and_column_count() {
     for case in cases("splitCells") {
         let count = case.args[1].as_u64().map(|n| usize::try_from(n).unwrap());
-        let actual = crate::helpers::split_cells(case.args[0].as_str().unwrap(), count);
+        let actual = crate::delimiters::split_cells(case.args[0].as_str().unwrap(), count);
         assert_eq!(
             serde_json::to_value(actual).unwrap(),
             case.result,
@@ -74,7 +74,7 @@ fn cell_splitting_preserves_escape_parity_and_column_count() {
 #[test]
 fn suffix_trimming_removes_only_the_selected_scalar() {
     for case in cases("rtrim") {
-        let actual = crate::helpers::rtrim(
+        let actual = crate::delimiters::rtrim(
             case.args[0].as_str().unwrap(),
             case.args[1].as_str().unwrap().chars().next().unwrap(),
         );
@@ -96,12 +96,12 @@ fn balanced_closers_preserve_selected_utf8_boundary() {
         let pair = (pair.next().unwrap(), pair.next().unwrap());
         let expected = case.result.as_i64().unwrap();
         let expected = match expected {
-            -1 => crate::helpers::ClosingBracket::Missing,
-            -2 => crate::helpers::ClosingBracket::Unclosed,
-            _ => crate::helpers::ClosingBracket::Found(case.byte_boundary.unwrap()),
+            -1 => crate::delimiters::ClosingBracket::Missing,
+            -2 => crate::delimiters::ClosingBracket::Unclosed,
+            _ => crate::delimiters::ClosingBracket::Found(case.byte_boundary.unwrap()),
         };
         for &options in options_for_recording(&case.version) {
-            let actual = crate::helpers::find_closing_bracket(input, pair, options);
+            let actual = crate::delimiters::find_closing_bracket(input, pair, options);
             assert_eq!(actual, expected, "{} {} {options:?}", case.version, case.id);
         }
     }

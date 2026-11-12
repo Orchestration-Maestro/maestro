@@ -34,7 +34,7 @@ pub mod daemon_api {
     pub use maestro_daemon::service::event_hub::EventHub;
     #[cfg(unix)]
     #[doc(inline)]
-    pub use maestro_daemon::service::socket::{
+    pub use maestro_daemon::service::local_socket::{
         AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketClaim,
         SocketFileIdentity, bind_async_local_listener, is_connection_closed_error,
         prepare_socket_path, remove_socket_file_if_owned, restrict_socket_permissions,

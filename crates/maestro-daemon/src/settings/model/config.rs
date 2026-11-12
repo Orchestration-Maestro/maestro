@@ -47,7 +47,7 @@ impl Config {
 
     /// Collect actionable warnings using the supplied sound-file root.
     #[must_use]
-    pub fn collect_diagnostics(&self, agent_dir: &Path) -> Vec<String> {
+    pub(crate) fn collect_diagnostics(&self, agent_dir: &Path) -> Vec<String> {
         self.theme
             .diagnostics()
             .into_iter()
@@ -77,7 +77,7 @@ impl Config {
 
     /// Explain inverted sidebar width bounds before clamping.
     #[must_use]
-    pub fn invalid_sidebar_bounds_diagnostic(&self) -> Option<String> {
+    pub(crate) fn invalid_sidebar_bounds_diagnostic(&self) -> Option<String> {
         validated_sidebar_bounds(self.ui.sidebar_min_width, self.ui.sidebar_max_width)
             .is_none()
             .then(|| {

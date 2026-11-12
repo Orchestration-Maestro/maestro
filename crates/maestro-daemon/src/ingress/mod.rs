@@ -10,10 +10,11 @@ pub use parse::parse_terminal_key_sequence;
 /// Supplied geometry and mouse report operations.
 pub mod mouse;
 
-pub use model::{
-    KeyIdentity, KeyboardProtocol, ModifyOtherKeysMode, MouseProtocolEncoding, MouseProtocolMode,
-    TerminalKey, TextCommit, WindowsKeyRecord,
-};
+pub use model::KeyIdentity;
+pub use model::KeyboardProtocol;
+pub use model::ModifyOtherKeysMode;
+pub(crate) use model::{MouseProtocolEncoding, MouseProtocolMode};
+pub use model::{TerminalKey, TextCommit, WindowsKeyRecord};
 
 #[cfg(test)]
 mod tests;

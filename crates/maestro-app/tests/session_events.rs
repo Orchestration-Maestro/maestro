@@ -17,6 +17,7 @@ use maestro_extensions::{
 use maestro_models::{Local, TextContent, UserBlock};
 use maestro_session::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_session::session_manager::SessionManager;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
@@ -427,6 +428,48 @@ fn reports_extension_handler_failures_without_stopping_the_queue() {
         assert!(
             log.borrow()
                 .contains(&"listener:message_end answer".to_owned())
+        );
+    });
+}
+
+#[test]
+fn reports_a_failed_save_once_and_keeps_the_conversation_going() {
+    on_task_set(|_| async {
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let sessions = scratch.path().join("sessions");
+        let manager = SessionManager::create(
+            &maestro_path::join(&[scratch.path().to_str().unwrap(), "project"]),
+            sessions.to_str(),
+            "",
+        )
+        .unwrap();
+        let file = manager.get_session_file().unwrap().to_owned();
+        std::fs::create_dir(&file).unwrap();
+        let h = harness(HarnessOptions {
+            responses: Some(vec![Scripted::text("answer"), Scripted::text("again")]),
+            session_manager: Some(manager),
+            scratch: Some(scratch),
+            ..HarnessOptions::default()
+        })
+        .await;
+        let errors = Rc::new(RefCell::new(Vec::new()));
+        let reported = Rc::clone(&errors);
+        let _unsubscribe = h.runner().on_error(Rc::new(move |error| {
+            reported
+                .borrow_mut()
+                .push(format!("{} {}", error.extension_path, error.event));
+            Ok(())
+        }));
+        let log = Rc::new(RefCell::new(Vec::new()));
+        log_events(&h, "listener", &log);
+        prompt(&h, "question").await;
+        assert_eq!(*errors.borrow(), ["<runtime> agent_event"]);
+        assert_eq!(log.borrow().last().unwrap(), "listener:agent_end");
+        prompt(&h, "second").await;
+        assert_eq!(
+            h.session.messages().read().unwrap().len(),
+            4,
+            "the conversation keeps working after the failed save"
         );
     });
 }

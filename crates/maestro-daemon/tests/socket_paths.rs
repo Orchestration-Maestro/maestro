@@ -1,9 +1,10 @@
 //! Client socket selection from supplied paths and override observations.
+#![cfg(unix)]
 
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
-use maestro_ipc::socket_paths::client_socket_path;
+use maestro_daemon::service::local_socket::paths::client_socket_path;
 
 #[test]
 fn socket_client_path_uses_api_override() {

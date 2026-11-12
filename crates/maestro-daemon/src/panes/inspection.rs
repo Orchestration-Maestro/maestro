@@ -12,17 +12,17 @@ pub mod schedule;
 
 /// Recognizes the raw agent environment value supplied by the process owner.
 #[must_use]
-pub fn parse_agent_env_hint(value: Option<&str>) -> Option<Agent> {
+pub(crate) fn parse_agent_env_hint(value: Option<&str>) -> Option<Agent> {
     parse_agent_label(value?)
 }
 
 /// Result of a foreground process scan.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProcessProbeResult {
+pub(crate) struct ProcessProbeResult {
     /// Observed or inferred process group.
     pub process_group_id: Option<u32>,
     /// Whether the observed job contains the pane shell.
-    pub foreground_is_pane_shell: bool,
+    pub(crate) foreground_is_pane_shell: bool,
     /// Recognized agent identity.
     pub agent: Option<Agent>,
     /// Effective executable name or canonical environment label.
@@ -31,7 +31,7 @@ pub struct ProcessProbeResult {
 
 /// Reads the leader's hint before any non-leader hint.
 #[must_use]
-pub fn agent_hint_for_foreground_job_members(
+pub(crate) fn agent_hint_for_foreground_job_members(
     job: &ForegroundJob,
     read_hint: impl Fn(u32) -> Option<Agent>,
 ) -> Option<Agent> {
@@ -76,7 +76,7 @@ fn process_probe_result(
 
 /// Resolves leader hints, leader names, member hints and member names in order.
 #[must_use]
-pub fn probe_foreground_process_from_jobs(
+pub(crate) fn probe_foreground_process_from_jobs(
     pid: u32,
     foreground_pgid: Option<u32>,
     leader_job: Option<&ForegroundJob>,
@@ -119,7 +119,7 @@ pub fn probe_foreground_process_from_jobs(
 
 /// Scans native foreground jobs, keeping process I/O in the process owner.
 #[must_use]
-pub fn probe_foreground_process(
+pub(crate) fn probe_foreground_process(
     pid: u32,
     foreground_pgid: Option<u32>,
     mode: ProcessDetectionMode,

@@ -159,7 +159,7 @@ fn action_components_preserve_identity_and_bound_paths() {
     assert!(action_path_component(&"A".repeat(120)).len() <= 120);
     assert_eq!(action_path_component("con"), "%con");
     assert_eq!(action_path_component("example."), "example%2E");
-    assert_eq!(action_path_component(""), "%plugin");
+    assert_eq!(action_path_component(""), "%action");
     assert_eq!(action_path_component(".."), ".%2E");
     assert_eq!(action_path_component("../a%é"), "..%2Fa%25%C3%A9");
     assert_reserved_and_long_components();

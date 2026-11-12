@@ -2,7 +2,7 @@
 use super::{Tokenizer, decode_operand};
 use crate::{
     ImageMetadata, Kind, LinkMetadata, LinkType, Text,
-    helpers::{ClosingBracket, find_closing_bracket},
+    delimiters::{ClosingBracket, find_closing_bracket},
     lexer::reference_key,
     rules,
     tokenizer::capture,

@@ -28,7 +28,7 @@ pub struct AgentResumePlan {
     /// Executable followed by literal arguments.
     pub argv: Vec<String>,
     /// NUL-separated provenance, agent, kind and value.
-    pub dedupe_key: String,
+    pub(crate) dedupe_key: String,
 }
 
 /// Canonical provenance and validated identity retained for restore.
@@ -155,7 +155,7 @@ pub fn plan(source: &str, agent: &str, session_ref: &AgentSessionRef) -> Option<
 
 /// Identify a resume operation without ambiguous field concatenation.
 #[must_use]
-pub fn dedupe_key(source: &str, agent: &str, session_ref: &AgentSessionRef) -> String {
+pub(crate) fn dedupe_key(source: &str, agent: &str, session_ref: &AgentSessionRef) -> String {
     format!(
         "{source}\u{0}{agent}\u{0}{:?}\u{0}{}",
         session_ref.kind, session_ref.value
