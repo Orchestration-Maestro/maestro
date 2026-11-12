@@ -26,7 +26,7 @@ pub(crate) enum Request {
 
 /// Independently retained progress observer, not the context that supplied it.
 #[derive(Clone)]
-pub struct ToolUpdate(Arc<Lease>);
+pub struct ToolUpdate(pub(crate) Arc<Lease>);
 
 impl ToolUpdate {
     /// Validates a native result before invoking its observer on the local owner.
@@ -38,7 +38,7 @@ impl ToolUpdate {
 
 /// Independently retained explicit remover; dropping it does not unsubscribe.
 #[derive(Clone)]
-pub struct SubscriptionEndpoint(pub(super) Arc<Lease>);
+pub struct SubscriptionEndpoint(pub(crate) Arc<Lease>);
 
 impl SubscriptionEndpoint {
     /// Applies the native owner's idempotent removal policy.
@@ -53,7 +53,7 @@ pub(crate) use crate::theme_reads::Endpoint as ThemeEndpoint;
 
 /// Redraw capability of one tool row.
 #[derive(Clone)]
-pub struct InvalidatorEndpoint(pub(super) Arc<Lease>);
+pub struct InvalidatorEndpoint(pub(crate) Arc<Lease>);
 
 impl InvalidatorEndpoint {
     /// Redraws the row on the local owner.
