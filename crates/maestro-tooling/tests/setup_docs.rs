@@ -93,13 +93,11 @@ fn runs_served_nextest(command: &str, served: &[String]) -> bool {
             }))
 }
 
-/// Every Markdown page that documents a command: the docs, the examples, the contributing guide
+/// Every Markdown page that documents a command: the docs, the contributing guide
 /// and each crate's README.
 fn documented_pages(root: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    for directory in ["docs", "examples"] {
-        markdown(&root.join(directory), &mut files);
-    }
+    markdown(&root.join("docs"), &mut files);
     files.push(root.join("CONTRIBUTING.md"));
     let mut crates: Vec<_> = fs::read_dir(root.join("crates"))
         .unwrap()

@@ -262,10 +262,12 @@ Maestro requests the cell size at startup only when the terminal supports images
 ## Errors and diagnostics
 
 A text line wider than the terminal is never drawn. Before any frame is written, the
-writer checks every line. For the first oversized one it writes a crash report to
-`maestro-crash.log` in the agent directory the runtime reports (`~/.maestro/agent`
-unless `MAESTRO_CODING_AGENT_DIR` names another), restores the terminal (as `stop`
-does) and fails the frame with
+writer checks the rows that frame draws: every row of a full redraw, and the changed
+rows of a differential update. A row the frame keeps is not measured again, because it
+was measured when it was first drawn, at the width the frame still has. For the first
+oversized drawn line it writes a crash report to `maestro-crash.log` in the agent
+directory the runtime reports (`~/.maestro/agent` unless `MAESTRO_CODING_AGENT_DIR`
+names another), restores the terminal (as `stop` does) and fails the frame with
 
 ```text
 Rendered line {i} exceeds terminal width ({visible_width} > {width}).

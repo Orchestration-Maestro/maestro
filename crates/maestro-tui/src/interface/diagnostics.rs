@@ -11,7 +11,7 @@ use crate::text::utils::visible_width;
 use super::TUI;
 use super::drawing::Update;
 use super::runtime::{LogContext, is_enabled};
-use super::screen::{Changes, Frame};
+use super::screen::{Changes, Frame, Plan};
 
 /// Variable that logs every full redraw when set to `1`.
 const DEBUG_REDRAW: &str = "MAESTRO_DEBUG_REDRAW";
@@ -65,6 +65,44 @@ fn crash_report(context: &LogContext, frame: &Frame, row: usize, measured: usize
     report
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Lines the width check measured on this thread, which tests count.
+    static MEASURED_LINES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Terminal columns `line` occupies, counted so a test can show how many lines a frame
+/// measures.
+fn measured_width(line: &str) -> usize {
+    #[cfg(test)]
+    MEASURED_LINES.with(|measured| measured.set(measured.get() + 1));
+    visible_width(line)
+}
+
+/// How many lines the width check has measured on this thread.
+#[cfg(test)]
+pub(super) fn measured_lines() -> usize {
+    MEASURED_LINES.with(std::cell::Cell::get)
+}
+
+/// Restarts the count of measured lines in tests.
+#[cfg(test)]
+pub(super) fn forget_measured_lines() {
+    MEASURED_LINES.with(|measured| measured.set(0));
+}
+
+/// The row of the first line `plan` draws that is wider than `frame.width`, with its width.
+pub(super) fn oversized_row(frame: &Frame, plan: &Plan) -> Option<(usize, usize)> {
+    let rows = plan.drawn_rows(frame.lines.len());
+    let drawn = frame.lines.get(rows.start..rows.end).unwrap_or_default();
+    drawn
+        .iter()
+        .enumerate()
+        .filter(|(_, line)| !is_image_line(line))
+        .map(|(offset, line)| (rows.start + offset, measured_width(line)))
+        .find(|&(_, measured)| measured > frame.width)
+}
+
 /// The error text for an oversized line.
 fn overflow_message(row: usize, measured: usize, width: usize, log: &Path) -> String {
     format!(
@@ -98,21 +136,18 @@ impl TUI {
         append_log(&path, &message)
     }
 
-    /// Fails with a crash report when a text line is wider than the terminal: the report
-    /// is written, the terminal is restored and nothing of the frame is drawn.
+    /// Fails with a crash report when a line `plan` draws is wider than the
+    /// terminal: the report is written, the terminal is restored and nothing of the frame
+    /// is drawn.
+    ///
+    /// The rows the plan leaves untouched are not measured again: each was measured when it
+    /// was first drawn, at the width the retained frame keeps.
     ///
     /// # Errors
     ///
     /// Returns the width error, or the host's or terminal's error if cleanup fails.
-    pub(super) fn reject_overflow(&self, frame: &Frame) -> io::Result<()> {
-        let oversized = frame
-            .lines
-            .iter()
-            .enumerate()
-            .filter(|(_, line)| !is_image_line(line))
-            .map(|(row, line)| (row, visible_width(line)))
-            .find(|&(_, measured)| measured > frame.width);
-        let Some((row, measured)) = oversized else {
+    pub(super) fn reject_overflow(&self, frame: &Frame, plan: &Plan) -> io::Result<()> {
+        let Some((row, measured)) = oversized_row(frame, plan) else {
             return Ok(());
         };
         let context = self.shared.runtime.log_context();

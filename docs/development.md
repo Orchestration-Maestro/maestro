@@ -20,6 +20,8 @@ just build
 Enable mise in your shell (or prefix a command with `mise exec --`) so `just`
 and the other pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml`
 through rustup, not mise.
+`just setup` also fetches the examples tree from maestro-packages into
+`examples/`.
 
 `build`, `test`, `check` and `ci` first build the sandbox runtime script, which needs
 Emscripten SDK 6.0.10 and the wasm-bindgen CLI 0.2.129 on `PATH`; install them as
@@ -232,7 +234,7 @@ CARGO_BUILD_JOBS=3 just sandbox-runtime
 ```
 
 Run the step before anything that builds `maestro-web`. `just check`, `just _check`,
-`just test`, `just build`, `just native-dev` and `just browser-chat-example` run it first.
+`just test`, `just build` and `just native-dev` run it first.
 A plain `cargo` build without the file fails in the `maestro-web` build script with one
 message that names the step. The command refuses a missing or unpinned compiler (naming the
 tool and its release), a library outside the audited list and script text that an inline
@@ -259,8 +261,7 @@ plain `cargo build`. Every CI job that compiles `maestro-web` must run the step 
 
 The workspace conventions check fails when Git tracks a `.js`, `.mjs`, `.cjs`, `.jsx`,
 `.ts`, `.tsx`, `.py`, `.sh` or `.ps1` file. Generated browser code comes out of the build
-under `target/` and is never committed. `examples/sdk/rpc.py` is the one named exception;
-it leaves with the examples move.
+under `target/` and is never committed.
 
 ## Browser integration qualification
 
@@ -336,7 +337,7 @@ package to `browser-exports` under Cargo's target directory, replacing the
 previous run's copy. If setup fails, nextest prints its output and stops before
 any browser test runs. The crate's build script generates one test per name in
 `exports.json`, `browser::exports::<family>::<export>`: 27 execution exports,
-70 loading exports, 196 contribution exports and 165 canvas exports. Each test
+70 loading exports, 189 contribution exports and 165 canvas exports. Each test
 serves only the packaged output on an ephemeral loopback port, launches its own
 browser and runs its export in a fresh page, with a disposable browser context,
 page lifecycle and policy-error accounting. Nextest runs these tests in
@@ -634,8 +635,11 @@ in the shared caller contract.
 
 ## Extension guide lock
 
-Run `just example-index` after changing dependencies to regenerate the extension
-index, example targets and the standalone extension guide's `Cargo.lock`.
+This repository carries no examples tree or guide fixture, so `just example-index`
+refreshes only the example targets of the component crate here. In a workspace
+that carries the extension guide, run it after changing dependencies to
+regenerate the extension index, example targets and the standalone extension
+guide's `Cargo.lock`.
 `just check` runs `just example-index-check`, which reports stale generated files
 without changing them and names the regeneration command.
 
@@ -862,6 +866,8 @@ destinations remain available.
 templates and vendor assets. `copy-binary-assets SOURCE DESTINATION VIEWER PACKAGE`
 resolves the `maestro` manifest through Cargo metadata and copies metadata, README,
 release-generated history, themes, images, the supplied viewer, docs and examples.
+The examples come from the tree `just setup` fetches from maestro-packages; without
+it the command fails and names the missing `examples` folder.
 Themes and images come from `SOURCE`, the `export-html` directory from `VIEWER`,
 and the README, history, documentation and examples from the package directory
 `PACKAGE`, which defaults to the justfile directory. An empty `VIEWER` directory
@@ -1087,55 +1093,32 @@ lanes then start together once the cold build finishes.
 | 91 | `maestro-extensions-wasmtime` / `canonical_theme::canonical_theme_strikethrough` | 72.902 |
 | 90 | `maestro-extensions-wasmtime` / `component_events::component_tool_results_consume_prior_content` | 72.483 |
 | 89 | `maestro-models` / `browser_build::maestro_browser_environment_has_no_key` | 71.882 |
-| 88 | `maestro-extensions-wasmtime` / `git_checkpoint_example::git_checkpoint_component_requires_checkpoint_ui_and_yes` | 68.837 |
 | 87 | `maestro-tooling` / `browser_author_build::browser_assets_follow_relative_selected_identity` | 60.280 |
 | 86 | `maestro-tooling` / `browser_author_build::browser_author_hook_uses_resolved_configuration_directory` | 55.338 |
-| 84 | `maestro-extensions-wasmtime` / `extension_guide::extension_guide_builds_and_loads_from_a_clean_folder` | 52.177 |
 | 83 | `maestro-extensions-wasmtime` / `canonical_schema::native_registration_and_enumeration_preserve_authored_schema_kinds` | 51.407 |
 | 82 | `maestro-tooling` / `browser_author_build::browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots` | 51.184 |
-| 81 | `maestro-extensions-wasm` / `tests::trigger_compact_example::trigger_compact_component_matches_host_requests` | 48.948 |
 | 80 | `maestro-test-conventions` / `architecture::real_workspace_obeys_crate_rules` | 45.737 |
 | 79 | `maestro-tooling` / `browser_author_build::browser_build_emits_wasm_and_prepared_assets` | 44.135 |
-| 78 | `maestro-extensions-wasm` / `tests::shutdown_example::shutdown_component_runs_every_registration` | 43.566 |
 | 77 | `maestro-tooling` / `browser_author_build::browser_author_included_files_rebuild_without_source_changes` | 41.429 |
-| 76 | `maestro-extensions-wasm` / `tests::preset_example::preset_layers_restore_branch_instructions_without_reapplying_settings` | 40.680 |
 | 75 | `maestro-markdown` / `tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth` | 40.392 |
 | 73 | `maestro-tooling` / `browser_author_build::browser_example_development_serves_rebuilt_external_assets` | 39.186 |
-| 72 | `maestro-extensions-wasm` / `tests::protected_paths_example::protected_paths_component_matches_the_hook` | 37.400 |
 | 71 | `maestro-tooling` / `build_recipes::maestro_selected_watch_rebuilds_cargo_configuration` | 37.229 |
 | 70 | `maestro-tooling` / `browser_author_build::browser_compile_watch_rebuilds_external_identity` | 36.977 |
 | 69 | `maestro-extensions-wasmtime` / `asynchronous_reentry::routed_completion_keeps_its_prefix_and_absent_result` | 36.706 |
-| 68 | `maestro-extensions-wasm` / `tests::notify_example::notify_component_windows_command_is_controlled` | 36.366 |
 | 67 | `maestro-markdown` / `tests::container_depth::deep_indented_list_parses_on_a_small_stack` | 36.253 |
-| 66 | `maestro-extensions-wasm` / `tests::permission_gate_example::permission_gate_component_preserves_patterns_and_decisions` | 36.218 |
-| 65 | `maestro-extensions-wasm` / `tests::model_status_example::model_status_component_runs_selection_hook` | 36.052 |
 | 64 | `maestro-tooling` / `browser_author_build::browser_author_unrelated_workspace_bump_keeps_fixture_lock` | 36.036 |
-| 63 | `maestro-extensions-wasm` / `tests::status_line_example::status_line_component_preserves_count_after_host_rejection` | 36.019 |
-| 62 | `maestro-extensions-wasm` / `tests::snake_example::snake_controls_apply_arrow_and_letter_turns` | 34.791 |
-| 61 | `maestro-extensions-wasm` / `tests::component_driver::message_renderer_example::message_renderer_truncates_numeric_timestamps` | 34.321 |
 | 60 | `maestro-extensions-wasmtime` / `authored_streams::ending_without_a_result_keeps_observation_pending` | 33.702 |
-| 59 | `maestro-extensions-wasmtime` / `git_checkpoint_example::git_checkpoint_component_clears_checkpoints_but_keeps_current_entry` | 33.605 |
 | 58 | `maestro-extensions-wasmtime` / `asynchronous_reentry::routed_retained_setup_runs_its_prefix_before_its_first_poll_returns` | 33.466 |
 | 57 | `maestro-extensions-wasm` / `tests::component_driver::schema_qualification::schema_callbacks_preserve_supplied_errors_on_owning_guest` | 33.437 |
-| 56 | `maestro-extensions-wasm` / `tests::titlebar_spinner_example::titlebar_spinner_component_runs_lifecycle` | 33.069 |
-| 55 | `maestro-extensions-wasm` / `tests::pirate_example::pirate_factories_keep_separate_state` | 32.826 |
-| 54 | `maestro-extensions-wasm` / `tests::space_invaders_example::space_invaders_resume_redraws_current_controls_without_losing_save` | 32.531 |
-| 53 | `maestro-extensions-wasm` / `tests::space_invaders_example::space_invaders_ticks_match_reference_movement_fire_and_collisions` | 32.371 |
 | 52 | `maestro-extensions-wasmtime` / `compilation_cache::component_load_populates_the_user_compilation_cache` | 32.216 |
 | 51 | `maestro-test-conventions` / `boundaries::runtime_dependencies_stay_in_the_runtime_adapter` | 32.167 |
-| 50 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_retains_supplied_question_metadata` | 32.017 |
-| 49 | `maestro-extensions-wasm` / `tests::questionnaire_example::questionnaire_headless_and_empty_return_errors` | 31.997 |
-| 48 | `maestro-extensions-wasm` / `tests::snake_example::snake_ticks_move_grow_turn_and_save_through_session_entries` | 31.944 |
 | 46 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec` | 31.648 |
-| 45 | `maestro-extensions-wasm` / `tests::preset_example::preset_startup_flag_is_applied_before_returning_and_overrides_saved_name` | 31.576 |
 | 44 | `maestro-extensions-wasmtime` / `factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends` | 31.525 |
 | 43 | `maestro-extensions-wasmtime` / `tests::builtin_factories::builtin_factory_construction_is_lazy_and_fresh` | 31.281 |
-| 42 | `maestro-extensions-wasm` / `tests::snake_example::snake_headless_command_requires_interactive_mode` | 31.215 |
 | 41 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_read_options_preserve_reverse_operations` | 30.949 |
 | 40 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_mutations_release_after_error_and_alias_paths` | 30.745 |
 | 39 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_find_callbacks_receive_pattern_root_ignore_and_limit` | 30.323 |
 | 38 | `maestro-tooling` / `browser_author_build::browser_author_projection_failure_prevents_dependent_build` | 30.158 |
-| 37 | `maestro-extensions-wasm` / `tests::preset_example::preset_cycles_restore_original_settings_and_persist_cleared_branch_state` | 30.154 |
 
 #### Refreshing priorities
 
@@ -1359,8 +1342,11 @@ names. Cargo's `--example prepare_author_component` target name stays the same o
 
 A test that starts a setup child which reads a prepared-bundle input the test does not supply
 clears it (`TEST_PREPARE_BASE`, `TEST_PREPARE_OUTPUT` and `TEST_ARCHIVE`) through
-`recipe_support::without_prepared_bundles`, so a bundle a machine exports for CI cannot change
-what the test reads.
+`maestro_test_process::without_prepared_bundles` from the test-support owner, so a bundle a
+machine exports for CI cannot change what the test reads, in this crate or in any other. The
+conventions check reads every test source that spells `nextest-setup`, so a setup child added
+without that helper fails the conventions run. The check follows the helper directly or through
+a function of the same source, reading the written syntax without expanding macros.
 
 Every development command that runs a child exits with that child's status. A child ended by
 a signal has no exit code, so the tool prints the native status on standard error, such as
@@ -1465,9 +1451,9 @@ and global fallbacks, then includes dependent crates. Use `test_inputs` in
 read them. A file owned by another workspace member already selects that member
 and its dependents. Only otherwise unowned, undeclared paths use the all-or-none fallback:
 they select every test, or none when the file is Markdown or under `docs/`.
-The conventions check names every test that reads `docs/`, `examples/` or `assets/` at
+The conventions check names every test that reads `docs/` or `assets/` at
 run time, through a `../../` path, a join onto the workspace root or a call to
-`get_docs_path`, `get_examples_path` or `get_package_dir`, and fails until
+`get_docs_path` or `get_package_dir`, and fails until
 `test_inputs` routes that directory to the reading package. The
 [workspace conventions](architecture.md#workspace-architecture-checks) read every
 crate's manifests and sources, so `crates/` routes to `maestro-test-conventions`: a
@@ -1523,7 +1509,8 @@ Four things it needs are the workspace's own:
   The crate's own fixture folder, `tests/support`, is optional: without it the
   index and preparation use the shipped examples alone.
 - **The shipped extension folder** is `examples/extensions` beside the workspace
-  manifest. Without it the index renders the crate's own example targets alone and
+  manifest, when git does not ignore it: a checkout that `just setup` filled from
+  maestro-packages ignores the fetched tree, so the tools never read it. Without it the index renders the crate's own example targets alone and
   writes no index page and no guide lock.
 - **The independent guide** is `tests/fixtures/hello-extension` under whichever
   member crate carries one, and it builds on the guest SDK package the workspace
@@ -1571,13 +1558,18 @@ The tool-factory suite in `maestro-tools` and the factory-construction test in
 test that receives the exports: add a test to it when the test calls
 `install_search_program`.
 
-The chat crate's isolated test children get stub `fd` and `rg` programs in their
-binary directory. A child that starts the interactive mode then neither downloads a
-search program nor runs one found on `PATH`. A test that supplies the child's `PATH`
-skips the stubs and installs whatever programs it needs. Every child's `PATH` also
-carries a guard `fd` and `rg` ahead of its first directory outside the child's root,
-unless its `PATH` names no such directory. If the child runs one, its test fails and
-names the program, whether or not the machine has `fd` or `rg` installed.
+Test children get stub `fd` and `rg` programs in their binary directory, from one
+helper in `maestro-test-process`: `install_stub_search_programs`. The chat crate's
+isolated children and the executable crate's `Root::command` children use it. A child
+that starts the interactive mode then neither downloads a search program nor runs one
+found on `PATH`. A test that supplies the child's `PATH` skips the stubs and installs
+whatever programs it needs.
+
+`SearchGuard`, from the same crate, wraps a child's `PATH`: it places a guard `fd` and
+`rg` ahead of the first directory outside the child's root, unless the `PATH` names no
+such directory. If the child runs one, the test fails and names the program, whether or
+not the machine has `fd` or `rg` installed. The chat harness asserts it after each
+isolated child. A `Root` asserts it when it is dropped.
 
 Nextest setups read the bundle: `MAESTRO_AUTHOR_COMPONENT` and its siblings,
 `MAESTRO_NATIVE_FIXTURE`, `MAESTRO_CHILD_TOOLCHAIN_PROBE`,
@@ -1800,12 +1792,11 @@ still reaches the shared home fails at once instead of waiting for another test.
 
 ### Prepared Cargo checks
 
-Run the browser import and extension-guide checks with their setup:
+Run the browser import checks with their setup:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-models -p maestro-extensions-wasmtime \
-    -E 'test(/^browser_build::/) | test(/^extension_guide::/)'
+cargo nextest run --locked -p maestro-models -E 'test(/^browser_build::/)'
 ```
 
 The `cargo-checks` setup builds `browser_import_check` for
@@ -2263,9 +2254,6 @@ scenarios keep authored text literal:
 `UnicodeState`, `PromptAcceptance`, `EndAfterAcceptance` and `ExitAfterReply`
 require the client to close its input without another command after its last
 reply, so a stray command fails the check.
-
-The client example's checks launch the shipped `examples/sdk/rpc.py` against an
-installed alias of this family, so only the example itself runs under Python 3.
 
 #### Footer Git aliases
 
@@ -2758,10 +2746,13 @@ override or remove either. Live protocols retain `CheckedChild` and
 its replaying `CheckedStdout` until the exchange completes, then check successful
 reaping. Call `CheckedChild::start` when the test uses its own command to launch
 the selected child; it proves the same prologue and reaps a failed start. It never
-signals that child: it closes the child's pipes and waits for the child to exit by
-itself. Settings helpers select supplied complete nested identities with `named`
-and request a process-count limit through `setup`, keeping reports separate from
-exit status checks.
+signals that child: it closes the child's input and standard output and waits for
+it to exit by itself. The child's standard error stays open until it ends, and the
+failure then carries what the child wrote there, so it says why the selected test
+did not start; a platform that reads a pipe only by waiting for it keeps no
+standard error. Settings helpers select supplied complete nested identities with
+`named` and request a process-count limit through `setup`, keeping reports separate
+from exit status checks.
 
 A child that a signal stops, from the test or from the code under test, waits for
 that signal and never ends on its own. A coverage run writes each process's profile
@@ -2801,7 +2792,9 @@ and loads a prepared component passes `run_agent_directory()` as
 compiling the component again. A test that gives an executable its own agent
 directory links the run's cache into it first with
 `maestro_test_process::link_files`, as the root-command harness in
-`crates/maestro/tests/support/mod.rs` and the tool-override example tests do.
+`crates/maestro/tests/support/mod.rs` and the tool-override example tests do. An entry that
+a writer renames away during the link is left out, and the test that needs that component
+compiles it.
 Test code that proves a diagnostic path survives a closed standard error uses
 `maestro_test_process::run_with_broken_stderr`, which runs the case in a child whose
 standard error is a pipe with no reader, and `maestro_test_process::wait_for_broken_stderr`,

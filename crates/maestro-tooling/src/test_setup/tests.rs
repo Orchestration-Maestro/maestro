@@ -549,7 +549,6 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             "crates/maestro-entry",
             "crates/maestro-extensions-wasm",
             "crates/maestro-json",
-            "crates/maestro-listing",
             "crates/maestro-package",
             "crates/maestro-request",
             "crates/maestro-subagents",
