@@ -276,8 +276,12 @@ example `extension catalog resource ended`. The text is exact per capability kin
 
 The host generates its traits and records from the same interface files as the guest.
 Each resource maps to the type the Store already holds, so a trait method receives the
-handle the guest passed. The model registry and the command context use this route; the
-other imports register by hand.
+handle the guest passed. The model registry, the command context, the theme, the session
+tree node and the read-only history use this route; the other imports register by hand.
+Each converted method is a trait method on the Store's state, and its registration forwards
+to it until every family has moved and the generated linker registration replaces the hand
+registration. Each kind of retained capability is one `Held` kind that names the entry it
+lends and the text its callers receive once it has ended.
 
 ## Event channels
 
