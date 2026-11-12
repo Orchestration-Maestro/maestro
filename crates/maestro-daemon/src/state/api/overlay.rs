@@ -17,7 +17,7 @@ pub(super) struct OverlayExit {
     zoomed_before: Option<bool>,
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Removes overlay bookkeeping while its tab and focus can still be observed.
     pub(super) fn take_overlay_before_exit(&mut self, event: &AppEvent) -> Option<OverlayExit> {
         let AppEvent::PaneDied { pane_id } = event else {

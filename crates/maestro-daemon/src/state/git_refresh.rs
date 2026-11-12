@@ -99,7 +99,7 @@ struct WorkspaceGitRefreshOutput {
     cache_updates: Vec<(PathBuf, GitStatusCacheEntry)>,
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Start one background refresh once its deadline has passed.
     pub(super) fn start_git_status_refresh_if_due(&mut self, now: Instant) {
         let Some(deadline) = self.git_refresh_deadline() else {

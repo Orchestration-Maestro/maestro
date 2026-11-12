@@ -10,8 +10,8 @@ use maestro_workspace::{
 };
 use std::collections::HashMap;
 
-fn topology() -> WorkspaceTopology<fn() -> u128> {
-    let mut topology = WorkspaceTopology::new((|| 0) as fn() -> u128);
+fn topology() -> WorkspaceTopology {
+    let mut topology = WorkspaceTopology::new(|| 0);
     topology
         .new_with_tab("/tmp".into(), None, |_, _| Ok(()))
         .unwrap();
@@ -33,7 +33,7 @@ fn workspace_rollup_all_unknown() {
     assert!(seen);
 }
 
-fn add_tab(topology: &mut WorkspaceTopology<fn() -> u128>, name: &str) -> usize {
+fn add_tab(topology: &mut WorkspaceTopology, name: &str) -> usize {
     topology
         .create_tab_with_runtime(0, |_, _| Ok(()))
         .unwrap()

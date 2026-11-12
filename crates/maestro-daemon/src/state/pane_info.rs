@@ -8,7 +8,7 @@ use maestro_protocol::{
 };
 use maestro_workspace::tiling::PaneId;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Reads one pane, awaiting the runtime-owned foreground directory observation.
     pub async fn pane_info(&self, workspace: usize, pane_id: PaneId) -> Option<PaneInfo> {
         let ws = self.state.topology.workspaces.get(workspace)?;

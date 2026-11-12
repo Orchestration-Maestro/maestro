@@ -73,7 +73,7 @@ impl Placed {
     }
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Moves a pane beside a pane of another tab, to a new tab or to a new workspace.
     ///
     /// The pane keeps its terminal. A pane that leaves its workspace gets a handle there and

@@ -15,14 +15,14 @@ use std::time::Instant;
 use tokio::sync::mpsc;
 
 /// Daemon with a deterministic public identity clock.
-type TestApp = App<fn() -> u128>;
+type TestApp = App;
 
 /// Supplies a daemon without launching any pane process.
 fn test_app() -> TestApp {
     let (launch, receiver) = spawning::launch_inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         EventHub::default(),

@@ -20,10 +20,10 @@ use std::{
 };
 
 /// State populated through the real allocator, with matching retained terminal metadata.
-fn state(names: &[&str]) -> DaemonState<fn() -> u128> {
+fn state(names: &[&str]) -> DaemonState {
     let mut state = DaemonState::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         Arc::new(RwLock::new(
             maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
         )),
@@ -46,12 +46,12 @@ fn state(names: &[&str]) -> DaemonState<fn() -> u128> {
 }
 
 /// Captures metadata without supplying a live process owner.
-fn snapshot(state: &DaemonState<fn() -> u128>) -> SessionSnapshot {
+fn snapshot(state: &DaemonState) -> SessionSnapshot {
     capture(state, &TerminalRuntimeRegistry::new())
 }
 
 /// Splits the first tab with the allocator's transaction and matching metadata.
-fn split(state: &mut DaemonState<fn() -> u128>) -> PaneId {
+fn split(state: &mut DaemonState) -> PaneId {
     let root = state.topology.workspaces[0].tabs[0].root_pane;
     let (pane, ()) = state
         .topology
@@ -78,7 +78,7 @@ fn split(state: &mut DaemonState<fn() -> u128>) -> PaneId {
 }
 
 /// Adds a tab using the same topology owner as native creation.
-fn add_tab(state: &mut DaemonState<fn() -> u128>, name: Option<&str>) -> usize {
+fn add_tab(state: &mut DaemonState, name: Option<&str>) -> usize {
     state
         .topology
         .create_tab_with_runtime(0, |_, _| Ok(()))

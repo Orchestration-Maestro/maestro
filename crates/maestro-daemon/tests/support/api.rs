@@ -21,18 +21,12 @@ use serde_json::{Value, json};
 use std::{sync::Arc, time::Instant};
 
 /// Daemon owner with a deterministic identity clock.
-pub type TestApp = App<fn() -> u128>;
+pub type TestApp = App;
 
 /// A daemon without workspaces, built from `config`.
 pub fn daemon_with(config: &Config) -> TestApp {
     let (launch, receiver) = launch_inputs(&[], manifest_cache());
-    App::new(
-        config,
-        (|| 0) as fn() -> u128,
-        launch,
-        receiver,
-        EventHub::default(),
-    )
+    App::new(config, || 0, launch, receiver, EventHub::default())
 }
 
 /// A daemon without workspaces.
@@ -298,13 +292,7 @@ pub fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut TestApp)) {
                     .to_string(),
             );
             let (launch, receiver) = launch_inputs(args, manifest_cache());
-            let mut app = App::new(
-                &config,
-                (|| 0) as fn() -> u128,
-                launch,
-                receiver,
-                EventHub::default(),
-            );
+            let mut app = App::new(&config, || 0, launch, receiver, EventHub::default());
             block_on(async {
                 body(&mut app).await;
                 for (_, runtime) in app.terminal_runtimes.drain_for_handoff() {

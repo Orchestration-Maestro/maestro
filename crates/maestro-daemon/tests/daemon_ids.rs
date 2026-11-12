@@ -23,7 +23,7 @@ use maestro_workspace::{terminal_id::TerminalId, tiling::PaneId};
 #[cfg(unix)]
 use std::sync::{Arc, RwLock};
 #[cfg(unix)]
-type TargetApp = App<fn() -> u128>;
+type TargetApp = App;
 
 #[test]
 fn public_target_forms_keep_alias_and_number_meaning() {
@@ -133,7 +133,7 @@ fn target_app() -> (TargetApp, PaneId, TerminalId) {
     let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     let mut app = App::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         maestro_daemon::service::event_hub::EventHub::default(),

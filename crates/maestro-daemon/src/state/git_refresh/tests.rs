@@ -20,7 +20,7 @@ use std::{
 use tokio::sync::{Notify, mpsc};
 
 /// Daemon owner driven by a deterministic public-identity clock.
-type TestApp = App<fn() -> u128>;
+type TestApp = App;
 
 /// Both observations demanded.
 const ALL: GitStatusRefreshDemand = GitStatusRefreshDemand {
@@ -57,13 +57,7 @@ fn test_app(config: &Config) -> TestApp {
         appearance: None,
         process_detection_mode: ProcessDetectionMode::Native,
     };
-    App::new(
-        config,
-        (|| 0) as fn() -> u128,
-        launch,
-        receiver,
-        EventHub::default(),
-    )
+    App::new(config, || 0, launch, receiver, EventHub::default())
 }
 
 /// A daemon whose workspace sidebar shows exactly `rows`.

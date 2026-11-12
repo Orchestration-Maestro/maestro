@@ -41,7 +41,7 @@ const LIMIT: usize = 1024 * 1024;
 const ROOT: &str = "MAESTRO_TEST_DAEMON_ROOT";
 
 /// A daemon without workspaces whose panes would advertise `socket`.
-fn daemon(socket: &Path) -> App<fn() -> u128> {
+fn daemon(socket: &Path) -> App {
     let (events, receiver) = mpsc::channel(8);
     let launch = PaneLaunchInputs {
         no_session: true,
@@ -59,7 +59,7 @@ fn daemon(socket: &Path) -> App<fn() -> u128> {
         appearance: None,
         process_detection_mode: ProcessDetectionMode::Native,
     };
-    let clock = (|| 0) as fn() -> u128;
+    let clock = || 0;
     App::new(
         &Config::default(),
         clock,
@@ -91,7 +91,7 @@ fn served<T: Send + 'static>(
 /// Serves `app` as the daemon of `paths` through `run_server` while `client` runs on a
 /// blocking thread with the API socket's path; the daemon stops once the client returns.
 fn served_by<T: Send + 'static>(
-    mut app: App<fn() -> u128>,
+    mut app: App,
     paths: &DaemonPaths,
     client: impl FnOnce(PathBuf) -> T + Send + 'static,
 ) -> T {
@@ -761,7 +761,7 @@ fn setup_entry() {
 
 /// A daemon advertising `socket` whose panes start real `/bin/sh` shells in the temporary
 /// root through the setup entry `args` select.
-fn live_daemon(socket: &Path, args: &[String]) -> App<fn() -> u128> {
+fn live_daemon(socket: &Path, args: &[String]) -> App {
     let mut app = daemon(socket);
     app.launch.setup_entry.args = args.iter().map(Into::into).collect();
     app.config.terminal.default_shell = "/bin/sh".into();

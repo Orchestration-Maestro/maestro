@@ -5,7 +5,7 @@ use maestro_settings::{InMemorySettingsStorage, SettingsManager, SettingsScope, 
 use std::sync::{Arc, RwLock};
 
 /// Daemon owner with a deterministic identity clock.
-pub type TestApp = App<fn() -> u128>;
+pub type TestApp = App;
 
 /// Replace the global document through the settings owner's locked seam.
 pub fn put(storage: &dyn SettingsStorage, text: &str) {
@@ -22,7 +22,7 @@ pub fn fixture() -> (TestApp, SettingsManager, Arc<InMemorySettingsStorage>) {
     let (launch, receiver) = crate::support::spawning::launch_inputs(&[], manifests);
     let app = App::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         EventHub::default(),

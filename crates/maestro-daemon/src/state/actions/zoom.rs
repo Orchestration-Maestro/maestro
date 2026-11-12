@@ -17,7 +17,7 @@ pub struct PaneZoomOutcome {
     pub zoomed: bool,
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Toggles zoom for the focused pane's tab, leaving single-pane tabs unchanged.
     pub fn toggle_zoom(&mut self) {
         let Some((workspace, pane)) = self.active.and_then(|index| {

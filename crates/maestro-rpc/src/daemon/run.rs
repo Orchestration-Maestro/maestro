@@ -26,8 +26,8 @@ const LOG_ROLE: &str = "daemon";
 /// # Errors
 /// Returns the socket preparation or binding failure: address-in-use while another daemon
 /// serves the socket, already-exists for a file that is not a socket.
-pub async fn run_server<C: FnMut() -> u128>(
-    app: &mut App<C>,
+pub async fn run_server(
+    app: &mut App,
     settings: &mut SettingsManager,
     paths: &DaemonPaths,
     shutdown: impl Future<Output = ()>,

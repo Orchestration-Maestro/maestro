@@ -16,7 +16,7 @@ use std::sync::{Arc, RwLock};
 use tokio::sync::{Notify, mpsc};
 
 /// Builds a daemon with topology only; this command starts no child process.
-fn daemon(count: usize) -> App<fn() -> u128> {
+fn daemon(count: usize) -> App {
     let config = Config::default();
     let (events, receiver) = mpsc::channel(8);
     let launch = PaneLaunchInputs {
@@ -35,13 +35,7 @@ fn daemon(count: usize) -> App<fn() -> u128> {
         appearance: None,
         process_detection_mode: ProcessDetectionMode::Native,
     };
-    let mut app = App::new(
-        &config,
-        (|| 0) as fn() -> u128,
-        launch,
-        receiver,
-        EventHub::default(),
-    );
+    let mut app = App::new(&config, || 0, launch, receiver, EventHub::default());
     for index in 0..count {
         app.state
             .topology

@@ -11,7 +11,7 @@ use maestro_protocol::{
 };
 use std::path::PathBuf;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Lists the tabs of one workspace, or of every workspace in display order.
     pub(super) fn handle_tab_list(
         &self,

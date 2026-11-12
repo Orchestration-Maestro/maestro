@@ -19,7 +19,7 @@ use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::tiling::PaneId;
 
 /// Daemon owner driven by a deterministic public-identity clock.
-type TestApp = App<fn() -> u128>;
+type TestApp = App;
 use std::{sync::Arc, time::Instant};
 use tokio::sync::mpsc;
 
@@ -148,7 +148,7 @@ fn context_app(directory: std::path::PathBuf, delayed: bool) -> TestApp {
     let (launch, event_rx) = launch_inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &config,
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         event_rx,
         maestro_daemon::service::event_hub::EventHub::default(),
@@ -728,7 +728,7 @@ async fn check_workspace_creation(args: &[String]) {
     let (launch, receiver) = launch_inputs(args, support::manifest_cache());
     let mut app = App::new(
         &config,
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         maestro_daemon::service::event_hub::EventHub::default(),

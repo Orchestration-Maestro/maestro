@@ -15,7 +15,7 @@ use maestro_protocol::{
 use maestro_workspace::tiling::{PaneId, SplitRequest};
 use std::{io, path::PathBuf};
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Splits the named pane, the focused pane of the named workspace or the focused pane of
     /// the active workspace, and answers with the new pane once its process runs.
     ///

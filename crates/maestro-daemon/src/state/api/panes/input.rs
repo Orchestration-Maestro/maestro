@@ -45,7 +45,7 @@ fn deliver(
     Ok(ResponseResult::Ok {})
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Chooses whether right clicks in the named pane go to the pane or to the multiplexer.
     ///
     /// # Errors

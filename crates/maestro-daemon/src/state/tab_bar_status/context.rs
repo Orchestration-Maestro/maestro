@@ -3,7 +3,7 @@
 use crate::state::App;
 use std::path::PathBuf;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Resolves command context once per launch pass, preferring the live process cwd.
     pub(crate) fn custom_command_env(&self) -> (Vec<(String, String)>, Option<PathBuf>) {
         let mut environment = vec![(

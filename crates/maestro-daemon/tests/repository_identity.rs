@@ -55,7 +55,7 @@ async fn check_admitted_repository(args: &[String]) {
     config.terminal.default_shell = "/bin/sh".into();
     let mut app = App::new(
         &config,
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         maestro_daemon::service::event_hub::EventHub::default(),

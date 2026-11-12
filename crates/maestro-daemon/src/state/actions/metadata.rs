@@ -5,7 +5,7 @@ use crate::{state::model::DaemonState, terminal::model::TerminalState};
 use maestro_workspace::tiling::PaneId;
 use std::time::Instant;
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Selects the earliest presentation or token deadline.
     pub(crate) fn next_agent_metadata_expiry(&self) -> Option<Instant> {
         self.terminals

@@ -52,7 +52,7 @@ fn read_terminal_snapshot(runtime: &PaneRuntime, request: ReadRequest) -> Termin
     }
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Reads the screen of a resolved pane, `None` when the pane has no tab or no process.
     ///
     /// The result names the pane, its workspace and its tab with their public handles.

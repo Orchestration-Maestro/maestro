@@ -9,7 +9,7 @@ use crate::{
 use maestro_detection::agents::AgentVisibility;
 use maestro_workspace::tiling::PaneId;
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Applies background state observations; host bell and clipboard effects stay with the loop.
     pub fn handle_app_event(&mut self, event: AppEvent) -> Vec<PaneStateUpdate> {
         let update = match event {
