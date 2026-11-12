@@ -69,17 +69,17 @@ fn daemon_unset_tokens_render_empty() {
 #[test]
 fn accepted_title_configuration_reaches_construction_and_reload() {
     let (mut app, mut manager, storage) = fixture();
-    assert!(app.window_title_configured());
-    assert!(!app.window_title_uses_terminal_title());
+    assert!(app.is_window_title_configured());
+    assert!(!app.does_window_title_use_terminal_title());
     config_support::put(
         &*storage,
         r#"{"multiplexer":{"windowTitle":"{terminal_title}"}}"#,
     );
     config_support::block_on(app.reload_config(&mut manager, std::path::Path::new("/unused")));
-    assert!(app.window_title_uses_terminal_title());
+    assert!(app.does_window_title_use_terminal_title());
     config_support::put(&*storage, r#"{"multiplexer":{"windowTitle":""}}"#);
     config_support::block_on(app.reload_config(&mut manager, std::path::Path::new("/unused")));
-    assert!(!app.window_title_configured());
+    assert!(!app.is_window_title_configured());
     app.state.active = None;
     app.configure_window_title("literal/{workspace}/{tab}/{pane}/{terminal_title}");
     assert_eq!(app.window_title().as_deref(), Some("literal////"));

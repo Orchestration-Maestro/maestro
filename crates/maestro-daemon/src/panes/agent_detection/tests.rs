@@ -135,7 +135,7 @@ fn runtime_pending_idle_holds_working_to_plain_idle_until_confirmed() {
             ),
             DetectionTransitionDecision::NoPublish
         );
-        assert!(pending.active());
+        assert!(pending.is_active());
     }
     assert_eq!(
         decide_detection_transition(
@@ -147,7 +147,7 @@ fn runtime_pending_idle_holds_working_to_plain_idle_until_confirmed() {
         ),
         DetectionTransitionDecision::PublishNext
     );
-    assert!(!pending.active());
+    assert!(!pending.is_active());
 }
 
 #[test]
@@ -282,7 +282,7 @@ fn runtime_visible_idle_bypasses_plain_idle_hold() {
         decide_detection_transition(input, &mut pending),
         DetectionTransitionDecision::PublishNext
     );
-    assert!(!pending.active());
+    assert!(!pending.is_active());
 }
 
 #[test]
@@ -374,7 +374,7 @@ fn plain_idle_cap_and_process_changes_release_pending_confirmation() {
             decide_detection_transition(release, &mut pending),
             DetectionTransitionDecision::PublishNext
         );
-        assert!(!pending.active());
+        assert!(!pending.is_active());
         assert_eq!(
             decide_detection_transition(input, &mut pending),
             DetectionTransitionDecision::NoPublish

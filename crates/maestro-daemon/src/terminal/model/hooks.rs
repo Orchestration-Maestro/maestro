@@ -153,7 +153,7 @@ impl TerminalState {
     }
 
     /// Whether screen evidence is at least as recent as current hook evidence.
-    pub(in crate::terminal) fn fallback_not_older_than_hook(&self) -> bool {
+    pub(in crate::terminal) fn is_fallback_not_older_than_hook(&self) -> bool {
         self.hook_authority.as_ref().is_none_or(|authority| {
             self.fallback_observed_at
                 .is_some_and(|observed_at| authority.reported_at <= observed_at)
@@ -180,7 +180,7 @@ impl TerminalState {
         detected_agent: Option<Agent>,
         process_exited: bool,
     ) -> bool {
-        self.live_full_lifecycle_hook_authority()
+        self.has_live_full_lifecycle_hook_authority()
             && !process_exited
             && !self.hook_authority_conflicts_with_detected_agent(detected_agent)
     }

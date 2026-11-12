@@ -2,7 +2,7 @@
 
 use super::{manifest_cache, populate_terminals, runtime::block_on, spawning::launch_inputs};
 use maestro_daemon::{
-    app::App, locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config,
+    locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config, state::App,
     terminal::model::DetectedStateUpdate,
 };
 use maestro_detection::agents::{Agent, AgentState, AgentVisibility};

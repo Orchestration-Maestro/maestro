@@ -5,13 +5,13 @@
 use crate::support::{self, spawning::launch_inputs};
 
 use maestro_daemon::{
-    app::App,
     events::AppEvent,
     panes::{
         launch::PaneLaunchEnv,
         lifecycle::{AgentDetection, PaneRuntime},
     },
     settings::model::Config,
+    state::App,
 };
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_test_directory::temporary_root;
@@ -188,7 +188,7 @@ fn daemon_delayed_workspace_toast_context_uses_live_root_runtime_cwd_label() {
 fn overlay_app(previous_zoomed: bool) -> (TestApp, PaneId, PaneId) {
     let mut app = context_app("/overlay".into(), false);
     app.state.active = Some(0);
-    app.state.mode = maestro_daemon::app::model::Mode::Terminal;
+    app.state.mode = maestro_daemon::state::model::Mode::Terminal;
     let previous_focus = app.state.topology.workspaces[0].tabs[0].root_pane;
     let pane = app
         .state
@@ -210,7 +210,7 @@ fn overlay_app(previous_zoomed: bool) -> (TestApp, PaneId, PaneId) {
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     app.overlay_panes.insert(
         pane,
-        maestro_daemon::app::OverlayPaneState {
+        maestro_daemon::state::OverlayPane {
             ws_idx: 0,
             tab_idx: 0,
             previous_focus,
@@ -485,7 +485,7 @@ fn daemon_delayed_terminal_delivery_does_not_refresh_existing_targeted_toast() {
 
 /// Keeps an existing target stable when delivery only targets the external client.
 fn assert_terminal_delivery_keeps_toast(delayed: bool) {
-    use maestro_daemon::app::model::{ToastKind, ToastNotification, ToastTarget};
+    use maestro_daemon::state::model::{ToastKind, ToastNotification, ToastTarget};
     let mut app = context_app("/__maestro_original__".into(), delayed);
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
     let terminal_id = app.state.topology.workspaces[0]
@@ -626,8 +626,8 @@ fn daemon_clipboard_feedback_can_be_disabled() {
 #[test]
 fn daemon_clipboard_feedback_does_not_replace_notification_toast() {
     let mut app = context_app(temporary_root(), false);
-    app.state.toast = Some(maestro_daemon::app::model::ToastNotification {
-        kind: maestro_daemon::app::model::ToastKind::NeedsAttention,
+    app.state.toast = Some(maestro_daemon::state::model::ToastNotification {
+        kind: maestro_daemon::state::model::ToastKind::NeedsAttention,
         title: "agent needs attention".into(),
         context: "background · 2".into(),
         position: None,
@@ -742,7 +742,7 @@ async fn check_workspace_creation(args: &[String]) {
     assert_eq!(app.state.terminals.len(), 1);
     assert_eq!(app.terminal_runtimes.len(), 1);
     assert!(app.terminal_runtimes.get(terminal).is_some());
-    assert_eq!(app.state.mode, maestro_daemon::app::model::Mode::Terminal);
+    assert_eq!(app.state.mode, maestro_daemon::state::model::Mode::Terminal);
     assert!(app.state.session_dirty);
     app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
     app.state.session_dirty = false;

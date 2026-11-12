@@ -6,11 +6,11 @@ use crate::config_support;
 
 use config_support::{block_on, fixture, put};
 use maestro_daemon::{
-    app::model::{Mode, ToastKind},
     settings::model::{
         AgentPanelSortConfig, ConfigReloadStatus, NewTerminalCwdConfig, ShellModeConfig,
         ToastDelivery,
     },
+    state::model::{Mode, ToastKind},
 };
 use serde_json::json;
 use std::{path::Path, time::Instant};
@@ -62,8 +62,8 @@ fn live_reload_applies_daemon_areas_without_binding_loader() {
     app.state.selection = Some(maestro_daemon::selection::Selection::range(
         pane, 0, 0, 1, None,
     ));
-    app.state.selection_autoscroll = Some(maestro_daemon::app::model::SelectionAutoscroll {
-        direction: maestro_daemon::app::model::SelectionAutoscrollDirection::Down,
+    app.state.selection_autoscroll = Some(maestro_daemon::state::model::SelectionAutoscroll {
+        direction: maestro_daemon::state::model::SelectionAutoscrollDirection::Down,
         last_mouse_screen_col: 1,
         last_mouse_screen_row: 1,
         inner_rect: maestro_workspace::tiling::Rect::new(0, 0, 2, 2),
@@ -106,7 +106,7 @@ fn live_reload_requests_client_reload_for_host_cursor_only_change() {
 
 #[test]
 fn live_reload_updates_sidebar_width_only_when_config_owned() {
-    use maestro_daemon::app::model::SidebarWidthSource;
+    use maestro_daemon::state::model::SidebarWidthSource;
     let (mut app, mut manager, storage) = fixture();
     assert_eq!(
         app.state.sidebar_width_source,
@@ -227,7 +227,7 @@ fn live_reload_updates_sidebar_collapsed_mode() {
 
 #[test]
 fn live_reload_updates_sidebar_bounds_and_reclamps() {
-    use maestro_daemon::app::model::SidebarWidthSource;
+    use maestro_daemon::state::model::SidebarWidthSource;
     let (mut app, mut manager, storage) = fixture();
     assert_eq!(app.config.ui.sidebar_min_width, 18);
     assert_eq!(app.config.ui.sidebar_max_width, 36);
@@ -419,9 +419,9 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     let paths = maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
     app.config.experimental.pane_history.0 = true;
     std::fs::write(paths.history_path(), "old history").unwrap();
-    let snapshot = maestro_daemon::persist::capture(&app.state, &app.terminal_runtimes);
+    let snapshot = maestro_daemon::persistence::capture(&app.state, &app.terminal_runtimes);
     let expected = serde_json::to_string_pretty(&snapshot).unwrap();
-    let history = maestro_daemon::persist::capture_history(
+    let history = maestro_daemon::persistence::capture_history(
         &app.state.topology.workspaces,
         &app.terminal_runtimes,
     );
@@ -431,7 +431,7 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     app.session_save_thread = Some(std::thread::spawn(move || {
         ready.send(()).unwrap();
         wait.recv().unwrap();
-        maestro_daemon::persist::save(&target, &snapshot, Some(&history));
+        maestro_daemon::persistence::save(&target, &snapshot, Some(&history));
     }));
     waiting.recv().unwrap();
     put(

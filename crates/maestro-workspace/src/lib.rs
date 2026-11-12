@@ -16,4 +16,4 @@ pub mod tab;
 pub mod terminal_id;
 
 /// Supplied-path topology and screen-history persistence.
-pub mod persist;
+pub mod persistence;

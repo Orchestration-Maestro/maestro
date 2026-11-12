@@ -102,7 +102,7 @@ pub struct PendingIdleConfirmation {
 impl PendingIdleConfirmation {
     /// Whether plain idle still awaits confirmation.
     #[must_use]
-    pub fn active(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         self.started_at.is_some()
     }
 

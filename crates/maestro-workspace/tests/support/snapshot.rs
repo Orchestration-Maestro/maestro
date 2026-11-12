@@ -1,5 +1,5 @@
 //! Supplied-path snapshot fixtures and scoped diagnostics.
-use maestro_workspace::persist::{SessionSnapshot, load};
+use maestro_workspace::persistence::{SessionSnapshot, load};
 use serde_json::{Value, json};
 use std::{
     fs,
@@ -100,7 +100,7 @@ pub fn populated() -> Value {
     })
 }
 
-pub fn history() -> maestro_workspace::persist::SessionHistorySnapshot {
+pub fn history() -> maestro_workspace::persistence::SessionHistorySnapshot {
     serde_json::from_value(json!({"version":1,"workspaces":[
         {"tabs":[{"panes":{"9":{"ansi":"\u{1b}[31mprivate screen\n\u{1b}[0m","lines":12}}},{"panes":{"20":{"ansi":"second tab","lines":7}}}]},
         {"tabs":[{"panes":{"9":{"ansi":"other workspace","lines":3}}}]}

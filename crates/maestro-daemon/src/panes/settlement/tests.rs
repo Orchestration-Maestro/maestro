@@ -55,7 +55,7 @@ fn pane_cursor_settle_caps_continuous_position_changes_from_first_pending_time()
         now + CURSOR_POSITION_MAX_HOLD + Duration::from_millis(1),
     );
 
-    assert!(!settle.pending());
+    assert!(!settle.is_pending());
     assert_eq!(
         settle.reported_cursor(
             Some(cursor(3, 0, true, 0)),
@@ -72,13 +72,13 @@ fn pane_cursor_settle_keeps_render_read_pure() {
     settle.observe(Some(cursor(1, 0, true, 0)), now);
     settle.observe(Some(cursor(2, 0, true, 0)), now + Duration::from_millis(1));
 
-    assert!(settle.pending());
+    assert!(settle.is_pending());
     let _ = settle.reported_cursor(
         Some(cursor(2, 0, true, 0)),
         now + CURSOR_POSITION_SETTLE + Duration::from_millis(1),
     );
 
-    assert!(settle.pending());
+    assert!(settle.is_pending());
 }
 
 #[test]
@@ -146,12 +146,12 @@ fn pane_cursor_observations_commit_stable_candidates_and_cancel_on_return() {
         first.map(|c| TerminalCursorState { shape: 6, ..c })
     );
     settle.observe(third, now + Duration::from_millis(3));
-    assert!(settle.pending());
+    assert!(settle.is_pending());
     settle.observe(first, now + Duration::from_millis(4));
-    assert!(!settle.pending());
+    assert!(!settle.is_pending());
     settle.observe(second, now + Duration::from_millis(5));
     settle.observe(second, now + Duration::from_millis(25));
-    assert!(!settle.pending());
+    assert!(!settle.is_pending());
     assert_eq!(
         settle.reported_cursor(second, now + Duration::from_millis(25)),
         second
@@ -165,7 +165,7 @@ fn pane_cursor_absence_clears_a_pending_move() {
     settle.observe(Some(cursor(1, 0, true, 0)), now);
     settle.observe(Some(cursor(2, 0, true, 0)), now);
     settle.observe(None, now);
-    assert!(!settle.pending());
+    assert!(!settle.is_pending());
     assert_eq!(settle.reported_cursor(None, now), None);
     let current = Some(cursor(8, 2, true, 4));
     settle.observe(current, now);
