@@ -13,6 +13,7 @@ mod documented_commands;
 mod duplicates;
 mod integration_tests;
 mod json_dependencies;
+mod lib_tests;
 mod message_renderer_ownership;
 mod package_crates;
 mod platform_opener;

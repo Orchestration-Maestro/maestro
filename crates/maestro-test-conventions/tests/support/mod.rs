@@ -53,13 +53,16 @@ impl Workspace {
         } else {
             "[lints]\nworkspace = true\n".to_owned()
         };
-        fs::write(
-            root.join("Cargo.toml"),
-            format!(
-                "[package]\nname = {name:?}\nversion = \"0.1.0\"\nedition = \"2024\"\n{lints}{dependencies}\n"
-            ),
-        )
-        .unwrap();
+        let manifest = format!(
+            "[package]\nname = {name:?}\nversion = \"0.1.0\"\nedition = \"2024\"\n{lints}{dependencies}\n"
+        );
+        // A caller that declares the library target itself keeps one `[lib]` table.
+        let manifest = if manifest.contains("[lib]\n") {
+            manifest.replace("[lib]\n", "[lib]\ntest = false\n")
+        } else {
+            format!("{manifest}[lib]\ntest = false\n")
+        };
+        fs::write(root.join("Cargo.toml"), manifest).unwrap();
     }
 
     pub fn external(&self, name: &str) {
@@ -74,6 +77,28 @@ impl Workspace {
         )
         .unwrap();
         fs::write(self.root.path().join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = {{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }}\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = {{ level = \"forbid\", priority = -1 }}\nmodule_name_repetitions = \"forbid\"\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
+    }
+
+    /// Set whether the member's library holds tests in its `src`, which decides its test target.
+    pub fn in_source_tests(&self, directory: &str, tests: bool) {
+        let path = self
+            .root
+            .path()
+            .join("crates")
+            .join(directory)
+            .join("Cargo.toml");
+        let text = fs::read_to_string(&path).unwrap();
+        let flag = "[lib]\ntest = false\n";
+        let updated = if tests {
+            text.replace(flag, "[lib]\n")
+        } else if text.contains(flag) {
+            text
+        } else if text.contains("[lib]\n") {
+            text.replace("[lib]\n", flag)
+        } else {
+            format!("{text}{flag}")
+        };
+        fs::write(path, updated).unwrap();
     }
 
     /// Package a fixture's top-level test files in the canonical executable.
@@ -203,6 +228,8 @@ pub fn native_path_text(relative: &str) -> String {
 ///
 /// The authored relative path is written with slashes and returned with the native
 /// separators the file system reports, so a diagnostic comparison matches on every host.
+/// A library source that holds tests turns the member's library test target back on, so
+/// every fixture keeps the agreement the workspace check requires.
 pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &str) -> PathBuf {
     let path = workspace
         .root
@@ -212,7 +239,20 @@ pub fn source(workspace: &Workspace, member: &str, relative: &str, contents: &st
         .join(native_path(relative));
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(&path, contents).unwrap();
+    if contains_tests(relative, contents) {
+        workspace.in_source_tests(member, true);
+    }
     path
+}
+
+/// Whether an authored library source holds tests: a test layout, gate or attribute.
+fn contains_tests(relative: &str, contents: &str) -> bool {
+    relative.starts_with("src/")
+        && (contents.contains("#[cfg(test)]")
+            || contents.contains("#[test]")
+            || relative
+                .split('/')
+                .any(|part| part == "tests" || part == "tests.rs"))
 }
 
 impl Workspace {

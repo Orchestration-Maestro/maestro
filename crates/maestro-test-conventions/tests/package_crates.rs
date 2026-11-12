@@ -341,10 +341,7 @@ fn package_factories_exclude_test_only_declarations_and_reexports() {
         package(&workspace, "maestro-subagents", "");
         workspace.list(&[("maestro-subagents", "package")]);
         support::source(&workspace, "maestro-subagents", "src/lib.rs", source);
-        assert!(
-            check_workspace(workspace.root.path())
-                .unwrap_err()
-                .contains("public factory")
-        );
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(error.contains("public factory"), "{source}: {error}");
     }
 }
