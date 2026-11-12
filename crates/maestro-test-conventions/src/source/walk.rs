@@ -17,8 +17,9 @@ use super::{
 use crate::boundaries::{application_exports, message_renderers};
 use crate::graph::packages::{self, Exports};
 use crate::{
-    child_tests, duplicates, generated, integration_tests, poison, quality, real_paths, repetition,
-    standard_error, temp_directories, test_input_routes, time_limits,
+    child_tests, duplicates, fixture_includes, generated, integration_tests, poison, quality,
+    real_paths, repetition, standard_error, temp_directories, test_input_routes, time_limits,
+    tokio_macros,
 };
 
 /// Every check's findings for one parsed source.
@@ -51,8 +52,12 @@ pub(crate) struct Walk {
     pub(crate) real_paths: Vec<usize>,
     /// Sorted lines invoking a standard error print macro, in production code.
     pub(crate) standard_error: Vec<usize>,
+    /// Sorted lines spelling a Tokio macro, in production code.
+    pub(crate) tokio_macros: Vec<usize>,
     /// Located repository-directory reads by test code.
     pub(crate) reads: BTreeSet<(usize, String)>,
+    /// Spelled compile-time include targets in test code, with their lines.
+    pub(crate) includes: Vec<(usize, String)>,
     /// Imports of an application source in its logical module.
     pub(crate) imports: Option<Vec<application_exports::Import>>,
     /// First public credentials name its declared surface does not carry, with its line.
@@ -133,8 +138,12 @@ struct Walker<'a> {
     resolutions: Option<real_paths::Resolutions>,
     /// Standard error print macros, for checked members.
     prints: Option<standard_error::Prints>,
+    /// Tokio macro spellings in production code.
+    tokio: tokio_macros::Spellings,
     /// Repository-directory reads by test code.
     reads: test_input_routes::Reads,
+    /// Compile-time includes in test code.
+    includes: fixture_includes::Includes,
     /// Application imports, for application sources.
     uses: Option<application_exports::Uses>,
     /// Credentials exports the declared surface does not carry, for a credentials root.
@@ -170,7 +179,9 @@ impl<'a> Walker<'a> {
                 .then(temp_directories::References::default),
             resolutions: real_paths::checked(member).then(real_paths::Resolutions::default),
             prints: standard_error::checked(member).then(standard_error::Prints::default),
+            tokio: tokio_macros::Spellings::default(),
             reads: test_input_routes::Reads::default(),
+            includes: fixture_includes::Includes::default(),
             uses: application_exports::Uses::new(member, source),
             credentials: application_exports::file_credentials(member, source, file),
             attributes: (member.name == generated::GUEST).then(|| generated::Attributes::new(file)),
@@ -258,7 +269,9 @@ impl<'a> Walker<'a> {
                 .prints
                 .map(standard_error::Prints::finish)
                 .unwrap_or_default(),
+            tokio_macros: self.tokio.finish(),
             reads: self.reads.finish(),
+            includes: self.includes.targets,
             imports: self.uses.map(|uses| uses.imports),
             credentials: self.credentials,
             guest: self.attributes,
@@ -312,6 +325,9 @@ impl<'a> Visit<'a> for Walker<'a> {
 
     fn visit_attribute(&mut self, attribute: &'a syn::Attribute) {
         self.ignored.attribute(attribute);
+        if !self.testing() {
+            self.tokio.attribute(attribute);
+        }
         if !self.context.attribute
             && let Some(attributes) = &mut self.attributes
         {
@@ -420,6 +436,7 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_item_use(&mut self, item: &'a syn::ItemUse) {
         if !self.testing() {
             self.guard.item_use(item);
+            self.tokio.import(&item.tree);
             if let Some(resolutions) = &mut self.resolutions {
                 resolutions.use_tree(&item.tree);
             }
@@ -449,9 +466,11 @@ impl<'a> Visit<'a> for Walker<'a> {
             if let Some(prints) = &mut self.prints {
                 prints.invocation(invocation);
             }
+            self.tokio.invocation(invocation);
         }
         if self.reading() {
             self.reads.macro_tokens(invocation);
+            self.includes.macro_tokens(invocation);
         }
         if self.context.gate != Some(Gate::Item)
             && let Some(exports) = &mut self.exports

@@ -4,8 +4,8 @@ use crate::support::api::{
     TestApp, add_tab, add_workspaces, answer, daemon_with_workspaces, event_names, events_after,
     failure, request, root_pane, run_in_pane, split_pane, with_live_daemon,
 };
-use maestro_daemon::app::model::Mode;
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
+use maestro_daemon::state::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirection};
 use maestro_workspace::tiling::PaneId;

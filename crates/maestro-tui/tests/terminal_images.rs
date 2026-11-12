@@ -4,8 +4,14 @@ use std::{cell::RefCell, rc::Rc};
 
 #[test]
 fn capability_environment_precedence_and_color_values() {
-    let corpus: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/image_cases.json")).unwrap();
+    let corpus: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/image_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     for case in corpus
         .as_array()
         .unwrap()

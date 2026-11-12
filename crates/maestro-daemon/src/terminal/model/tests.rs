@@ -75,18 +75,18 @@ fn pane_managed_agent_readiness_tracks_detection_state() {
     );
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Unknown);
 
-    assert!(terminal.managed_agent_launch_pending());
-    assert!(!terminal.managed_agent_interactive_ready());
+    assert!(terminal.is_managed_agent_launch_pending());
+    assert!(!terminal.is_managed_agent_interactive_ready());
     assert!(terminal.reconcile_managed_agent_at(now + Duration::from_millis(100), false));
-    assert!(terminal.managed_agent_launch_pending());
+    assert!(terminal.is_managed_agent_launch_pending());
 
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Working);
     assert!(!terminal.reconcile_managed_agent_at(now + Duration::from_millis(101), false));
 
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Blocked);
     assert!(terminal.reconcile_managed_agent_at(now + Duration::from_millis(102), false));
-    assert!(terminal.managed_agent_launch_pending());
-    assert!(!terminal.managed_agent_interactive_ready());
+    assert!(terminal.is_managed_agent_launch_pending());
+    assert!(!terminal.is_managed_agent_interactive_ready());
     assert_eq!(terminal.next_managed_agent_deadline(), None);
     assert_eq!(terminal.agent_name.as_deref(), Some("reviewer"));
     assert!(!terminal.reconcile_managed_agent_at(now + Duration::from_secs(2), false));
@@ -98,11 +98,11 @@ fn pane_managed_agent_readiness_tracks_detection_state() {
 fn assert_managed_agent_stays_ready_until_exit(terminal: &mut TerminalState, now: Instant) {
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
     assert!(terminal.reconcile_managed_agent_at(now + Duration::from_secs(2), false));
-    assert!(!terminal.managed_agent_launch_pending());
-    assert!(terminal.managed_agent_interactive_ready());
+    assert!(!terminal.is_managed_agent_launch_pending());
+    assert!(terminal.is_managed_agent_interactive_ready());
 
     terminal.set_detected_state(None, AgentState::Unknown);
-    assert!(terminal.managed_agent_interactive_ready());
+    assert!(terminal.is_managed_agent_interactive_ready());
     assert!(!terminal.reconcile_managed_agent_at(now + Duration::from_secs(2), false));
     assert_eq!(terminal.agent_name.as_deref(), Some("reviewer"));
     assert!(terminal.reconcile_managed_agent_at(now + Duration::from_secs(2), true));
@@ -266,7 +266,7 @@ fn pane_session_only_report_does_not_create_hook_authority() {
 
         assert!(mutation.is_some());
         assert!(terminal.hook_authority.is_none());
-        assert!(!terminal.full_lifecycle_hook_authority_active());
+        assert!(!terminal.is_full_lifecycle_hook_authority_active());
         assert_eq!(terminal.state, AgentState::Idle);
 
         terminal.set_detected_state_with_screen_signals_at(
@@ -1045,14 +1045,14 @@ fn pane_rapid_restart_replays_reports_that_arrive_before_process_evidence() {
     assert!(lower_sequence.is_none());
     assert!(missing_sequence.is_none());
     assert!(buffered_working.is_none());
-    assert!(!terminal.full_lifecycle_hook_authority_active());
+    assert!(!terminal.is_full_lifecycle_hook_authority_active());
 
     terminal.set_detected_state_with_screen_signals_at(
         idle_detection(Some(Agent::Pi), false),
         now + Duration::from_millis(5),
     );
 
-    assert!(terminal.full_lifecycle_hook_authority_active());
+    assert!(terminal.is_full_lifecycle_hook_authority_active());
     assert_eq!(terminal.state, AgentState::Working);
 }
 
@@ -3083,7 +3083,7 @@ fn pane_managed_agent_name_survives_native_session_replacement() {
     }
 
     assert_eq!(terminal.agent_name.as_deref(), Some("reviewer"));
-    assert!(terminal.managed_agent_interactive_ready());
+    assert!(terminal.is_managed_agent_interactive_ready());
     assert_eq!(
         terminal
             .persisted_agent_session

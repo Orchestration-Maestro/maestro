@@ -562,8 +562,13 @@ fn join_beta_headers(rows: &mut [Row]) {
 pub async fn assert_rows(test: &str) -> TestResult {
     // Ordered beta arrays avoid the secret scanner mistaking comma-joined OAuth
     // beta tokens for credentials; joining restores the unchanged wire values.
-    let mut rows: Vec<Row> =
-        serde_json::from_str(include_str!("../fixtures/message_protocol/options.json"))?;
+    let mut rows: Vec<Row> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/message_protocol/options.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )?;
     join_beta_headers(&mut rows);
     let mut ids = HashSet::new();
     let mut queries = HashSet::new();

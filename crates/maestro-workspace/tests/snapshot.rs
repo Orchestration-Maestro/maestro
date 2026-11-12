@@ -1,6 +1,6 @@
 //! Current-format topology and history records.
 use super::support::snapshot::{Directory, empty};
-use maestro_workspace::persist::{load, save_to_paths};
+use maestro_workspace::persistence::{load, save_to_paths};
 
 #[test]
 fn empty_snapshot_keeps_sidebar_selection() {
@@ -18,13 +18,13 @@ fn empty_snapshot_keeps_sidebar_selection() {
 #[test]
 fn nested_layout_keeps_axes_and_ratios() {
     let expected = serde_json::json!({"Split":{"direction":"Horizontal","ratio":0.25,"first":{"Pane":7},"second":{"Split":{"direction":"Vertical","ratio":0.75,"first":{"Pane":31},"second":{"Pane":99}}}}});
-    let layout: maestro_workspace::persist::LayoutSnapshot =
+    let layout: maestro_workspace::persistence::LayoutSnapshot =
         serde_json::from_value(expected.clone()).unwrap();
     assert_eq!(serde_json::to_value(layout).unwrap(), expected);
 }
 
 use super::support::snapshot::{assert_error, capture, encoded, history, populated, read};
-use maestro_workspace::persist::{
+use maestro_workspace::persistence::{
     load_history,
     records::{self, WorkspaceSnapshot},
 };

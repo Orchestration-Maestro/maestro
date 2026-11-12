@@ -13,7 +13,7 @@ mod style;
 mod tests;
 
 use cursor::CursorMemory;
-use maestro_app::daemon_api::render_prof;
+use maestro_app::daemon_api::render_profile;
 use maestro_protocol::frames::FrameData;
 use ratatui::style::Modifier;
 use redraw::Changes;
@@ -88,8 +88,8 @@ impl BlitEncoder {
         suppress_visible_cursor: bool,
     ) -> EncodedBlit {
         let full = diff_base(frame, previous).is_none();
-        let stats = render_prof::enabled().then(|| ProfBlitStats::new(frame, previous));
-        let started = render_prof::timer();
+        let stats = render_profile::enabled().then(|| ProfBlitStats::new(frame, previous));
+        let started = render_profile::timer();
         let mut cursor = self.cursor;
         let policy = BlitPolicy {
             repeat_ime_anchor: !cfg!(windows),
@@ -235,12 +235,12 @@ impl ProfBlitStats {
 
     /// Report the counts with the encoded size and duration.
     fn record(self, bytes: usize, full: bool, started: Option<Instant>) {
-        render_prof::duration_since("ansi_encode.total", started);
-        render_prof::counter("ansi_encode.bytes", bytes as u64);
-        render_prof::counter("ansi_encode.scanned_cells", self.scanned_cells);
-        render_prof::counter("ansi_encode.changed_cells", self.changed_cells);
-        render_prof::counter("ansi_encode.changed_runs", self.changed_runs);
-        render_prof::event(if full {
+        render_profile::duration_since("ansi_encode.total", started);
+        render_profile::counter("ansi_encode.bytes", bytes as u64);
+        render_profile::counter("ansi_encode.scanned_cells", self.scanned_cells);
+        render_profile::counter("ansi_encode.changed_cells", self.changed_cells);
+        render_profile::counter("ansi_encode.changed_runs", self.changed_runs);
+        render_profile::event(if full {
             "ansi_encode.full"
         } else {
             "ansi_encode.partial"

@@ -438,7 +438,11 @@ fn replace_marker(value: &mut Value, text: &str) -> usize {
 /// Run a test's recorded inputs in one isolated child process.
 pub fn assert_rows(test: &str) -> TestResult {
     assert_corpus_rows(
-        include_str!("../fixtures/response_qualification.json"),
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/response_qualification.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
         &OWNERS,
         test,
     )
@@ -674,7 +678,7 @@ mod tests {
     #[test]
     fn overflow_rows_expand_to_the_recorded_paragraph() {
         let mut rows: Vec<Value> =
-            serde_json::from_str(crate::cache_overflow_images::CORPUS).unwrap();
+            serde_json::from_str(&crate::cache_overflow_images::corpus()).unwrap();
         let mut leaves = 0;
         for row in &mut rows {
             if !(18..=21).any(|n| row["id"] == format!("overflow_{n}_0")) {

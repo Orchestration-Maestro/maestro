@@ -62,8 +62,14 @@ struct View {
 }
 
 pub fn run(test: &str) {
-    let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/ssf/legacy_metadata.json")).unwrap();
+    let cases: Vec<Case> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/ssf/legacy_metadata.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let mut count = 0;
     for case in cases.iter().filter(|case| case.test == test) {
         count += 1;

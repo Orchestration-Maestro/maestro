@@ -1,6 +1,7 @@
 //! Matching math stylesheet and fonts, embedded and installed once per document.
 use crate::browser::attachment_content::{AttachmentHostError, browser::host_error};
 use std::hash::{DefaultHasher, Hash as _, Hasher as _};
+use std::sync::OnceLock;
 use web_sys::{Document, FontFace, FontFaceDescriptors};
 
 /// Opening of each font rule in the stylesheet.
@@ -97,13 +98,8 @@ const FONTS: [(&str, &[u8]); 20] = [
 /// The faces are built from their bytes, which no page content policy governs, so math keeps
 /// its fonts on a page that refuses font URLs.
 pub(crate) fn install(document: &Document) -> Result<(), AttachmentHostError> {
-    let mut hasher = DefaultHasher::new();
-    STYLESHEET.hash(&mut hasher);
-    for font in FONTS {
-        font.hash(&mut hasher);
-    }
-    let id = format!("maestro-math-{:016x}", hasher.finish());
-    if document.get_element_by_id(&id).is_some() {
+    let id = element_id();
+    if document.get_element_by_id(id).is_some() {
         return Ok(());
     }
     let mut css = String::with_capacity(STYLESHEET.len());
@@ -118,7 +114,20 @@ pub(crate) fn install(document: &Document) -> Result<(), AttachmentHostError> {
         rest = &rule[end + 1..];
     }
     css.push_str(rest);
-    super::install_stylesheet(document, &id, &css)
+    super::install_stylesheet(document, id, &css)
+}
+
+/// Stylesheet element id, derived once from the embedded stylesheet and fonts.
+fn element_id() -> &'static str {
+    static ID: OnceLock<String> = OnceLock::new();
+    ID.get_or_init(|| {
+        let mut hasher = DefaultHasher::new();
+        STYLESHEET.hash(&mut hasher);
+        for font in FONTS {
+            font.hash(&mut hasher);
+        }
+        format!("maestro-math-{:016x}", hasher.finish())
+    })
 }
 
 /// Add the embedded face whose font rule has the declarations `rule`.

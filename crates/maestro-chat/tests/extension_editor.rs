@@ -28,8 +28,14 @@ struct Case {
 }
 /// Decodes each field through its owning schema.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
-    let corpus: Vec<Case> =
-        serde_json::from_str(include_str!("fixtures/extension_editor.json")).unwrap();
+    let corpus: Vec<Case> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/extension_editor.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     assert_eq!(corpus.len(), 105);
     let mut identities = std::collections::HashSet::new();
     for row in &corpus {
@@ -1404,8 +1410,14 @@ fn external_editor_windows_uses_shell_while_unix_executes_directly() {
     let _guard = input_support::globals();
     maestro_tui::set_keybindings(manager());
     let test = "external_editor_windows_uses_shell_while_unix_executes_directly";
-    let rows: Vec<Case> =
-        serde_json::from_str(include_str!("fixtures/extension_editor.json")).unwrap();
+    let rows: Vec<Case> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/extension_editor.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let rows: Vec<_> = rows
         .into_iter()
         .filter(|row| row.test == test && row.input.get("VISUAL").is_some())

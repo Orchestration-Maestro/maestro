@@ -34,8 +34,14 @@ struct Error {
 }
 /// Replay one fixture group through both real and controlled file operations.
 pub fn corpus(group: &str) {
-    let cases: HashMap<String, Vec<Case>> =
-        serde_json::from_str(include_str!("catalog-fixtures.json")).unwrap();
+    let cases: HashMap<String, Vec<Case>> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/support/catalog-fixtures.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let baseline: HashMap<_, _> = get_providers()
         .iter()
         .flat_map(|p| get_models(p))

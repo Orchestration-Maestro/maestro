@@ -322,6 +322,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Detection catalog:** The downloaded, version-checked cache of detection manifests, used ahead of the bundled set when newer.
 - **Detection manifest:** Bundled or downloaded data rules recognizing an agent and its status from a pane's screen, title or progress reports.
 - **Workspace action:** A declarative command, pane or hook delivered as package content and run by the daemon's command runner.
+- **Action pane:** A pane opened by a workspace action. _Avoid:_ plugin pane.
 - **Multiplexer:** The full-screen frontend attaching to a workspace daemon to show its frames.
 - **Attach / detach:** Connecting a multiplexer client to a daemon, and leaving the daemon running.
 

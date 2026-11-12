@@ -1,5 +1,5 @@
 //! Cargo-compiled native source witnesses for boundary descriptors.
-use super::{Case, Scratch};
+use super::Scratch;
 use crate::Model;
 use std::fmt::Write as _;
 
@@ -12,7 +12,7 @@ mod boundary {
 }
 /// Pair each selected boundary query with its typed input descriptor.
 fn boundary_inputs() -> Vec<(String, Model)> {
-    let cases: Vec<Case> = serde_json::from_str(include_str!("corpus.json")).unwrap();
+    let cases = super::corpus();
     let mut records = Vec::new();
     for case in cases.into_iter().filter(|case| {
         matches!(
@@ -69,7 +69,7 @@ fn emission_cases(name: &str) {
         ))
     );
     let compiled = boundary::cases();
-    let cases: Vec<Case> = serde_json::from_str(include_str!("corpus.json")).unwrap();
+    let cases = super::corpus();
     for case in cases.into_iter().filter(|case| case.test == name) {
         for (key, expected) in inputs
             .iter()
@@ -126,7 +126,7 @@ fn emitted_numbers_reconstruct_finite_values() {
 #[test]
 fn complete_catalog_matches_all_descriptors() {
     super::assembly_cases("complete_catalog_matches_all_descriptors");
-    let cases: Vec<Case> = serde_json::from_str(include_str!("corpus.json")).unwrap();
+    let cases = super::corpus();
     let case = cases
         .into_iter()
         .find(|case| case.test == "complete_catalog_matches_all_descriptors")
@@ -192,7 +192,7 @@ fn key_sequences(value: &serde_json::Value, out: &mut Vec<Vec<String>>) {
 
 /// Check literal filename identities through actual filesystem publication.
 fn assert_directory_local_filenames() {
-    let cases: Vec<Case> = serde_json::from_str(include_str!("corpus.json")).unwrap();
+    let cases = super::corpus();
     let case = cases
         .into_iter()
         .find(|case| case.test == "emitted_strings_compile_without_changing_identity")

@@ -1,4 +1,5 @@
 //! Shared integration-test executable.
+#![cfg(test)]
 
 mod browser_loop;
 mod browser_owned;

@@ -33,7 +33,7 @@ pub mod tab;
 pub mod workspace;
 
 /// Daemon snapshot save and clear operations.
-pub mod persist;
+pub mod persistence;
 
 /// Environment names grouped by their runtime consumers.
 pub mod variables;
@@ -45,7 +45,7 @@ pub mod panes;
 pub mod selection;
 
 /// Opt-in render profiling through structured tracing.
-pub mod render_prof;
+pub mod render_profile;
 
 /// Coalesced pane render and metadata requests.
 pub mod render_signal;
@@ -64,7 +64,7 @@ pub mod keys;
 
 /// Retained daemon state and workspace operations.
 #[cfg(target_os = "linux")]
-pub mod app;
+pub mod state;
 
 #[cfg(test)]
 mod tests;

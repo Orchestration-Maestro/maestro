@@ -1456,7 +1456,8 @@ fn workspace(root: &Path) {
     .unwrap();
     fs::write(
         root.join("Cargo.lock"),
-        "version = 4\n\n[[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
+        "version = 4\n\n[[package]]\nname = \"maestro-app\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
          [[package]]\nname = \"maestro-extensions-wasmtime\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-models\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
@@ -1473,6 +1474,7 @@ fn workspace(root: &Path) {
     fs::write(browser.join("Cargo.toml"), "browser manifest").unwrap();
     fs::write(browser.join("Cargo.lock"), "browser lock").unwrap();
     for (name, dependency) in [
+        ("maestro-app", ""),
         (
             "maestro-extensions-wasm",
             "\n[dependencies]\nshared = { path = \"../shared\" }\n",
@@ -1696,16 +1698,7 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
     let root = scratch.path();
     fixture(root);
     let environment = root.join("native-env");
-    let setup = || {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
-        command
-            .args(["nextest-setup", "native-fixture"])
-            .current_dir(root)
-            .env("CARGO", root.join("cargo"))
-            .env("NEXTEST_ENV", &environment);
-        maestro_test_process::without_prepared_bundles(&mut command);
-        command
-    };
+    let setup = || native_setup(root, &environment);
     assert_success(&setup().output().unwrap());
     assert_success(&setup().output().unwrap());
     assert_eq!(
@@ -1724,13 +1717,7 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
             .unwrap(),
     );
     let environment_text = fs::read_to_string(&environment).unwrap();
-    for variable in ["MAESTRO_NATIVE_FIXTURE", "MAESTRO_CHILD_TOOLCHAIN_PROBE"] {
-        let path = environment_text
-            .lines()
-            .find_map(|line| line.strip_prefix(&format!("{variable}=")))
-            .unwrap();
-        assert!(Path::new(path).is_absolute() && Path::new(path).starts_with(&moved));
-    }
+    assert_fixtures_relocated(&environment_text, &moved);
     let artifact = Path::new(
         environment_text
             .lines()
@@ -1748,6 +1735,72 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
         fs::read_to_string(root.join("probe-builds")).unwrap(),
         "build\n"
     );
+    assert_eq!(
+        fs::read_to_string(root.join("conversion-builds")).unwrap(),
+        "build\n"
+    );
+}
+
+/// The native setup, as nextest's setup entry runs it in a checkout without a prepared bundle.
+fn native_setup(root: &Path, environment: &Path) -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command
+        .args(["nextest-setup", "native-fixture"])
+        .current_dir(root)
+        .env("CARGO", root.join("cargo"))
+        .env("NEXTEST_ENV", environment);
+    maestro_test_process::without_prepared_bundles(&mut command);
+    command
+}
+
+/// The number of times the stand-in Cargo built the named example.
+fn builds(root: &Path, example: &str) -> usize {
+    fs::read_to_string(root.join(format!("{example}-builds")))
+        .unwrap()
+        .lines()
+        .count()
+}
+
+/// An edit to the application crate rebuilds the startup conversion child alone, and an edit to
+/// the test-process crate rebuilds the native fixture and the probe but not the child.
+#[test]
+fn native_fixture_setup_rebuilds_only_the_children_whose_inputs_changed() {
+    let scratch = Scratch::new().unwrap();
+    let root = scratch.path();
+    fixture(root);
+    let environment = root.join("native-env");
+    assert_success(&native_setup(root, &environment).output().unwrap());
+    fs::write(root.join("crates/maestro-app/src/lib.rs"), "edited app").unwrap();
+    assert_success(&native_setup(root, &environment).output().unwrap());
+    assert_eq!(
+        ["native", "probe", "conversion"].map(|example| builds(root, example)),
+        [1, 1, 2]
+    );
+    fs::write(
+        root.join("crates/maestro-test-process/src/lib.rs"),
+        "edited process",
+    )
+    .unwrap();
+    assert_success(&native_setup(root, &environment).output().unwrap());
+    assert_eq!(
+        ["native", "probe", "conversion"].map(|example| builds(root, example)),
+        [2, 2, 2]
+    );
+}
+
+/// Every host fixture the setup exported lies below the relocated bundle.
+fn assert_fixtures_relocated(environment: &str, bundle: &Path) {
+    for variable in [
+        "MAESTRO_NATIVE_FIXTURE",
+        "MAESTRO_CHILD_TOOLCHAIN_PROBE",
+        "MAESTRO_STARTUP_CONVERSION",
+    ] {
+        let path = environment
+            .lines()
+            .find_map(|line| line.strip_prefix(&format!("{variable}=")))
+            .unwrap();
+        assert!(Path::new(path).is_absolute() && Path::new(path).starts_with(bundle));
+    }
 }
 
 /// Cargo checks retain their built artifacts after relocation without calling Cargo in a shard.

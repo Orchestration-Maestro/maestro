@@ -1,6 +1,6 @@
 //! Controlled settings storage with the real daemon application owner.
 
-use maestro_daemon::{app::App, service::event_hub::EventHub, settings::model::Config};
+use maestro_daemon::{service::event_hub::EventHub, settings::model::Config, state::App};
 use maestro_settings::{InMemorySettingsStorage, SettingsManager, SettingsScope, SettingsStorage};
 use std::sync::{Arc, RwLock};
 

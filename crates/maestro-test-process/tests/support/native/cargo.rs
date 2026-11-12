@@ -47,6 +47,8 @@ enum Example {
     Native,
     /// The instrumented parent the toolchain counter test launches.
     Probe,
+    /// The child that runs one startup conversion.
+    Conversion,
 }
 
 /// A build parsed before any directory or log is written.
@@ -75,6 +77,7 @@ impl Build {
             Some("native_fixture") => Example::Native,
             Some("prepare_author_component") => Example::Author,
             Some("child_toolchain_probe") => Example::Probe,
+            Some("startup_conversion") => Example::Conversion,
             _ => return Err(io::Error::other("unknown preparation example")),
         };
         Ok(Self {
@@ -179,6 +182,11 @@ fn build(record: &Record, build: &Build, start: bool) -> io::Result<()> {
             "child_toolchain_probe",
             std::env::current_exe()?,
             "probe-builds",
+        ),
+        Example::Conversion => (
+            "startup_conversion",
+            std::env::current_exe()?,
+            "conversion-builds",
         ),
     };
     let declaration = if matches!(build.example, Example::Author) {

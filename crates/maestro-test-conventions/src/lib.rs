@@ -18,6 +18,8 @@ mod config_scripts;
 mod documented_commands;
 /// Exact production function-body ownership.
 mod duplicates;
+/// Fixture size limits for test code that compiles its input.
+mod fixture_includes;
 /// Native fixture setup selection for declared test-process callers.
 mod fixture_selection;
 /// Binding manifest lint exceptions and generated extension source checks.
@@ -55,6 +57,8 @@ mod test_budget;
 mod test_input_routes;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
+/// Tokio macros that need the `macros` feature.
+mod tokio_macros;
 /// Files the repository index tracks.
 mod tracked_files;
 /// Tracked script files.
@@ -162,6 +166,11 @@ mod tracked_sizes;
 /// the application's platform opener. The whole-file token check includes fragments
 /// and nested groups; editor and clipboard process policies stay with their callers.
 ///
+/// A member whose production code spells a Tokio macro (`select!`, `join!`, `try_join!`) by path
+/// or import, or the `main` or `test` attribute by path, declares Tokio's `macros` feature among
+/// its normal dependencies. Test code and spellings of other crates are exempt, and each offending
+/// line is reported.
+///
 /// Production code may not define its own poison-tolerant lock acquisition. A free
 /// function, an inherent accessor, a closure and a macro argument that acquire a
 /// `Mutex` or `RwLock` and recover with `PoisonError::into_inner` are reported with
@@ -198,7 +207,9 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| setup_children::check(&members),
         &|| real_paths::check(&members),
         &|| standard_error::check(&members),
+        &|| tokio_macros::check(&metadata, &members),
         &|| test_input_routes::check(root, &members),
+        &|| fixture_includes::check(&members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.
     pool::map(checks, |check| check())?.into_iter().collect()

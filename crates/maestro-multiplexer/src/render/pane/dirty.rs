@@ -2,7 +2,7 @@
 
 use super::{clear_render_dirty, style::CellStyler};
 use crate::render::conversion::color_to_u32;
-use maestro_app::daemon_api::{PaneRenderView, PaneTerminal, render_prof};
+use maestro_app::daemon_api::{PaneRenderView, PaneTerminal, render_profile};
 use maestro_app::terminal::Dirty;
 use maestro_protocol::frames::CellData;
 use ratatui::style::{Color, Style};
@@ -37,7 +37,7 @@ pub fn collect_dirty_patch(
 ) -> TerminalDirtyPatchOutcome {
     pane.with_render_view(Instant::now(), |mut view| {
         let outcome = patch(&mut view, area_width, area_height).unwrap_or_else(|reason| {
-            render_prof::event(reason);
+            render_profile::event(reason);
             TerminalDirtyPatchOutcome::Fallback
         });
         if let Some(started) = view.prof_started {
@@ -99,15 +99,15 @@ fn cell_data(symbol: String, style: Style) -> CellData {
 
 /// Report a collection's outcome to the opt-in render profiler.
 fn record(outcome: &TerminalDirtyPatchOutcome, started: Instant) {
-    render_prof::duration("dirty_collect.total", started.elapsed());
+    render_profile::duration("dirty_collect.total", started.elapsed());
     match outcome {
-        TerminalDirtyPatchOutcome::Clean => render_prof::event("dirty_collect.clean"),
-        TerminalDirtyPatchOutcome::Fallback => render_prof::event("dirty_collect.fallback"),
+        TerminalDirtyPatchOutcome::Clean => render_profile::event("dirty_collect.clean"),
+        TerminalDirtyPatchOutcome::Fallback => render_profile::event("dirty_collect.fallback"),
         TerminalDirtyPatchOutcome::Patch(patch) => {
-            render_prof::event("dirty_collect.patch");
-            render_prof::counter("dirty_collect.rows", patch.rows.len() as u64);
+            render_profile::event("dirty_collect.patch");
+            render_profile::counter("dirty_collect.rows", patch.rows.len() as u64);
             let cells = patch.rows.iter().map(|(_, cells)| cells.len() as u64).sum();
-            render_prof::counter("dirty_collect.cells", cells);
+            render_profile::counter("dirty_collect.cells", cells);
         }
     }
 }

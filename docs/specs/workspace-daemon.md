@@ -90,13 +90,13 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 |---|---|---|
 | `maestro-json` | `lines` | 1 |
 | `maestro-process` | `terminal::{fd, channels, jobs}`, `commands` additions, `children::native` signal escalation | 2, 19, 29 |
-| `maestro-workspace` | `tiling`, `spaces`, `spaces::repository`, `tab`, `pane_state`, `terminal_id`, `metadata_tokens`, `persist::{records, io}` | 3, 6, 14 |
+| `maestro-workspace` | `tiling`, `spaces`, `spaces::repository`, `tab`, `pane_state`, `terminal_id`, `metadata_tokens`, `persistence::{records, io}` | 3, 6, 14 |
 | `maestro-detection` | `agents`, `definitions`, `updates`, bundled manifests | 4, 7 |
 | `maestro-lock` | `replace` | 6 |
 | `maestro-protocol` | `KeyModifiers` constants and the underline bit layout in `frames` (additive) | 9, 26 |
 | `maestro-settings` | `SettingsManager::set_global_key` becomes public | 8 |
 | `maestro-packages` | the `actions` resource kind, the subdirectory field, `package_filters::toggle_resource`, `PackageManager::set_prepare_callback` | 19 |
-| `maestro-daemon` | `terminal`, `terminal_theme`, `resume`, `settings`, `locations`, `variables`, `diagnostics`, `instances`, `ingress`, `selection`, `panes`, `render_prof`, `events`, `render_signal`, `app`, `summary`, `git`, `persist`, `platform`, `keys`, `service`, `client`, `restore`, `actions`, `commands`, `popup`, `checkouts`, `integrations`, `server`, `pane_graphics`, `announcements` | 5, 8–20, 25, 27–31, 34 |
+| `maestro-daemon` | `terminal`, `terminal_theme`, `resume`, `settings`, `locations`, `variables`, `diagnostics`, `instances`, `ingress`, `selection`, `panes`, `render_profile`, `events`, `render_signal`, `state`, `summary`, `git`, `persistence`, `platform`, `keys`, `service`, `client`, `restore`, `actions`, `commands`, `popup`, `checkouts`, `integrations`, `server`, `pane_graphics`, `announcements` | 5, 8–20, 25, 27–31, 34 |
 | `maestro-rpc` | `daemon` (socket adapter and graphics stream channel) | 13, 15, 31 |
 | `maestro-cli` | `workspace_commands`, `completion`, `output` | 21–23, 32, 33, 35 |
 | `maestro-tui` | `input_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
@@ -112,7 +112,7 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Daemon state, view state and the render surface
 
-- **Daemon state.** `maestro-daemon::app::model::DaemonState` holds every field that daemon code reads or
+- **Daemon state.** `maestro-daemon::state::model::DaemonState` holds every field that daemon code reads or
   writes, directly or through a state method. Examples are sizes, popup geometry, persisted sidebar values,
   toasts, the mode, copy mode, selection, focus records, notification delivery and the worktree-open dialog.
   It is shared by every client of one daemon.

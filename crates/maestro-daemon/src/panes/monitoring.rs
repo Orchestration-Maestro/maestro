@@ -264,7 +264,7 @@ impl Detector {
                 || config.terminal.has_transient_default_color_override())
         {
             Duration::from_millis(50)
-        } else if self.pending_idle.active() {
+        } else if self.pending_idle.is_active() {
             AGENT_PENDING_IDLE_RECHECK
         } else if spawned && self.presence.current_agent().is_none() {
             Duration::from_millis(500)
@@ -401,7 +401,7 @@ impl Detector {
     }
 
     /// Whether completion must precede releasing the retained identity.
-    fn process_exited(&self) -> bool {
+    fn has_process_exited(&self) -> bool {
         self.shell.pending_clear
             && self.presence.current_agent().is_some()
             && !self.shell.exit_reported
@@ -409,7 +409,7 @@ impl Detector {
 
     /// Gates fallback state during lifecycle authority and process startup.
     fn screen_allowed(&mut self, lifecycle_authority: bool, now: Instant) -> bool {
-        let process_exited = self.process_exited();
+        let process_exited = self.has_process_exited();
         if lifecycle_authority && !process_exited {
             self.pending_idle.clear();
             return false;
@@ -438,12 +438,12 @@ impl Detector {
         now: Instant,
     ) {
         let agent = self.presence.current_agent();
-        let process_exited = self.process_exited();
+        let process_exited = self.has_process_exited();
         let revision = agent.map(|_| config.detection_content_seq.load(Ordering::Relaxed));
         if decide_detection_screen_read(DetectionScreenReadInput {
             state: self.published.state,
             agent,
-            pending_idle_active: self.pending_idle.active(),
+            pending_idle_active: self.pending_idle.is_active(),
             agent_changed,
             process_exited,
             current_detection_content_seq: revision,
@@ -480,7 +480,7 @@ impl Detector {
         now: Instant,
     ) -> Option<maestro_detection::agents::AgentDetection> {
         let agent = self.presence.current_agent();
-        let process_exited = self.process_exited();
+        let process_exited = self.has_process_exited();
         let content = config.terminal.detection_text();
         let content_changed = content != self.last_detection_text;
         self.last_detection_text.clone_from(&content);

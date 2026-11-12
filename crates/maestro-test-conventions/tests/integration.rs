@@ -11,6 +11,7 @@ mod dependency_locks;
 mod development_guidance;
 mod documented_commands;
 mod duplicates;
+mod fixture_includes;
 mod integration_tests;
 mod json_dependencies;
 mod lib_tests;
@@ -29,6 +30,7 @@ mod temp_directories;
 mod test_directories;
 mod test_input_routes;
 mod time_limits;
+mod tokio_macros;
 mod tracked_scripts;
 mod tracked_sizes;
 

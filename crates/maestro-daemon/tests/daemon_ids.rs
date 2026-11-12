@@ -5,10 +5,10 @@
 #[cfg(unix)]
 use crate::support::spawning;
 
-use maestro_daemon::{app::model::DaemonState, settings::model::Config};
+use maestro_daemon::{settings::model::Config, state::model::DaemonState};
 #[cfg(unix)]
 use maestro_daemon::{
-    app::{
+    state::{
         App,
         terminal_targets::{TerminalTargetCandidate, TerminalTargetError},
     },

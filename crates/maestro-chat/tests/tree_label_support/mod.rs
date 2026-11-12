@@ -137,8 +137,13 @@ pub fn group(name: &str) {
     }
     let _guard = registry::REGISTRY.lock().unwrap();
     let _restore = registry::Restore(maestro_tui::get_keybindings());
-    let cases: Vec<Case> =
-        on_this_platform(include_str!("../fixtures/tree-folding-and-labels.json"));
+    let cases: Vec<Case> = on_this_platform(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/tree-folding-and-labels.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    );
     let tz = std::env::var("TZ").unwrap();
     let selected: Vec<_> = cases
         .iter()
