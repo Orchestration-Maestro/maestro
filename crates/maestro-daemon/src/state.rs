@@ -20,6 +20,10 @@ mod window_title;
 /// Stable terminal targeting and unambiguous agent-name resolution.
 pub mod terminal_targets;
 
+/// Setup entries that build workspaces without a process for tests.
+#[cfg(feature = "test-support")]
+pub mod test_support;
+
 /// Shared launch inputs and daemon construction.
 pub mod construction;
 

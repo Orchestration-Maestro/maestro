@@ -77,11 +77,12 @@ impl App {
         params: WorkspaceRenameParams,
     ) -> Result<ResponseResult, ErrorBody> {
         let index = self.target_workspace(&params.workspace_id)?;
-        let workspace = &mut self.state.topology.workspaces[index];
-        workspace.set_custom_name(params.label.clone());
-        crate::diagnostics::workspace_renamed(&workspace.id);
-        let workspace_id = workspace.id.clone();
-        self.state.session_dirty = true;
+        let workspace_id = self.state.edit_topology(|state| {
+            let workspace = &mut state.topology.workspaces[index];
+            workspace.set_custom_name(params.label.clone());
+            crate::diagnostics::workspace_renamed(&workspace.id);
+            workspace.id.clone()
+        });
         self.event_hub.push(EventData::WorkspaceRenamed {
             workspace_id,
             label: params.label,

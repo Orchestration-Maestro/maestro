@@ -97,6 +97,13 @@ impl App {
         app
     }
 
+    /// The shared history of published events, from which consumers read what followed a
+    /// sequence.
+    #[must_use]
+    pub fn event_hub(&self) -> &EventHub {
+        &self.event_hub
+    }
+
     /// Constructs one daemon owner from accepted preferences and supplied runtime adapters.
     pub fn new(
         config: &Config,

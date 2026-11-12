@@ -41,7 +41,11 @@ maestro-test-tracing.workspace = true
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 
+[features]
+test-support = []
+
 [dev-dependencies]
+maestro-daemon = { path = ".", features = ["test-support"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "test-util"] }
 
 [[test]]

@@ -6,46 +6,11 @@
 )]
 use crate::{
     history_reads::optional_string,
-    local_resources::{Lease, Registry},
+    local_resources::{Lease, Registry, held},
 };
 use maestro_extensions::SessionTreeNode;
 use serde_json::Value;
-use std::{
-    rc::Rc,
-    sync::{Arc, mpsc},
-};
-
-/// Catchable node results sent to the dedicated Store thread.
-type Reply<T> = mpsc::Sender<Result<T, String>>;
-
-/// Read-only operations on a captured node, not a fresh history traversal.
-pub(crate) enum Request {
-    /// Encodes the retained entry as an owned crossing value.
-    Entry(Reply<String>),
-    /// Retains each captured child independently.
-    Children(Reply<Vec<Endpoint>>),
-    /// Reads the label captured when the tree was built.
-    Label(Reply<Option<String>>),
-    /// Reads the timestamp captured when the tree was built.
-    LabelTimestamp(Reply<Option<String>>),
-}
-
-impl Request {
-    /// Settles requests after a capability ends.
-    pub(crate) fn reject(self, error: &str) {
-        match self {
-            Self::Entry(reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-            Self::Children(reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-            Self::Label(reply) | Self::LabelTimestamp(reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-        }
-    }
-}
+use std::{rc::Rc, sync::Arc};
 
 /// One immutable captured record with flat child indexes.
 struct Node {
@@ -105,37 +70,47 @@ impl Owner {
             .collect())
     }
 
-    /// Answers only from this captured tree, without borrowing its original reader.
-    pub(crate) fn answer(&self, request: Request, registry: &Registry) {
-        let node = &self.nodes[self.index];
-        match request {
-            Request::Entry(reply) => {
-                let _ = reply
-                    .send(serde_json::to_string(&node.entry).map_err(|error| error.to_string()));
-            }
-            Request::Children(reply) => {
-                let result = node
-                    .children
-                    .iter()
-                    .map(|&index| {
-                        registry.node(Self {
-                            nodes: Rc::clone(&self.nodes),
-                            index,
-                        })
-                    })
-                    .collect();
-                let _ = reply.send(result);
-            }
-            Request::Label(reply) => {
-                let _ = reply.send(Ok(node.label.clone()));
-            }
-            Request::LabelTimestamp(reply) => {
-                let _ = reply.send(Ok(node.label_timestamp.clone()));
-            }
-        }
+    /// Retains each captured child independently of this node's reader.
+    fn children(&self, registry: &Registry) -> Result<Vec<Endpoint>, String> {
+        self.nodes[self.index]
+            .children
+            .iter()
+            .map(|&index| {
+                registry.node(Self {
+                    nodes: Rc::clone(&self.nodes),
+                    index,
+                })
+            })
+            .collect()
     }
 }
 
 /// A Store-owned node identity retaining its local captured tree.
 #[derive(Clone)]
 pub struct Endpoint(pub(crate) Arc<Lease>);
+
+impl Endpoint {
+    /// Encodes the retained entry as an owned crossing value.
+    pub(crate) fn entry(&self) -> Result<String, String> {
+        self.0.run::<held::Node, _>(|node, _| {
+            serde_json::to_string(&node.nodes[node.index].entry).map_err(|error| error.to_string())
+        })
+    }
+
+    /// Retains each captured child independently.
+    pub(crate) fn children(&self) -> Result<Vec<Endpoint>, String> {
+        self.0.run::<held::Node, _>(Owner::children)
+    }
+
+    /// Reads the label captured when the tree was built.
+    pub(crate) fn label(&self) -> Result<Option<String>, String> {
+        self.0
+            .run::<held::Node, _>(|node, _| Ok(node.nodes[node.index].label.clone()))
+    }
+
+    /// Reads the timestamp captured when the tree was built.
+    pub(crate) fn label_timestamp(&self) -> Result<Option<String>, String> {
+        self.0
+            .run::<held::Node, _>(|node, _| Ok(node.nodes[node.index].label_timestamp.clone()))
+    }
+}

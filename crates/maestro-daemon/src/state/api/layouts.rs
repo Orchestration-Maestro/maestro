@@ -41,10 +41,11 @@ impl App {
         let (workspace, tab) =
             self.layout_tab(params.tab_id.as_deref(), params.pane_id.as_deref())?;
         let layout = &mut self.state.topology.workspaces[workspace].tabs[tab].layout;
-        if !layout.set_ratio_at(&params.path, params.ratio) {
+        let set = layout.set_ratio_at(&params.path, params.ratio);
+        self.state.mark_session_dirty_if(set);
+        if !set {
             return Err(api_error("split_not_found", "split path not found"));
         }
-        self.state.session_dirty = true;
         let layout = self.described_layout(workspace, tab)?;
         self.emit_layout_updated_event(workspace, tab);
         Ok(ResponseResult::LayoutSplitRatioSet { layout })

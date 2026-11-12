@@ -21,7 +21,7 @@ fn add_tabs(app: &mut App, index: usize, count: usize) {
             .unwrap()
             .unwrap();
     }
-    crate::support::populate_terminals(&mut app.state);
+    app.state.admit_seeded_terminals();
 }
 
 /// The tab identities a list result holds, in order.
@@ -223,7 +223,7 @@ fn single_moves_validate_insertion_boundaries() {
     assert!(request(&mut app, moved).is_ok());
     let moved = json!({"type": "workspace.move", "workspace_id": "w2", "insert_index": 3});
     assert!(request(&mut app, moved).is_ok());
-    assert_eq!(workspace_ids(&app), ["w1", "w3", "w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w1", "w3", "w2"]);
     assert_eq!(app.state.active, Some(0));
     assert_eq!(events_after(&app, 0).len(), 2);
 }
@@ -239,7 +239,7 @@ fn final_tab_close_publishes_tab_then_workspace() {
     app.state.session_dirty = false;
     let close = json!({"type": "tab.close", "tab_id": "w1:t1"});
     assert_eq!(request(&mut app, close), Ok(ResponseResult::Ok {}));
-    assert_eq!(workspace_ids(&app), ["w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w2"]);
     assert_eq!(app.state.terminals.len(), 1);
     assert!(app.state.session_dirty);
     assert!(workspace.worktree.as_ref().unwrap().is_linked_worktree);
@@ -302,7 +302,7 @@ fn tab_close_preserves_confirmation_and_terminal_ownership() {
             "closing this tab would close a worktree group"
         )
     );
-    assert_eq!(workspace_ids(&app), ["w1", "w2"]);
+    assert_eq!(workspace_ids(&mut app), ["w1", "w2"]);
     assert_eq!(app.state.terminals.len(), 2);
     assert_eq!(app.state.mode, Mode::ConfirmClose);
     assert!(events_after(&app, 0).is_empty());
@@ -391,7 +391,7 @@ fn launch_environment_rejects_equals_in_keys_before_spawning() {
             failure("invalid_env", "env key BAD=KEY must not contain '='")
         );
     }
-    assert_eq!(workspace_ids(&app), ["w1"]);
+    assert_eq!(workspace_ids(&mut app), ["w1"]);
     assert_eq!(app.state.topology.workspaces[0].tabs.len(), 1);
     assert_eq!(app.state.topology.workspaces[0].next_public_tab_number, 2);
     assert!(events_after(&app, 0).is_empty());

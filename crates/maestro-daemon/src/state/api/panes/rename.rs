@@ -17,15 +17,19 @@ impl App {
         let (workspace, pane) = self.target_pane(&params.pane_id)?;
         let terminal = self.state.topology.workspaces[workspace]
             .terminal_id(pane)
-            .and_then(|id| self.state.terminals.get_mut(id))
+            .filter(|id| self.state.terminals.contains_key(*id))
+            .cloned()
             .ok_or_else(|| pane_not_found(&params.pane_id))?;
-        let previous = terminal.manual_label.clone();
-        match &params.label {
-            Some(label) => terminal.set_manual_label(label),
-            None => terminal.clear_manual_label(),
-        }
-        let changed = terminal.manual_label != previous;
-        self.state.session_dirty = true;
+        let changed = self.state.edit_topology(|state| {
+            state.terminals.get_mut(&terminal).is_some_and(|terminal| {
+                let previous = terminal.manual_label.clone();
+                match &params.label {
+                    Some(label) => terminal.set_manual_label(label),
+                    None => terminal.clear_manual_label(),
+                }
+                terminal.manual_label != previous
+            })
+        });
         if changed {
             self.emit_pane_updated(workspace, pane).await;
         }

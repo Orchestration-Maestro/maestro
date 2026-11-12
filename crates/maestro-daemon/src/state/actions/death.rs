@@ -31,19 +31,29 @@ impl DaemonState {
             .flat_map(|tab| tab.panes.values())
             .map(|pane| pane.attached_terminal_id.clone())
             .collect();
-        self.pane_id_aliases.retain(|_, alias| *alias != pane);
-        self.public_pane_id_aliases
-            .retain(|_, alias| *alias != pane);
-        let (active, selected) = self.selection_identities();
-        if self.topology.workspaces[index].remove_pane(pane) {
-            self.topology.workspaces.remove(index);
-            self.restore_workspace_selection_after_removal(active.as_deref(), selected.as_deref());
-            if self.topology.workspaces.is_empty() && self.mode == Mode::Terminal {
-                self.mode = Mode::Navigate;
+        self.edit_topology(|state| {
+            state.pane_id_aliases.retain(|_, alias| *alias != pane);
+            state
+                .public_pane_id_aliases
+                .retain(|_, alias| *alias != pane);
+            let (active, selected) = state.selection_identities();
+            if state.topology.workspaces[index].remove_pane(pane) {
+                state.topology.workspaces.remove(index);
+                state.restore_workspace_selection_after_removal(
+                    active.as_deref(),
+                    selected.as_deref(),
+                );
+                state.leave_terminal_mode_without_workspaces();
             }
+            state.remove_unattached_terminal_ids(terminals);
+        });
+    }
+
+    /// Returns to navigation when the last workspace is gone while a terminal had the keys.
+    fn leave_terminal_mode_without_workspaces(&mut self) {
+        if self.topology.workspaces.is_empty() && self.mode == Mode::Terminal {
+            self.mode = Mode::Navigate;
         }
-        self.remove_unattached_terminal_ids(terminals);
-        self.session_dirty = true;
     }
 
     /// Restores live identities after a workspace left the list, falling back to clamped

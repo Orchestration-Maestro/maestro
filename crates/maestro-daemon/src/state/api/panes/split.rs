@@ -49,16 +49,17 @@ impl App {
             .ok_or_else(pane_unresolved)?
             .map_err(|error| api_error("pane_split_failed", error.to_string()))?;
         let located = self.locate(workspace, pane).ok_or_else(pane_unresolved)?;
-        if let Some(state) = self.state.topology.workspaces[workspace].pane_state_mut(pane) {
-            state.right_click_passthrough = params.right_click == PaneRightClickTarget::Pane;
-        }
-        if params.focus {
-            self.state.switch_workspace_tab(workspace, located.tab);
-            self.state
-                .record_pane_focus_change(previous_focus, workspace, pane);
-            self.state.settle_terminal_mode_after_focus();
-        }
-        self.state.session_dirty = true;
+        self.state.edit_topology(|state| {
+            if let Some(pane_state) = state.topology.workspaces[workspace].pane_state_mut(pane) {
+                pane_state.right_click_passthrough =
+                    params.right_click == PaneRightClickTarget::Pane;
+            }
+            if params.focus {
+                state.switch_workspace_tab(workspace, located.tab);
+                state.record_pane_focus_change(previous_focus, workspace, pane);
+                state.settle_terminal_mode_after_focus();
+            }
+        });
         let info = self
             .pane_info(workspace, pane)
             .await
