@@ -6,6 +6,7 @@ mod lent;
 mod overlay;
 mod pipes;
 mod response;
+mod signal;
 mod stream;
 mod synchronous;
 mod watch;

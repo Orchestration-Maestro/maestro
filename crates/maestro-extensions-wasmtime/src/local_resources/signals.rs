@@ -47,18 +47,22 @@ impl Registry {
     /// owner; the waiter ends when the observer is released, by removal or after it ran.
     /// A failed guest listener is reported through its extension's bus; abort still
     /// returns and later observers still run.
-    fn subscribe(
+    pub(super) fn subscribe(
         &self,
         signal: &Cancellation,
         listener: Observer,
         api: &crate::api_reads::Endpoint,
     ) -> Result<SubscriptionEndpoint, String> {
         self.events(api)?;
-        let (pump, api) = (self.pump.clone(), api.0.id);
+        let pump = self
+            .pump
+            .upgrade()
+            .ok_or_else(|| "extension resource owner ended".to_owned())?;
+        let (pump_handle, api) = (self.pump.clone(), api.0.id);
         let (registered, released) = oneshot::channel::<Infallible>();
         let remove: Rc<dyn Fn()> = Rc::from(signal.subscribe(Rc::new(move || {
             let _ = &registered;
-            if let Some(state) = pump.upgrade() {
+            if let Some(state) = pump_handle.upgrade() {
                 state.notify_abort(&listener, api);
             }
         })));
@@ -70,10 +74,6 @@ impl Registry {
                 return Err(error);
             }
         };
-        let pump = self
-            .pump
-            .upgrade()
-            .ok_or_else(|| "extension resource owner ended".to_owned())?;
         pump.stage(waiter(signal, released));
         Ok(SubscriptionEndpoint(lease))
     }
