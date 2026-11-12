@@ -121,8 +121,6 @@ pub(crate) enum Message {
         Option<Cancellation>,
         std::sync::mpsc::Sender<Result<SignalEndpoint, String>>,
     ),
-    /// Uses the original retained cancellation, not the current context signal.
-    Signal(u64, signals::Request),
     /// Runs the retained provider's native authorization with original interaction.
     OAuthLogin(
         u64,

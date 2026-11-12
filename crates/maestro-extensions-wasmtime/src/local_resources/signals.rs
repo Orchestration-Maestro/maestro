@@ -1,27 +1,12 @@
 //! The original cancellation's reads and abort observers on the local owner.
-use super::{Capability, Lease, Message, effects::SubscriptionEndpoint, pump::State};
+use super::{
+    Capability, Lease, Registry, effects::SubscriptionEndpoint, held::Signal, pump::State,
+};
 use crate::guest_calls::{Observer, SynchronousKind};
 use futures_util::future::{Either, select};
 use maestro_extensions::Cancellation;
-use std::{convert::Infallible, rc::Rc, sync::Arc, sync::mpsc};
+use std::{convert::Infallible, rc::Rc, sync::Arc};
 use tokio::sync::oneshot;
-
-/// Catchable results returned to the waiting Store thread.
-type Reply<T> = mpsc::Sender<Result<T, String>>;
-
-/// Operations on one retained original cancellation.
-pub(crate) enum Request {
-    /// Reads whether the signal was aborted.
-    Aborted(Reply<bool>),
-    /// Aborts this original cancellation.
-    Abort(Reply<()>),
-    /// Registers a guest listener with the original extension's bus for its callback frame.
-    Subscribe(
-        Observer,
-        crate::api_reads::Endpoint,
-        Reply<SubscriptionEndpoint>,
-    ),
-}
 
 /// A cancellation resource retains its original signal independently of the context.
 #[derive(Clone)]
@@ -31,13 +16,15 @@ impl SignalEndpoint {
     /// Reads on the local owner through the same request pump as context operations.
     pub(crate) fn aborted(&self) -> Result<bool, String> {
         self.0
-            .request(|id, reply| Message::Signal(id, Request::Aborted(reply)))
+            .run::<Signal, _>(|signal, _| Ok(Cancellation::is_aborted(signal)))
     }
 
     /// Aborts through the existing continuation so relayed signals can call this guest again.
     pub(crate) fn abort(&self) -> crate::import_route::Route {
-        self.0
-            .route(|id, reply| Message::Signal(id, Request::Abort(reply)))
+        self.0.run_routed::<Signal, _>(|signal, _| {
+            Cancellation::abort(signal);
+            Ok(())
+        })
     }
 
     /// Registers `listener` to run once, through its synchronous export, when aborted.
@@ -47,35 +34,11 @@ impl SignalEndpoint {
         api: crate::api_reads::Endpoint,
     ) -> Result<SubscriptionEndpoint, String> {
         self.0
-            .request(|id, reply| Message::Signal(id, Request::Subscribe(listener, api, reply)))
+            .run::<Signal, _>(move |signal, registry| registry.subscribe(signal, listener, &api))
     }
 }
 
-impl State {
-    /// Serves a signal request after releasing the capability-table borrow.
-    pub(super) fn signal(&self, id: u64, request: Request) {
-        let capability = self.registry.capability(id);
-        let signal = match capability.as_deref() {
-            Some(Capability::Signal(signal)) => Some(signal),
-            _ => None,
-        };
-        let ended = || "extension signal resource ended".to_owned();
-        match request {
-            Request::Aborted(reply) => {
-                let _ = reply.send(signal.map(Cancellation::is_aborted).ok_or_else(ended));
-            }
-            Request::Abort(reply) => {
-                let _ = reply.send(signal.map(Cancellation::abort).ok_or_else(ended));
-            }
-            Request::Subscribe(listener, api, reply) => {
-                let result = signal
-                    .ok_or_else(ended)
-                    .and_then(|signal| self.subscribe(signal, listener, &api));
-                let _ = reply.send(result);
-            }
-        }
-    }
-
+impl Registry {
     /// Adds the guest listener as an abort observer and keeps its explicit removal.
     ///
     /// The observer keeps the listener without keeping the Store, this pump or the bus alive,
@@ -90,8 +53,8 @@ impl State {
         listener: Observer,
         api: &crate::api_reads::Endpoint,
     ) -> Result<SubscriptionEndpoint, String> {
-        self.registry.events(api)?;
-        let (pump, api) = (self.registry.pump.clone(), api.0.id);
+        self.events(api)?;
+        let (pump, api) = (self.pump.clone(), api.0.id);
         let (registered, released) = oneshot::channel::<Infallible>();
         let remove: Rc<dyn Fn()> = Rc::from(signal.subscribe(Rc::new(move || {
             let _ = &registered;
@@ -100,14 +63,18 @@ impl State {
             }
         })));
         let capability = Capability::SignalSubscription(Rc::clone(&remove));
-        let lease = match self.registry.insert(capability) {
+        let lease = match self.insert(capability) {
             Ok(lease) => lease,
             Err(error) => {
                 remove();
                 return Err(error);
             }
         };
-        self.stage(waiter(signal, released));
+        let pump = self
+            .pump
+            .upgrade()
+            .ok_or_else(|| "extension resource owner ended".to_owned())?;
+        pump.stage(waiter(signal, released));
         Ok(SubscriptionEndpoint(lease))
     }
 }

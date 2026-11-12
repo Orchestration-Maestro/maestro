@@ -206,7 +206,6 @@ impl State {
             Message::HostOperation(call) => self.host_operation(call),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
-            Message::Signal(id, request) => self.signal(id, request),
             message @ (Message::OAuthLogin(..)
             | Message::OAuthRefresh(..)
             | Message::OAuthProvider(..)

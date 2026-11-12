@@ -80,6 +80,14 @@ held!(
     Capability::Writer(session) => session
 );
 
+held!(
+    /// The cancellation a context, a signal creation or a provider call lent.
+    Signal,
+    maestro_extensions::Cancellation,
+    "extension signal resource ended",
+    Capability::Signal(signal) => signal
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
