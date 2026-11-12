@@ -72,7 +72,7 @@ Thirteen additions, each owned by the crate that already owns its neighbours:
 | A5 | PDF reads | `maestro-tools` | off (`pdfAsText`) |
 | A6 | Isolated subagent runs | `maestro-app` host action, `maestro-daemon` worktrees | off (`task.isolation.enabled`) |
 | A7 | Git guard | new package `maestro-git-guard`, `maestro-shell` | when installed |
-| A8 | Interactive commands | `maestro-tools`, `maestro-process`, `maestro-terminal` | off (`bash.pty`) |
+| A8 | Interactive commands | `maestro-tools`, `maestro-process`, `maestro-terminal-emulator` | off (`bash.pty`) |
 | A9 | Nested AGENTS.md listing | `maestro-resources`, `maestro-app` | off (`nestedAgentsFiles`) |
 | A10 | Notebooks as cells | `maestro-tools` | off (`notebooksAsText`) |
 | A11 | SIXEL images | `maestro-tui`, `maestro-tui-crossterm` | on (`terminal.showImages`) |
@@ -383,7 +383,7 @@ Reads:
   It reuses `maestro-shell`, which the package crates may depend on, and reads the
   repository through the host's process capability.
 - **Interactive commands.** The pseudo-terminal comes from `maestro-process`. The
-  screen comes from `maestro-terminal`, the one emulator, through its styled rows and
+  screen comes from `maestro-terminal-emulator`, the one emulator, through its styled rows and
   key encoder; `maestro-tools` gains that edge. The bash tool reaches the overlay
   through a small port that `maestro-app` supplies from the extension UI's custom
   overlay path when the session has a UI.
@@ -553,7 +553,7 @@ In `docs/specs/maestro-port.md`:
    - `maestro-diagram` | draw Mermaid diagrams as text | `maestro-text` | below 0,
      with `maestro-theme` gaining `maestro-diagram` (A13).
 3. Edges between existing crates, as the first commit of their ticket:
-   - `maestro-tools` gains `maestro-terminal` (A8);
+   - `maestro-tools` gains `maestro-terminal-emulator` (A8);
    - package crates may depend on `maestro-shell`, and the package crate
      `maestro-git-guard` is added (A7).
 

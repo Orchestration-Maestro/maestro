@@ -4,7 +4,7 @@ use crate::{
     ingress::{KeyboardProtocol, MouseProtocolMode},
     panes::WheelRouting,
 };
-use maestro_terminal::Terminal;
+use maestro_terminal_emulator::Terminal;
 use std::time::Instant;
 
 #[test]

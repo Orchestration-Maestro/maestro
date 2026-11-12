@@ -1,6 +1,6 @@
 # Terminal emulator
 
-`maestro-terminal` is the layer-0 terminal emulator for workspace panes. It is
+`maestro-terminal-emulator` is the layer-0 terminal emulator for workspace panes. It is
 pure Rust, inherits the workspace's unsafe-code prohibition and has no build
 script or foreign toolchain. Its full contract is the
 [terminal emulator specification](specs/terminal-emulator.md).
@@ -75,7 +75,7 @@ affect them. Build another snapshot to read updated terminal state.
 
 ## Codepoint width
 
-[`maestro_terminal::unicode::codepoint_width`](https://docs.rs/maestro-terminal/latest/maestro_terminal/unicode/fn.codepoint_width.html)
+[`maestro_terminal_emulator::unicode::codepoint_width`](https://docs.rs/maestro-terminal-emulator/latest/maestro_terminal_emulator/unicode/fn.codepoint_width.html)
 returns a Unicode scalar's terminal width in cells: zero, one or two. It accepts
 `char`, so surrogate and out-of-range values cannot enter the interface.
 

@@ -1,6 +1,6 @@
 //! Retained Unicode search and word motion.
 use super::super::{retained::*, *};
-use maestro_terminal::{
+use maestro_terminal_emulator::{
     Terminal,
     page::cell::Wide,
     screens::Key,

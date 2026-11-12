@@ -1,6 +1,6 @@
 # Terminal emulator
 
-This specification defines `maestro-terminal`, the pure-Rust terminal emulator that runs
+This specification defines `maestro-terminal-emulator`, the pure-Rust terminal emulator that runs
 inside every workspace pane. The foundation changes are listed in
 [Amendment to the foundation specification](#amendment-to-the-foundation-specification),
 and the terms in [Glossary](#glossary) are also defined in [the glossary](../../CONTEXT.md).
@@ -35,7 +35,7 @@ native engine needs foreign code, which Maestro forbids.
 
 ## Solution
 
-`maestro-terminal` is a concrete deep module with one job, emulating terminals. Its public
+`maestro-terminal-emulator` is a concrete deep module with one job, emulating terminals. Its public
 interface is the reference engine's library exports, restricted to the in-scope subset:
 `Terminal`, `RenderState`, the formatters, `Selection`, the key, mouse and focus encoders,
 the codepoint width function and the image-protocol types. The binding layer the
@@ -87,7 +87,7 @@ Each row exists in Maestro; none falls below the reference.
 
 ### Placement
 
-`maestro-terminal` sits at layer 0. Its only internal dependency is `maestro-text`, whose
+`maestro-terminal-emulator` sits at layer 0. Its only internal dependency is `maestro-text`, whose
 `Utf8Stream` is the PTY byte decoder, reused unchanged. It inherits the workspace lints,
 including `unsafe_code = "forbid"`, and has no build script. The workspace daemon depends on
 it directly. Frontends reach the items they need (the codepoint width, the host cell size
@@ -295,7 +295,7 @@ Each item is unreachable from every workspace path or replaced by a Maestro owne
 
 ## Glossary
 
-- **Terminal emulator:** The pure-Rust engine in `maestro-terminal` that parses a pane
+- **Terminal emulator:** The pure-Rust engine in `maestro-terminal-emulator` that parses a pane
   terminal's output, keeps its screens and byte-bounded scrollback, and encodes its keyboard,
   mouse and focus input.
 - **Scrollback limit:** The bytes of page storage a pane terminal keeps beyond its active
@@ -317,11 +317,11 @@ In `docs/specs/maestro-port.md`:
 
 1. Common contract, item 7: replace "forbid unsafe code except the terminal engine bindings
    described under [Workspace daemon](#workspace-daemon)" with "forbid unsafe code".
-2. Crate table: `maestro-terminal`'s job becomes "emulate terminals"; delete the
+2. Crate table: `maestro-terminal-emulator`'s job becomes "emulate terminals"; delete the
    `maestro-terminal-ghostty` row; drop it from the `maestro` row.
 3. Workspace daemon: the first paragraph says the executable always wires the daemon and
    the multiplexer and requires direct application and multiplexer dependencies; replace the
-   unsafe-exception paragraph with: "`maestro-terminal` is a pure-Rust terminal emulator,
+   unsafe-exception paragraph with: "`maestro-terminal-emulator` is a pure-Rust terminal emulator,
    specified in [terminal emulator](terminal-emulator.md): no foreign code, no build script
    and no unsafe code. The existing guest-authoring generated-binding lint exception is
    unchanged."

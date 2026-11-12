@@ -17,7 +17,7 @@ maestro-markdown = { path = "../crates/maestro-markdown" }
 maestro-models = { path = "../crates/maestro-models" }
 maestro-protocol = { path = "../crates/maestro-protocol" }
 maestro-resources = { path = "../crates/maestro-resources" }
-maestro-terminal = { path = "../crates/maestro-terminal" }
+maestro-terminal-emulator = { path = "../crates/maestro-terminal-emulator" }
 maestro-tui = { path = "../crates/maestro-tui" }
 maestro-test-browser = { path = "../crates/maestro-test-browser" }
 maestro-web = { path = "../crates/maestro-web" }

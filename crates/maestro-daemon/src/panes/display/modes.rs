@@ -4,7 +4,7 @@ use crate::{
     ingress::{KeyboardProtocol, MouseProtocolEncoding, MouseProtocolMode},
     panes::WheelRouting,
 };
-use maestro_terminal::{Mode, Terminal, screens::Key};
+use maestro_terminal_emulator::{Mode, Terminal, screens::Key};
 
 /// Input modes carried in a pane handoff.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

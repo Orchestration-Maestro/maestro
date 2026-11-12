@@ -10,10 +10,14 @@ fn application_exports_reject_crates_modules_and_wildcards() {
     workspace.foundation(&[
         "maestro-app",
         "maestro-daemon",
-        "maestro-terminal",
+        "maestro-terminal-emulator",
         "maestro-markdown",
     ]);
-    for owner in ["maestro-daemon", "maestro-terminal", "maestro-markdown"] {
+    for owner in [
+        "maestro-daemon",
+        "maestro-terminal-emulator",
+        "maestro-markdown",
+    ] {
         source(
             &workspace,
             owner,
@@ -150,18 +154,18 @@ fn application_exports_follow_local_glob_aliases() {
 #[test]
 fn application_exports_follow_root_external_prelude_aliases() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-app", "maestro-terminal"]);
+    workspace.foundation(&["maestro-app", "maestro-terminal-emulator"]);
     source(
         &workspace,
-        "maestro-terminal",
+        "maestro-terminal-emulator",
         "src/lib.rs",
         "pub mod detail { pub struct Record; }",
     );
     for export in [
-        "extern crate maestro_terminal as t; pub mod escaped { pub use t::*; }",
-        "extern crate maestro_terminal as t; pub mod escaped { use t as alias; pub use alias::detail as d; }",
-        "extern crate maestro_terminal as t; pub mod escaped { pub mod nested { pub use t::detail::*; } }",
-        "extern crate maestro_terminal as t; pub mod escaped;",
+        "extern crate maestro_terminal_emulator as t; pub mod escaped { pub use t::*; }",
+        "extern crate maestro_terminal_emulator as t; pub mod escaped { use t as alias; pub use alias::detail as d; }",
+        "extern crate maestro_terminal_emulator as t; pub mod escaped { pub mod nested { pub use t::detail::*; } }",
+        "extern crate maestro_terminal_emulator as t; pub mod escaped;",
     ] {
         source(&workspace, "maestro-app", "src/lib.rs", export);
         let escaped = if export.ends_with("pub mod escaped;") {
@@ -186,7 +190,7 @@ fn application_exports_follow_root_external_prelude_aliases() {
         &workspace,
         "maestro-app",
         "src/lib.rs",
-        "extern crate maestro_terminal as t; mod local { pub mod detail {} } mod shadow { use crate::local as t; pub use t::detail; } mod own { pub mod t { pub mod detail {} } pub use t::detail; } pub mod escaped;",
+        "extern crate maestro_terminal_emulator as t; mod local { pub mod detail {} } mod shadow { use crate::local as t; pub use t::detail; } mod own { pub mod t { pub mod detail {} } pub use t::detail; } pub mod escaped;",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
@@ -226,10 +230,10 @@ fn credentials_exports_carry_only_their_declared_names() {
 #[test]
 fn application_exports_prefer_glob_bindings_over_external_aliases() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-app", "maestro-terminal"]);
+    workspace.foundation(&["maestro-app", "maestro-terminal-emulator"]);
     source(
         &workspace,
-        "maestro-terminal",
+        "maestro-terminal-emulator",
         "src/lib.rs",
         "pub mod detail {}",
     );
@@ -238,7 +242,7 @@ fn application_exports_prefer_glob_bindings_over_external_aliases() {
         "maestro-app",
         "src/lib.rs",
         r"
-extern crate maestro_terminal as t;
+extern crate maestro_terminal_emulator as t;
 mod local { pub mod t { pub mod detail {} } }
 pub mod escaped {
     use crate::local::*;
@@ -382,10 +386,10 @@ fn application_exports_follow_aliases_across_source_files() {
 #[test]
 fn application_exports_keep_unrelated_aliases_in_separate_scopes() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-app", "maestro-terminal"]);
+    workspace.foundation(&["maestro-app", "maestro-terminal-emulator"]);
     source(
         &workspace,
-        "maestro-terminal",
+        "maestro-terminal-emulator",
         "src/lib.rs",
         "pub mod detail { pub struct Record; }",
     );
@@ -395,10 +399,10 @@ fn application_exports_keep_unrelated_aliases_in_separate_scopes() {
         "src/lib.rs",
         r"
 mod local { pub mod detail { pub struct Record; } }
-mod first { use maestro_terminal as t; }
+mod first { use maestro_terminal_emulator as t; }
 mod second { use crate::local as t; pub use self::t::detail as local_view; }
-mod named { use maestro_terminal as t; pub use self::t::detail::Record; }
-mod globs { use maestro_terminal::*; pub use self::detail::Record; }
+mod named { use maestro_terminal_emulator as t; pub use self::t::detail::Record; }
+mod globs { use maestro_terminal_emulator::*; pub use self::detail::Record; }
 ",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
@@ -407,15 +411,15 @@ mod globs { use maestro_terminal::*; pub use self::detail::Record; }
 #[test]
 fn application_exports_ignore_private_uses_comments_and_strings() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-app", "maestro-terminal"]);
+    workspace.foundation(&["maestro-app", "maestro-terminal-emulator"]);
     source(
         &workspace,
         "maestro-app",
         "src/lib.rs",
         r#"
-use maestro_terminal as terminal;
-// pub use maestro_terminal as terminal;
-const EXAMPLE: &str = "pub use maestro_terminal::*;";
+use maestro_terminal_emulator as terminal;
+// pub use maestro_terminal_emulator as terminal;
+const EXAMPLE: &str = "pub use maestro_terminal_emulator::*;";
 fn read() { drop(terminal::Terminal::new(1, 1, 0)); }
 "#,
     );

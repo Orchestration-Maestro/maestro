@@ -1,7 +1,7 @@
 //! Retained logical text, Unicode search and word coordinates.
 mod access;
 mod words;
-use maestro_terminal::{page::cell::Wide, screens::Key, terminal::ScreenTextRow};
+use maestro_terminal_emulator::{page::cell::Wide, screens::Key, terminal::ScreenTextRow};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -186,7 +186,7 @@ impl RetainedTextBuffer {
         &mut self,
         line: &mut LogicalTextLine,
         start: TerminalTextPoint,
-        cell: &maestro_terminal::terminal::ScreenTextCell,
+        cell: &maestro_terminal_emulator::terminal::ScreenTextCell,
         kind: IndexKind,
     ) {
         if cell.wide == Wide::SpacerTail {
