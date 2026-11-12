@@ -163,9 +163,13 @@ use the same result-slot fallback as callback failures.
 `set_expanded`, `set_show_images` and `set_image_width_cells` rebuild the retained
 shell. Raw details and absent versus null arguments stay distinct. Result updates
 may precede complete arguments; streaming and error flags remain independent.
-Started/complete updates request rendering. Invalidation rebuilds against the live
-theme and retains a formatting failure for `try_render`. The inherited `Container`
-interface keeps outer edits and existing child-array aliases.
+Started/complete updates request rendering. While a message streams, the interactive
+mode calls `update_args` on a pending row only when the call's arguments differ from
+those the row shows, so a long message with several calls does not rebuild every row
+for each fragment of the last one. `has_args` reports whether a row already shows given
+arguments. Invalidation rebuilds against the live theme and retains a formatting
+failure for `try_render`. The inherited `Container` interface keeps outer edits and
+existing child-array aliases.
 
 Images use the [terminal image owner](../terminal/images.md). Defaults show images
 at a maximum of 60 cells. Both constructor widths and setter widths are floored
