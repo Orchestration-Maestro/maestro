@@ -25,9 +25,6 @@ macro_rules! on_both_adapters {
     }};
 }
 
-include!(concat!(env!("OUT_DIR"), "/example_tests.rs"));
-example_tests!();
-
 mod abort_controller;
 pub(crate) mod action_host;
 mod advanced_ui;
@@ -56,7 +53,6 @@ mod event_transport;
 mod event_values;
 mod example_support;
 mod exec_records;
-pub(crate) mod file_trigger_path;
 mod finite_records;
 pub(crate) mod stream_host;
 mod tui_ui;
@@ -1239,7 +1235,5 @@ mod credential_host;
 mod native_helpers;
 
 mod custom_ticks;
-
-mod snake_frames;
 
 mod package_boundary;

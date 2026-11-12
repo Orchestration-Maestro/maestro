@@ -51,8 +51,3 @@ rustix = { workspace = true, features = ["std"] }
 [target.'cfg(unix)'.dev-dependencies]
 rustix = { workspace = true, features = ["std", "process", "stdio", "pipe"] }
 tokio = { workspace = true, features = ["signal"] }
-
-[[example]]
-name = "rpc_extension_ui"
-path = "../../examples/rpc_extension_ui.rs"
-test = true

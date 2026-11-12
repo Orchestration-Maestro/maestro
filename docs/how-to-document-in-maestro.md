@@ -27,7 +27,7 @@ enforces are in [AGENTS.md](../AGENTS.md#documentation).
 | --- | --- | --- |
 | Product entry | `README.md` | A first-time reader: what Maestro is, how to build it, where to read next. |
 | Guide page | `docs/<topic>.md`, with deeper pages in `docs/<area>/` | People using or extending Maestro, and the agent answering their questions. |
-| Example | `examples/extensions/` and `examples/sdk/`, each with a `README.md` index | Authors copying a working pattern. |
+| Example | maestro-packages' `examples/`, fetched into a source checkout by `just setup` | Authors copying a working pattern. |
 | Specification | `docs/specs/<feature>.md` | Implementers and reviewers of a feature. |
 | Decision record | `docs/adr/<decision>.md` | Maintainers who later wonder why something was built this way. |
 | Glossary | `CONTEXT.md` | Everyone: one definition per domain term. |
@@ -119,26 +119,21 @@ tests run, so the example cannot fall behind the code. Hide setup lines with a
 leading `#` (see the `fn main` wrapper in
 [skills](resources/skills.md#supplied-paths)). Blocks fenced as `toml`, `json`,
 `sh` or `text` are not compiled. An example that cannot run as a doctest belongs
-in `examples/` as a built target instead.
+in maestro-packages as a built example instead.
 
 ## Add an example
 
-An example shows one behaviour in one file.
+Examples live in maestro-packages, not in this repository. An example shows one
+behaviour in one file. Add it there, following that repository's
+`docs/examples.md`: name the source in `snake_case` after what it does, start it
+with `//!` documentation saying what it shows (as
+[`hello.rs`](../examples/extensions/hello.rs) does), register it in the crate that
+builds its family, and add one row to the folder's `README.md` table. Its
+tests run in that repository's CI.
 
-1. Add `examples/extensions/<name>.rs` or `examples/sdk/<name>.rs`, named in
-   `snake_case` after what it does. Start it with `//!` documentation saying what
-   it shows, as [`hello.rs`](../examples/extensions/hello.rs) does.
-2. Register it as an `[[example]]` target of the crate whose interface it uses,
-   with a relative `path` back to the single copy in `examples/` (see
-   `crates/maestro-extensions-wasm/Cargo.toml`).
-3. Add one row to the folder's `README.md` table saying what the example
-   registers or does, and its run command if it has one. Keep both lists in
-   file-name order, so a new example goes in its own place.
-
-The shipped-examples test, `crates/maestro-app/tests/shipped_examples.rs`, fails
-when an entry of an examples folder is not listed in that folder's index, or when
-an index names a path that does not exist. For the extension index it also fails
-when the table or the run commands are out of file-name order.
+A page here that teaches a feature links the example by relative path, for
+example `../examples/extensions/hello.rs`. The link resolves in an installation
+and in a source checkout that has run `just setup`.
 
 ## Write a specification
 

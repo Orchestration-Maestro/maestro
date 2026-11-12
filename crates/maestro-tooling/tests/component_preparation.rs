@@ -12,10 +12,7 @@ fn component_consumers_have_prepared_examples() {
     let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut prepared = HashMap::new();
     maestro_tooling::example_files::prepare(
-        &[
-            workspace.join("crates/maestro-extensions-wasm/tests/support"),
-            workspace.join("examples/extensions"),
-        ],
+        &[workspace.join("crates/maestro-extensions-wasm/tests/support")],
         &maestro_tooling::example_files::FIXED_COMPONENTS,
         |name, variable| {
             prepared.insert(name.to_owned(), variable.to_owned());
@@ -243,7 +240,7 @@ fn normalize_run(root: &Path, archived: bool) {
         .args(["nextest-setup", "normalize-component-cache"])
         .arg(root.join("target/debug"))
         .current_dir(root);
-    crate::recipe_support::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
     }

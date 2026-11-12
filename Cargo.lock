@@ -4297,7 +4297,6 @@ dependencies = [
  "maestro-extensions-wasmtime",
  "maestro-json",
  "maestro-listeners",
- "maestro-listing",
  "maestro-models",
  "maestro-package",
  "maestro-request",

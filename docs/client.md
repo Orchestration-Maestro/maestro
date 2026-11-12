@@ -113,9 +113,9 @@ client.stop().await?;
 
 ## Example
 
-`crates/maestro-app/examples/rpc_client_demo` is an interactive terminal client that
-uses these methods:
+`rpc_client_demo` in maestro-packages' `examples/sdk` is an interactive terminal client
+that uses these methods. From a maestro-packages checkout:
 
 ```sh
-cargo run -p maestro-app --example rpc_client_demo -- path/to/maestro
+cargo run -p maestro-sdk-examples --example rpc_client_demo -- path/to/maestro
 ```
