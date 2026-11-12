@@ -1,22 +1,26 @@
 //! Owned Markdown parsing with cursor-time extended links.
 mod autolinks;
-mod helpers;
+mod delimiters;
 mod inline;
 mod lexer;
 mod mapped_text;
 mod parse;
+mod records;
 mod rules;
 mod segments;
 mod source;
 mod tokenizer;
-mod types;
 
 pub use inline::{InlineAtom, InlineContext, InlineRun, InlineScope, InlineToken, InlineTokenizer};
 pub use mapped_text::MappedText;
 pub use parse::{
     BlockTokenizer, InvalidBlockToken, parse, parse_with_options, parse_with_tokenizer,
 };
-pub use types::*;
+pub(crate) use records::Definition;
+pub use records::{
+    Alignment, BlockToken, Cell, Cells, Document, ImageMetadata, Kind, LinkMetadata, LinkType,
+    MarkedOptions, Node, Table, Text,
+};
 
 #[cfg(test)]
 mod tests;
