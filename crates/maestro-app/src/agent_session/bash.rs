@@ -10,10 +10,8 @@ use maestro_session::message_records::{BashExecutionMessage, CustomAgentMessages
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tools::{
     BashError, BashResult,
-    process::{
-        command::local::create_local_bash_operations,
-        executor::local::{BashExecutorOptions, execute_bash_with_operations},
-    },
+    local::create_local_bash_operations,
+    process::local::{BashExecutorOptions, execute_bash_with_operations},
 };
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};

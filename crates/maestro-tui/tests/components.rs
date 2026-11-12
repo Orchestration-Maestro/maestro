@@ -5,13 +5,13 @@ use std::io;
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 
-use maestro_tui::candidates::{ArgumentCompletions, CompletionOptions, CursorPosition};
 use maestro_tui::editor_component::BorderColor;
-use maestro_tui::interface::{ChildArray, ComponentHandle, InputHandler};
+use maestro_tui::{ArgumentCompletions, CompletionOptions, CursorPosition};
 use maestro_tui::{
     AutocompleteProvider, CURSOR_MARKER, Component, Container, EditorComponent, OverlayMargin,
     OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable, visible_width,
 };
+use maestro_tui::{ChildArray, ComponentHandle, InputHandler};
 
 use crate::fixtures;
 use fixtures::editors::{Bare, Rich};
@@ -182,14 +182,6 @@ fn container_children_is_the_rendered_array_that_assignment_replaces() {
     );
     assert_eq!(replacement.borrow().len(), 3);
     assert!(!Rc::ptr_eq(&container.children(), &replacement));
-}
-
-#[test]
-fn tui_module_reexports_the_width_measure() {
-    assert_eq!(
-        maestro_tui::interface::visible_width("\x1b[31mHello\x1b[0m"),
-        5
-    );
 }
 
 fn render_text(text: &str, padding_x: usize, padding_y: usize, width: usize) -> Vec<String> {
@@ -427,7 +419,7 @@ fn suggestions_len(
     cursor: CursorPosition,
     signal: &Cell<bool>,
     force: Option<bool>,
-) -> Result<Option<usize>, maestro_tui::candidates::CompletionError> {
+) -> Result<Option<usize>, maestro_tui::CompletionError> {
     let options = CompletionOptions { signal, force };
     Ok(
         block_on(CommandProvider.get_suggestions(lines, cursor, options))?
@@ -435,7 +427,7 @@ fn suggestions_len(
     )
 }
 
-fn assert_command_provider() -> Result<(), maestro_tui::candidates::CompletionError> {
+fn assert_command_provider() -> Result<(), maestro_tui::CompletionError> {
     let lines = vec!["\u{e9} /he".to_owned()];
     let cursor = CursorPosition {
         line: 0,
@@ -498,7 +490,7 @@ fn assert_command_provider() -> Result<(), maestro_tui::candidates::CompletionEr
     Ok(())
 }
 
-fn assert_counting_provider() -> Result<(), maestro_tui::candidates::CompletionError> {
+fn assert_counting_provider() -> Result<(), maestro_tui::CompletionError> {
     let seen = RefCell::new(String::new());
     for (text, expected) in [("", None), ("none", Some(0)), ("some", Some(1))] {
         let lines = vec![text.to_owned()];
@@ -517,7 +509,7 @@ fn assert_counting_provider() -> Result<(), maestro_tui::candidates::CompletionE
     Ok(())
 }
 
-fn assert_slash_commands() -> Result<(), maestro_tui::candidates::CompletionError> {
+fn assert_slash_commands() -> Result<(), maestro_tui::CompletionError> {
     let ready: ArgumentCompletions = Rc::new(|prefix| {
         let prefix = prefix.to_owned();
         Box::pin(async move { Ok(Some(vec![item(&format!("{prefix}one"))])) })
@@ -554,7 +546,7 @@ fn assert_slash_commands() -> Result<(), maestro_tui::candidates::CompletionErro
 
 #[test]
 fn completion_contracts_keep_signals_results_and_byte_cursors()
--> Result<(), maestro_tui::candidates::CompletionError> {
+-> Result<(), maestro_tui::CompletionError> {
     assert_command_provider()?;
     assert_counting_provider()?;
     assert_slash_commands()?;
@@ -784,7 +776,7 @@ fn render_route_owner(
                 3,
                 crate::list_support::settings_theme(false, &Rc::default()),
                 (Rc::new(|_, _| true), Rc::new(|| {})),
-                maestro_tui::components::preferences::SettingsListOptions::default(),
+                maestro_tui::components::SettingsListOptions::default(),
             ));
             list.handle_input("\r");
             list

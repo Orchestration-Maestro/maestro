@@ -4,8 +4,8 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use maestro_tui::images::terminal_image::CellDimensions;
-use maestro_tui::interface::{InputListener, InputListenerResult};
 use maestro_tui::{Component, Container, TUI, TerminalImage};
+use maestro_tui::{InputListener, InputListenerResult};
 use serde::Deserialize;
 
 use crate::scenarios::support::checks::parse;

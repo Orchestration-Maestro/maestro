@@ -92,7 +92,7 @@ pub use maestro_theme::ThemeBg;
 /// Foreground color key, including authored names.
 pub use maestro_theme::ThemeColor;
 /// What a terminal input listener decided about one chunk of input.
-pub use maestro_tui::interface::InputListenerResult;
+pub use maestro_tui::InputListenerResult;
 pub use types::{
     AutocompleteProviderFactory, CommandContextOperations, CompactOptions, ContextUsage,
     EditorFactory, Extension, ExtensionAPI, ExtensionCommandContext,
@@ -160,32 +160,19 @@ pub use maestro_tools::with_file_mutation_queue;
 /// Caller-local tool definitions with their original tools-owned types.
 pub mod local {
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::editing::local::create_edit_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::process::command::local::{
-        BashSpawnHook, BashToolOptions, create_bash_tool_definition, create_local_bash_operations,
+    pub use maestro_tools::local::{
+        BashSpawnHook, BashToolOptions, ToolDef, ToolsOptions, create_all_tool_definitions,
+        create_bash_tool_definition, create_coding_tool_definitions, create_edit_tool_definition,
+        create_find_tool_definition, create_grep_tool_definition, create_local_bash_operations,
+        create_ls_tool_definition, create_read_only_tool_definitions, create_read_tool_definition,
+        create_tool_definition, create_write_tool_definition,
     };
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::reading::local::create_read_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::registry::local::{
-        ToolDef, ToolsOptions, create_all_tool_definitions, create_coding_tool_definitions,
-        create_read_only_tool_definitions, create_tool_definition,
-    };
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::search::directory::local::create_ls_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::search::discovery::local::create_find_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::search::matching::local::create_grep_tool_definition;
     pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
     pub use maestro_tools::types::local::*;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::writing::local::create_write_tool_definition;
 }
 /// Native glob constraints forwarded to replacement find operations.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::search::discovery::FindGlobOptions;
+pub use maestro_tools::FindGlobOptions;
 /// Retained native definitions accepted by the tools-owned execution wrapper.
 pub use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 /// Native raw shell operands and execution family used by returned extension operations.
@@ -205,7 +192,7 @@ pub use maestro_tools::{
     ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
     ToolRenderResultCallback, ToolRendererState, output::render_utils::ToolRenderResultLike,
 };
-pub use maestro_tui::interface::{Component, ComponentHandle, InputHandler};
+pub use maestro_tui::{Component, ComponentHandle, InputHandler};
 /// Toolkit widgets an extension host builds, and the capability that builds the ones whose
 /// look depends on the host.
 pub mod presentation {
@@ -214,14 +201,14 @@ pub mod presentation {
     };
     pub use maestro_tools::key_text;
     pub use maestro_tui::{
-        AutocompleteProvider, AutocompleteSuggestions,
-        candidates::{CompletionError, CompletionOptions, CompletionResult, CursorPosition},
+        AutocompleteProvider, AutocompleteSuggestions, CompletionError, CompletionOptions,
+        CompletionResult, CursorPosition,
     };
     pub use maestro_tui::{
         Box, Container, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, SelectItem,
         SelectList, SelectListLayoutOptions, SelectListTheme, SelectListTruncatePrimaryContext,
         SettingItem, SettingsList, SettingsListTheme, Spacer, Text, TextDecoration,
-        components::preferences::SettingsListOptions,
+        components::SettingsListOptions,
         editor_component::{BorderColor, EditorComponent, EditorError, TextCallback},
     };
     pub use maestro_tui::{

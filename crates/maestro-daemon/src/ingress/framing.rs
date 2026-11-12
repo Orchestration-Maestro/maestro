@@ -1,11 +1,11 @@
 //! Decode supplied host bytes for the multiplexer input loop without performing I/O.
 
 use maestro_protocol::frames::{ClientKeyCode, ClientMouseButton, ClientMouseKind, KeyModifiers};
-use maestro_tui::input_buffer::{
+use maestro_tui::terminal_theme::{parse_default_color_response, parse_palette_color_response};
+use maestro_tui::{
     HostColorScheme, HostMouse, RawInputByteFramer, host_frame_length, parse_host_cell_size_report,
     parse_host_color_scheme_report, parse_host_mouse,
 };
-use maestro_tui::terminal_theme::{parse_default_color_response, parse_palette_color_response};
 
 use super::{RawInputEvent, TerminalKey, parse_terminal_key_sequence};
 use crate::terminal_theme::HostAppearance;

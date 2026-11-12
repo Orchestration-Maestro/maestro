@@ -4,9 +4,7 @@ use maestro_tui::{
     KeybindingsManager, get_keybindings, set_keybindings, set_kitty_protocol_active,
 };
 
-use maestro_tui::{
-    Component, Focusable, Input, KeybindingKeys, KeybindingsConfig, interface::InputHandler,
-};
+use maestro_tui::{Component, Focusable, Input, InputHandler, KeybindingKeys, KeybindingsConfig};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 

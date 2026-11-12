@@ -1,6 +1,6 @@
 //! Shared host input recognition boundaries.
 
-use maestro_tui::input_buffer::scan_sgr_mouse_fields;
+use maestro_tui::scan_sgr_mouse_fields;
 
 #[test]
 fn sgr_field_scanner_preserves_each_consumer_domain() {
@@ -126,7 +126,7 @@ use maestro_protocol::frames::{
     ClientKeyCode as KeyCode, ClientKeyKind as KeyEventKind, ClientMouseButton as MouseButton,
     ClientMouseKind as MouseEventKind, KeyModifiers,
 };
-use maestro_tui::input_buffer::RawInputByteFramer;
+use maestro_tui::RawInputByteFramer;
 
 /// Dark host appearance bytes.
 const DARK_REPORT: &[u8] = b"\x1b[?997;1n";

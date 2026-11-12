@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use maestro_test_directory::Scratch;
 #[cfg(unix)]
-use maestro_tui::interface::TuiRuntime as _;
+use maestro_tui::TuiRuntime as _;
 use maestro_tui::{TUI, TerminalImage};
 
 use crate::scenarios::support::components::Probe;
@@ -321,7 +321,7 @@ fn first_frame_overflow_is_rejected() {
 
 #[test]
 fn settings_description_rows_fit_the_frame_viewport() {
-    use maestro_tui::components::preferences::SettingsListOptions;
+    use maestro_tui::components::SettingsListOptions;
     use maestro_tui::{Component, SettingItem, SettingsList, SettingsListTheme};
 
     in_home(

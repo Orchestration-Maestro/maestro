@@ -12,10 +12,7 @@ use maestro_theme::{
 use maestro_tools::types::local::ToolDefinition;
 use maestro_tools::{ToolRenderContext, ToolRenderEnvironment};
 use maestro_tui::test_support::manual_runtime;
-use maestro_tui::{
-    TerminalImage,
-    interface::{Component, ComponentHandle},
-};
+use maestro_tui::{Component, ComponentHandle, TerminalImage};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{

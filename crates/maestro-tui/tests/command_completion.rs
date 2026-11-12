@@ -5,8 +5,8 @@ use fixtures::completion::{
     ApplicationCase, CommandInput, Expected, FileInput, Files, SuggestionCase, item,
     run_applications, run_suggestions,
 };
-use maestro_tui::candidates::{CursorPosition, DirectoryEntryKind};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
+use maestro_tui::{CursorPosition, DirectoryEntryKind};
 
 #[test]
 fn commands_route_and_preserve_argument_results() {
@@ -75,8 +75,8 @@ fn command_values_starting_with_slash_are_inserted_as_paths() {
 }
 
 /// Await an explicit callback-entered/release boundary on the same request.
-fn observe_argument_completion(fail: bool) -> Result<(), maestro_tui::candidates::CompletionError> {
-    use maestro_tui::candidates::{Command, CompletionOptions, SlashCommand};
+fn observe_argument_completion(fail: bool) -> Result<(), maestro_tui::CompletionError> {
+    use maestro_tui::{Command, CompletionOptions, SlashCommand};
     use std::cell::Cell;
     use std::rc::Rc;
     use std::task::{Context, Poll, Waker};
@@ -545,7 +545,7 @@ fn deferred_callback(
     entered: &std::rc::Rc<std::cell::Cell<bool>>,
     released: &std::rc::Rc<std::cell::Cell<bool>>,
     fail: bool,
-) -> maestro_tui::candidates::ArgumentCompletions {
+) -> maestro_tui::ArgumentCompletions {
     let entered = std::rc::Rc::clone(entered);
     let released = std::rc::Rc::clone(released);
     std::rc::Rc::new(move |_| {
@@ -560,7 +560,7 @@ async fn deferred_result(
     entered: std::rc::Rc<std::cell::Cell<bool>>,
     released: std::rc::Rc<std::cell::Cell<bool>>,
     fail: bool,
-) -> Result<Option<Vec<maestro_tui::AutocompleteItem>>, maestro_tui::candidates::CompletionError> {
+) -> Result<Option<Vec<maestro_tui::AutocompleteItem>>, maestro_tui::CompletionError> {
     entered.set(true);
     std::future::poll_fn(|_| {
         if released.get() {

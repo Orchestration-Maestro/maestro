@@ -10,7 +10,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use maestro_tui::interface::TerminalHandle;
+use maestro_tui::TerminalHandle;
 
 use super::recording_terminal::RecordingTerminal;
 

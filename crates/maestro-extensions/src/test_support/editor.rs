@@ -5,8 +5,7 @@ use crate::types::{
 };
 use maestro_tui::editor_component::TextCallback;
 use maestro_tui::{
-    Cancellation, Component, Editor, EditorComponent, Focusable, KeybindingsManager,
-    interface::InputHandler,
+    Cancellation, Component, Editor, EditorComponent, Focusable, InputHandler, KeybindingsManager,
 };
 use std::{cell::RefCell, rc::Rc};
 

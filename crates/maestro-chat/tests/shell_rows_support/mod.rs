@@ -250,7 +250,7 @@ struct Transcript {
     /// Every frame in invocation order.
     frames: Vec<Vec<String>>,
     /// Optional inherited array captured before replacement.
-    alias: Option<maestro_tui::interface::ChildArray>,
+    alias: Option<maestro_tui::ChildArray>,
 }
 /// Applies one input operation without bypassing component boundaries.
 fn apply(

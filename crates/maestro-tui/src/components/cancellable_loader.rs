@@ -5,7 +5,7 @@ use std::{cell::RefCell, rc::Rc};
 use maestro_cancellation::Cancellation;
 
 use super::Loader;
-use crate::{Component, get_keybindings, interface::InputHandler};
+use crate::{Component, InputHandler, get_keybindings};
 
 /// A loader with a retained cancellation signal and an optional per-match callback.
 pub struct CancellableLoader {

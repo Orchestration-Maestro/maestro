@@ -92,7 +92,7 @@ fn browser_launcher_receives_literal_url_without_shell_expansion() {
 }
 use crate::recording_terminal;
 use maestro_chat::{LoginDialogComponent, LoginDialogOptions, LoginDialogPlatform};
-use maestro_tui::{Component, Focusable, interface::InputHandler};
+use maestro_tui::{Component, Focusable, InputHandler};
 use std::{
     cell::Cell,
     rc::Rc,
@@ -382,7 +382,7 @@ fn settled(
 
 #[test]
 fn submitted_prompt_rows_stay_frozen_while_a_later_prompt_is_active() {
-    use maestro_tui::interface::InputHandler as _;
+    use maestro_tui::InputHandler as _;
     let _guard = keybindings::bindings_guard();
     let (dialog, _) = login_support::controlled(
         maestro_chat::LoginDialogPlatform::Other,
@@ -407,7 +407,7 @@ fn submitted_prompt_rows_stay_frozen_while_a_later_prompt_is_active() {
 
 #[test]
 fn submitted_manual_input_stays_frozen_and_the_next_prompt_starts_empty() {
-    use maestro_tui::interface::InputHandler as _;
+    use maestro_tui::InputHandler as _;
     let _guard = keybindings::bindings_guard();
     let (dialog, _) = login_support::controlled(
         maestro_chat::LoginDialogPlatform::Other,
@@ -430,7 +430,7 @@ fn submitted_manual_input_stays_frozen_and_the_next_prompt_starts_empty() {
 
 #[test]
 fn manual_input_started_after_a_prompt_starts_empty() {
-    use maestro_tui::interface::InputHandler as _;
+    use maestro_tui::InputHandler as _;
     let _guard = keybindings::bindings_guard();
     let (dialog, _) = login_support::controlled(
         maestro_chat::LoginDialogPlatform::Other,

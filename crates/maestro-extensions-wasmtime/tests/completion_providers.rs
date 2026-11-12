@@ -10,10 +10,8 @@ use maestro_extensions::{
     EventError, ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for,
     types::{AutocompleteProviderFactory, ExtensionUIContextPort},
 };
-use maestro_tui::candidates::{
-    CompletionError, CompletionOptions, CompletionResult, CursorPosition,
-};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation};
+use maestro_tui::{CompletionError, CompletionOptions, CompletionResult, CursorPosition};
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// A native completion provider.

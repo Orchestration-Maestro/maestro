@@ -4,10 +4,8 @@ use std::cell::{Cell, RefCell};
 use std::future::Future;
 use std::pin::Pin;
 
-use maestro_tui::candidates::{
-    CompletionError, CompletionOptions, CompletionResult, CursorPosition,
-};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions};
+use maestro_tui::{CompletionError, CompletionOptions, CompletionResult, CursorPosition};
 
 use super::futures::YieldOnce;
 

@@ -12,7 +12,7 @@ use crate::runtime_support::{is_child, rerun, run_set};
 use crate::support::{Rig, START_BYTES, elapse, pipe_output, pty, until};
 use crate::{isolated, lifecycle_support::pty_input};
 use maestro_tui::Terminal;
-use maestro_tui::interface::TuiRuntime;
+use maestro_tui::TuiRuntime;
 use maestro_tui::terminal::OutputErrorHandler;
 use maestro_tui_crossterm::{ProcessTerminal, ProcessTuiRuntime};
 

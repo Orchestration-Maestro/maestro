@@ -10,7 +10,7 @@ use maestro_theme::{
     ColorMode, ColorValue, LiveTheme, SyntaxHighlighter, SyntectHighlighter, Theme, ThemeColor,
     ThemeDirectories, ThemeOptions, ThemeState,
 };
-use maestro_tui::{ImageProtocol, TerminalCapabilities, TerminalImage, interface::ComponentHandle};
+use maestro_tui::{ComponentHandle, ImageProtocol, TerminalCapabilities, TerminalImage};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 

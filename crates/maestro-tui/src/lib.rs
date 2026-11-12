@@ -1,21 +1,26 @@
 #![doc = include_str!("../../../docs/terminal/components.md")]
 
-pub mod bindings;
-pub mod candidates;
-pub mod clipboard;
+mod autocomplete;
+mod keybindings;
+mod kill_ring;
+pub use kill_ring::{KillRing, KillRingOptions};
 pub mod components;
 pub mod editor_component;
+mod fuzzy;
 pub mod images;
-pub mod input_buffer;
-pub mod interface;
 pub mod keys;
-pub mod matching;
+mod stdin_buffer;
 pub mod terminal;
 pub mod text;
+mod tui;
 pub mod undo_stack;
 
-pub use candidates::{
-    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
+#[cfg(not(target_arch = "wasm32"))]
+pub use autocomplete::NativeAutocompleteOperations;
+pub use autocomplete::{
+    ArgumentCompletions, AutocompleteItem, AutocompleteOperations, AutocompleteProvider,
+    AutocompleteSuggestions, CombinedAutocompleteProvider, Command, CompletionError,
+    CompletionOptions, CompletionResult, CursorPosition, DirectoryEntry, DirectoryEntryKind,
     SlashCommand,
 };
 pub use components::{
@@ -24,14 +29,15 @@ pub use components::{
     MarkdownTheme, Spacer, Text, TextDecoration, TruncatedText,
 };
 pub use editor_component::EditorComponent;
-pub use input_buffer::{StdinBuffer, StdinBufferEventMap, StdinBufferInput, StdinBufferOptions};
-pub use interface::{
-    CURSOR_MARKER, Component, Container, FocusFlag, Focusable, OverlayAnchor, OverlayHandle,
-    OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue, TUI, is_focusable,
-};
 pub use keys::{
     Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,
     is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
+};
+pub use stdin_buffer::{
+    HostColorScheme, HostMouse, RawInputByteFramer, SgrMouseFields, StdinBuffer,
+    StdinBufferEventMap, StdinBufferInput, StdinBufferOptions, host_frame_length,
+    parse_host_cell_size_report, parse_host_color_scheme_report, parse_host_mouse,
+    scan_sgr_mouse_fields,
 };
 pub use terminal::Terminal;
 pub use text::utils::{
@@ -39,6 +45,12 @@ pub use text::utils::{
     extract_ansi_code, extract_segments, get_segmenter, is_punctuation_char, is_whitespace_char,
     normalize_terminal_output, slice_by_column, slice_with_width, truncate_to_width, visible_width,
     wrap_text_with_ansi,
+};
+pub use tui::{
+    CURSOR_MARKER, ChildArray, Component, ComponentHandle, Container, FocusFlag, Focusable,
+    InputHandler, InputListener, InputListenerResult, LocalFuture, LogContext, OverlayAnchor,
+    OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, RenderCallback, RenderTimer,
+    RepeatingTimer, SizeValue, TUI, TerminalHandle, TuiRuntime, is_focusable,
 };
 
 pub use images::terminal_image::{
@@ -50,12 +62,12 @@ pub use images::terminal_image::{
     image_fallback, is_image_line,
 };
 
-pub use bindings::{
+pub use keybindings::{
     Keybinding, KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
     KeybindingsConfig, KeybindingsManager, TUI_KEYBINDINGS, get_keybindings, set_keybindings,
 };
 
-pub use matching::{FuzzyMatch, fuzzy_filter, fuzzy_match};
+pub use fuzzy::{FuzzyMatch, fuzzy_filter, fuzzy_match};
 
 pub use components::{
     SelectItem, SelectList, SelectListLayoutOptions, SelectListTheme,

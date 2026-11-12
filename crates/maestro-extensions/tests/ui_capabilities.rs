@@ -31,15 +31,13 @@ use maestro_models::{Cancellation, Local, UserContent};
 use maestro_session::Presence;
 use maestro_session::message_records::CustomMessage;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeInfo, ThemeState, get_editor_theme};
-use maestro_tui::candidates::{
-    CompletionError, CompletionOptions, CompletionResult, CursorPosition,
-};
-use maestro_tui::interface::{ComponentHandle, InputListenerResult};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Editor, EditorComponent,
     EditorOptions, EditorTheme, Input, KeybindingDefinition, KeybindingKeys, KeybindingsManager,
     OverlayHandle, OverlayOptions, TUI, TUI_KEYBINDINGS,
 };
+use maestro_tui::{CompletionError, CompletionOptions, CompletionResult, CursorPosition};
+use maestro_tui::{ComponentHandle, InputListenerResult};
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},

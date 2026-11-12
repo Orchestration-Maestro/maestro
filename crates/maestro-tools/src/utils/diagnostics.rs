@@ -1,6 +1,6 @@
 //! Failure records and cancellable native work shared by the tools.
 
-use crate::mutations::running_admission;
+use crate::file_mutation_queue::running_admission;
 use futures_util::future::{Either, select};
 use maestro_models::{Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use std::{future::Future, io, pin::pin};

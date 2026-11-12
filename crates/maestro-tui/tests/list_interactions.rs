@@ -5,7 +5,7 @@ use maestro_tui::{
     Component, KeybindingKeys, KeybindingsManager, SelectItem, SelectList, SelectListLayoutOptions,
     SettingItem, SettingsList, TUI_KEYBINDINGS, set_keybindings,
 };
-use maestro_tui::{components::preferences::SettingsListOptions, interface::InputHandler};
+use maestro_tui::{InputHandler, components::SettingsListOptions};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 

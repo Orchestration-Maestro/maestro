@@ -175,7 +175,7 @@ fn tool_result_empty_patch_leaves_absence_and_original_top_level() {
         bus.settle().await;
     });
 }
-use maestro_tools::test_support::callbacks as shell_support;
+use maestro_tools::test_support as shell_support;
 #[test]
 fn user_bash_keeps_first_result_and_invocable_operations() {
     support::local(user_bash_keeps_first_result_and_invocable_operations_case());

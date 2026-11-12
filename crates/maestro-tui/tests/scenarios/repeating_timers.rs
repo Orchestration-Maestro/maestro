@@ -1,6 +1,6 @@
 //! Owned repeating callbacks through the controlled terminal runtime.
 use crate::scenarios::support::manual_runtime::{ManualRuntime, ms};
-use maestro_tui::interface::RepeatingTimer;
+use maestro_tui::RepeatingTimer;
 use std::{cell::Cell, rc::Rc};
 
 #[test]
