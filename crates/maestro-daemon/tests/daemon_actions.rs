@@ -3,7 +3,7 @@
 #![cfg(target_os = "linux")]
 
 use crate::support;
-use support::{assert_identity_invariants, populate_terminals};
+use support::assert_identity_invariants;
 
 use maestro_daemon::{settings::model::Config, state::model::DaemonState};
 
@@ -16,7 +16,7 @@ fn app_with_workspaces(names: &[&str]) -> DaemonState {
             .new_with_tab(format!("/{name}").into(), None, |_, _| Ok(()))
             .unwrap();
     }
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     state.active = (!names.is_empty()).then_some(0);
     state.toast_config.delay_seconds = 0;
     state.sound.enabled = false;
@@ -456,7 +456,7 @@ fn daemon_pane_died_last_workspace_enters_navigate() {
 fn daemon_pane_died_multi_pane_keeps_workspace() {
     let mut state = app_with_workspaces(&["test"]);
     let second = split(&mut state, 0);
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     state.handle_pane_died(second);
     assert_eq!(state.topology.workspaces.len(), 1);
     assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 1);
@@ -1284,7 +1284,7 @@ fn daemon_background_toast_includes_tab_name_when_workspace_has_multiple_tabs() 
     state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
     state.topology.workspaces[1].tabs[0].set_custom_name("main".into());
     let bg_pane_id = add_tab(&mut state, 1);
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     let tab = state.topology.workspaces[1].tabs.last_mut().unwrap();
     tab.set_custom_name("logs".into());
     state.topology.workspaces[1].active_tab = 0;
@@ -1314,7 +1314,7 @@ fn daemon_background_tab_in_active_workspace_still_sets_toast() {
     state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
     state.topology.workspaces[0].tabs[0].set_custom_name("main".into());
     let bg_pane_id = add_tab(&mut state, 0);
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     let tab = state.topology.workspaces[0].tabs.last_mut().unwrap();
     tab.set_custom_name("logs".into());
     state.topology.workspaces[0].active_tab = 0;
@@ -1613,7 +1613,7 @@ fn daemon_toggle_zoom_single_pane_noop() {
 fn daemon_close_pane_removes_from_workspace() {
     let mut state = app_with_workspaces(&["test"]);
     let closed = split(&mut state, 0);
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 2);
     state.action_panes.insert(
         closed,
@@ -1675,7 +1675,7 @@ fn daemon_pane_process_exit_publish_marks_agent_idle_before_pane_removal() {
 fn daemon_close_pane_removes_unattached_terminal_state() {
     let mut state = app_with_workspaces(&["test"]);
     let pane = split(&mut state, 0);
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     let terminal = state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
@@ -1693,7 +1693,7 @@ fn daemon_close_tab_removes_unattached_terminal_states() {
         .create_tab_with_runtime(0, |_, _| Ok(()))
         .unwrap()
         .unwrap();
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     state.topology.workspaces[0].switch_tab(1);
     let terminal = state.topology.workspaces[0]
         .terminal_id(pane)

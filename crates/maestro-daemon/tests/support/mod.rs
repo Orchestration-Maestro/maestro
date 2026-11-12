@@ -7,11 +7,6 @@ pub mod spawning;
 
 use maestro_daemon::state::model::DaemonState;
 
-/// Admit terminal metadata for each pane using its topology-owned identity.
-pub fn populate_terminals(state: &mut DaemonState) {
-    state.admit_seeded_terminals();
-}
-
 /// Check topology identity, focus and metadata membership after each mutation.
 pub fn assert_identity_invariants(state: &DaemonState) {
     use std::collections::HashSet;

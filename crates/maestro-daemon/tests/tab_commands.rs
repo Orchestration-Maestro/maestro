@@ -21,7 +21,7 @@ fn add_tabs(app: &mut App, index: usize, count: usize) {
             .unwrap()
             .unwrap();
     }
-    crate::support::populate_terminals(&mut app.state);
+    app.state.admit_seeded_terminals();
 }
 
 /// The tab identities a list result holds, in order.

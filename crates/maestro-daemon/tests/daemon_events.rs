@@ -156,7 +156,7 @@ fn context_app(directory: std::path::PathBuf, delayed: bool) -> App {
         .topology
         .new_with_tab(directory, None, |_, _| Ok(()))
         .unwrap();
-    support::populate_terminals(state);
+    state.admit_seeded_terminals();
     state.active = Some(0);
     support::assert_identity_invariants(state);
     state.active = None;
@@ -204,7 +204,7 @@ fn overlay_app(previous_zoomed: bool) -> (App, PaneId, PaneId) {
         .unwrap()
         .unwrap()
         .0;
-    support::populate_terminals(&mut app.state);
+    app.state.admit_seeded_terminals();
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     app.overlay_panes.insert(
         pane,
@@ -229,7 +229,7 @@ fn daemon_overlay_exit_preserves_focus_changed_before_exit() {
         .unwrap();
     let new_tab = 1;
     app.state.topology.workspaces[0].switch_tab(new_tab);
-    support::populate_terminals(&mut app.state);
+    app.state.admit_seeded_terminals();
     app.handle_internal_event(AppEvent::PaneDied { pane_id: pane });
     let workspace = &app.state.topology.workspaces[0];
     assert_eq!(workspace.active_tab, new_tab);

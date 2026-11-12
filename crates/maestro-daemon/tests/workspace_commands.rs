@@ -2,7 +2,7 @@
 #![cfg(target_os = "linux")]
 use crate::support::api::{
     add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
-    root_pane, with_live_daemon, workspace_ids, workspace_ids_of,
+    with_live_daemon, workspace_ids, workspace_ids_of,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
 use maestro_daemon::state::App;
@@ -423,7 +423,7 @@ fn workspace_creation_follows_the_focused_pane_directory() {
                 .create_tab_with_runtime(0, |_, _| Ok(()))
                 .unwrap()
                 .unwrap();
-            crate::support::populate_terminals(&mut app.state);
+            app.state.admit_seeded_terminals();
             app.state.topology.workspaces[0].active_tab = 1;
             let tab = &app.state.topology.workspaces[0].tabs[1];
             let terminal = tab.terminal_id(tab.root_pane).unwrap().clone();
@@ -472,14 +472,4 @@ fn workspace_creation_preserves_explicit_cwd_and_focus_policy() {
             assert!(events_after(app, sequence).is_empty());
         },
     );
-}
-
-#[test]
-fn the_root_pane_helper_names_the_seeded_pane_past_ten_terminals() {
-    let mut app = daemon_with_workspaces(&[]);
-    let seeded: Vec<_> = (0..20)
-        .map(|index| app.seed_workspace(&format!("/w{index}")).unwrap())
-        .collect();
-    let found: Vec<_> = (0..20).map(|index| root_pane(&app, index)).collect();
-    assert_eq!(found, seeded);
 }

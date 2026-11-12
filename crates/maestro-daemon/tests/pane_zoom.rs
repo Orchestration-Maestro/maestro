@@ -174,3 +174,13 @@ fn zooming_a_missing_pane_is_refused() {
         failure("pane_not_found", "pane not found")
     );
 }
+
+#[test]
+fn each_seeded_workspace_names_its_first_tab_root() {
+    let mut app = daemon_with_workspaces(&[]);
+    let seeded: Vec<_> = (0..20)
+        .map(|index| app.seed_workspace(&format!("/w{index}")).unwrap())
+        .collect();
+    let found: Vec<_> = (0..20).map(|index| root_pane(&app, index)).collect();
+    assert_eq!(found, seeded);
+}
