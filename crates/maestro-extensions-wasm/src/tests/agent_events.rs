@@ -51,7 +51,7 @@ async fn agent_events(driver: &mut impl Driver) -> Result<(), String> {
     let tool = json!({"role":"toolResult","toolCallId":"id","toolName":"tool","content":[{"type":"image","data":"AA==","mimeType":"image/png"}],"isError":true,"timestamp":7.5});
     let second_tool = json!({"role":"toolResult","toolCallId":"second","toolName":"another","content":[{"type":"text","text":"second result"}],"isError":false,"timestamp":9.0});
     let assistant = json!({"role":"assistant","content":[{"type":"text","text":"answer","textSignature":"opaque"}],"api":"a","provider":"p","model":"m","usage":{"input":1.0,"output":2.0,"cacheRead":3.0,"cacheWrite":4.0,"totalTokens":99.0,"cost":{"input":1.0,"output":2.0,"cacheRead":3.0,"cacheWrite":4.0,"total":99.0}},"stopReason":"toolUse","timestamp":8.5});
-    let other = json!({"role":"plugin","data":" {\"x\":1,\"x\":2} "});
+    let other = json!({"role":"memo","data":" {\"x\":1,\"x\":2} "});
     let events = [
         json!({"type":"context", "messages":[tool.clone(), user.clone(), assistant.clone(), other, user.clone()]}),
         json!({"type":"before_agent_start", "prompt":"prompt", "images":[{"type":"image","data":"AA==", "mimeType":"image/png"}], "systemPrompt":"system", "systemPromptOptions":prompt_options()}),

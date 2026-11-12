@@ -195,7 +195,7 @@ fn scoped_package_cli_identifies_the_catalogue_entry() {
             "node.exe",
             &[
                 "node.exe",
-                "C:\\Users\\herdr\\AppData\\Roaming\\npm\\node_modules\\@earendil-works\\pi-coding-agent\\dist\\cli.js",
+                "C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules\\@earendil-works\\pi-coding-agent\\dist\\cli.js",
             ],
         )],
     };
@@ -215,7 +215,7 @@ fn unscoped_package_cli_identifies_the_catalogue_entry() {
             "node.exe",
             &[
                 "node.exe",
-                "C:\\Users\\herdr\\AppData\\Roaming\\npm\\node_modules\\mastracode\\dist\\cli.js",
+                "C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules\\mastracode\\dist\\cli.js",
             ],
         )],
     };
@@ -235,7 +235,7 @@ fn package_build_script_is_not_an_agent_cli() {
             "node.exe",
             &[
                 "node.exe",
-                "C:\\Users\\herdr\\AppData\\Roaming\\npm\\node_modules\\@earendil-works\\pi-coding-agent\\scripts\\build.js",
+                "C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules\\@earendil-works\\pi-coding-agent\\scripts\\build.js",
             ],
         )],
     };
@@ -255,7 +255,7 @@ fn command_interpreter_payload_identifies_an_agent() {
                 "/D",
                 "/S",
                 "/C",
-                "C:\\Users\\herdr\\AppData\\Roaming\\npm\\codex.cmd --model gpt-5",
+                "C:\\Users\\user\\AppData\\Roaming\\npm\\codex.cmd --model gpt-5",
             ],
         )],
     };
@@ -277,7 +277,7 @@ fn powershell_file_operand_identifies_an_agent() {
                 "powershell.exe",
                 "-NoProfile",
                 "-File",
-                "C:\\Users\\herdr\\Documents\\PowerShell\\Scripts\\claude.ps1",
+                "C:\\Users\\user\\Documents\\PowerShell\\Scripts\\claude.ps1",
             ],
         )],
     };
