@@ -2,7 +2,7 @@
 
 use super::super::*;
 use maestro_process::jobs::{ForegroundJob, ForegroundProcess};
-use maestro_terminal::{CursorStyle, Terminal};
+use maestro_terminal_emulator::{CursorStyle, Terminal};
 use maestro_workspace::tiling::PaneId;
 use std::time::{Duration, Instant};
 

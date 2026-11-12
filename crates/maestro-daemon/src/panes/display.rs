@@ -23,7 +23,7 @@ use super::{
     xtgettcap::XtgettcapQueryTracker,
 };
 use crate::terminal_theme::TerminalTheme;
-use maestro_terminal::{Terminal, color::Rgb, painting::RenderState};
+use maestro_terminal_emulator::{Terminal, color::Rgb, painting::RenderState};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::Duration;

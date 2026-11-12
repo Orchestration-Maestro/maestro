@@ -2403,7 +2403,7 @@ fn test_process_inventory_matches_foundation_contract() {
 fn workspace_daemon_owners_are_core() {
     for name in [
         "maestro-protocol",
-        "maestro-terminal",
+        "maestro-terminal-emulator",
         "maestro-workspace",
         "maestro-detection",
         "maestro-daemon",
@@ -2431,7 +2431,7 @@ fn daemon_requires_the_terminal_engine() {
     workspace.member("maestro-daemon", "maestro-daemon", "");
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err("maestro-daemon: missing required direct dependency maestro-terminal".into())
+        Err("maestro-daemon: missing required direct dependency maestro-terminal-emulator".into())
     );
     workspace.foundation(&["maestro-daemon"]);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
@@ -2718,7 +2718,7 @@ const TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-models",
     "maestro-process",
-    "maestro-terminal",
+    "maestro-terminal-emulator",
     "maestro-workspace",
 ];
 
@@ -2746,7 +2746,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-session",
     "maestro-session-reports",
     "maestro-settings",
-    "maestro-terminal",
+    "maestro-terminal-emulator",
     "maestro-test-browser",
     "maestro-test-conventions",
     "maestro-test-process",

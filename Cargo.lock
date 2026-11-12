@@ -3946,7 +3946,7 @@ dependencies = [
  "maestro-resources",
  "maestro-session",
  "maestro-settings",
- "maestro-terminal",
+ "maestro-terminal-emulator",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -4100,7 +4100,7 @@ dependencies = [
  "maestro-protocol",
  "maestro-realpath",
  "maestro-settings",
- "maestro-terminal",
+ "maestro-terminal-emulator",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-test-tracing",
@@ -4704,7 +4704,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-terminal"
+name = "maestro-terminal-emulator"
 version = "0.1.0"
 dependencies = [
  "base64 0.23.1",

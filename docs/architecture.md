@@ -28,8 +28,8 @@ imports only bindings visible from the importing module and cannot widen their
 visibility through a public relay. Local glob bindings shadow root external-crate
 aliases, including when a later export refers to an earlier alias through `self`.
 
-For example, `pub use maestro_terminal::painting::Dirty;` selects one item.
-`pub use maestro_terminal::painting;` exposes a whole module and is rejected.
+For example, `pub use maestro_terminal_emulator::painting::Dirty;` selects one item.
+`pub use maestro_terminal_emulator::painting;` exposes a whole module and is rejected.
 
 The same run checks the credentials crate's public surface. Its root names every
 export: the checker reports a public re-export or module whose name the crate's

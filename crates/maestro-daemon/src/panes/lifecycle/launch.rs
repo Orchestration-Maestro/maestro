@@ -259,7 +259,7 @@ fn prepare_command(
 
 /// Creates and themes the terminal before history or handoff replay.
 pub(super) fn make_terminal(config: &PaneRuntimeConfig) -> io::Result<Arc<PaneTerminal>> {
-    let terminal = maestro_terminal::Terminal::new(
+    let terminal = maestro_terminal_emulator::Terminal::new(
         config.size.cols,
         config.size.rows,
         config.scrollback_limit_bytes,
