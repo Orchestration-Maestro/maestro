@@ -205,7 +205,7 @@ identical content after failure retries. Empty content retains a successful body
 but empty content after failure shows an empty body. Filename edits only update
 metadata. Errors use the shared selectable native panel with the localized
 `Error loading spreadsheet` heading and literal diagnostic or localized fallback.
-Legacy XLS cells use the [shared workbook reader](../application/document-formats.md)
+Legacy XLS cells use the [shared workbook reader](../office.md)
 for formatted text, declared bounds, formula and array metadata, decoded rich-string
 plain text and selected hyperlink targets. Tables retain their owned content after
 parsing; sheet switches reuse those tables. The shared writer escapes binary text
@@ -318,7 +318,7 @@ clears a failed body. Assigning failed content again retries rendering and keeps
 the diagnostic if it fails again. Each mounted root owns its document URLs and
 pending shape sizing; replacement or root release drops those resources without
 affecting siblings. Errors share the attachment preview's literal node builder.
-The [shared Word renderer](../application/document-formats.md#word-page-rendering)
+The [shared Word renderer](../office.md#word-page-rendering)
 still owns document parsing and safe link output.
 
 ## Native artifact console

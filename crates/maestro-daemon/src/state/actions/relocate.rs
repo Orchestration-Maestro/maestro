@@ -42,18 +42,19 @@ impl DaemonState {
     /// Puts a pane back where a refused move took it from: as a new tab of its workspace,
     /// or, when that workspace is gone, in a restored workspace of the same identity.
     pub fn recover_failed_pane_move(&mut self, recovery: PaneMoveRecovery, moved: MovedPane) {
-        if let Some(index) = self
-            .topology
-            .workspaces
-            .iter()
-            .position(|workspace| workspace.id == recovery.workspace_id)
-        {
-            self.topology.workspaces[index]
-                .create_tab_from_existing_pane(moved, recovery.tab_label);
-        } else {
-            self.restore_source_workspace(recovery, moved);
-        }
-        self.session_dirty = true;
+        self.edit_topology(|state| {
+            if let Some(index) = state
+                .topology
+                .workspaces
+                .iter()
+                .position(|workspace| workspace.id == recovery.workspace_id)
+            {
+                state.topology.workspaces[index]
+                    .create_tab_from_existing_pane(moved, recovery.tab_label);
+            } else {
+                state.restore_source_workspace(recovery, moved);
+            }
+        });
     }
 
     /// Appends a workspace around a transferred pane, which becomes its only tab's only pane,

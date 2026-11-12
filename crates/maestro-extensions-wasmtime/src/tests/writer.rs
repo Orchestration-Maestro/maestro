@@ -24,7 +24,7 @@ fn writable_setup_and_its_reader_share_the_real_session() {
                 observe(&writer);
                 let reader = writer.reader().unwrap();
                 drop(writer);
-                assert_eq!(reader.read(history_reads::Request::Cwd).unwrap(), "/setup");
+                assert_eq!(reader.get_cwd().unwrap(), "/setup");
             });
             drop(admission);
             pump.serve().await;
@@ -46,10 +46,7 @@ fn observe(writer: &Endpoint) {
             .unwrap(),
         None
     );
-    assert_eq!(
-        reader.read(history_reads::Request::SessionId).unwrap(),
-        "setup-id"
-    );
+    assert_eq!(reader.get_session_id().unwrap(), "setup-id");
     let id = writer
         .read(|reply| {
             Request::Message(
@@ -96,8 +93,7 @@ fn append_records(writer: &Endpoint, id: &str) {
 
 /// Checks optional metadata, normalization policy and exact literal operands.
 fn check_records(reader: &history_reads::Endpoint) {
-    let entries: Value =
-        serde_json::from_str(&reader.read(history_reads::Request::Entries).unwrap()).unwrap();
+    let entries: Value = serde_json::from_str(&reader.get_entries().unwrap()).unwrap();
     assert_eq!(entries[1]["thinkingLevel"], " raw level ");
     assert_eq!(entries[2]["provider"], " provider ");
     assert_eq!(entries[3]["details"], Value::Null);
@@ -112,15 +108,9 @@ fn branch_records(writer: &Endpoint, reader: &history_reads::Endpoint, id: Strin
     writer
         .read(|reply| Request::Branch(id.clone(), reply))
         .unwrap();
-    assert_eq!(
-        reader
-            .read(history_reads::Request::LeafId)
-            .unwrap()
-            .as_deref(),
-        Some(id.as_str())
-    );
+    assert_eq!(reader.get_leaf_id().unwrap().as_deref(), Some(id.as_str()));
     writer.read(Request::ResetLeaf).unwrap();
-    assert_eq!(reader.read(history_reads::Request::LeafId).unwrap(), None);
+    assert_eq!(reader.get_leaf_id().unwrap(), None);
     writer
         .read(|reply| {
             Request::Summary(
@@ -150,7 +140,7 @@ fn branch_records(writer: &Endpoint, reader: &history_reads::Endpoint, id: Strin
     // The selected file is resolved: Windows puts it on the working drive.
     let selected = std::path::absolute("/setup-does-not-write/session.jsonl").unwrap();
     assert_eq!(
-        reader.read(history_reads::Request::SessionFile).unwrap(),
+        reader.get_session_file().unwrap(),
         Some(selected.display().to_string())
     );
     assert!(

@@ -3,7 +3,7 @@ use super::{
     pattern::Pattern,
     processor::{Context, Processor, Target},
 };
-use maestro_pattern::{Minimatch, Platform};
+use maestro_pattern::{GlobMatcher, Platform};
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -17,7 +17,11 @@ enum Phase {
     Read(Target, Vec<Pattern>),
 }
 /// Emits literals before scans, and completes current matches before subwalks.
-pub(super) fn walk(matcher: &Minimatch, root: &str, platform: Platform) -> io::Result<Vec<String>> {
+pub(super) fn walk(
+    matcher: &GlobMatcher,
+    root: &str,
+    platform: Platform,
+) -> io::Result<Vec<String>> {
     let root = maestro_resources::paths::resolve(&[root])?;
     let observed = maestro_resources::symlink_metadata(Path::new(&root));
     let missing = observed.as_ref().is_err_and(|e| {

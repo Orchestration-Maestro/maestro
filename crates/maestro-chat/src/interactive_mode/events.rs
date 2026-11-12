@@ -275,8 +275,16 @@ impl InteractiveMode {
         Ok(())
     }
 
+    /// Whether the pending row of `call` already shows its arguments.
+    fn shows_arguments(&self, call: &ToolCall) -> bool {
+        self.pending_tools
+            .borrow()
+            .get(&call.id)
+            .is_some_and(|row| row.has_args(&call.arguments))
+    }
+
     /// Shows `message` in the streaming row and gives each of its tool calls a pending row,
-    /// updating the arguments of a call that already has one; ignored without a stream.
+    /// updating the arguments of a call whose row shows others; ignored without a stream.
     ///
     /// # Errors
     /// Returns the failure of a renderer binding or of a row's rendering.
@@ -295,8 +303,12 @@ impl InteractiveMode {
         let calls: Vec<ToolCall> = {
             let message = message.read().unwrap_or_else(PoisonError::into_inner);
             let calls = message.content.iter().filter_map(|content| match content {
-                AssistantContent::ToolCall(call) => Some(call.clone()),
-                AssistantContent::Text(_) | AssistantContent::Thinking(_) => None,
+                AssistantContent::ToolCall(call) if !self.shows_arguments(call) => {
+                    Some(call.clone())
+                }
+                AssistantContent::ToolCall(_)
+                | AssistantContent::Text(_)
+                | AssistantContent::Thinking(_) => None,
             });
             calls.collect()
         };

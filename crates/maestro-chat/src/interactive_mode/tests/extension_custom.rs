@@ -31,9 +31,6 @@ pub(super) type Done = Rc<dyn Fn(String) -> Result<(), EventError>>;
 pub(super) type ViewFactory =
     UIHostCall<(TUI, LiveTheme, ExtensionKeybindings, Done), CustomFactoryOutcome>;
 
-/// The overlay handle an extension receives.
-pub(super) type Handle = Rc<RefCell<Box<dyn OverlayHandle>>>;
-
 /// A focusable view recording the width it renders at.
 pub(super) struct View {
     /// The painted label.
@@ -135,7 +132,7 @@ pub(super) struct Views {
     /// The options the resolver returns.
     options: Rc<RefCell<OverlayOptions>>,
     /// The handles the handle callback received.
-    handles: RefCell<Vec<Handle>>,
+    handles: RefCell<Vec<OverlayHandle>>,
     /// Original close failures caught inside a delayed build.
     close_failures: RefCell<Vec<EventError>>,
 }
@@ -147,7 +144,7 @@ pub(super) struct Bound {
     /// The overlay options resolver.
     pub(super) resolver: UIHostCall<(), Rc<RefCell<OverlayOptions>>>,
     /// The overlay handle callback.
-    pub(super) on_handle: UIHostCall<Handle, ()>,
+    pub(super) on_handle: UIHostCall<OverlayHandle, ()>,
 }
 
 impl Views {
@@ -275,7 +272,7 @@ impl Views {
                 }
                 Ok(resolving.options.clone())
             }),
-            on_handle: api.ui_callback(move |handle: Handle, _| {
+            on_handle: api.ui_callback(move |handle: OverlayHandle, _| {
                 handling.mark("on-handle");
                 handling.handles.borrow_mut().push(handle);
                 match handling.on_handle.get() {
@@ -289,9 +286,9 @@ impl Views {
     /// Hides and shows again each overlay through the handle the extension received.
     fn toggle_handles(&self) {
         for handle in self.handles.borrow().iter() {
-            handle.borrow_mut().set_hidden(true);
-            assert!(handle.borrow().is_hidden());
-            handle.borrow_mut().set_hidden(false);
+            handle.set_hidden(true);
+            assert!(handle.is_hidden());
+            handle.set_hidden(false);
         }
     }
     /// Releases the next asynchronous build and runs the host's admitted work.
@@ -318,7 +315,7 @@ async fn started(
 /// Options showing the view as an overlay with `source` and `on_handle`.
 pub(super) fn overlay(
     source: Option<OverlayOptionsSource>,
-    on_handle: Option<UIHostCall<Handle, ()>>,
+    on_handle: Option<UIHostCall<OverlayHandle, ()>>,
 ) -> CustomUIOptions {
     CustomUIOptions {
         overlay: Some(true),
@@ -913,7 +910,7 @@ fn custom_overlay_cleanup_keeps_the_original_callback_error() {
             let (building, failing, output) = (views.clone(), views.clone(), terminal.clone());
             let (world, mut bound) = with_factories(directory, move |api| {
                 let (failing, output) = (failing.clone(), output.clone());
-                let callback = api.ui_callback(move |_: Handle, _| {
+                let callback = api.ui_callback(move |_: OverlayHandle, _| {
                     output
                         .borrow()
                         .as_ref()

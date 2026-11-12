@@ -38,6 +38,11 @@ pub(crate) fn clear_dirty(t: &mut Terminal) {
 }
 
 pub(crate) fn assert_text(t: &Terminal, expected: &str) {
+    assert_text_in(t, expected, "");
+}
+
+/// Assert the screen text, naming `label` in every failure.
+pub(crate) fn assert_text_in(t: &Terminal, expected: &str, label: &str) {
     let screen = t.screens.active();
     let mut lines = expected.split('\n');
     for y in 0..u32::from(t.rows()) {
@@ -53,21 +58,32 @@ pub(crate) fn assert_text(t: &Terminal, expected: &str) {
             }
             let cp = cell.codepoint();
             if let Some(expected) = chars.next() {
-                assert_eq!(if cp == '\0' { ' ' } else { cp }, expected, "cell {x},{y}");
+                assert_eq!(
+                    if cp == '\0' { ' ' } else { cp },
+                    expected,
+                    "{label} cell {x},{y}"
+                );
             } else {
-                assert!(matches!(cp, '\0' | ' '), "unexpected cell {x},{y}: {cp:?}");
+                assert!(
+                    matches!(cp, '\0' | ' '),
+                    "{label} unexpected cell {x},{y}: {cp:?}"
+                );
             }
             let position = CellPosition {
                 x: u16::try_from(x).unwrap(),
                 y: pin.y,
             };
             for &scalar in page.lookup_grapheme(position).unwrap_or_default() {
-                assert_eq!(chars.next(), Some(scalar), "suffix at {x},{y}");
+                assert_eq!(chars.next(), Some(scalar), "{label} suffix at {x},{y}");
             }
         }
-        assert_eq!(chars.next(), None, "unmatched text on row {y}");
+        assert_eq!(chars.next(), None, "{label} unmatched text on row {y}");
     }
-    assert_eq!(lines.next(), None, "expected text exceeds active rows");
+    assert_eq!(
+        lines.next(),
+        None,
+        "{label} expected text exceeds active rows"
+    );
 }
 
 pub(crate) fn row(t: &Terminal, y: u32) -> maestro_terminal_emulator::page::row::Row {

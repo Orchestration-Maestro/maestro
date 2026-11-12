@@ -24,9 +24,6 @@ use tokio::sync::oneshot;
 /// The custom views the mode keeps until each settles.
 pub(in super::super) type CustomViews = Rc<RefCell<Listeners<Rc<CustomView>>>>;
 
-/// A shown overlay's handle, shared with the extension.
-type SharedHandle = Rc<RefCell<Box<dyn OverlayHandle>>>;
-
 /// A failed close: the original failure, shared by every close and the observation.
 #[derive(Debug)]
 struct CustomCloseFailure(Arc<dyn Error + Send + Sync>);
@@ -69,7 +66,7 @@ pub(in super::super) struct CustomView {
     /// The built component, until the view settles.
     component: RefCell<Option<Rc<ExtensionComponent>>>,
     /// The view's own overlay, until the view settles.
-    handle: RefCell<Option<SharedHandle>>,
+    handle: RefCell<Option<OverlayHandle>>,
     /// Settles the observation.
     settle: RefCell<Option<oneshot::Sender<Result<(), EventError>>>>,
     /// Removes the view from the mode's views.
@@ -202,7 +199,7 @@ impl CustomView {
         }
         drop(self.phase.replace(Phase::Closed));
         let handle = self.handle.borrow().clone().filter(|_| self.overlay);
-        let removed = handle.map_or(Ok(()), |handle| handle.borrow_mut().hide());
+        let removed = handle.map_or(Ok(()), |handle| handle.hide());
         let component = self.component.take();
         self.finish(Ok(()));
         if let Some(component) = component {
@@ -230,7 +227,7 @@ impl CustomView {
         }
         let handle = self.handle.borrow().clone();
         if let Some(handle) = handle {
-            handle.borrow_mut().hide()?;
+            handle.hide()?;
         }
         Ok(())
     }
@@ -280,7 +277,7 @@ impl CustomView {
         if !self.is_open() {
             return Ok(());
         }
-        let mut shown = match mode
+        let shown = match mode
             .ui
             .show_overlay(Rc::clone(&component.component), options)
         {
@@ -297,10 +294,9 @@ impl CustomView {
             shown.hide()?;
             return Ok(());
         }
-        let handle: SharedHandle = Rc::new(RefCell::new(shown));
-        self.handle.replace(Some(Rc::clone(&handle)));
+        self.handle.replace(Some(shown.clone()));
         if let Some(on_handle) = &setup.on_handle {
-            on_handle.call(handle)?;
+            on_handle.call(shown)?;
         }
         Ok(())
     }

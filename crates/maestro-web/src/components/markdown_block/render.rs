@@ -2,10 +2,10 @@
 use super::admission::{
     Formula, MathBlocks, MathInline, block_formula, matching, scan, starts_display,
 };
-use maestro_app::browser::script_scheme;
 use maestro_markdown::{
     self as markdown, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node,
 };
+use maestro_office::script_scheme;
 use maestro_text::{
     is_whitespace_scalar,
     markup::{EscapeMode, escape_into},
@@ -396,7 +396,7 @@ impl Writer<'_, '_> {
         };
         // A refused target keeps the label; with escaping on, an angle autolink keeps its source.
         let href = utf8_percent_encode(href, URL_SAFE).to_string();
-        let refused = maestro_app::browser::executable(&href);
+        let refused = maestro_office::executable(&href);
         if refused && escape_html && meta.link_type == markdown::LinkType::Autolink {
             escape_authored(node, out);
             return;

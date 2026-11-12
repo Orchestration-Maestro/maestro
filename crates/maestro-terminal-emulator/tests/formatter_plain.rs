@@ -2,7 +2,9 @@
 
 use maestro_terminal_emulator::{
     Page, Terminal,
-    formatting::{Options, PageFormatter, TrailingState},
+    formatting::{
+        CodepointMap, Options, PageFormatter, PageListFormatter, Replacement, TrailingState,
+    },
     point::Tag,
 };
 
@@ -21,23 +23,6 @@ fn page(terminal: &Terminal) -> &Page {
 }
 
 #[test]
-fn page_plain_single_line() {
-    let terminal = terminal(80, 24, "hello, world");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(page, Options::default());
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello, world");
-    assert_eq!(
-        state,
-        TrailingState {
-            rows: usize::from(page.size.rows),
-            cells: 68
-        }
-    );
-}
-
-#[test]
 fn terminal_formatter_plain_no_selection() {
     let terminal = terminal(80, 24, "hello\r\nworld");
     let formatter = maestro_terminal_emulator::formatting::TerminalFormatter::init(
@@ -47,180 +32,6 @@ fn terminal_formatter_plain_no_selection() {
     let mut output = String::new();
     formatter.format(&mut output).unwrap();
     assert_eq!(output, "hello\nworld");
-}
-
-#[test]
-fn page_plain_single_line_soft_wrapped_unwrapped() {
-    let terminal = terminal(3, 5, "hello!");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: true,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let _state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello!");
-}
-
-#[test]
-fn page_plain_multiline() {
-    let terminal = terminal(80, 24, "hello\r\nworld");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello\nworld");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_multiline_rectangle() {
-    let terminal = terminal(80, 24, "hello\r\nworld");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_x = 1;
-    formatter.end_x = Some(3);
-    formatter.rectangle = true;
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "ell\norl");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, 0);
-}
-
-#[test]
-fn page_plain_multi_blank_lines() {
-    let terminal = terminal(80, 24, "hello\r\n\r\n\r\nworld");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello\n\n\nworld");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 3);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_trailing_blank_lines() {
-    let terminal = terminal(80, 24, "hello\r\nworld\r\n\r\n");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello\nworld");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_trailing_whitespace() {
-    let terminal = terminal(80, 24, "hello   \r\nworld   ");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello\nworld");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_trailing_whitespace_no_trim() {
-    let terminal = terminal(80, 24, "hello   \r\nworld  ");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: false,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello   \nworld  ");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 7);
-}
-
-#[test]
-fn page_plain_with_prior_trailing_state_rows() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.trailing_state = Some(TrailingState { rows: 2, cells: 0 });
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "\n\nhello");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_with_prior_trailing_state_cells_no_wrapped_line() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.trailing_state = Some(TrailingState { rows: 0, cells: 3 });
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
 }
 
 #[test]
@@ -248,432 +59,6 @@ fn page_plain_with_prior_trailing_state_cells_with_wrap_continuation() {
     assert_eq!(output, "   world");
     assert_eq!(state.rows, usize::from(page.size.rows));
     assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_soft_wrapped_without_unwrap() {
-    let terminal = terminal(10, 24, "hello world test");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello worl\nd test");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 6);
-}
-
-#[test]
-fn page_plain_soft_wrapped_with_unwrap() {
-    let terminal = terminal(10, 24, "hello world test");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: true,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello world test");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 6);
-}
-
-#[test]
-fn page_plain_soft_wrapped_3_lines_without_unwrap() {
-    let terminal = terminal(10, 24, "hello world this is a test");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello worl\nd this is\na test");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 2);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 6);
-}
-
-#[test]
-fn page_plain_soft_wrapped_3_lines_with_unwrap() {
-    let terminal = terminal(10, 24, "hello world this is a test");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: true,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello world this is a test");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 2);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 6);
-}
-
-#[test]
-fn page_plain_start_y_subset() {
-    let terminal = terminal(80, 24, "hello\r\nworld\r\ntest");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_y = 1;
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "world\ntest");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 2);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 4);
-}
-
-#[test]
-fn page_plain_end_y_subset() {
-    let terminal = terminal(80, 24, "hello\r\nworld\r\ntest");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.end_y = Some(1);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello\nworld");
-    assert_eq!(state.rows, 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_start_y_and_end_y_range() {
-    let terminal = terminal(80, 24, "hello\r\nworld\r\ntest\r\nfoo");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_y = 1;
-    formatter.end_y = Some(2);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "world\ntest");
-    assert_eq!(state.rows, 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 4);
-}
-
-#[test]
-fn page_plain_start_y_out_of_bounds() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_y = 30;
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "");
-    assert_eq!(state.rows, 0);
-    assert_eq!(state.cells, 0);
-}
-
-#[test]
-fn page_plain_end_y_greater_than_rows() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.end_y = Some(30);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_end_y_less_than_start_y() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_y = 5;
-    formatter.end_y = Some(2);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "");
-    assert_eq!(state.rows, 0);
-    assert_eq!(state.cells, 0);
-}
-
-#[test]
-fn page_plain_start_x_on_first_row_only() {
-    let terminal = terminal(80, 24, "hello world");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_x = 6;
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "world");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 11);
-}
-
-#[test]
-fn page_plain_end_x_on_last_row_only() {
-    let terminal = terminal(80, 24, "first line\r\nsecond line\r\nthird line");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.end_y = Some(2);
-    formatter.end_x = Some(4);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "first line\nsecond line\nthird");
-    assert_eq!(state.rows, 1);
-    assert_eq!(state.cells, 0);
-}
-
-#[test]
-fn page_plain_start_x_and_end_x_multiline() {
-    let terminal = terminal(80, 24, "hello world\r\ntest case\r\nfoo bar");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_x = 6;
-    formatter.end_y = Some(2);
-    formatter.end_x = Some(2);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "world\ntest case\nfoo");
-    assert_eq!(state.rows, 1);
-    assert_eq!(state.cells, 0);
-}
-
-#[test]
-fn page_plain_start_x_out_of_bounds() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_x = 100;
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "");
-    assert_eq!(state.rows, 0);
-    assert_eq!(state.cells, 0);
-}
-
-#[test]
-fn page_plain_end_x_greater_than_cols() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.end_x = Some(100);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_end_x_less_than_start_x_single_row() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_x = 10;
-    formatter.end_y = Some(0);
-    formatter.end_x = Some(5);
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "");
-    assert_eq!(state.rows, 0);
-    assert_eq!(state.cells, 0);
-}
-
-#[test]
-fn page_plain_start_y_non_zero_ignores_trailing_state() {
-    let terminal = terminal(80, 24, "hello\r\nworld");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_y = 1;
-    formatter.trailing_state = Some(TrailingState { rows: 5, cells: 10 });
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "world");
-    assert_eq!(state.rows, usize::from(page.size.rows) - 1);
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_start_x_non_zero_ignores_trailing_state() {
-    let terminal = terminal(80, 24, "hello world");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_x = 6;
-    formatter.trailing_state = Some(TrailingState { rows: 2, cells: 8 });
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "world");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 11);
-}
-
-#[test]
-fn page_plain_start_y_and_start_x_zero_uses_trailing_state() {
-    let terminal = terminal(80, 24, "hello");
-    let page = page(&terminal);
-    let mut formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    formatter.start_y = 0;
-    formatter.start_x = 0;
-    formatter.trailing_state = Some(TrailingState { rows: 2, cells: 0 });
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "\n\nhello");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 5);
-}
-
-#[test]
-fn page_plain_single_line_with_styling() {
-    let terminal = terminal(80, 24, "hello, \x1b[1mworld\x1b[0m");
-    let page = page(&terminal);
-    let formatter = PageFormatter::init(
-        page,
-        Options {
-            unwrap: false,
-            trim: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    let state = formatter.format_with_state(&mut output).unwrap();
-    assert_eq!(output, "hello, world");
-    assert_eq!(state.rows, usize::from(page.size.rows));
-    assert_eq!(state.cells, usize::from(page.size.cols) - 12);
-}
-
-#[test]
-fn page_codepoint_map_single_replacement() {
-    use maestro_terminal_emulator::formatting::{CodepointMap, Replacement};
-    let terminal = terminal(80, 24, "hello world");
-    let maps = [CodepointMap {
-        range: 'o'..='o',
-        replacement: Replacement::Codepoint('x'),
-    }];
-    let formatter = PageFormatter::init(
-        page(&terminal),
-        Options {
-            codepoint_map: &maps,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output, "hellx wxrld");
 }
 
 #[test]
@@ -749,119 +134,6 @@ fn mapped(text: &str, maps: &[maestro_terminal_emulator::formatting::CodepointMa
 }
 
 #[test]
-fn page_codepoint_map_conflicting_replacement_prefers_last() {
-    use maestro_terminal_emulator::formatting::{CodepointMap, Replacement};
-    assert_eq!(
-        mapped(
-            "hello",
-            &[
-                CodepointMap {
-                    range: 'o'..='o',
-                    replacement: Replacement::Codepoint('x')
-                },
-                CodepointMap {
-                    range: 'o'..='o',
-                    replacement: Replacement::Codepoint('y')
-                },
-            ]
-        ),
-        "helly"
-    );
-}
-
-#[test]
-fn page_codepoint_map_replace_with_string() {
-    use maestro_terminal_emulator::formatting::{CodepointMap, Replacement};
-    assert_eq!(
-        mapped(
-            "hello",
-            &[CodepointMap {
-                range: 'o'..='o',
-                replacement: Replacement::String("XYZ")
-            }]
-        ),
-        "hellXYZ"
-    );
-}
-
-#[test]
-fn page_codepoint_map_range_replacement() {
-    use maestro_terminal_emulator::formatting::{CodepointMap, Replacement};
-    assert_eq!(
-        mapped(
-            "abcdefg",
-            &[CodepointMap {
-                range: 'b'..='e',
-                replacement: Replacement::Codepoint('X')
-            }]
-        ),
-        "aXXXXfg"
-    );
-}
-
-#[test]
-fn page_codepoint_map_multiple_ranges() {
-    use maestro_terminal_emulator::formatting::{CodepointMap, Replacement};
-    assert_eq!(
-        mapped(
-            "hello world",
-            &[
-                CodepointMap {
-                    range: 'a'..='m',
-                    replacement: Replacement::Codepoint('A')
-                },
-                CodepointMap {
-                    range: 'n'..='z',
-                    replacement: Replacement::Codepoint('Z')
-                },
-            ]
-        ),
-        "AAAAZ ZZZAA"
-    );
-}
-
-#[test]
-fn page_codepoint_map_unicode_replacement() {
-    use maestro_terminal_emulator::formatting::{CodepointMap, Replacement};
-    assert_eq!(
-        mapped(
-            "hello ⚡ world",
-            &[CodepointMap {
-                range: '⚡'..='⚡',
-                replacement: Replacement::Codepoint('🔥')
-            }]
-        ),
-        "hello 🔥 world"
-    );
-}
-
-#[test]
-fn page_codepoint_map_empty_map() {
-    assert_eq!(mapped("hello world", &[]), "hello world");
-}
-
-#[test]
-fn page_plain_graphemes_and_replaced_suffix() {
-    use maestro_terminal_emulator::formatting::{CodepointMap, Replacement};
-    assert_eq!(mapped("e\u{301} 👩‍💻", &[]), "e\u{301} 👩‍💻");
-    assert_eq!(
-        mapped(
-            "e\u{301}",
-            &[CodepointMap {
-                range: '\u{301}'..='\u{301}',
-                replacement: Replacement::String("!")
-            }]
-        ),
-        "e!"
-    );
-}
-
-#[test]
-fn page_plain_blank_cells_between_text() {
-    assert_eq!(mapped("a\x1b[4Gb", &[]), "a  b");
-}
-
-#[test]
 fn formatter_destination_failure_propagates() {
     struct Refuse;
     impl std::fmt::Write for Refuse {
@@ -891,58 +163,6 @@ fn screen_pin(terminal: &Terminal, x: u16, y: u32) -> maestro_terminal_emulator:
         .unwrap()
 }
 
-#[test]
-fn pagelist_plain_single_line() {
-    let terminal = terminal(80, 24, "hello, world");
-    let formatter = maestro_terminal_emulator::formatting::PageListFormatter::init(
-        &terminal.screens.active().pages,
-        Options::default(),
-    );
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output, "hello, world");
-}
-
-#[test]
-fn pagelist_plain_with_x_offset_on_single_page() {
-    let terminal = terminal(80, 24, "hello world\r\ntest case\r\nfoo bar");
-    let mut formatter = maestro_terminal_emulator::formatting::PageListFormatter::init(
-        &terminal.screens.active().pages,
-        Options::default(),
-    );
-    formatter.top_left = Some(screen_pin(&terminal, 6, 0));
-    formatter.bottom_right = Some(screen_pin(&terminal, 2, 2));
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output, "world\ntest case\nfoo");
-}
-
-#[test]
-fn pagelist_plain_with_start_x_only() {
-    let terminal = terminal(80, 24, "hello world");
-    let mut formatter = maestro_terminal_emulator::formatting::PageListFormatter::init(
-        &terminal.screens.active().pages,
-        Options::default(),
-    );
-    formatter.top_left = Some(screen_pin(&terminal, 6, 0));
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output, "world");
-}
-
-#[test]
-fn pagelist_plain_with_end_x_only() {
-    let terminal = terminal(80, 24, "hello world\r\ntest");
-    let mut formatter = maestro_terminal_emulator::formatting::PageListFormatter::init(
-        &terminal.screens.active().pages,
-        Options::default(),
-    );
-    formatter.bottom_right = Some(screen_pin(&terminal, 2, 1));
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output, "hello world\ntes");
-}
-
 fn page_boundary(cols: u16, text: &str) -> (Terminal, u32) {
     let mut terminal = terminal(cols, 3, "");
     let capacity = page(&terminal).capacity.rows;
@@ -957,45 +177,6 @@ fn page_boundary(cols: u16, text: &str) -> (Terminal, u32) {
         pages.get_bottom_right(Tag::Screen).unwrap().node
     );
     (terminal, u32::from(capacity - 1))
-}
-
-#[test]
-fn pagelist_plain_spanning_two_pages() {
-    let (terminal, _) = page_boundary(80, "page one\r\npage two");
-    let formatter = maestro_terminal_emulator::formatting::PageListFormatter::init(
-        &terminal.screens.active().pages,
-        Options::default(),
-    );
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output.trim_start_matches('\n'), "page one\npage two");
-}
-
-#[test]
-fn pagelist_soft_wrapped_line_spanning_two_pages_without_unwrap() {
-    let (terminal, _) = page_boundary(10, "hello world test");
-    let formatter = maestro_terminal_emulator::formatting::PageListFormatter::init(
-        &terminal.screens.active().pages,
-        Options::default(),
-    );
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output.trim_start_matches('\n'), "hello worl\nd test");
-}
-
-#[test]
-fn pagelist_soft_wrapped_line_spanning_two_pages_with_unwrap() {
-    let (terminal, _) = page_boundary(10, "hello world test");
-    let formatter = maestro_terminal_emulator::formatting::PageListFormatter::init(
-        &terminal.screens.active().pages,
-        Options {
-            unwrap: true,
-            ..Options::default()
-        },
-    );
-    let mut output = String::new();
-    formatter.format(&mut output).unwrap();
-    assert_eq!(output.trim_start_matches('\n'), "hello world test");
 }
 
 #[test]
@@ -1027,32 +208,6 @@ fn rectangle(text: &str, rows: u16, start: (u16, u32), end: (u16, u32)) -> Strin
 }
 
 const LOREM: &str = "Lorem ipsum dolor\r\nsit amet, consectetur\r\nadipiscing elit, sed do\r\neiusmod tempor incididunt\r\nut labore et dolore";
-
-#[test]
-fn pagelist_plain_rectangle_basic() {
-    assert_eq!(rectangle(LOREM, 5, (2, 1), (6, 3)), "t ame\nipisc\nusmod");
-}
-
-#[test]
-fn pagelist_plain_rectangle_with_eol() {
-    assert_eq!(
-        rectangle(LOREM, 5, (12, 0), (26, 4)),
-        "dolor\nnsectetur\nlit, sed do\nor incididunt\n dolore"
-    );
-}
-
-#[test]
-fn pagelist_plain_rectangle_more_complex_with_breaks() {
-    assert_eq!(
-        rectangle(
-            &format!("{LOREM}\r\n\r\nmagna aliqua. Ut enim\r\nad minim veniam, quis"),
-            8,
-            (11, 2),
-            (26, 7)
-        ),
-        "elit, sed do\npor incididunt\nt dolore\n\na. Ut enim\nniam, quis"
-    );
-}
 
 #[test]
 fn screen_plain_single_line() {
@@ -1214,4 +369,606 @@ fn format_plain_with_selection() {
     let mut output = String::new();
     formatter.format(&mut output).unwrap();
     assert_eq!(output, "World");
+}
+
+/// A count the formatter reports, relative to the page it formatted.
+#[derive(Clone, Copy)]
+enum Count {
+    /// The page's own count minus this many.
+    Short(usize),
+    /// This exact count.
+    Exact(usize),
+}
+
+impl Count {
+    /// The count the formatter must report for a page whose own count is `page`.
+    fn of(self, page: u16) -> usize {
+        match self {
+            Self::Short(by) => usize::from(page) - by,
+            Self::Exact(count) => count,
+        }
+    }
+}
+
+/// One plain page formatting case: the terminal, the formatter settings and the result.
+#[derive(Clone, Copy)]
+struct PlainCase {
+    /// Name that a failing assertion reports.
+    name: &'static str,
+    /// Terminal width in cells.
+    cols: u16,
+    /// Terminal height in rows.
+    rows: u16,
+    /// Bytes the terminal reads.
+    text: &'static str,
+    /// Join soft-wrapped rows.
+    unwrap: bool,
+    /// Omit trailing spaces.
+    trim: bool,
+    /// First column formatted on the first row.
+    start_x: u16,
+    /// First row formatted.
+    start_y: u16,
+    /// Last column formatted on the last row.
+    end_x: Option<u16>,
+    /// Last row formatted.
+    end_y: Option<u16>,
+    /// Format a rectangle instead of a stream.
+    rectangle: bool,
+    /// Blanks carried in from a previous page.
+    trailing: Option<TrailingState>,
+    /// The formatted text.
+    expected: &'static str,
+    /// The rows left pending, when the case states them with the cells.
+    pending: Option<(Count, Count)>,
+}
+
+/// Defaults a case overrides: an 80 by 24 terminal and the default options.
+const PLAIN: PlainCase = PlainCase {
+    name: "",
+    cols: 80,
+    rows: 24,
+    text: "",
+    unwrap: false,
+    trim: true,
+    start_x: 0,
+    start_y: 0,
+    end_x: None,
+    end_y: None,
+    rectangle: false,
+    trailing: None,
+    expected: "",
+    pending: None,
+};
+
+/// The plain page cases.
+const PLAIN_CASES: &[PlainCase] = &[
+    PlainCase {
+        name: "page_plain_single_line",
+        text: "hello, world",
+        expected: "hello, world",
+        pending: Some((Count::Short(0), Count::Short(12))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_single_line_soft_wrapped_unwrapped",
+        cols: 3,
+        rows: 5,
+        text: "hello!",
+        unwrap: true,
+        expected: "hello!",
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_multiline",
+        text: "hello\r\nworld",
+        expected: "hello\nworld",
+        pending: Some((Count::Short(1), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_multiline_rectangle",
+        text: "hello\r\nworld",
+        start_x: 1,
+        end_x: Some(3),
+        rectangle: true,
+        expected: "ell\norl",
+        pending: Some((Count::Short(1), Count::Exact(0))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_multi_blank_lines",
+        text: "hello\r\n\r\n\r\nworld",
+        expected: "hello\n\n\nworld",
+        pending: Some((Count::Short(3), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_trailing_blank_lines",
+        text: "hello\r\nworld\r\n\r\n",
+        expected: "hello\nworld",
+        pending: Some((Count::Short(1), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_trailing_whitespace",
+        text: "hello   \r\nworld   ",
+        expected: "hello\nworld",
+        pending: Some((Count::Short(1), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_trailing_whitespace_no_trim",
+        text: "hello   \r\nworld  ",
+        trim: false,
+        expected: "hello   \nworld  ",
+        pending: Some((Count::Short(1), Count::Short(7))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_with_prior_trailing_state_rows",
+        text: "hello",
+        trailing: Some(TrailingState { rows: 2, cells: 0 }),
+        expected: "\n\nhello",
+        pending: Some((Count::Short(0), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_with_prior_trailing_state_cells_no_wrapped_line",
+        text: "hello",
+        trailing: Some(TrailingState { rows: 0, cells: 3 }),
+        expected: "hello",
+        pending: Some((Count::Short(0), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_soft_wrapped_without_unwrap",
+        cols: 10,
+        text: "hello world test",
+        expected: "hello worl\nd test",
+        pending: Some((Count::Short(1), Count::Short(6))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_soft_wrapped_with_unwrap",
+        cols: 10,
+        text: "hello world test",
+        unwrap: true,
+        expected: "hello world test",
+        pending: Some((Count::Short(1), Count::Short(6))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_soft_wrapped_3_lines_without_unwrap",
+        cols: 10,
+        text: "hello world this is a test",
+        expected: "hello worl\nd this is\na test",
+        pending: Some((Count::Short(2), Count::Short(6))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_soft_wrapped_3_lines_with_unwrap",
+        cols: 10,
+        text: "hello world this is a test",
+        unwrap: true,
+        expected: "hello world this is a test",
+        pending: Some((Count::Short(2), Count::Short(6))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_y_subset",
+        text: "hello\r\nworld\r\ntest",
+        start_y: 1,
+        expected: "world\ntest",
+        pending: Some((Count::Short(2), Count::Short(4))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_end_y_subset",
+        text: "hello\r\nworld\r\ntest",
+        end_y: Some(1),
+        expected: "hello\nworld",
+        pending: Some((Count::Exact(1), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_y_and_end_y_range",
+        text: "hello\r\nworld\r\ntest\r\nfoo",
+        start_y: 1,
+        end_y: Some(2),
+        expected: "world\ntest",
+        pending: Some((Count::Exact(1), Count::Short(4))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_y_out_of_bounds",
+        text: "hello",
+        start_y: 30,
+        expected: "",
+        pending: Some((Count::Exact(0), Count::Exact(0))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_end_y_greater_than_rows",
+        text: "hello",
+        end_y: Some(30),
+        expected: "hello",
+        pending: Some((Count::Short(0), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_end_y_less_than_start_y",
+        text: "hello",
+        start_y: 5,
+        end_y: Some(2),
+        expected: "",
+        pending: Some((Count::Exact(0), Count::Exact(0))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_x_on_first_row_only",
+        text: "hello world",
+        start_x: 6,
+        expected: "world",
+        pending: Some((Count::Short(0), Count::Short(11))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_end_x_on_last_row_only",
+        text: "first line\r\nsecond line\r\nthird line",
+        end_y: Some(2),
+        end_x: Some(4),
+        expected: "first line\nsecond line\nthird",
+        pending: Some((Count::Exact(1), Count::Exact(0))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_x_and_end_x_multiline",
+        text: "hello world\r\ntest case\r\nfoo bar",
+        start_x: 6,
+        end_y: Some(2),
+        end_x: Some(2),
+        expected: "world\ntest case\nfoo",
+        pending: Some((Count::Exact(1), Count::Exact(0))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_x_out_of_bounds",
+        text: "hello",
+        start_x: 100,
+        expected: "",
+        pending: Some((Count::Exact(0), Count::Exact(0))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_end_x_greater_than_cols",
+        text: "hello",
+        end_x: Some(100),
+        expected: "hello",
+        pending: Some((Count::Short(0), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_end_x_less_than_start_x_single_row",
+        text: "hello",
+        start_x: 10,
+        end_y: Some(0),
+        end_x: Some(5),
+        expected: "",
+        pending: Some((Count::Exact(0), Count::Exact(0))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_y_non_zero_ignores_trailing_state",
+        text: "hello\r\nworld",
+        start_y: 1,
+        trailing: Some(TrailingState { rows: 5, cells: 10 }),
+        expected: "world",
+        pending: Some((Count::Short(1), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_x_non_zero_ignores_trailing_state",
+        text: "hello world",
+        start_x: 6,
+        trailing: Some(TrailingState { rows: 2, cells: 8 }),
+        expected: "world",
+        pending: Some((Count::Short(0), Count::Short(11))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_start_y_and_start_x_zero_uses_trailing_state",
+        text: "hello",
+        trailing: Some(TrailingState { rows: 2, cells: 0 }),
+        expected: "\n\nhello",
+        pending: Some((Count::Short(0), Count::Short(5))),
+        ..PLAIN
+    },
+    PlainCase {
+        name: "page_plain_single_line_with_styling",
+        text: "hello, \x1b[1mworld\x1b[0m",
+        expected: "hello, world",
+        pending: Some((Count::Short(0), Count::Short(12))),
+        ..PLAIN
+    },
+];
+
+#[test]
+fn page_plain_cases_format_and_report_trailing_state() {
+    for case in PLAIN_CASES {
+        let terminal = terminal(case.cols, case.rows, case.text);
+        let page = page(&terminal);
+        let mut formatter = PageFormatter::init(
+            page,
+            Options {
+                unwrap: case.unwrap,
+                trim: case.trim,
+                ..Options::default()
+            },
+        );
+        formatter.start_x = case.start_x;
+        formatter.start_y = case.start_y;
+        formatter.end_x = case.end_x;
+        formatter.end_y = case.end_y;
+        formatter.rectangle = case.rectangle;
+        formatter.trailing_state = case.trailing;
+        let mut output = String::new();
+        let state = formatter.format_with_state(&mut output).unwrap();
+        assert_eq!(output, case.expected, "{}", case.name);
+        if let Some((rows, cells)) = case.pending {
+            assert_eq!(state.rows, rows.of(page.size.rows), "{} rows", case.name);
+            assert_eq!(state.cells, cells.of(page.size.cols), "{} cells", case.name);
+        }
+    }
+}
+
+/// One codepoint-map case: the text, the substitutions and the formatted result.
+struct MapCase {
+    /// Name that a failing assertion reports.
+    name: &'static str,
+    /// Bytes the terminal reads.
+    text: &'static str,
+    /// Substitutions applied while formatting.
+    maps: &'static [CodepointMap<'static>],
+    /// The formatted text.
+    expected: &'static str,
+}
+
+/// The codepoint-map cases.
+const MAP_CASES: &[MapCase] = &[
+    MapCase {
+        name: "page_codepoint_map_single_replacement",
+        text: "hello world",
+        maps: &[CodepointMap {
+            range: 'o'..='o',
+            replacement: Replacement::Codepoint('x'),
+        }],
+        expected: "hellx wxrld",
+    },
+    MapCase {
+        name: "page_codepoint_map_conflicting_replacement_prefers_last",
+        text: "hello",
+        maps: &[
+            CodepointMap {
+                range: 'o'..='o',
+                replacement: Replacement::Codepoint('x'),
+            },
+            CodepointMap {
+                range: 'o'..='o',
+                replacement: Replacement::Codepoint('y'),
+            },
+        ],
+        expected: "helly",
+    },
+    MapCase {
+        name: "page_codepoint_map_replace_with_string",
+        text: "hello",
+        maps: &[CodepointMap {
+            range: 'o'..='o',
+            replacement: Replacement::String("XYZ"),
+        }],
+        expected: "hellXYZ",
+    },
+    MapCase {
+        name: "page_codepoint_map_range_replacement",
+        text: "abcdefg",
+        maps: &[CodepointMap {
+            range: 'b'..='e',
+            replacement: Replacement::Codepoint('X'),
+        }],
+        expected: "aXXXXfg",
+    },
+    MapCase {
+        name: "page_codepoint_map_multiple_ranges",
+        text: "hello world",
+        maps: &[
+            CodepointMap {
+                range: 'a'..='m',
+                replacement: Replacement::Codepoint('A'),
+            },
+            CodepointMap {
+                range: 'n'..='z',
+                replacement: Replacement::Codepoint('Z'),
+            },
+        ],
+        expected: "AAAAZ ZZZAA",
+    },
+    MapCase {
+        name: "page_codepoint_map_unicode_replacement",
+        text: "hello ⚡ world",
+        maps: &[CodepointMap {
+            range: '⚡'..='⚡',
+            replacement: Replacement::Codepoint('🔥'),
+        }],
+        expected: "hello 🔥 world",
+    },
+    MapCase {
+        name: "page_codepoint_map_empty_map",
+        text: "hello world",
+        maps: &[],
+        expected: "hello world",
+    },
+    MapCase {
+        name: "page_plain_graphemes_keep_their_marks",
+        text: "e\u{301} 👩‍💻",
+        maps: &[],
+        expected: "e\u{301} 👩‍💻",
+    },
+    MapCase {
+        name: "page_plain_graphemes_replaced_suffix",
+        text: "e\u{301}",
+        maps: &[CodepointMap {
+            range: '\u{301}'..='\u{301}',
+            replacement: Replacement::String("!"),
+        }],
+        expected: "e!",
+    },
+    MapCase {
+        name: "page_plain_blank_cells_between_text",
+        text: "a\x1b[4Gb",
+        maps: &[],
+        expected: "a  b",
+    },
+];
+
+#[test]
+fn page_codepoint_map_cases_format_their_replacements() {
+    for case in MAP_CASES {
+        assert_eq!(mapped(case.text, case.maps), case.expected, "{}", case.name);
+    }
+}
+
+/// One page-list case: the text, the pins that bound it and the formatted result.
+struct PinCase {
+    /// Name that a failing assertion reports.
+    name: &'static str,
+    /// Bytes the terminal reads.
+    text: &'static str,
+    /// Column and row where formatting starts.
+    top_left: Option<(u16, u32)>,
+    /// Column and row where formatting ends.
+    bottom_right: Option<(u16, u32)>,
+    /// The formatted text.
+    expected: &'static str,
+}
+
+/// The page-list cases on one page.
+const PIN_CASES: &[PinCase] = &[
+    PinCase {
+        name: "pagelist_plain_single_line",
+        text: "hello, world",
+        top_left: None,
+        bottom_right: None,
+        expected: "hello, world",
+    },
+    PinCase {
+        name: "pagelist_plain_with_x_offset_on_single_page",
+        text: "hello world\r\ntest case\r\nfoo bar",
+        top_left: Some((6, 0)),
+        bottom_right: Some((2, 2)),
+        expected: "world\ntest case\nfoo",
+    },
+    PinCase {
+        name: "pagelist_plain_with_start_x_only",
+        text: "hello world",
+        top_left: Some((6, 0)),
+        bottom_right: None,
+        expected: "world",
+    },
+    PinCase {
+        name: "pagelist_plain_with_end_x_only",
+        text: "hello world\r\ntest",
+        top_left: None,
+        bottom_right: Some((2, 1)),
+        expected: "hello world\ntes",
+    },
+];
+
+#[test]
+fn pagelist_pin_cases_format_their_range() {
+    for case in PIN_CASES {
+        let terminal = terminal(80, 24, case.text);
+        let mut formatter =
+            PageListFormatter::init(&terminal.screens.active().pages, Options::default());
+        formatter.top_left = case.top_left.map(|(x, y)| screen_pin(&terminal, x, y));
+        formatter.bottom_right = case.bottom_right.map(|(x, y)| screen_pin(&terminal, x, y));
+        let mut output = String::new();
+        formatter.format(&mut output).unwrap();
+        assert_eq!(output, case.expected, "{}", case.name);
+    }
+}
+
+/// Text that crosses a page boundary: the width, the text, whether rows join and the result.
+const BOUNDARY_CASES: &[(&str, u16, &str, bool, &str)] = &[
+    (
+        "pagelist_plain_spanning_two_pages",
+        80,
+        "page one\r\npage two",
+        false,
+        "page one\npage two",
+    ),
+    (
+        "pagelist_soft_wrapped_line_spanning_two_pages_without_unwrap",
+        10,
+        "hello world test",
+        false,
+        "hello worl\nd test",
+    ),
+    (
+        "pagelist_soft_wrapped_line_spanning_two_pages_with_unwrap",
+        10,
+        "hello world test",
+        true,
+        "hello world test",
+    ),
+];
+
+#[test]
+fn pagelist_boundary_cases_join_pages() {
+    for (name, cols, text, unwrap, expected) in BOUNDARY_CASES {
+        let (terminal, _) = page_boundary(*cols, text);
+        let formatter = PageListFormatter::init(
+            &terminal.screens.active().pages,
+            Options {
+                unwrap: *unwrap,
+                ..Options::default()
+            },
+        );
+        let mut output = String::new();
+        formatter.format(&mut output).unwrap();
+        assert_eq!(output.trim_start_matches('\n'), *expected, "{name}");
+    }
+}
+
+#[test]
+fn pagelist_rectangle_cases_keep_their_columns() {
+    let long = format!("{LOREM}\r\n\r\nmagna aliqua. Ut enim\r\nad minim veniam, quis");
+    for (name, text, rows, start, end, expected) in [
+        (
+            "pagelist_plain_rectangle_basic",
+            LOREM,
+            5,
+            (2, 1),
+            (6, 3),
+            "t ame\nipisc\nusmod",
+        ),
+        (
+            "pagelist_plain_rectangle_with_eol",
+            LOREM,
+            5,
+            (12, 0),
+            (26, 4),
+            "dolor\nnsectetur\nlit, sed do\nor incididunt\n dolore",
+        ),
+        (
+            "pagelist_plain_rectangle_more_complex_with_breaks",
+            long.as_str(),
+            8,
+            (11, 2),
+            (26, 7),
+            "elit, sed do\npor incididunt\nt dolore\n\na. Ut enim\nniam, quis",
+        ),
+    ] {
+        assert_eq!(rectangle(text, rows, start, end), expected, "{name}");
+    }
 }

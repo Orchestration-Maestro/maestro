@@ -381,14 +381,14 @@ following license:
 
 ## Word package reading
 
-The Word package reader in `crates/maestro-app/src/browser/docx_preview/`
+The Word package reader in `crates/maestro-office/src/wordprocessing/`
 derives its format behavior from docx-preview 0.3.7 by Volodymyr Baydalka,
 licensed under [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).
 Copyright Volodymyr Baydalka. The Apache-2.0 terms reproduced in
 [Spreadsheet formatting source](#spreadsheet-formatting-source) also apply here.
 
 The unchanged producer-written table fixture and its attribution are documented in
-[table fixture provenance](crates/maestro-app/tests/fixtures/docx/table-contracts.md).
+[table fixture provenance](crates/maestro-office/tests/fixtures/docx/table-contracts.md).
 It is distributed under the same Apache-2.0 terms, copyright Volodymyr Baydalka.
 
 Archive-name normalization follows JSZip 3.10.1, used under its MIT option:
@@ -715,7 +715,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 KaTeX 0.18.5, edited only to keep the `woff2` font source of each face.
 The typed math adapter in `crates/maestro-web/src/components/markdown_block/math/`
 also derives from KaTeX 0.16.45's radical, sizing, macro and error-handling code.
-`crates/maestro-web/src/docx_preview/fixtures/docx/embedded-font-loaded.docx`,
+`crates/maestro-web/src/word_view/fixtures/docx/embedded-font-loaded.docx`,
 also carried in `crates/maestro-web/tests/fixtures/native_document_artifacts.json`,
 embeds `KaTeX_Typewriter-Regular.woff2` from that directory as an obfuscated Word
 font, which decodes back to the original bytes.

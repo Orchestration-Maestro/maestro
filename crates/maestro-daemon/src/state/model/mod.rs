@@ -242,6 +242,26 @@ impl DaemonState {
         }
     }
 
+    /// Runs a change to the saved workspace structure and marks the session for saving.
+    ///
+    /// The mark is set once `edit` returns, so every change that must outlive the daemon goes
+    /// through here instead of setting the mark by hand.
+    pub(crate) fn edit_topology<R>(&mut self, edit: impl FnOnce(&mut Self) -> R) -> R {
+        let result = edit(self);
+        self.session_dirty = true;
+        result
+    }
+
+    /// Marks the session for saving when a change that may or may not have happened did.
+    pub(crate) fn mark_session_dirty_if(&mut self, changed: bool) {
+        self.session_dirty |= changed;
+    }
+
+    /// Reads and clears the save mark, reporting whether a change awaits a snapshot.
+    pub(crate) fn take_session_dirty(&mut self) -> bool {
+        std::mem::take(&mut self.session_dirty)
+    }
+
     /// Region in which panes are laid out: the headless surface at its configured size.
     #[must_use]
     pub fn view_area(&self) -> Rect {
@@ -258,3 +278,6 @@ impl DaemonState {
             })
     }
 }
+
+#[cfg(test)]
+mod tests;

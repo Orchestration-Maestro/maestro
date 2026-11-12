@@ -305,8 +305,8 @@ impl App {
         let created_tab = (placed.created != Created::Nothing)
             .then(|| self.tab_info(workspace, tab))
             .flatten();
-        self.state.remove_alias_shadowed_by_new_pane(pane);
-        self.state.session_dirty = true;
+        self.state
+            .edit_topology(|state| state.remove_alias_shadowed_by_new_pane(pane));
         let info = self
             .pane_info(workspace, pane)
             .await

@@ -164,14 +164,14 @@ impl State {
             FileType::Docx => {
                 let wrapper =
                     self.element("div", "maestro-docx-container maestro-attachment-document")?;
-                let options = crate::docx_preview::Options {
-                    page_size: crate::docx_preview::PageSizeOptions {
+                let options = crate::word_view::Options {
+                    page_size: crate::word_view::PageSizeOptions {
                         ignore_width: true,
                         ignore_height: false,
                     },
-                    ..crate::docx_preview::Options::default()
+                    ..crate::word_view::Options::default()
                 };
-                let rendered = crate::docx_preview::render_async(&bytes, &wrapper, None, options)?;
+                let rendered = crate::word_view::render_async(&bytes, &wrapper, None, options)?;
                 root = DomRoot {
                     node: wrapper.into(),
                     owner: Some(Box::new(rendered)),

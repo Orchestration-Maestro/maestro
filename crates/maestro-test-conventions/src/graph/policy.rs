@@ -210,6 +210,7 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-listing"
                 | "maestro-pattern"
                 | "maestro-markdown"
+                | "maestro-office"
                 | "maestro-cancellation"
                 | "maestro-request"
                 | "maestro-extensions-wasm"

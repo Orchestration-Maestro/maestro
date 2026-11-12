@@ -207,7 +207,6 @@ impl State {
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::Signal(id, request) => self.signal(id, request),
-            Message::History(id, request) => self.history(id, request),
             Message::Writer(id, request) => self.write(id, request),
             Message::WriterReader(id, reply) => self.writer_reader(id, &reply),
             message @ (Message::OAuthLogin(..)
@@ -221,14 +220,12 @@ impl State {
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
-            Message::Node(id, request) => self.node(id, request),
             Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
             Message::Footer(id, request) => self.footer(id, request),
-            Message::Theme(id, request) => self.theme(id, request),
             Message::Widgets(message) => self.widgets(message),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
@@ -276,16 +273,6 @@ impl State {
     fn release(&self, id: u64) {
         let removed = self.registry.resources.borrow_mut().entries.remove(&id);
         drop(removed);
-    }
-
-    /// Reads the original live history independently of guarded contexts.
-    fn history(&self, id: u64, request: crate::history_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::History(history)) = capability.as_deref() {
-            request.answer(&*history.borrow(), &self.registry);
-        } else {
-            request.reject("extension history resource ended");
-        }
     }
 
     /// Answers a request while its native code owns the route into this instance.
@@ -450,16 +437,6 @@ impl State {
             request.answer(ui, &self.registry);
         } else {
             request.reject("extension UI resource ended");
-        }
-    }
-
-    /// Serves the current theme after releasing the capability table borrow.
-    fn theme(&self, id: u64, request: crate::theme_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Theme(theme)) = capability.as_deref() {
-            request.answer(theme);
-        } else {
-            request.reject("extension theme resource ended");
         }
     }
 

@@ -14,10 +14,11 @@ impl DaemonState {
             return false;
         }
         let (active, selected) = self.selection_identities();
-        let workspace = self.topology.workspaces.remove(source);
-        self.topology.workspaces.insert(target, workspace);
-        self.restore_workspace_selection(active.as_deref(), selected.as_deref());
-        self.session_dirty = true;
+        self.edit_topology(|state| {
+            let workspace = state.topology.workspaces.remove(source);
+            state.topology.workspaces.insert(target, workspace);
+            state.restore_workspace_selection(active.as_deref(), selected.as_deref());
+        });
         true
     }
 
@@ -99,10 +100,11 @@ impl DaemonState {
             .enumerate()
             .map(|(position, id)| (id.to_owned(), position))
             .collect();
-        self.reorder_workspaces(&positions);
-        self.active = active;
-        self.selected = selected;
-        self.session_dirty = true;
+        self.edit_topology(|state| {
+            state.reorder_workspaces(&positions);
+            state.active = active;
+            state.selected = selected;
+        });
         true
     }
 

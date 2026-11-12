@@ -51,7 +51,7 @@ impl PathViews {
     /// Tries each observable path spelling against one exclusion pattern.
     fn matches(&self, pattern: &str) -> io::Result<bool> {
         for path in [&self.relative, &self.name, &self.authored] {
-            if crate::minimatch(path, pattern)
+            if crate::matches_glob(path, pattern)
                 .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?
             {
                 return Ok(true);

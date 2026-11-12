@@ -3,9 +3,9 @@ use super::DocxArtifact;
 use crate::{
     browser::attachment_content::browser::{set_text_if_changed, sync_text},
     dialogs::attachment_overlay::error,
-    docx_preview::{Options, PageSizeOptions, RenderedDocument, render_async},
     page::{DomRoot, DomView},
     tools::types::ToolUiError,
+    word_view::{Options, PageSizeOptions, RenderedDocument, render_async},
 };
 use std::rc::Rc;
 use wasm_bindgen::JsCast as _;

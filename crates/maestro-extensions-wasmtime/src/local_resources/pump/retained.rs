@@ -41,18 +41,6 @@ impl State {
 }
 
 impl State {
-    /// Reads one original retained tree node outside the registry borrow.
-    pub(super) fn node(&self, id: u64, request: crate::tree_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Node(node)) = capability.as_deref() {
-            node.answer(request, &self.registry);
-        } else {
-            request.reject("extension tree node resource ended");
-        }
-    }
-}
-
-impl State {
     /// Starts an OAuth login or refresh, or serves an OAuth provider or interaction request.
     pub(super) fn oauth(&self, message: super::Message) {
         match message {

@@ -3929,8 +3929,6 @@ dependencies = [
  "base64 0.23.1",
  "chrono",
  "clipboard-rs",
- "codepage",
- "encoding_rs",
  "futures-util",
  "hayro",
  "hayro-interpret",
@@ -3949,6 +3947,7 @@ dependencies = [
  "maestro-listing",
  "maestro-lock",
  "maestro-models",
+ "maestro-office",
  "maestro-packages",
  "maestro-path",
  "maestro-process",
@@ -3968,7 +3967,6 @@ dependencies = [
  "num-traits",
  "rand 0.10.3",
  "regex",
- "roxmltree",
  "rustix",
  "ryu-js",
  "serde",
@@ -4130,6 +4128,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "interprocess",
+ "maestro-daemon",
  "maestro-dependencies",
  "maestro-detection",
  "maestro-json",
@@ -4200,6 +4199,7 @@ dependencies = [
  "litemap",
  "log",
  "memchr",
+ "nix 0.31.3",
  "num-integer",
  "num-traits",
  "percent-encoding",
@@ -4247,6 +4247,8 @@ dependencies = [
  "zerofrom",
  "zerotrie",
  "zerovec",
+ "zip",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -4526,6 +4528,27 @@ dependencies = [
  "serde_json",
  "tracing",
  "unicode-width",
+]
+
+[[package]]
+name = "maestro-office"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "codepage",
+ "encoding_rs",
+ "indexmap 2.14.2",
+ "maestro-dependencies",
+ "maestro-json",
+ "maestro-lock",
+ "maestro-text",
+ "num-traits",
+ "roxmltree",
+ "ryu-js",
+ "serde",
+ "serde_json",
+ "url",
+ "zip",
 ]
 
 [[package]]
@@ -5059,6 +5082,7 @@ dependencies = [
  "maestro-json",
  "maestro-markdown",
  "maestro-models",
+ "maestro-office",
  "maestro-protocol",
  "maestro-session",
  "maestro-text",

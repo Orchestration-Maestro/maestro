@@ -90,7 +90,13 @@ async fn consume(source: &str, protocols: &[&str]) {
             .proxy_for(&Url::parse("http://destination.invalid:8081/credentials").unwrap())
             .unwrap(),
     };
-    let http = bridge(None, transport(&settings), None, Arc::new(Mutex::new(None)));
+    let http = bridge(
+        None,
+        transport(&settings),
+        Arc::default(),
+        None,
+        Arc::new(Mutex::new(None)),
+    );
     let components = RuntimeComponentsBuilder::for_tests().build().unwrap();
     for (index, protocol) in protocols.iter().enumerate() {
         let settings = HttpConnectorSettings::builder()
@@ -216,7 +222,13 @@ async fn check_environment(captured: Environment, uri: &str) {
             http1: true,
             proxy: chosen,
         };
-        let http = bridge(None, transport(&settings), None, Arc::new(Mutex::new(None)));
+        let http = bridge(
+            None,
+            transport(&settings),
+            Arc::default(),
+            None,
+            Arc::new(Mutex::new(None)),
+        );
         let connector = http.http_connector(&HttpConnectorSettings::builder().build(), &components);
         let mut request = WireRequest::new(SdkBody::empty());
         request.set_uri(uri).unwrap();
