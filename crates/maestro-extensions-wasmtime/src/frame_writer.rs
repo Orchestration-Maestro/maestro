@@ -238,9 +238,7 @@ impl Writer {
                 let shown = tui
                     .show_overlay(component, options)
                     .map_err(|error| error.to_string())?;
-                let handle = binding
-                    .registry
-                    .overlay_handle(Rc::new(RefCell::new(shown)))?;
+                let handle = binding.registry.overlay_handle(shown)?;
                 Ok(Value::Overlay(handle))
             }
             Request::SetOnDebug(callback) => {

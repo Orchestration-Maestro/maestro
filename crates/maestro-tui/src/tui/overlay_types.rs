@@ -1,6 +1,5 @@
-//! Placement options and public controls for retained overlays.
+//! Placement options for retained overlays.
 
-use std::io;
 use std::rc::Rc;
 
 /// Point of the viewport an overlay is anchored to.
@@ -82,28 +81,4 @@ pub struct OverlayOptions {
     pub visible: Option<Rc<dyn Fn(usize, usize) -> bool>>,
     /// When true the overlay does not take keyboard focus on showing.
     pub non_capturing: Option<bool>,
-}
-
-/// Control over a shown overlay.
-pub trait OverlayHandle {
-    /// Removes the overlay for good.
-    ///
-    /// # Errors
-    /// Returns cursor-hiding errors after removal and any applicable focus restoration.
-    fn hide(&mut self) -> io::Result<()>;
-
-    /// Changes temporary hiding. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
-    fn set_hidden(&mut self, hidden: bool);
-
-    /// Whether the overlay is temporarily hidden.
-    fn is_hidden(&self) -> bool;
-
-    /// Requests focus and visual raising. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
-    fn focus(&mut self);
-
-    /// Yields component focus. See the [overlay lifecycle](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/terminal/overlays.md).
-    fn unfocus(&mut self);
-
-    /// Whether the component identity currently owns focus, even after detachment.
-    fn is_focused(&self) -> bool;
 }
