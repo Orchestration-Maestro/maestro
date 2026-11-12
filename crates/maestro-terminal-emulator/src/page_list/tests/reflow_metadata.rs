@@ -15,9 +15,9 @@ fn history_resize_reflow_less_cols_copy_style() {
     let page = list.page_mut(list.first).unwrap();
     for x in 0..3 {
         let id = page.styles.add(style).unwrap();
-        page.get_cells_mut(0)[x].set_style_id(id);
+        page.cells_mut(0)[x].set_style_id(id);
     }
-    page.get_row_mut(0).set_styled(true);
+    page.row_mut(0).set_styled(true);
     reflow(&mut list, 2);
     assert_eq!((list.cols(), list.total_rows()), (2, 2));
     for (y, expected) in ["\0\u{1}", "\u{2}\0"].into_iter().enumerate() {
@@ -41,9 +41,9 @@ fn placeholders(columns: std::ops::Range<usize>) -> PageList {
     assert_eq!(list.total_pages(), 1);
     let page = list.page_mut(list.first).unwrap();
     for x in columns {
-        page.get_cells_mut(0)[x] = crate::page::cell::Cell::init('\u{10eeee}');
+        page.cells_mut(0)[x] = crate::page::cell::Cell::init('\u{10eeee}');
     }
-    page.get_row_mut(0).set_kitty_virtual_placeholder(true);
+    page.row_mut(0).set_kitty_virtual_placeholder(true);
     list
 }
 
@@ -146,7 +146,7 @@ fn history_resize_grow_cols_with_unwrap_fixes_viewport_pin() {
     for y in 0..40 {
         write(&mut list, y, "AA");
         let pin = list.pin_at_row(y, 0).unwrap();
-        let row = list.page_mut(pin.node).unwrap().get_row_mut(pin.y);
+        let row = list.page_mut(pin.node).unwrap().row_mut(pin.y);
         row.set_wrap(y % 2 == 0);
         row.set_wrap_continuation(y % 2 == 1);
     }

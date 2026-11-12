@@ -139,7 +139,7 @@ fn letter_rows(text: &str, active: u16) -> PageList {
     }
     for (y, letter) in text.chars().enumerate() {
         let pin = list.pin_at_row(y, 0).unwrap();
-        list.page_mut(pin.node).unwrap().get_cells_mut(pin.y)[0]
+        list.page_mut(pin.node).unwrap().cells_mut(pin.y)[0]
             .set_content(crate::page::cell::Content::Codepoint(letter));
     }
     list
@@ -446,8 +446,8 @@ fn erase_row_boundary_capacity_failure_keeps_managed_ownership_valid() {
             ..Style::default()
         })
         .unwrap();
-    source.get_cells_mut(0)[0].set_style_id(id);
-    source.get_row_mut(0).set_styled(true);
+    source.cells_mut(0)[0].set_style_id(id);
+    source.row_mut(0).set_styled(true);
     let handle = list.track_pin(list.pin_at_row(2, 0).unwrap()).unwrap();
     assert_eq!(
         list.erase_row(Point::Screen(Coordinate::default())),
@@ -457,8 +457,8 @@ fn erase_row_boundary_capacity_failure_keeps_managed_ownership_valid() {
     assert_eq!(list.nodes.get(list.first).unwrap().next, Some(list.last));
     assert_eq!(list.nodes.get(list.last).unwrap().prev, Some(list.first));
     assert!(list.pin_is_valid(*list.tracked_pin(handle).unwrap()));
-    assert_eq!(list.page(list.last).unwrap().get_cells(0)[0].style_id(), id);
-    assert_eq!(list.page(list.first).unwrap().get_cells(1)[0].style_id(), 0);
+    assert_eq!(list.page(list.last).unwrap().cells(0)[0].style_id(), id);
+    assert_eq!(list.page(list.first).unwrap().cells(1)[0].style_id(), 0);
     list.page_mut(list.first).unwrap().clear_cells(1, 0..3);
     list.page_mut(list.last).unwrap().clear_cells(0, 0..3);
     assert_eq!(list.page(list.last).unwrap().styles.count(), 0);
@@ -568,7 +568,7 @@ fn erased_row_rotation_preserves_managed_cell_ownership() {
     let origin = list.pin_at_row(0, 1).unwrap();
     populate_pin_views(&mut list, origin, crate::Style::default());
     let page = list.page_mut(list.first).unwrap();
-    page.get_cells_mut(position.y)[usize::from(position.x)].set_content(Content::Codepoint('z'));
+    page.cells_mut(position.y)[usize::from(position.x)].set_content(Content::Codepoint('z'));
     page.append_grapheme(position, '\u{302}').unwrap();
     let before = page.lookup_grapheme(position).unwrap().to_vec();
     list.erase_row_bounded(Point::Screen(Coordinate { x: 0, y: 1 }), 1)

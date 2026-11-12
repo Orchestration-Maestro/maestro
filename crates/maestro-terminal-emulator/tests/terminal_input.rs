@@ -16,7 +16,7 @@ fn viewport(t: &Terminal) -> String {
         let text: String = pages
             .page(pin.node)
             .unwrap()
-            .get_cells(pin.y)
+            .cells(pin.y)
             .iter()
             .map(|c| {
                 if c.codepoint() == '\0' {

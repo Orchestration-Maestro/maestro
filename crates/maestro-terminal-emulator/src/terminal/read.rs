@@ -119,7 +119,7 @@ impl Terminal {
                     y: u32::try_from(y).ok()?,
                 }))?;
                 let page = list.page(pin.node)?;
-                let row = page.get_row(pin.y);
+                let row = page.row(pin.y);
                 let cells = (0..self.cols())
                     .map(|x| self.text_cell(Pin { x, ..pin }))
                     .collect::<Option<Vec<_>>>()?;

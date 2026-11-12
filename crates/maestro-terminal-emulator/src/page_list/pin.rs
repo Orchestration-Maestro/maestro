@@ -64,10 +64,7 @@ impl Pin {
             return None;
         }
         let page = list.page(self.node)?;
-        Some((
-            page.get_row(self.y),
-            &page.get_cells(self.y)[usize::from(self.x)],
-        ))
+        Some((page.row(self.y), &page.cells(self.y)[usize::from(self.x)]))
     }
 
     /// Mutably borrow the actual row metadata and packed cell.
@@ -75,7 +72,7 @@ impl Pin {
         if !list.pin_is_valid(self) {
             return None;
         }
-        Some(list.page_mut(self.node)?.get_row_and_cell(CellPosition {
+        Some(list.page_mut(self.node)?.row_and_cell(CellPosition {
             x: self.x,
             y: self.y,
         }))
@@ -87,7 +84,7 @@ impl Pin {
         if !list.pin_is_valid(self) {
             return None;
         }
-        let cells = list.page(self.node)?.get_cells(self.y);
+        let cells = list.page(self.node)?.cells(self.y);
         Some(&cells[subset.range(self.x, cells.len())])
     }
 
@@ -96,7 +93,7 @@ impl Pin {
         if !list.pin_is_valid(self) {
             return None;
         }
-        let cells = list.page_mut(self.node)?.get_cells_mut(self.y);
+        let cells = list.page_mut(self.node)?.cells_mut(self.y);
         let range = subset.range(self.x, cells.len());
         Some(&mut cells[range])
     }
@@ -172,7 +169,7 @@ impl Eq for Pin {}
 impl PageList {
     /// Resolve a region's origin from the retained linked pages.
     #[must_use]
-    pub fn get_top_left(&self, tag: crate::point::Tag) -> Pin {
+    pub fn top_left(&self, tag: crate::point::Tag) -> Pin {
         let origin = Pin {
             node: self.first,
             x: 0,
@@ -209,7 +206,7 @@ impl PageList {
         if !self.pin_is_valid(pin) {
             return None;
         }
-        let origin = self.get_top_left(tag);
+        let origin = self.top_left(tag);
         let mut current = Some(origin.node);
         let mut rows = 0_u32;
         while let Some(key) = current {

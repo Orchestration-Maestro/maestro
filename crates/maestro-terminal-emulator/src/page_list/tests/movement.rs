@@ -109,7 +109,7 @@ fn history_pin_left_wrap_exact_row_multiple() {
 fn history_pin_right_wrap_maximum_distance() {
     let list = screen(1, 3);
     assert_eq!(
-        list.get_top_left(crate::point::Tag::Active)
+        list.top_left(crate::point::Tag::Active)
             .right_wrap(&list, usize::MAX),
         None
     );

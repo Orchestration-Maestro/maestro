@@ -12,7 +12,7 @@ use maestro_terminal_emulator::{
 fn render_information_combines_clamped_source_and_viewport_geometry() {
     let mut terminal = Terminal::new(5, 3, 100_000).unwrap();
     let pages = &mut terminal.screens.active_mut().pages;
-    let origin = pages.get_top_left(maestro_terminal_emulator::point::Tag::Viewport);
+    let origin = pages.top_left(maestro_terminal_emulator::point::Tag::Viewport);
     let pin = pages.track_pin(origin).unwrap();
     let placement = Placement {
         location: Location::Pin(pin),

@@ -37,7 +37,7 @@ fn history_split_at_middle_row() {
     for y in 0..5 {
         for (node, offset) in [(first, 0), (second, 5)] {
             assert_eq!(
-                list.page(node).unwrap().get_cells(y)[0].codepoint(),
+                list.page(node).unwrap().cells(y)[0].codepoint(),
                 char::from_u32(u32::from(y + offset)).unwrap()
             );
         }
@@ -73,10 +73,7 @@ fn history_split_at_last_row() {
     assert_eq!(list.total_pages(), 2);
     assert_eq!(list.page(list.first).unwrap().size.rows, 9);
     assert_eq!(list.page(list.last).unwrap().size.rows, 1);
-    assert_eq!(
-        list.page(list.last).unwrap().get_cells(0)[0].codepoint(),
-        '\t'
-    );
+    assert_eq!(list.page(list.last).unwrap().cells(0)[0].codepoint(), '\t');
     assert!(text(&list, 8).starts_with('\u{8}'));
     integrity(&list);
 }
@@ -84,7 +81,7 @@ fn history_split_at_last_row() {
 #[test]
 fn history_split_single_row_page_returns_out_of_space() {
     let mut list = screen(10, 1);
-    let pin = list.get_top_left(crate::point::Tag::Active);
+    let pin = list.top_left(crate::point::Tag::Active);
     assert_eq!(list.split(pin), Err(SplitError::OutOfSpace));
     assert_eq!((list.total_pages(), list.total_rows()), (1, 1));
     integrity(&list);
@@ -244,10 +241,10 @@ fn history_split_first_page_keeps_original_as_first() {
 fn history_split_preserves_wrap_flags() {
     let mut list = screen(10, 10);
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(5).set_wrap(true);
-    page.get_row_mut(6).set_wrap_continuation(true);
-    page.get_row_mut(7).set_wrap(true);
-    page.get_row_mut(7).set_wrap_continuation(true);
+    page.row_mut(5).set_wrap(true);
+    page.row_mut(6).set_wrap_continuation(true);
+    page.row_mut(7).set_wrap(true);
+    page.row_mut(7).set_wrap_continuation(true);
     at(&mut list, 5);
     assert_eq!(flags(&list, 5), (true, false));
     assert_eq!(flags(&list, 6), (false, true));
@@ -263,9 +260,9 @@ fn history_split_preserves_styled_cells() {
     let page = list.page_mut(list.first).unwrap();
     for y in 5..8 {
         let id = page.styles.add(bold).unwrap();
-        page.get_cells_mut(y)[0] = crate::page::cell::Cell::init('S');
-        page.get_cells_mut(y)[0].set_style_id(id);
-        page.get_row_mut(y).set_styled(true);
+        page.cells_mut(y)[0] = crate::page::cell::Cell::init('S');
+        page.cells_mut(y)[0].set_style_id(id);
+        page.row_mut(y).set_styled(true);
     }
     at(&mut list, 5);
     assert_eq!(list.page(list.first).unwrap().styles.count(), 0);

@@ -61,11 +61,11 @@ fn character_delete_work(cols: u16, rescan: bool) -> usize {
     terminal.delete_chars(1);
     let page = terminal.screens.active().pages.page(pin.node).unwrap();
     assert!(
-        page.get_cells(pin.y)[..usize::from(cols - 1)]
+        page.cells(pin.y)[..usize::from(cols - 1)]
             .iter()
             .all(|cell| cell.codepoint() == 'x')
     );
-    assert!(page.get_cells(pin.y)[usize::from(cols - 1)].is_zero());
+    assert!(page.cells(pin.y)[usize::from(cols - 1)].is_zero());
     crate::tests::WORK.with_borrow(|work| work.row_shift)
 }
 
@@ -90,7 +90,7 @@ fn full_row_shift_work(cols: u16, insert: bool) -> usize {
         .screens
         .active()
         .pages
-        .get_top_left(crate::point::Tag::Active);
+        .top_left(crate::point::Tag::Active);
     crate::tests::WORK.with_borrow_mut(|work| work.row_shift = 0);
     if insert {
         terminal.insert_lines(1).unwrap();
@@ -105,7 +105,7 @@ fn full_row_shift_work(cols: u16, insert: bool) -> usize {
     };
     for (y, expected) in expected.into_iter().enumerate() {
         assert_eq!(
-            page.get_cells(u16::try_from(y).unwrap())[0].codepoint(),
+            page.cells(u16::try_from(y).unwrap())[0].codepoint(),
             expected
         );
     }
@@ -197,7 +197,7 @@ fn alignment_work(cols: u16) -> (usize, usize) {
     let mut repeated = 0;
     for y in 0..4 {
         for end in 0..usize::from(cols) {
-            for cell in &page.get_cells(y)[..=end] {
+            for cell in &page.cells(y)[..=end] {
                 assert_eq!(cell.codepoint(), 'E');
                 repeated += 1;
             }

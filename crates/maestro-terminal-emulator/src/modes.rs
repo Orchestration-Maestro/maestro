@@ -208,7 +208,7 @@ pub enum ReportState {
 impl ModeState {
     /// Report a mode's current value, or an unrecognized numeric tag.
     #[must_use]
-    pub fn get_report(&self, tag: ModeTag) -> Report {
+    pub fn report(&self, tag: ModeTag) -> Report {
         let state = match Mode::from_number(tag.value, tag.ansi) {
             Some(mode) if self.get(mode) => ReportState::Set,
             Some(_) => ReportState::Reset,

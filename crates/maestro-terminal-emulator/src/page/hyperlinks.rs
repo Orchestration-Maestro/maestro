@@ -56,7 +56,7 @@ impl Page {
             self.release_hyperlink(previous);
         }
         self.cells[index].set_hyperlink(true);
-        self.get_row_mut(position.y).set_hyperlink(true);
+        self.row_mut(position.y).set_hyperlink(true);
         Ok(())
     }
 
@@ -77,8 +77,8 @@ impl Page {
 
     /// Clear the row flag when no addressable cell retains a hyperlink.
     pub(crate) fn update_row_hyperlink_flag(&mut self, y: u16) {
-        if !self.get_cells(y).iter().any(|cell| cell.hyperlink()) {
-            self.get_row_mut(y).set_hyperlink(false);
+        if !self.cells(y).iter().any(|cell| cell.hyperlink()) {
+            self.row_mut(y).set_hyperlink(false);
         }
     }
 

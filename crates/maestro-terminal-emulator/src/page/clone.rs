@@ -80,18 +80,14 @@ impl Page {
     ) -> Result<(), StorageError> {
         let columns = columns.start..columns.end.min(self.size.cols).min(other.size.cols);
         self.clear_cells(dst_row, columns.clone());
-        self.copy_row_metadata(
-            *other.get_row(src_row),
-            dst_row,
-            columns.end - columns.start,
-        );
+        self.copy_row_metadata(*other.row(src_row), dst_row, columns.end - columns.start);
         for x in columns.clone() {
             let src = CellPosition { x, y: src_row };
             self.clone_cell_from(other, CellPosition { x, y: dst_row }, src)?;
         }
         if self.size.cols > other.size.cols && columns.end == other.size.cols && !columns.is_empty()
         {
-            let cell = &mut self.get_cells_mut(dst_row)[usize::from(columns.end - 1)];
+            let cell = &mut self.cells_mut(dst_row)[usize::from(columns.end - 1)];
             if cell.wide() == Wide::SpacerHead {
                 cell.set_wide(Wide::Narrow);
             }
@@ -138,7 +134,7 @@ impl Page {
             return Ok(());
         }
         let columns = columns.start..columns.end.min(self.size.cols);
-        let source_row = *self.get_row(src_row);
+        let source_row = *self.row(src_row);
         let captured: Vec<_> = columns
             .clone()
             .map(|x| {
@@ -182,7 +178,7 @@ impl Page {
             self.set_hyperlink(dst, id)?;
         }
         if let Some(style) = data.style {
-            self.get_row_mut(dst.y).set_styled(true);
+            self.row_mut(dst.y).set_styled(true);
             let id = match style {
                 StyleCopy::Local(id) => {
                     self.styles.use_multiple(id, 1);
@@ -220,7 +216,7 @@ impl Page {
 
     /// Copy row metadata while retaining flags belonging to unselected columns.
     fn copy_row_metadata(&mut self, mut source: Row, dst_row: u16, count: u16) {
-        let previous = *self.get_row(dst_row);
+        let previous = *self.row(dst_row);
         if count < self.size.cols {
             source.set_wrap(previous.wrap());
             source.set_wrap_continuation(previous.wrap_continuation());
@@ -294,7 +290,7 @@ impl Page {
     fn cells_in_rows(&self, rows: Range<u16>) -> impl Iterator<Item = (CellPosition, &Cell)> {
         rows.flat_map(move |y| {
             (0..self.size.cols)
-                .zip(self.get_cells(y))
+                .zip(self.cells(y))
                 .map(move |(x, cell)| (CellPosition { x, y }, cell))
         })
     }

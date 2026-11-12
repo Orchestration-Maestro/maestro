@@ -69,11 +69,11 @@ fn terminal_print_cluster_width_and_suffix() {
         Some(&['\u{fe0f}'][..])
     );
     assert_eq!(
-        page.get_cells(pin.y)[1].wide(),
+        page.cells(pin.y)[1].wide(),
         maestro_terminal_emulator::page::cell::Wide::Wide
     );
     assert_eq!(
-        page.get_cells(pin.y)[2].wide(),
+        page.cells(pin.y)[2].wide(),
         maestro_terminal_emulator::page::cell::Wide::SpacerTail
     );
 }
@@ -845,7 +845,7 @@ fn screen_render_writes_to_bottom_if_scrolled() {
         .pin(Point::Viewport(Coordinate { x: 0, y: 0 }))
         .unwrap();
     let page = screen.pages.page(pin.node).unwrap();
-    for (value, expected) in page.get_cells(pin.y).iter().zip("hello".chars()) {
+    for (value, expected) in page.cells(pin.y).iter().zip("hello".chars()) {
         assert_eq!(value.codepoint(), expected);
     }
     t.print('A').unwrap();

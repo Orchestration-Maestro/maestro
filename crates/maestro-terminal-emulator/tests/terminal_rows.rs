@@ -219,7 +219,7 @@ fn assert_links(t: &Terminal, y: u32, expected: &[bool]) {
     let pin = pages.pin(Point::Viewport(Coordinate { x: 0, y })).unwrap();
     let page = pages.page(pin.node).unwrap();
     for (x, &linked) in expected.iter().enumerate() {
-        let c = page.get_cells(pin.y)[x];
+        let c = page.cells(pin.y)[x];
         assert_eq!(c.hyperlink(), linked);
         let id = page.lookup_hyperlink(maestro_terminal_emulator::page::CellPosition {
             x: u16::try_from(x).unwrap(),
@@ -227,7 +227,7 @@ fn assert_links(t: &Terminal, y: u32, expected: &[bool]) {
         });
         assert_eq!(id, linked.then_some(1));
         if linked {
-            assert!(page.get_row(pin.y).hyperlink());
+            assert!(page.row(pin.y).hyperlink());
         }
     }
 }
@@ -240,7 +240,7 @@ fn assert_viewport(t: &Terminal, expected: &str) {
         let line: String = pages
             .page(pin.node)
             .unwrap()
-            .get_cells(pin.y)
+            .cells(pin.y)
             .iter()
             .map(|c| {
                 if c.codepoint() == '\0' {
@@ -268,14 +268,14 @@ fn editing_scroll_up_simple() {
         .screens
         .active()
         .pages
-        .get_top_left(maestro_terminal_emulator::point::Tag::Viewport);
+        .top_left(maestro_terminal_emulator::point::Tag::Viewport);
     t.scroll_up(1).unwrap();
     assert_eq!(cursor(&t), before);
     assert_ne!(
         t.screens
             .active()
             .pages
-            .get_top_left(maestro_terminal_emulator::point::Tag::Viewport),
+            .top_left(maestro_terminal_emulator::point::Tag::Viewport),
         viewport
     );
     assert_text(&t, "DEF\nGHI");

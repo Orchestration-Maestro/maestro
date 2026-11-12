@@ -201,7 +201,7 @@ impl PageList {
             Viewport::Pin => {}
         }
         let pin = self.tracked_pin(self.viewport_pin).copied();
-        let active = self.get_top_left(Tag::Active);
+        let active = self.top_left(Tag::Active);
         if pin.is_some_and(|pin| pin.eql(active) || active.before(self, pin)) {
             self.viewport = Viewport::Active;
             return;
@@ -218,12 +218,12 @@ impl PageList {
     /// Resolve the current viewport origin without retaining an extra page borrow.
     pub(super) fn viewport_origin(&self) -> Pin {
         match self.viewport {
-            Viewport::Active => self.get_top_left(Tag::Active),
-            Viewport::Top => self.get_top_left(Tag::Screen),
+            Viewport::Active => self.top_left(Tag::Active),
+            Viewport::Top => self.top_left(Tag::Screen),
             Viewport::Pin => self
                 .tracked_pin(self.viewport_pin)
                 .copied()
-                .unwrap_or_else(|| self.get_top_left(Tag::Active)),
+                .unwrap_or_else(|| self.top_left(Tag::Active)),
         }
     }
 }

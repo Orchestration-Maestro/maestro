@@ -164,7 +164,7 @@ impl Placement {
         else {
             return (0, 0, false);
         };
-        let origin = pages.get_top_left(crate::point::Tag::Viewport);
+        let origin = pages.top_left(crate::point::Tag::Viewport);
         let Some(origin) = pages.point_from_pin(crate::point::Tag::Screen, origin) else {
             return (0, 0, false);
         };

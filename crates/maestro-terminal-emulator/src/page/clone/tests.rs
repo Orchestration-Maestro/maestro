@@ -15,10 +15,10 @@ fn row_metadata_unions_placeholder_summaries_only_for_partial_copies() {
             source.set_kitty_virtual_placeholder(incoming);
             assert!(!source.managed_memory());
             for count in [1, 2] {
-                page.get_row_mut(1).set_kitty_virtual_placeholder(surviving);
+                page.row_mut(1).set_kitty_virtual_placeholder(surviving);
                 page.copy_row_metadata(source, 1, count);
                 assert_eq!(
-                    page.get_row(1).kitty_virtual_placeholder(),
+                    page.row(1).kitty_virtual_placeholder(),
                     incoming || (count == 1 && surviving),
                     "incoming={incoming}, surviving={surviving}, count={count}"
                 );
@@ -47,6 +47,6 @@ fn copied_style_marks_row_before_admission_failure() {
         page.copy_cell(data, CellPosition { x: 0, y: 0 }),
         Err(crate::page::StorageError::StyleSetOutOfMemory)
     );
-    assert!(page.get_row(0).styled());
-    assert_eq!(page.get_cells(0)[0].style_id(), 0);
+    assert!(page.row(0).styled());
+    assert_eq!(page.cells(0)[0].style_id(), 0);
 }

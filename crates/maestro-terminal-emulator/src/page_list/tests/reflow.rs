@@ -17,7 +17,7 @@ pub(super) fn reflow(list: &mut PageList, cols: u16) {
 /// Read the wrap and continuation bits at an absolute row.
 pub(super) fn flags(list: &PageList, row: usize) -> (bool, bool) {
     let pin = list.pin_at_row(row, 0).unwrap();
-    let metadata = list.page(pin.node).unwrap().get_row(pin.y);
+    let metadata = list.page(pin.node).unwrap().row(pin.y);
     (metadata.wrap(), metadata.wrap_continuation())
 }
 
@@ -48,8 +48,8 @@ fn history_resize_reflow_more_cols_wrapped_rows() {
     }
     let page = list.page_mut(list.first).unwrap();
     for y in 0..4 {
-        page.get_row_mut(y).set_wrap(y % 2 == 0);
-        page.get_row_mut(y).set_wrap_continuation(y % 2 == 1);
+        page.row_mut(y).set_wrap(y % 2 == 0);
+        page.row_mut(y).set_wrap_continuation(y % 2 == 1);
     }
     let pin = list.track_pin(list.pin_at_row(1, 0).unwrap()).unwrap();
     reflow(&mut list, 4);
@@ -121,12 +121,12 @@ fn history_resize_reflow_less_cols_no_reflow_preserves_semantic_prompt_on_first_
     assert_eq!(list.total_pages(), 1);
     list.page_mut(list.first)
         .unwrap()
-        .get_row_mut(0)
+        .row_mut(0)
         .set_semantic_prompt(SemanticPrompt::Prompt);
     reflow(&mut list, 2);
     assert_eq!(list.total_rows(), 4);
     assert_eq!(
-        list.page(list.first).unwrap().get_row(0).semantic_prompt(),
+        list.page(list.first).unwrap().row(0).semantic_prompt(),
         SemanticPrompt::Prompt
     );
     assert_eq!(text(&list, 1), "\0\0");
@@ -141,14 +141,14 @@ fn history_resize_reflow_less_cols_no_reflow_preserves_semantic_prompt() {
     write(&mut list, 1, "\0\u{1}\u{2}\u{3}");
     list.page_mut(list.first)
         .unwrap()
-        .get_row_mut(1)
+        .row_mut(1)
         .set_semantic_prompt(SemanticPrompt::Prompt);
     reflow(&mut list, 2);
     assert_eq!(list.total_rows(), 4);
     let page = list.page(list.first).unwrap();
-    assert!(page.get_row(1).wrap());
-    assert_eq!(page.get_row(1).semantic_prompt(), SemanticPrompt::Prompt);
-    assert_eq!(page.get_row(2).semantic_prompt(), SemanticPrompt::Prompt);
+    assert!(page.row(1).wrap());
+    assert_eq!(page.row(1).semantic_prompt(), SemanticPrompt::Prompt);
+    assert_eq!(page.row(2).semantic_prompt(), SemanticPrompt::Prompt);
     assert_eq!(text(&list, 2), "\u{2}\u{3}");
     assert_eq!(list.total_pages(), 1);
     integrity(&list);
@@ -291,14 +291,14 @@ fn history_resize_reflow_less_cols_to_eliminate_a_wide_char() {
     let mut list = screen(2, 1);
     assert_eq!(list.total_pages(), 1);
     let page = list.page_mut(list.first).unwrap();
-    page.get_cells_mut(0)[0] = crate::page::cell::Cell::init('😀');
-    page.get_cells_mut(0)[0].set_wide(crate::page::cell::Wide::Wide);
-    page.get_cells_mut(0)[1].set_wide(crate::page::cell::Wide::SpacerTail);
+    page.cells_mut(0)[0] = crate::page::cell::Cell::init('😀');
+    page.cells_mut(0)[0].set_wide(crate::page::cell::Wide::Wide);
+    page.cells_mut(0)[1].set_wide(crate::page::cell::Wide::SpacerTail);
     reflow(&mut list, 1);
     assert_eq!(list.total_rows(), 1);
     assert_eq!(text(&list, 0), "\0");
     assert_eq!(
-        list.page(list.first).unwrap().get_cells(0)[0].wide(),
+        list.page(list.first).unwrap().cells(0)[0].wide(),
         crate::page::cell::Wide::Narrow
     );
     assert_eq!(list.total_pages(), 1);
@@ -311,8 +311,8 @@ fn history_resize_reflow_less_cols_to_wrap_a_wide_char() {
     assert_eq!(list.total_pages(), 1);
     write(&mut list, 0, "x😀");
     let page = list.page_mut(list.first).unwrap();
-    page.get_cells_mut(0)[1].set_wide(crate::page::cell::Wide::Wide);
-    page.get_cells_mut(0)[2].set_wide(crate::page::cell::Wide::SpacerTail);
+    page.cells_mut(0)[1].set_wide(crate::page::cell::Wide::Wide);
+    page.cells_mut(0)[2].set_wide(crate::page::cell::Wide::SpacerTail);
     reflow(&mut list, 2);
     assert_eq!(list.total_rows(), 2);
     assert_eq!(text(&list, 0), "x\0");
@@ -320,16 +320,10 @@ fn history_resize_reflow_less_cols_to_wrap_a_wide_char() {
     assert_eq!(flags(&list, 0), (true, false));
     assert_eq!(flags(&list, 1), (false, true));
     let page = list.page(list.first).unwrap();
-    assert_eq!(page.get_cells(0)[0].wide(), crate::page::cell::Wide::Narrow);
-    assert_eq!(
-        page.get_cells(0)[1].wide(),
-        crate::page::cell::Wide::SpacerHead
-    );
-    assert_eq!(page.get_cells(1)[0].wide(), crate::page::cell::Wide::Wide);
-    assert_eq!(
-        page.get_cells(1)[1].wide(),
-        crate::page::cell::Wide::SpacerTail
-    );
+    assert_eq!(page.cells(0)[0].wide(), crate::page::cell::Wide::Narrow);
+    assert_eq!(page.cells(0)[1].wide(), crate::page::cell::Wide::SpacerHead);
+    assert_eq!(page.cells(1)[0].wide(), crate::page::cell::Wide::Wide);
+    assert_eq!(page.cells(1)[1].wide(), crate::page::cell::Wide::SpacerTail);
     assert_eq!(list.total_pages(), 1);
     integrity(&list);
 }
@@ -344,7 +338,7 @@ fn history_resize_reflow_invalidates_viewport_offset_cache() {
     for y in 0..4 {
         write(&mut list, y, "AA");
         let pin = list.pin_at_row(y, 0).unwrap();
-        let row = list.page_mut(pin.node).unwrap().get_row_mut(pin.y);
+        let row = list.page_mut(pin.node).unwrap().row_mut(pin.y);
         row.set_wrap(y % 2 == 0);
         row.set_wrap_continuation(y % 2 == 1);
     }

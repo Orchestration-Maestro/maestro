@@ -129,7 +129,7 @@ impl Terminal {
             .pages
             .page(pin.node)
             .ok_or(Error::InvalidNode)?
-            .get_cells(pin.y)[usize::from(x)];
+            .cells(pin.y)[usize::from(x)];
         if !cell.has_text() {
             return Ok(());
         }

@@ -132,7 +132,7 @@ fn history_increase_capacity_preserves_dirty_flag() {
     let page = list.page_mut(list.first).unwrap();
     page.dirty = true;
     for y in 0..4 {
-        page.get_row_mut(y).set_dirty(y % 2 == 0);
+        page.row_mut(y).set_dirty(y % 2 == 0);
     }
     let new = list
         .increase_capacity(list.first, Some(IncreaseCapacity::Styles))
@@ -140,7 +140,7 @@ fn history_increase_capacity_preserves_dirty_flag() {
     let page = list.page(new).unwrap();
     assert!(page.dirty);
     for y in 0..4 {
-        assert_eq!(page.get_row(y).dirty(), y % 2 == 0);
+        assert_eq!(page.row(y).dirty(), y % 2 == 0);
     }
     integrity(&list);
 }

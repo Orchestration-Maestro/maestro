@@ -10,7 +10,7 @@ impl Terminal {
 
     /// Borrow the nonempty title bytes until the next mutable terminal operation.
     #[must_use]
-    pub fn get_title(&self) -> Option<&[u8]> {
+    pub fn title(&self) -> Option<&[u8]> {
         (!self.title.is_empty()).then_some(self.title.as_slice())
     }
 
@@ -29,7 +29,7 @@ impl Terminal {
 
     /// Borrow the nonempty directory bytes until the next mutable terminal operation.
     #[must_use]
-    pub fn get_pwd(&self) -> Option<&[u8]> {
+    pub fn pwd(&self) -> Option<&[u8]> {
         (!self.pwd.is_empty()).then_some(self.pwd.as_slice())
     }
 }

@@ -54,7 +54,7 @@ fn history_grow_fit_in_capacity() {
     assert!(list.grow().is_none());
     screen_origin(&list, Tag::Active, 1);
     assert_eq!(
-        list.point_from_pin(Tag::Screen, list.get_top_left(Tag::Active)),
+        list.point_from_pin(Tag::Screen, list.top_left(Tag::Active)),
         Some(Point::Screen(Coordinate { x: 0, y: 1 }))
     );
 }
@@ -113,7 +113,7 @@ fn history_grow_prune_scrollback() {
     fill_last(&mut list);
     let (first, second, charge) = (list.first, list.last, list.charged_bytes());
     let rows = list.page(first).unwrap().size.rows;
-    let handle = list.track_pin(list.get_top_left(Tag::Screen)).unwrap();
+    let handle = list.track_pin(list.top_left(Tag::Screen)).unwrap();
     list.scroll(Scroll::Row(usize::from(rows / 2)));
     assert_eq!(list.viewport, Viewport::Pin);
     assert_eq!(list.scrollbar().offset, usize::from(rows / 2));
@@ -171,7 +171,7 @@ fn history_grow_reuses_non_standard_page_without_leak() {
     let charge = PageList::page_charge(list.page(first).unwrap().capacity);
     assert!(charge > PageList::standard_bytes());
     assert!(list.total_rows() >= usize::from(list.rows()));
-    let handle = list.track_pin(list.get_top_left(Tag::Screen)).unwrap();
+    let handle = list.track_pin(list.top_left(Tag::Screen)).unwrap();
     let old_charge = list.charged_bytes();
     assert_eq!(
         list.page(list.last).unwrap().size.rows,
@@ -295,7 +295,7 @@ fn history_bounded_pruning_after_middle_replacement_preserves_live_nodes() {
 fn history_trimming_keeps_live_nodes_and_checks_bounds() {
     let mut list = screen(80, 24);
     let first = list.first;
-    let retained = list.get_top_left(Tag::Active);
+    let retained = list.top_left(Tag::Active);
     let trimmed = list.get_bottom_right(Tag::Active).unwrap();
     list.resize(Resize {
         rows: Some(nz(23)),

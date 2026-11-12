@@ -136,7 +136,7 @@ impl RenderState {
     /// without a terminal dirty bit.
     pub fn update(&mut self, terminal: &mut Terminal) {
         let screen = terminal.screens.active();
-        let origin = screen.pages.get_top_left(Tag::Viewport);
+        let origin = screen.pages.top_left(Tag::Viewport);
         let redraw = self.redraw(terminal, origin);
         self.rows = screen.pages.rows();
         self.cols = screen.pages.cols();
@@ -248,7 +248,7 @@ impl RenderState {
                     x: pin.x,
                     y: u32::try_from(y).unwrap_or_default() + u32::from(pin.y - chunk.start),
                     wide_tail: pin.x > 0
-                        && page.get_cells(pin.y)[usize::from(pin.x - 1)].wide()
+                        && page.cells(pin.y)[usize::from(pin.x - 1)].wide()
                             == crate::page::cell::Wide::Wide,
                 });
             }

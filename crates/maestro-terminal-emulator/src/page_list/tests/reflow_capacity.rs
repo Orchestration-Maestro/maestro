@@ -51,8 +51,8 @@ fn history_resize_reflow_exceeds_grapheme_memory_forcing_capacity_increase() {
     for pin in pins {
         let pin = *list.tracked_pin(pin).unwrap();
         let page = list.page_mut(pin.node).unwrap();
-        page.get_cells_mut(pin.y)[usize::from(pin.x)] = PackedCell::init('X');
-        page.get_row_mut(pin.y).set_wrap(true);
+        page.cells_mut(pin.y)[usize::from(pin.x)] = PackedCell::init('X');
+        page.row_mut(pin.y).set_wrap(true);
         page.set_graphemes(CellPosition { x: pin.x, y: pin.y }, &suffix)
             .unwrap();
     }
@@ -64,7 +64,7 @@ fn history_resize_reflow_exceeds_grapheme_memory_forcing_capacity_increase() {
     for handle in pins {
         let pin = *list.tracked_pin(handle).unwrap();
         let page = list.page(pin.node).unwrap();
-        assert_eq!(page.get_cells(pin.y)[usize::from(pin.x)].codepoint(), 'X');
+        assert_eq!(page.cells(pin.y)[usize::from(pin.x)].codepoint(), 'X');
         assert_eq!(
             page.lookup_grapheme(CellPosition { x: pin.x, y: pin.y })
                 .unwrap(),
@@ -84,9 +84,9 @@ fn history_resize_reflow_exceeds_hyperlink_memory_forcing_capacity_increase() {
     for (index, handle) in pins.into_iter().enumerate() {
         let pin = *list.tracked_pin(handle).unwrap();
         let page = list.page_mut(pin.node).unwrap();
-        page.get_cells_mut(pin.y)[usize::from(pin.x)] = PackedCell::init('X');
-        page.get_row_mut(pin.y).set_wrap(index == 0);
-        page.get_row_mut(pin.y).set_wrap_continuation(index == 1);
+        page.cells_mut(pin.y)[usize::from(pin.x)] = PackedCell::init('X');
+        page.row_mut(pin.y).set_wrap(index == 0);
+        page.row_mut(pin.y).set_wrap_continuation(index == 1);
         let id = page
             .insert_hyperlink(crate::links::Hyperlink {
                 id: crate::links::HyperlinkId::Implicit(u32::try_from(index).unwrap()),
@@ -154,13 +154,13 @@ fn history_resize_reflow_exceeds_style_memory_forcing_capacity_increase() {
             let Ok(id) = page.styles.add(style) else {
                 break;
             };
-            let cell = &mut page.get_cells_mut(pin.y)[usize::from(x)];
+            let cell = &mut page.cells_mut(pin.y)[usize::from(x)];
             *cell = PackedCell::init('X');
             cell.set_style_id(id);
         }
-        page.get_row_mut(pin.y).set_styled(true);
-        page.get_row_mut(pin.y).set_wrap(index == 0);
-        page.get_row_mut(pin.y).set_wrap_continuation(index == 1);
+        page.row_mut(pin.y).set_styled(true);
+        page.row_mut(pin.y).set_wrap(index == 0);
+        page.row_mut(pin.y).set_wrap_continuation(index == 1);
     }
     list.resize(Resize {
         cols: Some(nz(cols * 2)),
@@ -170,8 +170,8 @@ fn history_resize_reflow_exceeds_style_memory_forcing_capacity_increase() {
     let pin = *list.tracked_pin(pins[1]).unwrap();
     let page = list.page(pin.node).unwrap();
     assert!(page.capacity.styles > original);
-    let left = page.get_cells(pin.y)[0];
-    let right = page.get_cells(pin.y)[usize::from(cols)];
+    let left = page.cells(pin.y)[0];
+    let right = page.cells(pin.y)[usize::from(cols)];
     assert_eq!(left.codepoint(), 'X');
     assert_eq!(right.codepoint(), 'X');
     assert_ne!(

@@ -29,7 +29,7 @@ impl Terminal {
         let mut end = start + count;
         if let Some(page) = screen.pages.page(pin.node)
             && end < cols
-            && page.get_cells(pin.y)[usize::from(end - 1)].wide() == Wide::Wide
+            && page.cells(pin.y)[usize::from(end - 1)].wide() == Wide::Wide
         {
             end += 1;
         }

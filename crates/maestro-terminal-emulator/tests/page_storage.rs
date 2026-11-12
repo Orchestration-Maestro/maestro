@@ -376,8 +376,8 @@ fn page_initializes_storage() {
     assert_eq!(page.size.cols, 120);
     assert_eq!(page.size.rows, 80);
     for y in 0..80 {
-        assert_eq!(page.get_cells(y), &[Cell::default(); 120]);
-        assert!(!page.get_row(y).dirty());
+        assert_eq!(page.cells(y), &[Cell::default(); 120]);
+        assert!(!page.row(y).dirty());
     }
     assert!(!page.is_dirty());
 }
@@ -394,16 +394,16 @@ fn page_read_write_cells() {
         ..Capacity::default()
     });
     for y in 0..10 {
-        let (row, cell) = page.get_row_and_cell(CellPosition { x: 1, y });
+        let (row, cell) = page.row_and_cell(CellPosition { x: 1, y });
         row.set_wrap(y % 2 == 1);
         *cell = Cell::init(char::from_u32(u32::from(y)).unwrap());
     }
     for y in 0..10 {
-        assert_eq!(page.get_cells(y)[1].codepoint() as u32, u32::from(y));
-        assert_eq!(page.get_row(y).wrap(), y % 2 == 1);
-        page.get_cells_mut(y)[0] = Cell::init('A');
-        page.get_row_mut(y).set_dirty(true);
-        assert_eq!(page.get_cells(y)[0].codepoint(), 'A');
+        assert_eq!(page.cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(page.row(y).wrap(), y % 2 == 1);
+        page.cells_mut(y)[0] = Cell::init('A');
+        page.row_mut(y).set_dirty(true);
+        assert_eq!(page.cells(y)[0].codepoint(), 'A');
     }
     assert!(page.is_dirty());
 }
@@ -420,18 +420,18 @@ fn page_append_small_cluster() {
         ..Capacity::default()
     });
     let position = CellPosition { x: 0, y: 0 };
-    page.get_cells_mut(0)[0] = Cell::init('\t');
+    page.cells_mut(0)[0] = Cell::init('\t');
     page.append_grapheme(position, '\n').unwrap();
     assert_eq!(page.lookup_grapheme(position), Some(&['\n'][..]));
-    assert!(page.get_cells(0)[0].has_grapheme());
-    assert!(page.get_row(0).grapheme());
+    assert!(page.cells(0)[0].has_grapheme());
+    assert!(page.row(0).grapheme());
     page.append_grapheme(position, '\u{b}').unwrap();
     assert_eq!(page.lookup_grapheme(position), Some(&['\n', '\u{b}'][..]));
     page.clear_grapheme(position);
     page.update_row_grapheme_flag(0);
     assert_eq!(page.lookup_grapheme(position), None);
-    assert!(!page.get_cells(0)[0].has_grapheme());
-    assert!(!page.get_row(0).grapheme());
+    assert!(!page.cells(0)[0].has_grapheme());
+    assert!(!page.row(0).grapheme());
 }
 
 #[test]
@@ -446,7 +446,7 @@ fn page_append_crosses_chunk() {
         ..Capacity::default()
     });
     let position = CellPosition { x: 0, y: 0 };
-    page.get_cells_mut(0)[0] = Cell::init('\t');
+    page.cells_mut(0)[0] = Cell::init('\t');
     let suffix: Vec<_> = (10..50).map(|cp| char::from_u32(cp).unwrap()).collect();
     for &cp in &suffix {
         page.append_grapheme(position, cp).unwrap();
@@ -466,7 +466,7 @@ fn page_clear_partial_graphemes() {
         ..Capacity::default()
     });
     for x in 0..2 {
-        page.get_cells_mut(0)[usize::from(x)] = Cell::init('A');
+        page.cells_mut(0)[usize::from(x)] = Cell::init('A');
         page.append_grapheme(CellPosition { x, y: 0 }, 'B').unwrap();
     }
     page.clear_grapheme(CellPosition { x: 0, y: 0 });
@@ -476,7 +476,7 @@ fn page_clear_partial_graphemes() {
         page.lookup_grapheme(CellPosition { x: 1, y: 0 }),
         Some(&['B'][..])
     );
-    assert!(page.get_row(0).grapheme());
+    assert!(page.row(0).grapheme());
     assert_eq!(page.grapheme_count(), 1);
 }
 
@@ -490,16 +490,16 @@ fn page_clone_preserves_records() {
     };
     let mut source = Page::init(capacity);
     for y in 0..10 {
-        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+        source.cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
     }
     let cloned = source.clone();
     for y in 0..10 {
-        source.get_cells_mut(y).fill(Cell::default());
+        source.cells_mut(y).fill(Cell::default());
     }
     assert_eq!(cloned.capacity, capacity);
     for y in 0..10 {
-        assert_eq!(cloned.get_cells(y)[1].codepoint() as u32, u32::from(y));
-        assert_eq!(source.get_cells(y), &[Cell::default(); 10]);
+        assert_eq!(cloned.cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(source.cells(y), &[Cell::default(); 10]);
     }
 }
 
@@ -512,16 +512,16 @@ fn page_copy_range() {
         ..Capacity::default()
     });
     for y in 0..10 {
-        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+        source.cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
     }
     let mut destination = Page::init(source.capacity);
     destination.clone_from(&source, 0..10).unwrap();
     for y in 0..10 {
-        source.get_cells_mut(y).fill(Cell::default());
+        source.cells_mut(y).fill(Cell::default());
     }
     for y in 0..10 {
-        assert_eq!(destination.get_cells(y)[1].codepoint() as u32, u32::from(y));
-        assert_eq!(source.get_cells(y), &[Cell::default(); 10]);
+        assert_eq!(destination.cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(source.cells(y), &[Cell::default(); 10]);
     }
 }
 
@@ -534,7 +534,7 @@ fn page_copy_truncates_columns() {
         ..Capacity::default()
     });
     for y in 0..10 {
-        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+        source.cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
     }
     let mut destination = Page::init(Capacity {
         cols: 5,
@@ -543,7 +543,7 @@ fn page_copy_truncates_columns() {
     destination.clone_from(&source, 0..10).unwrap();
     assert_eq!(destination.size.cols, 5);
     for y in 0..10 {
-        assert_eq!(destination.get_cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(destination.cells(y)[1].codepoint() as u32, u32::from(y));
     }
 }
 
@@ -556,15 +556,15 @@ fn page_copy_selected_rows() {
         ..Capacity::default()
     });
     for y in 0..10 {
-        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+        source.cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
     }
     let mut destination = Page::init(source.capacity);
     destination.clone_from(&source, 0..5).unwrap();
     for y in 0..5 {
-        assert_eq!(destination.get_cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(destination.cells(y)[1].codepoint() as u32, u32::from(y));
     }
     for y in 5..10 {
-        assert_eq!(destination.get_cells(y), &[Cell::default(); 10]);
+        assert_eq!(destination.cells(y), &[Cell::default(); 10]);
     }
 }
 
@@ -577,8 +577,7 @@ fn row_copy_partial() {
         ..Capacity::default()
     });
     for x in 0..10 {
-        source.get_cells_mut(0)[x] =
-            Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
+        source.cells_mut(0)[x] = Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
     }
     let mut destination = Page::init(source.capacity);
     destination
@@ -586,7 +585,7 @@ fn row_copy_partial() {
         .unwrap();
     for x in 0..10 {
         assert_eq!(
-            destination.get_cells(0)[x].codepoint() as u32,
+            destination.cells(0)[x].codepoint() as u32,
             if (2..8).contains(&x) {
                 u32::try_from(x + 1).unwrap()
             } else {
@@ -608,25 +607,20 @@ fn row_copy_retains_unselected_source_graphemes() {
         ..Capacity::default()
     });
     for x in [0, 9] {
-        source.get_cells_mut(0)[usize::from(x)] = Cell::init('A');
+        source.cells_mut(0)[usize::from(x)] = Cell::init('A');
         source
             .append_grapheme(CellPosition { x, y: 0 }, 'B')
             .unwrap();
     }
-    source.get_cells_mut(0)[3] = Cell::init('C');
+    source.cells_mut(0)[3] = Cell::init('C');
     let mut destination = Page::init(source.capacity);
     destination
         .clone_partial_row_from(&source, 0, 0, 2..8)
         .unwrap();
-    assert_eq!(destination.get_cells(0)[3].codepoint(), 'C');
+    assert_eq!(destination.cells(0)[3].codepoint(), 'C');
     assert_eq!(destination.grapheme_count(), 0);
-    assert!(!destination.get_row(0).grapheme());
-    assert!(
-        destination
-            .get_cells(0)
-            .iter()
-            .all(|cell| !cell.has_grapheme())
-    );
+    assert!(!destination.row(0).grapheme());
+    assert!(destination.cells(0).iter().all(|cell| !cell.has_grapheme()));
     assert_eq!(source.grapheme_count(), 2);
 }
 
@@ -642,12 +636,11 @@ fn row_copy_retains_unselected_destination_graphemes() {
         ..Capacity::default()
     });
     for x in 0..10 {
-        source.get_cells_mut(0)[x] =
-            Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
+        source.cells_mut(0)[x] = Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
     }
     let mut destination = Page::init(source.capacity);
     for x in [0, 9] {
-        destination.get_cells_mut(0)[usize::from(x)] = Cell::init('»');
+        destination.cells_mut(0)[usize::from(x)] = Cell::init('»');
         destination
             .append_grapheme(CellPosition { x, y: 0 }, 'B')
             .unwrap();
@@ -657,18 +650,18 @@ fn row_copy_retains_unselected_destination_graphemes() {
         .unwrap();
     for x in 2..8 {
         assert_eq!(
-            destination.get_cells(0)[x].codepoint() as u32,
+            destination.cells(0)[x].codepoint() as u32,
             u32::try_from(x + 1).unwrap()
         );
     }
     for x in [0, 9] {
-        assert_eq!(destination.get_cells(0)[usize::from(x)].codepoint(), '»');
+        assert_eq!(destination.cells(0)[usize::from(x)].codepoint(), '»');
         assert_eq!(
             destination.lookup_grapheme(CellPosition { x, y: 0 }),
             Some(&['B'][..])
         );
     }
-    assert!(destination.get_row(0).grapheme());
+    assert!(destination.row(0).grapheme());
     assert_eq!(destination.grapheme_count(), 2);
 }
 
@@ -684,14 +677,13 @@ fn page_move_plain_cells() {
         ..Capacity::default()
     });
     for x in 0..10 {
-        page.get_cells_mut(0)[x] =
-            Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
+        page.cells_mut(0)[x] = Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
     }
     page.move_cells(CellPosition { x: 0, y: 0 }, CellPosition { x: 0, y: 1 }, 10);
-    assert_eq!(page.get_cells(0), &[Cell::default(); 10]);
+    assert_eq!(page.cells(0), &[Cell::default(); 10]);
     for x in 0..10 {
         assert_eq!(
-            page.get_cells(1)[x].codepoint() as u32,
+            page.cells(1)[x].codepoint() as u32,
             u32::try_from(x + 1).unwrap()
         );
     }
@@ -710,7 +702,7 @@ fn page_reinit_clears_owned_tables() {
         ..Capacity::default()
     });
     let position = CellPosition { x: 0, y: 0 };
-    page.get_cells_mut(0)[0] = Cell::init('A');
+    page.cells_mut(0)[0] = Cell::init('A');
     page.append_grapheme(position, 'B').unwrap();
     let id = page
         .insert_hyperlink(Hyperlink {
@@ -720,13 +712,13 @@ fn page_reinit_clears_owned_tables() {
         .unwrap();
     page.set_hyperlink(position, id).unwrap();
     page.dirty = true;
-    page.get_row_mut(0).set_dirty(true);
+    page.row_mut(0).set_dirty(true);
     page.reinit();
     assert_eq!(page.grapheme_count(), 0);
     assert_eq!(page.hyperlink_count(), 0);
     assert!(!page.is_dirty());
     for y in 0..10 {
-        assert_eq!(page.get_cells(y), &[Cell::default(); 10]);
+        assert_eq!(page.cells(y), &[Cell::default(); 10]);
     }
 }
 
@@ -746,7 +738,7 @@ fn page_swap_preserves_owned_content() {
             ..Capacity::default()
         });
         for (index, position) in [first, second].into_iter().enumerate() {
-            page.get_cells_mut(0)[index] = Cell::init(['A', 'B'][index]);
+            page.cells_mut(0)[index] = Cell::init(['A', 'B'][index]);
             if graphemes & (1 << index) != 0 {
                 page.append_grapheme(position, ['C', 'D'][index]).unwrap();
             }
@@ -760,9 +752,9 @@ fn page_swap_preserves_owned_content() {
                 page.set_hyperlink(position, id).unwrap();
             }
         }
-        let records = [page.get_cells(0)[0], page.get_cells(0)[1]];
+        let records = [page.cells(0)[0], page.cells(0)[1]];
         page.swap_cells(first, second);
-        assert_eq!(&page.get_cells(0)[..2], &[records[1], records[0]]);
+        assert_eq!(&page.cells(0)[..2], &[records[1], records[0]]);
         for (old, position) in [(1, first), (0, second)] {
             let expected = [['C', 'D'][old]];
             assert_eq!(
@@ -797,14 +789,14 @@ fn row_flags_and_dirty_sources_match() {
     });
     source.dirty = true;
     assert!(source.is_dirty());
-    source.get_row_mut(0).set_dirty(true);
+    source.row_mut(0).set_dirty(true);
     source.dirty = false;
     assert!(source.is_dirty());
-    source.get_row_mut(0).set_dirty(false);
+    source.row_mut(0).set_dirty(false);
     assert!(!source.is_dirty());
-    source.get_cells_mut(0)[0] = Cell::init('\u{10eeee}');
-    source.get_row_mut(0).set_kitty_virtual_placeholder(true);
-    source.get_cells_mut(0)[1] = Cell::init('A');
+    source.cells_mut(0)[0] = Cell::init('\u{10eeee}');
+    source.row_mut(0).set_kitty_virtual_placeholder(true);
+    source.cells_mut(0)[1] = Cell::init('A');
     source
         .append_grapheme(CellPosition { x: 1, y: 0 }, 'B')
         .unwrap();
@@ -813,13 +805,13 @@ fn row_flags_and_dirty_sources_match() {
     destination
         .clone_partial_row_from(&source, 0, 0, 0..1)
         .unwrap();
-    assert!(destination.get_row(0).kitty_virtual_placeholder());
-    assert!(!destination.get_row(0).grapheme());
+    assert!(destination.row(0).kitty_virtual_placeholder());
+    assert!(!destination.row(0).grapheme());
     assert!(!destination.is_dirty());
     destination.clear_cells(0, 0..2);
-    assert!(destination.get_row(0).kitty_virtual_placeholder());
+    assert!(destination.row(0).kitty_virtual_placeholder());
     destination.clear_cells(0, 0..2);
-    assert!(!destination.get_row(0).kitty_virtual_placeholder());
+    assert!(!destination.row(0).kitty_virtual_placeholder());
     assert!(!destination.is_dirty());
 }
 
@@ -885,7 +877,7 @@ fn refused_hyperlink_releases_string_budget() {
         page.set_hyperlink(CellPosition { x: count, y: 0 }, id),
         Err(StorageError::HyperlinkMapOutOfMemory)
     );
-    assert!(!page.get_cells(0)[usize::from(count)].hyperlink());
+    assert!(!page.cells(0)[usize::from(count)].hyperlink());
     assert_eq!(page.hyperlink_count(), usize::from(count));
     let distinct = Hyperlink {
         id: HyperlinkId::Implicit(3),
@@ -910,29 +902,27 @@ fn partial_cross_page_copy_retains_placeholder_summary() {
         });
         let copied = if incoming { '\u{10eeee}' } else { 'A' };
         let retained = if surviving { '\u{10eeee}' } else { '\0' };
-        source.get_cells_mut(0)[1] = Cell::init(copied);
-        source
-            .get_row_mut(0)
-            .set_kitty_virtual_placeholder(incoming);
-        assert!(!source.get_row(0).managed_memory());
+        source.cells_mut(0)[1] = Cell::init(copied);
+        source.row_mut(0).set_kitty_virtual_placeholder(incoming);
+        assert!(!source.row(0).managed_memory());
         let mut destination = Page::init(source.capacity);
-        destination.get_cells_mut(0)[0] = Cell::init(retained);
+        destination.cells_mut(0)[0] = Cell::init(retained);
         destination
-            .get_row_mut(0)
+            .row_mut(0)
             .set_kitty_virtual_placeholder(surviving);
         destination
             .clone_partial_row_from(&source, 0, 0, 1..2)
             .unwrap();
-        assert_eq!(destination.get_cells(0)[0].codepoint(), retained);
-        assert_eq!(destination.get_cells(0)[1].codepoint(), copied);
+        assert_eq!(destination.cells(0)[0].codepoint(), retained);
+        assert_eq!(destination.cells(0)[1].codepoint(), copied);
         assert_eq!(
-            destination.get_row(0).kitty_virtual_placeholder(),
+            destination.row(0).kitty_virtual_placeholder(),
             incoming || surviving
         );
         destination.clone_row_from(&source, 0, 0).unwrap();
-        assert_eq!(destination.get_cells(0)[0].codepoint(), '\0');
-        assert_eq!(destination.get_cells(0)[1].codepoint(), copied);
-        assert_eq!(destination.get_row(0).kitty_virtual_placeholder(), incoming);
+        assert_eq!(destination.cells(0)[0].codepoint(), '\0');
+        assert_eq!(destination.cells(0)[1].codepoint(), copied);
+        assert_eq!(destination.row(0).kitty_virtual_placeholder(), incoming);
     }
 }
 
@@ -947,21 +937,21 @@ fn partial_same_page_copy_retains_placeholder_summary() {
         });
         let copied = if incoming { '\u{10eeee}' } else { 'A' };
         let retained = if surviving { '\u{10eeee}' } else { '\0' };
-        page.get_cells_mut(0)[1] = Cell::init(copied);
-        page.get_row_mut(0).set_kitty_virtual_placeholder(incoming);
-        assert!(!page.get_row(0).managed_memory());
-        page.get_cells_mut(1)[0] = Cell::init(retained);
-        page.get_row_mut(1).set_kitty_virtual_placeholder(surviving);
+        page.cells_mut(0)[1] = Cell::init(copied);
+        page.row_mut(0).set_kitty_virtual_placeholder(incoming);
+        assert!(!page.row(0).managed_memory());
+        page.cells_mut(1)[0] = Cell::init(retained);
+        page.row_mut(1).set_kitty_virtual_placeholder(surviving);
         page.clone_partial_row_within(1, 0, 1..2).unwrap();
-        assert_eq!(page.get_cells(1)[0].codepoint(), retained);
-        assert_eq!(page.get_cells(1)[1].codepoint(), copied);
+        assert_eq!(page.cells(1)[0].codepoint(), retained);
+        assert_eq!(page.cells(1)[1].codepoint(), copied);
         assert_eq!(
-            page.get_row(1).kitty_virtual_placeholder(),
+            page.row(1).kitty_virtual_placeholder(),
             incoming || surviving
         );
         page.clone_partial_row_within(1, 0, 0..2).unwrap();
-        assert_eq!(page.get_cells(1)[0].codepoint(), '\0');
-        assert_eq!(page.get_cells(1)[1].codepoint(), copied);
-        assert_eq!(page.get_row(1).kitty_virtual_placeholder(), incoming);
+        assert_eq!(page.cells(1)[0].codepoint(), '\0');
+        assert_eq!(page.cells(1)[1].codepoint(), copied);
+        assert_eq!(page.row(1).kitty_virtual_placeholder(), incoming);
     }
 }

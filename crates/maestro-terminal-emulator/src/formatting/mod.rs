@@ -266,7 +266,7 @@ impl<'a> PageListFormatter<'a> {
         use crate::{page_list::Direction, point::Tag};
         let tl = self
             .top_left
-            .unwrap_or_else(|| self.list.get_top_left(Tag::Screen));
+            .unwrap_or_else(|| self.list.top_left(Tag::Screen));
         let Some(br) = self
             .bottom_right
             .or_else(|| self.list.get_bottom_right(Tag::Screen))

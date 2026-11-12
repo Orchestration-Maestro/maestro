@@ -21,7 +21,7 @@ fn screen_suffix_growth_reloads_target_without_losing_cursor_owners() {
             .pages
             .page_mut(initial.node)
             .unwrap()
-            .get_cells_mut(initial.y)[usize::from(target_x)] = Cell::init('o');
+            .cells_mut(initial.y)[usize::from(target_x)] = Cell::init('o');
         let expected = screen.cursor.clone();
         let capacity = screen
             .pages
@@ -44,10 +44,10 @@ fn screen_suffix_growth_reloads_target_without_losing_cursor_owners() {
             vec!['\u{301}'; 3000]
         );
         assert_eq!(
-            page.get_cells(position.y)[usize::from(target_x)].codepoint(),
+            page.cells(position.y)[usize::from(target_x)].codepoint(),
             'o'
         );
-        assert!(page.get_row(position.y).grapheme());
+        assert!(page.row(position.y).grapheme());
         assert_cursor_owners(&screen, &expected);
     }
 }

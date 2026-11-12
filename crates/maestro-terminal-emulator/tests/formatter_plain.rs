@@ -17,7 +17,7 @@ fn terminal(cols: u16, rows: u16, text: &str) -> Terminal {
 
 fn page(terminal: &Terminal) -> &Page {
     let pages = &terminal.screens.active().pages;
-    pages.page(pages.get_top_left(Tag::Screen).node).unwrap()
+    pages.page(pages.top_left(Tag::Screen).node).unwrap()
 }
 
 #[test]
@@ -227,11 +227,11 @@ fn page_plain_with_prior_trailing_state_cells_no_wrapped_line() {
 fn page_plain_with_prior_trailing_state_cells_with_wrap_continuation() {
     let mut terminal = terminal(80, 24, "world");
     let pages = &mut terminal.screens.active_mut().pages;
-    let node = pages.get_top_left(Tag::Screen).node;
+    let node = pages.top_left(Tag::Screen).node;
     pages
         .page_mut(node)
         .unwrap()
-        .get_row_mut(0)
+        .row_mut(0)
         .set_wrap_continuation(true);
     let page = page(&terminal);
     let mut formatter = PageFormatter::init(
@@ -953,7 +953,7 @@ fn page_boundary(cols: u16, text: &str) -> (Terminal, u32) {
     );
     let pages = &terminal.screens.active().pages;
     assert_ne!(
-        pages.get_top_left(Tag::Screen).node,
+        pages.top_left(Tag::Screen).node,
         pages.get_bottom_right(Tag::Screen).unwrap().node
     );
     (terminal, u32::from(capacity - 1))

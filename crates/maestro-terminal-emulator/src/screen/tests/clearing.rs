@@ -8,8 +8,8 @@ fn screen_clear_rows_active_one_line() {
     let mut s = screen(20, 3);
     write_row(&mut s, "hello, world");
     s.clear_rows(Point::Active(Coordinate::default()), None, false);
-    assert!(page(&s).get_row(0).dirty());
-    assert!(page(&s).get_cells(0).iter().all(|cell| cell.is_zero()));
+    assert!(page(&s).row(0).dirty());
+    assert!(page(&s).cells(0).iter().all(|cell| cell.is_zero()));
 }
 
 #[test]
@@ -20,8 +20,8 @@ fn screen_clear_rows_active_multi_line() {
     write_row(&mut s, "world");
     s.clear_rows(Point::Active(Coordinate::default()), None, false);
     for y in 0..3 {
-        assert!(page(&s).get_row(y).dirty());
-        assert!(page(&s).get_cells(y).iter().all(|cell| cell.is_zero()));
+        assert!(page(&s).row(y).dirty());
+        assert!(page(&s).cells(y).iter().all(|cell| cell.is_zero()));
     }
 }
 
@@ -34,18 +34,18 @@ fn screen_clear_rows_active_styled_line() {
     assert_eq!(page(&s).styles.count(), 1);
     s.clear_rows(Point::Active(Coordinate::default()), None, false);
     assert_eq!(page(&s).styles.count(), 0);
-    assert!(page(&s).get_cells(0).iter().all(|cell| cell.is_zero()));
+    assert!(page(&s).cells(0).iter().all(|cell| cell.is_zero()));
 }
 
 #[test]
 fn screen_clear_cells_empty_range() {
     let mut s = screen(5, 1);
     write_row(&mut s, "hello");
-    let before = page(&s).get_cells(0).to_vec();
-    let row = *page(&s).get_row(0);
+    let before = page(&s).cells(0).to_vec();
+    let row = *page(&s).row(0);
     s.clear_cells(pin(&s).node, 0, 0..0);
-    assert_eq!(page(&s).get_cells(0), before);
-    assert_eq!(*page(&s).get_row(0), row);
+    assert_eq!(page(&s).cells(0), before);
+    assert_eq!(*page(&s).row(0), row);
 }
 
 #[test]
@@ -56,8 +56,8 @@ fn screen_clear_rows_uses_stored_page_width() {
     s.pages.page_mut(node).unwrap().size.cols = 2;
     s.cursor_horizontal_absolute(0);
     s.clear_rows(Point::Screen(Coordinate::default()), None, false);
-    assert_eq!(page(&s).get_cells(0).len(), 2);
-    assert!(page(&s).get_cells(0).iter().all(|cell| cell.is_zero()));
+    assert_eq!(page(&s).cells(0).len(), 2);
+    assert!(page(&s).cells(0).iter().all(|cell| cell.is_zero()));
 }
 
 #[test]
@@ -68,17 +68,17 @@ fn screen_clear_rows_protected() {
         write_row(&mut s, "ABCDEFGH");
         let page = s.pages.page_mut(pin(&s).node).unwrap();
         for x in 0..8 {
-            page.get_cells_mut(y)[x].set_protected((x / 2 + usize::from(y)) % 2 == 0);
+            page.cells_mut(y)[x].set_protected((x / 2 + usize::from(y)) % 2 == 0);
         }
-        page.get_row_mut(y).set_wrap(true);
+        page.row_mut(y).set_wrap(true);
     }
     s.clear_rows(Point::Active(Coordinate::default()), None, true);
     for y in 0..2 {
-        for (x, cell) in page(&s).get_cells(y).iter().enumerate() {
+        for (x, cell) in page(&s).cells(y).iter().enumerate() {
             assert_eq!(cell.is_zero(), (x / 2 + usize::from(y)) % 2 != 0);
         }
-        assert!(page(&s).get_row(y).wrap());
-        assert!(page(&s).get_row(y).dirty());
+        assert!(page(&s).row(y).wrap());
+        assert!(page(&s).row(y).dirty());
     }
 }
 
@@ -126,7 +126,7 @@ fn screen_protected_clear_preserves_managed_neighbours() {
     let link = s.cursor.hyperlink_id;
     {
         let page = s.pages.page_mut(p.node).unwrap();
-        page.get_cells_mut(0)[2].set_protected(true);
+        page.cells_mut(0)[2].set_protected(true);
         for x in 1..4 {
             page.append_grapheme(crate::page::CellPosition { x, y: 0 }, '\u{301}')
                 .unwrap();
@@ -148,20 +148,20 @@ fn screen_protected_clear_preserves_managed_neighbours() {
                 .is_none()
         );
     }
-    assert!(page.get_row(0).grapheme());
-    assert!(page.get_row(0).styled());
-    assert!(page.get_row(0).hyperlink());
+    assert!(page.row(0).grapheme());
+    assert!(page.row(0).styled());
+    assert!(page.row(0).hyperlink());
     assert_eq!(s.cursor.style.bg_color, Color::Palette(3));
 }
 
 /// Verify retained neighbor styles and links alongside background-only cleared cells.
 fn assert_protected_neighbours(s: &super::Screen, style: crate::style::Id) {
     for x in [0, 2, 4] {
-        assert_eq!(page(s).get_cells(0)[x].style_id(), style);
-        assert!(page(s).get_cells(0)[x].hyperlink());
+        assert_eq!(page(s).cells(0)[x].style_id(), style);
+        assert!(page(s).cells(0)[x].hyperlink());
     }
     for x in [1, 3] {
-        assert_eq!(page(s).get_cells(0)[x], s.blank_cell());
+        assert_eq!(page(s).cells(0)[x], s.blank_cell());
     }
 }
 
@@ -172,20 +172,20 @@ fn screen_wrap_reset_clears_only_wrap_and_spacer_state() {
     let p = pin(&s);
     {
         let page = s.pages.page_mut(p.node).unwrap();
-        page.get_row_mut(0).set_wrap(true);
-        page.get_row_mut(1).set_wrap_continuation(true);
-        page.get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
+        page.row_mut(0).set_wrap(true);
+        page.row_mut(1).set_wrap_continuation(true);
+        page.cells_mut(0)[3].set_wide(Wide::SpacerHead);
     }
     s.cursor.pending_wrap = true;
     s.cursor_reset_wrap();
     assert!(!s.cursor.pending_wrap);
-    assert!(!page(&s).get_row(0).wrap());
-    assert!(!page(&s).get_row(1).wrap_continuation());
-    assert_eq!(page(&s).get_cells(0)[0], Cell::init('A'));
-    assert!(page(&s).get_cells(0)[3].is_zero());
-    s.pages.page_mut(p.node).unwrap().get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
+    assert!(!page(&s).row(0).wrap());
+    assert!(!page(&s).row(1).wrap_continuation());
+    assert_eq!(page(&s).cells(0)[0], Cell::init('A'));
+    assert!(page(&s).cells(0)[3].is_zero());
+    s.pages.page_mut(p.node).unwrap().cells_mut(0)[3].set_wide(Wide::SpacerHead);
     s.cursor_reset_wrap();
-    assert_eq!(page(&s).get_cells(0)[3].wide(), Wide::SpacerHead);
+    assert_eq!(page(&s).cells(0)[3].wide(), Wide::SpacerHead);
 }
 
 #[test]
@@ -195,15 +195,15 @@ fn screen_wide_boundary_split_clears_only_disconnected_halves() {
         let p = pin(&s);
         {
             let page = s.pages.page_mut(p.node).unwrap();
-            page.get_row_mut(0).set_wrap(true);
-            page.get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
-            page.get_row_mut(1).set_wrap_continuation(true);
-            page.get_row_mut(1).set_wrap(true);
-            page.get_cells_mut(1)[0] = Cell::init('界');
-            page.get_cells_mut(1)[0].set_wide(Wide::Wide);
-            page.get_cells_mut(1)[1].set_wide(Wide::SpacerTail);
-            page.get_cells_mut(1)[2] = Cell::init('X');
-            page.get_cells_mut(1)[3].set_wide(Wide::SpacerHead);
+            page.row_mut(0).set_wrap(true);
+            page.cells_mut(0)[3].set_wide(Wide::SpacerHead);
+            page.row_mut(1).set_wrap_continuation(true);
+            page.row_mut(1).set_wrap(true);
+            page.cells_mut(1)[0] = Cell::init('界');
+            page.cells_mut(1)[0].set_wide(Wide::Wide);
+            page.cells_mut(1)[1].set_wide(Wide::SpacerTail);
+            page.cells_mut(1)[2] = Cell::init('X');
+            page.cells_mut(1)[3].set_wide(Wide::SpacerHead);
         }
         if cross_page {
             super::split_rows(&mut s, 1);
@@ -213,13 +213,13 @@ fn screen_wide_boundary_split_clears_only_disconnected_halves() {
         let previous = s.pages.page(p.node).unwrap();
         let current = page(&s);
         let y = u16::from(!cross_page);
-        assert_eq!(previous.get_cells(0)[3].is_zero(), boundary <= 1);
-        assert_eq!(current.get_cells(y)[0].is_zero(), boundary == 1);
-        assert_eq!(current.get_cells(y)[1].is_zero(), boundary == 1);
-        assert_eq!(current.get_cells(y)[2], Cell::init('X'));
-        assert_eq!(current.get_cells(y)[3].is_zero(), boundary == 4);
-        assert!(current.get_row(y).wrap());
-        assert!(current.get_row(y).wrap_continuation());
+        assert_eq!(previous.cells(0)[3].is_zero(), boundary <= 1);
+        assert_eq!(current.cells(y)[0].is_zero(), boundary == 1);
+        assert_eq!(current.cells(y)[1].is_zero(), boundary == 1);
+        assert_eq!(current.cells(y)[2], Cell::init('X'));
+        assert_eq!(current.cells(y)[3].is_zero(), boundary == 4);
+        assert!(current.row(y).wrap());
+        assert!(current.row(y).wrap_continuation());
     }
 }
 
@@ -233,12 +233,12 @@ fn screen_protected_clear_empty_full_and_all_protected() {
         let p = pin(&control);
         let style = control.cursor.style_id;
         let link = control.cursor.hyperlink_id;
-        for cell in control.pages.page_mut(p.node).unwrap().get_cells_mut(0) {
+        for cell in control.pages.page_mut(p.node).unwrap().cells_mut(0) {
             cell.set_protected(protected);
         }
-        let before = page(&control).get_cells(0).to_vec();
+        let before = page(&control).cells(0).to_vec();
         control.clear_unprotected_cells(p.node, 0, 0..0);
-        assert_eq!(page(&control).get_cells(0), before);
+        assert_eq!(page(&control).cells(0), before);
         control.clear_unprotected_cells(p.node, 0, 0..5);
         let expected_owners = if protected { 6 } else { 1 };
         assert_eq!(page(&control).styles.ref_count(style), expected_owners);
@@ -247,9 +247,9 @@ fn screen_protected_clear_empty_full_and_all_protected() {
             expected_owners
         );
         if protected {
-            assert_eq!(page(&control).get_cells(0), before);
+            assert_eq!(page(&control).cells(0), before);
         } else {
-            assert!(page(&control).get_cells(0).iter().all(|c| c.is_zero()));
+            assert!(page(&control).cells(0).iter().all(|c| c.is_zero()));
         }
     }
 }
@@ -277,7 +277,7 @@ fn screen_prompt_redraw_clears_with_default_background() {
     s.pages
         .page_mut(p.node)
         .unwrap()
-        .get_row_mut(0)
+        .row_mut(0)
         .set_semantic_prompt(crate::page::row::SemanticPrompt::Prompt);
     s.cursor.semantic_content = crate::page::cell::SemanticContent::Prompt;
     s.set_attribute(Attribute::Palette256Bg(7)).unwrap();
@@ -288,7 +288,7 @@ fn screen_prompt_redraw_clears_with_default_background() {
         prompt_redraw: crate::osc::semantic_prompt::Redraw::True,
     })
     .unwrap();
-    assert!(page(&s).get_cells(0).iter().all(|cell| cell.is_zero()));
+    assert!(page(&s).cells(0).iter().all(|cell| cell.is_zero()));
     assert_eq!(s.cursor.style.bg_color, Color::Palette(7));
 }
 
@@ -303,25 +303,25 @@ fn selective_clear_keeps_protected_wide_boundaries() {
             let p = pin(&s);
             {
                 let page = s.pages.page_mut(p.node).unwrap();
-                page.get_cells_mut(0)[0].set_wide(Wide::Wide);
-                page.get_cells_mut(0)[1].set_wide(Wide::SpacerTail);
-                page.get_cells_mut(0)[0].set_protected(protected);
-                page.get_cells_mut(0)[1].set_protected(protected);
+                page.cells_mut(0)[0].set_wide(Wide::Wide);
+                page.cells_mut(0)[1].set_wide(Wide::SpacerTail);
+                page.cells_mut(0)[0].set_protected(protected);
+                page.cells_mut(0)[1].set_protected(protected);
                 page.append_grapheme(crate::page::CellPosition { x: 0, y: 0 }, '\u{301}')
                     .unwrap();
             }
-            let before = page(&s).get_cells(0).to_vec();
+            let before = page(&s).cells(0).to_vec();
             let empty = range.is_empty();
             s.clear_unprotected_cells(p.node, 0, range);
             if protected || empty {
-                assert_eq!(page(&s).get_cells(0), before);
+                assert_eq!(page(&s).cells(0), before);
                 assert!(
                     page(&s)
                         .lookup_grapheme(crate::page::CellPosition { x: 0, y: 0 })
                         .is_some()
                 );
             } else {
-                assert!(page(&s).get_cells(0)[0..2].iter().all(|c| c.is_zero()));
+                assert!(page(&s).cells(0)[0..2].iter().all(|c| c.is_zero()));
                 assert!(
                     page(&s)
                         .lookup_grapheme(crate::page::CellPosition { x: 0, y: 0 })
@@ -342,7 +342,7 @@ fn selective_clear_refreshes_metadata_once() {
         let p = pin(&s);
         let stored = s.pages.page_mut(p.node).unwrap();
         for x in 0..cols {
-            stored.get_cells_mut(0)[usize::from(x)].set_protected(x % 2 == 0);
+            stored.cells_mut(0)[usize::from(x)].set_protected(x % 2 == 0);
         }
         stored
             .append_grapheme(crate::page::CellPosition { x: cols - 2, y: 0 }, '\u{301}')
@@ -358,8 +358,8 @@ fn selective_clear_refreshes_metadata_once() {
         let stored = page(&s);
         (
             crate::tests::WORK.with_borrow(|work| work.row_shift),
-            stored.get_cells(0).to_vec(),
-            *stored.get_row(0),
+            stored.cells(0).to_vec(),
+            *stored.row(0),
         )
     };
     let small = measure(8, false);
@@ -384,15 +384,15 @@ fn selective_clear_keeps_wrapped_protected_owners() {
             let p = pin(&s);
             {
                 let stored = s.pages.page_mut(p.node).unwrap();
-                stored.get_row_mut(0).set_wrap(true);
-                stored.get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
-                stored.get_cells_mut(0)[3].set_protected(protected);
-                stored.get_row_mut(1).set_wrap_continuation(true);
-                stored.get_cells_mut(1)[0] = Cell::init('中');
-                stored.get_cells_mut(1)[0].set_wide(Wide::Wide);
-                stored.get_cells_mut(1)[1].set_wide(Wide::SpacerTail);
-                stored.get_cells_mut(1)[0].set_protected(protected);
-                stored.get_cells_mut(1)[1].set_protected(protected);
+                stored.row_mut(0).set_wrap(true);
+                stored.cells_mut(0)[3].set_wide(Wide::SpacerHead);
+                stored.cells_mut(0)[3].set_protected(protected);
+                stored.row_mut(1).set_wrap_continuation(true);
+                stored.cells_mut(1)[0] = Cell::init('中');
+                stored.cells_mut(1)[0].set_wide(Wide::Wide);
+                stored.cells_mut(1)[1].set_wide(Wide::SpacerTail);
+                stored.cells_mut(1)[0].set_protected(protected);
+                stored.cells_mut(1)[1].set_protected(protected);
             }
             if cross_page {
                 super::split_rows(&mut s, 1);
@@ -401,11 +401,11 @@ fn selective_clear_keeps_wrapped_protected_owners() {
             let current = pin(&s);
             s.clear_unprotected_cells(current.node, current.y, 1..2);
             assert_eq!(
-                page(&s).get_cells(current.y)[0].codepoint(),
+                page(&s).cells(current.y)[0].codepoint(),
                 if protected { '中' } else { '\0' }
             );
             assert_eq!(
-                page(&s).get_cells(current.y)[1].wide(),
+                page(&s).cells(current.y)[1].wide(),
                 if protected {
                     Wide::SpacerTail
                 } else {
@@ -413,7 +413,7 @@ fn selective_clear_keeps_wrapped_protected_owners() {
                 }
             );
             assert_eq!(
-                s.pages.page(p.node).unwrap().get_cells(0)[3].wide(),
+                s.pages.page(p.node).unwrap().cells(0)[3].wide(),
                 if protected {
                     Wide::SpacerHead
                 } else {
@@ -433,13 +433,10 @@ fn selective_clear_retains_full_and_partial_placeholder_metadata() {
         s.pages
             .page_mut(p.node)
             .unwrap()
-            .get_row_mut(0)
+            .row_mut(0)
             .set_kitty_virtual_placeholder(true);
         s.clear_unprotected_cells(p.node, 0, range.clone());
-        assert_eq!(
-            page(&s).get_row(0).kitty_virtual_placeholder(),
-            range != (0..4)
-        );
+        assert_eq!(page(&s).row(0).kitty_virtual_placeholder(), range != (0..4));
     }
 }
 
@@ -450,12 +447,12 @@ fn boundary_cleanup_dirties_changed_spacer_row() {
         let p = pin(&s);
         {
             let page = s.pages.page_mut(p.node).unwrap();
-            page.get_row_mut(0).set_wrap(true);
-            page.get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
-            page.get_row_mut(1).set_wrap_continuation(true);
-            page.get_cells_mut(1)[0] = Cell::init('中');
-            page.get_cells_mut(1)[0].set_wide(Wide::Wide);
-            page.get_cells_mut(1)[1].set_wide(Wide::SpacerTail);
+            page.row_mut(0).set_wrap(true);
+            page.cells_mut(0)[3].set_wide(Wide::SpacerHead);
+            page.row_mut(1).set_wrap_continuation(true);
+            page.cells_mut(1)[0] = Cell::init('中');
+            page.cells_mut(1)[0].set_wide(Wide::Wide);
+            page.cells_mut(1)[1].set_wide(Wide::SpacerTail);
         }
         if cross_page {
             super::split_rows(&mut s, 1);
@@ -467,14 +464,11 @@ fn boundary_cleanup_dirties_changed_spacer_row() {
         s.pages
             .page_mut(p.node)
             .unwrap()
-            .get_row_mut(0)
+            .row_mut(0)
             .set_dirty(false);
         s.clear_unprotected_cells(current.node, current.y, 0..1);
         let previous = s.pages.page(p.node).unwrap();
-        assert_eq!(previous.get_cells(0)[3], s.blank_cell());
-        assert!(
-            previous.get_row(0).dirty(),
-            "changed spacer row must be dirty"
-        );
+        assert_eq!(previous.cells(0)[3], s.blank_cell());
+        assert!(previous.row(0).dirty(), "changed spacer row must be dirty");
     }
 }

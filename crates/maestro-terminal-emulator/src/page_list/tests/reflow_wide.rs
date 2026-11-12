@@ -11,9 +11,9 @@ use crate::page::{
 /// Write a wide cell with its following spacer.
 fn wide(list: &mut PageList, x: u16, y: u16, cp: char) {
     let page = list.page_mut(list.first).unwrap();
-    page.get_cells_mut(y)[usize::from(x)] = PackedCell::init(cp);
-    page.get_cells_mut(y)[usize::from(x)].set_wide(Wide::Wide);
-    page.get_cells_mut(y)[usize::from(x + 1)].set_wide(Wide::SpacerTail);
+    page.cells_mut(y)[usize::from(x)] = PackedCell::init(cp);
+    page.cells_mut(y)[usize::from(x)].set_wide(Wide::Wide);
+    page.cells_mut(y)[usize::from(x + 1)].set_wide(Wide::SpacerTail);
 }
 
 /// Read the width role at a retained screen coordinate.
@@ -28,9 +28,9 @@ fn history_resize_reflow_more_cols_unwrap_wide_spacer_head() {
     assert_eq!(list.total_pages(), 1);
     write(&mut list, 0, "x");
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(0).set_wrap(true);
-    page.get_row_mut(1).set_wrap_continuation(true);
-    page.get_cells_mut(0)[1].set_wide(Wide::SpacerHead);
+    page.row_mut(0).set_wrap(true);
+    page.row_mut(1).set_wrap_continuation(true);
+    page.cells_mut(0)[1].set_wide(Wide::SpacerHead);
     wide(&mut list, 0, 1, '😀');
     reflow(&mut list, 4);
     assert_eq!((list.cols(), list.total_rows()), (4, 2));
@@ -54,10 +54,10 @@ fn history_resize_reflow_more_cols_unwrap_wide_spacer_head_across_two_rows() {
     write(&mut list, 1, "x");
     let page = list.page_mut(list.first).unwrap();
     for y in 0..3 {
-        page.get_row_mut(y).set_wrap(y < 2);
-        page.get_row_mut(y).set_wrap_continuation(y > 0);
+        page.row_mut(y).set_wrap(y < 2);
+        page.row_mut(y).set_wrap_continuation(y > 0);
     }
-    page.get_cells_mut(1)[1].set_wide(Wide::SpacerHead);
+    page.cells_mut(1)[1].set_wide(Wide::SpacerHead);
     wide(&mut list, 0, 2, '😀');
     reflow(&mut list, 4);
     assert_eq!((list.cols(), list.total_rows()), (4, 3));
@@ -80,8 +80,8 @@ fn history_resize_reflow_more_cols_unwrap_still_requires_wide_spacer_head() {
     assert_eq!(list.total_pages(), 1);
     write(&mut list, 0, "xx");
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(0).set_wrap(true);
-    page.get_row_mut(1).set_wrap_continuation(true);
+    page.row_mut(0).set_wrap(true);
+    page.row_mut(1).set_wrap_continuation(true);
     wide(&mut list, 0, 1, '😀');
     reflow(&mut list, 3);
     assert_eq!((list.cols(), list.total_rows()), (3, 2));
@@ -103,9 +103,9 @@ fn history_resize_reflow_less_cols_wraps_spacer_head() {
     assert_eq!(list.total_pages(), 1);
     write(&mut list, 0, "xxx");
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(0).set_wrap(true);
-    page.get_row_mut(1).set_wrap_continuation(true);
-    page.get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
+    page.row_mut(0).set_wrap(true);
+    page.row_mut(1).set_wrap_continuation(true);
+    page.cells_mut(0)[3].set_wide(Wide::SpacerHead);
     wide(&mut list, 0, 1, '😀');
     reflow(&mut list, 3);
     assert_eq!((list.cols(), list.total_rows()), (3, 3));

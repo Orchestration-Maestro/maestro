@@ -31,7 +31,7 @@ impl ReflowCursor {
             x: origin.x,
             y: origin.y,
         };
-        let cell = source.get_cells(position.y)[usize::from(position.x)];
+        let cell = source.cells(position.y)[usize::from(position.x)];
         let cols = list.cols();
         match cell.wide() {
             Wide::SpacerHead => {
@@ -40,7 +40,7 @@ impl ReflowCursor {
             }
             Wide::Wide if cols == 1 => {
                 if let Some(page) = list.page_mut(self.pin.node) {
-                    page.get_cells_mut(self.pin.y)[0] = Cell::default();
+                    page.cells_mut(self.pin.y)[0] = Cell::default();
                 }
                 self.remap_cell(list, origin.node, position);
                 self.remap_cell(
@@ -62,7 +62,7 @@ impl ReflowCursor {
                 let mut spacer = Cell::default();
                 spacer.set_wide(Wide::SpacerHead);
                 if let Some(page) = list.page_mut(self.pin.node) {
-                    page.get_cells_mut(self.pin.y)[usize::from(self.pin.x)] = spacer;
+                    page.cells_mut(self.pin.y)[usize::from(self.pin.x)] = spacer;
                 }
                 self.forward(cols);
                 return Ok(Written::Repeat);
@@ -73,8 +73,7 @@ impl ReflowCursor {
         if cell.codepoint() == '\u{10eeee}'
             && let Some(page) = list.page_mut(self.pin.node)
         {
-            page.get_row_mut(self.pin.y)
-                .set_kitty_virtual_placeholder(true);
+            page.row_mut(self.pin.y).set_kitty_virtual_placeholder(true);
         }
         self.remap_cell(list, origin.node, position);
         self.forward(cols);
@@ -121,7 +120,7 @@ impl ReflowCursor {
                 self.move_last_row(list, PageList::resized_capacity(source, list.cols()))?;
                 continue;
             }
-            self.discard_managed(list, source.get_cells(position.y)[usize::from(position.x)]);
+            self.discard_managed(list, source.cells(position.y)[usize::from(position.x)]);
             return Ok(());
         }
     }
@@ -133,7 +132,7 @@ impl ReflowCursor {
             cell.set_content(Content::Codepoint(cell.codepoint()));
             cell.set_style_id(0);
             cell.set_hyperlink(false);
-            page.get_cells_mut(self.pin.y)[usize::from(self.pin.x)] = cell;
+            page.cells_mut(self.pin.y)[usize::from(self.pin.x)] = cell;
         }
     }
 }

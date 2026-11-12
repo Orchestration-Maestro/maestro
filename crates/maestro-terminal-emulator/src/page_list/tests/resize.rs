@@ -22,7 +22,7 @@ pub(super) fn text(list: &PageList, row: usize) -> String {
     let pin = list.pin_at_row(row, 0).unwrap();
     list.page(pin.node)
         .unwrap()
-        .get_cells(pin.y)
+        .cells(pin.y)
         .iter()
         .map(|c| c.codepoint())
         .collect()
@@ -34,7 +34,7 @@ pub(super) fn write(list: &mut PageList, row: usize, value: &str) {
     for (cell, cp) in list
         .page_mut(pin.node)
         .unwrap()
-        .get_cells_mut(pin.y)
+        .cells_mut(pin.y)
         .iter_mut()
         .zip(value.chars())
     {
@@ -80,7 +80,7 @@ pub(super) fn integrity(list: &PageList) {
         assert_eq!(node.page.size.cols, list.cols());
         assert!(node.page.size.rows > 0 && node.page.size.rows <= node.page.capacity.rows);
         for y in 0..node.page.size.rows {
-            assert_eq!(node.page.get_cells(y).len(), usize::from(list.cols()));
+            assert_eq!(node.page.cells(y).len(), usize::from(list.cols()));
         }
         count += usize::from(node.page.size.rows);
         charge += PageList::page_charge(node.page.capacity);
@@ -252,12 +252,12 @@ fn background_rows(rows: u16) -> PageList {
     write(&mut list, 0, "A");
     let page = list.page_mut(list.first).unwrap();
     for y in 1..rows {
-        page.get_cells_mut(y)[0].set_content(Content::BgColorRgb(crate::color::Rgb {
+        page.cells_mut(y)[0].set_content(Content::BgColorRgb(crate::color::Rgb {
             r: 255,
             g: 0,
             b: 0,
         }));
-        page.get_cells_mut(y)[1].set_content(Content::BgColorPalette(1));
+        page.cells_mut(y)[1].set_content(Content::BgColorPalette(1));
     }
     list
 }
@@ -323,7 +323,7 @@ fn history_resize_no_reflow_more_rows_extends_blank_lines() {
     );
     assert!(text(&list, 0).starts_with('A'));
     assert_eq!(
-        list.page(list.first).unwrap().get_cells(1)[1].content(),
+        list.page(list.first).unwrap().cells(1)[1].content(),
         Content::BgColorPalette(1)
     );
     screen_origin(&list, Tag::Active, 0);
@@ -371,7 +371,7 @@ fn history_resize_no_reflow_less_cols_clears_graphemes() {
     assert_eq!(list.page(list.first).unwrap().grapheme_count(), 0);
     width(&mut list, 10);
     assert_eq!(text(&list, 0), "abcde\0\0\0\0\0");
-    assert!(!list.page(list.first).unwrap().get_row(0).grapheme());
+    assert!(!list.page(list.first).unwrap().row(0).grapheme());
     integrity(&list);
 }
 
@@ -404,8 +404,8 @@ fn resize_failure_keeps_source_and_retained_locations() {
     let pin = list.track_pin(list.pin_at_row(1, 0).unwrap()).unwrap();
     let page = list.page_mut(node).unwrap();
     let id = page.styles.add(crate::Style::default()).unwrap();
-    page.get_cells_mut(1)[0].set_style_id(id);
-    page.get_row_mut(1).set_styled(true);
+    page.cells_mut(1)[0].set_style_id(id);
+    page.row_mut(1).set_styled(true);
     page.capacity.styles = 0;
     assert_eq!(
         list.resize(Resize {
@@ -435,15 +435,15 @@ fn history_resize_no_reflow_grow_cols_fast_path_with_spacer_head() {
     write(&mut list, 0, "x");
     let page = list.page_mut(list.first).unwrap();
     for y in 0..2 {
-        page.get_cells_mut(y)[4].set_wide(Wide::SpacerHead);
-        page.get_row_mut(y).set_wrap(true);
+        page.cells_mut(y)[4].set_wide(Wide::SpacerHead);
+        page.row_mut(y).set_wrap(true);
     }
     width(&mut list, 10);
     assert_eq!(list.cols(), 10);
     let page = list.page(list.first).unwrap();
     for y in 0..2 {
-        assert_eq!(page.get_cells(y)[4].wide(), Wide::Narrow);
-        assert!(!page.get_row(y).wrap());
+        assert_eq!(page.cells(y)[4].wide(), Wide::Narrow);
+        assert!(!page.row(y).wrap());
     }
     integrity(&list);
     spacer_growth(4, 3);
@@ -456,11 +456,11 @@ fn spacer_growth(initial: u16, target: u16) {
     width(&mut list, 2);
     write(&mut list, 0, "x");
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(0).set_wrap(true);
-    page.get_cells_mut(0)[1].set_wide(Wide::SpacerHead);
-    page.get_cells_mut(1)[0] = PackedCell::init('😀');
-    page.get_cells_mut(1)[0].set_wide(Wide::Wide);
-    page.get_cells_mut(1)[1].set_wide(Wide::SpacerTail);
+    page.row_mut(0).set_wrap(true);
+    page.cells_mut(0)[1].set_wide(Wide::SpacerHead);
+    page.cells_mut(1)[0] = PackedCell::init('😀');
+    page.cells_mut(1)[0].set_wide(Wide::Wide);
+    page.cells_mut(1)[1].set_wide(Wide::SpacerTail);
     let pin = list.track_pin(list.pin_at_row(1, 0).unwrap()).unwrap();
     width(&mut list, target);
     assert_eq!((list.cols(), list.total_rows()), (target, 3));
@@ -468,10 +468,10 @@ fn spacer_growth(initial: u16, target: u16) {
     assert_eq!(text(&list, 0), "x\0\0");
     let page = list.page(list.first).unwrap();
     for x in 0..3 {
-        assert_eq!(page.get_cells(0)[x].wide(), Wide::Narrow);
+        assert_eq!(page.cells(0)[x].wide(), Wide::Narrow);
     }
-    assert_eq!(page.get_cells(1)[0].wide(), Wide::Wide);
-    assert_eq!(page.get_cells(1)[1].wide(), Wide::SpacerTail);
+    assert_eq!(page.cells(1)[0].wide(), Wide::Wide);
+    assert_eq!(page.cells(1)[1].wide(), Wide::SpacerTail);
     assert_eq!(active(&list, pin), Some(Coordinate { x: 0, y: 1 }));
     integrity(&list);
 }
@@ -726,7 +726,7 @@ fn history_resize_no_reflow_more_cols_remaps_pins_in_backfill_path() {
             garbage: false,
         })
         .unwrap();
-    list.page_mut(original).unwrap().get_cells_mut(0)[0] = PackedCell::init('X');
+    list.page_mut(original).unwrap().cells_mut(0)[0] = PackedCell::init('X');
     width(&mut list, 6);
     let retained = *list.tracked_pin(pin).unwrap();
     assert_ne!(retained.node, original);

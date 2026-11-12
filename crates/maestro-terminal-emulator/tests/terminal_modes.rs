@@ -116,11 +116,11 @@ fn mode_report_known_dec_mode() {
         value: 1,
         ansi: false,
     };
-    let report = state.get_report(tag);
+    let report = state.report(tag);
     assert_eq!(report.state, ReportState::Reset);
     assert_eq!(report.tag, tag);
     state.set(Mode::CursorKeys, true);
-    assert_eq!(state.get_report(tag).state, ReportState::Set);
+    assert_eq!(state.report(tag).state, ReportState::Set);
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn mode_report_known_ansi_mode() {
         value: 4,
         ansi: true,
     };
-    let report = state.get_report(tag);
+    let report = state.report(tag);
     assert_eq!(report.state, ReportState::Set);
     assert_eq!(report.tag, tag);
 }
@@ -155,7 +155,7 @@ fn mode_report_unknown_mode() {
     let state = ModeState::default();
     assert_eq!(
         state
-            .get_report(ModeTag {
+            .report(ModeTag {
                 value: 9999,
                 ansi: false
             })
@@ -250,7 +250,7 @@ fn terminal_mode_reports_cover_all_response_states() {
     }
     assert_eq!(
         ModeState::default()
-            .get_report(ModeTag {
+            .report(ModeTag {
                 value: 9999,
                 ansi: true
             })

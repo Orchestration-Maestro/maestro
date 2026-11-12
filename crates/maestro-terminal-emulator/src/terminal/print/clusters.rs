@@ -15,7 +15,7 @@ impl Terminal {
         let c = &screen.cursor;
         let pin = screen.pages.tracked_pin(c.page_pin)?;
         let page = screen.pages.page(pin.node)?;
-        let under = page.get_cells(pin.y)[usize::from(c.x)];
+        let under = page.cells(pin.y)[usize::from(c.x)];
         let left = if self.modes.get(Mode::Wraparound) {
             u16::from(!c.pending_wrap)
         } else if clustered && c.x == right - 1 {
@@ -24,7 +24,7 @@ impl Terminal {
             1
         };
         let x = c.x.checked_sub(left)?;
-        if page.get_cells(pin.y)[usize::from(x)].wide() == Wide::SpacerTail {
+        if page.cells(pin.y)[usize::from(x)].wide() == Wide::SpacerTail {
             x.checked_sub(1)
         } else {
             Some(x)
@@ -48,7 +48,7 @@ impl Terminal {
             .tracked_pin(screen.cursor.page_pin)
             .ok_or(Error::InvalidNode)?;
         let page = screen.pages.page(pin.node).ok_or(Error::InvalidNode)?;
-        let cell = page.get_cells(pin.y)[usize::from(x)];
+        let cell = page.cells(pin.y)[usize::from(x)];
         let mut previous = cell.codepoint();
         if previous == '\0' {
             return Ok(false);
@@ -100,12 +100,12 @@ impl Terminal {
                 .tracked_pin(screen.cursor.page_pin)
                 .ok_or(Error::InvalidNode)?;
             let page = screen.pages.page_mut(pin.node).ok_or(Error::InvalidNode)?;
-            let cp = page.get_cells(pin.y)[usize::from(x)].codepoint();
+            let cp = page.cells(pin.y)[usize::from(x)].codepoint();
             let suffix = page.take_grapheme(CellPosition { x, y: pin.y });
             page.update_row_grapheme_flag(pin.y);
             let row_wrap = right == self.cols;
             if row_wrap {
-                page.get_row_mut(pin.y).set_wrap(true);
+                page.row_mut(pin.y).set_wrap(true);
             }
             self.print_cell(
                 '\0',
@@ -161,7 +161,7 @@ impl Terminal {
             .pages
             .page_mut(pin.node)
             .ok_or(Error::InvalidNode)?
-            .get_cells_mut(pin.y)[usize::from(x)]
+            .cells_mut(pin.y)[usize::from(x)]
         .set_wide(wide);
         Ok(())
     }

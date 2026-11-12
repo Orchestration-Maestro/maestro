@@ -10,7 +10,7 @@ fn append_chunks_track_suffix_ownership() {
         ..Capacity::default()
     });
     let position = CellPosition { x: 0, y: 0 };
-    page.get_cells_mut(0)[0] = crate::Cell::init('A');
+    page.cells_mut(0)[0] = crate::Cell::init('A');
     for _ in 0..4 {
         page.append_grapheme(position, 'B').unwrap();
     }
@@ -29,15 +29,15 @@ fn page_clone_owns_graphemes() {
         ..Capacity::default()
     });
     let position = CellPosition { x: 0, y: 0 };
-    source.get_cells_mut(0)[0] = crate::Cell::init('\t');
+    source.cells_mut(0)[0] = crate::Cell::init('\t');
     source.append_grapheme(position, '\n').unwrap();
     source.append_grapheme(position, '\u{b}').unwrap();
     let cloned = source.clone();
     source.clear_grapheme(position);
     source.update_row_grapheme_flag(0);
     assert_eq!(cloned.lookup_grapheme(position), Some(&['\n', '\u{b}'][..]));
-    assert!(cloned.get_cells(0)[0].has_grapheme());
-    assert!(cloned.get_row(0).grapheme());
+    assert!(cloned.cells(0)[0].has_grapheme());
+    assert!(cloned.row(0).grapheme());
     assert_eq!(cloned.grapheme_count(), 1);
     assert_eq!(source.grapheme_count(), 0);
 }
@@ -52,16 +52,16 @@ fn page_clone_keeps_style_values() {
     let mut style = crate::Style::default();
     style.flags.set_bold(true);
     let id = source.styles.add(style).unwrap();
-    source.get_cells_mut(0)[0] = crate::Cell::init('A');
-    source.get_cells_mut(0)[0].set_style_id(id);
-    source.get_row_mut(0).set_styled(true);
+    source.cells_mut(0)[0] = crate::Cell::init('A');
+    source.cells_mut(0)[0].set_style_id(id);
+    source.row_mut(0).set_styled(true);
     let cloned = source.clone();
-    source.get_cells_mut(0)[0].set_style_id(0);
+    source.cells_mut(0)[0].set_style_id(0);
     assert!(source.styles.release_multiple(id, 1).is_some());
     assert!(
         cloned
             .styles
-            .get(cloned.get_cells(0)[0].style_id())
+            .get(cloned.cells(0)[0].style_id())
             .flags
             .bold()
     );
@@ -77,7 +77,7 @@ fn page_copy_graphemes() {
         ..Capacity::default()
     });
     for y in 0..10 {
-        source.get_cells_mut(y)[1] = crate::Cell::init('A');
+        source.cells_mut(y)[1] = crate::Cell::init('A');
         source
             .append_grapheme(CellPosition { x: 1, y }, '\n')
             .unwrap();
@@ -90,9 +90,9 @@ fn page_copy_graphemes() {
     assert_eq!(source.grapheme_count(), 0);
     assert_eq!(destination.grapheme_count(), 10);
     for y in 0..10 {
-        assert_eq!(destination.get_cells(y)[1].codepoint(), 'A');
-        assert!(destination.get_cells(y)[1].has_grapheme());
-        assert!(destination.get_row(y).grapheme());
+        assert_eq!(destination.cells(y)[1].codepoint(), 'A');
+        assert!(destination.cells(y)[1].has_grapheme());
+        assert!(destination.row(y).grapheme());
         assert_eq!(
             destination.lookup_grapheme(CellPosition { x: 1, y }),
             Some(&['\n'][..])
@@ -109,7 +109,7 @@ fn page_copy_releases_old_graphemes() {
     });
     let mut destination = Page::init(source.capacity);
     for y in 0..10 {
-        destination.get_cells_mut(y)[1] = crate::Cell::init('A');
+        destination.cells_mut(y)[1] = crate::Cell::init('A');
         destination
             .append_grapheme(CellPosition { x: 1, y }, 'B')
             .unwrap();
@@ -117,8 +117,8 @@ fn page_copy_releases_old_graphemes() {
     destination.clone_from(&source, 0..10).unwrap();
     assert_eq!(destination.grapheme_count(), 0);
     for y in 0..10 {
-        assert_eq!(destination.get_cells(y), &[crate::Cell::default(); 10]);
-        assert!(!destination.get_row(y).grapheme());
+        assert_eq!(destination.cells(y), &[crate::Cell::default(); 10]);
+        assert!(!destination.row(y).grapheme());
     }
     assert_eq!(destination.grapheme_alloc.used_bytes(), 0);
 }
@@ -131,19 +131,19 @@ fn page_move_graphemes() {
         ..Capacity::default()
     });
     for x in 0..10 {
-        page.get_cells_mut(0)[usize::from(x)] =
+        page.cells_mut(0)[usize::from(x)] =
             crate::Cell::init(char::from_u32(u32::from(x) + 1).unwrap());
         page.append_grapheme(CellPosition { x, y: 0 }, '\n')
             .unwrap();
     }
     page.move_cells(CellPosition { x: 0, y: 0 }, CellPosition { x: 0, y: 1 }, 10);
     assert_eq!(page.grapheme_count(), 10);
-    assert_eq!(page.get_cells(0), &[crate::Cell::default(); 10]);
-    assert!(!page.get_row(0).grapheme());
-    assert!(page.get_row(1).grapheme());
+    assert_eq!(page.cells(0), &[crate::Cell::default(); 10]);
+    assert!(!page.row(0).grapheme());
+    assert!(page.row(1).grapheme());
     for x in 0..10 {
         assert_eq!(
-            page.get_cells(1)[usize::from(x)].codepoint() as u32,
+            page.cells(1)[usize::from(x)].codepoint() as u32,
             u32::from(x) + 1
         );
         assert_eq!(
@@ -163,7 +163,7 @@ fn page_copy_links_at_capacity() {
     });
     let count = u16::try_from(source.hyperlink_capacity()).unwrap();
     for x in 0..count {
-        source.get_cells_mut(0)[usize::from(x)] = crate::Cell::init('A');
+        source.cells_mut(0)[usize::from(x)] = crate::Cell::init('A');
         let id = source
             .insert_hyperlink(Hyperlink {
                 id: HyperlinkId::Implicit(1),
@@ -184,7 +184,7 @@ fn page_copy_links_at_capacity() {
             destination.hyperlink_set.get(id).uri,
             b"https://example.test"
         );
-        assert!(destination.get_cells(0)[usize::from(x)].hyperlink());
+        assert!(destination.cells(0)[usize::from(x)].hyperlink());
     }
 }
 
@@ -196,7 +196,7 @@ fn row_copy_same_page_links() {
         rows: 10,
         ..Capacity::default()
     });
-    page.get_cells_mut(0)[7] = crate::Cell::init('B');
+    page.cells_mut(0)[7] = crate::Cell::init('B');
     let id = page
         .insert_hyperlink(Hyperlink {
             id: HyperlinkId::Implicit(1),
@@ -206,9 +206,9 @@ fn row_copy_same_page_links() {
     page.set_hyperlink(CellPosition { x: 7, y: 0 }, id).unwrap();
     page.clone_partial_row_within(1, 0, 2..8).unwrap();
     assert_eq!(page.hyperlink_count(), 2);
-    assert_eq!(page.get_cells(1)[7].codepoint(), 'B');
-    assert!(page.get_cells(1)[7].hyperlink());
-    assert!(page.get_row(1).hyperlink());
+    assert_eq!(page.cells(1)[7].codepoint(), 'B');
+    assert!(page.cells(1)[7].hyperlink());
+    assert!(page.row(1).hyperlink());
     assert_eq!(page.lookup_hyperlink(CellPosition { x: 7, y: 1 }), Some(id));
 }
 
@@ -220,8 +220,8 @@ fn row_copy_omits_unselected_same_page_links() {
         rows: 10,
         ..Capacity::default()
     });
-    page.get_cells_mut(0)[3] = crate::Cell::init('C');
-    page.get_cells_mut(0)[7] = crate::Cell::init('B');
+    page.cells_mut(0)[3] = crate::Cell::init('C');
+    page.cells_mut(0)[7] = crate::Cell::init('B');
     let id = page
         .insert_hyperlink(Hyperlink {
             id: HyperlinkId::Implicit(1),
@@ -230,10 +230,10 @@ fn row_copy_omits_unselected_same_page_links() {
         .unwrap();
     page.set_hyperlink(CellPosition { x: 7, y: 0 }, id).unwrap();
     page.clone_partial_row_within(1, 0, 2..6).unwrap();
-    assert_eq!(page.get_cells(1)[3].codepoint(), 'C');
+    assert_eq!(page.cells(1)[3].codepoint(), 'C');
     assert_eq!(page.hyperlink_count(), 1);
-    assert!(!page.get_row(1).hyperlink());
-    assert!(page.get_cells(1).iter().all(|cell| !cell.hyperlink()));
+    assert!(!page.row(1).hyperlink());
+    assert!(page.cells(1).iter().all(|cell| !cell.hyperlink()));
 }
 
 #[test]
@@ -259,8 +259,8 @@ fn exact_capacity_empty_rows() {
 /// Add one cell-owned style reference and maintain its row marker.
 fn write_style(page: &mut Page, position: CellPosition, style: crate::Style) {
     let id = page.styles.add(style).unwrap();
-    page.get_cells_mut(position.y)[usize::from(position.x)].set_style_id(id);
-    page.get_row_mut(position.y).set_styled(true);
+    page.cells_mut(position.y)[usize::from(position.x)].set_style_id(id);
+    page.row_mut(position.y).set_styled(true);
 }
 
 #[test]
@@ -288,10 +288,7 @@ fn exact_capacity_unique_styles() {
     let mut copied = Page::init(exact);
     copied.clone_from(&page, 0..5).unwrap();
     assert_eq!(copied.exact_row_capacity(0..5), exact);
-    assert_eq!(
-        copied.styles.get(copied.get_cells(0)[2].style_id()),
-        &style(2)
-    );
+    assert_eq!(copied.styles.get(copied.cells(0)[2].style_id()), &style(2));
 }
 
 #[test]
@@ -311,10 +308,7 @@ fn exact_capacity_repeated_style_clones() {
     let mut copied = Page::init(capacity);
     copied.clone_from(&page, 0..1).unwrap();
     assert_eq!(copied.styles.count(), 1);
-    assert_eq!(
-        copied.styles.ref_count(copied.get_cells(0)[0].style_id()),
-        10
-    );
+    assert_eq!(copied.styles.ref_count(copied.cells(0)[0].style_id()), 10);
     assert_eq!(copied.exact_row_capacity(0..1), capacity);
 }
 
@@ -350,7 +344,7 @@ fn exact_capacity_grapheme_bytes() {
     });
     assert_eq!(page.exact_row_capacity(0..5).grapheme_bytes, 0);
     for (index, (x, y)) in [(0, 0), (1, 0), (0, 1), (0, 7)].into_iter().enumerate() {
-        page.get_cells_mut(y)[usize::from(x)] = crate::Cell::init('A');
+        page.cells_mut(y)[usize::from(x)] = crate::Cell::init('A');
         page.append_grapheme(CellPosition { x, y }, 'B').unwrap();
         assert_eq!(
             page.exact_row_capacity(0..5).grapheme_bytes,
@@ -371,7 +365,7 @@ fn exact_capacity_multi_chunk_graphemes() {
         rows: 1,
         ..Capacity::default()
     });
-    page.get_cells_mut(0)[0] = crate::Cell::init('A');
+    page.cells_mut(0)[0] = crate::Cell::init('A');
     page.set_graphemes(CellPosition { x: 0, y: 0 }, &['B', 'C', 'D', 'E', 'F', 'G'])
         .unwrap();
     let exact = page.exact_row_capacity(0..1);
@@ -484,7 +478,7 @@ fn exact_capacity_many_link_cells() {
     let mut copied = Page::init(exact);
     copied.clone_from(&page, 0..1).unwrap();
     assert_eq!(copied.hyperlink_count(), 50);
-    assert!(copied.get_cells(0).iter().all(|cell| cell.hyperlink()));
+    assert!(copied.cells(0).iter().all(|cell| cell.hyperlink()));
     assert_eq!(copied.exact_row_capacity(0..1), exact);
 }
 
@@ -610,9 +604,9 @@ fn clearing_empty_row_removes_placeholder_flag() {
         rows: 1,
         ..Capacity::default()
     });
-    page.get_row_mut(0).set_kitty_virtual_placeholder(true);
+    page.row_mut(0).set_kitty_virtual_placeholder(true);
     page.clear_cells(0, 0..2);
-    assert!(!page.get_row(0).kitty_virtual_placeholder());
+    assert!(!page.row(0).kitty_virtual_placeholder());
 }
 
 #[test]
@@ -625,7 +619,7 @@ fn storage_errors_keep_categories() {
         grapheme_bytes: 0,
         ..Capacity::default()
     });
-    no_clusters.get_cells_mut(0)[0] = crate::Cell::init('A');
+    no_clusters.cells_mut(0)[0] = crate::Cell::init('A');
     assert_eq!(
         no_clusters.set_graphemes(position, &['B']),
         Err(E::GraphemeAllocOutOfMemory)
@@ -634,19 +628,19 @@ fn storage_errors_keep_categories() {
         no_clusters.append_grapheme(position, 'B'),
         Err(E::OutOfMemory)
     );
-    assert!(!no_clusters.get_cells(0)[0].has_grapheme());
+    assert!(!no_clusters.cells(0)[0].has_grapheme());
     let mut small = Page::init(Capacity {
         grapheme_bytes: 1,
         ..no_clusters.capacity
     });
-    small.get_cells_mut(0).fill(crate::Cell::init('A'));
+    small.cells_mut(0).fill(crate::Cell::init('A'));
     small.set_graphemes(position, &['B']).unwrap();
     assert_eq!(
         small.set_graphemes(CellPosition { x: 1, y: 0 }, &['C']),
         Err(E::GraphemeMapOutOfMemory)
     );
     assert_eq!(small.grapheme_alloc.used_bytes(), 16);
-    assert!(!small.get_cells(0)[1].has_grapheme());
+    assert!(!small.cells(0)[1].has_grapheme());
     link_error_controls();
     style_copy_error_control();
     for (error, name) in [
@@ -674,7 +668,7 @@ fn style_copy_error_control() {
         rows: 1,
         ..Capacity::default()
     });
-    source.get_cells_mut(0)[0] = crate::Cell::init('A');
+    source.cells_mut(0)[0] = crate::Cell::init('A');
     write_style(
         &mut source,
         position,
@@ -692,8 +686,8 @@ fn style_copy_error_control() {
         Err(E::StyleSetOutOfMemory)
     );
     assert_eq!(destination.styles.count(), 0);
-    assert_eq!(destination.get_cells(0)[0].style_id(), 0);
-    assert!(destination.get_row(0).styled());
+    assert_eq!(destination.cells(0)[0].style_id(), 0);
+    assert!(destination.row(0).styled());
 }
 
 /// Reach insertion and row-copy link errors at their actual table owners.
@@ -747,7 +741,7 @@ fn link_error_controls() {
         Err(E::HyperlinkMapOutOfMemory)
     );
     assert_eq!(no_set.hyperlink_count(), 0);
-    assert!(!no_set.get_cells(0)[0].hyperlink());
+    assert!(!no_set.cells(0)[0].hyperlink());
 }
 
 #[test]
@@ -760,9 +754,9 @@ fn owned_style_refs_survive_swaps_and_reset() {
     let mut bold = crate::Style::default();
     bold.flags.set_bold(true);
     write_style(&mut page, CellPosition { x: 0, y: 0 }, bold);
-    let id = page.get_cells(0)[0].style_id();
+    let id = page.cells(0)[0].style_id();
     page.swap_cells(CellPosition { x: 0, y: 0 }, CellPosition { x: 1, y: 0 });
-    assert_eq!(page.get_cells(0)[1].style_id(), id);
+    assert_eq!(page.cells(0)[1].style_id(), id);
     assert_eq!(page.styles.count(), 1);
     assert_eq!(page.styles.ref_count(id), 1);
     let mut italic = crate::Style::default();
@@ -772,14 +766,14 @@ fn owned_style_refs_survive_swaps_and_reset() {
     assert_eq!(page.styles.lookup(&italic), None);
     assert_eq!(page.styles.count(), 1);
     assert_eq!(page.styles.ref_count(id), 1);
-    assert!(page.get_row(0).styled());
+    assert!(page.row(0).styled());
     page.clear_cells(0, 0..2);
     assert_eq!(page.styles.count(), 0);
-    assert!(!page.get_row(0).styled());
+    assert!(!page.row(0).styled());
     write_style(&mut page, CellPosition { x: 0, y: 0 }, bold);
     page.reinit();
     assert_eq!(page.styles.count(), 0);
-    assert_eq!(page.get_cells(0)[1].style_id(), 0);
+    assert_eq!(page.cells(0)[1].style_id(), 0);
 }
 
 #[test]
@@ -804,21 +798,21 @@ fn copy_cleared_link_marker_rows(rows: u16) {
             uri: vec![b'x'],
         },
     );
-    source.get_cells_mut(0)[0].set_hyperlink(false);
+    source.cells_mut(0)[0].set_hyperlink(false);
     assert!(
         source
             .lookup_hyperlink(CellPosition { x: 0, y: 0 })
             .is_some()
     );
-    assert!(!source.get_cells(0)[0].hyperlink());
+    assert!(!source.cells(0)[0].hyperlink());
     let mut destination = Page::init(source.capacity);
     destination.clone_from(&source, 0..1).unwrap();
     assert_eq!(destination.hyperlink_count(), 0);
-    assert!(!destination.get_cells(0)[0].hyperlink());
+    assert!(!destination.cells(0)[0].hyperlink());
     if rows > 1 {
         source.clone_partial_row_within(1, 0, 0..1).unwrap();
         assert_eq!(source.hyperlink_count(), 1);
-        assert!(!source.get_cells(1)[0].hyperlink());
+        assert!(!source.cells(1)[0].hyperlink());
     }
 }
 
@@ -833,7 +827,7 @@ fn same_page_copy_refusal_preserves_link_owners() {
         });
         let amount = page.hyperlink_capacity() - usize::from(!full);
         for x in 0..u16::try_from(amount).unwrap() {
-            page.get_cells_mut(0)[usize::from(x)] = crate::Cell::init('A');
+            page.cells_mut(0)[usize::from(x)] = crate::Cell::init('A');
             write_link(
                 &mut page,
                 CellPosition { x, y: 0 },
@@ -849,12 +843,12 @@ fn same_page_copy_refusal_preserves_link_owners() {
         if full {
             assert_eq!(copied, Err(super::StorageError::HyperlinkMapOutOfMemory));
             assert_eq!(page.hyperlink_set.ref_count(id), before);
-            assert!(!page.get_cells(1)[0].hyperlink());
+            assert!(!page.cells(1)[0].hyperlink());
         } else {
             copied.unwrap();
             assert_eq!(page.hyperlink_set.ref_count(id), before + 1);
-            assert_eq!(page.get_cells(1)[0].codepoint(), 'A');
-            assert!(page.get_cells(1)[0].hyperlink());
+            assert_eq!(page.cells(1)[0].codepoint(), 'A');
+            assert!(page.cells(1)[0].hyperlink());
         }
         page.clear_cells(0, 0..120);
         assert_eq!(page.hyperlink_count(), usize::from(!full));

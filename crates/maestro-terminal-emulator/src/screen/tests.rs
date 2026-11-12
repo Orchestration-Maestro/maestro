@@ -40,13 +40,13 @@ fn write_row(screen: &mut Screen, text: &str) {
         let pin = pin(screen);
         let style_id = screen.cursor.style_id;
         let page = screen.pages.page_mut(pin.node).unwrap();
-        let cell = &mut page.get_cells_mut(pin.y)[usize::from(x)];
+        let cell = &mut page.cells_mut(pin.y)[usize::from(x)];
         assert_eq!(cell.style_id(), 0);
         cell.set_content(Content::Codepoint(ch));
         cell.set_style_id(style_id);
         if style_id != 0 {
             page.styles.use_multiple(style_id, 1);
-            page.get_row_mut(pin.y).set_styled(true);
+            page.row_mut(pin.y).set_styled(true);
         }
         if screen.cursor.hyperlink_id != 0 {
             screen.cursor_set_hyperlink().unwrap();

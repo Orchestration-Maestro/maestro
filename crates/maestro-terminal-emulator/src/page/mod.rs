@@ -124,13 +124,13 @@ impl Page {
 
     /// Borrow row metadata at the supplied row index.
     #[must_use]
-    pub fn get_row(&self, y: u16) -> &Row {
+    pub fn row(&self, y: u16) -> &Row {
         &self.rows[usize::from(y)]
     }
 
     /// Borrow the addressable cells of one row.
     #[must_use]
-    pub fn get_cells(&self, y: u16) -> &[Cell] {
+    pub fn cells(&self, y: u16) -> &[Cell] {
         let start = self.row_offsets[usize::from(y)];
         &self.cells[start..start + usize::from(self.size.cols)]
     }
@@ -162,18 +162,18 @@ pub struct CellPosition {
 
 impl Page {
     /// Mutably borrow one row's metadata.
-    pub fn get_row_mut(&mut self, y: u16) -> &mut Row {
+    pub fn row_mut(&mut self, y: u16) -> &mut Row {
         &mut self.rows[usize::from(y)]
     }
 
     /// Mutably borrow one row's cells; callers maintain managed-table ownership.
-    pub fn get_cells_mut(&mut self, y: u16) -> &mut [Cell] {
+    pub fn cells_mut(&mut self, y: u16) -> &mut [Cell] {
         let start = self.row_offsets[usize::from(y)];
         &mut self.cells[start..start + usize::from(self.size.cols)]
     }
 
     /// Mutably borrow a cell together with its row metadata.
-    pub fn get_row_and_cell(&mut self, position: CellPosition) -> (&mut Row, &mut Cell) {
+    pub fn row_and_cell(&mut self, position: CellPosition) -> (&mut Row, &mut Cell) {
         let index = self.cell_index(position);
         (
             &mut self.rows[usize::from(position.y)],

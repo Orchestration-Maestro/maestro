@@ -37,7 +37,7 @@ impl Screen {
             self.clear_cells(node, y, 0..cols);
         }
         if let Some(page) = self.pages.page_mut(node) {
-            let row = page.get_row_mut(y);
+            let row = page.row_mut(y);
             if !protected {
                 *row = Row::default();
             }
@@ -58,7 +58,7 @@ impl Screen {
         let blank = self.blank_cell();
         if let Some(page) = self.pages.page_mut(node) {
             page.clear_cells(y, columns.clone());
-            page.get_cells_mut(y)[usize::from(columns.start)..usize::from(columns.end)].fill(blank);
+            page.cells_mut(y)[usize::from(columns.start)..usize::from(columns.end)].fill(blank);
         }
     }
 
@@ -75,7 +75,7 @@ impl Screen {
         let Some(page) = self.pages.page(node) else {
             return;
         };
-        let cells = page.get_cells(y);
+        let cells = page.cells(y);
         let start = columns.start
             - u16::from(
                 columns.start > 0 && cells[usize::from(columns.start)].wide() == Wide::SpacerTail,
@@ -86,7 +86,7 @@ impl Screen {
                     && cells[usize::from(columns.end - 1)].wide() == Wide::Wide,
             );
         let clear_previous = start == 0
-            && page.get_row(y).wrap_continuation()
+            && page.row(y).wrap_continuation()
             && cells[0].wide() == Wide::Wide
             && !cells[0].protected();
         if clear_previous {
@@ -106,7 +106,7 @@ impl Screen {
             let Some(page) = self.pages.page(node) else {
                 return;
             };
-            let cells = page.get_cells(y);
+            let cells = page.cells(y);
             while x < end && cells[usize::from(x)].protected() {
                 x += 1;
             }
@@ -118,9 +118,9 @@ impl Screen {
                 return;
             };
             page.release_cells(y, start..x);
-            page.get_cells_mut(y)[usize::from(start)..usize::from(x)].fill(blank);
+            page.cells_mut(y)[usize::from(start)..usize::from(x)].fill(blank);
             if start == 0 && x == page.size.cols {
-                page.get_row_mut(y).set_kitty_virtual_placeholder(false);
+                page.row_mut(y).set_kitty_virtual_placeholder(false);
             }
         }
         if let Some(page) = self.pages.page_mut(node) {
@@ -164,8 +164,8 @@ impl Screen {
         };
         let cols = page.size.cols;
         assert!(x <= cols);
-        let row = page.get_row(pin.y);
-        let cells = page.get_cells(pin.y);
+        let row = page.row(pin.y);
+        let cells = page.cells(pin.y);
         if x == cols {
             if row.wrap() {
                 self.clear_spacer_head(pin);
@@ -188,10 +188,10 @@ impl Screen {
             return;
         };
         let last = page.size.cols - 1;
-        if page.get_cells(pin.y)[usize::from(last)].wide() == Wide::SpacerHead {
+        if page.cells(pin.y)[usize::from(last)].wide() == Wide::SpacerHead {
             self.clear_cells(pin.node, pin.y, last..last + 1);
             if let Some(page) = self.pages.page_mut(pin.node) {
-                page.get_row_mut(pin.y).set_dirty(true);
+                page.row_mut(pin.y).set_dirty(true);
             }
         }
     }

@@ -32,7 +32,7 @@ impl Terminal {
         if screen
             .pages
             .page(pin.node)
-            .is_some_and(|p| p.get_cells(pin.y)[usize::from(right)].wide() == Wide::Wide)
+            .is_some_and(|p| p.cells(pin.y)[usize::from(right)].wide() == Wide::Wide)
         {
             screen.clear_cells(pin.node, pin.y, right..right + 2);
         }
@@ -42,7 +42,7 @@ impl Terminal {
             && screen
                 .pages
                 .page(pin.node)
-                .is_some_and(|p| p.get_cells(pin.y)[usize::from(end - 1)].wide() == Wide::Wide)
+                .is_some_and(|p| p.cells(pin.y)[usize::from(end - 1)].wide() == Wide::Wide)
         {
             screen.clear_cells(pin.node, pin.y, end - 1..end + 1);
         }
@@ -210,28 +210,28 @@ impl Terminal {
             .ok_or(Error::InvalidNode)?;
         let last = page.size.cols - 1;
         if (r.right == self.cols - 1 || r.left < 2)
-            && page.get_cells(pin.y)[usize::from(last)].wide() == Wide::SpacerHead
+            && page.cells(pin.y)[usize::from(last)].wide() == Wide::SpacerHead
         {
-            page.get_cells_mut(pin.y)[usize::from(last)].set_wide(Wide::Narrow);
+            page.cells_mut(pin.y)[usize::from(last)].set_wide(Wide::Narrow);
         }
-        let left_tail = page.get_cells(pin.y)[usize::from(r.left)].wide() == Wide::SpacerTail;
-        let right_wide = page.get_cells(pin.y)[usize::from(r.right)].wide() == Wide::Wide;
+        let left_tail = page.cells(pin.y)[usize::from(r.left)].wide() == Wide::SpacerTail;
+        let right_wide = page.cells(pin.y)[usize::from(r.right)].wide() == Wide::Wide;
         for x in [left_tail.then(|| r.left - 1), right_wide.then_some(r.right)]
             .into_iter()
             .flatten()
         {
-            if page.get_cells(pin.y)[usize::from(x)].has_grapheme() {
+            if page.cells(pin.y)[usize::from(x)].has_grapheme() {
                 page.clear_grapheme(CellPosition { x, y: pin.y });
                 page.update_row_grapheme_flag(pin.y);
             }
-            let cells = page.get_cells_mut(pin.y);
+            let cells = page.cells_mut(pin.y);
             cells[usize::from(x)].set_content(Content::Codepoint('\0'));
             cells[usize::from(x)].set_wide(Wide::Narrow);
             cells[usize::from(x + 1)].set_wide(Wide::Narrow);
         }
         if r.left == 0 && r.right == self.cols - 1 {
-            page.get_row_mut(pin.y).set_wrap(false);
-            page.get_row_mut(pin.y).set_wrap_continuation(false);
+            page.row_mut(pin.y).set_wrap(false);
+            page.row_mut(pin.y).set_wrap_continuation(false);
         }
         Ok(())
     }

@@ -69,7 +69,7 @@ impl PageList {
 
     /// Count continuations only when the cursor is in the active region.
     fn wrapped_above(&self, pin: Pin) -> usize {
-        let active = self.get_top_left(Tag::Active);
+        let active = self.top_left(Tag::Active);
         if pin.before(self, active) {
             return 0;
         }
@@ -189,7 +189,7 @@ impl ReflowCursor {
         origin: Pin,
         cursor: Option<TrackedPin>,
     ) -> Result<(), StorageError> {
-        let row = *source.get_row(origin.y);
+        let row = *source.row(origin.y);
         let len = self.meaningful_columns(list, source, origin, cursor);
         if len == 0 {
             if !row.wrap_continuation() {
@@ -212,7 +212,7 @@ impl ReflowCursor {
             self.new_rows -= 1;
         }
         if let Some(page) = list.page_mut(self.pin.node) {
-            page.get_row_mut(self.pin.y)
+            page.row_mut(self.pin.y)
                 .set_semantic_prompt(row.semantic_prompt());
         }
         let mut x = 0;
@@ -242,10 +242,10 @@ impl ReflowCursor {
         origin: Pin,
         cursor: Option<TrackedPin>,
     ) -> u16 {
-        let row = *source.get_row(origin.y);
+        let row = *source.row(origin.y);
         let mut len = source.size.cols;
         if !row.wrap() {
-            while len > 0 && source.get_cells(origin.y)[usize::from(len - 1)].is_empty() {
+            while len > 0 && source.cells(origin.y)[usize::from(len - 1)].is_empty() {
                 len -= 1;
             }
             if len == 0 && row.semantic_prompt() != SemanticPrompt::None {
@@ -284,11 +284,11 @@ impl ReflowCursor {
         prompt: SemanticPrompt,
     ) {
         if let Some(page) = list.page_mut(self.pin.node) {
-            page.get_row_mut(self.pin.y).set_wrap(true);
+            page.row_mut(self.pin.y).set_wrap(true);
         }
         self.next_row(list, cap);
         if let Some(page) = list.page_mut(self.pin.node) {
-            let destination = page.get_row_mut(self.pin.y);
+            let destination = page.row_mut(self.pin.y);
             destination.set_semantic_prompt(prompt);
             destination.set_wrap_continuation(true);
         }

@@ -23,7 +23,7 @@ fn crossing(cols: u16, extra: usize) -> PageList {
     for y in [boundary, boundary + 1] {
         write(&mut list, y, &line);
         let pin = list.pin_at_row(y, 0).unwrap();
-        let row = list.page_mut(pin.node).unwrap().get_row_mut(pin.y);
+        let row = list.page_mut(pin.node).unwrap().row_mut(pin.y);
         row.set_wrap(y == boundary);
         row.set_wrap_continuation(y != boundary);
     }
@@ -113,7 +113,7 @@ fn history_resize_reflow_more_cols_creates_multiple_pages() {
         let row = list
             .page_mut(list.first)
             .unwrap()
-            .get_row_mut(u16::try_from(y).unwrap());
+            .row_mut(u16::try_from(y).unwrap());
         row.set_wrap(y % 2 == 0);
         row.set_wrap_continuation(y % 2 == 1);
     }

@@ -93,7 +93,7 @@ impl Handler<'_> {
 
     /// Reuse the mode owner's namespace and state encoding.
     fn mode_report(&mut self, tag: crate::modes::ModeTag) {
-        let report = self.terminal.modes.get_report(tag);
+        let report = self.terminal.modes.report(tag);
         let _ = report.encode(&mut self.terminal.effects.pty_reply);
     }
 }

@@ -165,7 +165,7 @@ fn reset_clears_metadata_and_retains_size_and_colors() {
         (8, 3, 96, 60)
     );
     assert_eq!(t.colors, colors);
-    assert_eq!((t.get_pwd(), t.get_title()), (None, None));
+    assert_eq!((t.pwd(), t.title()), (None, None));
     assert_eq!(t.previous_char, None);
     assert!(t.flags.dirty.clear);
     assert_eq!(

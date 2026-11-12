@@ -120,9 +120,9 @@ fn add_style(list: &mut PageList, x: u16, green: u8) {
     loop {
         let page = list.page_mut(list.first).unwrap();
         if let Ok(id) = page.styles.add(value) {
-            page.get_cells_mut(0)[usize::from(x)] = PackedCell::init('P');
-            page.get_cells_mut(0)[usize::from(x)].set_style_id(id);
-            page.get_row_mut(0).set_styled(true);
+            page.cells_mut(0)[usize::from(x)] = PackedCell::init('P');
+            page.cells_mut(0)[usize::from(x)].set_style_id(id);
+            page.row_mut(0).set_styled(true);
             break;
         }
         list.increase_capacity(list.first, Some(IncreaseCapacity::Styles))
@@ -139,7 +139,7 @@ fn write(list: &mut PageList, y: u16, sequence: usize) {
         }))
         .unwrap();
     let page = list.page_mut(pin.node).unwrap();
-    page.get_cells_mut(pin.y)[0] =
+    page.cells_mut(pin.y)[0] =
         PackedCell::init(char::from(b'A' + u8::try_from(sequence % 26).unwrap()));
     if !sequence.is_multiple_of(8) {
         return;
@@ -151,13 +151,13 @@ fn write(list: &mut PageList, y: u16, sequence: usize) {
             ..Style::default()
         })
         .unwrap();
-    page.get_cells_mut(pin.y)[1] = PackedCell::init('s');
-    page.get_cells_mut(pin.y)[1].set_style_id(id);
-    page.get_row_mut(pin.y).set_styled(true);
-    page.get_cells_mut(pin.y)[2] = PackedCell::init('e');
+    page.cells_mut(pin.y)[1] = PackedCell::init('s');
+    page.cells_mut(pin.y)[1].set_style_id(id);
+    page.row_mut(pin.y).set_styled(true);
+    page.cells_mut(pin.y)[2] = PackedCell::init('e');
     page.append_grapheme(CellPosition { x: 2, y: pin.y }, '\u{301}')
         .unwrap();
-    page.get_cells_mut(pin.y)[3] = PackedCell::init('l');
+    page.cells_mut(pin.y)[3] = PackedCell::init('l');
     let link = page
         .insert_hyperlink(crate::links::Hyperlink {
             id: crate::links::HyperlinkId::Implicit(0),
@@ -178,7 +178,7 @@ fn visible(list: &PageList, appended: usize) {
     for y in 0..24 {
         let pin = rows.next(list).unwrap();
         let page = list.page(pin.node).unwrap();
-        for (x, &cell) in page.get_cells(pin.y).iter().enumerate() {
+        for (x, &cell) in page.cells(pin.y).iter().enumerate() {
             let managed = (appended + y).is_multiple_of(8);
             if x >= 4 || (!managed && x > 0) {
                 assert_eq!(cell, PackedCell::default());
@@ -201,7 +201,7 @@ fn visible(list: &PageList, appended: usize) {
     }
     assert!(rows.next(list).is_none());
     assert_eq!(
-        list.point_from_pin(Tag::Active, list.get_top_left(Tag::Active)),
+        list.point_from_pin(Tag::Active, list.top_left(Tag::Active)),
         Some(Point::Active(Coordinate::default()))
     );
 }

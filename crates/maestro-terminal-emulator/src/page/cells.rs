@@ -9,10 +9,10 @@ impl Page {
         self.release_cells(y, columns.clone());
         if columns.end - columns.start == self.size.cols {
             let has_placeholder = self
-                .get_cells(y)
+                .cells(y)
                 .iter()
                 .any(|cell| cell.codepoint() == '\u{10eeee}');
-            let row = self.get_row_mut(y);
+            let row = self.row_mut(y);
             row.set_grapheme(false);
             row.set_hyperlink(false);
             row.set_styled(false);
@@ -24,7 +24,7 @@ impl Page {
             self.update_row_styled_flag(y);
             self.update_row_hyperlink_flag(y);
         }
-        self.get_cells_mut(y)[usize::from(columns.start)..usize::from(columns.end)]
+        self.cells_mut(y)[usize::from(columns.start)..usize::from(columns.end)]
             .fill(Cell::default());
     }
 
@@ -34,7 +34,7 @@ impl Page {
             let position = CellPosition { x, y };
             self.clear_grapheme(position);
             self.clear_hyperlink(position);
-            let style = self.get_cells(y)[usize::from(x)].style_id();
+            let style = self.cells(y)[usize::from(x)].style_id();
             if style != 0 {
                 self.styles.release_multiple(style, 1);
             }
@@ -50,8 +50,8 @@ impl Page {
 
     /// Clear the styled flag when no addressable cell has a style ID.
     pub(crate) fn update_row_styled_flag(&mut self, y: u16) {
-        if !self.get_cells(y).iter().any(|cell| cell.has_styling()) {
-            self.get_row_mut(y).set_styled(false);
+        if !self.cells(y).iter().any(|cell| cell.has_styling()) {
+            self.row_mut(y).set_styled(false);
         }
     }
 }
@@ -60,7 +60,7 @@ impl Page {
     /// Move selected cells, releasing overwritten content and zeroing the source.
     pub fn move_cells(&mut self, src: CellPosition, dst: CellPosition, len: u16) {
         self.clear_cells(dst.y, dst.x..dst.x + len);
-        let managed = self.get_row(src.y).managed_memory();
+        let managed = self.row(src.y).managed_memory();
         for offset in 0..len {
             let source = CellPosition {
                 x: src.x + offset,
@@ -75,23 +75,22 @@ impl Page {
             self.cells[index] = cell;
             if cell.has_grapheme() {
                 self.move_grapheme(source, destination);
-                self.get_row_mut(dst.y).set_grapheme(true);
+                self.row_mut(dst.y).set_grapheme(true);
             }
             if let Some(id) = self.hyperlink_map.remove(&self.cell_index(source)) {
                 self.hyperlink_map.insert(index, id);
-                self.get_row_mut(dst.y).set_hyperlink(true);
+                self.row_mut(dst.y).set_hyperlink(true);
             }
             if managed && cell.codepoint() == '\u{10eeee}' {
-                self.get_row_mut(dst.y).set_kitty_virtual_placeholder(true);
+                self.row_mut(dst.y).set_kitty_virtual_placeholder(true);
             }
             if cell.has_styling() {
-                self.get_row_mut(dst.y).set_styled(true);
+                self.row_mut(dst.y).set_styled(true);
             }
         }
-        self.get_cells_mut(src.y)[usize::from(src.x)..usize::from(src.x + len)]
-            .fill(Cell::default());
+        self.cells_mut(src.y)[usize::from(src.x)..usize::from(src.x + len)].fill(Cell::default());
         if len == self.size.cols {
-            let row = self.get_row_mut(src.y);
+            let row = self.row_mut(src.y);
             row.set_grapheme(false);
             row.set_hyperlink(false);
             row.set_styled(false);

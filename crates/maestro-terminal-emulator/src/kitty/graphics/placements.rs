@@ -226,7 +226,7 @@ impl Projection {
     ) -> Vec<KittyImagePlacement> {
         let pages = &screen.pages;
         let storage = &screen.kitty_images;
-        let start = pages.get_top_left(Tag::Viewport);
+        let start = pages.top_left(Tag::Viewport);
         let limit = start.down(pages, usize::from(pages.rows() - 1));
         let mut iterator = super::unicode::placement_iterator(start, limit);
         let mut result = Vec::new();

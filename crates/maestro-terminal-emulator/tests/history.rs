@@ -115,18 +115,18 @@ fn pin_handles_reject_stale_foreign_and_released_keys() {
 /// Replaced and removed page slots never revive an old key.
 fn check_page_key_replacement(list: &mut maestro_terminal_emulator::PageList) {
     use maestro_terminal_emulator::point::Tag;
-    let pin = list.get_top_left(Tag::Screen);
+    let pin = list.top_left(Tag::Screen);
     let replacement = list.increase_capacity(pin.node, None).unwrap();
     assert_ne!(pin.node, replacement);
     assert!(!list.node_is_valid(pin.node));
     assert!(pin.row_and_cell(list).is_none());
     let split = list.pin(Point::Screen(Coordinate { x: 0, y: 1 })).unwrap();
     list.split(split).unwrap();
-    let removed = list.get_top_left(Tag::Screen).node;
+    let removed = list.top_left(Tag::Screen).node;
     list.grow();
     list.erase_history(None);
     assert!(!list.node_is_valid(removed));
-    let live = list.get_top_left(Tag::Screen);
+    let live = list.top_left(Tag::Screen);
     list.increase_capacity(live.node, None).unwrap();
     assert!(!list.node_is_valid(removed));
     assert!(!list.node_is_valid(pin.node));
@@ -254,7 +254,7 @@ fn mutable_iteration_reuses_the_owned_page() {
     list.split(split).unwrap();
     for y in 0..2 {
         let pin = list.pin(Point::Screen(Coordinate { x: 0, y })).unwrap();
-        list.page_mut(pin.node).unwrap().get_cells_mut(pin.y)[0].set_content(
+        list.page_mut(pin.node).unwrap().cells_mut(pin.y)[0].set_content(
             maestro_terminal_emulator::page::cell::Content::Codepoint(if y == 0 {
                 'A'
             } else {
@@ -270,7 +270,7 @@ fn mutable_iteration_reuses_the_owned_page() {
     let mut visited = Vec::new();
     while let Some(chunk) = iterator.next(&list) {
         let page = list.page_mut(chunk.node).unwrap();
-        visited.push((chunk.node, page.get_cells(chunk.start)[0].codepoint()));
+        visited.push((chunk.node, page.cells(chunk.start)[0].codepoint()));
         for y in chunk.start..chunk.end {
             page.clear_cells(y, 0..page.size.cols);
         }
@@ -301,26 +301,26 @@ fn pin_dirty_marks_keep_page_and_row_flags_independent() {
         for row_dirty in [false, true] {
             let page = list.page_mut(pin.node).unwrap();
             page.dirty = page_dirty;
-            page.get_row_mut(0).set_dirty(row_dirty);
+            page.row_mut(0).set_dirty(row_dirty);
             assert_eq!(pin.is_dirty(&list), Some(page_dirty || row_dirty));
         }
     }
     let page = list.page_mut(pin.node).unwrap();
     page.dirty = false;
-    page.get_row_mut(0).set_dirty(false);
+    page.row_mut(0).set_dirty(false);
     pin.mark_dirty(&mut list);
     let page = list.page(pin.node).unwrap();
     assert!(!page.dirty);
-    assert!(page.get_row(0).dirty());
-    assert!(!page.get_row(1).dirty());
+    assert!(page.row(0).dirty());
+    assert!(!page.row(1).dirty());
     list.reset();
     assert_eq!(pin.is_dirty(&list), None);
     let clean = list.pin(Point::Screen(Coordinate::default())).unwrap();
     assert_eq!(clean.is_dirty(&list), Some(false));
     let page = list.page_mut(clean.node).unwrap();
-    page.get_cells_mut(0)[0].set_content(
-        maestro_terminal_emulator::page::cell::Content::Codepoint('e'),
-    );
+    page.cells_mut(0)[0].set_content(maestro_terminal_emulator::page::cell::Content::Codepoint(
+        'e',
+    ));
     page.append_grapheme(
         maestro_terminal_emulator::page::CellPosition { x: 0, y: 0 },
         '\u{301}',
@@ -355,7 +355,7 @@ fn tracked_pin_edits_are_visible_after_list_changes() {
     use maestro_terminal_emulator::point::Tag;
     let mut list = history_list(5, 3);
     let other = history_list(5, 3);
-    let origin = list.get_top_left(Tag::Screen);
+    let origin = list.top_left(Tag::Screen);
     let released = list.track_pin(origin).unwrap();
     let retained = list.track_pin(origin).unwrap();
     list.untrack_pin(released);
@@ -519,7 +519,7 @@ fn scrollbar_pruning() {
             std::num::NonZeroU16::new(24).unwrap(),
             Some(802_816),
         );
-        let first = list.get_top_left(Tag::Screen).node;
+        let first = list.top_left(Tag::Screen).node;
         let rows = list.page(first).unwrap().capacity.rows;
         for _ in 24..usize::from(rows) * 2 {
             list.grow();
@@ -563,7 +563,7 @@ fn assert_initial_capacity(cols: u16, rows: u16, capacity_rows: u16) {
         NonZeroU16::new(rows).unwrap(),
         Some(0),
     );
-    let origin = list.get_top_left(maestro_terminal_emulator::point::Tag::Screen);
+    let origin = list.top_left(maestro_terminal_emulator::point::Tag::Screen);
     let capacity = Capacity {
         cols,
         rows: capacity_rows,

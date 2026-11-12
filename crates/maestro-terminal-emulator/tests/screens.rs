@@ -208,7 +208,7 @@ fn write_cell(screen: &mut Screen, ch: char) {
     screen.clear_cells(pin.node, pin.y, pin.x..pin.x + 1);
     assert_eq!(screen.cursor.style_id, 0);
     let page = screen.pages.page_mut(pin.node).unwrap();
-    let cell = &mut page.get_cells_mut(pin.y)[usize::from(pin.x)];
+    let cell = &mut page.cells_mut(pin.y)[usize::from(pin.x)];
     *cell = Cell::init(ch);
     cell.set_protected(screen.cursor.protected);
     if screen.cursor.hyperlink_id != 0 {
@@ -503,7 +503,7 @@ fn screen_scrolling_moves_viewport() {
     assert_eq!(contents(&s, Tag::Viewport), "2EFGH\n3IJKL\n1ABCD");
     assert_eq!(
         s.pages
-            .point_from_pin(Tag::Screen, s.pages.get_top_left(Tag::Viewport)),
+            .point_from_pin(Tag::Screen, s.pages.top_left(Tag::Viewport)),
         Some(Point::Screen(Coordinate { x: 0, y: 1 }))
     );
 }
@@ -521,7 +521,7 @@ fn screen_scrolling_when_viewport_is_pruned() {
     write_text(&mut s, "1ABCD\n2EFGH\n3IJKL");
     assert_eq!(
         s.pages
-            .point_from_pin(Tag::Screen, s.pages.get_top_left(Tag::Viewport)),
+            .point_from_pin(Tag::Screen, s.pages.top_left(Tag::Viewport)),
         Some(Point::Screen(Coordinate::default()))
     );
 }
@@ -782,7 +782,7 @@ fn check_scroll_above(mut s: Screen, text: &str, expected: &str) {
         );
     }
     let current = *s.pages.tracked_pin(s.cursor.page_pin).unwrap();
-    for cell in s.pages.page(current.node).unwrap().get_cells(current.y) {
+    for cell in s.pages.page(current.node).unwrap().cells(current.y) {
         assert_eq!(
             cell.content(),
             maestro_terminal_emulator::page::cell::Content::BgColorRgb(

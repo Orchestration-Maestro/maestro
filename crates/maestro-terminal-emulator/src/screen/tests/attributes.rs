@@ -537,7 +537,7 @@ fn screen_cursor_scroll_region_up_with_styled_erased_row() {
     let page = page(&s);
     for (y, expected) in ["2EFGH", "3IJKL", "     "].into_iter().enumerate() {
         let actual: String = page
-            .get_cells(u16::try_from(y).unwrap())
+            .cells(u16::try_from(y).unwrap())
             .iter()
             .map(|c| if c.has_text() { c.codepoint() } else { ' ' })
             .collect();
@@ -568,7 +568,7 @@ fn screen_storage_copy_errors_remain_typed_and_keep_partial_state() {
         assert_eq!(s.pages.total_rows(), before + usize::from(above));
         let partial = s.pages.page(destination).unwrap();
         assert_eq!(
-            partial.get_cells(u16::from(above))[0].codepoint(),
+            partial.cells(u16::from(above))[0].codepoint(),
             if above { 'A' } else { 'B' }
         );
         assert_eq!(s.pages.page(destination).unwrap().styles.count(), 0);
@@ -586,8 +586,8 @@ fn replace_without_style_capacity(s: &mut Screen, node: crate::page_list::NodeId
     let rows = s.pages.page(node).unwrap().size.rows;
     let mut replacement = crate::Page::init(capacity);
     replacement.size.rows = rows;
-    replacement.get_cells_mut(0)[0] = crate::Cell::init('A');
-    replacement.get_cells_mut(1)[0] = crate::Cell::init('B');
+    replacement.cells_mut(0)[0] = crate::Cell::init('A');
+    replacement.cells_mut(1)[0] = crate::Cell::init('B');
     *s.pages.page_mut(node).unwrap() = replacement;
 }
 
@@ -614,7 +614,7 @@ fn screen_scroll_above_retains_managed_rows_across_pages() {
         s.cursor_absolute(0, cursor_row);
         s.cursor_scroll_above().unwrap();
         assert_eq!((s.cursor.x, s.cursor.y), (0, cursor_row));
-        assert_eq!(page(&s).get_cells(super::pin(&s).y)[0].codepoint(), '\0');
+        assert_eq!(page(&s).cells(super::pin(&s).y)[0].codepoint(), '\0');
         s.end_hyperlink();
         s.set_attribute(Attribute::Unset).unwrap();
         for node in [first, second] {
@@ -634,7 +634,7 @@ fn screen_scroll_above_retains_managed_rows_across_pages() {
 fn assert_reset_usable(s: &mut Screen) {
     s.reset();
     write_row(s, "RESET");
-    assert_eq!(page(s).get_cells(0)[0], crate::Cell::init('R'));
+    assert_eq!(page(s).cells(0)[0], crate::Cell::init('R'));
     assert_eq!((s.cursor.x, s.cursor.y), (4, 0));
 }
 
@@ -650,15 +650,13 @@ fn screen_region_scroll_retains_style_for_following_write() {
     s.set_attribute(Attribute::Bold).unwrap();
     s.cursor_scroll_region_up(2).unwrap();
     write_row(&mut s, "X");
-    assert_eq!(page(&s).get_cells(0)[0].codepoint(), 'X');
+    assert_eq!(page(&s).cells(0)[0].codepoint(), 'X');
     assert_eq!(page(&s).styles.count(), 1);
     assert_eq!(page(&s).styles.ref_count(s.cursor.style_id), 2);
-    assert_eq!(page(&s).get_cells(0)[0].style_id(), s.cursor.style_id);
+    assert_eq!(page(&s).cells(0)[0].style_id(), s.cursor.style_id);
     s.set_attribute(Attribute::Unset).unwrap();
     assert_eq!(
-        page(&s)
-            .styles
-            .ref_count(page(&s).get_cells(0)[0].style_id()),
+        page(&s).styles.ref_count(page(&s).cells(0)[0].style_id()),
         1
     );
 }

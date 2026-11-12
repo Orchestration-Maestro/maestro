@@ -62,13 +62,13 @@ impl RenderRow<'_> {
 impl RowData {
     /// Rebuild one dirty row, consuming its source flag before copying metadata.
     pub fn update(&mut self, page: &mut crate::page::Page, y: u16, force: bool) -> bool {
-        if !force && !page.get_row(y).dirty() {
+        if !force && !page.row(y).dirty() {
             return false;
         }
-        page.get_row_mut(y).set_dirty(false);
-        self.raw = *page.get_row(y);
+        page.row_mut(y).set_dirty(false);
+        self.raw = *page.row(y);
         self.cells.clear();
-        for (x, raw) in (0..page.size.cols).zip(page.get_cells(y).iter().copied()) {
+        for (x, raw) in (0..page.size.cols).zip(page.cells(y).iter().copied()) {
             self.cells
                 .push(CellData::new(page, crate::page::CellPosition { x, y }, raw));
         }

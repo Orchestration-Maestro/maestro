@@ -20,7 +20,7 @@ fn page_output(cols: u16, text: &str, opts: Options<'_>) -> String {
     let page = pages
         .page(
             pages
-                .get_top_left(maestro_terminal_emulator::point::Tag::Screen)
+                .top_left(maestro_terminal_emulator::point::Tag::Screen)
                 .node,
         )
         .unwrap();
@@ -153,7 +153,7 @@ fn pagelist_vt_spanning_two_pages() {
     let mut terminal = terminal(80, "");
     let list = &terminal.screens.active().pages;
     let rows = list
-        .page(list.get_top_left(Tag::Screen).node)
+        .page(list.top_left(Tag::Screen).node)
         .unwrap()
         .capacity
         .rows;
@@ -166,12 +166,7 @@ fn pagelist_vt_spanning_two_pages() {
         &mut maestro_terminal_emulator::stream_terminal::Handler::new(&mut terminal),
     );
     assert_ne!(
-        terminal
-            .screens
-            .active()
-            .pages
-            .get_top_left(Tag::Screen)
-            .node,
+        terminal.screens.active().pages.top_left(Tag::Screen).node,
         terminal
             .screens
             .active()

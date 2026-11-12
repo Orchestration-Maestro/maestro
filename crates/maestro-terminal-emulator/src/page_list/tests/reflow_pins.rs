@@ -12,7 +12,7 @@ fn wrapped_screen(third: bool) -> PageList {
     for y in 0..if third { 3 } else { 2 } {
         write(&mut list, y, "\0\u{1}");
         let page = list.page_mut(list.first).unwrap();
-        let row = page.get_row_mut(u16::try_from(y).unwrap());
+        let row = page.row_mut(u16::try_from(y).unwrap());
         row.set_wrap(y == 0 || (third && y == 1));
         row.set_wrap_continuation(y > 0);
     }
@@ -63,16 +63,16 @@ fn history_resize_reflow_more_cols_no_reflow_preserves_semantic_prompt() {
     assert_eq!(list.total_pages(), 1);
     list.page_mut(list.first)
         .unwrap()
-        .get_row_mut(1)
+        .row_mut(1)
         .set_semantic_prompt(SemanticPrompt::Prompt);
     reflow(&mut list, 4);
     assert_eq!((list.cols(), list.total_rows()), (4, 4));
     assert_eq!(
-        list.page(list.first).unwrap().get_row(1).semantic_prompt(),
+        list.page(list.first).unwrap().row(1).semantic_prompt(),
         SemanticPrompt::Prompt
     );
     assert_eq!(
-        list.page(list.first).unwrap().get_row(0).semantic_prompt(),
+        list.page(list.first).unwrap().row(0).semantic_prompt(),
         SemanticPrompt::None
     );
     integrity(&list);
@@ -96,7 +96,7 @@ fn history_resize_reflow_less_cols_wrapped_rows() {
     assert_eq!(
         list.point_from_pin(
             crate::point::Tag::Screen,
-            list.get_top_left(crate::point::Tag::Active)
+            list.top_left(crate::point::Tag::Active)
         ),
         Some(Point::Screen(Coordinate { x: 0, y: 2 }))
     );

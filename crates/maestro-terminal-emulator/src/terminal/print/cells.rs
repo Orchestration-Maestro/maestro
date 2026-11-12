@@ -25,7 +25,7 @@ impl Terminal {
             .ok_or(Error::InvalidNode)?;
         let position = CellPosition { x: pin.x, y: pin.y };
         let page = screen.pages.page_mut(pin.node).ok_or(Error::InvalidNode)?;
-        let old = page.get_cells(pin.y)[usize::from(pin.x)];
+        let old = page.cells(pin.y)[usize::from(pin.x)];
         if old.has_grapheme() {
             page.clear_grapheme(position);
             page.update_row_grapheme_flag(pin.y);
@@ -46,12 +46,12 @@ impl Terminal {
         cell.set_style_id(screen.cursor.style_id);
         cell.set_protected(protected);
         cell.set_semantic_content(screen.cursor.semantic_content);
-        page.get_cells_mut(pin.y)[usize::from(pin.x)] = cell;
+        page.cells_mut(pin.y)[usize::from(pin.x)] = cell;
         if cell.has_styling() {
-            page.get_row_mut(pin.y).set_styled(true);
+            page.row_mut(pin.y).set_styled(true);
         }
         if cp == '\u{10eeee}' {
-            page.get_row_mut(pin.y).set_kitty_virtual_placeholder(true);
+            page.row_mut(pin.y).set_kitty_virtual_placeholder(true);
         }
         if screen.cursor.hyperlink_id != 0 {
             screen.cursor_set_hyperlink()?;

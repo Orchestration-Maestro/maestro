@@ -17,7 +17,7 @@ fn history_page_list() {
         garbage: false,
     };
     assert_eq!(list.tracked_pin(list.viewport_pin), Some(&origin));
-    assert_eq!(list.get_top_left(Tag::Active), origin);
+    assert_eq!(list.top_left(Tag::Active), origin);
     assert_eq!(
         list.scrollbar(),
         Scrollbar {
@@ -102,7 +102,7 @@ fn history_point_from_pin_active_from_prior_page() {
         Some(Point::Active(Coordinate { x: 2, y: 0 }))
     );
     assert_eq!(
-        list.point_from_pin(Tag::Active, list.get_top_left(Tag::Screen)),
+        list.point_from_pin(Tag::Active, list.top_left(Tag::Screen)),
         None
     );
 }
@@ -126,7 +126,7 @@ fn history_point_from_pin_traverse_pages() {
         Some(Point::Screen(Coordinate { x: 2, y }))
     );
     assert_eq!(
-        list.point_from_pin(Tag::Active, list.get_top_left(Tag::Screen)),
+        list.point_from_pin(Tag::Active, list.top_left(Tag::Screen)),
         None
     );
 }
@@ -170,7 +170,7 @@ fn history_point_from_pin_rejects_overflowing_screen_coordinate() {
     assert!(list.pin_is_valid(pin));
     assert_eq!(list.point_from_pin(Tag::Screen, pin), None);
     assert_eq!(
-        list.point_from_pin(Tag::Screen, list.get_top_left(Tag::Screen)),
+        list.point_from_pin(Tag::Screen, list.top_left(Tag::Screen)),
         Some(Point::Screen(Coordinate::default()))
     );
 }

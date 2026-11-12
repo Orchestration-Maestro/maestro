@@ -263,7 +263,7 @@ impl PageList {
         }
         let tag = point.tag();
         let mut pin = self
-            .get_top_left(tag)
+            .top_left(tag)
             .down(self, usize::try_from(coord.y).ok()?)?;
         pin.x = coord.x;
         self.pin_is_valid(pin).then_some(pin)
@@ -317,7 +317,7 @@ impl PageList {
     pub(crate) fn track_origin(&mut self) -> TrackedPin {
         TrackedPin(
             self.tracked
-                .insert(self.get_top_left(crate::point::Tag::Active)),
+                .insert(self.top_left(crate::point::Tag::Active)),
         )
     }
 

@@ -163,7 +163,7 @@ impl PageList {
             page.clear_cells(y, 0..page.size.cols);
         }
         for y in chunk.start..end {
-            page.get_row_mut(y).set_dirty(true);
+            page.row_mut(y).set_dirty(true);
         }
         page.size.rows = end;
         for pin in self

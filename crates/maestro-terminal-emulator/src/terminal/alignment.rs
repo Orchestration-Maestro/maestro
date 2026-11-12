@@ -42,7 +42,7 @@ impl Terminal {
                 .ok_or(IncreaseCapacityError::InvalidNode)?;
             let mut cell = Cell::init('E');
             cell.set_style_id(screen.cursor.style_id);
-            page.get_cells_mut(pin.y).fill(cell);
+            page.cells_mut(pin.y).fill(cell);
             #[cfg(test)]
             {
                 crate::tests::WORK
@@ -51,7 +51,7 @@ impl Terminal {
             if screen.cursor.style_id != 0 {
                 page.styles
                     .use_multiple(screen.cursor.style_id, page.size.cols);
-                page.get_row_mut(pin.y).set_styled(true);
+                page.row_mut(pin.y).set_styled(true);
             }
             screen.cursor_mark_dirty();
             if screen.cursor.y == screen.pages.rows() - 1 {

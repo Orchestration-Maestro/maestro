@@ -140,7 +140,7 @@ impl Screen {
         let coordinate = if let Some(point) = self.pages.point_from_pin(Tag::Active, pin) {
             point.coord()
         } else {
-            pin = self.pages.get_top_left(Tag::Active);
+            pin = self.pages.top_left(Tag::Active);
             if let Some(current) = self.pages.tracked_pin_mut(self.cursor.page_pin) {
                 *current = pin;
             }

@@ -11,7 +11,7 @@ fn history_reset() {
     assert_eq!(list.viewport, Viewport::Active);
     assert_eq!(list.total_rows(), 24);
     assert_eq!(
-        list.get_top_left(crate::point::Tag::Active),
+        list.top_left(crate::point::Tag::Active),
         Pin {
             node: list.first,
             x: 0,
@@ -28,7 +28,7 @@ fn history_reset_invalidates_stale_untracked_refs_even_if_node_memory_is_reused(
     let mut list = screen(80, 24);
     let mut stale = Vec::new();
     for _ in 0..16 {
-        stale.push(list.get_top_left(crate::point::Tag::Active));
+        stale.push(list.top_left(crate::point::Tag::Active));
         list.reset();
         assert!(list.node_is_valid(list.first));
         for pin in &stale {
@@ -88,7 +88,7 @@ fn history_clears_history() {
     assert_eq!(list.total_rows(), 24);
     assert_eq!(list.history_rows(), 0);
     assert_eq!(
-        list.get_top_left(crate::point::Tag::Active),
+        list.top_left(crate::point::Tag::Active),
         Pin {
             node: list.first,
             x: 0,

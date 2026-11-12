@@ -74,7 +74,7 @@ fn split_keeps_untracked_bounds_and_remaps_retained_row() {
     for (y, value) in ['A', 'B', 'C'].into_iter().enumerate() {
         list.page_mut(original)
             .unwrap()
-            .get_cells_mut(u16::try_from(y).unwrap())[0]
+            .cells_mut(u16::try_from(y).unwrap())[0]
             .set_content(crate::page::cell::Content::Codepoint(value));
     }
     let split = list.pin(Point::Screen(Coordinate { x: 0, y: 1 })).unwrap();
@@ -82,16 +82,13 @@ fn split_keeps_untracked_bounds_and_remaps_retained_row() {
     list.split(split).unwrap();
     assert_eq!((list.total_rows(), list.total_pages()), (3, 2));
     assert_eq!(list.page(original).unwrap().size.rows, 1);
-    assert_eq!(
-        list.page(original).unwrap().get_cells(0)[0].codepoint(),
-        'A'
-    );
+    assert_eq!(list.page(original).unwrap().cells(0)[0].codepoint(), 'A');
     let retained = *list.tracked_pin(handle).unwrap();
     assert_eq!((retained.x, retained.y), (0, 0));
     assert_ne!(retained.node, original);
     assert_eq!(retained.row_and_cell(&list).unwrap().1.codepoint(), 'B');
     assert_eq!(
-        list.page(retained.node).unwrap().get_cells(1)[0].codepoint(),
+        list.page(retained.node).unwrap().cells(1)[0].codepoint(),
         'C'
     );
     assert!(list.node_is_valid(original));
@@ -138,7 +135,7 @@ fn active_projection_keeps_viewport_and_cell_coordinates() {
     let three = NonZeroU16::new(3).unwrap();
     let mut list = PageList::init(three, three, None);
     assert!(list.grow().is_none());
-    let active = list.get_top_left(crate::point::Tag::Active);
+    let active = list.top_left(crate::point::Tag::Active);
     assert_eq!((active.x, active.y), (0, 1));
     assert_eq!(
         list.pin(Point::Viewport(Coordinate::default())),
@@ -343,10 +340,7 @@ fn pin_views_preserve_cell_domains() {
         Content::BgColorPalette(8)
     );
     pin.cells_mut(&mut list, CellSubset::Right).unwrap()[1].set_content(Content::Codepoint('Z'));
-    assert_eq!(
-        list.page(pin.node).unwrap().get_cells(0)[2].codepoint(),
-        'Z'
-    );
+    assert_eq!(list.page(pin.node).unwrap().cells(0)[2].codepoint(), 'Z');
     assert!(pin.row_and_cell(&list).unwrap().0.wrap());
     assert_eq!(pin.row_and_cell(&list).unwrap().1.codepoint(), 'e');
     assert_eq!(pin.hyperlink_uri(&list), Some(&[b'x', 0xff, 0][..]));
@@ -373,7 +367,7 @@ fn populate_pin_views(list: &mut PageList, pin: Pin, style: crate::Style) {
     };
     let page = list.page_mut(pin.node).unwrap();
     let id = page.styles.add(style).unwrap();
-    page.get_cells_mut(0)[1].set_style_id(id);
+    page.cells_mut(0)[1].set_style_id(id);
     page.append_grapheme(CellPosition { x: 1, y: 0 }, '\u{301}')
         .unwrap();
     let link = page
@@ -384,7 +378,7 @@ fn populate_pin_views(list: &mut PageList, pin: Pin, style: crate::Style) {
         .unwrap();
     page.set_hyperlink(CellPosition { x: 1, y: 0 }, link)
         .unwrap();
-    page.get_cells_mut(0)[2].set_content(Content::BgColorPalette(8));
+    page.cells_mut(0)[2].set_content(Content::BgColorPalette(8));
 }
 
 #[test]
@@ -406,8 +400,8 @@ fn history_increase_capacity_to_increase_styles() {
     page.dirty = true;
     let old_capacity = page.capacity.styles;
     let id = page.styles.add(style).unwrap();
-    page.get_cells_mut(0)[0].set_style_id(id);
-    page.get_cells_mut(0)[0].set_content(Content::Codepoint('a'));
+    page.cells_mut(0)[0].set_style_id(id);
+    page.cells_mut(0)[0].set_content(Content::Codepoint('a'));
     page.append_grapheme(CellPosition { x: 0, y: 0 }, '\u{301}')
         .unwrap();
     let new = list
@@ -558,7 +552,7 @@ fn prompt_list() -> PageList {
         (8, PromptContinuation),
         (12, PromptContinuation),
     ] {
-        page.get_row_mut(y).set_semantic_prompt(role);
+        page.row_mut(y).set_semantic_prompt(role);
     }
     list
 }
@@ -606,14 +600,14 @@ fn history_prompt_iterator_right_down_continuation_at_start() {
     let mut source = resize::screen(2, 20);
     assert_eq!(source.first, source.last);
     let page = source.page_mut(source.first).unwrap();
-    page.get_row_mut(0).set_semantic_prompt(PromptContinuation);
-    page.get_row_mut(1).set_semantic_prompt(PromptContinuation);
-    page.get_row_mut(5).set_semantic_prompt(Prompt);
+    page.row_mut(0).set_semantic_prompt(PromptContinuation);
+    page.row_mut(1).set_semantic_prompt(PromptContinuation);
+    page.row_mut(5).set_semantic_prompt(Prompt);
     assert_eq!(prompt_rows(&source, Direction::RightDown, 0, None), [0, 5]);
     let mut list = prompt_list();
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(0).set_semantic_prompt(PromptContinuation);
-    page.get_row_mut(1).set_semantic_prompt(PromptContinuation);
+    page.row_mut(0).set_semantic_prompt(PromptContinuation);
+    page.row_mut(1).set_semantic_prompt(PromptContinuation);
     assert_eq!(
         prompt_rows(&list, Direction::RightDown, 0, None),
         [0, 3, 6, 12]
@@ -626,9 +620,9 @@ fn history_prompt_iterator_right_down_with_prompt_before_continuation() {
     let mut list = resize::screen(2, 20);
     assert_eq!(list.first, list.last);
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(2).set_semantic_prompt(Prompt);
-    page.get_row_mut(3).set_semantic_prompt(PromptContinuation);
-    page.get_row_mut(4).set_semantic_prompt(PromptContinuation);
+    page.row_mut(2).set_semantic_prompt(Prompt);
+    page.row_mut(3).set_semantic_prompt(PromptContinuation);
+    page.row_mut(4).set_semantic_prompt(PromptContinuation);
     assert_eq!(prompt_rows(&list, Direction::RightDown, 3, None), [3]);
     assert_eq!(
         prompt_rows(&prompt_list(), Direction::RightDown, 7, None),
@@ -642,8 +636,8 @@ fn history_prompt_iterator_right_down_limit_inclusive() {
     let mut list = resize::screen(2, 20);
     assert_eq!(list.first, list.last);
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(5).set_semantic_prompt(Prompt);
-    page.get_row_mut(10).set_semantic_prompt(Prompt);
+    page.row_mut(5).set_semantic_prompt(Prompt);
+    page.row_mut(10).set_semantic_prompt(Prompt);
     assert_eq!(prompt_rows(&list, Direction::RightDown, 0, Some(5)), [5]);
     assert_eq!(
         prompt_rows(&prompt_list(), Direction::RightDown, 0, Some(6)),
@@ -673,8 +667,8 @@ fn history_prompt_iterator_left_up_limit_inclusive() {
     );
     assert_eq!(list.first, list.last);
     let page = list.page_mut(list.first).unwrap();
-    page.get_row_mut(5).set_semantic_prompt(Prompt);
-    page.get_row_mut(10).set_semantic_prompt(Prompt);
+    page.row_mut(5).set_semantic_prompt(Prompt);
+    page.row_mut(10).set_semantic_prompt(Prompt);
     assert_eq!(prompt_rows(&list, Direction::LeftUp, 10, Some(15)), [10]);
 }
 
@@ -730,7 +724,7 @@ fn prompt_reverse_default_boundary_ignores_columns() {
     let mut list = PageList::init(nz(2), nz(20), None);
     list.page_mut(list.first)
         .unwrap()
-        .get_row_mut(3)
+        .row_mut(3)
         .set_semantic_prompt(SemanticPrompt::Prompt);
     assert!(prompt_rows(&list, Direction::LeftUp, 5, None).is_empty());
     let start = list.pin_at_row(19, 1).unwrap();
@@ -752,12 +746,12 @@ fn prompt_reverse_pruned_primary_returns_first_retained_continuation() {
     for y in 1..4 {
         list.page_mut(list.first)
             .unwrap()
-            .get_row_mut(y)
+            .row_mut(y)
             .set_semantic_prompt(SemanticPrompt::PromptContinuation);
     }
     list.page_mut(list.first)
         .unwrap()
-        .get_row_mut(0)
+        .row_mut(0)
         .set_semantic_prompt(SemanticPrompt::Prompt);
     list.erase_history(None);
     let start = list.pin_at_row(2, 1).unwrap();

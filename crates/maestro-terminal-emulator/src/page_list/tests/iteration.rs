@@ -48,7 +48,7 @@ fn history_page_iterator_history_two_pages() {
         &list,
         list.first,
         0,
-        list.get_top_left(crate::point::Tag::Active).y,
+        list.top_left(crate::point::Tag::Active).y,
     );
     assert!(it.next(&list).is_none());
 }
@@ -94,7 +94,7 @@ fn history_page_iterator_reverse_history_two_pages() {
         &list,
         list.first,
         0,
-        list.get_top_left(crate::point::Tag::Active).y,
+        list.top_left(crate::point::Tag::Active).y,
     );
     assert!(it.next(&list).is_none());
 }
@@ -102,7 +102,7 @@ fn history_page_iterator_reverse_history_two_pages() {
 #[test]
 fn history_page_iterator_reverse_count_includes_row_zero() {
     let list = screen(2, 2);
-    let pin = list.get_top_left(crate::point::Tag::Screen);
+    let pin = list.top_left(crate::point::Tag::Screen);
     let mut it = pin.page_iterator(Direction::LeftUp, Some(pin));
     chunk(&mut it, &list, list.first, 0, 1);
     assert!(it.next(&list).is_none());
@@ -169,7 +169,7 @@ fn iteration_work(rows: u16) -> [usize; 4] {
         let pin = list.pin_at_row(usize::from(y), 0).unwrap();
         list.split(pin).unwrap();
     }
-    let origin = list.get_top_left(crate::point::Tag::Screen);
+    let origin = list.top_left(crate::point::Tag::Screen);
     crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     let mut pages = list.page_iterator(
         Direction::RightDown,
@@ -182,7 +182,7 @@ fn iteration_work(rows: u16) -> [usize; 4] {
         let page = list.page(chunk.node).unwrap();
         for y in chunk.start..chunk.end {
             row_count += 1;
-            cell_count += page.get_cells(y).len();
+            cell_count += page.cells(y).len();
         }
     }
     let indexed = crate::tests::WORK
@@ -347,8 +347,8 @@ fn reverse_rotation_work(rows: u16, history: u16) -> (usize, usize) {
 fn work_observations_keep_arena_owners_separate() {
     let mut list = screen(5, 3);
     let other = screen(5, 3);
-    let origin = list.get_top_left(crate::point::Tag::Screen);
-    let foreign = other.get_top_left(crate::point::Tag::Screen);
+    let origin = list.top_left(crate::point::Tag::Screen);
+    let foreign = other.top_left(crate::point::Tag::Screen);
     let tracked = list.track_pin(origin).unwrap();
     crate::tests::WORK.with_borrow_mut(|work| work.queries.clear());
     assert!(list.page(origin.node).is_some());

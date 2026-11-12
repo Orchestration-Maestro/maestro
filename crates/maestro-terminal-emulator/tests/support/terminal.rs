@@ -47,7 +47,7 @@ pub(crate) fn assert_text(t: &Terminal, expected: &str) {
             .pin(Point::Active(Coordinate { x: 0, y }))
             .unwrap();
         let page = screen.pages.page(pin.node).unwrap();
-        for (x, cell) in page.get_cells(pin.y).iter().enumerate() {
+        for (x, cell) in page.cells(pin.y).iter().enumerate() {
             if matches!(cell.wide(), Wide::SpacerTail | Wide::SpacerHead) {
                 continue;
             }

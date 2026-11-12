@@ -47,7 +47,7 @@ impl PageFormatter<'_> {
         if self.opts.unwrap
             && !self.rectangle
             && end_y < size.rows - 1
-            && self.page.get_cells(end_y)[usize::from(end_x)].wide() == Wide::SpacerHead
+            && self.page.cells(end_y)[usize::from(end_x)].wide() == Wide::SpacerHead
         {
             end_y += 1;
             end_x = 0;
@@ -71,7 +71,7 @@ impl PageFormatter<'_> {
             0
         };
         if start > 0 {
-            match self.page.get_cells(y)[usize::from(start)].wide() {
+            match self.page.cells(y)[usize::from(start)].wide() {
                 Wide::SpacerTail => start -= 1,
                 Wide::SpacerHead => return None,
                 Wide::Narrow | Wide::Wide => {}
@@ -92,7 +92,7 @@ impl PageFormatter<'_> {
         let Some(columns) = self.columns(y, end) else {
             return Ok(());
         };
-        let cells = self.page.get_cells(y);
+        let cells = self.page.cells(y);
         if !cells[usize::from(columns.start)..usize::from(columns.end)]
             .iter()
             .any(|cell| {
@@ -114,7 +114,7 @@ impl PageFormatter<'_> {
                 "\n"
             })?;
         }
-        let row = self.page.get_row(y);
+        let row = self.page.row(y);
         state.rows = usize::from(!row.wrap() || !self.opts.unwrap);
         if !row.wrap_continuation() || !self.opts.unwrap {
             state.cells = 0;
@@ -150,7 +150,7 @@ impl PageFormatter<'_> {
         state: &mut TrailingState,
         style: &mut Style,
     ) -> fmt::Result {
-        let cell = self.page.get_cells(position.y)[usize::from(position.x)];
+        let cell = self.page.cells(position.y)[usize::from(position.x)];
         if matches!(cell.wide(), Wide::SpacerHead | Wide::SpacerTail) {
             return Ok(());
         }

@@ -105,7 +105,7 @@ impl Page {
     pub fn update_row_grapheme_flag(&mut self, y: u16) {
         #[cfg(test)]
         let mut visits = 0;
-        let has_grapheme = self.get_cells(y).iter().any(|cell| {
+        let has_grapheme = self.cells(y).iter().any(|cell| {
             #[cfg(test)]
             {
                 visits += 1;

@@ -169,7 +169,7 @@ impl PageList {
                 break;
             };
             let y = page.size.rows - 1;
-            if Cell::has_text_any(page.get_cells(y))
+            if Cell::has_text_any(page.cells(y))
                 || self
                     .tracked
                     .iter()
@@ -193,9 +193,8 @@ impl PageList {
         let source = self.nodes.get(key).ok_or(StorageError::OutOfMemory)?;
         let old_cols = source.page.size.cols;
         if source.page.capacity.cols >= cols
-            && (0..source.page.size.rows).all(|y| {
-                source.page.get_cells(y)[usize::from(old_cols - 1)].wide() != Wide::SpacerHead
-            })
+            && (0..source.page.size.rows)
+                .all(|y| source.page.cells(y)[usize::from(old_cols - 1)].wide() != Wide::SpacerHead)
         {
             if let Some(page) = self.page_mut(key) {
                 page.size.cols = cols;

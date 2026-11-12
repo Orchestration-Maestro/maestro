@@ -135,7 +135,7 @@ fn terminal_grapheme_growth_retains_cursor_references() {
     while page.append_grapheme(position, '\u{301}').is_ok() {
         count += 1;
     }
-    page.get_row_mut(initial.y).set_dirty(false);
+    page.row_mut(initial.y).set_dirty(false);
     t.print('\u{301}').unwrap();
     assert!(dirty(&t, 0));
     let screen = t.screens.active();
@@ -151,11 +151,8 @@ fn terminal_grapheme_growth_retains_cursor_references() {
             .unwrap(),
         vec!['\u{301}'; count + 1]
     );
-    assert_eq!(page.get_cells(pin.y)[0].codepoint(), 'o');
-    assert_eq!(
-        page.get_row(pin.y).grapheme(),
-        cell(&t, 0, 0).has_grapheme()
-    );
+    assert_eq!(page.cells(pin.y)[0].codepoint(), 'o');
+    assert_eq!(page.row(pin.y).grapheme(), cell(&t, 0, 0).has_grapheme());
     assert_cursor_references(screen, &expected);
 }
 
@@ -431,7 +428,7 @@ fn row_shifts_retain_traversal_across_destination_growth() {
     for insert in [false, true] {
         let mut t = Terminal::new(600, 100, 0).unwrap();
         let pages = &t.screens.active().pages;
-        let origin = pages.get_top_left(crate::point::Tag::Active);
+        let origin = pages.top_left(crate::point::Tag::Active);
         let boundary = (2..98)
             .find(|y| origin.down(pages, *y).unwrap().y == 0)
             .unwrap();
@@ -446,7 +443,7 @@ fn row_shifts_retain_traversal_across_destination_growth() {
         }
         let pages = &t.screens.active().pages;
         let old = pages
-            .get_top_left(crate::point::Tag::Active)
+            .top_left(crate::point::Tag::Active)
             .down(pages, destination)
             .unwrap()
             .node;
@@ -472,14 +469,14 @@ fn row_shifts_retain_traversal_across_destination_growth() {
             .unwrap();
         let page = pages.page(pin.node).unwrap();
         for x in 0..600 {
-            assert_eq!(page.get_cells(pin.y)[usize::from(x)].codepoint(), 'a');
+            assert_eq!(page.cells(pin.y)[usize::from(x)].codepoint(), 'a');
             assert_eq!(
                 page.lookup_grapheme(crate::page::CellPosition { x, y: pin.y }),
                 Some(&['\u{301}'][..])
             );
             assert!(
                 page.styles
-                    .get(page.get_cells(pin.y)[usize::from(x)].style_id())
+                    .get(page.cells(pin.y)[usize::from(x)].style_id())
                     .flags
                     .bold()
             );

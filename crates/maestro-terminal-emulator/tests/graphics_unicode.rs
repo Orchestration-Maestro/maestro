@@ -12,7 +12,7 @@ fn placeholders_continue_implicit_columns_and_split_explicit_gaps() {
         .print_string("ABC\u{10eeee}\u{305}\u{305}\u{10eeee}\u{10eeee}\u{305}\u{310}Z")
         .unwrap();
     let pages = &terminal.screens.active().pages;
-    let mut iter = placement_iterator(pages.get_top_left(Tag::Viewport), None);
+    let mut iter = placement_iterator(pages.top_left(Tag::Viewport), None);
     let first = iter.next(pages).unwrap();
     assert_eq!(
         (first.pin.x, first.row, first.col, first.width),
@@ -29,7 +29,7 @@ fn runs(text: &str) -> Vec<maestro_terminal_emulator::kitty::graphics::unicode::
     terminal.modes.set(Mode::GraphemeCluster, true);
     terminal.print_string(text).unwrap();
     let pages = &terminal.screens.active().pages;
-    let mut iter = placement_iterator(pages.get_top_left(Tag::Viewport), None);
+    let mut iter = placement_iterator(pages.top_left(Tag::Viewport), None);
     std::iter::from_fn(|| iter.next(pages)).collect()
 }
 
@@ -89,7 +89,7 @@ fn placeholder_colors_encode_image_high_bits_and_placement_identity() {
             .print_string(&format!("\u{10eeee}{suffix}"))
             .unwrap();
         let pages = &terminal.screens.active().pages;
-        let mut iter = placement_iterator(pages.get_top_left(Tag::Viewport), None);
+        let mut iter = placement_iterator(pages.top_left(Tag::Viewport), None);
         let p = iter.next(pages).unwrap();
         assert_eq!(
             (p.image_id, p.placement_id, p.row, p.col),
@@ -115,7 +115,7 @@ fn placeholder_runs_remain_row_local_and_respect_the_inclusive_row_limit() {
     let mut terminal = Terminal::new(5, 5, 0).unwrap();
     terminal.print_string("\u{10eeee}\r\n\u{10eeee}").unwrap();
     let pages = &terminal.screens.active().pages;
-    let origin = pages.get_top_left(Tag::Viewport);
+    let origin = pages.top_left(Tag::Viewport);
     let mut iter = placement_iterator(origin, Some(origin));
     assert_eq!(iter.next(pages).unwrap().width, 1);
     assert!(iter.next(pages).is_none());
@@ -152,7 +152,7 @@ fn placeholder_runs_split_on_foreground_or_underline_changes() {
         terminal.print_string("\u{10eeee}").unwrap();
     }
     let pages = &terminal.screens.active().pages;
-    let mut iter = placement_iterator(pages.get_top_left(Tag::Viewport), None);
+    let mut iter = placement_iterator(pages.top_left(Tag::Viewport), None);
     for expected in [(42, 0), (43, 0), (43, 7)] {
         let run = iter.next(pages).unwrap();
         assert_eq!((run.image_id, run.placement_id), expected);
