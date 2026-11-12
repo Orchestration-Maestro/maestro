@@ -60,7 +60,7 @@ The initial record is the current session header, with `type: "session"`,
 `version`, `id`, `timestamp` and `cwd`; a fork can also carry `parentSession`.
 New sessions use format version 3. The timestamp is text and the directory is
 the session's working directory. See the [header format](sessions/session_format.md#header)
-and its [record owner](../crates/maestro-entry/src/session_manager.rs).
+and its [record owner](../crates/maestro-request/src/entry/session_manager.rs).
 
 For example, the controlled run began with these three complete records:
 

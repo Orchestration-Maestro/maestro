@@ -3914,9 +3914,9 @@ dependencies = [
  "maestro-listeners",
  "maestro-lock",
  "maestro-models",
+ "maestro-request",
  "maestro-test-process",
  "maestro-text",
- "maestro-tool",
  "serde",
  "serde_json",
  "tokio",
@@ -4271,17 +4271,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-entry"
-version = "0.1.0"
-dependencies = [
- "indexmap 2.14.2",
- "maestro-dependencies",
- "maestro-request",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "maestro-export"
 version = "0.1.0"
 dependencies = [
@@ -4336,17 +4325,14 @@ dependencies = [
  "httpdate",
  "indexmap 2.14.2",
  "maestro-dependencies",
- "maestro-entry",
  "maestro-extensions-wasmtime",
  "maestro-json",
  "maestro-listeners",
  "maestro-models",
- "maestro-package",
  "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
- "maestro-tool",
  "num-traits",
  "regex",
  "ryu-js",
@@ -4549,27 +4535,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-package"
-version = "0.1.0"
-dependencies = [
- "maestro-dependencies",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
  "futures-util",
  "maestro-dependencies",
  "maestro-json",
- "maestro-package",
  "maestro-packages",
  "maestro-path",
  "maestro-pattern",
  "maestro-process",
  "maestro-realpath",
+ "maestro-request",
  "maestro-resources",
  "maestro-settings",
  "maestro-test-directory",
@@ -4735,7 +4712,6 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-agent",
  "maestro-dependencies",
- "maestro-entry",
  "maestro-json",
  "maestro-listing",
  "maestro-lock",
@@ -4956,16 +4932,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-tool"
-version = "0.1.0"
-dependencies = [
- "maestro-dependencies",
- "maestro-request",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "maestro-tooling"
 version = "0.1.0"
 dependencies = [
@@ -5003,13 +4969,13 @@ dependencies = [
  "maestro-path",
  "maestro-process",
  "maestro-realpath",
+ "maestro-request",
  "maestro-resources",
  "maestro-test-directory",
  "maestro-test-fixtures",
  "maestro-test-process",
  "maestro-text",
  "maestro-theme",
- "maestro-tool",
  "maestro-tools",
  "maestro-tui",
  "num-traits",

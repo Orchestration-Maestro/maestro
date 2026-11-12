@@ -1343,8 +1343,8 @@ fn session_operation_records_have_one_shared_owner() {
         ("UserMessageDelivery", "maestro-request"),
         ("SendMessageOptions", "maestro-request"),
         ("SendUserMessageOptions", "maestro-request"),
-        ("ForkPosition", "maestro-entry"),
-        ("NavigateTreeOptions", "maestro-entry"),
+        ("ForkPosition", "maestro-request"),
+        ("NavigateTreeOptions", "maestro-request"),
     ] {
         assert_single_owner(
             name,

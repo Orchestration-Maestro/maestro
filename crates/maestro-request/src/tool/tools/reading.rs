@@ -1,5 +1,5 @@
 //! Read tool observations.
-use maestro_request::presence::Omittable;
+use crate::presence::Omittable;
 use serde::{Deserialize, Serialize};
 
 /// Read observations with caller-selected optional truncation.

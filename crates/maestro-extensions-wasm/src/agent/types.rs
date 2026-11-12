@@ -73,11 +73,11 @@ impl<'de> Deserialize<'de> for AgentMessage {
 use crate::ExtensionResult;
 use crate::Presence;
 /// Authored execution ordering choice.
-pub use maestro_tool::types::ToolExecutionMode;
+pub use maestro_request::tool::types::ToolExecutionMode;
 use std::rc::Rc;
 /// Supplied tool output with guest field presence.
 pub type AgentToolResult =
-    maestro_tool::types::AgentToolResult<Presence<crate::JsonText>, Presence<bool>>;
+    maestro_request::tool::types::AgentToolResult<Presence<crate::JsonText>, Presence<bool>>;
 /// Synchronous delivery of a partial result.
 pub type AgentToolUpdateCallback = Rc<dyn Fn(AgentToolResult) -> ExtensionResult<()>>;
 

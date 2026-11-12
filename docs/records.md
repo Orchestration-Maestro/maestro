@@ -383,7 +383,7 @@ records and converts their model-visible content.
 
 ## Stored session entries
 
-[Session interchange records](entry.md) are declared by `maestro-entry` and
+[Session interchange records](entry.md) are declared by `maestro_request::entry` and
 re-exported by `maestro_session::session_manager`.
 [Stored-entry context](sessions/session_manager.md) owns history and projection. Raw ordered JSON remains the
 file-entry representation; typed views are explicit consuming reads. Shared

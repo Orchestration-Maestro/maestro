@@ -10,7 +10,7 @@ pub use entry::{
     LabelEntry, ModelChangeEntry, SessionEntryBase, SessionHeader, SessionInfoEntry,
     ThinkingLevelChangeEntry,
 };
-use maestro_entry::session_manager as entry;
+use maestro_request::entry::session_manager as entry;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;

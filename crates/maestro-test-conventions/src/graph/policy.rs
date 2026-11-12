@@ -216,9 +216,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-extensions-wasm"
                 | "maestro-text"
                 | "maestro-json"
-                | "maestro-entry"
-                | "maestro-tool"
-                | "maestro-package"
                 | "maestro-brand"
         )
 }

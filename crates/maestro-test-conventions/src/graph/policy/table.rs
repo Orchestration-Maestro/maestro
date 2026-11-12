@@ -53,9 +53,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     // Common text operations include CSS string serialization for brand and application callers.
     ("maestro-text", &[]),
     ("maestro-json", &[]),
-    ("maestro-entry", &["maestro-request"]),
-    ("maestro-tool", &["maestro-request"]),
-    ("maestro-package", &[]),
     ("maestro-brand", &["maestro-text", "maestro-json"]),
     ("maestro-pattern", &["maestro-text"]),
     ("maestro-markdown", &["maestro-text"]),
@@ -65,14 +62,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     (
         "maestro-extensions-wasm",
-        &[
-            "maestro-package",
-            "maestro-request",
-            "maestro-entry",
-            "maestro-tool",
-            "maestro-json",
-            "maestro-text",
-        ],
+        &["maestro-request", "maestro-json", "maestro-text"],
     ),
     ("maestro-models-catalog", &["maestro-request"]),
     (
@@ -134,7 +124,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         &[
             "maestro-models",
             "maestro-text",
-            "maestro-tool",
+            "maestro-request",
             "maestro-listeners",
             "maestro-json",
             "maestro-lock",
@@ -153,7 +143,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-packages",
         &[
-            "maestro-package",
+            "maestro-request",
             "maestro-settings",
             "maestro-resources",
             "maestro-pattern",
@@ -202,7 +192,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-models",
             "maestro-agent",
             "maestro-request",
-            "maestro-entry",
             "maestro-text",
             "maestro-json",
             "maestro-listing",
@@ -217,7 +206,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-agent",
             "maestro-tui",
             "maestro-theme",
-            "maestro-tool",
+            "maestro-request",
             "maestro-text",
             "maestro-json",
             "maestro-process",

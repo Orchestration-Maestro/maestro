@@ -1,5 +1,5 @@
 //! Package records preserve the host wire format at the author boundary.
-use maestro_package::{GitPinStatus, ResolvedPackage};
+use maestro_request::packages::{GitPinStatus, ResolvedPackage};
 use serde_json::json;
 
 #[test]

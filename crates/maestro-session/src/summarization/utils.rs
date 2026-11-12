@@ -1,7 +1,7 @@
 //! Shared file tracking and conversation text for summaries.
-pub use maestro_entry::summarization::FileOperations;
 use maestro_json::is_truthy;
 use maestro_models::{AssistantContent, Message, UserBlock, UserContent};
+pub use maestro_request::entry::summarization::FileOperations;
 use serde::Deserialize;
 use serde_json::Value;
 use std::borrow::Cow;

@@ -30,7 +30,7 @@ From `docs/specs/maestro-port.md`.
 - **EventStream:** Producer-owned FIFO with independently observable result.
 - **AssistantMessageEventStream:** EventStream specialization retaining shared assistant-message handles.
 - **Request:** An invocation of a supplied model descriptor with its inputs, options, authentication and cancellation; catalog membership is not required.
-- **Request records:** Shared message and model-request data describing application messages and a model invocation's descriptor, conversation, instruction inputs and observations; the shared owner is `maestro-request`, not an invocation executor or a general data container.
+- **Interchange records:** The request, session, tool and package records a guest and its host exchange: shared message and model-request data describing application messages and a model invocation's descriptor, conversation, instruction inputs and observations, with the session tree entries and the tool and package shapes beside them; the shared owner is `maestro-request`, not an invocation executor or a general data container.
 - **Stream option slots:** The shared request owner selects signal, payload hook, response hook and fetch representations without executable operations. Shared common, raw and simple options retain their native and guest aliases. Its `StreamOptionsInput` record preserves the supplied raw or simple variant without converting their policies; provider execution stays in models.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
@@ -128,7 +128,7 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **SessionManager:** The owner of session entries, branch position, labels, resolved context and JSONL persistence.
 - **Session:** A conversation history with a selected branch, backed by a native JSONL file or explicit memory storage.
 - **AgentSession:** The application session coordinating agent execution, prompt delivery, events, selection, compaction, retries and navigation.
-- **Entry:** An append-only item in the session tree, such as a message, label, model/thinking change or compaction record. The [maestro-entry library](docs/entry.md), which depends only on `maestro-request`, owns the session interchange records, including generic compaction results, `ForkPosition` and `NavigateTreeOptions`; `maestro-session` keeps history and storage.
+- **Entry:** An append-only item in the session tree, such as a message, label, model/thinking change or compaction record. The [session interchange records](docs/entry.md) in `maestro-request::entry` own the entry, context and compaction records, including generic compaction results, `ForkPosition` and `NavigateTreeOptions`; `maestro-session` keeps history and storage.
 - **Active branch:** The path from the root to the selected position.
 - **Context projection:** The selected-ancestry message and setting values produced from supplied session entries; persistence remains with the session owner.
 - **Compaction:** Reduction of model context without deleting raw history.
@@ -231,7 +231,7 @@ Internal-dependency descriptions below state domain edges, subject to the
 including leaves and exact sets. The unifier itself has no workspace dependencies.
 
 - **Catalog:** The application-facing usable model selection resolved from models and credentials.
-- **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The [tool-record library](docs/tool-records.md), `maestro-tool`, depends only on `maestro-request` and owns the tool interchange records; `maestro-tools` keeps execution.
+- **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The [tool interchange records](docs/tool-records.md) in `maestro-request::tool` own the shared tool shapes; `maestro-tools` keeps execution.
 - **Export:** Session document serialization shared with application operations.
 - **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf, the native process owner, the shared Markdown parser and the optional foundation utility, without application selectors or framework/highlighting engines. It is not the terminal adapter in `maestro-tui-crossterm`, and not the terminal emulator in `maestro-terminal-emulator`.
 - **Frame writer:** The `TUI` owner in `maestro-tui` that draws components to a terminal as retained frames, routes terminal input and schedules renders through its runtime.
@@ -258,9 +258,9 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Fragment:** An incomplete escape sequence the input buffer retains for more input; it can be completed, explicitly flushed or cleared, released as it is at a representable deadline, or delivered as data immediately before a paste starts.
 - **Bracketed paste:** Text a terminal wraps in start and end markers; the input buffer delivers it as one paste event without the markers.
 - **Host binding:** The traits and records `maestro-extensions-wasmtime` generates from the interface files in the guest authoring crate, with each resource mapped to the type the host stores. An import that implements its trait method runs on the local owner as a run or admit call. See [host calls on the local owner](docs/extensions/guest.md#host-calls-on-the-local-owner).
-- **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the request, entry, tool, JSON and text owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
-- **Shared request owner:** The core `maestro-request` library below layer 0, whose job is to define shared message and model-request records, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, `SlashCommandInfo`, `SlashCommandSource`, `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
-`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, flat-rate `calculate_cost` arithmetic, `DiagnosticErrorInfo` as the one thrown-error form with its message-only construction, and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, entry, tool and guest authoring) may depend on it directly, and it depends only on the JSON leaf.
+- **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the request, JSON and text owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
+- **Shared record owner:** The core `maestro-request` library below layer 0, whose job is to define the records a guest shares with its host, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, `SlashCommandInfo`, `SlashCommandSource`, `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
+`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, flat-rate `calculate_cost` arithmetic, `DiagnosticErrorInfo` as the one thrown-error form with its message-only construction, and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, agent, tools, packages and guest authoring) may depend on it directly, and it depends only on the JSON leaf.
 - **Extension JSON wire:** Plain serde_json payloads beside typed capabilities; finite numbers retain their value and signed zero, ordinary host nonfinite values serialize as null, and extension-written Infinity or NaN fails clearly before output. Shared records have no bit-number encoding or added Presence wrapper.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose permitted internal targets are extensions and the optional native path utility.
 - **Attachment:** Application-owned original bytes, media metadata and optional derived text/preview, with browser-message conversion. See [browser attachments](docs/application/browser-attachments.md).
@@ -377,7 +377,8 @@ their declared edges.
 
 ## Package interchange
 
-- **Package records:** `maestro-package` defines portable resolved-package and Git-pin
-  observations shared by native packages and guest authoring. It runs no effects.
+- **Package records:** The `packages` module of `maestro-request` defines portable
+  resolved-package and Git-pin observations shared by native packages and guest
+  authoring. It runs no effects.
 - **Package manager:** `maestro-packages` owns native resolution, acquisition and
   Git operations; it re-exports the package records at its existing public paths.

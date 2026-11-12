@@ -11,7 +11,7 @@ pub enum ToolExecutionMode {
     Parallel,
 }
 
-use maestro_request::{
+use crate::{
     presence::Omittable,
     types::{TextContent, UserBlock},
 };

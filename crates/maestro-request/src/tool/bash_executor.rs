@@ -1,5 +1,5 @@
 //! Direct-shell output records.
-use maestro_request::presence::Omittable;
+use crate::presence::Omittable;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

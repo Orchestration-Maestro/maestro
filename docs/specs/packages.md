@@ -107,7 +107,7 @@ agents' hook files, and runtime mechanics ([list](#runtime-mechanics-not-copied)
 - **Class.** `workspace-crates.json` gains the class `package`. Conventions forbid any `core` or `dedicated` crate
   from depending on a `package` crate. They allow `package` → `package` edges, which must stay acyclic.
 - **Allowed dependencies.** A package crate may depend on `maestro-extensions-wasm`, other package crates,
-  `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, and approved libraries that build for
+  `maestro-request`, `maestro-json`, and approved libraries that build for
   `wasm32-wasip2`.
 - **Enforcement.** The conventions checker reads package classifications from the inventory, checks declared
   and host-resolved dependencies, and checks component targets and export locations in member sources.

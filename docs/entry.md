@@ -1,11 +1,11 @@
 # Session interchange records
 
-`maestro-entry` declares session headers, entry identity, the nine concrete entry
-records, new-session options, built-context records and compaction preparation,
-results, settings and file-operation records, plus `ForkPosition` and
-`NavigateTreeOptions` shared by native session operations and guest authoring. It depends only on `maestro-request` within
-the workspace. [Approved libraries](libraries/entry.md) supply serialization and
-ordered sets.
+The `entry` module of `maestro-request` declares session headers, entry identity, the
+nine concrete entry records, new-session options, built-context records and compaction
+preparation, results, settings and file-operation records, plus `ForkPosition` and
+`NavigateTreeOptions` shared by native session operations and guest authoring, at
+`maestro_request::entry`. [Approved libraries](libraries/entry.md) supply serialization
+and ordered sets.
 
 ## Consumer views
 
@@ -22,7 +22,7 @@ Both consumers retain their existing public names through re-exports or aliases.
 
 Native context views are built by projection. See [session context](sessions/session_manager.md)
 for history, file reading and selection, and [guest records](extensions/guest.md#session-entries)
-for guest decoding. The entry crate adds no history, discovery, persistence or
+for guest decoding. The entry module adds no history, discovery, persistence or
 compaction algorithm; consumers own those operations.
 
 ## Encoded members

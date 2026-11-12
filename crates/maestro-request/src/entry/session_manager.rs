@@ -1,6 +1,6 @@
 //! Session file and context records shared by the native session and the extension guest.
-use maestro_request::presence::{Omittable, Presence};
-use maestro_request::types::UserContent;
+use crate::presence::{Omittable, Presence};
+use crate::types::UserContent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

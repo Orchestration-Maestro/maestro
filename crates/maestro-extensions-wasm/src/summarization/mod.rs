@@ -6,13 +6,15 @@
 )]
 
 use crate::AgentMessage;
-pub use maestro_entry::summarization::{CompactionSettings, FileOperations};
+pub use maestro_request::entry::summarization::{CompactionSettings, FileOperations};
 
 /// Supplied messages, files and settings for a pending compaction.
-pub type CompactionPreparation = maestro_entry::summarization::CompactionPreparation<AgentMessage>;
+pub type CompactionPreparation =
+    maestro_request::entry::summarization::CompactionPreparation<AgentMessage>;
 
 /// A compaction an extension supplies, with opaque JSON text details.
-pub type CompactionResult = maestro_entry::summarization::CompactionResult<crate::JsonText>;
+pub type CompactionResult =
+    maestro_request::entry::summarization::CompactionResult<crate::JsonText>;
 
 /// Native transcript serialization.
 pub mod utils;

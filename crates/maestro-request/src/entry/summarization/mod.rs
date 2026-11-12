@@ -1,5 +1,5 @@
 //! Compaction records an extension reads and supplies, generic over the message view.
-use maestro_request::presence::Presence;
+use crate::presence::Presence;
 use serde::{Deserialize, Serialize};
 mod utils;
 pub use utils::FileOperations;

@@ -111,7 +111,7 @@ use super::context::ExtensionContext;
 use super::extension_result::HookFuture;
 use std::rc::Rc;
 
-pub use maestro_entry::session_manager::ForkPosition;
+pub use maestro_request::entry::session_manager::ForkPosition;
 /// Author handler retaining local event operands.
 pub type ExtensionHandler = Rc<
     dyn for<'a> Fn(

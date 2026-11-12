@@ -291,7 +291,6 @@ fn check_declarations(
             owner,
             "maestro-tools"
                 | "maestro-request"
-                | "maestro-entry"
                 | "maestro-app"
                 | "maestro-listeners"
                 | "maestro-office"
@@ -353,7 +352,7 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     } else if name == "ModelConstructor" {
         "maestro-models-catalog"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
-        "maestro-entry"
+        "maestro-request"
     } else if input_presenter_record(name) {
         "maestro-app"
     } else {

@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-maestro-package = { path = "../maestro-package" }
+maestro-request = { path = "../maestro-request" }
 serde = { workspace = true, optional = true }
 maestro-json = { path = "../maestro-json" }
 maestro-text = { path = "../maestro-text" }

@@ -44,8 +44,8 @@ Dependency descriptions here state domain edges, subject to the
 including leaves and exact sets. The unifier itself has no workspace dependencies.
 
 The extension domain may depend directly on resources. The crates that list
-`maestro-request` in the specification table may depend on it; its job is to define shared
-message and model-request records, including command provenance records
+`maestro-request` in the specification table may depend on it; its job is to define the
+records a guest shares with its host, including command provenance records
 `SlashCommandInfo` and the open `SlashCommandSource` label, and the renderer option
 record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`. Resources and
@@ -57,12 +57,13 @@ owner, and duplicates within it.
 The request owner depends only on the dependency-free JSON leaf.
 No reverse dependency is permitted.
 
-The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
-owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
-only on `maestro-request`, and `maestro-brand` depends on text and JSON.
+The [specification](specs/maestro-port.md#crates-and-delivery-order) declares these
+owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-request`
+depends only on the JSON leaf and holds the session, tool and package record modules,
+and `maestro-brand` depends on text and JSON.
 The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; application and the web frontend consume it.
-The `maestro-package` leaf owns portable package interchange records; native
-packages and guest authoring specialize its resolved-package scope. Pattern depends
+The `packages` module of `maestro-request` owns the portable package interchange
+records; native packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
 the web frontend imports them directly. The dedicated conventions checker may
@@ -307,8 +308,8 @@ Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/re
 belong to tools, except the guest author definition in
 `maestro-extensions-wasm/src/types/tools.rs`; application selector types and selector
 modules belong to chat.
-The four message delivery records belong to `maestro-request`; `ForkPosition` and
-`NavigateTreeOptions` belong to `maestro-entry`. Duplicate declarations in these
+The four message delivery records belong to `maestro-request`, and so do
+`ForkPosition` and `NavigateTreeOptions`. Duplicate declarations in these
 owners are rejected. Qualified uses and re-exports are not declarations. Duplicate tool declarations
 within either owner are rejected. Planning references in comments retain their separate policy and
 line-accurate diagnostics from native compiler-lexer comment spans.
