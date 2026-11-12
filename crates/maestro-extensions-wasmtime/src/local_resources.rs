@@ -134,8 +134,6 @@ pub(crate) enum Message {
     ),
     /// Uses native interaction callbacks on this same local owner.
     OAuthInteraction(crate::oauth_interaction::Request),
-    /// Calls an independently retained OAuth implementation.
-    OAuthProvider(u64, crate::oauth_reads::Request),
     /// Authorizes and persists through the retained credential owner.
     CredentialLogin(
         u64,

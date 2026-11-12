@@ -1,10 +1,6 @@
 //! A native OAuth implementation ends with its capability.
 use super::ended_endpoint;
-use crate::{
-    local_resources::Capability,
-    oauth_reads::{Endpoint, Request},
-    read_imports::ReadEndpoint,
-};
+use crate::{local_resources::Capability, oauth_reads::Endpoint};
 use maestro_extensions::{
     BoxFuture, Fetch, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthProviderInterface,
 };
@@ -53,15 +49,9 @@ fn released_oauth_provider_rejects_every_kind_of_operation_with_its_ended_text()
         Endpoint,
         |provider| {
             [
-                provider.read(Request::Info).unwrap_err(),
-                provider
-                    .route(|reply| Request::Models("[]".into(), reply))
-                    .result()
-                    .unwrap_err(),
-                provider
-                    .route(|reply| Request::Key("{}".into(), reply))
-                    .result()
-                    .unwrap_err(),
+                provider.info().unwrap_err(),
+                provider.modify_models("[]".into()).result().unwrap_err(),
+                provider.get_api_key("{}".into()).result().unwrap_err(),
             ]
         },
     );

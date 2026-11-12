@@ -207,7 +207,6 @@ impl State {
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             message @ (Message::OAuthLogin(..)
             | Message::OAuthRefresh(..)
-            | Message::OAuthProvider(..)
             | Message::OAuthInteraction(..)) => self.oauth(message),
             Message::CredentialLogin(id, provider, controls, reply, admission) => {
                 self.start_credential_login(id, (provider, controls), reply, admission);

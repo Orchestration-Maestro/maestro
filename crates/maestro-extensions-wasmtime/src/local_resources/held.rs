@@ -300,6 +300,14 @@ held!(
 );
 
 held!(
+    /// An independently retained native OAuth implementation.
+    OAuth,
+    maestro_extensions::OAuthProviderHandle,
+    "extension OAuth provider resource ended",
+    Capability::OAuthProvider(provider) => provider
+);
+
+held!(
     /// The native buffer of generic authored events.
     EventBuffer,
     super::stream_reads::Owner,
