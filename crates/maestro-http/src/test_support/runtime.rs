@@ -35,8 +35,13 @@ fn runtime(paused: bool) -> tokio::runtime::Runtime {
         .enable_all()
         .start_paused(paused)
         .build();
-    match built {
-        Ok(runtime) => runtime,
-        Err(error) => unreachable!("a test runtime builds its drivers: {error}"),
-    }
+    assert!(
+        built.is_ok(),
+        "a test runtime builds its drivers: {:?}",
+        built.as_ref().err()
+    );
+    let Ok(runtime) = built else {
+        unreachable!("the assertion admits only a built runtime")
+    };
+    runtime
 }
