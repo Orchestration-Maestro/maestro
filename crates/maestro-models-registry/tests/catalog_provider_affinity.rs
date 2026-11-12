@@ -4,8 +4,8 @@
 #[path = "../../maestro-models/tests/support/original_options.rs"]
 mod original_options;
 use crate::{dynamic, support};
-use maestro_catalog::{ModelRegistry, ProviderConfigInput};
 use maestro_models::*;
+use maestro_models_registry::{ModelRegistry, ProviderConfigInput};
 use std::sync::{
     Arc, RwLock, Weak,
     atomic::{AtomicUsize, Ordering},

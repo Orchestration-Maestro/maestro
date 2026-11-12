@@ -33,7 +33,7 @@ maestro-dependencies.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-extensions-wasmtime = { path = "../maestro-extensions-wasmtime", features = ["test-support"] }
 maestro-lock = { path = "../maestro-lock" }
-maestro-catalog = { path = "../maestro-catalog" }
+maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-json = { path = "../maestro-json" }
 maestro-session = { path = "../maestro-session" }

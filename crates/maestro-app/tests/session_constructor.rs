@@ -662,11 +662,11 @@ fn refreshes_the_current_model_after_provider_registration() {
             (model.provider.clone(), model.id.clone())
         };
         let model = h.faux.models[0].clone();
-        let config = maestro_catalog::ProviderConfigInput {
+        let config = maestro_models_registry::ProviderConfigInput {
             base_url: Some(model.base_url.clone()),
             api_key: Some("faux-key".into()),
             api: Some(h.faux.api.clone()),
-            models: Some(vec![maestro_catalog::ProviderModelInput {
+            models: Some(vec![maestro_models_registry::ProviderModelInput {
                 id: model.id.clone(),
                 name: "Renamed".into(),
                 api: Some(model.api.clone()),
@@ -680,7 +680,7 @@ fn refreshes_the_current_model_after_provider_registration() {
                 headers: None,
                 compat: None,
             }]),
-            ..maestro_catalog::ProviderConfigInput::default()
+            ..maestro_models_registry::ProviderConfigInput::default()
         };
         api.register_provider(provider.clone(), std::sync::Arc::new(RwLock::new(config)))
             .unwrap();

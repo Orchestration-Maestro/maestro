@@ -19,7 +19,7 @@ fn empty_stored_keys_block_configured_fallback() {
     operations.command("never", Some("fallback"));
     let registry = support::registry_with(
         r#"{"providers":{"p":{"apiKey":"!never","baseUrl":"url","api":"test","models":[{"id":"m"}]}}}"#,
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     registry.auth_storage().set(
         "p",
@@ -55,7 +55,7 @@ fn request_headers_merge_exact_names_in_layer_order() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
-    let maestro_catalog::ResolvedRequestAuth::Ok {
+    let maestro_models_registry::ResolvedRequestAuth::Ok {
         api_key, headers, ..
     } = runtime.block_on(registry.get_api_key_and_headers(&model))
     else {
@@ -91,8 +91,10 @@ fn native_helpers_preserve_shell_output_and_failure() {
     ));
 
     for (index, (input, expected, failure)) in NATIVE_CASES.iter().copied().enumerate() {
-        let registry =
-            support::registry_with(input, Arc::clone(&native) as maestro_catalog::ConfigValues);
+        let registry = support::registry_with(
+            input,
+            Arc::clone(&native) as maestro_models_registry::ConfigValues,
+        );
         let key = run(registry.get_api_key_for_provider("p")).unwrap();
         assert!(key.as_deref().eq(&expected), "native helper case {index}");
         match failure {
@@ -278,7 +280,7 @@ fn overwritten_header_failures_prevent_later_effects() {
         operations.command("later", Some("success"));
         let registry = support::registry_with(
             &document(fields, model_fields),
-            Arc::clone(&operations) as maestro_catalog::ConfigValues,
+            Arc::clone(&operations) as maestro_models_registry::ConfigValues,
         );
         error(
             request(&registry),
@@ -299,7 +301,7 @@ fn header_resolution_preserves_record_enumeration_order() {
             r#""apiKey":"key","headers":{"10":"!ten","2":"!two","01":"one","Z":"z","A":"a"}"#,
             "",
         ),
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     error(
         request(&registry),
@@ -404,7 +406,7 @@ fn configured_commands_repeat_across_calls_and_registries() {
     let operations = Arc::new(request_support::Operations::default());
     let registry = support::registry_with(
         &input,
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     for (key, header) in [("key-1", "Bearer key-1"), ("key-2", "Bearer key-2")] {
         operations.command("fresh", Some(key));
@@ -412,7 +414,7 @@ fn configured_commands_repeat_across_calls_and_registries() {
     }
     let second = support::registry_with(
         &input,
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     operations.command("fresh", Some("key-3"));
     assert!(
@@ -428,7 +430,7 @@ fn configured_commands_repeat_across_calls_and_registries() {
     operations.command("other", Some("independent"));
     let other = support::registry_with(
         &document(r#""apiKey":"!other""#, ""),
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     assert!(
         run(other.get_api_key_for_provider("p"))
@@ -443,7 +445,7 @@ fn failed_configured_commands_are_retried() {
     let operations = Arc::new(request_support::Operations::default());
     let registry = support::registry_with(
         &document(r#""apiKey":"!retry""#, ""),
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     for _ in 0..2 {
         assert!(
@@ -473,7 +475,7 @@ fn clear_key_cache_alias_clears_shared_credential_results() {
             .as_deref()
             .eq(&Some("first"))
     );
-    maestro_catalog::clear_api_key_cache();
+    maestro_models_registry::clear_api_key_cache();
     assert!(
         maestro_credentials::resolve_config_value(&command, &native)
             .as_deref()
@@ -489,7 +491,7 @@ fn header_helpers_resolve_again_for_each_request() {
             r#""apiKey":"key","headers":{"P":"!provider-fresh"}"#,
             r#", "headers":{"M":"!model-fresh"}"#,
         ),
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     for (provider, model) in [("provider-1", "model-1"), ("provider-2", "model-2")] {
         operations.command("provider-fresh", Some(provider));
@@ -572,7 +574,7 @@ fn stored_commands_keep_lower_layer_cache_policy() {
     let operations = Arc::new(request_support::Operations::default());
     let registry = support::registry_with(
         &document(r#""apiKey":"!configured-cache-policy""#, ""),
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     registry.auth_storage().set(
         "p",
@@ -586,7 +588,7 @@ fn stored_commands_keep_lower_layer_cache_policy() {
     operations.command("stored-cache-policy", Some("second"));
     success(request(&registry), Some("first"), &[]);
     assert_eq!(*operations.calls.lock().unwrap(), ["stored-cache-policy"]);
-    maestro_catalog::clear_api_key_cache();
+    maestro_models_registry::clear_api_key_cache();
     success(request(&registry), Some("second"), &[]);
     assert_eq!(
         *operations.calls.lock().unwrap(),
@@ -1027,7 +1029,7 @@ const FIELD_CASES: &[FieldCase] = &[
 #[test]
 fn request_fields_preserve_checked_input_domains() {
     for (input, diagnostic, key, headers) in FIELD_CASES {
-        let registry = maestro_catalog::ModelRegistry::with_operations(
+        let registry = maestro_models_registry::ModelRegistry::with_operations(
             support::auth(),
             "models-input.json",
             support::Text(Arc::new(std::sync::Mutex::new(Some((*input).into())))),
@@ -1049,9 +1051,11 @@ fn request_result_catches_storage_errors_while_key_lookup_propagates() {
     let mut provider = request_support::OAuth::new(id, "controlled");
     provider.fail_key = true;
     let _registration = provider.register();
-    let registry =
-        maestro_catalog::ModelRegistry::in_memory(support::auth(), crate::support::values())
-            .unwrap();
+    let registry = maestro_models_registry::ModelRegistry::in_memory(
+        support::auth(),
+        crate::support::values(),
+    )
+    .unwrap();
     let config = dynamic::config(&["m"]);
     config.write().unwrap().api_key = Some("!never".into());
     registry.register_provider(id, config).unwrap();
@@ -1059,7 +1063,7 @@ fn request_result_catches_storage_errors_while_key_lookup_propagates() {
     registry
         .auth_storage()
         .set(id, request_support::tokens(f64::MAX));
-    let failure: maestro_catalog::CatalogError =
+    let failure: maestro_models_registry::CatalogError =
         run(registry.get_api_key_for_provider(id)).unwrap_err();
     dynamic::assert_account_failure(&failure, "extraction failed");
     error(
@@ -1139,7 +1143,7 @@ fn oauth_reload_failure_keeps_new_request_configuration() {
         r#""apiKey":"first","headers":{"X":"first"}"#,
         "",
     )))));
-    let registry = maestro_catalog::ModelRegistry::with_operations(
+    let registry = maestro_models_registry::ModelRegistry::with_operations(
         auth,
         "models-input.json",
         text.clone(),

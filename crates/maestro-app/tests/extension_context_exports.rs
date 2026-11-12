@@ -6,8 +6,6 @@ use maestro_app::{CompactOptions, ContextUsage, ExtensionContext, ExtensionConte
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{ExtensionActions, ExtensionError, ExtensionRuntime, create_extension_runtime};
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_catalog::ModelRegistry;
-#[cfg(not(target_arch = "wasm32"))]
 use maestro_credentials::{AuthStorage, AuthStorageData};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_extensions::ExtensionRunner;
@@ -17,6 +15,8 @@ use maestro_extensions::execution::ExtensionRunnerSession;
 use maestro_extensions::{Extension, ExtensionAPI, ExtensionErrorListener, ExtensionExecution};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::Threaded;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models_registry::ModelRegistry;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_session::SessionManager;
 #[cfg(not(target_arch = "wasm32"))]

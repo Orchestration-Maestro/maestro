@@ -4,9 +4,9 @@ use super::{Setup, World, install, install_output, isolated, isolated_case, star
 use crate::interactive_mode::autocomplete::{
     get_autocomplete_source_tag, prefix_autocomplete_description,
 };
-use maestro_catalog::{ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_extensions::{EventError, ExtensionCommandContext, RegisteredCommand, ResolvedCommand};
 use maestro_models::{DiagnosticErrorInfo, Local, Model, SharedHandle};
+use maestro_models_registry::{ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_resources::{PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, Cancellation};
 use maestro_tui::{AutocompleteSuggestions, CompletionOptions, CursorPosition};

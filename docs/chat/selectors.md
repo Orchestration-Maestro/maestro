@@ -115,7 +115,7 @@ confirmation alone do not rebuild the list. Text and cursor layout belong to the
 # Model picker
 
 `ModelSelectorComponent::new` takes a `TUI`, shared mutable
-`maestro_settings::SettingsManager`, mutable `maestro_catalog::ModelRegistry`,
+`maestro_settings::SettingsManager`, mutable `maestro_models_registry::ModelRegistry`,
 `ModelSelectorCallbacks` and `ModelSelectorOptions`. Construction refreshes the
 registry, propagates refresh failures and requests one render after a completed
 load or caught availability failure. Options supply the

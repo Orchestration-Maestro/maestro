@@ -9,9 +9,9 @@ use crate::{
         ExtensionUIContextBinding,
     },
 };
-use maestro_catalog::ModelRegistry;
 use maestro_lock::write;
 use maestro_models::SharedHandle;
+use maestro_models_registry::ModelRegistry;
 use maestro_session::session_manager::ReadonlySessionManager;
 use std::{cell::RefCell, rc::Rc};
 

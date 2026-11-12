@@ -10,10 +10,10 @@ use maestro_app::{
     CreateAgentSessionServicesOptions, ExtensionFactory, ProviderConfig, ProviderModelConfig,
     ResourceKind, ResourceLoaderOptions, create_agent_session_services,
 };
-use maestro_catalog::{ModelRegistry, ResolvedRequestAuth};
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_extensions::types::FlagValue;
 use maestro_models::{Local, ModelCost, ModelInput};
+use maestro_models_registry::{ModelRegistry, ResolvedRequestAuth};
 use maestro_settings::{Settings, SettingsManager};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};

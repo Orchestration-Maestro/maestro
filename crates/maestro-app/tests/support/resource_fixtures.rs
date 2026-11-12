@@ -6,7 +6,6 @@ use maestro_app::{
     ExtensionRunner, ResourceDiagnostic, ResourceExtensionPath, ResourceExtensionPaths,
     ResourceKind, ResourceLoader, ResourceLoaderOptions,
 };
-use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::ModuleLoader;
 use maestro_extensions::{
@@ -15,6 +14,7 @@ use maestro_extensions::{
     types::{CommandHandler, ExtensionFlagOptions, FlagType, RegisteredCommandOptions},
 };
 use maestro_models::{Local, Tool};
+use maestro_models_registry::ModelRegistry;
 use maestro_resources::{DiagnosticType, PathMetadata, SourceOrigin, SourceScope};
 use maestro_session::SessionManager;
 use maestro_settings::{Settings, SettingsManager};

@@ -16,7 +16,7 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 /// The runtime factory building one services-backed session over `catalog` and `model`.
 fn services_factory(
-    catalog: Arc<maestro_catalog::ModelRegistry>,
+    catalog: Arc<maestro_models_registry::ModelRegistry>,
     model: Arc<std::sync::RwLock<maestro_models::Model>>,
     local: Rc<tokio::task::LocalSet>,
 ) -> CreateAgentSessionRuntimeFactory {

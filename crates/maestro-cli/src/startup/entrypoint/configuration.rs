@@ -3,9 +3,11 @@
 use crate::input::arguments::Args;
 use maestro_agent::ThinkingLevel;
 use maestro_app::{AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, NoTools};
-use maestro_catalog::{ModelRegistry, ResolveCliModelOptions, ScopedModel, resolve_cli_model};
 use maestro_lock::read;
 use maestro_models::Model;
+use maestro_models_registry::{
+    ModelRegistry, ResolveCliModelOptions, ScopedModel, resolve_cli_model,
+};
 use maestro_settings::SettingsManager;
 use std::cmp::Ordering;
 use std::io;

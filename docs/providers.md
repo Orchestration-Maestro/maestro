@@ -114,7 +114,7 @@ are not trimmed. Use the variable spelling shown here. Provider IDs are case-sen
 | Xiaomi MiMo Token Plan (Singapore) | `xiaomi-token-plan-sgp` | `XIAOMI_TOKEN_PLAN_SGP_API_KEY` |
 
 These mappings come from the [environment-key owner](../crates/maestro-models/src/builtins/env_api_keys.rs)
-and the [built-in display names](../crates/maestro-catalog/src/provider_display_names.rs).
+and the [built-in display names](../crates/maestro-models-registry/src/provider_display_names.rs).
 Configured authentication is not proof that a token works. Ambient discovery
 checks are described in [request authentication](request-authentication.md).
 

@@ -233,7 +233,7 @@ fn runner(loader: &impl ResourceLoader<Local>) -> maestro_app::ExtensionRunner<L
                 maestro_session::SessionManager::in_memory(None).unwrap(),
             )),
             model_registry: std::sync::Arc::new(
-                maestro_catalog::ModelRegistry::in_memory(
+                maestro_models_registry::ModelRegistry::in_memory(
                     auth,
                     crate::resource_fixtures::no_commands(),
                 )

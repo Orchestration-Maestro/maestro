@@ -9,7 +9,7 @@ repository.workspace = true
 [dependencies]
 maestro-app = { path = "../maestro-app" }
 maestro-agent = { path = "../maestro-agent" }
-maestro-catalog = { path = "../maestro-catalog" }
+maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-export = { path = "../maestro-export" }
 maestro-extensions = { path = "../maestro-extensions" }

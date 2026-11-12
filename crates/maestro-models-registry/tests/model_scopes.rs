@@ -2,10 +2,10 @@
 //! Model scopes resolved against authenticated models.
 use crate::fallback;
 use crate::scopes;
-use maestro_catalog::ModelRegistry;
-use maestro_catalog::{ModelResolverOutput, model_id_comparator, resolve_model_scope};
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_models::SharedHandle;
+use maestro_models_registry::ModelRegistry;
+use maestro_models_registry::{ModelResolverOutput, model_id_comparator, resolve_model_scope};
 use scopes::replay;
 use std::sync::{Arc, Mutex};
 

@@ -739,10 +739,10 @@ async fn capture_attribution_headers(case: AttributionCase) -> Option<Attributio
     let mut descriptor = h.model("faux-1").read().unwrap().clone();
     descriptor.provider.clone_from(&case.provider);
     descriptor.base_url = case.base_url;
-    let config = maestro_catalog::ProviderConfigInput {
+    let config = maestro_models_registry::ProviderConfigInput {
         api_key: Some("faux-key".into()),
         headers: case.credential_headers,
-        ..maestro_catalog::ProviderConfigInput::default()
+        ..maestro_models_registry::ProviderConfigInput::default()
     };
     h.registry
         .register_provider(&case.provider, Arc::new(std::sync::RwLock::new(config)))

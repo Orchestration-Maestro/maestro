@@ -4,7 +4,7 @@
 use std::path::{Path, PathBuf};
 
 /// The file that owns the lookup-then-credential restoration.
-const OWNER: &str = "maestro-catalog/src/model_resolver/restoration.rs";
+const OWNER: &str = "maestro-models-registry/src/model_resolver/restoration.rs";
 
 /// The lines of `text` where a lookup by `.find(` is followed, within the next eight lines,
 /// by the credential check.

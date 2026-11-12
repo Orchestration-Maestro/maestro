@@ -6,12 +6,12 @@ use crate::support::session_harness::{
 };
 use maestro_agent::QueueMode;
 use maestro_app::PromptOptions;
-use maestro_catalog::{ProviderCallbacks, ProviderConfigInput};
 use maestro_extensions::{ExtensionFactory, Local};
 use maestro_models::{
     AssistantMessageEventStream, DiagnosticErrorInfo, Invoke, ProviderCall, ProviderExecution,
     SharedHandle,
 };
+use maestro_models_registry::{ProviderCallbacks, ProviderConfigInput};
 use maestro_settings::MessageDeliveryMode;
 use serde_json::json;
 use std::{rc::Rc, sync::RwLock};

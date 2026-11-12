@@ -3,11 +3,11 @@
 use crate::support::startup;
 use maestro_agent::ThinkingLevel;
 use maestro_app::{AgentSessionRuntimeDiagnosticType, NoTools};
-use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_cli::startup::entrypoint::configuration::{
     BuiltSessionOptions, SessionOptionInputs, build_session_options, resolve_cli_paths,
 };
 use maestro_models::Model;
+use maestro_models_registry::{ModelRegistry, ScopedModel};
 use serde_json::json;
 use std::sync::{Arc, RwLock};
 
@@ -486,8 +486,8 @@ fn selected_model_keeps_the_shared_descriptor() {
 #[test]
 fn model_patterns_use_cli_before_saved_settings() {
     use crate::startup_runtime::{Fixture, run};
-    use maestro_catalog::ModelResolverOutput;
     use maestro_cli::startup::entrypoint::initialization::create_runtime;
+    use maestro_models_registry::ModelResolverOutput;
     run(
         "model_patterns_use_cli_before_saved_settings",
         |local| async move {
@@ -541,8 +541,8 @@ fn model_patterns_use_cli_before_saved_settings() {
 /// Invalid stored members fail after the valid prefix reports its warnings.
 async fn assert_mixed_patterns_fail(local: std::rc::Rc<tokio::task::LocalSet>) {
     use crate::startup_runtime::Fixture;
-    use maestro_catalog::ModelResolverOutput;
     use maestro_cli::startup::entrypoint::initialization::create_runtime;
+    use maestro_models_registry::ModelResolverOutput;
     let fixture = Fixture::new(
         local,
         startup::settings(&[(

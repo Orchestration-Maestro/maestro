@@ -1,10 +1,10 @@
 //! The inputs and result of creating a session.
 use crate::agent_session::{AgentSession, ToolDefinitionHandle};
 use crate::resources::loading::{ResourceLoader, ResourceLoaderOptions};
-use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_credentials::AuthStorage;
 use maestro_extensions::{LoadExtensionsResult, SessionStartEvent};
 use maestro_models::{Local, Model, ModelThinkingLevel};
+use maestro_models_registry::{ModelRegistry, ScopedModel};
 use maestro_session::SessionManager;
 use maestro_settings::SettingsManager;
 use maestro_theme::LiveTheme;

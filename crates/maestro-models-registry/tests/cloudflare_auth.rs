@@ -19,7 +19,7 @@ fn cloudflare_availability_requires_ids_without_resolving_key() {
     let operations = Arc::new(request_support::Operations::default());
     let registry = support::registry_with(
         r#"{"providers":{"cloudflare-ai-gateway":{"apiKey":"!never"}}}"#,
-        Arc::clone(&operations) as maestro_catalog::ConfigValues,
+        Arc::clone(&operations) as maestro_models_registry::ConfigValues,
     );
     let model = registry
         .get_all()
@@ -151,7 +151,7 @@ fn cloudflare_availability_requires_nonempty_key() {
 
 /// Compare a resolved custom endpoint with its retained descriptor.
 fn check_materialized_auth(
-    registry: &maestro_catalog::ModelRegistry,
+    registry: &maestro_models_registry::ModelRegistry,
     operations: &request_support::Operations,
     provider: &str,
     env: &serde_json::Value,
@@ -172,7 +172,7 @@ fn check_materialized_auth(
     let model = Arc::new(std::sync::RwLock::new(descriptor));
     assert!(registry.has_configured_auth(&model).unwrap());
     assert!(operations.calls.lock().unwrap().is_empty());
-    let maestro_catalog::ResolvedRequestAuth::Ok {
+    let maestro_models_registry::ResolvedRequestAuth::Ok {
         api_key, base_url, ..
     } = request_support::run(registry.get_api_key_and_headers(&model))
     else {
@@ -232,7 +232,7 @@ fn oauth_configuration(complete: bool) {
     let auth = request_support::run(registry.get_api_key_and_headers(&model));
     if complete {
         assert!(
-            matches!(auth, maestro_catalog::ResolvedRequestAuth::Ok {base_url:Some(url), ..} if url == "https://custom.invalid/account/gateway")
+            matches!(auth, maestro_models_registry::ResolvedRequestAuth::Ok {base_url:Some(url), ..} if url == "https://custom.invalid/account/gateway")
         );
     } else {
         request_support::error(
@@ -266,10 +266,11 @@ fn cloudflare_request_reread_releases_descriptor_guard() {
         .unwrap(),
     );
     let registry =
-        maestro_catalog::ModelRegistry::in_memory(Arc::new(storage), support::forbidden()).unwrap();
+        maestro_models_registry::ModelRegistry::in_memory(Arc::new(storage), support::forbidden())
+            .unwrap();
     model.write().unwrap().name = "before request".into();
 
-    let maestro_catalog::ResolvedRequestAuth::Ok {
+    let maestro_models_registry::ResolvedRequestAuth::Ok {
         api_key, base_url, ..
     } = request_support::run(registry.get_api_key_and_headers(&model))
     else {

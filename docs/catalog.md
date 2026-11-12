@@ -1,6 +1,6 @@
 # Local model catalog
 
-`maestro-catalog::ModelRegistry` composes the offline descriptors with an explicit
+`maestro-models-registry::ModelRegistry` composes the offline descriptors with an explicit
 model file or an ordered list of files. `create` uses native file operations;
 `with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
@@ -32,7 +32,7 @@ local endpoints, field defaults and compatibility settings.
 ## Errors
 
 Construction, registration, refresh, removal and provider-key lookup return
-`maestro_catalog::CatalogError`.
+`maestro_models_registry::CatalogError`.
 Its diagnostic accessor borrows the retained record; Display writes the supplied
 message, including an empty message. The OAuth variant exposes the original
 [account error](models/oauth.md) as its source. Authored catalog diagnostics have
@@ -121,9 +121,9 @@ A successful transformation publishes exactly its selected list, not a merge wit
 nested writes. A failing transformation leaves already-applied effects visible.
 Loading publishes its local selected list only after its complete transformation
 chain succeeds. Public regression witnesses in
-[`catalog_reentry.rs`](../crates/maestro-catalog/tests/catalog_reentry.rs) exercise
+[`catalog_reentry.rs`](../crates/maestro-models-registry/tests/catalog_reentry.rs) exercise
 these boundaries, live replay, owned diagnostics and native/local callers; the
-[browser witness](../crates/maestro-catalog/tests/support/browser_catalog_check.rs)
+[browser witness](../crates/maestro-models-registry/tests/support/browser_catalog_check.rs)
 provides compile-only evidence for local browser effects.
 
 ## Dynamic providers

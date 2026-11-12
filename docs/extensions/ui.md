@@ -61,7 +61,7 @@ fn retained_ui_owned_host_example() -> Result<(), EventError> {
 #   let session = maestro_extensions::execution::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
+#       model_registry: maestro_models::SharedHandle::new(maestro_models_registry::ModelRegistry::in_memory(auth, no_commands)?),
 #   };
     let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(Vec::new())),

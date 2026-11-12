@@ -31,7 +31,7 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
 
 /// Permitted development edges that only a native, non-optional declaration may use.
 pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
-    ("maestro-extensions-wasmtime", "maestro-catalog"),
+    ("maestro-extensions-wasmtime", "maestro-models-registry"),
     ("maestro-extensions-wasmtime", "maestro-credentials"),
     ("maestro-extensions-wasmtime", "maestro-models"),
     ("maestro-extensions-wasmtime", "maestro-session"),
@@ -53,7 +53,7 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-models"),
     ("maestro-chat", "maestro-tui-crossterm"),
     ("maestro", "maestro-lock"),
-    ("maestro", "maestro-catalog"),
+    ("maestro", "maestro-models-registry"),
     ("maestro", "maestro-credentials"),
     ("maestro", "maestro-json"),
     ("maestro", "maestro-session"),
@@ -84,7 +84,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro",
     "maestro-agent",
     "maestro-app",
-    "maestro-catalog",
+    "maestro-models-registry",
     "maestro-chat",
     "maestro-cli",
     "maestro-credentials",
@@ -117,7 +117,7 @@ pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
 pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro",
     "maestro-app",
-    "maestro-catalog",
+    "maestro-models-registry",
     "maestro-chat",
     "maestro-cli",
     "maestro-credentials",
@@ -169,7 +169,7 @@ pub(crate) const TEST_FIXTURES: &str = "maestro-test-fixtures";
 pub(crate) const TEST_FIXTURE_CALLERS: &[&str] = &[
     "maestro-models",
     "maestro-request",
-    "maestro-catalog",
+    "maestro-models-registry",
     "maestro-chat",
     "maestro-tools",
     "maestro-export",

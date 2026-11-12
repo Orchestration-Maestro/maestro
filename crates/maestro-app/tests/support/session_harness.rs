@@ -11,7 +11,6 @@ use maestro_app::resources::loading::{
     LoadPromptsResult, LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
 };
 use maestro_app::{AgentSession, AgentSessionConfig, AgentSessionEvent};
-use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData};
 use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
@@ -27,6 +26,9 @@ use maestro_models::{
     FauxModelDefinition, FauxProviderRegistration, FauxResponseInput, FauxResponseStep, Local,
     Model, RegisterFauxProviderOptions, StopReason, Threaded, Tool, UserContent,
     faux_assistant_message, register_faux_provider,
+};
+use maestro_models_registry::{
+    ModelRegistry, ProviderConfigInput, ProviderModelInput, ScopedModel,
 };
 use maestro_resources::LoadSkillsResult;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
