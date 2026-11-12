@@ -8,15 +8,18 @@ use super::transcript::{
 };
 use super::{Effects, Setup, World, cases, isolated, started, tap};
 use crate::ToolExecutionComponent;
+use maestro_agent::{AgentEvent, AgentMessage};
 use maestro_app::configuration::config::APP_TITLE;
-use maestro_app::messages::CustomAgentMessages;
-use maestro_app::{
-    AgentEvent, AgentMessage, AgentSessionEvent, AgentToolResult, AssistantMessageEvent,
-    AssistantMessageEventStream, PromptOptions, ReadonlySessionManager, SessionManager,
-    SharedAssistantMessage, TextContent, ToolCall, ToolRenderResult, UserBlock,
-    WorkingIndicatorOptions,
+use maestro_app::{AgentSessionEvent, PromptOptions};
+use maestro_extensions::{AgentToolResult, WorkingIndicatorOptions};
+use maestro_models::{
+    AssistantMessageEvent, AssistantMessageEventStream, SharedAssistantMessage, TextContent,
+    ToolCall, UserBlock,
 };
+use maestro_session::message_records::CustomAgentMessages;
+use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_theme::ThemeColor;
+use maestro_tools::ToolRenderResult;
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use serde_json::{Value, json};

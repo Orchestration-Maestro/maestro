@@ -50,9 +50,9 @@ impl ExtensionInputComponent {
             theme,
         } = opts;
         let input = Rc::new(Input::new());
-        let hint = maestro_app::key_hint("tui.select.confirm", "submit", &theme)?
+        let hint = maestro_tools::key_hint("tui.select.confirm", "submit", &theme)?
             + "  "
-            + &maestro_app::key_hint("tui.select.cancel", "cancel", &theme)?;
+            + &maestro_tools::key_hint("tui.select.cancel", "cancel", &theme)?;
         let (container, update) = dialog_chrome(title, input.clone(), theme, hint, false);
         let countdown = dialog_countdown(timeout, tui.as_ref(), runtime, update, on_cancel.clone());
         let focus = FocusFlag::forwarding(input.clone());

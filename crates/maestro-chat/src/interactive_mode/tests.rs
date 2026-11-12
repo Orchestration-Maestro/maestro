@@ -49,18 +49,27 @@ use maestro_app::presentation_data::status_line::{
     FooterFileStats, FooterOperations, NativeFooterOperations,
 };
 use maestro_app::{
-    AgentSessionRuntime, AuthStorage, ContextFile, CreateAgentSessionRuntimeFactory,
-    DefaultEventBus, Extension, ExtensionAPI, ExtensionCommandContext, ExtensionFactory,
-    ExtensionLoadError, LoadExtensionsResult, LoadPromptsResult, LoadSkillsResult,
-    LoadThemesResult, Local, PromptTemplate, RegisteredCommandOptions, ResourceDiagnostic,
-    ResourceExtensionPaths, ResourceLoader, SettingsManager, Skill, SourceInfo, SourceOrigin,
-    SourceScope, create_extension_runtime, load_extension_from_factory, strip_ansi,
+    AgentSessionRuntime, CreateAgentSessionRuntimeFactory, DefaultEventBus, LoadPromptsResult,
+    LoadThemesResult, ResourceExtensionPaths, ResourceLoader,
 };
-use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
+use maestro_credentials::AuthStorage;
+use maestro_extensions::{
+    Extension, ExtensionAPI, ExtensionCommandContext, ExtensionFactory, ExtensionLoadError,
+    LoadExtensionsResult, create_extension_runtime, load_extension_from_factory,
+    types::RegisteredCommandOptions,
+};
+use maestro_models::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
+use maestro_models::{Local, system_prompt::ContextFile};
+use maestro_resources::{
+    LoadSkillsResult, PromptTemplate, ResourceDiagnostic, Skill, SourceInfo, SourceOrigin,
+    SourceScope,
+};
+use maestro_settings::SettingsManager;
 use maestro_test_process::{IsolatedSetup, SearchGuard, TestProcess};
 use maestro_theme::{
     Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, CompletionError,
     CompletionOptions, CompletionResult, Component, CursorPosition, EditorComponent, InputHandler,
@@ -654,7 +663,7 @@ fn loaded(
 fn loaded_on_bus(
     cwd: &str,
     factory: ExtensionFactory<Local>,
-    bus: &maestro_app::EventBus<Local>,
+    bus: &maestro_extensions::EventBus<Local>,
     further: Vec<(String, ExtensionFactory<Local>)>,
 ) -> Rc<LoadExtensionsResult<Local>> {
     let runtime = create_extension_runtime::<Local>();
@@ -1713,7 +1722,7 @@ pub(super) fn rendered_border(world: &World) -> String {
 }
 
 /// Selects `level` on the session as its agent state, whatever the model supports.
-pub(super) fn select_level(world: &World, level: maestro_app::ThinkingLevel) {
+pub(super) fn select_level(world: &World, level: maestro_agent::ThinkingLevel) {
     world
         .host
         .session()
@@ -2018,12 +2027,12 @@ fn seed_replaced_session(world: &World) {
     world.mode.compaction_queued_messages.borrow_mut().push(
         super::queues::CompactionQueuedMessage {
             text: "STALE QUEUE".to_owned(),
-            mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+            mode: maestro_session::message_records::UserMessageDelivery::FollowUp,
         },
     );
     events::dispatch(
         world,
-        maestro_app::AgentEvent::MessageStart {
+        maestro_agent::AgentEvent::MessageStart {
             message: transcript::message(transcript::assistant(
                 &json!([{"type": "text", "text": "STALE STREAM"}]),
                 "stop",

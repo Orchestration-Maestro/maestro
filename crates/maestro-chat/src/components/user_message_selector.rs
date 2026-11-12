@@ -84,7 +84,7 @@ impl UserMessageList {
     fn rows(&self, index: usize, width: usize) -> [String; 3] {
         let normalized = self.messages[index].text.replace('\n', " ");
         let clipped = truncate_to_width(
-            normalized.trim_matches(maestro_app::is_whitespace_scalar),
+            normalized.trim_matches(maestro_text::is_whitespace_scalar),
             width.saturating_sub(2),
             TruncateOptions::default(),
         );

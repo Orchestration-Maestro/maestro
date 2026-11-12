@@ -1,8 +1,8 @@
 //! Borrowed display reads and preview normalization.
-pub(super) use maestro_app::export_html::template::{
+pub(super) use maestro_session::export_html::template::{
     extract_content_prefix as content, read_text as text,
 };
-use maestro_app::{is_whitespace_scalar, truncate_utf16};
+use maestro_text::{is_whitespace_scalar, truncate_utf16};
 use maestro_theme::{Theme, ThemeColor};
 use serde_json::Value;
 use std::io;
@@ -33,7 +33,7 @@ pub(super) fn entry(entry: &Value, theme: &Theme, styles: bool) -> io::Result<St
             let tokens = entry["tokensBefore"].as_f64().ok_or_else(|| {
                 io::Error::new(io::ErrorKind::InvalidData, "token count is not numeric")
             })?;
-            let rounded = maestro_app::compact_json(&Value::from((tokens / 1000.0).round()))
+            let rounded = maestro_json::compact_json(&Value::from((tokens / 1000.0).round()))
                 .map_err(io::Error::other)?;
             fg(
                 ThemeColor::BorderAccent,
@@ -64,7 +64,7 @@ pub(super) fn entry(entry: &Value, theme: &Theme, styles: bool) -> io::Result<St
             fg(ThemeColor::Dim, &format!("[label: {label}]"))
         }
         Some("session_info") => {
-            let name = if maestro_app::is_truthy(&entry["name"]) {
+            let name = if maestro_json::is_truthy(&entry["name"]) {
                 fg(ThemeColor::Dim, text(&entry["name"])?)?
             } else {
                 Theme::italic(&fg(ThemeColor::Dim, "empty")?, styles)
@@ -87,7 +87,7 @@ fn message(message: &Value, theme: &Theme) -> io::Result<String> {
                 preview
             } else if message["stopReason"] == "aborted" {
                 fg(ThemeColor::Muted, "(aborted)")?
-            } else if maestro_app::is_truthy(&message["errorMessage"]) {
+            } else if maestro_json::is_truthy(&message["errorMessage"]) {
                 fg(
                     ThemeColor::Error,
                     &truncate_utf16(&normalize(text(&message["errorMessage"])?), 80),

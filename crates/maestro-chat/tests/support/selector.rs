@@ -1,6 +1,6 @@
 //! Shared strict selector queries and complete output records.
 use crate::platform_keys::for_this_platform;
-use maestro_app::ThinkingLevel;
+use maestro_agent::ThinkingLevel;
 use maestro_tui::Component;
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;

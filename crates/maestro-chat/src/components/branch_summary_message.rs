@@ -1,6 +1,7 @@
 //! Expandable branch summary and the shared summary display owner.
-use maestro_app::{BranchSummaryMessage, key_text};
+use maestro_session::message_records::BranchSummaryMessage;
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor};
+use maestro_tools::key_text;
 use maestro_tui::{Box, Component, MarkdownTheme, Spacer, TerminalImage, Text};
 use std::{cell::Cell, rc::Rc};
 

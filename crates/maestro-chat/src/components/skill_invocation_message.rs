@@ -1,6 +1,7 @@
 //! Collapsed and expanded skill invocation content.
-use maestro_app::{ParsedSkillBlock, key_text};
+use maestro_app::ParsedSkillBlock;
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor};
+use maestro_tools::key_text;
 use maestro_tui::{Box as Panel, Component, MarkdownTheme, TerminalImage, Text};
 use std::{cell::Cell, rc::Rc};
 

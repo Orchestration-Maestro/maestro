@@ -2,8 +2,8 @@
 #![cfg(test)]
 #[path = "session_search_support/mod.rs"]
 mod session_search_support;
-use maestro_app::{Presence, SessionInfo};
 use maestro_chat::*;
+use maestro_session::{Presence, SessionInfo};
 
 /// A populated owner record for direct borrowing witnesses.
 fn session() -> SessionInfo {

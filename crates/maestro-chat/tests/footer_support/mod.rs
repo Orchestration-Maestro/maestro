@@ -6,12 +6,13 @@ pub mod harness;
 
 use harness::session;
 
-use maestro_app::{
-    AgentSession, CompactionOptions, ExtensionStatuses, Local, Model, Presence,
-    ReadonlyFooterDataProvider, ThinkingLevel,
-};
+use maestro_agent::ThinkingLevel;
+use maestro_app::AgentSession;
 use maestro_chat::FooterComponent;
 use maestro_chat::components::Environment;
+use maestro_extensions::footer::{ExtensionStatuses, ReadonlyFooterDataProvider};
+use maestro_models::{Local, Model};
+use maestro_session::{Presence, session_manager::CompactionOptions};
 
 use maestro_theme::{Collator, LiveTheme, Theme, ThemeColor, ThemeState};
 use serde_json::Value;

@@ -1,6 +1,6 @@
 //! Supplied thinking levels in a bordered selection list.
 use super::bordered_select_list;
-use maestro_app::ThinkingLevel;
+use maestro_agent::ThinkingLevel;
 use maestro_theme::LiveTheme;
 use maestro_tui::{Component, Container, SelectItem, SelectList};
 use std::rc::Rc;

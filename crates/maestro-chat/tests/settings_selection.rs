@@ -299,7 +299,7 @@ fn submenus_cap_visible_options_at_ten() {
         let mut cfg = config();
         assert_eq!(query.n, query.available.len());
         cfg.available_thinking_levels = query.available;
-        cfg.thinking_level = maestro_app::ThinkingLevel::Minimal;
+        cfg.thinking_level = maestro_agent::ThinkingLevel::Minimal;
         let selector = maestro_chat::SettingsSelectorComponent::new(
             cfg,
             events.callbacks(true),

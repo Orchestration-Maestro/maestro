@@ -5,10 +5,10 @@ use crate::{
     AuthType, ExtensionSelectorComponent, ExtensionSelectorOptions, LoginDialogComponent,
     LoginDialogOptions, LoginDialogPlatform,
 };
-use maestro_app::{
-    ApiKeyCredential, AuthCredential, OAuthSelectPrompt, configuration::config::get_docs_path,
-    is_whitespace_scalar,
-};
+use maestro_app::configuration::config::get_docs_path;
+use maestro_credentials::{ApiKeyCredential, AuthCredential};
+use maestro_models::OAuthSelectPrompt;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::ThemeColor;
 use std::{cell::Cell, error::Error, path::Path, rc::Rc};
 use tokio::sync::oneshot;

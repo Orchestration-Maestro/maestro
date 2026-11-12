@@ -1,8 +1,8 @@
 //! Bordered session-tree presentation over one retained navigation owner.
 use super::{FilterMode, TreeList};
 use crate::components::dynamic_border::DynamicBorder;
-use maestro_app::key_text;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
+use maestro_tools::key_text;
 use maestro_tui::{
     Component, Container, Input, Spacer, Text, TruncateOptions, TruncatedText, truncate_to_width,
 };
@@ -102,7 +102,7 @@ impl TreeSelectorComponent {
     /// # Errors
     /// Preserves reached list construction errors.
     pub fn new(
-        tree: &[maestro_app::SessionTreeNode<'_>],
+        tree: &[maestro_session::session_manager::SessionTreeNode<'_>],
         callbacks: TreeSelectorCallbacks,
         options: TreeSelectorOptions,
     ) -> io::Result<Self> {
@@ -337,10 +337,10 @@ impl Component for LabelInput {
                 .iter()
                 .map(|line| format!("  {line}")),
         );
-        let hint = maestro_app::key_hint("tui.select.confirm", "save", &self.theme)
+        let hint = maestro_tools::key_hint("tui.select.confirm", "save", &self.theme)
             .unwrap_or_default()
             + "  "
-            + &maestro_app::key_hint("tui.select.cancel", "cancel", &self.theme)
+            + &maestro_tools::key_hint("tui.select.cancel", "cancel", &self.theme)
                 .unwrap_or_default();
         lines.push(format!("  {hint}"));
         lines
@@ -359,7 +359,7 @@ impl InputHandler for LabelInput {
         let keys = maestro_tui::get_keybindings();
         if keys.matches(data, "tui.select.confirm") {
             let value = self.input.get_value();
-            let value = value.trim_matches(maestro_app::is_whitespace_scalar);
+            let value = value.trim_matches(maestro_text::is_whitespace_scalar);
             let label = (!value.is_empty()).then_some(value);
             let id = self.id.borrow().clone();
             let Some(id) = id else {

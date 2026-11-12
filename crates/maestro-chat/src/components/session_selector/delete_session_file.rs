@@ -1,5 +1,5 @@
 //! Literal trash execution with permanent unlink fallback.
-use maestro_app::{is_whitespace_scalar, truncate_utf16};
+use maestro_text::{is_whitespace_scalar, truncate_utf16};
 use maestro_tui::LocalFuture;
 use std::{error::Error, path::Path, rc::Rc};
 /// Observed trash completion, preserving native failures alongside captured diagnostics.
@@ -103,7 +103,7 @@ struct NativeOperations;
 #[cfg(not(target_arch = "wasm32"))]
 impl SessionFileOperations for NativeOperations {
     fn trash(&self, args: &[String]) -> TrashResult {
-        use maestro_app::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
+        use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
         let mut command = tokio::process::Command::new("trash");
         command.args(args);
         let result = spawn_sync(
@@ -119,7 +119,7 @@ impl SessionFileOperations for NativeOperations {
         match result {
             Ok(output) => TrashResult::Exited {
                 success: output.status.success(),
-                stderr: maestro_app::decode_utf8(&output.stderr).into_owned(),
+                stderr: maestro_text::decode_utf8(&output.stderr).into_owned(),
             },
             Err(error) => {
                 let error: Box<dyn Error> = match error {

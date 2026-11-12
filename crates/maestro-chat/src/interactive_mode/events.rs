@@ -6,12 +6,13 @@ use super::progress::{CompactionOutcome, RetryEnd, RetryStart};
 use super::replay::{aborted_notice, error_notice, failure_result};
 use super::status_indicator::StatusKind;
 use crate::{AssistantMessageComponent, ToolExecutionComponent, ToolExecutionResult};
+use maestro_agent::{AgentEvent, AgentMessage};
+use maestro_app::AgentSessionEvent;
 use maestro_app::configuration::config::APP_TITLE;
-use maestro_app::messages::CustomAgentMessages;
-use maestro_app::{
-    AgentEvent, AgentMessage, AgentSessionEvent, AgentToolResult, AssistantContent,
-    NativeAgentMessage, ReadonlySessionManager, SharedAssistantMessage, StopReason, ToolCall,
-};
+use maestro_extensions::{AgentToolResult, types::events::NativeAgentMessage};
+use maestro_models::{AssistantContent, SharedAssistantMessage, StopReason, ToolCall};
+use maestro_session::message_records::CustomAgentMessages;
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tui::Component;
 use std::{
     error::Error,
@@ -485,7 +486,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the invalid stored name or the terminal's title-writing failure.
-    pub(super) fn update_terminal_title(&self) -> Result<(), maestro_app::EventError> {
+    pub(super) fn update_terminal_title(&self) -> Result<(), maestro_extensions::EventError> {
         let title = {
             let session = self.runtime_host.session();
             let manager = session.session_manager().borrow();

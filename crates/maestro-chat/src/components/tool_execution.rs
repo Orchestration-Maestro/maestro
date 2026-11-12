@@ -1,10 +1,12 @@
 //! Retained transcript composition over caller-selected tool renderer bindings.
-use maestro_app::{
-    DiagnosticErrorInfo, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase,
-    ToolRenderResultLike, ToolRenderResultOptions, ToolRenderShell, ToolRendererBinding,
-    ToolRendererState, UserBlock, expand_hint, get_text_output, pretty_json,
-};
+use maestro_json::pretty_json;
+use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::{Theme, ThemeBg, ThemeColor};
+use maestro_tools::{
+    ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResultOptions,
+    ToolRenderShell, ToolRendererBinding, ToolRendererState, expand_hint,
+    output::render_utils::{ToolRenderResultLike, get_text_output},
+};
 use maestro_tui::{Box as Frame, Component, ComponentHandle, Container, Spacer, Text};
 use serde_json::Value;
 use std::{
@@ -118,7 +120,9 @@ struct Row {
     /// Current inline children, removable without touching caller-added children.
     images: RefCell<Vec<ComponentHandle>>,
     /// Successful conversions for current payloads.
-    converted: RefCell<HashMap<String, HashMap<String, maestro_app::ConvertedImage>>>,
+    converted: RefCell<
+        HashMap<String, HashMap<String, maestro_tools::utils::image_convert::ConvertedImage>>,
+    >,
     /// Rebuild failure retained by the infallible invalidation interface.
     error: RefCell<Option<DiagnosticErrorInfo>>,
 }

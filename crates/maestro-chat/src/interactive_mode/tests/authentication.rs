@@ -17,9 +17,11 @@ use crate::{
     AuthSelectorProvider, AuthType, ExtensionSelectorComponent, LoginDialogComponent,
     OAuthSelectorComponent,
 };
-use maestro_app::{
-    AuthCredential, AuthStorage, BoxFuture, Fetch, Model, OAuthCallbacks, OAuthCredentials,
-    OAuthError, OAuthProviderInterface, ReadonlyFooterDataProvider, SharedHandle,
+use maestro_credentials::{AuthCredential, AuthStorage};
+use maestro_extensions::footer::ReadonlyFooterDataProvider;
+use maestro_models::{
+    BoxFuture, Fetch, Model, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthProviderInterface,
+    SharedHandle,
 };
 use maestro_tui::{Component, Focusable, KeybindingKeys};
 use serde::{Deserialize, de::DeserializeOwned};
@@ -318,7 +320,8 @@ fn select_on(world: &World, panel: &OAuthSelectorComponent, position: usize) {
 /// Whether the terminal was written `text`, however the frame wrapped it: every word of
 /// `text` appears, in order, in what the terminal received.
 fn painted(world: &World, text: &str) -> bool {
-    let frame = maestro_app::strip_ansi(&world.terminal.writes().concat()).unwrap();
+    let frame =
+        maestro_tools::output::render_utils::strip_ansi(&world.terminal.writes().concat()).unwrap();
     let mut rest = frame.as_str();
     text.split_whitespace().all(|word| {
         rest.find(word).is_some_and(|at| {
@@ -879,7 +882,7 @@ impl OAuthProviderInterface for RefusingAfter {
 
 /// The refusing provider's failure.
 fn refused() -> OAuthError {
-    maestro_app::DiagnosticErrorInfo::error("refresh refused").into()
+    maestro_models::DiagnosticErrorInfo::error("refresh refused").into()
 }
 
 /// Arms a catalog whose refresh succeeds `succeeds` more times before failing, and stores

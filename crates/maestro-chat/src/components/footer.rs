@@ -1,9 +1,11 @@
 //! The footer that shows the working directory, cumulative usage and the selected model.
 use super::{shorten_path_with_home, thinking_selector::thinking_text};
-use maestro_app::{
-    AgentSession, DiagnosticErrorInfo, ExtensionExecution, Local, ReadonlyFooterDataProvider,
-    ReadonlySessionManager, ThinkingLevel, is_whitespace_scalar,
-};
+use maestro_agent::ThinkingLevel;
+use maestro_app::AgentSession;
+use maestro_extensions::{ExtensionExecution, footer::ReadonlyFooterDataProvider};
+use maestro_models::{DiagnosticErrorInfo, Local};
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::{Collator, LiveTheme, ThemeColor, paint};
 use maestro_tui::{Component, TruncateOptions, truncate_to_width, visible_width};
 use serde_json::Value;

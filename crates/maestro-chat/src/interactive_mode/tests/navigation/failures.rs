@@ -1,7 +1,8 @@
 //! Fork and clone failures through the real runtime's factory and replacement callback.
 use super::super::{Setup, World, actions, isolated_case, start, typed::submit};
 use super::{append_user, cancellable, fork_panel, tree::finish};
-use maestro_app::{CreateAgentSessionRuntimeFactory, DiagnosticErrorInfo};
+use maestro_app::CreateAgentSessionRuntimeFactory;
+use maestro_models::DiagnosticErrorInfo;
 use maestro_tui::Component;
 use std::{cell::Cell, path::Path, rc::Rc};
 
@@ -40,7 +41,10 @@ fn reported(world: &World, callback: bool, calls: &Cell<usize>) {
     } else {
         "ordinary fork failure"
     };
-    let rows = maestro_app::strip_ansi(&world.mode.chat_container.render(120).join("\n")).unwrap();
+    let rows = maestro_tools::output::render_utils::strip_ansi(
+        &world.mode.chat_container.render(120).join("\n"),
+    )
+    .unwrap();
     assert_eq!(rows.matches(message).count(), 1, "{rows}");
     assert!(rows.contains("Error:"), "{rows}");
     assert!(!rows.contains("to new session"), "{rows}");

@@ -5,9 +5,12 @@ use super::{
     tree::{finish, panel},
 };
 use crate::{ExtensionEditorComponent, ExtensionSelectorComponent, TreeSelectorComponent};
-use maestro_app::{
-    ExtensionFactory, Local, Presence, SessionBeforeTreeEvent, SessionBeforeTreeResult,
+use maestro_extensions::{
+    ExtensionFactory,
+    types::events::{SessionBeforeTreeEvent, SessionBeforeTreeResult},
 };
+use maestro_models::Local;
+use maestro_session::Presence;
 use maestro_tui::Component;
 use std::{cell::RefCell, rc::Rc};
 
@@ -81,7 +84,7 @@ fn completed_choice(world: &World, seen: &Choices, summarize: bool, text: Option
     ));
     assert!(!shows(&world.mode.chat_container, "tail"));
     if !summarize {
-        use maestro_app::ReadonlySessionManager as _;
+        use maestro_session::session_manager::ReadonlySessionManager as _;
         assert_eq!(
             world
                 .host
@@ -120,9 +123,11 @@ fn tree_choices_keep_reopen_loader_and_navigation_branches() {
                 if let Some(text) = text {
                     let editor = panel::<ExtensionEditorComponent>(&world).unwrap();
                     assert!(
-                        maestro_app::strip_ansi(&editor.render(100).join("\n"))
-                            .unwrap()
-                            .contains("Custom summarization instructions")
+                        maestro_tools::output::render_utils::strip_ansi(
+                            &editor.render(100).join("\n")
+                        )
+                        .unwrap()
+                        .contains("Custom summarization instructions")
                     );
                     editor.handle_input(text).unwrap();
                     editor.handle_input("\r").unwrap();
@@ -172,7 +177,7 @@ fn tree_cancellation_returns_to_the_same_selection_without_navigating() {
             world.mode.compaction_queued_messages.borrow_mut().push(
                 super::super::super::queues::CompactionQueuedMessage {
                     text: "retained on veto".into(),
-                    mode: maestro_app::messages::UserMessageDelivery::Steer,
+                    mode: maestro_session::message_records::UserMessageDelivery::Steer,
                 },
             );
             choose(&world, 1);

@@ -3,9 +3,9 @@
 use super::{HomeLookup, ResourceItem, Snapshots, format_display_path, get_short_path, read};
 use indexmap::IndexMap;
 use maestro_app::presentation_data::slash_commands::BUILTIN_SLASH_COMMANDS;
-use maestro_app::{
-    DiagnosticType, ExtensionRunner, Local, ResourceDiagnostic, SourceInfo, SourceScope,
-};
+use maestro_extensions::ExtensionRunner;
+use maestro_models::Local;
+use maestro_resources::{DiagnosticType, ResourceDiagnostic, SourceInfo, SourceScope};
 use maestro_theme::{Theme, ThemeColor};
 use std::{
     cell::RefCell,

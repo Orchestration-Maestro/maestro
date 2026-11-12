@@ -1,6 +1,9 @@
 //! Extension headers and footers in place of the built-in ones.
 use super::super::InteractiveMode;
-use maestro_app::{ComponentFactory, EventError, FooterFactory};
+use maestro_extensions::{
+    EventError,
+    types::{ComponentFactory, FooterFactory},
+};
 use maestro_tui::ComponentHandle;
 use std::rc::Rc;
 

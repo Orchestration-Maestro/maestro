@@ -1,5 +1,6 @@
 //! Index forest retaining each original session occurrence.
-use maestro_app::{Presence, SessionInfo, canonicalize_path};
+use maestro_resources::canonicalize_path;
+use maestro_session::{Presence, SessionInfo};
 use std::collections::HashMap;
 /// Visible original occurrence with its connector text.
 pub(super) struct FlatSessionNode {

@@ -33,7 +33,7 @@ fn watched(directory: &Path, progress: bool) -> (World, Rc<RecordingWatcher>) {
     assert_eq!(Path::new(&watcher.paths()[0]).file_name().unwrap(), ".git");
     assert!(watcher.paths()[1].ends_with("custom"));
     world.host.set_before_session_invalidate(Some(Rc::new(
-        || -> Result<(), maestro_app::EventError> {
+        || -> Result<(), maestro_extensions::EventError> {
             panic!("presentation stop must not dispose the application runtime");
         },
     )));
@@ -610,7 +610,7 @@ async fn failure_shutdown(directory: &Path, phase: &str) {
     if phase == "dispose" {
         assert!(
             error
-                .downcast_ref::<maestro_app::DiagnosticErrorInfo>()
+                .downcast_ref::<maestro_models::DiagnosticErrorInfo>()
                 .is_some()
         );
         assert!(!rig.world.mode.is_initialized.get());
@@ -679,7 +679,7 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
         assert!(mode.pending_tools.borrow().values().next().is_none());
     })));
     mode.shutdown_requested.set(requested);
-    let ended = maestro_app::AgentEvent::AgentEnd {
+    let ended = maestro_agent::AgentEvent::AgentEnd {
         messages: Vec::new(),
     };
     super::events::dispatch(&rig.world, ended);
@@ -695,7 +695,7 @@ async fn requested_case(directory: &Path, requested: bool, transient: (bool, boo
     if requested {
         super::events::dispatch(
             &rig.world,
-            maestro_app::AgentEvent::AgentEnd {
+            maestro_agent::AgentEvent::AgentEnd {
                 messages: Vec::new(),
             },
         );
@@ -741,12 +741,12 @@ fn second_signal_uses_native_default_during_pending_disposal() {
 fn pending_extension(
     events: Rc<RefCell<Vec<String>>>,
     gate: tokio::sync::oneshot::Receiver<()>,
-) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+) -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     let gate = Rc::new(RefCell::new(Some(gate)));
     Rc::new(move |api| {
         let gate = Rc::clone(&gate);
         let events = Rc::clone(&events);
-        api.on::<maestro_app::SessionShutdownEvent, ()>(
+        api.on::<maestro_extensions::types::events::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(move |_, _| {
                 events.borrow_mut().push("dispose".into());
@@ -763,9 +763,9 @@ fn pending_extension(
 }
 
 /// A real extension failure that the runtime's error listener can reject.
-fn failing_extension() -> maestro_app::ExtensionFactory<maestro_app::Local> {
+fn failing_extension() -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     Rc::new(|api| {
-        api.on::<maestro_app::SessionShutdownEvent, ()>(
+        api.on::<maestro_extensions::types::events::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(|_, _| {
                 Box::pin(async {
@@ -788,7 +788,7 @@ fn select_failure(rig: &Rig, phase: &str) {
                 .session()
                 .extension_runner()
                 .on_error(Rc::new(|_| {
-                    Err(Box::new(maestro_app::DiagnosticErrorInfo::new(
+                    Err(Box::new(maestro_models::DiagnosticErrorInfo::new(
                         None,
                         "disposal rejected",
                     )))

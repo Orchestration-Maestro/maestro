@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 pub use crate::selector::{Empty, Frame, Frames};
 pub use crate::simple_selector_cases::*;
-use maestro_app::ThinkingLevel;
+use maestro_agent::ThinkingLevel;
 use maestro_tui::Component;
 use serde::Deserialize;
 use serde_json::Value;

@@ -4,7 +4,9 @@ use super::InteractiveMode;
 use maestro_app::configuration::config::{
     APP_NAME, get_package_dir, installation::Installation, paths,
 };
-use maestro_app::{ExtensionUIContextPort, NativeExportOperations, is_whitespace_scalar};
+use maestro_export::NativeExportOperations;
+use maestro_extensions::types::ExtensionUIContextPort;
+use maestro_text::is_whitespace_scalar;
 use std::{error::Error, path::Path, rc::Rc};
 
 impl InteractiveMode {
@@ -140,7 +142,7 @@ impl InteractiveMode {
     fn show_import_result(
         &self,
         path: &str,
-        result: maestro_app::SessionChangeResult,
+        result: maestro_extensions::types::SessionChangeResult,
     ) -> Result<(), Box<dyn Error>> {
         if result.cancelled {
             return Ok(self.show_status("Import cancelled")?);

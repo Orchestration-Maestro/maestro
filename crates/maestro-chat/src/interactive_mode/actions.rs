@@ -4,11 +4,13 @@ use super::InteractiveMode;
 use crate::components::thinking_selector::thinking_text;
 use crate::external_editor::{ExternalEditorFile, edit_external_file, external_command};
 use crate::temporary_file::write_temporary_file;
+use maestro_agent::ThinkingLevel;
 use maestro_app::agent_session::{CycleDirection, ModelCycleResult};
 use maestro_app::utils::image_clipboard::{
     ClipboardImage, extension_for_image_mime_type, read_clipboard_image,
 };
-use maestro_app::{DiagnosticErrorInfo, ThinkingLevel, is_whitespace_scalar};
+use maestro_models::DiagnosticErrorInfo;
+use maestro_text::is_whitespace_scalar;
 use maestro_tui::Component;
 use std::{
     error::Error,
@@ -220,9 +222,9 @@ impl InteractiveMode {
     #[cfg(unix)]
     pub(super) fn handle_ctrl_z(&self) -> Result<(), Box<dyn Error>> {
         let interrupts = ignore_interrupts()?;
-        let suspended = maestro_app::continued().and_then(|continued| {
+        let suspended = maestro_process::continued().and_then(|continued| {
             self.ui.stop()?;
-            maestro_app::stop_process_group()?;
+            maestro_process::stop_process_group()?;
             Ok(continued)
         });
         let continued = match suspended {
@@ -293,7 +295,7 @@ impl InteractiveMode {
 /// so a later suspension cannot leave an earlier preparation taking the default action
 /// first.
 #[cfg(unix)]
-static INTERRUPT_ACTIONS: std::sync::Mutex<Option<maestro_app::DefaultSignalActions>> =
+static INTERRUPT_ACTIONS: std::sync::Mutex<Option<maestro_process::DefaultSignalActions>> =
     std::sync::Mutex::new(None);
 
 /// Makes interrupts do nothing until the returned actions are restored.
@@ -301,7 +303,7 @@ static INTERRUPT_ACTIONS: std::sync::Mutex<Option<maestro_app::DefaultSignalActi
 /// # Errors
 /// Returns the native handler registration failure.
 #[cfg(unix)]
-fn ignore_interrupts() -> io::Result<maestro_app::DefaultSignalActions> {
+fn ignore_interrupts() -> io::Result<maestro_process::DefaultSignalActions> {
     let mut prepared = INTERRUPT_ACTIONS
         .lock()
         .unwrap_or_else(PoisonError::into_inner);
@@ -309,8 +311,8 @@ fn ignore_interrupts() -> io::Result<maestro_app::DefaultSignalActions> {
         actions.defer();
         return Ok(actions.clone());
     }
-    let interrupt = [maestro_app::TerminationSignal::Interrupt];
+    let interrupt = [maestro_process::TerminationSignal::Interrupt];
     Ok(prepared
-        .insert(maestro_app::DefaultSignalActions::new(&interrupt)?)
+        .insert(maestro_process::DefaultSignalActions::new(&interrupt)?)
         .clone())
 }

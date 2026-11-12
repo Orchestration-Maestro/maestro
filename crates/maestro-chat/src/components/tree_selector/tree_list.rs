@@ -4,10 +4,11 @@ use super::{
     FilterMode, SessionTreeNode,
     structure::{FlatNode, Structure},
 };
-use maestro_app::export_html::template::{
+use maestro_json::is_truthy;
+use maestro_session::export_html::template::{
     ancestors, flatten_tree, has_text_content, read_message, recalculate_visual_structure,
 };
-use maestro_app::{SessionTreeNode as InputNode, is_truthy};
+use maestro_session::session_manager::SessionTreeNode as InputNode;
 use maestro_theme::LiveTheme;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -221,7 +222,7 @@ impl TreeList {
     /// # Errors
     /// Returns invalid data when a reached message or content read is malformed.
     pub fn new(
-        tree: &[maestro_app::SessionTreeNode<'_>],
+        tree: &[maestro_session::session_manager::SessionTreeNode<'_>],
         current_leaf_id: Option<&str>,
         max_visible_lines: usize,
         initial_selected_id: Option<&str>,

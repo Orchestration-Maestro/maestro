@@ -6,13 +6,16 @@ use crate::{
     BranchSummaryMessageComponent, CompactionSummaryMessageComponent, CustomMessageComponent,
     SkillInvocationMessageComponent, UserMessageComponent,
 };
-use maestro_app::EventError;
-use maestro_app::messages::{BashExecutionMessage, CustomAgentMessages};
-use maestro_app::{
-    AgentMessage, Local, LocaleNumberFormat, NativeAgentMessage, Presence, SharedAssistantMessage,
-    TruncationOptions, UserBlock, UserContent, parse_skill_block, truncate_tail,
-};
+use maestro_agent::AgentMessage;
+use maestro_app::parse_skill_block;
+use maestro_extensions::EventError;
+use maestro_extensions::types::events::NativeAgentMessage;
+use maestro_models::{Local, SharedAssistantMessage, UserBlock, UserContent};
+use maestro_session::Presence;
+use maestro_session::message_records::{BashExecutionMessage, CustomAgentMessages};
+use maestro_text::numbers::LocaleNumberFormat;
 use maestro_theme::{ThemeColor, ThemeError};
+use maestro_tools::{TruncationOptions, truncate_tail};
 use maestro_tui::{Component, MarkdownTheme, Spacer, TUI, Text};
 use std::{rc::Rc, sync::PoisonError};
 

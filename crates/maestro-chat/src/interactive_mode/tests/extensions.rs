@@ -4,10 +4,14 @@
 mod autocomplete;
 
 use super::{Setup, World, isolated};
-use maestro_app::{
-    DefaultEventBus, Extension, ExtensionAPI, ExtensionFactory, ExtensionShortcutOptions, Local,
-    ReadonlySessionManager, create_extension_runtime, strip_ansi,
+use maestro_app::DefaultEventBus;
+use maestro_extensions::{
+    Extension, ExtensionAPI, ExtensionFactory, create_extension_runtime,
+    types::ExtensionShortcutOptions,
 };
+use maestro_models::Local;
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::InputHandler;
 use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};

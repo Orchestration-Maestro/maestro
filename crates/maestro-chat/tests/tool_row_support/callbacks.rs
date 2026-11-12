@@ -1,6 +1,6 @@
 //! Controlled callbacks capture the complete source-visible context and component identity.
 use super::records::Input;
-use maestro_app::{ToolRenderContext, ToolRenderShell, ToolRendererBinding, ToolRendererState};
+use maestro_tools::{ToolRenderContext, ToolRenderShell, ToolRendererBinding, ToolRendererState};
 use maestro_tui::{ComponentHandle, Container, Text};
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -42,14 +42,17 @@ impl Callbacks {
                       context: &ToolRenderContext<'_, ToolRendererState>| {
                     owner.call("call", &kind, context, None)
                 },
-            ) as maestro_app::ToolRenderCall<ToolRendererState>
+            ) as maestro_tools::ToolRenderCall<ToolRendererState>
         });
         let result = def.result.as_ref().map(|kind| {
             let owner = self.clone();
             let kind = kind.clone();
             Rc::new(
-                move |result: &maestro_app::ToolRenderResultLike<'_, Value>,
-                      options: maestro_app::ToolRenderResultOptions,
+                move |result: &maestro_tools::output::render_utils::ToolRenderResultLike<
+                    '_,
+                    Value,
+                >,
+                      options: maestro_tools::ToolRenderResultOptions,
                       _: &maestro_theme::LiveTheme,
                       context: &ToolRenderContext<'_, ToolRendererState>| {
                     let value = result_value(result);
@@ -63,7 +66,7 @@ impl Callbacks {
                         )),
                     )
                 },
-            ) as maestro_app::ToolRenderResultCallback<Value, ToolRendererState>
+            ) as maestro_tools::ToolRenderResultCallback<Value, ToolRendererState>
         });
         Some(ToolRendererBinding {
             render_call: call,
@@ -82,7 +85,7 @@ impl Callbacks {
         kind: &str,
         c: &ToolRenderContext<'_, ToolRendererState>,
         result: Option<(Value, Value)>,
-    ) -> Result<ComponentHandle, maestro_app::DiagnosticErrorInfo> {
+    ) -> Result<ComponentHandle, maestro_models::DiagnosticErrorInfo> {
         self.invalidators
             .borrow_mut()
             .insert(slot.into(), c.invalidate.clone());
@@ -103,7 +106,9 @@ impl Callbacks {
             .filter(|e| e["slot"] == slot)
             .count();
         if kind == "throw" || (kind == "recover" && count == 2) {
-            return Err(maestro_app::DiagnosticErrorInfo::error("renderer refused"));
+            return Err(maestro_models::DiagnosticErrorInfo::error(
+                "renderer refused",
+            ));
         }
         if kind == "empty" {
             return Ok(Rc::new(Container::new()));
@@ -126,7 +131,9 @@ impl Callbacks {
 }
 
 /// Preserve the whole result payload, including optional metadata presence.
-fn result_value(result: &maestro_app::ToolRenderResultLike<'_, Value>) -> Value {
+fn result_value(
+    result: &maestro_tools::output::render_utils::ToolRenderResultLike<'_, Value>,
+) -> Value {
     let mut value = json!({"content":result.content});
     if let Some(details) = result.details {
         value["details"] = details.clone();
@@ -169,13 +176,13 @@ fn text(
                 c.show_images,
                 c.is_error
             ]);
-            format!("{slot}:{}", maestro_app::compact_json(&v).unwrap())
+            format!("{slot}:{}", maestro_json::compact_json(&v).unwrap())
         }
         "reuse" | "recover" => format!(
             "{slot} {}",
             c.args.map_or_else(
                 || "undefined".into(),
-                |v| maestro_app::compact_json(v).unwrap()
+                |v| maestro_json::compact_json(v).unwrap()
             )
         ),
         "style" => "\x1b[7m   \x1b[27m".into(),

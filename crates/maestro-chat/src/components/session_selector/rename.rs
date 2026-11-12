@@ -3,8 +3,9 @@ use super::{
     Component, Container, DynamicBorder, Focusable, LoadReason, Rc, SessionList, Spacer, State,
     ThemeColor, paint,
 };
-use maestro_app::{is_whitespace_scalar, key_text};
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::Theme;
+use maestro_tools::key_text;
 use maestro_tui::Text;
 impl State {
     /// Keeps list callbacks useful without a strong backedge from the editor.

@@ -1,9 +1,10 @@
 //! Strict model-picker corpus and controlled owner operations.
 use crate::bindings::Binding;
-use maestro_app::{
-    AuthStorage, ConfigValues, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput,
-    ProviderModelInput, SharedHandle,
+use maestro_catalog::{
+    ConfigValues, ModelFileOperations, ModelRegistry, ProviderConfigInput, ProviderModelInput,
 };
+use maestro_credentials::AuthStorage;
+use maestro_models::{Model, SharedHandle};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use serde::Deserialize;
 use serde_json::Value;
@@ -77,7 +78,7 @@ pub struct Descriptor {
 impl Descriptor {
     /// Builds a full record using the existing owner's default metadata.
     pub fn model(&self) -> Model {
-        let mut model = maestro_app::ModelRegistry::in_memory(
+        let mut model = maestro_catalog::ModelRegistry::in_memory(
             SharedHandle::new(AuthStorage::in_memory(std::iter::empty().collect())),
             no_commands(),
         )

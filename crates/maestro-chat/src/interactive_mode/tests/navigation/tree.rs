@@ -3,7 +3,8 @@ use super::super::typed::submit;
 use super::super::{Setup, World, isolated, start};
 use super::{super::models::shown, append_user};
 use crate::TreeSelectorComponent;
-use maestro_app::{ReadonlySessionManager, TreeFilterMode};
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_settings::TreeFilterMode;
 use maestro_tui::Component;
 use std::{any::Any, rc::Rc};
 
@@ -39,7 +40,7 @@ fn tree_passes_current_leaf_filter_reselection_and_labels() {
                 submit(&world.mode, "/tree");
                 let tree = panel::<TreeSelectorComponent>(&world)
                     .expect("tree command opens the retained tree");
-                let rows = maestro_app::strip_ansi(
+                let rows = maestro_tools::output::render_utils::strip_ansi(
                     &tree.try_render(80).expect("tree rows render").join("\n"),
                 )
                 .unwrap();
@@ -201,7 +202,7 @@ impl UntilAborted {
         input: &maestro_models::FauxResponseInput<E>,
         admitted: &tokio::sync::Notify,
     ) -> impl Future<
-        Output = Result<maestro_app::AssistantMessage, maestro_app::DiagnosticErrorInfo>,
+        Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
     > + Send
     + 'static {
         let common = match input.options.as_ref().unwrap() {
@@ -222,15 +223,18 @@ impl UntilAborted {
 
 impl
     maestro_models::Invoke<
-        maestro_app::Local,
-        maestro_models::FauxResponseInput<maestro_app::Local>,
+        maestro_models::Local,
+        maestro_models::FauxResponseInput<maestro_models::Local>,
     > for UntilAborted
 {
-    type Return = <maestro_app::Local as maestro_models::Execution>::Future<
+    type Return = <maestro_models::Local as maestro_models::Execution>::Future<
         'static,
-        Result<maestro_app::AssistantMessage, maestro_app::DiagnosticErrorInfo>,
+        Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
     >;
-    fn invoke(&self, input: maestro_models::FauxResponseInput<maestro_app::Local>) -> Self::Return {
+    fn invoke(
+        &self,
+        input: maestro_models::FauxResponseInput<maestro_models::Local>,
+    ) -> Self::Return {
         Box::pin(Self::respond(&input, &self.0))
     }
 }
@@ -243,7 +247,7 @@ impl
 {
     type Return = <maestro_models::Threaded as maestro_models::Execution>::Future<
         'static,
-        Result<maestro_app::AssistantMessage, maestro_app::DiagnosticErrorInfo>,
+        Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
     >;
     fn invoke(
         &self,
@@ -305,7 +309,7 @@ async fn cancelled_summary(
             .deadlines()
             .contains(&std::time::Duration::from_millis(80))
     );
-    let status = maestro_app::strip_ansi(&painted).unwrap();
+    let status = maestro_tools::output::render_utils::strip_ansi(&painted).unwrap();
     assert!(status.contains(label), "{status}");
     assert!(!restored(world, original));
     admitted.notified().await;
@@ -357,13 +361,13 @@ fn navigation_loader_stops_and_restores_escape_on_every_result() {
                 .set_runtime_api_key(&scripted.provider.models[0].provider, "controlled-key");
             let label = format!(
                 "Summarizing branch... ({} to cancel)",
-                maestro_app::key_text("app.interrupt")
+                maestro_tools::key_text("app.interrupt")
             );
 
             world.mode.compaction_queued_messages.borrow_mut().push(
                 super::super::super::queues::CompactionQueuedMessage {
                     text: "retained after summary failure".into(),
-                    mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+                    mode: maestro_session::message_records::UserMessageDelivery::FollowUp,
                 },
             );
             cancelled_summary(&scripted, &first, &label, original.as_ref()).await;

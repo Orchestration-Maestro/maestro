@@ -3,7 +3,9 @@ use super::actions::shows;
 use super::models::register_configured;
 use super::typed::{poll, recalled, submit, waiting};
 use super::{World, isolated, started};
-use maestro_app::{ReadonlySessionManager, ThinkingLevel, strip_ansi};
+use maestro_agent::ThinkingLevel;
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::Component;
 
 /// Makes a controlled reasoning model current without invoking a provider.

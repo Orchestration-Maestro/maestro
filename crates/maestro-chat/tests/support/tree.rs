@@ -1,5 +1,5 @@
 //! Shared borrowed session-tree fixture construction.
-use maestro_app::SessionTreeNode;
+use maestro_session::session_manager::SessionTreeNode;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 /// One borrowed node's recorded fields.

@@ -3,10 +3,15 @@ use super::extension_editors::{Knobs, probe_factory};
 use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{World, isolated};
-use maestro_app::{
-    CustomFactoryOutcome, CustomUIOptions, EditorFactory, EventError, ExtensionAPI,
-    ExtensionComponent, ExtensionKeybindings, Local, OverlayOptionsSource, UIHostCall,
+use maestro_extensions::{
+    EventError, ExtensionAPI, UIHostCall,
+    presentation::ExtensionKeybindings,
+    types::{
+        CustomFactoryOutcome, CustomUIOptions, EditorFactory, ExtensionComponent,
+        OverlayOptionsSource,
+    },
 };
+use maestro_models::Local;
 use maestro_theme::LiveTheme;
 use maestro_tui::InputHandler;
 use maestro_tui::{
