@@ -2,7 +2,7 @@
 
 use super::{PaneCore, PaneTerminal, TerminalCursorState, retained::terminal_cell_text};
 use crate::{render_profile, selection::Selection, terminal_theme::TerminalTheme};
-use maestro_terminal::{
+use maestro_terminal_emulator::{
     Terminal,
     color::{Palette, Rgb},
     page::cell::Wide,

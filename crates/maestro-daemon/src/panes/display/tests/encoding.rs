@@ -4,7 +4,7 @@ use crate::ingress::{KeyboardProtocol, TerminalKey};
 use maestro_protocol::frames::{
     ClientKeyCode, ClientKeyKind, ClientMouseButton, ClientMouseKind, KeyModifiers,
 };
-use maestro_terminal::Terminal;
+use maestro_terminal_emulator::Terminal;
 
 #[test]
 fn pane_keyboard_protocol_tracks_live_terminal_flags() {
@@ -154,7 +154,9 @@ fn pane_char_keys_still_use_semantic_encoding() {
 #[test]
 fn pane_key_encoding_honors_application_cursor_mode() {
     let mut terminal = Terminal::new(80, 24, 0).unwrap();
-    terminal.modes.set(maestro_terminal::Mode::CursorKeys, true);
+    terminal
+        .modes
+        .set(maestro_terminal_emulator::Mode::CursorKeys, true);
     let pane = PaneTerminal::new(terminal);
 
     let encoded = pane.encode_terminal_key(
