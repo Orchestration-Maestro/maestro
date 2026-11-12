@@ -41,8 +41,8 @@ macro_rules! endpoints {
         }
     )+};
 }
-endpoints! { oauth_reads => OAuthProvider, builtin_reads => Builtin, api_reads => Api, context_reads => Read, history_reads => History,
-writer_reads => Writer, credential_reads => Credentials, tree_reads => Node, theme_reads => Theme }
+endpoints! { oauth_reads => OAuthProvider, builtin_reads => Builtin, api_reads => Api, context_reads => Read,
+writer_reads => Writer, credential_reads => Credentials }
 
 /// Clones an original resource endpoint before invoking its native owner.
 pub(crate) fn resource<T: WasiView, E: ReadEndpoint>(
@@ -131,4 +131,53 @@ where
         let (endpoint, value) = endpoint(store.data_mut(), params)?;
         Ok((endpoint.read(|reply| request(value, reply)),))
     })
+}
+
+/// Clones the endpoint a guest handle names before native code runs.
+pub(crate) fn endpoint<E: Clone + 'static>(
+    state: &mut crate::lifecycle::State,
+    this: &Resource<E>,
+) -> wasmtime::Result<E> {
+    Ok(state.ctx().table.get(this)?.clone())
+}
+
+/// Removes the handle a guest dropped from the Store table.
+pub(crate) fn release<E: 'static>(
+    state: &mut crate::lifecycle::State,
+    this: Resource<E>,
+) -> wasmtime::Result<()> {
+    state.ctx().table.delete(this)?;
+    Ok(())
+}
+
+/// Registers each named method of one resource as a forward to its generated trait method.
+macro_rules! forwards {
+    ($host:ident, $resource:literal, $trait:ident, $endpoint:ty, $($wit:literal => $method:ident($($operand:ident: $kind:ty),*);)+) => {$(
+        $crate::read_imports::forward(
+            $host,
+            concat!("[method]", $resource, ".", $wit),
+            |state, (this, $($operand),*): (::wasmtime::component::Resource<$endpoint>, $($kind),*)| {
+                $trait::$method(state, this, $($operand),*)
+            },
+        )?;
+    )+};
+}
+pub(crate) use forwards;
+
+/// Registers one import as a forward to its trait method on the Store's state.
+pub(crate) fn forward<P, R>(
+    host: &mut LinkerInstance<'_, crate::lifecycle::State>,
+    name: &str,
+    call: fn(&mut crate::lifecycle::State, P) -> wasmtime::Result<R>,
+) -> wasmtime::Result<()>
+where
+    P: ComponentNamedList + Lift + 'static,
+    R: ComponentType + Lower + 'static,
+{
+    host.func_wrap(
+        name,
+        move |mut store: StoreContextMut<'_, crate::lifecycle::State>, params: P| {
+            Ok((call(store.data_mut(), params)?,))
+        },
+    )
 }
