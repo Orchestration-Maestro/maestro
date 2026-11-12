@@ -37,10 +37,10 @@ pub struct PaneFocusTarget {
     pub pane_id: PaneId,
 }
 
-/// Extension provenance for a registered pane.
+/// Workspace-action provenance for a registered pane.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionPaneRecord {
-    /// Owning extension identity.
+    /// Owning workspace action identity.
     pub action_id: String,
     /// Registered pane entrypoint.
     pub entrypoint: String,

@@ -53,7 +53,7 @@ fn targeted_tab_retirement_cleans_only_its_owned_records() {
     state.action_panes.insert(
         pane,
         ActionPaneRecord {
-            action_id: "plugin".into(),
+            action_id: "example.pane".into(),
             entrypoint: "pane".into(),
         },
     );
