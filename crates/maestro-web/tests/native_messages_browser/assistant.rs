@@ -102,7 +102,7 @@ impl DomContent for Label {
 pub(super) fn message(content: Value, stop: &str) -> SharedAssistantMessage {
     let mut value = json!({
         "role":"assistant", "content":[], "api":"controlled", "provider":"controlled", "model":"controlled",
-        "usage":maestro_app::Usage::default(), "stopReason":stop, "timestamp":0,
+        "usage":maestro_models::Usage::default(), "stopReason":stop, "timestamp":0,
     });
     value["content"] = content;
     Arc::new(RwLock::new(serde_json::from_value(value).unwrap()))

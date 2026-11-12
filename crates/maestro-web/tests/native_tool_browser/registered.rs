@@ -286,7 +286,7 @@ fn artifact_phases(view: &DomView, result: &ToolResultMessage<Details>) {
 fn assistant(call: &ToolCall) -> maestro_models::SharedAssistantMessage {
     let message = json!({
         "role":"assistant", "content":[call], "api":"controlled", "provider":"controlled",
-        "model":"controlled", "usage":maestro_app::Usage::default(), "stopReason":"stop",
+        "model":"controlled", "usage":maestro_models::Usage::default(), "stopReason":"stop",
         "timestamp":0,
     });
     Arc::new(RwLock::new(serde_json::from_value(message).unwrap()))
