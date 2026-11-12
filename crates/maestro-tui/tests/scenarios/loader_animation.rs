@@ -1,5 +1,5 @@
 //! Loader lifecycle and callback ordering through its public component interface.
-use crate::support::checks::succeeds;
+use crate::scenarios::support::checks::succeeds;
 use maestro_tui::{Component, Loader, LoaderIndicatorOptions, TUI};
 use std::rc::Rc;
 
@@ -9,8 +9,8 @@ fn all_succeed(results: Vec<std::io::Result<()>>) {
         succeeds(result);
     }
 }
-use crate::support::manual_runtime::ms;
-use crate::support::writer::writer;
+use crate::scenarios::support::manual_runtime::ms;
+use crate::scenarios::support::writer::writer;
 
 /// Identity-colored message M with optional custom frames.
 fn loader(tui: TUI, indicator: Option<LoaderIndicatorOptions>) -> Loader {

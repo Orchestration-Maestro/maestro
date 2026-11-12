@@ -7,10 +7,10 @@ use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
 use maestro_tui::interface::{ChildArray, ComponentHandle};
 use maestro_tui::{CURSOR_MARKER, Component, Container, TUI, TerminalImage};
 
-use crate::support::checks::succeeds;
-use crate::support::components::{Cached, Probe};
-use crate::support::manual_runtime::{ManualRuntime, ms};
-use crate::support::recording_terminal::RecordingTerminal;
+use crate::scenarios::support::checks::succeeds;
+use crate::scenarios::support::components::{Cached, Probe};
+use crate::scenarios::support::manual_runtime::{ManualRuntime, ms};
+use crate::scenarios::support::recording_terminal::RecordingTerminal;
 
 /// A writer over a recording terminal whose terminal supports `protocol` images.
 fn writer(protocol: Option<ImageProtocol>) -> (TUI, RecordingTerminal, ManualRuntime) {

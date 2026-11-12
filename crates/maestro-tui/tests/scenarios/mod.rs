@@ -1,7 +1,6 @@
-//! Terminal scenarios compiled as one integration-test program.
+//! Terminal scenarios compiled as part of the toolkit's integration-test program.
 #![cfg(test)]
 
-use maestro_tui::test_support::input_support;
 mod support;
 
 mod cancellable_loading;

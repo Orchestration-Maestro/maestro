@@ -8,9 +8,9 @@ use maestro_test_directory::Scratch;
 use maestro_tui::interface::TuiRuntime as _;
 use maestro_tui::{TUI, TerminalImage};
 
-use crate::support::components::Probe;
-use crate::support::manual_runtime::ManualRuntime;
-use crate::support::recording_terminal::RecordingTerminal;
+use crate::scenarios::support::components::Probe;
+use crate::scenarios::support::manual_runtime::ManualRuntime;
+use crate::scenarios::support::recording_terminal::RecordingTerminal;
 
 /// Width of the terminals in these scenarios.
 const COLUMNS: usize = 10;
@@ -37,7 +37,7 @@ fn log_text(path: &Path) -> String {
 /// Runs one diagnostics scenario in a child whose environment is exactly `environment`,
 /// with a disposable home the writer logs below.
 fn in_home(test: &str, environment: &[(&str, &str)], body: impl FnOnce(&Path)) {
-    crate::support::in_child(test, environment, || {
+    crate::scenarios::support::in_child(test, environment, || {
         let scratch = Scratch::new().unwrap();
         body(scratch.path());
     });

@@ -1,6 +1,6 @@
 //! Shared fixtures for controlled terminal scenarios.
 
-pub use maestro_test_terminal::{manual_runtime, recording_terminal};
+pub use maestro_tui::test_support::{manual_runtime, recording_terminal};
 
 /// Runs `body` in one cleared child whose environment is exactly `environment`.
 ///

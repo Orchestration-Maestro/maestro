@@ -1,5 +1,5 @@
 //! Markdown tables through the public component interface and an emulated screen.
-use crate::support::markdown_cases as markdown;
+use crate::scenarios::support::markdown_cases as markdown;
 use maestro_tui::{TerminalImage, extract_ansi_code};
 use std::rc::Rc;
 
@@ -23,11 +23,11 @@ fn shown(row: &str) -> String {
 fn table_cases(name: &str) {
     markdown::cases(name);
     for case in markdown::corpus(name) {
-        let terminal = crate::support::virtual_terminal::VirtualTerminal::new(
+        let terminal = crate::scenarios::support::virtual_terminal::VirtualTerminal::new(
             case.width,
             case.lines.len() + 1,
         );
-        let runtime = crate::support::manual_runtime::ManualRuntime::new();
+        let runtime = crate::scenarios::support::manual_runtime::ManualRuntime::new();
         let tui = maestro_tui::TUI::new(
             terminal.handle(),
             runtime.handle(),

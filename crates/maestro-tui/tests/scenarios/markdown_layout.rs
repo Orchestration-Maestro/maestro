@@ -1,5 +1,5 @@
 //! Markdown layout through the public component interface.
-use crate::support::markdown_cases as markdown;
+use crate::scenarios::support::markdown_cases as markdown;
 use maestro_tui::{Component, DefaultTextStyle, Markdown, MarkdownOptions, TerminalImage};
 use std::rc::Rc;
 
@@ -141,8 +141,8 @@ fn markdown_list_loose_empty_and_lazy_continuations() {
 fn markdown_nested_list_indentation_is_theme_independent() {
     markdown::cases("markdown_nested_list_indentation_is_theme_independent");
     for theme in [markdown::plain(), markdown::ansi()] {
-        let terminal = crate::support::virtual_terminal::VirtualTerminal::new(40, 8);
-        let runtime = crate::support::manual_runtime::ManualRuntime::new();
+        let terminal = crate::scenarios::support::virtual_terminal::VirtualTerminal::new(40, 8);
+        let runtime = crate::scenarios::support::manual_runtime::ManualRuntime::new();
         let tui = maestro_tui::TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -185,8 +185,8 @@ fn markdown_wide_graphemes_wrap_without_splitting() {
 fn markdown_narrow_lists_preserve_wrapped_rows() {
     markdown::cases("markdown_narrow_lists_preserve_wrapped_rows");
     for (width, last) in [(1, "z"), (2, "zz"), (3, "z"), (5, "xyzz")] {
-        let terminal = crate::support::virtual_terminal::VirtualTerminal::new(width, 20);
-        let runtime = crate::support::manual_runtime::ManualRuntime::new();
+        let terminal = crate::scenarios::support::virtual_terminal::VirtualTerminal::new(width, 20);
+        let runtime = crate::scenarios::support::manual_runtime::ManualRuntime::new();
         let tui = maestro_tui::TUI::new(
             terminal.handle(),
             runtime.handle(),

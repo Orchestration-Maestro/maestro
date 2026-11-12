@@ -52,3 +52,4 @@ test-support = []
 
 [dev-dependencies]
 maestro-tui = { path = ".", features = ["test-support"] }
+vt100 = "=0.16.2"

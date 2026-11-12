@@ -1,6 +1,6 @@
 //! Overlay controls observed through focus flags, input and rendered frames.
 
-use crate::support::{components::Probe, scene::Scene};
+use crate::scenarios::support::{components::Probe, scene::Scene};
 use maestro_tui::OverlayOptions;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -706,7 +706,9 @@ fn overlay_handle_noops_preserve_hidden_state_and_render_requests() {
 
 #[test]
 fn overlay_cursor_failures_remove_failed_admission_and_keep_completed_removal() {
-    use crate::support::{manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal};
+    use crate::scenarios::support::{
+        manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal,
+    };
     use maestro_tui::{TUI, TerminalImage};
     use std::io::ErrorKind;
     let terminal = RecordingTerminal::new(20, 6);
@@ -920,7 +922,7 @@ fn reject_release_after_repair(scene: &Scene, overlay: &Rc<Probe>) {
 fn clipped_cursor_markers() {
     use maestro_tui::{CURSOR_MARKER, SizeValue};
     let scene = focused_scene();
-    crate::support::checks::succeeds(scene.tui.set_show_hardware_cursor(true));
+    crate::scenarios::support::checks::succeeds(scene.tui.set_show_hardware_cursor(true));
     let lower = Probe::shared(&[]);
     lower.set_lines(&[format!("{CURSOR_MARKER}L"), format!("X{CURSOR_MARKER}")]);
     let shown = scene.tui.show_overlay(
@@ -1391,7 +1393,9 @@ fn replacement_overlay(
 
 #[test]
 fn overlay_failed_admission_preserves_a_reentrant_sibling() {
-    use crate::support::{manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal};
+    use crate::scenarios::support::{
+        manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal,
+    };
     use maestro_tui::{TUI, TerminalImage};
     use std::{cell::Cell, io::ErrorKind};
     let terminal = RecordingTerminal::new(20, 6);

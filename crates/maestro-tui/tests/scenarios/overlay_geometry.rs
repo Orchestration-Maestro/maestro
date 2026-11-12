@@ -1,6 +1,6 @@
 //! Overlay placement and composition observed as exact terminal writes.
 
-use crate::support::{
+use crate::scenarios::support::{
     components::Probe, manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal,
 };
 use maestro_tui::{OverlayOptions, SizeValue, TUI, TerminalImage};
@@ -369,7 +369,7 @@ fn maestro_overlays_row_and_col_override_the_anchor() {
 
 #[test]
 fn maestro_frames_not_leak_styles_when_overlay_slicing_drops_trailing_sgr_resets() {
-    let scene = crate::support::scene::Scene::new(20, 6);
+    let scene = crate::scenarios::support::scene::Scene::new(20, 6);
     let base = format!("\x1b[3m{}\x1b[23m", "X".repeat(20));
     scene.probe.set_lines(&[base, "INPUT".to_owned()]);
     scene
@@ -396,7 +396,7 @@ fn maestro_frames_not_leak_styles_when_overlay_slicing_drops_trailing_sgr_resets
 #[test]
 fn maestro_overlays_render_multiple_overlays_with_later_ones_on_top() {
     use maestro_tui::OverlayAnchor;
-    let scene = crate::support::scene::Scene::new(80, 24);
+    let scene = crate::scenarios::support::scene::Scene::new(80, 24);
     scene.start(&[]);
     scene
         .tui
@@ -435,7 +435,7 @@ fn maestro_overlays_render_multiple_overlays_with_later_ones_on_top() {
 #[test]
 fn maestro_overlays_handle_overlays_at_different_positions_without_interference() {
     use maestro_tui::OverlayAnchor;
-    let scene = crate::support::scene::Scene::new(80, 24);
+    let scene = crate::scenarios::support::scene::Scene::new(80, 24);
     scene.start(&[]);
     for (label, anchor) in [
         ("TOP-LEFT", OverlayAnchor::TopLeft),
@@ -465,7 +465,7 @@ fn maestro_overlays_handle_overlays_at_different_positions_without_interference(
 #[test]
 fn maestro_overlays_properly_hide_overlays_in_stack_order() {
     use maestro_tui::OverlayAnchor;
-    let scene = crate::support::scene::Scene::new(80, 24);
+    let scene = crate::scenarios::support::scene::Scene::new(80, 24);
     scene.start(&[]);
     for label in ["FIRST", "SECOND"] {
         scene
@@ -496,7 +496,7 @@ fn maestro_overlays_properly_hide_overlays_in_stack_order() {
 
 #[test]
 fn overlay_size_percentages_multiply_before_dividing() {
-    let scene = crate::support::scene::Scene::new(100, 100);
+    let scene = crate::scenarios::support::scene::Scene::new(100, 100);
     scene.start(&[]);
     let overlay = Probe::shared(&[]);
     overlay.set_lines(&(0..100).map(|_| "X".to_owned()).collect::<Vec<_>>());
@@ -536,7 +536,7 @@ fn overlay_tab_expansion_keeps_unterminated_escape_text_and_clips_it() {
             "\x1b]\x1b]\x1b]\x1b]",
         ),
     ] {
-        let scene = crate::support::scene::Scene::new(10, 2);
+        let scene = crate::scenarios::support::scene::Scene::new(10, 2);
         scene.start(&[]);
         let overlay = Probe::shared(&[]);
         overlay.set_lines(&[line]);
@@ -573,7 +573,7 @@ fn overlay_tab_expansion_keeps_unterminated_escape_text_and_clips_it() {
 
 #[test]
 fn overlay_percentage_coordinates_keep_precision_until_final_clamp() {
-    let scene = crate::support::scene::Scene::new(21, 21);
+    let scene = crate::scenarios::support::scene::Scene::new(21, 21);
     scene.start(&[]);
     scene
         .tui
