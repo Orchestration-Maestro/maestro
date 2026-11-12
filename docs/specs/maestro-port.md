@@ -435,7 +435,7 @@ as one portable build dependency and one portable development dependency.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
-| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, POSIX shell operands, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
+| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, POSIX shell operands, author-written number prefixes, URI component encoding, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | `maestro-listeners` | below 0 |
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
@@ -455,7 +455,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-package`, `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
 | `maestro-resources` | discover resources | `maestro-request`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-listing` | 0 |
-| `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json`, `maestro-resources` | 0 |
+| `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown`, `maestro-realpath` | 0 |
 | `maestro-test-directory` | own disposable native test directories | `maestro-realpath` | 0 |
 | `maestro-test-browser` | qualify browser exports | `maestro-tooling`, `maestro-realpath` | 0 |
@@ -463,7 +463,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-test-process` | run controlled native test children | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-tooling` | automate repository development | `maestro-listing`, `maestro-realpath` | 0 |
-| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-resources`, `maestro-listeners` | 0 |
+| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-listeners` | 0 |
 | `maestro-terminal` | emulate terminals | `maestro-text`, `maestro-realpath` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock`, `maestro-realpath` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock`, `maestro-realpath` | 0 |
@@ -517,8 +517,8 @@ observers of each signal. Only models and the terminal toolkit may depend on it.
 
 `maestro-text` and `maestro-json` are core leaves below layer 0 with no workspace
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
-lexical comparison, markup escaping, CSS string serialization, locale construction and optional locale-number
-formatting shared by transcript components. JSON owns JSON boundary
+lexical comparison, markup escaping, CSS string serialization, locale construction, optional locale-number
+formatting shared by transcript components, author-written number prefixes with half-up rounding, and URI component encoding. JSON owns JSON boundary
 semantics: object acceptance, canonical keys, truth, selected-value display, compact and pretty text, and JSONL line framing.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
 only on `maestro-request`: entry defines session interchange records, including the
