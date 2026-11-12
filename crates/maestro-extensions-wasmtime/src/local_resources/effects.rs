@@ -1,5 +1,9 @@
 //! Native callback operands retained by the same capability registry.
-use super::{Capability, Lease, Message, Registry, pump::State};
+use super::{
+    Capability, Lease, Message, Registry,
+    held::{Invalidator, Remover, Update},
+    pump::State,
+};
 use maestro_extensions::callbacks::CallbackFrame;
 use maestro_extensions::{AgentToolUpdateCallback, LiveTheme, Local, Subscription};
 use std::rc::Rc;
@@ -14,12 +18,6 @@ type Reply = mpsc::Sender<Result<(), String>>;
 pub(crate) enum Request {
     /// Traverses a retained listener snapshot using the same receiver.
     Emission(emission::Request),
-    /// Redraws a tool row.
-    Invalidate(Reply),
-    /// Delivers a decoded partial result to the original observer.
-    Update(String, Reply),
-    /// Removes exactly the native registration, without cancelling its tails.
-    Unsubscribe(Reply),
     /// Supplies the original listener's independently owned guest continuation.
     Tail(crate::guest_calls::Handle, Reply),
 }
@@ -31,8 +29,9 @@ pub struct ToolUpdate(pub(crate) Arc<Lease>);
 impl ToolUpdate {
     /// Validates a native result before invoking its observer on the local owner.
     pub(crate) fn update(&self, partial: String) -> crate::import_route::Route {
-        self.0
-            .route(|id, reply| Message::Effect(id, Request::Update(partial, reply)))
+        self.0.run_routed::<Update, _>(move |update, _| {
+            crate::writer_reads::decode(&partial).map(|partial| update(partial))
+        })
     }
 }
 
@@ -43,8 +42,7 @@ pub struct SubscriptionEndpoint(pub(crate) Arc<Lease>);
 impl SubscriptionEndpoint {
     /// Applies the native owner's idempotent removal policy.
     pub(crate) fn unsubscribe(&self) -> Result<(), String> {
-        self.0
-            .request(|id, reply| Message::Effect(id, Request::Unsubscribe(reply)))
+        self.0.run::<Remover, _>(|remover, _| remover.remove())
     }
 }
 
@@ -58,8 +56,10 @@ pub struct InvalidatorEndpoint(pub(crate) Arc<Lease>);
 impl InvalidatorEndpoint {
     /// Redraws the row on the local owner.
     pub(crate) fn invalidate(&self) -> Result<(), String> {
-        self.0
-            .request(|id, reply| Message::Effect(id, Request::Invalidate(reply)))
+        self.0.run::<Invalidator, _>(|invalidate, _| {
+            invalidate();
+            Ok(())
+        })
     }
 }
 
@@ -219,42 +219,6 @@ impl State {
                         frame.start_tail(tail, self.registry.clone())
                     }
                     _ => Err("extension callback-emitter resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
-            }
-            Request::Invalidate(reply) => {
-                let result = match capability.as_deref() {
-                    Some(Capability::Invalidate(invalidate)) => {
-                        invalidate();
-                        Ok(())
-                    }
-                    _ => Err("extension tool-invalidator resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
-            }
-            Request::Update(partial, reply) => {
-                let result = match capability.as_deref() {
-                    Some(Capability::ToolUpdate(update)) => {
-                        crate::writer_reads::decode(&partial).map(|partial| update(partial))
-                    }
-                    _ => Err("extension tool-update resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
-            }
-            Request::Unsubscribe(reply) => {
-                let result = match capability.as_deref() {
-                    Some(Capability::Subscription(subscription)) => {
-                        subscription.unsubscribe();
-                        Ok(())
-                    }
-                    Some(Capability::SignalSubscription(remove)) => {
-                        remove();
-                        Ok(())
-                    }
-                    Some(Capability::UiSubscription(remove)) => {
-                        remove().map_err(|error| error.to_string())
-                    }
-                    _ => Err("extension subscription resource ended".to_owned()),
                 };
                 let _ = reply.send(result);
             }

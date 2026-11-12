@@ -67,18 +67,6 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
 ) -> wasmtime::Result<()> {
     add_resource::<T, UiEndpoint>(host, "extension-ui-context")?;
     add_resource::<T, crate::local_resources::effects::TuiEndpoint>(host, "tui")?;
-    add_resource::<T, crate::local_resources::effects::InvalidatorEndpoint>(
-        host,
-        "tool-invalidator",
-    )?;
-    host.func_wrap(
-        "[method]tool-invalidator.invalidate",
-        |mut store: wasmtime::StoreContextMut<'_, T>,
-         (resource,): (Resource<crate::local_resources::effects::InvalidatorEndpoint>,)| {
-            let invalidator = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((invalidator.invalidate(),))
-        },
-    )?;
     add_context::<T, Context>(host, "context")?;
     add_context::<T, CommandContext>(host, "command-context")?;
     Ok(())

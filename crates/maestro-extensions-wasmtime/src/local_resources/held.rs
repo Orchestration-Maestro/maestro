@@ -7,7 +7,7 @@ use std::{future::Future, sync::mpsc};
 /// One kind of retained capability, with the text its callers receive once it has ended.
 pub(crate) trait Held {
     /// What the capability lends to a call on the local owner.
-    type Target;
+    type Target: ?Sized;
     /// The failure text of a call whose capability has ended or is another kind.
     const ENDED: &'static str;
     /// Lends the capability when the entry holds this kind.
@@ -95,6 +95,65 @@ held!(
     "extension footer resource ended",
     Capability::Footer(footer) => footer
 );
+
+held!(
+    /// The progress observer a tool invocation supplied.
+    Update,
+    maestro_extensions::AgentToolUpdateCallback<serde_json::Value, maestro_extensions::Local>,
+    "extension tool-update resource ended",
+    Capability::ToolUpdate(update) => update
+);
+
+held!(
+    /// The redraw capability of one tool row.
+    Invalidator,
+    std::rc::Rc<dyn Fn()>,
+    "extension tool-invalidator resource ended",
+    Capability::Invalidate(invalidate) => invalidate
+);
+
+/// An explicit remover of a registered observer or listener.
+pub(crate) trait Remove {
+    /// Removes the registration, which a drop of its resource leaves in place.
+    fn remove(&self) -> Result<(), String>;
+}
+
+impl Remove for maestro_extensions::Subscription<maestro_extensions::Local> {
+    fn remove(&self) -> Result<(), String> {
+        self.unsubscribe();
+        Ok(())
+    }
+}
+
+impl Remove for std::rc::Rc<dyn Fn()> {
+    fn remove(&self) -> Result<(), String> {
+        self();
+        Ok(())
+    }
+}
+
+impl Remove for std::rc::Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>> {
+    fn remove(&self) -> Result<(), String> {
+        self().map_err(|error| error.to_string())
+    }
+}
+
+/// The remover behind a subscription resource: an event bus subscription, an abort observer
+/// or a terminal input listener.
+pub(crate) struct Remover;
+
+impl Held for Remover {
+    type Target = dyn Remove;
+    const ENDED: &'static str = "extension subscription resource ended";
+    fn lend(capability: &Capability) -> Option<&Self::Target> {
+        match capability {
+            Capability::Subscription(remover) => Some(remover),
+            Capability::SignalSubscription(remover) => Some(remover),
+            Capability::UiSubscription(remover) => Some(remover),
+            _ => None,
+        }
+    }
+}
 
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
