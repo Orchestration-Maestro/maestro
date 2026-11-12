@@ -102,28 +102,28 @@ fn prompt_names_the_running_installation_without_override() {
     assert_recorded_prompts(workspace.unwrap().to_str().unwrap());
 }
 
-/// Every documentation and example path in the default prompt names shipped content.
+/// Every documentation path in the default prompt names shipped content. The examples folder
+/// comes from the package repository, so a source checkout holds it only when a person fetched it.
 #[test]
-fn default_prompt_paths_exist_in_the_installation() {
+fn default_prompt_documentation_paths_exist_in_the_installation() {
     if !selection().is_child() {
-        return in_child("default_prompt_paths_exist_in_the_installation", None);
+        return in_child(
+            "default_prompt_documentation_paths_exist_in_the_installation",
+            None,
+        );
     }
     let built = prompt(serde_json::json!({"cwd": "/work"}));
     let docs = get_docs_path().unwrap();
     let package = Path::new(&docs).parent().unwrap();
     let relative = built
         .split(|character: char| character.is_whitespace() || "(),".contains(character))
-        .filter(|word| word.starts_with("docs/") || word.starts_with("examples/"))
+        .filter(|word| word.starts_with("docs/"))
         .filter(|word| !word.ends_with("..."));
     let absolute = built.lines().filter_map(|line| {
-        [
-            "- Main documentation: ",
-            "- Additional docs: ",
-            "- Examples: ",
-        ]
-        .iter()
-        .find_map(|prefix| line.strip_prefix(prefix))
-        .and_then(|rest| rest.split(" (extensions,").next())
+        ["- Main documentation: ", "- Additional docs: "]
+            .iter()
+            .find_map(|prefix| line.strip_prefix(prefix))
+            .and_then(|rest| rest.split(" (extensions,").next())
     });
     let paths: Vec<_> = relative.chain(absolute).collect();
     assert!(!paths.is_empty(), "the prompt must name its documentation");

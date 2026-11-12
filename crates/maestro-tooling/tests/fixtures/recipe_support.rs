@@ -116,7 +116,8 @@ fn source_configuration(variable: &str, scope: &[&str]) -> PathBuf {
         return PathBuf::from(config);
     }
     record("phase: fixture sources preparation");
-    let output = Command::new(env!("CARGO_BIN_EXE_development"))
+    let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
+    command
         .args(["nextest-setup", "fixture-sources"])
         .args(scope)
         .current_dir(
@@ -124,9 +125,9 @@ fn source_configuration(variable: &str, scope: &[&str]) -> PathBuf {
                 .join("../..")
                 .canonicalize()
                 .unwrap(),
-        )
-        .output()
-        .unwrap();
+        );
+    maestro_test_process::without_prepared_bundles(&mut command);
+    let output = command.output().unwrap();
     assert!(
         output.status.success(),
         "{}",
@@ -359,14 +360,6 @@ pub fn capture_lines<R: std::io::Read>(
         .unwrap()
 }
 
-/// Clear the prepared-bundle inputs a setup child inherits from the process that runs the tests,
-/// so it runs the setup the test supplies.
-pub fn without_prepared_bundles(command: &mut Command) {
-    for name in ["TEST_PREPARE_BASE", "TEST_PREPARE_OUTPUT", "TEST_ARCHIVE"] {
-        command.env_remove(name);
-    }
-}
-
 /// Run the `normalize-component-cache` setup over `profile` without any inherited prepared bundle
 /// and return its output.
 pub fn normalize_cache(profile: &Path) -> Output {
@@ -374,7 +367,7 @@ pub fn normalize_cache(profile: &Path) -> Output {
     command
         .args(["nextest-setup", "normalize-component-cache"])
         .arg(profile);
-    without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     command.output().unwrap()
 }
 
