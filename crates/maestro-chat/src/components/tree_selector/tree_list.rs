@@ -1,13 +1,12 @@
 //! Retained tree ordering, entry filtering and selection.
 use super::navigation::Notification;
-use super::{
-    FilterMode, SessionTreeNode,
-    structure::{FlatNode, Structure},
+use super::{FilterMode, SessionTreeNode};
+use maestro_json::is_truthy;
+use maestro_session::export_html::template::{
+    FlatNode, Structure, ancestors, flatten_tree, has_text_content, matches_search, physical,
+    read_message, recalculate_visual_structure, retain,
 };
-use maestro_app::export_html::template::{
-    ancestors, flatten_tree, has_text_content, read_message, recalculate_visual_structure,
-};
-use maestro_app::{SessionTreeNode as InputNode, is_truthy};
+use maestro_session::session_manager::SessionTreeNode as InputNode;
 use maestro_theme::LiveTheme;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -61,7 +60,7 @@ impl TreeState {
         initial_selected_id: Option<&str>,
         initial_filter_mode: Option<FilterMode>,
     ) -> io::Result<Self> {
-        let nodes = Rc::new(super::nodes::retain(&flatten_tree(tree, current_leaf_id)?));
+        let nodes = Rc::new(retain(&flatten_tree(tree, current_leaf_id)?));
         let parents = nodes
             .iter()
             .filter_map(|node| {
@@ -73,7 +72,7 @@ impl TreeState {
             .collect();
         let mut list = Self {
             active_path: Rc::new(HashSet::new()),
-            physical: Rc::new(super::structure::physical(&nodes)),
+            physical: Rc::new(physical(&nodes)),
             tool_calls: Rc::new(super::tool_call::collect(&nodes)),
             structure: Structure::default(),
             nodes,
@@ -129,7 +128,7 @@ impl TreeState {
     pub(super) fn apply_filter(&mut self) -> io::Result<()> {
         let mut visible = Vec::new();
         for node in self.nodes.iter() {
-            if self.includes(node)? && super::search::matches(node, &self.query)? {
+            if self.includes(node)? && matches_search(node, &self.query)? {
                 visible.push(node.clone());
             }
         }
@@ -221,7 +220,7 @@ impl TreeList {
     /// # Errors
     /// Returns invalid data when a reached message or content read is malformed.
     pub fn new(
-        tree: &[maestro_app::SessionTreeNode<'_>],
+        tree: &[maestro_session::session_manager::SessionTreeNode<'_>],
         current_leaf_id: Option<&str>,
         max_visible_lines: usize,
         initial_selected_id: Option<&str>,

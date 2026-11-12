@@ -5,7 +5,7 @@ use crate::{
     page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
-use maestro_app::CustomAgentMessages;
+use maestro_agent::CustomAgentMessages;
 use std::cell::RefCell;
 
 /// Row placements, the first one for emitted position 0.

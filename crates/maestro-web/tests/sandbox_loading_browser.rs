@@ -2,8 +2,8 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::sandbox_bootstrap_support::loader_document;
 use crate::sandbox_loading_support;
-use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider;
+use maestro_models::SharedHandle;
 use maestro_web::browser::values::BrowserSandboxValue;
 use sandbox_loading_support::*;
 
@@ -141,7 +141,7 @@ pub async fn srcdoc_load_injects_console_before_supplied_providers() {
                     "function(){window.secondProvider=window.firstProvider}",
                 ),
             ],
-            vec![maestro_app::SharedHandle::new(Consumer(fixture.clone()))],
+            vec![maestro_models::SharedHandle::new(Consumer(fixture.clone()))],
         )
         .unwrap();
     let loaded = fixture.waited().await;
@@ -213,7 +213,7 @@ pub async fn url_load_uses_live_configuration_and_ready_handshake() {
         let expected = Fixture::url(mode);
         sandbox
             .sandbox_url_provider
-            .replace(Some(maestro_app::SharedHandle::new(move || {
+            .replace(Some(maestro_models::SharedHandle::new(move || {
                 Ok(expected.clone())
             })));
         fixture.arm("url-mounted");
@@ -250,7 +250,7 @@ pub async fn url_error_reaches_registered_consumers_without_source_bypass() {
     let sandbox = adapter();
     sandbox
         .sandbox_url_provider
-        .replace(Some(maestro_app::SharedHandle::new({
+        .replace(Some(maestro_models::SharedHandle::new({
             move || Ok(Fixture::url("error"))
         })));
     fixture.arm("url-mounted");
@@ -259,7 +259,7 @@ pub async fn url_error_reaches_registered_consumers_without_source_bypass() {
             "url-error",
             "<body>url branch</body>",
             vec![provider(&fixture, "function(){}")],
-            vec![maestro_app::SharedHandle::new(Consumer(fixture.clone()))],
+            vec![maestro_models::SharedHandle::new(Consumer(fixture.clone()))],
         )
         .unwrap();
     fixture.waited().await;
@@ -279,7 +279,7 @@ pub async fn extension_links_use_tabs_then_window_fallback() {
     fixture.fault("tabs");
     sandbox
         .sandbox_url_provider
-        .replace(Some(maestro_app::SharedHandle::new({
+        .replace(Some(maestro_models::SharedHandle::new({
             move || Ok(Fixture::url("tabs"))
         })));
     fixture.arm("url-mounted");
@@ -394,7 +394,7 @@ pub async fn close_removes_ready_error_and_external_routes() {
         let sandbox = adapter();
         sandbox
             .sandbox_url_provider
-            .replace(Some(maestro_app::SharedHandle::new({
+            .replace(Some(maestro_models::SharedHandle::new({
                 move || Ok(Fixture::url("close"))
             })));
         if phase == "invalid" {
@@ -447,7 +447,7 @@ pub async fn removing_one_sandbox_preserves_its_sibling() {
                     &format!("sibling-{index}"),
                     &Fixture::content(),
                     vec![],
-                    vec![maestro_app::SharedHandle::new(Consumer(fixture.clone()))],
+                    vec![maestro_models::SharedHandle::new(Consumer(fixture.clone()))],
                 )
                 .unwrap();
             fixture.waited().await;
@@ -484,8 +484,8 @@ pub async fn failed_load_releases_native_registration_and_frame() {
         sandbox
             .sandbox_url_provider
             .replace((mode == "url").then(|| {
-                maestro_app::SharedHandle::new(|| {
-                    Err(maestro_app::DiagnosticErrorInfo::error("URL failure"))
+                maestro_models::SharedHandle::new(|| {
+                    Err(maestro_models::DiagnosticErrorInfo::error("URL failure"))
                 })
                     as maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider
             }));
@@ -689,7 +689,7 @@ fn failing_providers(
     mode: &str,
 ) -> Vec<SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> {
     if mode == "data" || mode == "runtime" {
-        vec![maestro_app::SharedHandle::new(Provider {
+        vec![maestro_models::SharedHandle::new(Provider {
             fixture: fixture.clone(),
             data: js_sys::Object::new().into(),
             runtime: "function(){}".into(),
@@ -698,7 +698,7 @@ fn failing_providers(
     } else if mode == "serializer" {
         let data = js_sys::Object::new();
         js_sys::Reflect::set(&data, &"value".into(), &wasm_bindgen::JsValue::UNDEFINED).unwrap();
-        vec![maestro_app::SharedHandle::new(Provider {
+        vec![maestro_models::SharedHandle::new(Provider {
             fixture: fixture.clone(),
             data: data.into(),
             runtime: "function(){}".into(),

@@ -6,8 +6,8 @@ use maestro_app::connection_runner::{
     JsonlLineReader, RpcFuture, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, WorkspaceEventSink,
     WorkspaceOperations,
 };
-use maestro_app::rpc_types::{workspace, workspace_schema};
 use maestro_app::{RpcConnectionOutcome, RpcResponse, run_rpc_connection};
+use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},

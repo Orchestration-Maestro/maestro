@@ -1,10 +1,11 @@
 //! WebAssembly signature witnesses, not executed browser observations.
 #![cfg(target_arch = "wasm32")]
+use maestro_app::Runtime;
 use maestro_app::browser::components::sandbox::providers::{
     SandboxRespond, SandboxRuntimeProvider,
 };
 use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
-use maestro_app::{BoxFuture, DiagnosticErrorInfo, Runtime, SharedHandle};
+use maestro_models::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
 use maestro_web::browser::values::BrowserSandboxValue;
 use maestro_web::components::sandbox::routing::{
     MessageType, RuntimeMessageBridgeOptions, RuntimeMessageContext,

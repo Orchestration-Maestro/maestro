@@ -30,14 +30,14 @@ fn ls_keeps_dotfiles_and_directory_suffix() {
 /// copy in the binary directory before any `PATH` lookup, so the runner's search `PATH` never
 /// decides which program runs. The directory lives as long as the returned guard.
 fn search_manager(
-    program: maestro_app::SearchTool,
+    program: maestro_tools::SearchTool,
 ) -> (
     maestro_test_directory::Scratch,
     std::sync::Arc<maestro_tools::ToolsManager>,
 ) {
     let name = match program {
-        maestro_app::SearchTool::Fd => "fd",
-        maestro_app::SearchTool::Rg => "rg",
+        maestro_tools::SearchTool::Fd => "fd",
+        maestro_tools::SearchTool::Rg => "rg",
     };
     let bin = maestro_test_directory::Scratch::new().unwrap();
     maestro_test_process::install_search_program(name, bin.path()).unwrap();
@@ -54,7 +54,7 @@ fn search_manager(
 fn find_tool(
     root: &maestro_test_directory::Scratch,
 ) -> (maestro_test_directory::Scratch, maestro_agent::AgentTool) {
-    let (bin, manager) = search_manager(maestro_app::SearchTool::Fd);
+    let (bin, manager) = search_manager(maestro_tools::SearchTool::Fd);
     let tool = maestro_app::create_find_tool(
         root.path().display().to_string(),
         maestro_app::FindToolOptions::default(),
@@ -75,7 +75,7 @@ fn grep_single_file_keeps_filename_and_line() {
     )
     .unwrap();
     run_io(async {
-        let (_bin, manager) = search_manager(maestro_app::SearchTool::Rg);
+        let (_bin, manager) = search_manager(maestro_tools::SearchTool::Rg);
         let tool = maestro_app::create_grep_tool(
             root.path().display().to_string(),
             maestro_app::GrepToolOptions::default(),
@@ -108,7 +108,7 @@ fn grep_limit_retains_context_and_notice() {
     )
     .unwrap();
     run_io(async {
-        let (_bin, manager) = search_manager(maestro_app::SearchTool::Rg);
+        let (_bin, manager) = search_manager(maestro_tools::SearchTool::Rg);
         let tool = maestro_app::create_grep_tool(
             root.path().display().to_string(),
             maestro_app::GrepToolOptions::default(),
@@ -177,7 +177,7 @@ fn find_applies_ignore_rules_without_repository_metadata() {
             .await
             .unwrap();
         assert_eq!(json!(outside), expected);
-        let initialized = maestro_app::exec_command(
+        let initialized = maestro_tools::exec_command(
             "git",
             &["init".into(), "--quiet".into(), "--template=".into()],
             &cwd,

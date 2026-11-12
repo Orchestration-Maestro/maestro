@@ -1,7 +1,7 @@
 //! Complete original-history JSONL download preparation.
 use super::{SessionDocument, document::invalid};
 use crate::browser::attachment_content::AttachmentHost;
-use maestro_app::{BorrowedJson, compact_json, compact_members_with_default, is_truthy};
+use maestro_json::{BorrowedJson, compact_json, compact_members_with_default, is_truthy};
 use serde_json::Value;
 use std::io;
 

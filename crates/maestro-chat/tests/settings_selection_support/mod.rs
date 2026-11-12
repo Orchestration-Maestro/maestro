@@ -1,10 +1,11 @@
 //! Strict corpus queries and controlled selector construction.
-use maestro_app::{
-    DoubleEscapeAction, MessageDeliveryMode, ThinkingLevel, Transport, TransportSetting,
-    TreeFilterMode, WarningSettings,
-};
+use maestro_agent::ThinkingLevel;
 use maestro_chat::{
     BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig, TerminalDisplaySettings,
+};
+use maestro_models::Transport;
+use maestro_settings::{
+    DoubleEscapeAction, MessageDeliveryMode, TransportSetting, TreeFilterMode, WarningSettings,
 };
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::Component;

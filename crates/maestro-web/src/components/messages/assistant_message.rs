@@ -1,7 +1,7 @@
 //! Ordered assistant content with emitted-position child ownership.
 #[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::AssistantContent;
-use maestro_app::{SharedAssistantMessage, ToolResultMessage};
+use maestro_models::AssistantContent;
+use maestro_models::{SharedAssistantMessage, ToolResultMessage};
 use std::{
     collections::{HashMap, HashSet},
     rc::Rc,
@@ -9,7 +9,7 @@ use std::{
 };
 
 /// The actual local collection of executable application tools.
-type Tools = Rc<RwLock<Vec<maestro_app::SharedAgentTool<maestro_app::Local>>>>;
+type Tools = Rc<RwLock<Vec<maestro_agent::SharedAgentTool<maestro_models::Local>>>>;
 /// Original mutable standard result envelopes indexed by exact call ID.
 type LiveResults = Rc<HashMap<String, Arc<RwLock<ToolResultMessage>>>>;
 
@@ -100,13 +100,14 @@ struct Visibility {
 #[cfg(any(target_arch = "wasm32", test))]
 fn admitted(
     chunk: &AssistantContent,
-    tool_state: impl FnOnce(&maestro_app::ToolCall) -> Visibility,
+    tool_state: impl FnOnce(&maestro_models::ToolCall) -> Visibility,
 ) -> bool {
     match chunk {
-        AssistantContent::Text(text) => !text.text.chars().all(maestro_app::is_whitespace_scalar),
-        AssistantContent::Thinking(text) => {
-            !text.thinking.chars().all(maestro_app::is_whitespace_scalar)
-        }
+        AssistantContent::Text(text) => !text.text.chars().all(maestro_text::is_whitespace_scalar),
+        AssistantContent::Thinking(text) => !text
+            .thinking
+            .chars()
+            .all(maestro_text::is_whitespace_scalar),
         AssistantContent::ToolCall(call) => {
             let state = tool_state(call);
             !(state.hide_all || state.hide_pending && state.pending_without_result)

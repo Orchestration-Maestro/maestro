@@ -1,10 +1,10 @@
 //! User text with caller-owned attachment handles.
 #[cfg(any(target_arch = "wasm32", test))]
 use crate::{SharedAttachment, tools::types::ToolUiError};
+use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages};
 use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
-use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages};
 #[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::{UserBlock, UserContent};
+use maestro_models::{UserBlock, UserContent};
 
 /// Native user row retaining the application's original message owner.
 pub struct UserMessage<C: CustomAgentMessages = NoCustomMessages> {

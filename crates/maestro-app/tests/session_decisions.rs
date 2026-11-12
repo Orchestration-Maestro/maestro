@@ -331,10 +331,10 @@ fn refused_queue_modes_preserve_agent_and_preferences() {
         let modes = (h.session.steering_mode(), h.session.follow_up_mode());
         let preferences = settings.borrow().get_global_settings();
         let next = |mode| {
-            if mode == maestro_app::QueueMode::All {
-                maestro_app::QueueMode::OneAtATime
+            if mode == maestro_agent::QueueMode::All {
+                maestro_agent::QueueMode::OneAtATime
             } else {
-                maestro_app::QueueMode::All
+                maestro_agent::QueueMode::All
             }
         };
         h.session.set_steering_mode(next(modes.0)).unwrap_err();

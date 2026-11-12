@@ -11,7 +11,7 @@ use crate::manual_runtime;
 use crate::simple_selector_cases::*;
 #[cfg(not(target_arch = "wasm32"))]
 use keybindings::bindings;
-use maestro_app::ThinkingLevel;
+use maestro_agent::ThinkingLevel;
 use maestro_chat::ThinkingSelectorComponent;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_tui::Component;

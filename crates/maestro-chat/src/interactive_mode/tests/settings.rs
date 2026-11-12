@@ -6,11 +6,13 @@ use super::{Setup, World, isolated, start};
 use crate::SettingsSelectorComponent;
 use maestro_app::agent_session::PromptOptions;
 use maestro_app::presentation_data::status_line::FooterOperations;
-use maestro_app::{
-    AssistantMessageEventStream, MessageDeliveryMode, SettingsManager, Transport, TransportSetting,
-    strip_ansi,
+use maestro_models::{AssistantMessageEventStream, Transport};
+use maestro_settings::{
+    DoubleEscapeAction, MessageDeliveryMode, SettingsManager, TransportSetting, TreeFilterMode,
+    WarningSettings,
 };
 use maestro_theme::{ThemeColor, ThemeDirectories};
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::InputHandler;
 use maestro_tui::{Component, SettingsList, TerminalCapabilities};
 use serde_json::{Value, json};
@@ -141,10 +143,10 @@ fn settings_snapshot_reads_live_session_and_preferences() {
             let session = world.host.session();
             session.set_auto_compaction_enabled(true).unwrap();
             session
-                .set_steering_mode(maestro_app::QueueMode::All)
+                .set_steering_mode(maestro_agent::QueueMode::All)
                 .unwrap();
             session
-                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .set_follow_up_mode(maestro_agent::QueueMode::OneAtATime)
                 .unwrap();
             let levels = session.get_available_thinking_levels();
             open(&world);
@@ -375,12 +377,12 @@ fn settings_remaining_changes_preserve_each_callback_effect() {
                     .settings_manager()
                     .borrow()
                     .get_double_escape_action(),
-                maestro_app::DoubleEscapeAction::Fork
+                DoubleEscapeAction::Fork
             );
             choose(&list, "filter", 0);
             assert_eq!(
                 session.settings_manager().borrow().get_tree_filter_mode(),
-                maestro_app::TreeFilterMode::NoTools
+                TreeFilterMode::NoTools
             );
             choose(&list, "shrink", 0);
             assert!(session.settings_manager().borrow().get_clear_on_shrink());
@@ -420,24 +422,27 @@ fn settings_session_modes_use_distinct_live_policies() {
             let world = settings_world(directory, |_| {}).await;
             let session = world.host.session();
             session
-                .set_steering_mode(maestro_app::QueueMode::All)
+                .set_steering_mode(maestro_agent::QueueMode::All)
                 .unwrap();
             session
-                .set_follow_up_mode(maestro_app::QueueMode::OneAtATime)
+                .set_follow_up_mode(maestro_agent::QueueMode::OneAtATime)
                 .unwrap();
             let list = open(&world);
             choose(&list, "Steering", 0);
-            assert_eq!(session.steering_mode(), maestro_app::QueueMode::OneAtATime);
+            assert_eq!(
+                session.steering_mode(),
+                maestro_agent::QueueMode::OneAtATime
+            );
             assert_eq!(
                 session.follow_up_mode(),
-                maestro_app::QueueMode::OneAtATime,
+                maestro_agent::QueueMode::OneAtATime,
                 "the sibling policy is unchanged"
             );
             choose(&list, "follow", 0);
-            assert_eq!(session.follow_up_mode(), maestro_app::QueueMode::All);
+            assert_eq!(session.follow_up_mode(), maestro_agent::QueueMode::All);
             assert_eq!(
                 session.steering_mode(),
-                maestro_app::QueueMode::OneAtATime,
+                maestro_agent::QueueMode::OneAtATime,
                 "the sibling policy is unchanged in the other direction"
             );
             drop(world.runtime.settle());
@@ -536,11 +541,11 @@ type Churn = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
 fn counted_tool(seen: &Rc<RefCell<Vec<Served>>>, churn: &Churn) -> transcript::Definition {
     let mut counted = transcript::tool("counted");
     let (seen, churn) = (Rc::clone(seen), Rc::clone(churn));
-    counted.render_result = Some(maestro_app::ToolRenderResult::<Value, ()>::Raw(Rc::new(
-        move |_: &maestro_app::ToolRenderResultLike<'_, Value>,
-              _: maestro_app::ToolRenderResultOptions,
+    counted.render_result = Some(maestro_tools::ToolRenderResult::<Value, ()>::Raw(Rc::new(
+        move |_: &maestro_tools::output::render_utils::ToolRenderResultLike<'_, Value>,
+              _: maestro_tools::ToolRenderResultOptions,
               _: &maestro_theme::LiveTheme,
-              context: &maestro_app::ToolRenderContext<'_, ()>| {
+              context: &maestro_tools::ToolRenderContext<'_, ()>| {
             seen.borrow_mut()
                 .push((context.tool_call_id.clone(), context.show_images));
             if context.tool_call_id == "t1"
@@ -774,11 +779,11 @@ fn image_result(text: &str) -> crate::ToolExecutionResult {
     .concat();
     crate::ToolExecutionResult {
         content: vec![
-            maestro_app::UserBlock::Text(maestro_app::TextContent {
+            maestro_models::UserBlock::Text(maestro_models::TextContent {
                 text: text.into(),
                 text_signature: None,
             }),
-            maestro_app::UserBlock::Image(maestro_app::ImageContent {
+            maestro_models::UserBlock::Image(maestro_models::ImageContent {
                 data,
                 mime_type: "image/png".into(),
             }),
@@ -964,16 +969,16 @@ async fn use_reasoning_model(world: &World, provider: &str, id: &str) {
         .model_registry()
         .register_provider(
             provider,
-            maestro_app::SharedHandle::new(std::sync::RwLock::new(
-                maestro_app::ProviderConfigInput {
+            maestro_models::SharedHandle::new(std::sync::RwLock::new(
+                maestro_catalog::ProviderConfigInput {
                     base_url: Some("https://example.invalid".into()),
                     api_key: Some("fixture".into()),
                     api: Some("openai-completions".into()),
-                    models: Some(vec![maestro_app::ProviderModelInput {
+                    models: Some(vec![maestro_catalog::ProviderModelInput {
                         reasoning: true,
                         ..model_input(id)
                     }]),
-                    ..maestro_app::ProviderConfigInput::default()
+                    ..maestro_catalog::ProviderConfigInput::default()
                 },
             )),
         )
@@ -998,7 +1003,7 @@ fn settings_thinking_updates_session_footer_and_editor_border() {
             press(&list, "\x1b[B");
             press(&list, "\r");
             let chosen = session.thinking_level();
-            assert_ne!(chosen, maestro_app::ThinkingLevel::Off);
+            assert_ne!(chosen, maestro_agent::ThinkingLevel::Off);
             let label = crate::components::thinking_selector::thinking_text(&chosen).0;
             assert_eq!(
                 world
@@ -1147,18 +1152,18 @@ async fn completed(world: &World) -> String {
 }
 
 /// A loaded skill named `name`.
-fn skill(name: &str) -> maestro_app::Skill {
-    maestro_app::Skill {
+fn skill(name: &str) -> maestro_resources::Skill {
+    maestro_resources::Skill {
         name: name.to_owned(),
         description: format!("{name} skill"),
         file_path: format!("/skills/{name}/SKILL.md"),
         base_dir: "/skills".to_owned(),
-        source_info: maestro_app::SourceInfo {
+        source_info: maestro_resources::SourceInfo {
             path: format!("/skills/{name}/SKILL.md"),
             base_dir: Some("/skills".to_owned()),
             source: format!("skill:{name}"),
-            scope: maestro_app::SourceScope::User,
-            origin: maestro_app::SourceOrigin::TopLevel,
+            scope: maestro_resources::SourceScope::User,
+            origin: maestro_resources::SourceOrigin::TopLevel,
         },
         disable_model_invocation: false,
     }
@@ -1217,7 +1222,7 @@ fn typed_preferences(world: &World) -> Vec<String> {
 /// A started world whose supplied settings document is `raw`, applied after startup so
 /// the startup changelog save cannot discard it.
 async fn typed_world(directory: &Path, raw: serde_json::Value) -> World {
-    let supplied: maestro_app::Settings = serde_json::from_value(raw).unwrap();
+    let supplied: maestro_settings::Settings = serde_json::from_value(raw).unwrap();
     let world = started_settings(directory).await;
     world
         .host
@@ -1687,7 +1692,7 @@ pub(super) async fn next_http_request_uses_idle_limit(milliseconds: Option<u64>)
         arrived.send(()).unwrap();
         released.await.unwrap();
     });
-    let request = maestro_app::default_fetch()(maestro_app::HttpRequest {
+    let request = maestro_models::default_fetch()(maestro_models::HttpRequest {
         method: "GET".into(),
         url: format!("http://{address}/"),
         headers: indexmap::IndexMap::new(),
@@ -1709,7 +1714,7 @@ pub(super) async fn next_http_request_uses_idle_limit(milliseconds: Option<u64>)
     if milliseconds.is_some() {
         assert!(matches!(
             request.as_mut().await,
-            Err(maestro_app::FetchError::Timeout)
+            Err(maestro_models::FetchError::Timeout)
         ));
         // Tokio deadlines round up to the next 1 ms timer tick.
         assert!(
@@ -1746,9 +1751,12 @@ fn runtime_settings_apply_http_idle_limit_to_next_request() {
 
 /// Refuses explicit behaviour edits while allowing tool refresh candidates.
 struct RefuseBehaviour;
-impl maestro_app::SettingsDecider for RefuseBehaviour {
-    fn decide(&self, request: &maestro_app::DecisionRequest<'_>) -> Result<(), String> {
-        if matches!(request, maestro_app::DecisionRequest::SettingsEdit { .. }) {
+impl maestro_settings::SettingsDecider for RefuseBehaviour {
+    fn decide(&self, request: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
+        if matches!(
+            request,
+            maestro_settings::DecisionRequest::SettingsEdit { .. }
+        ) {
             return Err("release refuses behaviour changes".into());
         }
         Ok(())
@@ -1875,17 +1883,15 @@ fn all_panel_preference_callbacks_refuse_before_live_effects() {
                     7 => (callbacks.on_hide_thinking_block_change)(true),
                     8 => (callbacks.on_collapse_changelog_change)(false),
                     9 => (callbacks.on_enable_install_telemetry_change)(false),
-                    10 => (callbacks.on_double_escape_action_change)(
-                        maestro_app::DoubleEscapeAction::Fork,
-                    ),
-                    11 => (callbacks.on_tree_filter_mode_change)(maestro_app::TreeFilterMode::All),
+                    10 => (callbacks.on_double_escape_action_change)(DoubleEscapeAction::Fork),
+                    11 => (callbacks.on_tree_filter_mode_change)(TreeFilterMode::All),
                     12 => (callbacks.on_show_hardware_cursor_change)(true),
                     13 => (callbacks.on_editor_padding_x_change)(2.0),
                     14 => (callbacks.on_autocomplete_max_visible_change)(10.0),
                     15 => (callbacks.on_quiet_startup_change)(true),
                     16 => (callbacks.on_clear_on_shrink_change)(true),
                     17 => (callbacks.on_show_terminal_progress_change)(true),
-                    _ => (callbacks.on_warnings_change)(maestro_app::WarningSettings::default()),
+                    _ => (callbacks.on_warnings_change)(WarningSettings::default()),
                 };
                 assert!(!accepted, "route {route}");
                 assert_eq!(
@@ -1975,9 +1981,9 @@ fn refused_extension_theme_preserves_published_theme_and_settings() {
                 .unwrap();
             let before = session.settings_manager().borrow().get_global_settings().0;
             let theme = published(&world);
-            let outcome = maestro_app::ExtensionUIContextPort::set_theme(
+            let outcome = maestro_extensions::types::ExtensionUIContextPort::set_theme(
                 &*world.mode,
-                maestro_app::ThemeSelection::Name("light".into()),
+                maestro_extensions::types::ThemeSelection::Name("light".into()),
             )
             .unwrap();
             assert!(!outcome.success);

@@ -5,9 +5,9 @@ use crate::platform_keys::for_this_platform;
 use crate::published;
 mod records;
 use crate::registry::REGISTRY;
-use maestro_app::{ToolDef, ToolRenderEnvironment};
 use maestro_chat::{ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions};
+use maestro_tools::{ToolDef, ToolRenderEnvironment};
 use maestro_tui::{
     Component, ImageProtocol, KeybindingDefinition, KeybindingKeys, KeybindingsManager,
     TerminalCapabilities, TerminalImage, get_keybindings, set_keybindings,
@@ -58,20 +58,20 @@ fn theme(corpus: &Corpus, changed: bool) -> Rc<Theme> {
     Rc::new(Theme::new(colors, bg, ColorMode::Color256, ThemeOptions::default()).unwrap())
 }
 /// Existing SDK factories selected by the application caller, never by the row.
-fn builtin(input: &Input) -> Option<maestro_app::ToolRendererBinding> {
+fn builtin(input: &Input) -> Option<maestro_tools::ToolRendererBinding> {
     let cwd = input.cwd.clone().unwrap_or_else(|| "/work".into());
     let definition = match input.tool.as_deref().unwrap_or("custom_tool") {
-        "read" => ToolDef::Read(maestro_app::create_read_tool_definition::<()>(
+        "read" => ToolDef::Read(maestro_tools::create_read_tool_definition::<()>(
             cwd,
-            maestro_app::ReadToolOptions::default(),
+            maestro_tools::ReadToolOptions::default(),
         )),
-        "edit" => ToolDef::Edit(maestro_app::create_edit_tool_definition::<()>(
+        "edit" => ToolDef::Edit(maestro_tools::create_edit_tool_definition::<()>(
             cwd,
-            maestro_app::EditToolOptions::default(),
+            maestro_tools::EditToolOptions::default(),
         )),
-        "write" => ToolDef::Write(maestro_app::create_write_tool_definition::<()>(
+        "write" => ToolDef::Write(maestro_tools::create_write_tool_definition::<()>(
             cwd,
-            maestro_app::WriteToolOptions::default(),
+            maestro_tools::WriteToolOptions::default(),
         )),
         _ => return None,
     };
@@ -290,7 +290,7 @@ pub fn argument_roots() {
 }
 /// Render one retained call's row before and after a result, comparing every styled line.
 fn argument_root(arguments: &serde_json::Value, printed: &[&str]) {
-    let call: maestro_app::ToolCall = serde_json::from_value(serde_json::json!({
+    let call: maestro_models::ToolCall = serde_json::from_value(serde_json::json!({
         "type": "toolCall", "id": "tool-1", "name": "custom_tool", "arguments": arguments,
     }))
     .unwrap();
@@ -317,7 +317,7 @@ fn argument_root(arguments: &serde_json::Value, printed: &[&str]) {
         frame(13, None),
         "{label}"
     );
-    let done = maestro_app::UserBlock::Text(maestro_app::TextContent::new("done".into()));
+    let done = maestro_models::UserBlock::Text(maestro_models::TextContent::new("done".into()));
     component
         .update_result(
             maestro_chat::ToolExecutionResult {
@@ -336,9 +336,9 @@ fn argument_root(arguments: &serde_json::Value, printed: &[&str]) {
 }
 /// A self-rendered row whose callbacks draw nothing.
 fn empty_self_rendered_row(runtime: &manual_runtime::ManualRuntime) -> ToolExecutionComponent {
-    use maestro_app::{ToolRenderResultCallback, ToolRenderShell, ToolRendererBinding};
+    use maestro_tools::{ToolRenderResultCallback, ToolRenderShell, ToolRendererBinding};
     let (mut params, _) = params(&default_input(), runtime);
-    let result: ToolRenderResultCallback<serde_json::Value, maestro_app::ToolRendererState> =
+    let result: ToolRenderResultCallback<serde_json::Value, maestro_tools::ToolRendererState> =
         Rc::new(|_, _, _, _| Ok(Rc::new(maestro_tui::Text::new(String::new(), 0, 0, None))));
     params.tool_definition = Some(ToolRendererBinding {
         render_call: Some(Rc::new(|_, _, _| {
@@ -420,22 +420,27 @@ pub fn self_rendered_rows_walk_live_children() {
 fn plain(row: &ToolExecutionComponent) -> Vec<String> {
     row.render(120)
         .iter()
-        .map(|line| maestro_app::strip_ansi(line).unwrap().trim_end().to_owned())
+        .map(|line| {
+            maestro_tools::output::render_utils::strip_ansi(line)
+                .unwrap()
+                .trim_end()
+                .to_owned()
+        })
         .collect()
 }
 /// A successful result holding only `text`.
 fn text_result(text: String) -> maestro_chat::ToolExecutionResult {
     maestro_chat::ToolExecutionResult {
-        content: vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
-            text,
-        ))],
+        content: vec![maestro_models::UserBlock::Text(
+            maestro_models::TextContent::new(text),
+        )],
         details: None,
         is_error: false,
     }
 }
 /// A result without a result renderer shows its first ten lines and a hint until expanded.
 pub fn collapsed_fallback() {
-    use maestro_app::{ToolRenderShell, ToolRendererBinding};
+    use maestro_tools::{ToolRenderShell, ToolRendererBinding};
     let _guard = REGISTRY
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);

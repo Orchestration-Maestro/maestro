@@ -4,7 +4,7 @@
 
 use crate::support::package_commands::{CONFIG_DIR, Failing, Failure, Harness, Trace};
 use maestro_app::configuration::config::VERSION;
-use maestro_app::{SettingsListEntry, SettingsManager};
+use maestro_settings::{SettingsListEntry, SettingsManager};
 use serde_json::json;
 use std::sync::Arc;
 
@@ -624,9 +624,11 @@ fn package_commands_reuse_supplied_owners() {
         }
     }));
     let set = harness.state.edit_in_factory.clone();
-    *set.borrow_mut() = Some(Arc::new(|manager: &mut maestro_app::SettingsManager| {
-        manager.set_npm_command(Some(entries(&["npm", "--from-factory"])));
-    }));
+    *set.borrow_mut() = Some(Arc::new(
+        |manager: &mut maestro_settings::SettingsManager| {
+            manager.set_npm_command(Some(entries(&["npm", "--from-factory"])));
+        },
+    ));
     assert!(harness.run(&["update"]));
     let loaded = harness.state.loaded.borrow();
     let factory = harness.state.factory.borrow();

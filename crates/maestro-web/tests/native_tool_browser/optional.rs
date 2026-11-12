@@ -3,7 +3,7 @@ use crate::{
     artifact_card_support::{self as cards, browser_records as records},
     contributions_support::{body, localized_view, select, text},
 };
-use maestro_app::ToolResultMessage;
+use maestro_models::ToolResultMessage;
 use maestro_web::{
     ArtifactsToolRenderer, BashRenderer, CalculateRenderer, GetCurrentTimeRenderer,
     page::{DomContent, DomView, MountedContent},
@@ -191,7 +191,7 @@ fn listing_text(block: &Element) -> String {
     let code = select(block, "copy-button").get_attribute("text").unwrap();
     assert_eq!(
         text(&select(block, "pre code")),
-        maestro_app::normalize_to_lf(&code)
+        maestro_text::normalize_to_lf(&code)
     );
     code
 }
@@ -457,11 +457,9 @@ fn template(template: &Template) -> Dom {
     );
     let mut result = cards::phase(&template.phase);
     if let Some(result) = &mut result {
-        result
-            .content
-            .push(maestro_app::UserBlock::Text(maestro_app::TextContent::new(
-                "R".into(),
-            )));
+        result.content.push(maestro_models::UserBlock::Text(
+            maestro_models::TextContent::new("R".into()),
+        ));
     }
     <ArtifactsToolRenderer as ToolRenderer<Value, Value, _>>::render(
         &ArtifactsToolRenderer::new(None),

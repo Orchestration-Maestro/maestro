@@ -2,8 +2,10 @@
 use super::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
 use super::custom_editor::CustomEditor;
 use super::dynamic_border::DynamicBorder;
-use maestro_app::{
-    ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets, KeybindingsManager,
+use maestro_app::KeybindingsManager;
+use maestro_extensions::{
+    ExtensionWidgets,
+    presentation::{ExtensionEditor, ExtensionKeybindings, ExtensionLoader},
 };
 use maestro_theme::{
     LiveTheme, SyntaxHighlighter, Theme, get_editor_theme, get_markdown_theme,
@@ -106,11 +108,12 @@ impl ExtensionWidgets for ExtensionWidgetHost {
         get_editor_theme(self.theme.clone())
     }
     fn key_hint(&self, keybinding: &str, description: &str) -> Result<String, String> {
-        maestro_app::key_hint(keybinding, description, &self.theme)
+        maestro_tools::key_hint(keybinding, description, &self.theme)
             .map_err(|error| error.to_string())
     }
     fn raw_key_hint(&self, key: &str, description: &str) -> Result<String, String> {
-        maestro_app::raw_key_hint(key, description, &self.theme).map_err(|error| error.to_string())
+        maestro_tools::raw_key_hint(key, description, &self.theme)
+            .map_err(|error| error.to_string())
     }
     fn custom_editor(
         &self,

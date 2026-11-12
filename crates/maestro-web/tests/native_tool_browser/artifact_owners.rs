@@ -1,7 +1,8 @@
 //! Artifact cards own their prepared inputs and keep their console across body changes.
 use super::optional::Panel;
 use crate::contributions_support::{body, select, text};
-use maestro_app::{JsonObject, browser::tools::documents::ArtifactsParams};
+use maestro_app::browser::tools::documents::ArtifactsParams;
+use maestro_models::JsonObject;
 use maestro_web::{
     ArtifactsToolRenderer,
     page::{DomView, MountedContent},
@@ -124,11 +125,9 @@ pub(super) fn caption_without_pill(view: &DomView) {
 /// updates, an emptied listing and collapsing and reopening the card.
 pub(super) fn console_scroll(view: &DomView) {
     let mut result = crate::artifact_card_support::phase("success").unwrap();
-    result
-        .content
-        .push(maestro_app::UserBlock::Text(maestro_app::TextContent::new(
-            "log\n".repeat(100),
-        )));
+    result.content.push(maestro_models::UserBlock::Text(
+        maestro_models::TextContent::new("log\n".repeat(100)),
+    ));
     let card = |content: &str| {
         let params = json!({"command":"create","filename":"a.html","content":content});
         <ArtifactsToolRenderer as ToolRenderer<Value, Value>>::render(

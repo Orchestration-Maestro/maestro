@@ -5,12 +5,16 @@ use super::extension_editors::{Knobs, probe_factory};
 use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{World, isolated, with_held_response};
-use maestro_app::{
-    Cancellation, ComponentFactory, EditorFactory, EventError, ExtensionAPI, ExtensionComponent,
-    ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterFactory, Local,
-    NewSessionCommandOptions, ReadonlyFooterDataProvider, TerminalInputHandler, WidgetContent,
-    WidgetPlacement, WorkingIndicatorOptions,
+use maestro_extensions::{
+    EventError, ExtensionAPI, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
+    TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
+    footer::ReadonlyFooterDataProvider,
+    types::{
+        ComponentFactory, EditorFactory, ExtensionComponent, FooterFactory,
+        NewSessionCommandOptions, WidgetContent,
+    },
 };
+use maestro_models::{Cancellation, Local};
 use maestro_tui::{Component, EditorComponent, Text};
 use maestro_tui::{ComponentHandle, InputListenerResult};
 use std::{
@@ -69,9 +73,10 @@ impl Disposals {
 
 /// The keys each placement holds, in order.
 fn widget_keys(world: &World) -> (Vec<String>, Vec<String>) {
-    let keys = |map: &maestro_app::Live<String, Rc<ExtensionComponent>>| {
-        map.iter().map(|(key, _)| key).collect()
-    };
+    let keys = |map: &maestro_extensions::footer::iteration::Live<
+        String,
+        Rc<ExtensionComponent>,
+    >| { map.iter().map(|(key, _)| key).collect() };
     (
         keys(&world.mode.extension_widgets_above),
         keys(&world.mode.extension_widgets_below),
@@ -262,7 +267,7 @@ fn install_everything(
     world: &World,
     kit: &Kit,
     knobs: &Knobs,
-) -> Vec<maestro_app::ExtensionUIFuture<Option<String>>> {
+) -> Vec<maestro_extensions::types::ExtensionUIFuture<Option<String>>> {
     let ui = ExtensionUIContext::new(world.mode.clone());
     ui.set_editor_component(Some(kit.editor.clone())).unwrap();
     ui.set_header(Some(kit.header.clone())).unwrap();
@@ -322,7 +327,7 @@ fn assert_reset(world: &World, disposals: &Disposals) {
 fn assert_abandoned(
     world: &World,
     views: &Views,
-    pending: Vec<maestro_app::ExtensionUIFuture<Option<String>>>,
+    pending: Vec<maestro_extensions::types::ExtensionUIFuture<Option<String>>>,
 ) {
     for mut result in pending {
         assert_eq!(
@@ -454,7 +459,7 @@ fn hidden_dialog_completion_preserves_the_active_panel() {
 /// The working row's text while a response runs.
 fn working_row(world: &World) -> String {
     let rows = world.mode.status_container.render(80);
-    maestro_app::strip_ansi(&rows.join("\n")).unwrap()
+    maestro_tools::output::render_utils::strip_ansi(&rows.join("\n")).unwrap()
 }
 
 #[test]
@@ -511,7 +516,7 @@ fn reset_shows_the_default_message_on_a_running_loader() {
             })
             .await;
             assert!(before.contains("Busy"), "{before}");
-            let interrupt = maestro_app::key_text("app.interrupt");
+            let interrupt = maestro_tools::key_text("app.interrupt");
             let message = format!("Working... ({interrupt} to interrupt)");
             assert!(after.contains(&message), "{after}");
             assert!(!after.contains("Busy"), "{after}");

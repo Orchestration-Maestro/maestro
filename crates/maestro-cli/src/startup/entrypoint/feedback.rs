@@ -1,11 +1,11 @@
 //! The confirmation dialog for an unavailable stored working directory.
 use crate::input::selection::{Running, settlement};
+use maestro_app::KeybindingsManager;
 use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, ExtensionSelectorRequest,
 };
-use maestro_app::{
-    KeybindingsManager, SessionCwdIssue, SettingsManager, format_missing_session_cwd_prompt,
-};
+use maestro_session::cwd::{SessionCwdIssue, format_missing_session_cwd_prompt};
+use maestro_settings::SettingsManager;
 use maestro_theme::ThemeState;
 use std::{cell::RefCell, io, rc::Rc};
 

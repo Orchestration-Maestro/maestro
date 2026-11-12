@@ -1,37 +1,12 @@
 //! Existing session owners exposed at the application root.
 
 pub use maestro_session::session_manager::{
-    BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, LabelEntry,
-    ModelChangeEntry, SessionEntry, SessionEntryBase, SessionInfoEntry, SessionMessageEntry,
-    SessionTreeNode, ThinkingLevelChangeEntry,
+    BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, ModelChangeEntry,
+    SessionEntry, SessionEntryBase, SessionInfoEntry, SessionMessageEntry, SessionTreeNode,
+    ThinkingLevelChangeEntry,
 };
 
-pub use maestro_session::{Presence, SessionInfo, SessionManager};
-
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::cwd::get_missing_session_cwd_issue;
-pub use maestro_session::cwd::{
-    MissingSessionCwdError, SessionCwdIssue, format_missing_session_cwd_prompt,
-};
-
-/// The session's message records, including the application roles a transcript shows.
-pub use maestro_session::message_records as messages;
-
-pub use maestro_session::message_records::{
-    BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,
-};
-
-pub use maestro_session::message_records::CustomMessage;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::session_manager::SessionListProgress;
-
-pub use maestro_session::export_html;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_export::{
-    ExportOperations, ExportOptions, NativeExportOperations, export_from_file,
-};
+pub use maestro_session::{SessionInfo, SessionManager};
 
 pub use crate::skill_block::{ParsedSkillBlock, parse_skill_block};
 
@@ -63,7 +38,7 @@ pub use crate::sdk::{
 
 pub use maestro_session::summarization::{
     BranchPreparation, BranchSummaryResult, CollectEntriesResult, CompactionResult, CutPointResult,
-    DEFAULT_COMPACTION_SETTINGS, FileOperations, GenerateBranchSummaryOptions, GeneratedSummary,
+    DEFAULT_COMPACTION_SETTINGS, FileOperations, GenerateBranchSummaryOptions,
     calculate_context_tokens, collect_entries_for_branch_summary, compact, estimate_tokens,
     find_cut_point, find_turn_start_index, generate_branch_summary, generate_summary,
     generate_summary_with_usage, get_last_assistant_usage, prepare_branch_entries,
@@ -72,17 +47,8 @@ pub use maestro_session::summarization::{
 
 pub use maestro_session::convert_to_llm;
 
-pub use maestro_session::session_manager::NavigateTreeOptions;
-
 pub use maestro_session::session_manager::{
     CURRENT_SESSION_VERSION, FileEntry, NewSessionOptions, SessionContext, SessionHeader,
     build_session_context, get_latest_compaction_entry, migrate_session_entries,
     parse_session_entries,
 };
-
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_extensions::execution::ExtensionRunnerSession;
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::session_manager::CompactionOptions;
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_session::session_manager::ReadonlySessionManager;

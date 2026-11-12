@@ -157,8 +157,8 @@ impl SessionSelectorHeader {
     }
     /// Frames a live key hint using its existing owner.
     fn hint(&self, key: &str, text: &str) -> String {
-        maestro_app::key_hint(key, text, &self.options.theme)
-            .unwrap_or_else(|_| format!("{} {text}", maestro_app::key_text(key)))
+        maestro_tools::key_hint(key, text, &self.options.theme)
+            .unwrap_or_else(|_| format!("{} {text}", maestro_tools::key_text(key)))
     }
     /// Gives confirmation priority over status and ordinary help.
     fn hints(&self, width: usize) -> (String, String) {

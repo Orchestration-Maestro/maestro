@@ -1,11 +1,12 @@
 //! Strict corpus decoding and controlled clipboard effects.
 
 use futures_util::{FutureExt, future::LocalBoxFuture};
+use maestro_app::copy_to_clipboard_with;
 use maestro_app::utils::{
     clipboard_native::ClipboardModule,
     copying::{ClipboardOperations, ClipboardPlatform},
 };
-use maestro_app::{OutputMode, SpawnSyncError, SpawnSyncOptions, copy_to_clipboard_with};
+use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{

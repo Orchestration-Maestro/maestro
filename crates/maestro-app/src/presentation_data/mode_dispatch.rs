@@ -14,13 +14,13 @@ pub struct InteractiveModeOptions {
     /// The first prompt sent at startup.
     pub initial_message: Option<String>,
     /// Images attached to the first startup prompt.
-    pub initial_images: Option<Vec<crate::ImageContent>>,
+    pub initial_images: Option<Vec<maestro_models::ImageContent>>,
     /// Prompts sent after the first startup prompt, in order.
     pub initial_messages: Vec<String>,
     /// Hosted service origin; absent selects the compiled default.
     pub service_origin: Option<String>,
     /// Supplied HTTP transport for startup requests.
-    pub fetch: Option<crate::Fetch>,
+    pub fetch: Option<maestro_models::Fetch>,
 }
 
 /// A retained interactive presentation, with its existing lifecycle.

@@ -4,10 +4,11 @@
 use super::InteractiveMode;
 use super::status_indicator::StatusKind;
 use crate::CountdownTimer;
+use maestro_agent::AgentMessage;
 use maestro_app::agent_session::CompactionReason;
-use maestro_app::messages::CustomAgentMessages;
-use maestro_app::messages::create_compaction_summary_message;
-use maestro_app::{AgentMessage, CompactionResult};
+use maestro_session::message_records::CustomAgentMessages;
+use maestro_session::message_records::create_compaction_summary_message;
+use maestro_session::summarization::CompactionResult;
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::{Component, Loader};
 use std::{
@@ -251,7 +252,7 @@ fn colored(theme: LiveTheme, role: ThemeColor) -> Rc<dyn Fn(&str) -> String> {
 
 /// The label of a running compaction, with the interrupt keys in effect when it started.
 fn compaction_label(reason: CompactionReason) -> String {
-    let hint = format!("({} to cancel)", maestro_app::key_text("app.interrupt"));
+    let hint = format!("({} to cancel)", maestro_tools::key_text("app.interrupt"));
     match reason {
         CompactionReason::Manual => format!("Compacting context... {hint}"),
         CompactionReason::Threshold => format!("Auto-compacting... {hint}"),
@@ -267,6 +268,6 @@ fn retry_label(attempt: u32, limit: f64, seconds: f64) -> String {
         "Retrying ({attempt}/{}) in {}s... ({} to cancel)",
         ryu_js::Buffer::new().format_finite(limit),
         ryu_js::Buffer::new().format_finite(seconds),
-        maestro_app::key_text("app.interrupt")
+        maestro_tools::key_text("app.interrupt")
     )
 }

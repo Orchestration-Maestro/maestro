@@ -1,9 +1,10 @@
 //! Real terminal and component composition without a runtime-to-terminal crate edge.
 #![cfg(unix)]
-use maestro_app::{
-    Local, create_event_bus_for, create_extension_runtime, load_extension_from_factory,
+use maestro_extensions::{
+    create_event_bus_for, create_extension_runtime, load_extension_from_factory,
 };
 use maestro_extensions_wasmtime::artifact_factory_with_stdout;
+use maestro_models::Local;
 use maestro_test_process::{TestProcess, selection};
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;

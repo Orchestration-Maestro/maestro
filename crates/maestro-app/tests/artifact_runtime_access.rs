@@ -4,7 +4,6 @@
 use crate::artifact_presentation_support::Recorder;
 use crate::support::run;
 use maestro_agent::{Agent, AgentMessage, AgentOptions};
-use maestro_app::SharedHandle;
 use maestro_app::browser::components::records::CustomAgentMessages;
 use maestro_app::browser::components::sandbox::{
     artifacts_runtime_provider::{AgentLike, ArtifactsRuntimeProvider},
@@ -14,6 +13,7 @@ use maestro_app::browser::tools::documents::ArtifactsPanel;
 use maestro_app::browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
 };
+use maestro_models::SharedHandle;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock};
@@ -112,7 +112,7 @@ fn deliver(
         Arc::new(move |value| {
             output.lock().unwrap().push(value);
             if fail {
-                return Err(maestro_app::DiagnosticErrorInfo::error("reply failed"));
+                return Err(maestro_models::DiagnosticErrorInfo::error("reply failed"));
             }
             Ok(())
         }),

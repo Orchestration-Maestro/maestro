@@ -1,10 +1,10 @@
 //! Public widget construction and inherited editing operations.
 use super::input::{AssistantFields, Input};
-use maestro_app::{AssistantMessage, SharedAssistantMessage};
 use maestro_chat::{
     AssistantMessageComponent, AssistantMessageOptions, BranchSummaryMessageComponent,
     CompactionSummaryMessageComponent, UserMessageComponent,
 };
+use maestro_models::{AssistantMessage, SharedAssistantMessage};
 use maestro_theme::LiveTheme;
 use maestro_tui::ChildArray;
 use maestro_tui::{Component, MarkdownTheme, TerminalImage};
@@ -93,7 +93,7 @@ impl Widget {
             }
             "branch" => (
                 Self::Branch(BranchSummaryMessageComponent::new(
-                    maestro_app::BranchSummaryMessage {
+                    maestro_session::message_records::BranchSummaryMessage {
                         summary: input.text.clone().unwrap(),
                         from_id: "origin".into(),
                         timestamp: 0.0,
@@ -119,12 +119,13 @@ impl Widget {
         let count = count
             .as_str()
             .map_or_else(|| count.as_f64().unwrap(), |text| text.parse().unwrap());
-        let numbers =
-            maestro_app::LocaleNumberFormat::new(&|key| input.environment.get(key).cloned())
-                .unwrap();
+        let numbers = maestro_text::numbers::LocaleNumberFormat::new(&|key| {
+            input.environment.get(key).cloned()
+        })
+        .unwrap();
         Self::Compaction(
             CompactionSummaryMessageComponent::new(
-                maestro_app::CompactionSummaryMessage {
+                maestro_session::message_records::CompactionSummaryMessage {
                     summary: input.text.clone().unwrap(),
                     tokens_before: count,
                     timestamp: 0.0,

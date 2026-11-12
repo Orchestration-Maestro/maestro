@@ -89,9 +89,9 @@ numeric exit and for a signal this host does not name. `windows_shell_launch`
 builds a Windows shell launch for callers that must run through one, without
 parsing their command text.
 
-The application re-exports these original launch interfaces plus the tools
-owner's [asynchronous execution](../../docs/tools-process.md#running-a-command),
-on native targets only.
+Frontends import these launch interfaces from this crate and the tools
+owner's [asynchronous execution](../../docs/tools-process.md#running-a-command)
+from `maestro_tools`, on native targets only.
 
 ## Streaming and sessions
 

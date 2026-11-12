@@ -4,10 +4,11 @@ use crate::{
     artifact_presentation_support::Recorder,
     contributions_support::{container, text, view},
 };
-use maestro_app::{
-    AgentMessage, AssistantContent, ToolResultMessage,
-    browser::{components::records::CustomAgentMessages, tools::documents::ArtifactsPanel},
+use maestro_agent::AgentMessage;
+use maestro_app::browser::{
+    components::records::CustomAgentMessages, tools::documents::ArtifactsPanel,
 };
+use maestro_models::{AssistantContent, ToolResultMessage};
 use maestro_web::{
     AssistantMessage, UserMessage,
     components::messages::ToolResults,
@@ -78,7 +79,7 @@ fn project(raw: &Value) -> Message {
 fn load(name: &str) -> (Value, Vec<Message>) {
     let source: Value = serde_json::from_str(include_str!("fixtures/test_sessions.json")).unwrap();
     let session = &source[name];
-    let model: maestro_app::Model = serde_json::from_value(session["model"].clone()).unwrap();
+    let model: maestro_models::Model = serde_json::from_value(session["model"].clone()).unwrap();
     assert_eq!(model.id, session["model"]["id"].as_str().unwrap());
     assert!(!session["systemPrompt"].as_str().unwrap().is_empty());
     let raw = session["messages"].as_array().unwrap();
@@ -91,7 +92,7 @@ fn replay(name: &str, counts: [usize; 5]) {
     crate::renderer_recipes::reset();
     maestro_web::register_tool_renderer(
         "artifacts",
-        maestro_web::tools::types::ToolRendererBinding::from_raw::<maestro_app::JsonObject, Value>(
+        maestro_web::tools::types::ToolRendererBinding::from_raw::<maestro_models::JsonObject, Value>(
             Rc::new(maestro_web::ArtifactsToolRenderer::new(None)),
         ),
     );
@@ -159,8 +160,8 @@ fn show_user(parent: &Element, view: &DomView, message: &Message) {
     ));
     assert!(!markdown.trim().is_empty());
     if let Message::User(user) = message
-        && let maestro_app::UserContent::Blocks(blocks) = &user.read().unwrap().content
-        && let Some(maestro_app::UserBlock::Text(first)) = blocks.first()
+        && let maestro_models::UserContent::Blocks(blocks) = &user.read().unwrap().content
+        && let Some(maestro_models::UserBlock::Text(first)) = blocks.first()
         && matches!(first.text.as_str(), "minimal html" | "simple html")
     {
         assert_eq!(markdown.trim(), first.text);
@@ -172,7 +173,7 @@ fn show_user(parent: &Element, view: &DomView, message: &Message) {
 fn show_assistant(
     parent: &Element,
     view: &DomView,
-    message: &maestro_app::SharedAssistantMessage,
+    message: &maestro_models::SharedAssistantMessage,
     results: &Rc<HashMap<String, Arc<RwLock<ToolResultMessage>>>>,
 ) {
     let row = AssistantMessage::<Value> {
@@ -187,7 +188,7 @@ fn show_assistant(
         toggle.unchecked_ref::<HtmlElement>().click();
     }
     let message = message.read().unwrap();
-    if message.stop_reason == maestro_app::StopReason::Error {
+    if message.stop_reason == maestro_models::StopReason::Error {
         let error = crate::contributions_support::select(element, ".maestro-message-error");
         let expected = format!("Error: {}", message.error_message.as_deref().unwrap());
         assert_eq!(text(&error), expected);
@@ -201,7 +202,7 @@ fn show_assistant(
             "the message stays literal text"
         );
     }
-    if message.stop_reason == maestro_app::StopReason::Aborted {
+    if message.stop_reason == maestro_models::StopReason::Aborted {
         let abort = crate::contributions_support::select(element, ".maestro-message-abort");
         assert_eq!(text(&abort), "Request aborted");
     }
@@ -245,10 +246,10 @@ fn observe_text(row: &Element, text: &str) {
 }
 
 /// Observe source-bearing artifact cards and the ordinary fallback's input/result listings.
-fn observe_call(row: &Element, call: &maestro_app::ToolCall, result: &ToolResultMessage) {
+fn observe_call(row: &Element, call: &maestro_models::ToolCall, result: &ToolResultMessage) {
     assert_eq!(call.id, result.tool_call_id);
     assert_eq!(call.name, result.tool_name);
-    let output = maestro_app::UserBlock::text_output(&result.content);
+    let output = maestro_models::UserBlock::text_output(&result.content);
     let listings = texts(row, ".maestro-code pre code");
     if call.name == "artifacts" {
         if call.arguments["command"] == "create" {
@@ -275,7 +276,7 @@ fn observe_call(row: &Element, call: &maestro_app::ToolCall, result: &ToolResult
 }
 
 /// Distinguish the added console line in each of the two recorded updates.
-fn observe_update(row: &Element, call: &maestro_app::ToolCall) {
+fn observe_update(row: &Element, call: &maestro_models::ToolCall) {
     let expected = if call.arguments["new_str"]
         .as_str()
         .unwrap()

@@ -3,7 +3,9 @@ use crate::SharedAttachment;
 #[cfg(target_arch = "wasm32")]
 use crate::dialogs::attachment_overlay::AttachmentUiError;
 #[cfg(target_arch = "wasm32")]
-use maestro_app::{browser::utils::attachments::AttachmentType, truncate_utf16};
+use maestro_app::browser::utils::attachments::AttachmentType;
+#[cfg(target_arch = "wasm32")]
+use maestro_text::truncate_utf16;
 use std::rc::Rc;
 
 /// A native attachment thumbnail with optional removal.

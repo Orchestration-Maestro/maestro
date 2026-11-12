@@ -1,10 +1,8 @@
 //! Session name, session information, keyboard help and debug capture witnesses.
 use super::{World, isolated, isolated_case, started};
 use crate::interactive_mode::info::session_info;
-use maestro_app::{
-    AgentSessionEvent, NewSessionOptions, ReadonlySessionManager, SessionStats,
-    agent_session::SessionStatsTokens,
-};
+use maestro_app::{AgentSessionEvent, SessionStats, agent_session::SessionStatsTokens};
+use maestro_session::session_manager::{NewSessionOptions, ReadonlySessionManager};
 use maestro_tui::{Component, Container, EditorComponent, Spacer, Text};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;

@@ -3,7 +3,7 @@ use crate::{
     contributions_support::{body, select, text},
     tool_cards_support::{Expected, NativeDetail, Registration},
 };
-use maestro_app::{JsonObject, ToolCall, ToolResultMessage};
+use maestro_models::{JsonObject, ToolCall, ToolResultMessage};
 use maestro_web::{
     ArtifactsToolRenderer, AssistantMessage, ToolMessage,
     components::messages::ToolResults,
@@ -185,9 +185,9 @@ pub(super) fn artifacts(view: &Rc<DomView>) {
     let weak = Rc::downgrade(&details);
     let mut result = crate::recipes::message(Some(details));
     result.is_error = false;
-    result.content = vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
-        "literal result".into(),
-    ))];
+    result.content = vec![maestro_models::UserBlock::Text(
+        maestro_models::TextContent::new("literal result".into()),
+    )];
     artifact_adapters(view, &result);
     artifact_phases(view, &result);
     artifact_registry(view, &result, binding);
@@ -283,10 +283,10 @@ fn artifact_phases(view: &DomView, result: &ToolResultMessage<Details>) {
 }
 
 /// A settled assistant message carrying only `call`.
-fn assistant(call: &ToolCall) -> maestro_app::SharedAssistantMessage {
+fn assistant(call: &ToolCall) -> maestro_models::SharedAssistantMessage {
     let message = json!({
         "role":"assistant", "content":[call], "api":"controlled", "provider":"controlled",
-        "model":"controlled", "usage":maestro_app::Usage::default(), "stopReason":"stop",
+        "model":"controlled", "usage":maestro_models::Usage::default(), "stopReason":"stop",
         "timestamp":0,
     });
     Arc::new(RwLock::new(serde_json::from_value(message).unwrap()))

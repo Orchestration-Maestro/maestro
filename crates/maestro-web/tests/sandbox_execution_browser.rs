@@ -1,7 +1,7 @@
 //! Hidden execution through the retained native browser adapter.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::placement;
-use maestro_app::Cancellation;
+use maestro_models::Cancellation;
 use placement::adapter;
 
 /// Already-aborted execution never mounts a frame; direct empty code remains admitted.
@@ -57,7 +57,7 @@ pub async fn execution_preflight_avoids_all_effects() {
 }
 
 use crate::sandbox_execution_support;
-use maestro_app::SharedHandle;
+use maestro_models::SharedHandle;
 use sandbox_execution_support::*;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::JsCast as _;
@@ -532,7 +532,7 @@ pub async fn execution_native_failures_unwind_the_shared_owner() {
         sandbox
             .sandbox_url_provider
             .replace((mode == "url").then(|| {
-                SharedHandle::new(|| Err(maestro_app::DiagnosticErrorInfo::error("URL failure")))
+                SharedHandle::new(|| Err(maestro_models::DiagnosticErrorInfo::error("URL failure")))
                     as _
             }));
         let error = sandbox
@@ -612,7 +612,7 @@ pub async fn execution_end_failure_cannot_prevent_resource_release() {
                 label: "first",
                 trace: trace.clone(),
                 end: Some(Rc::new(|| {
-                    Err(maestro_app::DiagnosticErrorInfo::error("end failure"))
+                    Err(maestro_models::DiagnosticErrorInfo::error("end failure"))
                 })),
                 failure: earlier.then_some("data"),
                 ..Probe::default()
@@ -838,7 +838,7 @@ pub async fn hidden_host_and_default_tool_use_the_same_real_adapter() {
     )
     .await
     .unwrap();
-    let maestro_app::UserBlock::Text(text) = &result.content[0] else {
+    let maestro_models::UserBlock::Text(text) = &result.content[0] else {
         panic!("text result")
     };
     assert_eq!(text.text, "=> 42");

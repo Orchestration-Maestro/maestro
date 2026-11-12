@@ -1,7 +1,8 @@
 //! Native keyed widgets and footer status text.
 use super::super::InteractiveMode;
-use maestro_app::{
-    EventError, ExtensionComponent, ExtensionWidgetOptions, WidgetContent, WidgetPlacement,
+use maestro_extensions::{
+    EventError, ExtensionWidgetOptions, WidgetPlacement,
+    types::{ExtensionComponent, WidgetContent},
 };
 use maestro_theme::ThemeColor;
 use maestro_tui::{Container, Spacer, Text};

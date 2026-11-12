@@ -76,15 +76,17 @@ struct Recorded {
 /// directory owner removes the working and agent directories when the run ends.
 ///
 /// ```
+/// use maestro_agent::AgentEvent;
 /// use maestro_app::{
-///     AgentEvent, AgentSessionEvent, AssistantMessageEvent, AuthStorage, ConfigValueOperations,
-///     CreateAgentSessionOptions, Local, ModelRegistry, ModuleLoader, NoTools, PromptOptions,
-///     ResourceKind, ResourceLoaderOptions, SessionManager, SessionResources, SettingsManager,
-///     create_agent_session,
+///     AgentSessionEvent, AuthStorage, CreateAgentSessionOptions, ModelRegistry, NoTools,
+///     PromptOptions, ResourceKind, ResourceLoaderOptions, SessionManager, SessionResources,
+///     SettingsManager, create_agent_session,
 /// };
+/// use maestro_credentials::ConfigValueOperations;
+/// use maestro_extensions::ModuleLoader;
 /// use maestro_models::{
-///     FauxAssistantMessageOptions, FauxResponseStep, RegisterFauxProviderOptions,
-///     faux_assistant_message, register_faux_provider,
+///     AssistantMessageEvent, FauxAssistantMessageOptions, FauxResponseStep, Local,
+///     RegisterFauxProviderOptions, faux_assistant_message, register_faux_provider,
 /// };
 /// use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 ///

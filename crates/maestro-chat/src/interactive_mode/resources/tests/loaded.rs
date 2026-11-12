@@ -14,7 +14,7 @@ use super::loaded_support::{
 };
 use super::{HOME, RecordedSource, expand_all, in_home, repainted, sections, unknown_home};
 use crate::interactive_mode::tests::{Setup, World, dark, light, painted, roles};
-use maestro_app::{ResourceDiagnostic, SourceInfo, home_directory};
+use maestro_resources::{ResourceDiagnostic, SourceInfo, paths::home_directory};
 use maestro_tui::Component;
 use serde_json::json;
 use std::{
@@ -693,8 +693,8 @@ fn diagnostic_lookup_work_stays_linear_in_total_path_bytes() {
     let source_info = SourceInfo {
         path: String::new(),
         source: "near".to_owned(),
-        scope: maestro_app::SourceScope::Project,
-        origin: maestro_app::SourceOrigin::TopLevel,
+        scope: maestro_resources::SourceScope::Project,
+        origin: maestro_resources::SourceOrigin::TopLevel,
         base_dir: None,
     };
     let mut previous = None;

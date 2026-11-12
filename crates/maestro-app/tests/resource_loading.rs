@@ -340,7 +340,7 @@ fn install_overrides(
     let note_extensions = record(seen);
     options.extensions_override = Some(Box::new(move |mut base| {
         note_extensions(json!(base.extensions.len()));
-        base.errors.push(maestro_app::ExtensionLoadError {
+        base.errors.push(maestro_extensions::ExtensionLoadError {
             path: "<override>".into(),
             error: "override note".into(),
         });
@@ -372,7 +372,7 @@ fn install_overrides(
     let note_files = record(seen);
     options.agents_files_override = Some(Box::new(move |base| {
         note_files(json!(base.len()));
-        vec![maestro_app::ContextFile {
+        vec![maestro_models::system_prompt::ContextFile {
             path: "/virtual/AGENTS.md".into(),
             content: "virtual".into(),
         }]

@@ -345,11 +345,11 @@ pub async fn provider_card_native_focus_layout_and_brand_roles(import: js_sys::F
 mod paint;
 
 /// Observe the original missing/null/present model shape.
-fn model_case(models: &maestro_app::Presence<Vec<maestro_app::Model>>) -> &'static str {
+fn model_case(models: &maestro_session::Presence<Vec<maestro_models::Model>>) -> &'static str {
     match models {
-        maestro_app::Presence::Missing => "missing",
-        maestro_app::Presence::Null => "null",
-        maestro_app::Presence::Present(models) => match models.len() {
+        maestro_session::Presence::Missing => "missing",
+        maestro_session::Presence::Null => "null",
+        maestro_session::Presence::Present(models) => match models.len() {
             0 => "empty",
             1 => "one",
             2 => "two",

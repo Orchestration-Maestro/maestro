@@ -2,7 +2,7 @@
 use super::{Answer, Interception, World, active, intercepting_world, painted, printing, recorded};
 use crate::{BashExecutionComponent, interactive_mode::tests::isolated};
 use futures_util::FutureExt;
-use maestro_app::{BashError, BashExecOptions, BashExecResult, BashOperations};
+use maestro_tools::{BashError, BashExecOptions, BashExecResult, BashOperations};
 use maestro_tui::LocalFuture;
 use std::{
     future::Future,
@@ -28,7 +28,7 @@ pub(super) struct Script {
     pub(super) release: Mutex<Option<oneshot::Receiver<()>>>,
 }
 
-impl BashOperations<maestro_app::Local> for Script {
+impl BashOperations<maestro_models::Local> for Script {
     fn exec<'a>(
         &'a self,
         _command: &'a str,
@@ -58,13 +58,15 @@ impl BashOperations<maestro_app::Local> for Script {
 
 /// An answer supplying `script` as the command's operations.
 pub(super) fn scripting(script: &Rc<Script>) -> Answer {
-    let operations = Rc::clone(script) as Rc<dyn BashOperations<maestro_app::Local>>;
-    Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
-        Some(Interception {
-            operations: Some(Rc::clone(&operations)),
-            result: None,
-        })
-    })
+    let operations = Rc::clone(script) as Rc<dyn BashOperations<maestro_models::Local>>;
+    Rc::new(
+        move |_event: &mut maestro_extensions::types::events::UserBashEvent| {
+            Some(Interception {
+                operations: Some(Rc::clone(&operations)),
+                result: None,
+            })
+        },
+    )
 }
 
 /// The waker a caller registers, forwarded to the phase that waits for the caller's wake.

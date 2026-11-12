@@ -10,7 +10,7 @@ use super::{
     HomeLookup, InteractiveMode, ResourceItem, Snapshots, build_scope_groups, format_compact_list,
     format_resource_groups, format_scope_groups, get_short_path, read,
 };
-use maestro_app::{DiagnosticType, ResourceDiagnostic};
+use maestro_resources::{DiagnosticType, ResourceDiagnostic};
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::{Spacer, Text};
 use std::{error::Error, rc::Rc};

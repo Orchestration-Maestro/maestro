@@ -3,10 +3,9 @@
 use super::super::{World, isolated, painted, started};
 use super::{cases, port};
 use crate::components::session_selector::list::tests::session_picker::manual_runtime::ms;
-use maestro_app::{
-    Cancellation, ExtensionUIDialogOptions, ExtensionUIFuture, MissingSessionCwdError,
-    SessionCwdIssue,
-};
+use maestro_extensions::{ExtensionUIDialogOptions, types::ExtensionUIFuture};
+use maestro_models::Cancellation;
+use maestro_session::cwd::{MissingSessionCwdError, SessionCwdIssue};
 use maestro_tui::{Component, Focusable};
 use serde::Deserialize;
 use serde_json::{Value, json};

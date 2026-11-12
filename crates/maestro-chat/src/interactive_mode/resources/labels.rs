@@ -1,7 +1,7 @@
 //! Compact labels and expanded paths of listed resources.
 
 use super::{HomeLookup, ResourceItem, format_display_path, get_short_path, is_package_source};
-use maestro_app::parse_git_url;
+use maestro_packages::parse_git_url;
 use std::{collections::HashMap, error::Error, hash::Hash, io};
 
 /// Displays an extension path with the home prefix abbreviated and a final

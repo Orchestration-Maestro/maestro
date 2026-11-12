@@ -5,7 +5,7 @@ use super::{
     tree::{finish, panel},
 };
 use crate::TreeSelectorComponent;
-use maestro_app::messages::UserMessageDelivery;
+use maestro_session::message_records::UserMessageDelivery;
 use std::rc::Rc;
 
 /// Selects an entry through the installed tree command.
@@ -23,7 +23,10 @@ fn before_prompt(world: &World) -> impl Fn() + use<> {
     let mode = Rc::downgrade(&world.mode);
     world.host.session().subscribe(Rc::new(move |event| {
         if let maestro_app::AgentSessionEvent::Agent(event) = event
-            && matches!(*event.read().unwrap(), maestro_app::AgentEvent::AgentStart)
+            && matches!(
+                *event.read().unwrap(),
+                maestro_agent::AgentEvent::AgentStart
+            )
         {
             let mode = mode.upgrade().unwrap();
             assert!(shows(&mode.chat_container, "Navigated to selected point"));

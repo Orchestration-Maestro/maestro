@@ -1,6 +1,6 @@
 //! HTML table projection under the selected rendering policy.
 use super::{Atoms, Policy, Writer};
-use maestro_app::markdown::Table;
+use maestro_markdown::Table;
 
 impl Writer<'_, '_> {
     /// Write a table inside its own horizontal scroller.

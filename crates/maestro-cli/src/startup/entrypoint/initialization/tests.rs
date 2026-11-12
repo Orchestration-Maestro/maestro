@@ -1,6 +1,6 @@
 //! Counted observations of the actual stored-pattern prefix walk.
 use super::model_patterns;
-use maestro_app::SettingsListEntry;
+use maestro_settings::SettingsListEntry;
 use std::{cell::Cell, rc::Rc};
 
 /// An iterator whose every request is observed by the test.

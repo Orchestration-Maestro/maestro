@@ -11,13 +11,11 @@ use super::{
     types::{ToolRenderer, ToolUiError},
 };
 use crate::components::console_block::ConsoleVariant;
-use maestro_app::{
-    JsonObject, TextContent, ToolResultMessage, UserBlock,
-    browser::tools::{
-        extraction::{ExtractDocumentParams, ExtractDocumentResult},
-        javascript_repl::{JavaScriptReplFile, JavaScriptReplParams, JavaScriptReplToolResult},
-    },
+use maestro_app::browser::tools::{
+    extraction::{ExtractDocumentParams, ExtractDocumentResult},
+    javascript_repl::{JavaScriptReplFile, JavaScriptReplParams, JavaScriptReplToolResult},
 };
+use maestro_models::{JsonObject, TextContent, ToolResultMessage, UserBlock};
 use serde_json::{Value, json};
 use std::{any::TypeId, cell::Cell, rc::Rc};
 

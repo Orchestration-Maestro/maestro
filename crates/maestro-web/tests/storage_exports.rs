@@ -249,8 +249,8 @@ fn exported_provider_records() {
             name: "P".into(),
             r#type: kind,
             base_url: "http://localhost".into(),
-            api_key: maestro_app::Presence::Null,
-            models: maestro_app::Presence::Missing,
+            api_key: maestro_session::Presence::Null,
+            models: maestro_session::Presence::Missing,
         };
         assert_eq!(
             serde_json::to_value(p).unwrap(),
@@ -324,8 +324,8 @@ fn browser_session_exports_use_the_application_owners() {
                 .unwrap()
                 .iter()
                 .map(|m| match m {
-                    maestro_app::AgentMessage::Custom(c) =>
-                        maestro_app::CustomAgentMessages::role(&*c.read().unwrap()).to_owned(),
+                    maestro_agent::AgentMessage::Custom(c) =>
+                        maestro_agent::CustomAgentMessages::role(&*c.read().unwrap()).to_owned(),
                     _ => panic!("browser custom role expected"),
                 })
                 .collect::<Vec<_>>(),

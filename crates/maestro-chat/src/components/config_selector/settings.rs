@@ -1,10 +1,9 @@
 //! Signed-pattern updates using raw scoped snapshots and canonical adapters.
 use super::{ResourceItem, resource_list::ResourceList};
-use maestro_app::{
-    DecisionRequest, PathMetadata, SettingsChange, SettingsListEntry, SettingsScope, SourceOrigin,
-    SourceScope,
-};
+use maestro_packages::PathMetadata;
 use maestro_path::{Cwd, dirname, join, relative, resolve_with};
+use maestro_resources::{SourceOrigin, SourceScope};
+use maestro_settings::{DecisionRequest, SettingsChange, SettingsListEntry, SettingsScope};
 use serde_json::{Map, Value};
 use std::{cell::RefCell, io, rc::Rc};
 
@@ -50,10 +49,7 @@ impl ResourceList {
         };
         if metadata.origin == SourceOrigin::TopLevel {
             let base = if metadata.scope == SourceScope::Project {
-                join(&[
-                    &self.options.cwd,
-                    maestro_app::configuration::config::CONFIG_DIR_NAME,
-                ])
+                join(&[&self.options.cwd, maestro_resources::paths::CONFIG_DIR_NAME])
             } else {
                 self.options.agent_dir.clone()
             };
@@ -115,8 +111,8 @@ impl ResourceList {
         }
         let paths = resolve_with(
             &[&[from], &[to]],
-            maestro_app::drive_directories,
-            maestro_app::current_directory,
+            maestro_resources::drive_directories,
+            maestro_resources::current_directory,
         )?;
         Ok(relative(
             &paths[0],

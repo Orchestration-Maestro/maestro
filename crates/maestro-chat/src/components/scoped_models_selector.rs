@@ -1,7 +1,8 @@
 //! Ordered session-only model scope editing with explicit persistence.
 use super::{dynamic_border::DynamicBorder, list_window};
-use maestro_app::{Model, key_text};
+use maestro_models::Model;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
+use maestro_tools::key_text;
 use maestro_tui::{
     Component, Container, FocusFlag, Focusable, Input, InputHandler, LocalFuture, Spacer, Text,
     TuiRuntime, fuzzy_filter, get_keybindings, matches_key,

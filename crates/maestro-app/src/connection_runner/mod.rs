@@ -15,9 +15,9 @@ pub use connection::{JsonlLineReader, RpcInput, RpcLineReader, run_rpc_connectio
 pub use daemon::DaemonWorkspaceOperations;
 pub use output::{RpcLine, RpcOutput, RpcRecord, stdout_output};
 
-use crate::rpc_types::{workspace, workspace_schema};
 use maestro_export::ExportOperations;
 use maestro_process::TerminationSignal;
+use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
 use maestro_theme::LiveTheme;
 use maestro_tools::ToolRenderEnvironment;
 use std::{future::Future, io, pin::Pin, rc::Rc};

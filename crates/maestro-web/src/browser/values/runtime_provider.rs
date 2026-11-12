@@ -2,21 +2,19 @@
 use super::{BrowserSandboxValue, diagnostic};
 use indexmap::IndexMap;
 use js_sys::{Array, Object, Reflect};
-use maestro_app::{
-    DiagnosticErrorInfo,
-    browser::{
-        components::{
-            sandbox::{
-                artifacts_runtime_provider::{ArtifactOperation, ArtifactResponse},
-                console_runtime_provider::{ConsoleLog, ConsoleLogType},
-                file_download_runtime_provider::DownloadableFile,
-                providers::RuntimeProviderValue,
-            },
-            sandboxed_iframe::{SandboxError, SandboxFile},
+use maestro_app::browser::{
+    components::{
+        sandbox::{
+            artifacts_runtime_provider::{ArtifactOperation, ArtifactResponse},
+            console_runtime_provider::{ConsoleLog, ConsoleLogType},
+            file_download_runtime_provider::DownloadableFile,
+            providers::RuntimeProviderValue,
         },
-        utils::attachments::Attachment,
+        sandboxed_iframe::{SandboxError, SandboxFile},
     },
+    utils::attachments::Attachment,
 };
+use maestro_models::DiagnosticErrorInfo;
 use wasm_bindgen::JsValue;
 
 /// Read one property without serializing the object or any sibling field.

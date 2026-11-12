@@ -1,7 +1,8 @@
 //! Typed renderer handles using the existing row-state erasure owner.
 use super::{ToolRenderResult, ToolRenderer, ToolResultMessageView};
 use crate::tools::types::ToolUiError;
-use maestro_app::{JsonObject, ToolRendererState};
+use maestro_models::JsonObject;
+use maestro_tools::ToolRendererState;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::{any::TypeId, rc::Rc};

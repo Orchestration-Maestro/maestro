@@ -4,7 +4,7 @@ use crate::input::{
     file_processor::{FileArgumentOperations, ProcessFileOptions, process_file_arguments},
     messages::{InitialMessageInput, InitialMessageResult, build_initial_message},
 };
-use maestro_app::{is_whitespace_scalar, lossy_string};
+use maestro_text::{is_whitespace_scalar, lossy_string};
 use std::io::{self, Write};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt};
 

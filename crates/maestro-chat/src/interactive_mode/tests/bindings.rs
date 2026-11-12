@@ -1,12 +1,18 @@
 //! Binding the current session's extensions, settings and errors to the retained mode.
 use super::{Setup, World, admitted, cases, isolated, roles, started};
 use crate::interactive_mode::InteractiveMode;
-use maestro_app::{
-    DiagnosticErrorInfo, ExtensionError, ExtensionFactory, ExtensionShortcut, LoadExtensionsResult,
-    Local, NewSessionCommandOptions, ReadonlyFooterDataProvider, ReadonlySessionManager,
-    ResourcesDiscoverEvent, ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
+use maestro_extensions::{
+    ExtensionError, ExtensionFactory, ExtensionShortcut, LoadExtensionsResult,
+    footer::ReadonlyFooterDataProvider,
+    types::{
+        NewSessionCommandOptions,
+        events::{ResourcesDiscoverEvent, ResourcesDiscoverResult, SessionStartEvent},
+    },
 };
+use maestro_models::{DiagnosticErrorInfo, Local};
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::{Component, InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -380,7 +386,7 @@ fn invalid_replacement_http_settings_leave_footer_unchanged() {
                         super::harness::session(cwd.to_str().unwrap(), None, |inner| inner);
                     replacement.session.model().write().unwrap().id = "rejected-model".into();
                     *replacement.session.settings_manager().borrow_mut() =
-                        maestro_app::SettingsManager::in_memory(
+                        maestro_settings::SettingsManager::in_memory(
                             serde_json::from_value(json!({
                                 "httpIdleTimeoutMs": -5,
                                 "compaction": {"enabled": false}
@@ -566,7 +572,7 @@ fn probing(probe: &Rc<Probe>) -> ExtensionFactory<Local> {
 }
 
 /// Records what `probe`'s mode shows at one session start, failing it on request.
-fn observe_start(probe: &Probe, ui: bool) -> Result<Option<()>, maestro_app::EventError> {
+fn observe_start(probe: &Probe, ui: bool) -> Result<Option<()>, maestro_extensions::EventError> {
     if let Some(mode) = probe.mode.borrow().upgrade() {
         let session = mode.runtime_host.session();
         probe.seen.borrow_mut().push(json!({
@@ -814,9 +820,9 @@ fn asking(log: &Rc<Log>, gate: &Gate, refuse: &Rc<Cell<bool>>) -> ExtensionFacto
 /// Records whether the started UI is `present`, then asks through `ui`.
 async fn ask(
     log: Rc<Log>,
-    ui: maestro_app::ExtensionUIContext,
+    ui: maestro_extensions::ExtensionUIContext,
     present: bool,
-) -> Result<Option<()>, maestro_app::EventError> {
+) -> Result<Option<()>, maestro_extensions::EventError> {
     log.push(format!("bind ui={present}"));
     let chosen = ui
         .select("Choose".to_owned(), vec!["answer".to_owned()], None)
@@ -830,7 +836,7 @@ async fn discover(
     log: Rc<Log>,
     gate: Option<tokio::sync::oneshot::Receiver<()>>,
     refuse: Rc<Cell<bool>>,
-) -> Result<Option<ResourcesDiscoverResult>, maestro_app::EventError> {
+) -> Result<Option<ResourcesDiscoverResult>, maestro_extensions::EventError> {
     log.push("discover".to_owned());
     if let Some(gate) = gate {
         gate.await.unwrap();
@@ -855,7 +861,8 @@ fn register_shortcut(owners: &LoadExtensionsResult<Local>, mut shortcut: Extensi
 
 /// A `ctrl+q` shortcut that runs `handler`.
 fn ctrl_q(
-    handler: impl Fn(maestro_app::ExtensionContext) -> Result<(), maestro_app::EventError> + 'static,
+    handler: impl Fn(maestro_extensions::ExtensionContext) -> Result<(), maestro_extensions::EventError>
+    + 'static,
 ) -> ExtensionShortcut<Local> {
     let handler = Rc::new(handler);
     ExtensionShortcut {
@@ -950,7 +957,7 @@ fn discoverable(directory: &Path) -> ResourcesDiscoverResult {
     let theme = themes.join("ocean.json");
     std::fs::write(&theme, dark.replace("\"dark\"", "\"ocean\"")).unwrap();
     let path =
-        |path: &Path| maestro_app::Presence::Present(vec![path.to_str().unwrap().to_owned()]);
+        |path: &Path| maestro_session::Presence::Present(vec![path.to_str().unwrap().to_owned()]);
     ResourcesDiscoverResult {
         skill_paths: path(&skill),
         prompt_paths: path(&prompt),
@@ -1025,7 +1032,7 @@ async fn paused(directory: &Path, quiet: bool) -> Paused {
     let world = Setup {
         extension: Some(asking(&log, &gate, &refuse)),
         configure: Box::new(move |settings| settings.set_quiet_startup(quiet)),
-        context: vec![maestro_app::ContextFile {
+        context: vec![maestro_models::system_prompt::ContextFile {
             path: directory.join("AGENTS.md").to_str().unwrap().to_owned(),
             content: "context".to_owned(),
         }],
@@ -1147,7 +1154,7 @@ async fn shutdown_case(
     world.mode.shutdown_requested.set(before);
     let runner = || world.mode.runtime_host.session().extension_runner();
     let started = Rc::new(Cell::new(0));
-    let request = |context: &maestro_app::ExtensionContext| {
+    let request = |context: &maestro_extensions::ExtensionContext| {
         context.shutdown().unwrap();
         started.set(world.runtime.futures());
     };
@@ -1193,7 +1200,7 @@ async fn bound_failure(directory: &Path, stack: Option<String>) -> Vec<String> {
                 let mut error = DiagnosticErrorInfo::new(None, "binding failure");
                 error.stack.clone_from(&stack);
                 Box::pin(std::future::ready(Err(
-                    Box::new(error) as maestro_app::EventError
+                    Box::new(error) as maestro_extensions::EventError
                 )))
             }),
         );
@@ -1255,7 +1262,7 @@ async fn bound_error_case(directory: &Path, stack: Option<String>, expected: For
         .map(|frame| {
             format!(
                 "   {}",
-                frame.trim_matches(maestro_app::is_whitespace_scalar)
+                frame.trim_matches(maestro_text::is_whitespace_scalar)
             )
         });
     let rows: Vec<String> = std::iter::once(heading).chain(frames).collect();
@@ -1410,9 +1417,9 @@ fn extension_error_stacks_keep_every_frame_at_scale() {
 
 /// What a shortcut's context reads, with the catalog compared to `registry`.
 fn capabilities(
-    context: &maestro_app::ExtensionContext,
-    registry: &std::sync::Arc<maestro_app::ModelRegistry>,
-) -> Result<Value, maestro_app::EventError> {
+    context: &maestro_extensions::ExtensionContext,
+    registry: &std::sync::Arc<maestro_catalog::ModelRegistry>,
+) -> Result<Value, maestro_extensions::EventError> {
     let manager = context.session_manager()?;
     let cwd = manager.borrow().get_cwd().to_owned();
     Ok(json!({
@@ -1433,7 +1440,7 @@ fn capabilities(
 /// reads in `log`, aborts, compacts with its failure recorded in `log`, then shuts down.
 fn capability_shortcut(
     log: &Rc<RefCell<Vec<Value>>>,
-    registry: std::sync::Arc<maestro_app::ModelRegistry>,
+    registry: std::sync::Arc<maestro_catalog::ModelRegistry>,
 ) -> ExtensionShortcut<Local> {
     let log = Rc::clone(log);
     ctrl_q(move |context| {
@@ -1441,7 +1448,7 @@ fn capability_shortcut(
         log.borrow_mut().push(capabilities(&context, &registry)?);
         context.abort()?;
         let failed = Rc::clone(&log);
-        context.compact(Some(maestro_app::CompactOptions {
+        context.compact(Some(maestro_extensions::CompactOptions {
             custom_instructions: None,
             on_complete: None,
             on_error: Some(Rc::new(move |error| {
@@ -1456,7 +1463,9 @@ fn capability_shortcut(
 }
 
 /// What a shortcut's context reports about its turn signal and its queued messages.
-fn abort_state(context: &maestro_app::ExtensionContext) -> Result<Value, maestro_app::EventError> {
+fn abort_state(
+    context: &maestro_extensions::ExtensionContext,
+) -> Result<Value, maestro_extensions::EventError> {
     Ok(json!({
         "signal": context.signal()?.is_some(),
         "pending": context.has_pending_messages()?,
@@ -1492,7 +1501,7 @@ fn compacting_shortcut(outcome: Outcome) -> ExtensionShortcut<Local> {
     ctrl_q(move |context| {
         let completed = Rc::new(RefCell::new(outcome.borrow_mut().take()));
         let failed = Rc::clone(&completed);
-        context.compact(Some(maestro_app::CompactOptions {
+        context.compact(Some(maestro_extensions::CompactOptions {
             custom_instructions: None,
             on_complete: Some(Rc::new(move |result| {
                 send_outcome(&completed, json!({"summary": result.summary}));
@@ -1745,7 +1754,7 @@ pub(super) fn renaming_replacements(
         let extensions = super::loaded(&options.cwd, Rc::clone(&extension), Vec::new());
         register_shortcut(&extensions, reading_shortcut(&log));
         let resources = super::Resources {
-            context: vec![maestro_app::ContextFile {
+            context: vec![maestro_models::system_prompt::ContextFile {
                 path: context.clone(),
                 content: "context".to_owned(),
             }],
@@ -1781,11 +1790,11 @@ fn continued(
     mode: &Weak<InteractiveMode>,
     seen: &Rc<RefCell<Vec<Value>>>,
     titles: &Rc<RefCell<Vec<String>>>,
-) -> maestro_app::NewSessionCommandOptions {
+) -> maestro_extensions::types::NewSessionCommandOptions {
     let mode = Weak::clone(mode);
     let seen = Rc::clone(seen);
     let titles = Rc::clone(titles);
-    maestro_app::NewSessionCommandOptions {
+    maestro_extensions::types::NewSessionCommandOptions {
         with_session: Some(Rc::new(move |context| {
             let mode = mode.upgrade().unwrap();
             let seen = Rc::clone(&seen);
@@ -1807,7 +1816,7 @@ fn continued(
                 Ok(())
             })
         })),
-        ..maestro_app::NewSessionCommandOptions::default()
+        ..maestro_extensions::types::NewSessionCommandOptions::default()
     }
 }
 
@@ -1845,7 +1854,7 @@ pub(super) struct Retiring {
     /// The retired session.
     session: Rc<maestro_app::AgentSession>,
     /// A context taken from the retired session's runner.
-    context: maestro_app::ExtensionContext,
+    context: maestro_extensions::ExtensionContext,
     /// Each terminal title written since the capture.
     pub(super) titles: Rc<RefCell<Vec<String>>>,
 }
@@ -1940,7 +1949,7 @@ fn real_session_replacement_rebinds_shortcuts_before_continuation() {
             let world = Setup {
                 extension: Some(idle()),
                 create: Some(renaming_replacements(directory, &log, &idle())),
-                context: vec![maestro_app::ContextFile {
+                context: vec![maestro_models::system_prompt::ContextFile {
                     path: directory.join("AGENTS.md").to_str().unwrap().to_owned(),
                     content: "context".to_owned(),
                 }],
@@ -1973,7 +1982,7 @@ fn compaction_shutdown(
     Rc::new(move |api| {
         let (waiting, releasing) = (Rc::clone(&entered), Rc::clone(&release));
         let registered = api
-            .on::<maestro_app::SessionBeforeCompactEvent, maestro_app::SessionBeforeCompactResult>(
+            .on::<maestro_extensions::types::events::SessionBeforeCompactEvent, maestro_extensions::types::events::SessionBeforeCompactResult>(
                 "session_before_compact".into(),
                 Rc::new(move |_, context| {
                     let (waiting, releasing) = (Rc::clone(&waiting), Rc::clone(&releasing));
@@ -1982,9 +1991,9 @@ fn compaction_shutdown(
                         context.shutdown()?;
                         waiting.notify_one();
                         releasing.notified().await;
-                        Ok(Some(maestro_app::SessionBeforeCompactResult {
-                            cancel: maestro_app::Presence::Present(true),
-                            compaction: maestro_app::Presence::Missing,
+                        Ok(Some(maestro_extensions::types::events::SessionBeforeCompactResult {
+                            cancel: maestro_session::Presence::Present(true),
+                            compaction: maestro_session::Presence::Missing,
                         }))
                     })
                 }),
@@ -2025,7 +2034,8 @@ fn shutdown_requested_during_compaction_runs_once_at_settle() {
             let held = receive.await.unwrap();
             let message = super::answer();
             message.write().unwrap().usage.input = 2_000.0;
-            message.write().unwrap().usage.total_tokens = maestro_app::Presence::Present(2_000.0);
+            message.write().unwrap().usage.total_tokens =
+                maestro_session::Presence::Present(2_000.0);
             held.stream.end(Some(message));
             entered.notified().await;
             assert_eq!(exits(&effects), 0);

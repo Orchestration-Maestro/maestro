@@ -7,16 +7,14 @@ use maestro_app::connection_runner::{
     RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcOutput, RpcProcessPort, WorkspaceEventSink,
     WorkspaceOperations,
 };
-use maestro_app::rpc_types::{workspace, workspace_schema};
-use maestro_app::{
-    AgentSessionRuntime, RpcConnectionOutcome, RpcModeOptions, TerminationSignal,
-    run_rpc_connection,
-};
+use maestro_app::{AgentSessionRuntime, RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_extensions::{
     ExtensionFactory, SessionBeforeForkEvent, SessionBeforeForkResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionStartEvent,
 };
 use maestro_models::Local;
+use maestro_process::TerminationSignal;
+use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
 use maestro_session::Presence;
 use maestro_theme::LiveTheme;
 use serde_json::{Value, json};

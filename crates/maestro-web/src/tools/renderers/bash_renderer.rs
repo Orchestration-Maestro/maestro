@@ -4,7 +4,7 @@ use crate::tools::{
     renderer_registry::{ToolHeaderState, get_text_output},
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
 };
-use maestro_app::JsonObject;
+use maestro_models::JsonObject;
 /// Stateless command renderer.
 pub struct BashRenderer;
 impl<D, C: CardOutput> ToolRenderer<JsonObject, D, C> for BashRenderer {

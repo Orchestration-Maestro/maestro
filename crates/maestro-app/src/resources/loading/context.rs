@@ -1,7 +1,7 @@
 //! Context files, system prompt files and the warning written when one cannot be read.
-use super::{ContextFile, DefaultEventBus, DefaultResourceLoader, ResourceKind, overrides::apply};
-use crate::diagnostics::write_stderr_line;
-use maestro_models::system_prompt::CONTEXT_FILE_NAMES;
+use super::{DefaultEventBus, DefaultResourceLoader, ResourceKind, overrides::apply};
+use maestro_agent::diagnostics::write_stderr_line;
+use maestro_models::system_prompt::{CONTEXT_FILE_NAMES, ContextFile};
 use maestro_path::join;
 use maestro_resources::{
     paths::{CONFIG_DIR_NAME, resolve},

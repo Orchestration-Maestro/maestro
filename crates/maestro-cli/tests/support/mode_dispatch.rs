@@ -1,11 +1,12 @@
 //! Controlled presentations over the existing startup service fixture.
 use crate::startup_runtime::Fixture;
 use crate::support::{presenters, startup};
+use maestro_app::AgentSessionRuntime;
 use maestro_app::configuration::timings::Timings;
 use maestro_app::presentation_data::mode_dispatch::{
     InteractiveModeOptions, InteractiveModeRunner, ModeLaunchers,
 };
-use maestro_app::{AgentSessionRuntime, ModelResolverOutput, ScopedModel};
+use maestro_catalog::{ModelResolverOutput, ScopedModel};
 use maestro_cli::startup::entrypoint::bootstrap::AppMode;
 use maestro_cli::startup::entrypoint::initialization::create_runtime;
 use maestro_cli::startup::entrypoint::routing::{DispatchOutput, ModeDispatch, dispatch_mode};
@@ -288,8 +289,8 @@ pub fn script_print(h: &Harness) -> Rc<RefCell<Vec<serde_json::Value>>> {
     let prompts = Rc::new(RefCell::new(Vec::new()));
     let (received, recorder) = (Rc::clone(&prompts), Rc::clone(&h.recorder));
     h.runtime.session().model().write().unwrap().input = vec![
-        maestro_app::ModelInput::Text,
-        maestro_app::ModelInput::Image,
+        maestro_models::ModelInput::Text,
+        maestro_models::ModelInput::Image,
     ];
     *h.runtime.session().agent().stream_fn.write().unwrap() =
         Some(Rc::new(move |_, context, _, _| {
@@ -297,18 +298,18 @@ pub fn script_print(h: &Harness) -> Rc<RefCell<Vec<serde_json::Value>>> {
             received
                 .borrow_mut()
                 .push(serde_json::to_value(context.messages.last().unwrap()).unwrap());
-            let message: maestro_app::AssistantMessage =
+            let message: maestro_models::AssistantMessage =
                 serde_json::from_value(serde_json::json!({
                     "role": "assistant", "content": [{"type":"text", "text":"answer"}],
                     "api":"openai-completions", "provider":"startup", "model":"first",
-                    "usage": maestro_app::Usage::default(), "stopReason":"stop", "timestamp": 0
+                    "usage": maestro_models::Usage::default(), "stopReason":"stop", "timestamp": 0
                 }))
                 .unwrap();
-            let event: maestro_app::AssistantMessageEvent = serde_json::from_value(
+            let event: maestro_models::AssistantMessageEvent = serde_json::from_value(
                 serde_json::json!({"type":"done", "reason":"stop", "message":message}),
             )
             .unwrap();
-            let stream = maestro_app::AssistantMessageEventStream::new();
+            let stream = maestro_models::AssistantMessageEventStream::new();
             stream.push(event);
             Box::pin(std::future::ready(Ok(stream)))
         }));

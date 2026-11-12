@@ -1,4 +1,5 @@
-//! Named application exports instead of unrestricted domain namespaces, and the enumerated
+//! Named application exports instead of unrestricted domain namespaces, the reach check that
+//! keeps frontends from naming lower-crate items through the application, and the enumerated
 //! public surface of the credentials crate.
 
 use std::{
@@ -10,12 +11,7 @@ use syn::ext::IdentExt;
 
 use crate::source::{Member, Source, imports::flatten};
 
-/// Domain crates whose frontend surface is selected by the application.
-const DOMAINS: &[&str] = &[
-    "maestro-daemon",
-    "maestro-terminal-emulator",
-    "maestro-markdown",
-];
+pub(crate) mod frontends;
 
 /// Public names `maestro-credentials` offers; the crate names each one and adds no writer.
 const CREDENTIALS_NAMES: &[&str] = &[
@@ -51,7 +47,8 @@ const CREDENTIALS_NAMES: &[&str] = &[
 /// Binding paths with their visibility scopes; `None` means unrestricted visibility.
 pub(crate) type Scopes = BTreeMap<Vec<String>, Option<Vec<String>>>;
 
-/// Reject crate aliases, module exports and wildcard escapes from domain crates.
+/// Reject crate aliases, module exports and wildcard escapes from lower crates, and frontend paths
+/// that reach a lower-crate item through the application.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     let modules = modules(members);
     let sources: Vec<_> = members
@@ -77,6 +74,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
             }
         }
     }
+    frontends::check(members, &aliases)?;
     credentials(members)
 }
 
@@ -161,10 +159,10 @@ fn public(vis: &syn::Visibility) -> bool {
     matches!(vis, syn::Visibility::Public(_))
 }
 
-/// Whether a resolved path begins in one of the bounded domain crates.
+/// Whether a resolved path begins in a workspace crate other than the application.
 fn domain(path: &[String]) -> bool {
     path.first()
-        .is_some_and(|name| DOMAINS.iter().any(|owner| owner.replace('-', "_") == *name))
+        .is_some_and(|name| name.starts_with("maestro_") && name != "maestro_app")
 }
 
 /// One import in its logical module scope.
@@ -438,11 +436,6 @@ fn module_path(relative: &Path) -> Vec<String> {
     path
 }
 
-/// Whether a member is the application or one of the bounded domain crates.
-fn surface(member: &Member) -> bool {
-    member.name == "maestro-app" || DOMAINS.contains(&member.name.as_str())
-}
-
 /// Logical root of a member's modules: empty for the application, the crate name for a domain.
 fn root(member: &Member) -> Vec<String> {
     (member.name != "maestro-app")
@@ -451,10 +444,10 @@ fn root(member: &Member) -> Vec<String> {
         .collect()
 }
 
-/// Discover domain and application module paths from source layout and inline declarations.
+/// Discover workspace and application module paths from source layout and inline declarations.
 fn modules(members: &[Member]) -> Scopes {
     let mut modules = BTreeMap::new();
-    for member in members.iter().filter(|member| surface(member)) {
+    for member in members {
         modules.insert(root(member), None);
         for walk in member
             .sources
@@ -467,14 +460,11 @@ fn modules(members: &[Member]) -> Scopes {
     modules
 }
 
-/// Module declarations of an application or domain source below its source root.
+/// Module declarations of a source below its source root.
 ///
 /// The shared syntax walk records them, so the module index needs no parsed file.
 pub(crate) fn file_modules(member: &Member, source: &Source, file: &syn::File) -> Scopes {
     let mut modules = Scopes::new();
-    if !surface(member) {
-        return modules;
-    }
     if let Ok(relative) = source.path.strip_prefix(member.directory.join("src")) {
         let mut path = root(member);
         path.extend(module_path(relative));

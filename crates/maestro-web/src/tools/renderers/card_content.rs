@@ -5,7 +5,8 @@ use crate::tools::{
     renderer_registry::ToolHeaderState,
     types::{ToolRenderResult, ToolResultMessageView, ToolUiError},
 };
-use maestro_app::{JsonObject, display_truthy};
+use maestro_json::display_truthy;
+use maestro_models::JsonObject;
 use std::borrow::Cow;
 /// Private localized or authored caption representation.
 pub(in crate::tools) enum Caption {

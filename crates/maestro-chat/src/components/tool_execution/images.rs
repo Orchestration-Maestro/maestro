@@ -1,7 +1,8 @@
 //! Inline images of a tool row: their conversion for Kitty and their retained children.
 use super::{Row, ToolExecutionResult};
-use maestro_app::{DiagnosticErrorInfo, UserBlock, convert_to_png};
+use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::ThemeColor;
+use maestro_tools::utils::image_convert::convert_to_png;
 use maestro_tui::{ComponentHandle, Image, ImageOptions, ImageProtocol, ImageTheme, Spacer};
 use std::rc::Rc;
 
@@ -86,7 +87,7 @@ impl Row {
     /// Builds an inline child after releasing the conversion cache borrow.
     fn image(
         &self,
-        image: &maestro_app::ImageContent,
+        image: &maestro_models::ImageContent,
         protocol: ImageProtocol,
     ) -> Option<Rc<Image>> {
         let (data, mime) = {

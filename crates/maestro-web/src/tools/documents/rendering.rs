@@ -12,10 +12,10 @@ use crate::{
         types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError, json_params},
     },
 };
-use maestro_app::{
-    JsonObject,
-    browser::tools::documents::{ArtifactCommand, ArtifactsParams, LocalArtifactsPanel},
+use maestro_app::browser::tools::documents::{
+    ArtifactCommand, ArtifactsParams, LocalArtifactsPanel,
 };
+use maestro_models::JsonObject;
 use serde_json::Value;
 use std::{borrow::Cow, rc::Rc};
 
@@ -92,7 +92,7 @@ impl<'a> Field<'a> {
     fn truthy(self) -> bool {
         match self {
             Self::Text(text) => !text.is_empty(),
-            Self::Json(value) => maestro_app::is_truthy(value),
+            Self::Json(value) => maestro_json::is_truthy(value),
         }
     }
     /// Selected nullish operands are empty; other non-strings fail at their consumer.
@@ -107,7 +107,7 @@ impl<'a> Field<'a> {
     fn display(self) -> Result<Option<Cow<'a, str>>, ToolUiError> {
         match self {
             Self::Text(text) => Ok((!text.is_empty()).then_some(Cow::Borrowed(text))),
-            Self::Json(value) => maestro_app::display_truthy(Some(value))
+            Self::Json(value) => maestro_json::display_truthy(Some(value))
                 .map_err(|error| ToolUiError::Presentation(error.to_string())),
         }
     }

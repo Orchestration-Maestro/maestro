@@ -26,7 +26,10 @@ impl ExtensionOperations {
     /// # Errors
     /// Returns a settings borrow or native operation failure.
     #[must_use]
-    pub fn call(self: &Rc<Self>, operation: HostOperation) -> crate::PackageFuture<'static, Value> {
+    pub fn call(
+        self: &Rc<Self>,
+        operation: HostOperation,
+    ) -> maestro_packages::PackageFuture<'static, Value> {
         let owners = self.clone();
         Box::pin(async move {
             match operation {

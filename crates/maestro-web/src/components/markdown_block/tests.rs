@@ -1,6 +1,6 @@
 //! Escaped Markdown keeps authored markup inert.
 use super::render::prepare;
-use maestro_app::markdown::{self, Kind, Node};
+use maestro_markdown::{self as markdown, Kind, Node};
 
 /// Parse the escaping policy directly without rewriting authored source.
 fn escaped_document(source: String) -> markdown::Document {

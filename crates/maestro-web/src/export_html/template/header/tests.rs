@@ -212,7 +212,7 @@ fn header_dates_forward_values_lazily_and_keep_localized_text() {
             assert_prepared(&prepared, row);
         }
         let timestamp = &data["header"]["timestamp"];
-        if maestro_app::is_truthy(timestamp) {
+        if maestro_json::is_truthy(timestamp) {
             assert_eq!(seen.borrow().as_slice(), std::slice::from_ref(timestamp));
             assert_eq!(prepared.rows[0], localized);
             let error = prepare(&doc, &|_| {

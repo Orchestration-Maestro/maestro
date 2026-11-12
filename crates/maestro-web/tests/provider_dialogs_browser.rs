@@ -6,7 +6,9 @@ use crate::{
         Fetch, Prompts, completed_reply, panel, panels, press, settled, storage, type_text, until,
     },
 };
-use maestro_app::{CustomProvider, Model, Presence, get_model};
+use maestro_app::CustomProvider;
+use maestro_models::{Model, get_model};
+use maestro_session::Presence;
 use maestro_web::{
     ApiKeyPromptDialog, CustomProviderDialog, ModelSelector, ProviderKeyInput, ProvidersModelsTab,
     SettingsTab,
@@ -664,7 +666,7 @@ pub async fn providers_models_tab_lists_keys_and_manages_custom_providers(
     parent.append_child(&mounted.node).unwrap();
     assert_eq!(
         all(&parent, ".maestro-key-input").len(),
-        maestro_app::get_providers().len()
+        maestro_models::get_providers().len()
     );
     until(|| text(&parent).contains("3 models")).await;
     let cards = all(&parent, ".maestro-provider-card");

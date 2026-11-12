@@ -1,10 +1,14 @@
 //! Retained direct shell command rows.
 use super::dynamic_border::DynamicBorder;
-use maestro_app::{
-    DiagnosticErrorInfo, TruncationOptions, TruncationResult, key_hint, key_text, normalize_to_lf,
-    num, plain_key_hint, strip_ansi, truncate_tail, truncate_to_visual_lines,
-};
+use maestro_models::DiagnosticErrorInfo;
+use maestro_text::normalize_to_lf;
 use maestro_theme::{LiveTheme, ThemeColor, paint};
+use maestro_tools::{
+    TruncationOptions, TruncationResult, key_hint, key_text,
+    keybinding_hints::plain_key_hint,
+    output::render_utils::{num, strip_ansi},
+    truncate_tail, truncate_to_visual_lines,
+};
 use maestro_tui::{Component, Container, Loader, Spacer, TUI, Text};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;

@@ -108,7 +108,7 @@ impl Download {
         if self.text && !record.content.is_empty() {
             record.extracted_text = crate::utils::base64::decode(&record.content)
                 .ok()
-                .map(|bytes| maestro_app::decode_utf8(&bytes).into_owned());
+                .map(|bytes| maestro_text::decode_utf8(&bytes).into_owned());
         }
         record
     }

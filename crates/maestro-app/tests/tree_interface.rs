@@ -119,7 +119,8 @@ fn message_and_settings_records() {
 
 /// Builds label and session-info records through their existing owner.
 fn label_and_info_records() {
-    use maestro_app::{LabelEntry, SessionInfoEntry};
+    use maestro_app::SessionInfoEntry;
+    use maestro_session::session_manager::LabelEntry;
     use serde_json::json;
     let label: maestro_session::session_manager::LabelEntry = LabelEntry {
         base: base(),
@@ -208,8 +209,8 @@ fn session_records_and_scalar_helpers_use_their_existing_owners() {
         };
     assert!(std::ptr::eq(node.entry, &raw const entry));
     assert_eq!(node.entry["open"]["nested"], true);
-    assert!(maestro_app::is_whitespace_scalar('\u{feff}'));
-    assert!(!maestro_app::is_whitespace_scalar('\u{85}'));
-    assert!(maestro_app::is_truthy(&serde_json::json!([])));
-    assert!(!maestro_app::is_truthy(&serde_json::json!(0)));
+    assert!(maestro_text::is_whitespace_scalar('\u{feff}'));
+    assert!(!maestro_text::is_whitespace_scalar('\u{85}'));
+    assert!(maestro_json::is_truthy(&serde_json::json!([])));
+    assert!(!maestro_json::is_truthy(&serde_json::json!(0)));
 }

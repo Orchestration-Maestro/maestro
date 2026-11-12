@@ -10,11 +10,11 @@ use tokio::task::LocalSet;
 fn main() {
     #[cfg(target_os = "linux")]
     if let Some(error) = maestro_process::terminal::setup_entry() {
-        maestro_app::diagnostics::write_stderr_line(&format!("Error: {error}"));
+        maestro_agent::diagnostics::write_stderr_line(&format!("Error: {error}"));
         std::process::exit(1);
     }
     let status = execute().unwrap_or_else(|error| {
-        maestro_app::diagnostics::write_stderr_line(&format!("Error: {error}"));
+        maestro_agent::diagnostics::write_stderr_line(&format!("Error: {error}"));
         1
     });
     std::process::exit(status);

@@ -76,7 +76,7 @@ fn replay_case(case: &Case) {
     );
     let (_, theme) = published::published(&palette::palette("dark").unwrap()).unwrap();
     let entry = json!({"id":"a","parentId":null,"type":"message","message":{"role":"user","content":"hello"}});
-    let node = maestro_app::SessionTreeNode {
+    let node = maestro_session::session_manager::SessionTreeNode {
         entry: &entry,
         children: vec![],
         label: None,

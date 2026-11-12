@@ -4,10 +4,10 @@ use crate::{
     contributions_support::{container, frames, host, text, view},
     dialog_support::{Fetch, completed_reply, press, settled, storage},
 };
-use maestro_app::{
-    AgentInitialState, AgentMessage, AgentOptions, CustomProvider, DiagnosticErrorInfo, Model,
-    Presence, get_model,
-};
+use maestro_agent::{AgentInitialState, AgentMessage, AgentOptions};
+use maestro_app::CustomProvider;
+use maestro_models::{DiagnosticErrorInfo, Model, get_model};
+use maestro_session::Presence;
 use maestro_web::{
     AgentInterface, AgentInterfaceProps, Attachment, BrowserSession, SharedAttachment,
 };
@@ -363,7 +363,7 @@ async fn proxied(interface: &AgentInterface, first: &Rc<BrowserSession>) {
         (200, "text/event-stream", completed_reply()),
     ]);
     first
-        .prompt(maestro_app::PromptInput::Text {
+        .prompt(maestro_agent::PromptInput::Text {
             text: "elsewhere".into(),
             images: Vec::new(),
         })
@@ -568,7 +568,7 @@ pub async fn agent_interface_detach_reconnect_keeps_draft_and_subscription(
     frames(2).await;
     interface.root().remove();
     session
-        .prompt(maestro_app::PromptInput::Text {
+        .prompt(maestro_agent::PromptInput::Text {
             text: "elsewhere".into(),
             images: Vec::new(),
         })
@@ -614,14 +614,14 @@ async fn reconnect_during_pending_tool() {
     let session = session(haiku(), Vec::new());
     let (interface, parent) = mounted(props(&session, &Rc::default(), vec![]), 400);
     let (partial, finish_message, _updates) = hold_event(&session, |event| {
-        matches!(event, maestro_app::AgentEvent::MessageUpdate { message, .. }
+        matches!(event, maestro_agent::AgentEvent::MessageUpdate { message, .. }
             if message.read().unwrap().content.iter().any(|content|
-                matches!(content, maestro_app::AssistantContent::Text(text) if text.text == "ok")))
+                matches!(content, maestro_models::AssistantContent::Text(text) if text.text == "ok")))
     });
     let (tool, finish_tool, _tools) = hold_event(&session, |event| {
-        matches!(event, maestro_app::AgentEvent::ToolExecutionStart { .. })
+        matches!(event, maestro_agent::AgentEvent::ToolExecutionStart { .. })
     });
-    let run = session.prompt(maestro_app::PromptInput::Text {
+    let run = session.prompt(maestro_agent::PromptInput::Text {
         text: "hold the tool".into(),
         images: Vec::new(),
     });
@@ -656,11 +656,11 @@ async fn reconnect_during_pending_tool() {
 /// Pause the first matching event after the view has observed it, exposing entry and release.
 fn hold_event(
     session: &Rc<BrowserSession>,
-    matches: fn(&maestro_app::AgentEvent<Browser>) -> bool,
+    matches: fn(&maestro_agent::AgentEvent<Browser>) -> bool,
 ) -> (
     tokio::sync::oneshot::Receiver<()>,
     tokio::sync::oneshot::Sender<()>,
-    maestro_app::Subscription<Browser, maestro_app::Local>,
+    maestro_agent::Subscription<Browser, maestro_models::Local>,
 ) {
     let (entered, entering) = tokio::sync::oneshot::channel();
     let (release, pending) = tokio::sync::oneshot::channel();

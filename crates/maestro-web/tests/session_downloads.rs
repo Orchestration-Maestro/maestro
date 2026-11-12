@@ -17,7 +17,7 @@ fn session_download_keeps_full_history_and_header_projection() {
             row.name
         );
         if row.name == "all-branches-and-repeated-records" {
-            doc.leaf_id = maestro_app::Presence::Present(serde_json::json!("right"));
+            doc.leaf_id = maestro_session::Presence::Present(serde_json::json!("right"));
             download_session_json(&doc, &host).unwrap();
             assert_eq!(
                 host.downloads.take().as_slice(),

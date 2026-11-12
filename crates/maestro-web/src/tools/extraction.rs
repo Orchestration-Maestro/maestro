@@ -9,10 +9,8 @@ use super::{
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
 };
 use crate::components::console_block::ConsoleVariant;
-use maestro_app::{
-    JsonObject,
-    browser::tools::extraction::{ExtractDocumentParams, ExtractDocumentResult},
-};
+use maestro_app::browser::tools::extraction::{ExtractDocumentParams, ExtractDocumentResult};
+use maestro_models::JsonObject;
 use serde_json::Value;
 
 /// Stateless document-extraction renderer.
@@ -32,7 +30,7 @@ impl<C: CardOutput> ToolRenderer<JsonObject, Value, C> for ExtractDocumentRender
             } else {
                 Some(match params.get("url").filter(|v| !v.is_null()) {
                     Some(Value::String(s)) => s.clone(),
-                    Some(value) => maestro_app::compact_json(value)
+                    Some(value) => maestro_json::compact_json(value)
                         .map_err(|e| ToolUiError::Presentation(e.to_string()))?,
                     None => String::new(),
                 })
@@ -94,7 +92,7 @@ impl<C: CardOutput> ToolRenderer<ExtractDocumentParams, ExtractDocumentResult, C
 }
 /// Read only metadata selected by the reached result branch.
 fn caption(details: Option<&Value>, error: bool) -> Result<String, ToolUiError> {
-    let Some(details) = details.filter(|d| maestro_app::is_truthy(d)) else {
+    let Some(details) = details.filter(|d| maestro_json::is_truthy(d)) else {
         return Ok(generic(error).into());
     };
     let name = details

@@ -2,7 +2,8 @@
 //! default action on a second one during shutdown.
 #![cfg(unix)]
 use crate::support::{Child, Served, serve};
-use maestro_app::{ExtensionFactory, Local, SessionShutdownEvent};
+use maestro_extensions::{ExtensionFactory, types::events::SessionShutdownEvent};
+use maestro_models::Local;
 use maestro_test_directory::Scratch;
 use maestro_test_process::{CASE, TestProcess, selection};
 use std::convert::Infallible;

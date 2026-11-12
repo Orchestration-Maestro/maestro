@@ -14,10 +14,7 @@ mod operations;
 mod provider;
 mod watch;
 
-pub use maestro_extensions::footer::{
-    ExtensionStatusIter, ExtensionStatuses, ReadonlyFooterDataProvider,
-};
-pub use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
+pub use maestro_extensions::footer::ReadonlyFooterDataProvider;
 #[cfg(any(unix, windows))]
 pub use native::NativeFooterOperations;
 pub use operations::{FooterFileStats, FooterOperations};

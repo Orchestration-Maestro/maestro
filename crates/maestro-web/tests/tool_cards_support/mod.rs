@@ -76,7 +76,7 @@ pub struct ValueRoute {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ValueInput {
     pub params: serde_json::Value,
-    pub result: maestro_app::ToolResultMessage,
+    pub result: maestro_models::ToolResultMessage,
     pub is_streaming: bool,
 }
 #[derive(Deserialize)]

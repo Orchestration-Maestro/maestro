@@ -149,7 +149,7 @@ fn other_keys() -> String {
 /// An extension shortcut in the display spelling of the other key hints: each part starts
 /// with a capital letter and `alt` takes the platform's name.
 fn capitalize_shortcut(key: &str) -> String {
-    maestro_app::format_key_text(key, true)
+    maestro_tools::format_key_text(key, true)
 }
 
 #[cfg(test)]

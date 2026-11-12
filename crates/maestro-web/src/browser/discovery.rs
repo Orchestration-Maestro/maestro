@@ -1,11 +1,11 @@
 //! Local-server model discovery over the page's own fetch and socket effects.
 use maestro_app::{
-    AutoDiscoveryProviderType, Model,
+    AutoDiscoveryProviderType,
     browser::utils::model_discovery::{
         DiscoveryDiagnostic, DiscoveryError, DiscoveryOptions, DiscoveryProvider, discover_models,
     },
-    default_fetch,
 };
+use maestro_models::{Model, default_fetch};
 use std::sync::Arc;
 
 /// List the models a local server of `kind` offers, logging its diagnostics to the console.

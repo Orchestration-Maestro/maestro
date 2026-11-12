@@ -10,7 +10,7 @@ use maestro_app::utils::{
         ClipboardImageOperations, ReadClipboardImageOptions, read_clipboard_image_with,
     },
 };
-use maestro_app::{OutputMode, SpawnSyncError, SpawnSyncOptions};
+use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{

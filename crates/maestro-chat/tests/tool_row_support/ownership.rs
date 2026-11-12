@@ -1,8 +1,8 @@
 //! Replacement, fallible-child propagation and weak teardown witnesses.
-use maestro_app::{
+use maestro_chat::{ToolExecutionComponent, ToolExecutionResult};
+use maestro_tools::{
     ToolRenderResultCallback, ToolRenderShell, ToolRendererBinding, ToolRendererState,
 };
-use maestro_chat::{ToolExecutionComponent, ToolExecutionResult};
 use maestro_tui::{Component, Container};
 use serde::Deserialize;
 use serde_json::Value;
@@ -19,8 +19,8 @@ struct Case {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Replacement {
-    first: maestro_app::UserBlock,
-    replacement: maestro_app::UserBlock,
+    first: maestro_models::UserBlock,
+    replacement: maestro_models::UserBlock,
 }
 /// Extract actual wire payloads in order, retaining repeated images.
 fn payloads(rows: &[String]) -> Vec<String> {
@@ -330,9 +330,9 @@ pub fn typed_rebuilds() {
 fn typed_definition(
     states: &Rc<RefCell<Vec<Rc<RefCell<u32>>>>>,
     events: RebuildEvents,
-) -> maestro_app::local::ToolDefinition<(), (), Decoded, u32> {
-    use maestro_app::ToolRenderResult;
-    use maestro_app::local::ToolDefinition;
+) -> maestro_tools::types::local::ToolDefinition<(), (), Decoded, u32> {
+    use maestro_tools::ToolRenderResult;
+    use maestro_tools::types::local::ToolDefinition;
     let seen = states.clone();
     ToolDefinition::<(), (), Decoded, u32> {
         definition: serde_json::from_value(
@@ -345,7 +345,7 @@ fn typed_definition(
         prepare_arguments: None,
         execution_mode: None,
         execute: Rc::new(|_, (), _, _, _| Box::pin(async { panic!("rendering must not execute") })),
-        render_shell: Some(maestro_app::ToolRenderShell::SelfRendered),
+        render_shell: Some(maestro_tools::ToolRenderShell::SelfRendered),
         render_call: Some(Rc::new(move |_, _, row| {
             *row.state.borrow_mut() += 1;
             seen.borrow_mut().push(row.state.clone());

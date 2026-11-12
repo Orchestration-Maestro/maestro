@@ -40,8 +40,8 @@ stable sorting and comparator lifetime.
   nothing else. Frontmatter parsing, the editor's stored text, Markdown parsing and
   edit matching all call it; each keeps its own tab policy.
 - **UTF-16 prefixes.** `truncate_utf16(text, limit)` returns the longest whole-scalar
-  prefix within the unit budget. Models and tree previews share this helper, also
-  re-exported from `maestro_app`.
+  prefix within the unit budget. Models and tree previews share this helper, which
+  frontends import from `maestro_text`.
 - **Lexical order.** `utf16_order` compares UTF-16 code units, so supplementary
   scalars sort before U+E000.
 - **Markup.** `markup::escape` and `markup::escape_into` replace `&`, `<`, `>` and `"`
@@ -77,7 +77,7 @@ Its constructor uses the same locale selection as the collator above, retaining
 neither the reader nor later environment changes. `format(f64)` returns locale
 grouping and digits, zero to three fractional digits, half-expand rounding and
 signed zero. It accepts finite values and returns an I/O error for conversion
-failures. The application re-exports this formatter for transcript summaries.
+failures. Transcript summaries import this formatter from `maestro_text`.
 
 ```rust
 use maestro_text::{markup::{EscapeMode, escape}, is_whitespace_scalar, utf16_order};

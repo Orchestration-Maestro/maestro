@@ -1,6 +1,6 @@
 //! Contextual math admission over the shared owned document.
-use maestro_app::is_whitespace_scalar;
-use maestro_app::markdown;
+use maestro_markdown as markdown;
+use maestro_text::is_whitespace_scalar;
 use std::ops::Range;
 
 /// Delimiter family of one formula.

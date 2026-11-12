@@ -4,10 +4,15 @@ use crate::components::tree_selector::{
     FilterMode, TreeSelectorCallbacks, TreeSelectorComponent, TreeSelectorOptions,
 };
 use crate::interactive_mode::status_indicator::StatusKind;
-use maestro_app::{
-    DiagnosticErrorInfo, EventError, NavigateTreeOptions, NavigateTreeResult, Presence,
-    ReadonlySessionManager, TreeFilterMode, is_whitespace_scalar,
+use maestro_app::NavigateTreeResult;
+use maestro_extensions::EventError;
+use maestro_models::DiagnosticErrorInfo;
+use maestro_session::{
+    Presence,
+    session_manager::{NavigateTreeOptions, ReadonlySessionManager},
 };
+use maestro_settings::TreeFilterMode;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::ThemeColor;
 use maestro_tui::Spacer;
 use std::{error::Error, rc::Rc};
@@ -193,7 +198,7 @@ impl InteractiveMode {
         self.chat_container.add_child(Rc::new(Spacer::new(1)));
         let label = format!(
             "Summarizing branch... ({} to cancel)",
-            maestro_app::key_text("app.interrupt")
+            maestro_tools::key_text("app.interrupt")
         );
         let loader = self.progress_loader(Some(label), ThemeColor::Accent);
         self.show_status_indicator(StatusKind::BranchSummary, loader, None);

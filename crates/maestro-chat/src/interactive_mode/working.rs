@@ -4,7 +4,7 @@
 use super::InteractiveMode;
 use super::status_indicator::StatusKind;
 use crate::{AssistantMessageComponent, AssistantMessageOptions};
-use maestro_app::WorkingIndicatorOptions;
+use maestro_extensions::WorkingIndicatorOptions;
 use maestro_theme::{ThemeColor, paint};
 use maestro_tui::{Loader, LoaderIndicatorOptions};
 use std::{
@@ -120,7 +120,7 @@ impl InteractiveMode {
         self.working.working_visible.set(true);
         self.set_working_indicator(None);
         if let Some(loader) = self.working_loader() {
-            let interrupt = maestro_app::key_text("app.interrupt");
+            let interrupt = maestro_tools::key_text("app.interrupt");
             loader.set_message(format!(
                 "{DEFAULT_WORKING_MESSAGE} ({interrupt} to interrupt)"
             ));

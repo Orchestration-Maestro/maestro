@@ -80,7 +80,7 @@ struct Native {
 }
 fn format_native(input: &Native) -> Result<Option<String>, ToolUiError> {
     input.formatted.set(input.formatted.get() + 1);
-    maestro_app::pretty_json(&serde_json::json!(input.value.get()))
+    maestro_json::pretty_json(&serde_json::json!(input.value.get()))
         .map(Some)
         .map_err(|error| ToolUiError::Presentation(error.to_string()))
 }

@@ -1,6 +1,7 @@
 //! Viewer-specific admission through the shared document walker.
 use super::{Policy, Prepared, Writer, escape, title};
-use maestro_app::{is_whitespace_scalar, markdown, normalize_to_lf};
+use maestro_markdown as markdown;
+use maestro_text::{is_whitespace_scalar, normalize_to_lf};
 use maestro_theme::{HighlightProfile, SyntaxHighlighter};
 
 /// Prepare standalone viewer markup without retained chat controls.
@@ -61,7 +62,7 @@ pub(super) fn code(
     let html =
         maestro_theme::highlight_auto(highlighter, code, info, HighlightProfile::ExportViewer)
             .unwrap_or_else(|_| {
-                maestro_app::markup::escape(code, maestro_app::markup::EscapeMode::HtmlDecimal)
+                maestro_text::markup::escape(code, maestro_text::markup::EscapeMode::HtmlDecimal)
             });
     out.push_str("<pre><code class=\"hljs\">");
     out.push_str(&html);

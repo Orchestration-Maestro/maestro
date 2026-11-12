@@ -3,10 +3,9 @@ use super::config;
 use maestro_app::presentation_data::input_selectors::{
     ConfigSelectorCallbacks, ConfigSelectorOptions,
 };
-use maestro_app::{
-    PathMetadata, ResolvedPaths, ResolvedResource, Settings, SettingsManager, SourceOrigin,
-    SourceScope,
-};
+use maestro_packages::{PathMetadata, ResolvedPaths, ResolvedResource};
+use maestro_resources::{SourceOrigin, SourceScope};
+use maestro_settings::{Settings, SettingsManager};
 use maestro_test_directory::Scratch;
 use maestro_theme::{ThemeDirectories, ThemeState};
 use std::{

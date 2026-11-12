@@ -8,8 +8,9 @@ use crate::interactive_mode::tests::{
     Setup, World, dark, isolated_case, light, painted, roles, start,
 };
 use crate::{InteractiveMode, InteractiveModeOptions};
-use maestro_app::{
-    ContextFile, PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope, home_directory,
+use maestro_models::system_prompt::ContextFile;
+use maestro_resources::{
+    PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope, paths::home_directory,
 };
 use maestro_theme::{Collator, Theme, ThemeColor};
 use maestro_tui::Component;
