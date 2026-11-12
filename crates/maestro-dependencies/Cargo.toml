@@ -200,6 +200,7 @@ iana-time-zone = { version = "0.1.65", default-features = false, features = ["fa
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }
@@ -251,6 +252,7 @@ iana-time-zone = { version = "0.1.65", default-features = false, features = ["fa
 icu_properties = { version = "2.3.0" }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
 phf = { version = "0.14.0", features = ["macros"] }

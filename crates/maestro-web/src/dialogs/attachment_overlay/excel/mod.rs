@@ -1,7 +1,7 @@
 //! One retained workbook projection for attachment and artifact consumers.
 use super::error::Text;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentHostError, ReadingContent};
-use maestro_app::browser::ssf::{Ssf, read, sheet_to_html};
+use maestro_office::ssf::{Ssf, read, sheet_to_html};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

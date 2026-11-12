@@ -3917,8 +3917,6 @@ dependencies = [
  "base64 0.23.1",
  "chrono",
  "clipboard-rs",
- "codepage",
- "encoding_rs",
  "futures-util",
  "hayro",
  "hayro-interpret",
@@ -3938,6 +3936,7 @@ dependencies = [
  "maestro-lock",
  "maestro-markdown",
  "maestro-models",
+ "maestro-office",
  "maestro-packages",
  "maestro-path",
  "maestro-process",
@@ -3958,7 +3957,6 @@ dependencies = [
  "num-traits",
  "rand 0.10.3",
  "regex",
- "roxmltree",
  "rustix",
  "ryu-js",
  "serde",
@@ -4160,6 +4158,7 @@ dependencies = [
  "litemap",
  "log",
  "memchr",
+ "nix 0.31.3",
  "num-integer",
  "num-traits",
  "percent-encoding",
@@ -4472,6 +4471,27 @@ dependencies = [
  "serde_json",
  "tracing",
  "unicode-width",
+]
+
+[[package]]
+name = "maestro-office"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "codepage",
+ "encoding_rs",
+ "indexmap 2.14.2",
+ "maestro-dependencies",
+ "maestro-json",
+ "maestro-lock",
+ "maestro-text",
+ "num-traits",
+ "roxmltree",
+ "ryu-js",
+ "serde",
+ "serde_json",
+ "url",
+ "zip",
 ]
 
 [[package]]
@@ -4965,6 +4985,7 @@ dependencies = [
  "katex-rs",
  "maestro-app",
  "maestro-dependencies",
+ "maestro-office",
  "maestro-theme",
  "maestro-web",
  "num-traits",

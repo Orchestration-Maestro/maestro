@@ -1,7 +1,7 @@
 //! Element text, attribute and declaration serialization, and style lookup.
 use super::{HtmlElement, check, markup, render};
 use crate::docx_preview::html_renderer::Styles;
-use maestro_app::browser::docx_preview::{StylesPart, parse_xml_string};
+use maestro_office::docx_preview::{StylesPart, parse_xml_string};
 
 #[test]
 fn hostile_text_and_attribute_values_stay_literal() {

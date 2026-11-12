@@ -1,7 +1,7 @@
 //! VML shapes rendered as SVG.
 use super::{Children, HtmlRenderer};
 use crate::docx_preview::html_element::{HtmlElement, Namespace};
-use maestro_app::browser::docx_preview::{
+use maestro_office::docx_preview::{
     OpenXmlElementData as Data, OpenXmlElementTree, VmlAttributeValue, VmlElement,
 };
 

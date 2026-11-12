@@ -185,7 +185,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `sha2 =0.11.0` to shorten lock and record names for long file names. Only
   theme/application may depend on watch. Every crate that holds
   shared state behind a mutex or read-write lock may depend on lock: settings,
-  credentials, workspace, detection, session, models, agent, tools, extensions,
+  credentials, workspace, detection, session, models, agent, tools, extensions, office,
   application, the daemon, the runtime adapter, the terminal adapter, the interactive
   frontend and the command-line frontend, and the composed executable
   crate only as a native development dependency so its tests serialize one shared
@@ -241,6 +241,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   internal dependency is `maestro-listeners`, for synchronous abort observers.
   Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
+- `maestro-office` is a core crate that reads office documents: spreadsheet number
+  formatting and workbook reading, and Word package reading, from supplied bytes. It depends
+  only on text, JSON and lock, builds for the browser, and only the application and the web
+  frontend depend on it.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and

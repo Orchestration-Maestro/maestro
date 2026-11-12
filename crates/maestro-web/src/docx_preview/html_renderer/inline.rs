@@ -1,11 +1,11 @@
 //! Paragraphs, runs, links and the inline content they hold.
 use super::{Children, HtmlRenderer, render_style_values};
 use crate::docx_preview::html_element::HtmlElement;
-use maestro_app::browser::docx_preview::{
+use maestro_office::docx_preview::{
     CommonProperties, OpenXmlElementTree, ParagraphProperties, Relationship, RunProperties,
     VerticalAlign, WmlHyperlink,
 };
-use maestro_app::browser::executable;
+use maestro_office::executable;
 
 impl<'a> HtmlRenderer<'a> {
     /// Render a paragraph with its class, declarations, common properties and numbering class.

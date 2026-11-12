@@ -1,9 +1,9 @@
 //! Complete attachment observations through the public boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use maestro_app::browser::docx_preview::DocxError;
-use maestro_app::browser::ssf::WorkbookError;
 use maestro_app::browser::utils::attachments::{Attachment, AttachmentError};
+use maestro_office::docx_preview::DocxError;
+use maestro_office::ssf::WorkbookError;
 use serde_json::{Value, json};
 /// Compare full results, replacing only a checked nondeterministic identifier.
 pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {

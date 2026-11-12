@@ -1,10 +1,11 @@
 //! Authored formula operands observed through workbook, CSV and attachment APIs.
-use maestro_app::browser::ssf::{self, Ssf};
+use maestro_office::ssf::{self, Ssf};
 use serde::Deserialize;
 use std::collections::BTreeSet;
 
 /// Pinned-writer workbook with shared records encoded without formula changes.
-const BYTES: &[u8] = include_bytes!("../fixtures/spreadsheet/operand-grammar.xlsx");
+const BYTES: &[u8] =
+    include_bytes!("../../../maestro-office/tests/fixtures/spreadsheet/operand-grammar.xlsx");
 
 /// Independent worked expectations and annotated coordinate leaves.
 #[derive(Deserialize)]
@@ -46,7 +47,10 @@ enum Piece {
 
 /// Load strict readable recordings.
 fn corpus() -> Corpus {
-    serde_json::from_str(include_str!("../fixtures/spreadsheet/operand-grammar.json")).unwrap()
+    serde_json::from_str(include_str!(
+        "../../../maestro-office/tests/fixtures/spreadsheet/operand-grammar.json"
+    ))
+    .unwrap()
 }
 
 /// Render an annotated fragment without parsing any formula text.

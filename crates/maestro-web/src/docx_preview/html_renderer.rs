@@ -3,9 +3,7 @@ use super::html_element::{HtmlContent, HtmlElement, Namespace};
 use super::utils::escape_class_name;
 use super::{Options, Rendering, Sections, WordPreview};
 use indexmap::IndexMap;
-use maestro_app::browser::docx_preview::{
-    DomType, OpenXmlElementData as Data, OpenXmlElementTree, Part,
-};
+use maestro_office::docx_preview::{DomType, OpenXmlElementData as Data, OpenXmlElementTree, Part};
 
 mod drawing;
 mod header_footer;

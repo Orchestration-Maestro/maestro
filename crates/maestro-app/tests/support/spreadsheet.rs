@@ -1,6 +1,6 @@
 //! Strict spreadsheet recordings and complete cell projections.
 #![cfg(test)]
-use maestro_app::browser::ssf::{self, CellObject, CellValue, ExcelDataType};
+use maestro_office::ssf::{self, CellObject, CellValue, ExcelDataType};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 

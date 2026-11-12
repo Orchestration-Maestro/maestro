@@ -1,9 +1,7 @@
 //! Office math rendered as `MathML`.
 use super::{HtmlRenderer, render_style_values};
 use crate::docx_preview::html_element::{HtmlContent, HtmlElement, Namespace};
-use maestro_app::browser::docx_preview::{
-    DomType, MathProperties, OpenXmlElementTree, RunProperties,
-};
+use maestro_office::docx_preview::{DomType, MathProperties, OpenXmlElementTree, RunProperties};
 
 impl<'a> HtmlRenderer<'a> {
     /// Render one equation element by kind; kinds that are not equation elements render

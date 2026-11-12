@@ -1,6 +1,6 @@
 # Document-format libraries
 
-The application's [Word package reader](../application/document-formats.md#word-package-reader)
+The [Word package reader](../office.md#word-package-reader) in `maestro-office`
 and [presentation attachment extraction](../application/browser-attachments.md#loading)
 share one package reader using these existing lockfile packages on native and browser targets:
 

@@ -20,7 +20,7 @@ mod vml;
 
 use super::html_element::{HtmlContent, HtmlElement, Namespace};
 use super::{Options, parse_async};
-use maestro_app::browser::strip_decimal;
+use maestro_office::strip_decimal;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::fmt::Write as _;

@@ -1,8 +1,8 @@
 //! Image and document attachment records and loading.
-use crate::browser::docx_preview::{DocxError, OpenXmlPackage, Options, decode_text};
-use crate::browser::ssf::{self, Ssf, WorkbookError};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
+use maestro_office::docx_preview::{DocxError, OpenXmlPackage, Options, decode_text};
+use maestro_office::ssf::{self, Ssf, WorkbookError};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, fmt};
 

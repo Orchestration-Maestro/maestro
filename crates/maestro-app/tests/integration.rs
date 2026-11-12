@@ -35,10 +35,7 @@ mod application_keybindings;
 mod artifact_runtime_access;
 mod attachment_loading;
 mod base_package_loading;
-#[path = "docx_support/body_tree.rs"]
-mod body_tree;
 mod browser_contributions;
-mod browser_decimal;
 mod browser_discovery;
 mod browser_messages;
 mod browser_proxy;
@@ -71,28 +68,10 @@ mod default_path_routes;
 mod diff_root_exports;
 mod document_extraction;
 mod docx_attachments;
-mod docx_body;
-mod docx_comments;
-mod docx_drawing_records;
-mod docx_formatting;
-mod docx_metadata;
-mod docx_metadata_packages;
-mod docx_numbering_fonts;
-mod docx_packages;
-mod docx_paragraph_properties;
-mod docx_parts;
-mod docx_properties;
-mod docx_section_properties;
-mod docx_support;
-mod docx_tables;
-mod docx_values;
-mod docx_xml;
 mod extension_context_exports;
 mod extension_native_io;
 mod extension_ui;
 mod extension_ui_exports;
-#[path = "docx_support/font_resources.rs"]
-mod font_resources;
 mod footer_cwd_identity;
 mod footer_metadata;
 #[path = "support/mod.rs"]
@@ -106,21 +85,15 @@ mod installation_kind;
 #[path = "support/isolated_home.rs"]
 mod isolated_home;
 mod javascript_execution;
-mod legacy_workbook_support;
-mod legacy_workbooks;
 mod lm_studio_discovery;
 #[cfg(not(target_arch = "wasm32"))]
 mod lm_studio_support;
 mod message_end_cost_override_checks;
-#[path = "docx_support/metadata.rs"]
-mod metadata;
 mod model_selector_exports;
 #[cfg(unix)]
 #[path = "support/native.rs"]
 mod native;
 mod network_connection_lost_retry_checks;
-#[path = "docx_support/numbering.rs"]
-mod numbering_observation;
 mod output_routing;
 mod package_command_execution;
 #[cfg(not(target_arch = "wasm32"))]
@@ -187,13 +160,6 @@ mod share_links;
 mod shell_root_exports;
 mod skill_precedence;
 mod spreadsheet_attachments;
-mod spreadsheet_html;
-mod spreadsheet_support;
-mod ssf_detection;
-mod ssf_format;
-mod ssf_support;
-mod ssf_values;
-mod ssf_writers;
 mod startup_completion;
 mod startup_conversions;
 mod startup_environment;
@@ -252,8 +218,6 @@ mod tree_traversal_checks;
 #[path = "support/watching.rs"]
 mod watching;
 mod wire_records;
-mod workbook_fixture;
-mod workbooks;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/artifact_presentation.rs"]

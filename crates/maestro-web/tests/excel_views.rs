@@ -44,7 +44,7 @@ fn excel_factory_and_fields_follow_current_artifact() {
 
 fn bytes(name: &str) -> Vec<u8> {
     std::fs::read(format!(
-        "{}/../maestro-app/tests/fixtures/spreadsheet_html/{name}.xlsx",
+        "{}/../maestro-office/tests/fixtures/spreadsheet_html/{name}.xlsx",
         env!("CARGO_MANIFEST_DIR")
     ))
     .unwrap()
@@ -142,7 +142,7 @@ struct FailureCase {
 #[test]
 fn excel_preview_error_recovery_keeps_download_independent() {
     let rows: Vec<FailureCase> = serde_json::from_str(include_str!(
-        "../../maestro-app/tests/fixtures/spreadsheet_html/failures.json"
+        "../../maestro-office/tests/fixtures/spreadsheet_html/failures.json"
     ))
     .unwrap();
     let host = Rc::new(session_header_support::Host::default());
@@ -254,7 +254,8 @@ fn excel_tool_commands_retain_and_update_live_view() {
 #[test]
 fn excel_mixed_workbooks_do_not_latch_workbook_failure() {
     use base64::Engine as _;
-    let bytes = include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-bad-first.xlsx");
+    let bytes =
+        include_bytes!("../../maestro-office/tests/fixtures/workbooks/mixed-bad-first.xlsx");
     let content = base64::engine::general_purpose::STANDARD.encode(bytes);
     let host = Rc::new(session_header_support::Host::default());
     host.controls.set(true);

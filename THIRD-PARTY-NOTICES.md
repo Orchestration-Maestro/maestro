@@ -381,14 +381,14 @@ following license:
 
 ## Word package reading
 
-The Word package reader in `crates/maestro-app/src/browser/docx_preview/`
+The Word package reader in `crates/maestro-office/src/docx_preview/`
 derives its format behavior from docx-preview 0.3.7 by Volodymyr Baydalka,
 licensed under [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).
 Copyright Volodymyr Baydalka. The Apache-2.0 terms reproduced in
 [Spreadsheet formatting source](#spreadsheet-formatting-source) also apply here.
 
 The unchanged producer-written table fixture and its attribution are documented in
-[table fixture provenance](crates/maestro-app/tests/fixtures/docx/table-contracts.md).
+[table fixture provenance](crates/maestro-office/tests/fixtures/docx/table-contracts.md).
 It is distributed under the same Apache-2.0 terms, copyright Volodymyr Baydalka.
 
 Archive-name normalization follows JSZip 3.10.1, used under its MIT option:

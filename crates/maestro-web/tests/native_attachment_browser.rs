@@ -688,7 +688,7 @@ pub async fn overlay_dom_documents_keep_resources_and_sheet_state() {
         let mut a = record.write().unwrap();
         a.file_name = "single.xlsx".into();
         a.content = base64::engine::general_purpose::STANDARD.encode(include_bytes!(
-            "../../maestro-app/tests/fixtures/spreadsheet_html/rich.xlsx"
+            "../../maestro-office/tests/fixtures/spreadsheet_html/rich.xlsx"
         ));
     }
     let (_, root) = opened(&view, record);

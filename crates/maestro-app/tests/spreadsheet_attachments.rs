@@ -1,7 +1,7 @@
 //! Spreadsheet serialization through the public application boundary.
 #![cfg(test)]
 use crate::support;
-use maestro_app::browser::ssf::{self, Ssf};
+use maestro_office::ssf::{self, Ssf};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
 #[cfg(not(target_arch = "wasm32"))]
 use support::spreadsheet_native::{attachments, bytes, workbooks};
@@ -403,7 +403,7 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
     .unwrap();
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
     for case in cases {
-        let bytes = crate::workbook_fixture::bytes(&format!("metadata-{}", case.file));
+        let bytes = office_workbook(&format!("metadata-{}", case.file));
         let attachment = crate::support::run(load_attachment(
             AttachmentSource::File {
                 bytes: &bytes,
@@ -492,7 +492,7 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
             "<excel filename=\"mixed-empty-valid.xlsx\">\n<sheet name=\"Data\" index=\"1\">\n\n</sheet>\n<sheet name=\"Good\" index=\"2\">\n\n</sheet>\n</excel>",
         ),
     ] {
-        let bytes = crate::workbook_fixture::bytes(file);
+        let bytes = office_workbook(file);
         let result = extract_workbook(&bytes, file).unwrap();
         assert_eq!(result.extracted_text.as_deref(), Some(expected));
         assert_eq!(
@@ -502,7 +502,7 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
             bytes
         );
     }
-    let bytes = crate::workbook_fixture::bytes("all-corrupt-two.xlsx");
+    let bytes = office_workbook("all-corrupt-two.xlsx");
     let error = extract_workbook(&bytes, "all-corrupt-two.xlsx").unwrap_err();
     assert_eq!(
         error.to_string(),
@@ -514,8 +514,8 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_extracted_output_past_the_bound_fails() {
-    use maestro_app::browser::ssf::WorkbookError;
     use maestro_app::browser::utils::attachments::AttachmentError;
+    use maestro_office::ssf::WorkbookError;
     use std::io::{Cursor, Write};
 
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
@@ -562,4 +562,12 @@ fn spreadsheet_extracted_output_past_the_bound_fails() {
         !matches!(error, AttachmentError::Excel(WorkbookError::Reader(_))),
         "output overflow was classified as a value-reader failure"
     );
+}
+
+/// Bytes of a workbook recorded beside the office readers.
+#[cfg(not(target_arch = "wasm32"))]
+fn office_workbook(file: &str) -> Vec<u8> {
+    bytes(&format!(
+        "crates/maestro-office/tests/fixtures/workbooks/{file}"
+    ))
 }

@@ -1,7 +1,7 @@
 //! Header and footer selection and placement on a page.
 use super::HtmlRenderer;
 use crate::docx_preview::html_element::HtmlElement;
-use maestro_app::browser::docx_preview::{FooterHeaderReference, PartKind, SectionProperties};
+use maestro_office::docx_preview::{FooterHeaderReference, PartKind, SectionProperties};
 
 impl<'a> HtmlRenderer<'a> {
     /// Render the header or footer a page uses: the first-page reference on the first page of

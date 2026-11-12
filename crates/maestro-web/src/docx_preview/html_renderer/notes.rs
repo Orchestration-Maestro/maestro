@@ -2,7 +2,7 @@
 use super::HtmlRenderer;
 use crate::docx_preview::html_element::HtmlElement;
 use crate::docx_preview::{PartRecords, WordPreview};
-use maestro_app::browser::docx_preview::{Part, WmlBaseNote};
+use maestro_office::docx_preview::{Part, WmlBaseNote};
 use std::collections::HashMap;
 
 /// One kind of notes by identifier, a repeated identifier keeping its last note, and the part
