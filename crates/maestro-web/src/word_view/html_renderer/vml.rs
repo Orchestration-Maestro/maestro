@@ -1,6 +1,6 @@
 //! VML shapes rendered as SVG.
 use super::{Children, HtmlRenderer};
-use crate::docx_preview::html_element::{HtmlElement, Namespace};
+use crate::word_view::html_element::{HtmlElement, Namespace};
 use maestro_office::wordprocessing::{
     OpenXmlElementData as Data, OpenXmlElementTree, VmlAttributeValue, VmlElement,
 };

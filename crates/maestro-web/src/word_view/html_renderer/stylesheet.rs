@@ -2,8 +2,8 @@
 //! font faces.
 use super::styles::Styles;
 use super::{HtmlRenderer, process_style_name};
-use crate::docx_preview::PartRecords;
-use crate::docx_preview::html_element::{HtmlElement, contained};
+use crate::word_view::PartRecords;
+use crate::word_view::html_element::{HtmlElement, contained};
 use maestro_app::normalize_to_lf;
 use maestro_office::wordprocessing::typefaces::{EmbedFontType, FontDeclaration};
 use maestro_office::wordprocessing::{DmlTheme, enclose_font_family};

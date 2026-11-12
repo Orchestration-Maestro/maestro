@@ -1,6 +1,6 @@
 //! Package resources a rendering names: images, picture bullets, fonts and alternate chunks.
 use super::HtmlRenderer;
-use crate::docx_preview::PartRecords;
+use crate::word_view::PartRecords;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 

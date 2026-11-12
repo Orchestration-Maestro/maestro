@@ -1,6 +1,6 @@
 //! The preview entry points, the XML declaration option and the resource URL policy.
 use super::{markup, package, preview_case};
-use crate::docx_preview::{Options, parse_async};
+use crate::word_view::{Options, parse_async};
 
 #[test]
 fn xml_declaration_option_reaches_the_package_reader() {

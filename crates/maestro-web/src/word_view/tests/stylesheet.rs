@@ -1,6 +1,6 @@
 //! Document styles as rules under the class namespace.
 use super::check_preview;
-use crate::docx_preview::html_renderer::{Styles, steps_taken};
+use crate::word_view::html_renderer::{Styles, steps_taken};
 use maestro_office::wordprocessing::{StylesPart, parse_xml_string};
 
 #[test]

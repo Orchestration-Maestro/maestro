@@ -1,6 +1,6 @@
 //! Header and footer selection and placement on a page.
 use super::HtmlRenderer;
-use crate::docx_preview::html_element::HtmlElement;
+use crate::word_view::html_element::HtmlElement;
 use maestro_office::wordprocessing::{FooterHeaderReference, PartKind, SectionProperties};
 
 impl<'a> HtmlRenderer<'a> {

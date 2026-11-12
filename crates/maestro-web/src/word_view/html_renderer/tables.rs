@@ -1,6 +1,6 @@
 //! Tables, their column groups, rows and cells, and vertical merges.
 use super::{HtmlRenderer, render_style_values};
-use crate::docx_preview::html_element::HtmlElement;
+use crate::word_view::html_element::HtmlElement;
 use maestro_office::wordprocessing::{
     OpenXmlElementData as Data, OpenXmlElementTree, WmlTable, WmlTableCell, WmlTableColumn,
     WmlTableRow,

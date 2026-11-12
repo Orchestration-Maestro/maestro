@@ -304,7 +304,7 @@ fn valid_document(record: &maestro_web::SharedAttachment, kind: &str) {
         "excel" => Some(crate::excel_views_browser::encoded("two")),
         "docx" => Some(
             base64::engine::general_purpose::STANDARD.encode(include_bytes!(
-                "../src/docx_preview/fixtures/docx/wrapper-default.docx"
+                "../src/word_view/fixtures/docx/wrapper-default.docx"
             )),
         ),
         _ => None,
@@ -620,7 +620,7 @@ fn overlay_sheets(view: &Rc<maestro_web::page::DomView>) {
 }
 /// Each native Word body keeps only its own live image resources until close.
 async fn overlay_word_resources(view: &Rc<maestro_web::page::DomView>) {
-    use crate::docx_preview_browser::fetch_bytes;
+    use crate::word_view_browser::fetch_bytes;
     let case = crate::native_document_artifacts_browser::packages()
         .into_iter()
         .find(|case| case.name == "image-inline")

@@ -1,6 +1,6 @@
 //! Drawing boxes, their images, and alternate format chunks.
 use super::{CssStyle, HtmlRenderer, render_style_values};
-use crate::docx_preview::html_element::HtmlElement;
+use crate::word_view::html_element::HtmlElement;
 use maestro_office::wordprocessing::OpenXmlElementTree;
 
 impl<'a> HtmlRenderer<'a> {

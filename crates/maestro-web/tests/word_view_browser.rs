@@ -1,8 +1,8 @@
 //! Word previews mounted as browser nodes and read back.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "../src/docx_preview/tests/corrections.rs"]
+#[path = "../src/word_view/tests/corrections.rs"]
 mod corrections;
-use maestro_web::docx_preview::{
+use maestro_web::word_view::{
     HtmlContent, HtmlElement, Options, parse_async, render_async, render_document,
 };
 use serde::Deserialize;
@@ -13,19 +13,19 @@ use wasm_bindgen::prelude::*;
 const PAGES: [(&str, &[u8]); 4] = [
     (
         "inline-hostile-values",
-        include_bytes!("../src/docx_preview/fixtures/docx/inline-hostile-values.docx"),
+        include_bytes!("../src/word_view/fixtures/docx/inline-hostile-values.docx"),
     ),
     (
         "table-vertical-merge",
-        include_bytes!("../src/docx_preview/fixtures/docx/table-vertical-merge.docx"),
+        include_bytes!("../src/word_view/fixtures/docx/table-vertical-merge.docx"),
     ),
     (
         "header-footer-default",
-        include_bytes!("../src/docx_preview/fixtures/docx/header-footer-default.docx"),
+        include_bytes!("../src/word_view/fixtures/docx/header-footer-default.docx"),
     ),
     (
         "footnotes",
-        include_bytes!("../src/docx_preview/fixtures/docx/footnotes.docx"),
+        include_bytes!("../src/word_view/fixtures/docx/footnotes.docx"),
     ),
 ];
 
@@ -161,7 +161,7 @@ return JSON.stringify({tree: [...root.childNodes].map(observe), blobs: [...blobs
 #[wasm_bindgen]
 pub fn mounted_pages_rebuild_the_recorded_trees() {
     let recorded: Vec<Value> = serde_json::from_str(include_str!(
-        "../src/docx_preview/fixtures/docx/render-cases.json"
+        "../src/word_view/fixtures/docx/render-cases.json"
     ))
     .unwrap();
     let document = window().document().unwrap();
@@ -185,7 +185,7 @@ pub fn mounted_pages_rebuild_the_recorded_trees() {
 #[wasm_bindgen]
 pub async fn mounted_previews_rebuild_the_recorded_containers() {
     let cases: Vec<ObjectCase> = serde_json::from_str(include_str!(
-        "../src/docx_preview/fixtures/docx/preview-object-urls.json"
+        "../src/word_view/fixtures/docx/preview-object-urls.json"
     ))
     .unwrap();
     let document = window().document().unwrap();
@@ -366,29 +366,29 @@ async fn assert_bytes(observed: &Observed, case: &ObjectCase) {
 fn package(name: &str) -> &'static [u8] {
     match name {
         "numbering-picture-bullet" => {
-            include_bytes!("../src/docx_preview/fixtures/docx/numbering-picture-bullet.docx")
+            include_bytes!("../src/word_view/fixtures/docx/numbering-picture-bullet.docx")
         }
-        "embedded-fonts" => include_bytes!("../src/docx_preview/fixtures/docx/embedded-fonts.docx"),
+        "embedded-fonts" => include_bytes!("../src/word_view/fixtures/docx/embedded-fonts.docx"),
         "font-name-escape" => {
-            include_bytes!("../src/docx_preview/fixtures/docx/font-name-escape.docx")
+            include_bytes!("../src/word_view/fixtures/docx/font-name-escape.docx")
         }
-        "image-inline" => include_bytes!("../src/docx_preview/fixtures/docx/image-inline.docx"),
-        "image-anchors" => include_bytes!("../src/docx_preview/fixtures/docx/image-anchors.docx"),
+        "image-inline" => include_bytes!("../src/word_view/fixtures/docx/image-inline.docx"),
+        "image-anchors" => include_bytes!("../src/word_view/fixtures/docx/image-anchors.docx"),
         "image-crop-rotate" => {
-            include_bytes!("../src/docx_preview/fixtures/docx/image-crop-rotate.docx")
+            include_bytes!("../src/word_view/fixtures/docx/image-crop-rotate.docx")
         }
         "image-in-header-and-note" => {
-            include_bytes!("../src/docx_preview/fixtures/docx/image-in-header-and-note.docx")
+            include_bytes!("../src/word_view/fixtures/docx/image-in-header-and-note.docx")
         }
-        "vml-shapes" => include_bytes!("../src/docx_preview/fixtures/docx/vml-shapes.docx"),
+        "vml-shapes" => include_bytes!("../src/word_view/fixtures/docx/vml-shapes.docx"),
         "full-composition" => {
-            include_bytes!("../src/docx_preview/fixtures/docx/full-composition.docx")
+            include_bytes!("../src/word_view/fixtures/docx/full-composition.docx")
         }
         "full-composition-separate" => {
-            include_bytes!("../src/docx_preview/fixtures/docx/full-composition-separate.docx")
+            include_bytes!("../src/word_view/fixtures/docx/full-composition-separate.docx")
         }
         "alt-chunk-script" => {
-            include_bytes!("../src/docx_preview/fixtures/docx/alt-chunk-script.docx")
+            include_bytes!("../src/word_view/fixtures/docx/alt-chunk-script.docx")
         }
         other => panic!("unrecorded package {other}"),
     }

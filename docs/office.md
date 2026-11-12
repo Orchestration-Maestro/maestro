@@ -479,7 +479,7 @@ not create browser URLs, load fonts into a browser or render a preview.
 
 ## Word page rendering
 
-`maestro_web::docx_preview::parse_async` opens a Word package with the readers
+`maestro_web::word_view::parse_async` opens a Word package with the readers
 above and prepares its body, styles, theme, numbering, fonts, notes, headers and
 footers. A malformed part fails the load with `DocxError`, so rendering itself
 cannot fail. `WordPreview::render` returns the styles, the pages and the resource

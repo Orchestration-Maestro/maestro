@@ -1,7 +1,7 @@
 //! Note references and the note lists that close a page.
 use super::HtmlRenderer;
-use crate::docx_preview::html_element::HtmlElement;
-use crate::docx_preview::{PartRecords, WordPreview};
+use crate::word_view::html_element::HtmlElement;
+use crate::word_view::{PartRecords, WordPreview};
 use maestro_office::wordprocessing::{Part, WmlBaseNote};
 use std::collections::HashMap;
 

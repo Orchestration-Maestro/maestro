@@ -1,6 +1,6 @@
 //! Embedded font faces.
 use super::{check_preview, markup, package};
-use crate::docx_preview::{Options, parse_async};
+use crate::word_view::{Options, parse_async};
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use serde_json::Value;

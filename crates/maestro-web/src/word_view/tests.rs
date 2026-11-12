@@ -100,7 +100,7 @@ fn case(name: &str) -> Case {
 /// Read one controlled package by fixture name.
 fn package(name: &str) -> Vec<u8> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src/docx_preview/fixtures/docx")
+        .join("src/word_view/fixtures/docx")
         .join(format!("{name}.docx"));
     std::fs::read(path).unwrap()
 }

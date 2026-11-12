@@ -1,6 +1,6 @@
 //! Element text, attribute and declaration serialization, and style lookup.
 use super::{HtmlElement, check, markup, render};
-use crate::docx_preview::html_renderer::Styles;
+use crate::word_view::html_renderer::Styles;
 use maestro_office::wordprocessing::{StylesPart, parse_xml_string};
 
 #[test]

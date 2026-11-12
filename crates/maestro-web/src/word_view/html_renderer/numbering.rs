@@ -1,8 +1,8 @@
 //! List numbering: counters, markers, resets, list formats, level text and picture bullets.
 use super::HtmlRenderer;
 use super::stylesheet::{contained_values, create_style_element, identifier, style_to_string};
-use crate::docx_preview::PartRecords;
-use crate::docx_preview::html_element::{HtmlElement, contained};
+use crate::word_view::PartRecords;
+use crate::word_view::html_element::{HtmlElement, contained};
 use indexmap::IndexMap;
 use maestro_office::wordprocessing::{IDomNumbering, Numbering, NumberingPicBullet};
 use std::fmt::Write as _;

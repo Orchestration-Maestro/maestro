@@ -1,6 +1,6 @@
 //! Paragraphs, runs, links and the inline content they hold.
 use super::{Children, HtmlRenderer, render_style_values};
-use crate::docx_preview::html_element::HtmlElement;
+use crate::word_view::html_element::HtmlElement;
 use maestro_office::executable;
 use maestro_office::wordprocessing::{
     CommonProperties, OpenXmlElementTree, ParagraphProperties, Relationship, RunProperties,

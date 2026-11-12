@@ -1,6 +1,6 @@
 //! Office math rendered as `MathML`.
 use super::{HtmlRenderer, render_style_values};
-use crate::docx_preview::html_element::{HtmlContent, HtmlElement, Namespace};
+use crate::word_view::html_element::{HtmlContent, HtmlElement, Namespace};
 use maestro_office::wordprocessing::{DomType, MathProperties, OpenXmlElementTree, RunProperties};
 
 impl<'a> HtmlRenderer<'a> {

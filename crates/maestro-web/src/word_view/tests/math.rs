@@ -1,6 +1,6 @@
 //! Office math rendered as `MathML`.
 use super::check_preview;
-use crate::docx_preview::{Options, parse_async};
+use crate::word_view::{Options, parse_async};
 use serde_json::Value;
 use std::path::Path;
 
@@ -37,7 +37,7 @@ fn malformed_equations_render_without_failing_the_document() {
 /// Render one recorded fixture that the reference fails on, and observe its container.
 fn render_math(name: &str) -> Vec<Value> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src/docx_preview/fixtures/docx")
+        .join("src/word_view/fixtures/docx")
         .join(format!("{name}.docx"));
     let package = std::fs::read(path).unwrap();
     let options = Options::default();

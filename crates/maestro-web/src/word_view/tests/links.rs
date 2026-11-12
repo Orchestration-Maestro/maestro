@@ -1,6 +1,6 @@
 //! Rendered Word link targets and their refusal.
 use super::check;
-use crate::docx_preview::html_renderer::inline::hyperlink_href;
+use crate::word_view::html_renderer::inline::hyperlink_href;
 use maestro_office::wordprocessing::{Relationship, WmlHyperlink};
 use serde::Deserialize;
 
