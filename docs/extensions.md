@@ -346,8 +346,9 @@ A callback error follows its event's dispatch policy, not one blanket fallback:
 for example, tool-call errors propagate to the caller while many notification
 errors go to error listeners. When a queued session event fails, for example a save
 of a finished message on a full disk, the session reports it once to the error
-listeners (path `<runtime>`, event `agent_event`) and keeps running. Event edits are not automatically rolled back.
-A component trap faults that instance and affects its later calls. The
+listeners (path `<runtime>`, event `agent_event`) and keeps running. Event edits
+are not automatically rolled back. A component trap faults that instance and
+affects its later calls. The
 [hooks](extensions/hooks.md) and [native executor](extensions/native-execution.md)
 pages give the exact rules.
 

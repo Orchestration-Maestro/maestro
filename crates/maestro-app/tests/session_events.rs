@@ -438,7 +438,7 @@ fn reports_a_failed_save_once_and_keeps_the_conversation_going() {
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         let sessions = scratch.path().join("sessions");
         let manager = SessionManager::create(
-            &format!("{}/project", scratch.path().display()),
+            &maestro_path::join(&[scratch.path().to_str().unwrap(), "project"]),
             sessions.to_str(),
             "",
         )
