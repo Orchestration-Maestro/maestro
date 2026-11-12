@@ -71,3 +71,17 @@ async fn retained_signal(command: bool) {
     pump.serve().await;
     worker.join().unwrap();
 }
+
+#[test]
+fn released_signal_rejects_every_kind_of_operation_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let signal = pump.registry().signal(Cancellation::new()).unwrap();
+    let lease = signal.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [
+            signal.aborted().unwrap_err(),
+            signal.abort().result().unwrap_err(),
+        ]
+    });
+    assert_eq!(errors, ["extension signal resource ended"; 2]);
+}

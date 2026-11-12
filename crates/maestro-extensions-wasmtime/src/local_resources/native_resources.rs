@@ -1,5 +1,9 @@
 //! Typed native resources serviced by the existing local request pump.
-use super::{Admission, Capability, Lease, Registry, Work, pump::State};
+use super::{
+    Admission, Capability, Lease, Registry, Work,
+    held::{NativeChild, NativeReader},
+    pump::State,
+};
 use maestro_extensions::native_io::{self, IoFuture};
 use std::{
     rc::Rc,
@@ -21,6 +25,41 @@ pub struct Reader(pub(crate) Arc<Lease>);
 /// Store-safe ownership of the original native byte writer.
 #[derive(Clone)]
 pub struct Writer(pub(crate) Arc<Lease>);
+
+impl Child {
+    /// Reads the original admitted child's PID.
+    pub(crate) fn pid(&self) -> Result<Option<u32>, String> {
+        self.0.run::<NativeChild, _>(|child, _| Ok(child.pid()))
+    }
+    /// Acquires the original input pipe without resetting it.
+    pub(crate) fn stdin(&self) -> Result<Option<Writer>, String> {
+        self.0.run::<NativeChild, _>(|child, registry| {
+            child.stdin().map(|pipe| registry.writer(pipe)).transpose()
+        })
+    }
+    /// Acquires one original output pipe without resetting it.
+    pub(crate) fn output(&self, stderr: bool) -> Result<Option<Reader>, String> {
+        self.0.run::<NativeChild, _>(move |child, registry| {
+            let pipe = if stderr {
+                child.stderr()
+            } else {
+                child.stdout()
+            };
+            pipe.map(|pipe| registry.reader(pipe)).transpose()
+        })
+    }
+    /// Signals this original child only while it is live.
+    pub(crate) fn kill(&self, signal: Option<String>) -> Result<bool, String> {
+        self.0
+            .run::<NativeChild, _>(move |child, _| child.kill(signal))
+    }
+}
+impl Reader {
+    /// Closes only this byte consumer.
+    pub(crate) fn close(&self) -> Result<(), String> {
+        self.0.run::<NativeReader, _>(|reader, _| reader.close())
+    }
+}
 
 /// Literal operands for one native child launch.
 pub(crate) struct Spawn {
@@ -45,20 +84,10 @@ pub(crate) enum Request {
     Spawn(Spawn, Async<Child>, Admission),
     /// Signals a native PID or supported process group.
     Kill(i32, Option<String>, Reply<()>),
-    /// Reads the original admitted child's PID.
-    Pid(Reply<Option<u32>>),
-    /// Acquires the original input pipe without resetting it.
-    Stdin(Reply<Option<Writer>>),
-    /// Acquires one original output pipe without resetting it.
-    Output(bool, Reply<Option<Reader>>),
     /// Waits for the sole native collector's completion.
     Wait(Async<native_io::ExitStatus>, Admission),
-    /// Signals this original child only while it is live.
-    ChildKill(Option<String>, Reply<bool>),
     /// Consumes the next raw output chunk.
     Read(Async<Option<Vec<u8>>>, Admission),
-    /// Closes only the selected byte consumer.
-    Close(Reply<()>),
     /// Writes every admitted byte in order.
     Write(Vec<u8>, Async<()>, Admission),
     /// Closes input after admitted writes.
@@ -79,23 +108,10 @@ impl Request {
             }
             Self::SetFileMode(_, _, reply)
             | Self::CreateDir(_, _, reply)
-            | Self::Kill(_, _, reply)
-            | Self::Close(reply) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Pid(reply) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Stdin(reply) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Output(_, reply) => {
+            | Self::Kill(_, _, reply) => {
                 let _ = reply.send(Err(error));
             }
             Self::Wait(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::ChildKill(_, reply) => {
                 let _ = reply.send(Err(error));
             }
             Self::Read(reply, _) => {
@@ -117,7 +133,7 @@ impl Registry {
         self.insert(Capability::NativeReader(reader)).map(Reader)
     }
     /// Gives an input alias its own release without replacing the native writer.
-    fn writer(&self, writer: Rc<dyn native_io::Writable>) -> Result<Writer, String> {
+    pub(super) fn writer(&self, writer: Rc<dyn native_io::Writable>) -> Result<Writer, String> {
         self.insert(Capability::NativeWriter(writer)).map(Writer)
     }
 }
@@ -156,11 +172,7 @@ impl State {
                 let result = operations.and_then(|io| io.kill(pid, signal));
                 let _ = reply.send(result);
             }
-            request @ (Request::Pid(_)
-            | Request::Stdin(_)
-            | Request::Output(..)
-            | Request::Wait(..)
-            | Request::ChildKill(..)) => self.native_child(id, request),
+            request @ Request::Wait(..) => self.native_child(id, request),
             request => self.native_pipe(id, request),
         }
     }
@@ -191,28 +203,6 @@ impl State {
             return;
         };
         match request {
-            Request::Pid(reply) => {
-                let _ = reply.send(Ok(child.pid()));
-            }
-            Request::Stdin(reply) => {
-                let _ = reply.send(
-                    child
-                        .stdin()
-                        .map(|pipe| self.registry.writer(pipe))
-                        .transpose(),
-                );
-            }
-            Request::Output(stderr, reply) => {
-                let pipe = if stderr {
-                    child.stderr()
-                } else {
-                    child.stdout()
-                };
-                let _ = reply.send(pipe.map(|pipe| self.registry.reader(pipe)).transpose());
-            }
-            Request::ChildKill(signal, reply) => {
-                let _ = reply.send(child.kill(signal));
-            }
             Request::Wait(reply, admission) => {
                 let child = child.clone();
                 self.admit(
@@ -233,9 +223,6 @@ impl State {
                     consuming(Box::pin(async move { reader.read().await }), reply),
                     admission,
                 );
-            }
-            (Some(Capability::NativeReader(reader)), Request::Close(reply)) => {
-                let _ = reply.send(reader.close());
             }
             (Some(Capability::NativeWriter(writer)), Request::Write(bytes, reply, admission)) => {
                 let writer = writer.clone();

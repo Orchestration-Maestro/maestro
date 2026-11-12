@@ -5,10 +5,15 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    credential_reads::{Endpoint, Request},
-    read_imports::{
-        ReadEndpoint, add_operand, add_read, add_routed, add_routed_operand, operand, resource,
-    },
+    api_imports::ApiView,
+    bindings::maestro::extension::host::HostAuthStorage,
+    callback_imports::retain,
+    context_imports::add_resource,
+    credential_reads::Endpoint,
+    guest_calls::Callback,
+    import_route::{Route, push},
+    lifecycle::State,
+    read_imports::{endpoint, forwards, reads, release, routes},
 };
 use wasmtime::{
     StoreContextMut,
@@ -16,15 +21,91 @@ use wasmtime::{
 };
 use wasmtime_wasi::WasiView;
 
-/// Installs the independently retained credential resource and its catalog acquisition route.
+impl HostAuthStorage for State {
+    reads! { Endpoint;
+        set_runtime_api_key(provider: String, key: String) -> ();
+        remove_runtime_api_key(provider: String) -> ();
+        drain_errors() -> String;
+    }
+
+    routes! { Endpoint;
+        reload();
+        get(provider: String);
+        set(provider: String, credential: String);
+        remove(provider: String);
+        list();
+        has(provider: String);
+        has_auth(provider: String);
+        get_auth_status(provider: String);
+        get_all();
+        logout(provider: String);
+    }
+
+    fn get_oauth_providers(
+        &mut self,
+        this: Resource<Endpoint>,
+    ) -> wasmtime::Result<Result<Vec<Resource<crate::oauth_reads::Endpoint>>, String>> {
+        let providers = endpoint(self, &this)?.get_oauth_providers();
+        Ok(providers.and_then(|providers| {
+            providers
+                .into_iter()
+                .map(|provider| {
+                    self.ctx()
+                        .table
+                        .push(provider)
+                        .map_err(|error| error.to_string())
+                })
+                .collect()
+        }))
+    }
+
+    fn set_fallback_resolver(
+        &mut self,
+        this: Resource<Endpoint>,
+        resolver: Resource<Callback>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let credentials = endpoint(self, &this)?;
+        let handler = retain(self, &resolver)?;
+        let requests = self.api().0.requests().clone();
+        let route = credentials.set_fallback_resolver(handler, requests);
+        push(self, route)
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards every synchronous credential method to its trait implementation.
+pub(crate) fn add_storage(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Endpoint>(host, "auth-storage")?;
+    forwards! { host, "auth-storage", HostAuthStorage, Endpoint,
+        "get-oauth-providers" => get_oauth_providers();
+        "set-fallback-resolver" => set_fallback_resolver(resolver: Resource<Callback>);
+        "set-runtime-api-key" => set_runtime_api_key(provider: String, key: String);
+        "remove-runtime-api-key" => remove_runtime_api_key(provider: String);
+        "reload" => reload();
+        "get" => get(provider: String);
+        "set" => set(provider: String, credential: String);
+        "remove" => remove(provider: String);
+        "list" => list();
+        "has" => has(provider: String);
+        "has-auth" => has_auth(provider: String);
+        "get-auth-status" => get_auth_status(provider: String);
+        "get-all" => get_all();
+        "drain-errors" => drain_errors();
+        "logout" => logout(provider: String);
+    }
+    Ok(())
+}
+
+/// Installs the independently retained credential resource's asynchronous key read and its
+/// invocation-local update operands.
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::oauth_imports::add_to_linker(host)?;
-    crate::context_imports::add_resource::<T, Endpoint>(host, "auth-storage")?;
     add_callbacks(host)?;
-    add_reads(host)?;
-    add_mutations(host)?;
     host.func_wrap_concurrent(
         "[method]auth-storage.get-api-key",
         |accessor, (resource, provider, include): (Resource<Endpoint>, String, Option<bool>)| {
@@ -48,102 +129,6 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     )
 }
 
-/// Reads the original accepted state and drains its own error queue.
-fn add_reads<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    add_routed(
-        host,
-        "[method]auth-storage.list",
-        Request::List,
-        resource::<T, Endpoint>,
-    )?;
-    add_routed(
-        host,
-        "[method]auth-storage.get-all",
-        Request::All,
-        resource::<T, Endpoint>,
-    )?;
-    add_read(
-        host,
-        "[method]auth-storage.drain-errors",
-        Request::Errors,
-        resource::<T, Endpoint>,
-    )?;
-    add_routed_operand(
-        host,
-        "[method]auth-storage.get",
-        Request::Get,
-        operand::<T, Endpoint, String>,
-    )?;
-    host.func_wrap(
-        "[method]auth-storage.get-auth-status",
-        |mut store: StoreContextMut<'_, T>, (resource, provider): (Resource<Endpoint>, String)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Status(provider, reply));
-            Ok((crate::import_route::push(store.data_mut(), route)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]auth-storage.has-auth",
-        |mut store: StoreContextMut<'_, T>, (resource, provider): (Resource<Endpoint>, String)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::HasAuth(provider, reply));
-            Ok((crate::import_route::push(store.data_mut(), route)?,))
-        },
-    )?;
-    add_routed_operand(
-        host,
-        "[method]auth-storage.has",
-        Request::Has,
-        operand::<T, Endpoint, String>,
-    )?;
-    Ok(())
-}
-
-/// Preserves accepted-state-before-persistence behavior by calling the original owner.
-fn add_mutations<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    add_routed(
-        host,
-        "[method]auth-storage.reload",
-        Request::Reload,
-        resource::<T, Endpoint>,
-    )?;
-    for (name, request) in [
-        ("remove", Request::Remove as fn(_, _) -> _),
-        ("logout", Request::Logout),
-    ] {
-        add_routed_operand(
-            host,
-            &format!("[method]auth-storage.{name}"),
-            request,
-            operand::<T, Endpoint, String>,
-        )?;
-    }
-    add_operand(
-        host,
-        "[method]auth-storage.remove-runtime-api-key",
-        Request::RemoveRuntime,
-        operand::<T, Endpoint, String>,
-    )?;
-    host.func_wrap(
-        "[method]auth-storage.set-runtime-api-key",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, provider, key): (Resource<Endpoint>, String, String)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((endpoint.read(|reply| Request::Runtime(provider, key, reply)),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]auth-storage.set",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, provider, data): (Resource<Endpoint>, String, String)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let route = endpoint.route(|reply| Request::Set(provider, data, reply));
-            Ok((crate::import_route::push(store.data_mut(), route)?,))
-        },
-    )?;
-    Ok(())
-}
-
 /// Links authored backends and invocation-local native update operands.
 fn add_callbacks<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
@@ -152,13 +137,6 @@ fn add_callbacks<T: crate::callback_imports::CallbackView + 'static>(
         host,
         "auth-lock-update",
     )?;
-    host.func_wrap("[method]auth-storage.set-fallback-resolver", |mut store: StoreContextMut<'_, T>, (resource, handler): (Resource<Endpoint>, Resource<crate::guest_calls::Callback>)| {
-        let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-        let handler = crate::callback_imports::retain(store.data_mut(), &handler)?;
-        let requests = store.data().api().0.requests().clone();
-        let route = endpoint.route(|reply| Request::Fallback(handler, requests, reply));
-        Ok((crate::import_route::push(store.data_mut(), route)?,))
-    })?;
     host.func_wrap(
         "[method]auth-lock-update.update",
         |mut store: StoreContextMut<'_, T>,

@@ -144,6 +144,17 @@ impl Route {
             }),
         }
     }
+
+    /// Waits for an operation that makes no nested call and settles with lines.
+    pub(crate) fn lines(mut self) -> Result<Vec<String>, String> {
+        match self.next() {
+            Ok(_) => Err("unexpected nested call".to_owned()),
+            Err(result) => result.and_then(|value| match value {
+                Value::Lines(lines) => Ok(lines),
+                _ => Err("unexpected non-lines result".into()),
+            }),
+        }
+    }
 }
 
 /// A nested asynchronous call whose prefix ran and whose result the guest delivers later.

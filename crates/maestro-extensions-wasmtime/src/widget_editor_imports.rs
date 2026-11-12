@@ -7,7 +7,6 @@
 use crate::{
     callback_imports::{CallbackView, retain},
     guest_calls::Callback,
-    guest_calls::editors::TextCallbackEndpoint,
     import_route::push,
     keys_reads::KeysEndpoint,
     local_resources::effects::TuiEndpoint,
@@ -214,15 +213,6 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
 /// Installs the lent text callbacks, border style lending and widget sharing an authored editor
 /// uses.
 fn authored<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, TextCallbackEndpoint>(host, "text-callback")?;
-    host.func_wrap(
-        "[method]text-callback.call",
-        |mut store: StoreContextMut<'_, T>,
-         (this, text): (Resource<TextCallbackEndpoint>, String)| {
-            let callback = store.data_mut().ctx().table.get(&this)?.clone();
-            Ok((push(store.data_mut(), callback.call(text))?,))
-        },
-    )?;
     host.func_wrap(
         "[method]widget.border-color",
         |mut store: StoreContextMut<'_, T>, (this,): (Resource<WidgetEndpoint>,)| {

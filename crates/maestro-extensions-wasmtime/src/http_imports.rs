@@ -6,17 +6,18 @@
 )]
 use crate::{
     api_imports::ApiView,
+    bindings::maestro::extension::host::HostResponse,
     context_imports::add_resource,
+    lifecycle::State,
     local_resources::{
         Message, SignalEndpoint,
         http::{Fetch, Request, Response},
         native_resources::Reader,
     },
+    read_imports::{endpoint, forwards, release},
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{ComponentType, Lift, LinkerInstance, Resource},
-};
+use wasmtime::component::{ComponentType, Lift, LinkerInstance, Resource};
+use wasmtime_wasi::WasiView;
 
 /// Canonical supplied HTTP operands, with body presence preserved.
 #[derive(ComponentType, Lift)]
@@ -31,11 +32,10 @@ struct HttpRequest {
     /// Absent and present-empty remain distinct.
     body: Option<Vec<u8>>,
 }
-/// Registers response ownership and one native attempt without JSON resource IDs.
+/// Registers one native attempt and the response consumers without JSON resource IDs.
 pub(crate) fn add_to_linker<T: ApiView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    add_resource::<T, Response>(host, "response")?;
     host.func_wrap_concurrent(
         "fetch",
         |accessor, (request, signal): (HttpRequest, Option<Resource<SignalEndpoint>>)| {
@@ -68,57 +68,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
             })
         },
     )?;
-    consumers(host)?;
-    metadata(host)?;
-    host.func_wrap(
-        "[method]response.status",
-        |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
-            let response = store.data_mut().ctx().table.get(&response)?.clone();
-            let result = response
-                .0
-                .request(|id, reply| Message::Http(id, Request::Status(reply)))
-                .map_err(wasmtime::Error::msg)?;
-            Ok((result,))
-        },
-    )
-}
-
-/// Projects native headers and body presence without collecting bytes.
-fn metadata<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]response.status-text",
-        |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
-            let response = store.data_mut().ctx().table.get(&response)?.clone();
-            Ok((response
-                .0
-                .request(|id, reply| Message::Http(id, Request::StatusText(reply)))
-                .map_err(wasmtime::Error::msg)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]response.headers",
-        |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
-            let response = store.data_mut().ctx().table.get(&response)?.clone();
-            Ok((response
-                .0
-                .request(|id, reply| Message::Http(id, Request::Headers(reply)))
-                .map_err(wasmtime::Error::msg)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]response.body",
-        |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
-            let response = store.data_mut().ctx().table.get(&response)?.clone();
-            let body = response
-                .0
-                .request(|id, reply| Message::Http(id, Request::Body(reply)))
-                .map_err(wasmtime::Error::msg)?;
-            let body: Option<Resource<Reader>> = body
-                .map(|body| store.data_mut().ctx().table.push(body))
-                .transpose()?;
-            Ok((body,))
-        },
-    )
+    consumers(host)
 }
 
 /// Consumes a native response without holding a Store or capability-table borrow.
@@ -138,6 +88,49 @@ fn consumers<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime
                 Ok((result,))
             })
         })?;
+    }
+    Ok(())
+}
+
+impl HostResponse for State {
+    fn status(&mut self, this: Resource<Response>) -> wasmtime::Result<u16> {
+        endpoint(self, &this)?
+            .status()
+            .map_err(wasmtime::Error::msg)
+    }
+
+    fn status_text(&mut self, this: Resource<Response>) -> wasmtime::Result<String> {
+        endpoint(self, &this)?
+            .status_text()
+            .map_err(wasmtime::Error::msg)
+    }
+
+    fn headers(&mut self, this: Resource<Response>) -> wasmtime::Result<Vec<(String, String)>> {
+        endpoint(self, &this)?
+            .headers()
+            .map_err(wasmtime::Error::msg)
+    }
+
+    fn body(&mut self, this: Resource<Response>) -> wasmtime::Result<Option<Resource<Reader>>> {
+        let body = endpoint(self, &this)?
+            .body()
+            .map_err(wasmtime::Error::msg)?;
+        Ok(body.map(|body| self.ctx().table.push(body)).transpose()?)
+    }
+
+    fn drop(&mut self, this: Resource<Response>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards the synchronous methods of a response to its trait implementation.
+pub(crate) fn add_response(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Response>(host, "response")?;
+    forwards! { host, "response", HostResponse, Response,
+        "status" => status();
+        "status-text" => status_text();
+        "headers" => headers();
+        "body" => body();
     }
     Ok(())
 }

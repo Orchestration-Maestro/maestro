@@ -21,7 +21,6 @@ pub(crate) mod builtin_selection;
 pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
-mod footer;
 pub(crate) mod held;
 pub(crate) mod host_operations;
 pub(crate) mod http;
@@ -121,15 +120,6 @@ pub(crate) enum Message {
         Option<Cancellation>,
         std::sync::mpsc::Sender<Result<SignalEndpoint, String>>,
     ),
-    /// Uses the original retained cancellation, not the current context signal.
-    Signal(u64, signals::Request),
-    /// Mutates the original writable session supplied to setup.
-    Writer(u64, crate::writer_reads::Request),
-    /// Acquires an independent live reader from the writable setup capability.
-    WriterReader(
-        u64,
-        std::sync::mpsc::Sender<Result<crate::history_reads::Endpoint, String>>,
-    ),
     /// Runs the retained provider's native authorization with original interaction.
     OAuthLogin(
         u64,
@@ -148,8 +138,6 @@ pub(crate) enum Message {
     OAuthInteraction(crate::oauth_interaction::Request),
     /// Calls an independently retained OAuth implementation.
     OAuthProvider(u64, crate::oauth_reads::Request),
-    /// Uses independently retained accepted credentials.
-    Credentials(u64, crate::credential_reads::Request),
     /// Authorizes and persists through the retained credential owner.
     CredentialLogin(
         u64,
@@ -176,14 +164,10 @@ pub(crate) enum Message {
         Box<Message>,
         std::sync::mpsc::Sender<crate::import_route::Nested>,
     ),
-    /// Forwards an owned chunk into its original execution's data stream.
-    BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
     /// Admits one dialog on the originally acquired UI.
     Dialog(u64, crate::ui_reads::DialogRequest, Admission),
-    /// Reads or subscribes to the footer metadata lent to a footer factory.
-    Footer(u64, crate::footer_data::Request),
     /// Builds, uses or lends host widgets and styles.
     Widgets(crate::widget_reads::WidgetMessage),
     /// Typed operations on original application-supplied native resources.

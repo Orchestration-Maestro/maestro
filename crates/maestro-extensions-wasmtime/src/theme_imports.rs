@@ -7,7 +7,7 @@
 use crate::{
     bindings::maestro::extension::host::{ColorMode, HostTheme},
     lifecycle::State,
-    read_imports::{endpoint, forwards, release},
+    read_imports::{endpoint, forwards, reads, release},
     theme_reads::Endpoint,
 };
 use wasmtime::{
@@ -24,35 +24,22 @@ impl From<maestro_extensions::ColorMode> for ColorMode {
     }
 }
 
-/// Declares the methods that read one endpoint operation with string operands.
-macro_rules! reads {
-    ($($method:ident($($operand:ident),*) -> $result:ty;)+) => {
-        $(fn $method(
-            &mut self,
-            this: Resource<Endpoint>,
-            $($operand: String),*
-        ) -> wasmtime::Result<Result<$result, String>> {
-            Ok(endpoint(self, &this)?.$method($($operand),*))
-        })+
-    };
-}
-
 impl HostTheme for State {
-    reads! {
+    reads! { Endpoint;
         name() -> Option<String>;
         source_path() -> Option<String>;
         source_info() -> Option<String>;
-        fg(color, text) -> String;
-        bg(color, text) -> String;
-        bold(text) -> String;
-        italic(text) -> String;
-        underline(text) -> String;
-        inverse(text) -> String;
-        strikethrough(text) -> String;
-        get_fg_ansi(color) -> String;
-        get_bg_ansi(color) -> String;
-        thinking_border(level, text) -> String;
-        bash_mode_border(text) -> String;
+        fg(color: String, text: String) -> String;
+        bg(color: String, text: String) -> String;
+        bold(text: String) -> String;
+        italic(text: String) -> String;
+        underline(text: String) -> String;
+        inverse(text: String) -> String;
+        strikethrough(text: String) -> String;
+        get_fg_ansi(color: String) -> String;
+        get_bg_ansi(color: String) -> String;
+        thinking_border(level: String, text: String) -> String;
+        bash_mode_border(text: String) -> String;
     }
 
     fn set_source_info(
