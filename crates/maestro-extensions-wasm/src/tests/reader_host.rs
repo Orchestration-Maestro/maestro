@@ -23,14 +23,6 @@ pub struct Reply {
     #[serde(default)]
     pub error: Option<String>,
 }
-/// One query the guest made, in call order.
-#[derive(Clone, Debug)]
-pub struct Query {
-    /// Public query spelling.
-    pub method: String,
-    /// Literal operands the guest supplied.
-    pub args: Vec<Value>,
-}
 /// A flat fixture node; children are indexes, not recursively decoded nodes.
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -69,9 +61,9 @@ pub struct Data {
     /// Query failure captured by newly returned nodes.
     #[serde(default)]
     pub node_error: Option<String>,
-    /// Queries the guest made, recorded by the host and never supplied by a fixture.
+    /// How many queries the guest made, counted by the host and never supplied by a fixture.
     #[serde(skip)]
-    pub queries: Vec<Query>,
+    pub queries: usize,
 }
 /// Host state changes synchronously acknowledged by append-entry.
 #[derive(Deserialize)]
@@ -108,10 +100,7 @@ impl Reader {
     /// Look up the actual route and operands, rejecting unintended calls.
     pub fn reply(&self, method: &str, args: &[Value]) -> Result<Reply, String> {
         let mut data = self.0.lock().unwrap();
-        data.queries.push(Query {
-            method: method.to_owned(),
-            args: args.to_vec(),
-        });
+        data.queries += 1;
         if let Some(error) = &data.error {
             return Err(error.clone());
         }
@@ -137,9 +126,9 @@ impl Reader {
                 .map_err(|error| error.to_string())?;
         Ok(providers.into_iter().map(Self::from_data).collect())
     }
-    /// The queries the guest made, in call order.
-    pub fn queries(&self) -> Vec<Query> {
-        self.0.lock().unwrap().queries.clone()
+    /// How many queries the guest made.
+    pub fn queries(&self) -> usize {
+        self.0.lock().unwrap().queries
     }
     /// Read a string scalar without normalization.
     pub fn string(&self, method: &str) -> Result<String, String> {

@@ -10,10 +10,6 @@ repository.workspace = true
 name = "integration"
 path = "tests/integration.rs"
 
-[[example]]
-name = "chat"
-crate-type = ["cdylib"]
-
 [dependencies]
 oxc_allocator.workspace = true
 oxc_parser.workspace = true

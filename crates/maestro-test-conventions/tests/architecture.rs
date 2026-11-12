@@ -1908,30 +1908,37 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
-fn guest_listing_edges_are_development_or_build_only() {
+fn guest_listing_edges_are_refused_in_every_dependency_kind() {
+    const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-wasm -> maestro-listing";
+    const PRODUCTION: &str =
+        "forbidden production dependency: maestro-extensions-wasm -> maestro-listing";
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-wasm", "maestro-listing"]);
-    for kind in [
-        "dev-dependencies",
-        "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
-        "build-dependencies",
-        "target.'cfg(target_arch = \"wasm32\")'.build-dependencies",
-    ] {
-        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\" }}"));
-        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{kind}");
-    }
-    for (kind, extra) in [
-        ("dependencies", ""),
-        ("dependencies", ", optional = true"),
-        ("target.'cfg(target_os = \"none\")'.dependencies", ""),
+    for (kind, extra, message) in [
+        ("dev-dependencies", "", DEVELOPMENT),
+        (
+            "target.'cfg(target_arch = \"wasm32\")'.dev-dependencies",
+            "",
+            DEVELOPMENT,
+        ),
+        ("build-dependencies", "", PRODUCTION),
+        (
+            "target.'cfg(target_arch = \"wasm32\")'.build-dependencies",
+            "",
+            PRODUCTION,
+        ),
+        ("dependencies", "", PRODUCTION),
+        ("dependencies", ", optional = true", PRODUCTION),
+        (
+            "target.'cfg(target_os = \"none\")'.dependencies",
+            "",
+            PRODUCTION,
+        ),
     ] {
         workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\"{extra} }}"));
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err(
-                "forbidden production dependency: maestro-extensions-wasm -> maestro-listing"
-                    .into()
-            ),
+            Err(message.into()),
             "{kind}{extra}"
         );
     }

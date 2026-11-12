@@ -16,7 +16,6 @@ pub(crate) struct Rule {
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-credentials"),
     ("maestro-tui-crossterm", "maestro-brand"),
-    ("maestro-extensions-wasm", "maestro-listing"),
 ];
 
 /// Permitted development edges that only a native, non-optional declaration may use.
@@ -47,7 +46,7 @@ pub(crate) fn permitted_development(from: &str, to: &str) -> bool {
 }
 
 /// Internal build edges permitted beyond the production table.
-pub(crate) const BUILD: &[(&str, &str)] = &[("maestro-extensions-wasm", "maestro-listing")];
+pub(crate) const BUILD: &[(&str, &str)] = &[];
 
 /// Whether the policy permits this internal build edge between the two crates.
 pub(crate) fn permitted_build(from: &str, to: &str) -> bool {
