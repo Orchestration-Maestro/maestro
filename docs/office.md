@@ -90,7 +90,7 @@ including empty codes, and leaves the same-owner table unchanged.
 the current table slot without changing earlier handles; XLS retains that slot.
 Both readers repair the producer date code `d.m` to `d\.m` before loading it;
 direct `NumberFormatter::load` calls preserve the supplied code.
-`WorkBook::spreadsheet` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
+`WorkBook::formats` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
 `WorkBook::sheets` stores a `Result<WorkSheet, WorkbookError>` for each named sheet.
 An XLSX sheet decoding failure retains its typed error and discards partial cells,
@@ -452,7 +452,7 @@ records retain raw nullable IDs/types and repeated IDs in source order. Note
 parts select their own immediate note kind using one admitted source per call.
 Package-to-part composition and preview rendering remain separate from these
 factories; no inherited-style resolution or document rendering occurs in the
-application factories.
+office crate's factories.
 
 ## Word numbering and embedded fonts
 
@@ -485,7 +485,7 @@ footers. A malformed part fails the load with `DocxError`, so rendering itself
 cannot fail. `WordPreview::render` returns the styles, the pages and the resource
 styles one rendering composes; `render_sections` returns the pages alone, with the
 object URLs their nodes name.
-`maestro_office::wordprocessing::Options` defaults to the `docx` class namespace, XML declaration
+`maestro_web::word_view::Options` defaults to the `docx` class namespace, XML declaration
 trimming, page-break detection, ignored last-rendered page breaks, kept page
 sizes, rendered headers, footers and note lists, the page wrapper, loaded fonts,
 object URLs and rendered alternate chunks. The reading options decide the URL
