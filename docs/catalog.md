@@ -43,7 +43,7 @@ no account source. File failures remain available through `get_error`, and
 
 The file's `providers` object supplies provider defaults, custom `models` and
 built-in `modelOverrides`. Loading checks the complete document with the
-[model schema checker](models/arguments.md#checking-without-conversion) before
+[model schema checker](models/schema-validation.md#checking-without-conversion) before
 selecting descriptor fields. Line comments and trailing commas outside strings
 are removed; block comments and a leading byte-order mark are not accepted.
 Configured keys and headers are not resolved during loading.
