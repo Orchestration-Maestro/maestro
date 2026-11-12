@@ -394,9 +394,9 @@ non-alphanumerics and case changes into words and checks two lists in
   segments joined by `_` matches when its segments sit next to each other, joined by `_`,
   `-` or a case change alone and ignoring case. A longer word never matches: a denied word
   `quartz` is found in `quartz_load`, `QuartzLoad` and `quartz-notes.md`, not in `quartzite`.
-- `HASHED` holds the 64-bit FNV-1a hash of the lowercase form of each word that is another
-  project's own name, so the repository never spells the name. A word matches when its hash
-  does.
+- `HASHED` holds the 64-bit FNV-1a hash of the lowercase form of other projects' own names,
+  so the repository never spells them. A word matches when its hash does. A short name that
+  is also an ordinary word stays off the list, and this scan does not check it.
 
 A hit names the file, the line, what holds the word (identifier, string literal, doc
 comment, comment, documentation page, or file or directory name) and the word as the text

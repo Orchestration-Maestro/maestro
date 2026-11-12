@@ -208,7 +208,7 @@ fn an_exemption_covers_its_file_and_word_only() {
 }
 
 #[test]
-fn a_row_whose_path_is_gone_from_the_workspace_is_reported() {
+fn a_row_whose_path_is_gone_from_the_workspace_is_kept() {
     let root = Scratch::new().unwrap();
     let list = root.path().join(super::LIST_FILE);
     std::fs::create_dir_all(list.parent().unwrap()).unwrap();

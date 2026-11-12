@@ -204,7 +204,7 @@ fn workspace_payloads_and_subscription_selectors_preserve_fields() {
 
 #[test]
 /// The single request family rejects an unknown command and malformed known parameters.
-fn removed_envelopes_and_names_are_not_accepted() {
+fn removed_envelopes_and_unknown_command_are_not_accepted() {
     assert!(
         serde_json::from_value::<Request>(serde_json::json!({"type": "not_a_command"})).is_err()
     );
