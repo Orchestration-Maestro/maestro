@@ -1,7 +1,6 @@
 //! Terminal, image, editor and session-directory preferences.
 
 use maestro_path::join_home;
-use maestro_resources::paths::native_home_directory;
 use serde_json::Value;
 use std::io;
 
@@ -24,7 +23,7 @@ fn env_enabled(name: &str) -> bool {
 /// Expand the two supported home forms, keeping every other spelling as written.
 fn expand_session_dir(configured: &str) -> String {
     expand_session_dir_with(configured, || {
-        native_home_directory()
+        maestro_path::native_homedir()
             .map(|home| home.to_string_lossy().into_owned())
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
     })

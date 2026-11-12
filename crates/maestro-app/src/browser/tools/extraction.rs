@@ -135,7 +135,7 @@ async fn execute(
             let Some(proxy) = proxy.filter(|value| !value.is_empty()) else {
                 return Err(DiagnosticErrorInfo::error(NO_PROXY));
             };
-            download(&format!("{proxy}{}", crate::utils::uri::encode_uri_component(url)), fetch, signal.as_ref()).await.map_err(|error| DiagnosticErrorInfo::error(format!("TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: {}\n\n{MANUAL_ATTACHMENT}", error.message)))?
+            download(&format!("{proxy}{}", maestro_text::uri::encode_uri_component(url)), fetch, signal.as_ref()).await.map_err(|error| DiagnosticErrorInfo::error(format!("TELL USER: The document could not be fetched because of CORS restrictions.\n\nThe proxy attempt failed as well: {}\n\n{MANUAL_ATTACHMENT}", error.message)))?
         }
     };
     let path = url.split(['?', '#']).next().unwrap_or(url);

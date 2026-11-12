@@ -145,7 +145,7 @@ impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocomplet
     }
 
     fn home_dir(&self) -> io::Result<String> {
-        maestro_resources::paths::home_directory()
+        maestro_path::home_directory()
     }
 
     fn read_dir(&self, path: &str) -> io::Result<Vec<DirectoryEntry>> {

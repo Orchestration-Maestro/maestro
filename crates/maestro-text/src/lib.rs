@@ -1,6 +1,7 @@
 //! Text primitives shared by Maestro crates: streaming and BOM-aware lossy UTF-8,
 //! whitespace membership, UTF-16 lexical order, markup escaping, CSS string serialization,
-//! POSIX shell operands, environment flag truth,
+//! POSIX shell operands, author-written number prefixes and half-up rounding, URI component
+//! encoding, environment flag truth,
 //! optional `collation` locale comparison, `number-format` locale-number presentation,
 //! and `date-time-format` local date-time presentation.
 //!
@@ -23,8 +24,10 @@ mod lexical;
 pub mod line_framing;
 pub mod markup;
 mod newlines;
+pub mod numeric;
 mod shell;
 pub mod terminal;
+pub mod uri;
 mod whitespace;
 pub use decoding::{Utf8Stream, decode_utf8, lossy_string};
 
