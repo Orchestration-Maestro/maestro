@@ -6,47 +6,28 @@
 )]
 use crate::{
     builtin_tools,
-    local_resources::{Lease, Message, SignalEndpoint},
+    local_resources::{Lease, Message, SignalEndpoint, held::BuiltinTool},
 };
-use std::sync::{Arc, mpsc::Sender};
+use std::sync::Arc;
 
 /// Independently retained native tool identity.
 #[derive(Clone)]
 pub struct Endpoint(pub(crate) Arc<Lease>);
 
-/// Synchronous reads of the original native definition.
-pub(crate) enum Request {
+impl Endpoint {
     /// Complete native metadata, including schema conversions.
-    Metadata(Sender<Result<String, String>>),
-    /// Native argument preparation, without execution or validation.
-    Prepare(
-        String,
-        Sender<Result<crate::guest_exports::tools::PreparedArguments, String>>,
-    ),
-}
-impl Request {
-    /// Uses the native definition after leaving the capability-table borrow.
-    pub(crate) fn answer(self, definition: &dyn builtin_tools::Definition) {
-        match self {
-            Self::Metadata(reply) => {
-                let _ = reply.send(definition.metadata());
-            }
-            Self::Prepare(args, reply) => {
-                let result = prepare_arguments(definition, &args);
-                let _ = reply.send(result);
-            }
-        }
+    pub(crate) fn metadata(&self) -> Result<String, String> {
+        self.0
+            .run::<BuiltinTool, _>(|definition, _| definition.metadata())
     }
-    /// Settles a request whose original owner has ended.
-    pub(crate) fn reject(self, error: &str) {
-        match self {
-            Self::Metadata(reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-            Self::Prepare(_, reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-        }
+
+    /// Native argument preparation, without execution or validation.
+    pub(crate) fn prepare(
+        &self,
+        args: String,
+    ) -> Result<crate::bindings::maestro::extension::host::PreparedArguments, String> {
+        self.0
+            .run::<BuiltinTool, _>(move |definition, _| prepare_arguments(&**definition, &args))
     }
 }
 
@@ -54,15 +35,17 @@ impl Request {
 fn prepare_arguments(
     definition: &dyn builtin_tools::Definition,
     document: &str,
-) -> Result<crate::guest_exports::tools::PreparedArguments, String> {
+) -> Result<crate::bindings::maestro::extension::host::PreparedArguments, String> {
     let mut args = crate::writer_reads::decode(document)?;
     let prepared = definition
         .prepare(&mut args)
         .and_then(|value| serde_json::to_string(&value).map_err(|error| error.to_string()));
-    Ok(crate::guest_exports::tools::PreparedArguments {
-        retained: serde_json::to_string(&args).map_err(|error| error.to_string())?,
-        prepared,
-    })
+    Ok(
+        crate::bindings::maestro::extension::host::PreparedArguments {
+            retained: serde_json::to_string(&args).map_err(|error| error.to_string())?,
+            prepared,
+        },
+    )
 }
 
 /// Owned execution operands; capability identities never enter the JSON document.

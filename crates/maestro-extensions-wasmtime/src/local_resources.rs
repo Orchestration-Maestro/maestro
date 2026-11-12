@@ -85,8 +85,6 @@ pub(crate) enum Message {
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
     Api(u64, crate::api_reads::Request),
-    /// Reads or prepares an original native built-in definition.
-    Builtin(u64, crate::builtin_reads::Request),
     /// Constructs, executes or renders through an original native built-in owner.
     BuiltinOperation(builtin::Operation),
     /// Registers retained callbacks through the original facade.

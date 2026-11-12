@@ -1,11 +1,9 @@
 //! A native tool definition ends with its capability.
 use super::Pump;
 use crate::{
-    builtin_reads::Request,
     guest_calls::tool_renders::{Info, Phase},
     local_resources::{Capability, builtin::Factory},
     native_renders::{Render, Slot},
-    read_imports::ReadEndpoint,
     tests::ended_errors,
 };
 use maestro_extensions::LiveTheme;
@@ -42,10 +40,8 @@ fn released_builtin_tool_rejects_every_kind_of_operation_with_its_ended_text() {
     let lease = tool.0.clone();
     let errors = ended_errors(lease, pump, admission, move || {
         [
-            tool.read(Request::Metadata).unwrap_err(),
-            tool.read(|reply| Request::Prepare("{}".into(), reply))
-                .err()
-                .unwrap(),
+            tool.metadata().unwrap_err(),
+            tool.prepare("{}".into()).err().unwrap(),
             tool.render(render()).result().unwrap_err(),
         ]
     });

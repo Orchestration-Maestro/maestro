@@ -1,6 +1,10 @@
 //! Native tool resource ownership on the original local request pump.
-use super::{Admission, Capability, Message, Registry, pump::State};
-use crate::builtin_reads::{Endpoint, Execution, Request};
+use super::{
+    Admission, Capability, Message, Registry,
+    held::{BuiltinTool, Held},
+    pump::State,
+};
+use crate::builtin_reads::{Endpoint, Execution};
 use maestro_extensions::ReadToolOptions;
 use std::{
     rc::Rc,
@@ -219,15 +223,6 @@ impl crate::api_reads::Endpoint {
     }
 }
 impl State {
-    /// Reads the original native owner after releasing the capability-table borrow.
-    pub(super) fn builtin(&self, id: u64, request: Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Builtin(definition)) = capability.as_deref() {
-            request.answer(&**definition);
-        } else {
-            request.reject("extension built-in tool resource ended");
-        }
-    }
     /// Starts native execution with the caller's model and independent cancellation.
     pub(super) fn builtin_execute(
         &self,
@@ -239,7 +234,7 @@ impl State {
         let capability = self.registry.capability(id);
         let result = (|| {
             let Some(Capability::Builtin(definition)) = capability.as_deref() else {
-                return Err("extension built-in tool resource ended".to_owned());
+                return Err(BuiltinTool::ENDED.to_owned());
             };
             let model = execution
                 .model
@@ -354,12 +349,6 @@ pub(crate) enum Operation {
         tokio::sync::oneshot::Sender<Result<String, String>>,
         Admission,
     ),
-    /// Renders through an original typed native definition and lent native row.
-    Render(
-        u64,
-        crate::native_renders::Render,
-        std::sync::mpsc::Sender<Result<crate::import_route::Value, String>>,
-    ),
 }
 impl State {
     /// Dispatches one native built-in operation without adding another request receiver.
@@ -379,9 +368,6 @@ impl State {
             }
             Operation::Execute(id, execution, reply, admission) => {
                 self.builtin_execute(id, execution, reply, admission);
-            }
-            Operation::Render(id, render, reply) => {
-                let _ = reply.send(self.builtin_render(id, render));
             }
         }
     }

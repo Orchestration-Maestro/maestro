@@ -276,6 +276,14 @@ held!(
 );
 
 held!(
+    /// The definition of a native tool.
+    BuiltinTool,
+    std::rc::Rc<dyn crate::builtin_tools::Definition>,
+    "extension built-in tool resource ended",
+    Capability::Builtin(definition) => definition
+);
+
+held!(
     /// The native buffer of generic authored events.
     EventBuffer,
     super::stream_reads::Owner,

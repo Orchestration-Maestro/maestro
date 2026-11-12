@@ -197,7 +197,6 @@ impl State {
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.api_request(id, request),
-            Message::Builtin(id, request) => self.builtin(id, request),
             Message::BuiltinOperation(operation) => self.builtin_operation(operation),
             Message::Events(id, request) => self.event(id, request),
             Message::Registration(id, request) => self.api_request(id, request),
