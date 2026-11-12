@@ -184,11 +184,6 @@ fn container_children_is_the_rendered_array_that_assignment_replaces() {
     assert!(!Rc::ptr_eq(&container.children(), &replacement));
 }
 
-#[test]
-fn tui_module_reexports_the_width_measure() {
-    assert_eq!(maestro_tui::visible_width("\x1b[31mHello\x1b[0m"), 5);
-}
-
 fn render_text(text: &str, padding_x: usize, padding_y: usize, width: usize) -> Vec<String> {
     TruncatedText::new(text.to_owned(), padding_x, padding_y).render(width)
 }

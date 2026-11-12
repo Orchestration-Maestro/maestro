@@ -160,25 +160,12 @@ pub use maestro_tools::with_file_mutation_queue;
 /// Caller-local tool definitions with their original tools-owned types.
 pub mod local {
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::local::create_edit_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::local::create_find_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::local::create_grep_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::local::create_ls_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::local::create_read_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::local::create_write_tool_definition;
-    #[cfg(not(target_arch = "wasm32"))]
     pub use maestro_tools::local::{
-        BashSpawnHook, BashToolOptions, create_bash_tool_definition, create_local_bash_operations,
-    };
-    #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::local::{
-        ToolDef, ToolsOptions, create_all_tool_definitions, create_coding_tool_definitions,
-        create_read_only_tool_definitions, create_tool_definition,
+        BashSpawnHook, BashToolOptions, ToolDef, ToolsOptions, create_all_tool_definitions,
+        create_bash_tool_definition, create_coding_tool_definitions, create_edit_tool_definition,
+        create_find_tool_definition, create_grep_tool_definition, create_local_bash_operations,
+        create_ls_tool_definition, create_read_only_tool_definitions, create_read_tool_definition,
+        create_tool_definition, create_write_tool_definition,
     };
     pub use maestro_tools::tool_definition_wrapper::local::wrap_tool_definition;
     pub use maestro_tools::types::local::*;

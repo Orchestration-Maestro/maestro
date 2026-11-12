@@ -12,8 +12,8 @@ use ls_support::{Case, assert_effects, execute};
 use ls_support::{Scripted, cases, check_execute, execute_input};
 use maestro_models::Cancellation;
 use maestro_tools::{
-    LsToolDetails, LsToolInput, LsToolOptions, create_ls_tool_definition,
-    output::{TruncationBy, TruncationResult},
+    LsToolDetails, LsToolInput, LsToolOptions, TruncationBy, TruncationResult,
+    create_ls_tool_definition,
 };
 use read_support::isolated;
 #[cfg(unix)]

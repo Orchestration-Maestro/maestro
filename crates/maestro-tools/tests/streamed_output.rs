@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_tools::TruncationBy;
-use maestro_tools::output::{OutputAccumulator, OutputAccumulatorOptions};
+use maestro_tools::{OutputAccumulator, OutputAccumulatorOptions};
 use serde::Deserialize;
 use serde_json::{Value, json};
 

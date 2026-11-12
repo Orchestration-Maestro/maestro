@@ -3,7 +3,7 @@ use std::{future::Future, pin::Pin, rc::Rc};
 
 /// Cancellable native delay owned by the tools runtime.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::process::sleep;
+pub use maestro_tools::sleep;
 
 /// A local native operation with its unchanged failure text.
 pub type IoFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, String>> + 'a>>;

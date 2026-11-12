@@ -10,8 +10,8 @@ use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo, UserBlock};
 use maestro_tools::{
     LsOperations, LsToolDetails, LsToolInput, LsToolOptions, ToolRenderPhase,
-    ToolRenderResultOptions, create_ls_tool, create_ls_tool_definition,
-    output::{TruncationBy, TruncationResult, render_utils::strip_ansi},
+    ToolRenderResultOptions, TruncationBy, TruncationResult, create_ls_tool,
+    create_ls_tool_definition, output::render_utils::strip_ansi,
 };
 use maestro_tui::{ComponentHandle, ImageProtocol, Text};
 use serde::Deserialize;

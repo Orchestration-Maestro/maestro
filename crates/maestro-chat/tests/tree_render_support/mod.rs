@@ -15,7 +15,7 @@ const _: fn(&serde_json::Value) -> Result<String, serde_json::Error> = compact_j
 const _: fn(&str, usize) -> String = truncate_utf16;
 /// The frontend facade retains the shared read-range signature.
 const _: fn(&serde_json::Value) -> String = format_read_line_range;
-use maestro_chat::components::TreeList;
+use maestro_chat::TreeList;
 use maestro_tui::{KeybindingsManager, get_keybindings, set_keybindings, visible_width};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet};

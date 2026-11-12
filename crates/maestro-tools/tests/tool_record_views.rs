@@ -82,7 +82,7 @@ fn native_bash_result_uses_shared_record() {
         full_output_path: None,
     };
     let shared: maestro_tool::bash_executor::BashResult<Option<f64>, Option<String>> = native;
-    let result: maestro_tools::process::BashResult = shared;
+    let result: maestro_tools::BashResult = shared;
     assert_eq!(
         serde_json::to_value(result).unwrap(),
         serde_json::json!({
@@ -104,7 +104,7 @@ fn native_record_aliases_keep_producer_fields() {
             max_lines: case.options.max_lines,
             max_bytes: case.options.max_bytes,
         };
-        let result: maestro_tools::output::TruncationResult = match case.op.as_str() {
+        let result: maestro_tools::TruncationResult = match case.op.as_str() {
             "head" => maestro_tools::truncate_head(&case.text, options),
             "tail" => maestro_tools::truncate_tail(&case.text, options),
             _ => panic!("unknown producer"),

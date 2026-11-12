@@ -17,22 +17,18 @@ pub mod extension_widgets;
 pub mod countdown_timer;
 
 pub(crate) mod bordered_loader;
-pub use bordered_loader::*;
 
 pub mod custom_editor;
 
 pub mod session_selector_search;
 pub(crate) mod tree_selector;
-pub use tree_selector::*;
 
 pub(crate) mod user_message;
-pub use user_message::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) mod footer;
 #[cfg(not(target_arch = "wasm32"))]
-pub use footer::*;
-
+pub use footer::Environment;
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor, paint};
 use maestro_tui::{
     Component, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TerminalImage,
@@ -66,21 +62,14 @@ fn mark_zone(mut lines: Vec<String>) -> Vec<String> {
 }
 
 pub(crate) mod assistant_message;
-pub use assistant_message::*;
 
 pub(crate) mod branch_summary_message;
-pub use branch_summary_message::*;
 
 pub(crate) mod custom_message;
-pub use custom_message::*;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) mod skill_invocation_message;
-#[cfg(not(target_arch = "wasm32"))]
-pub use skill_invocation_message::*;
 
 pub(crate) mod compaction_summary_message;
-pub use compaction_summary_message::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod skill_invocation_message;
 
 /// Shared constructor inputs and Markdown composition for transcript widgets.
 struct MessageRendering {
@@ -154,7 +143,6 @@ impl MessageRendering {
 }
 
 pub(crate) mod thinking_selector;
-pub use thinking_selector::*;
 
 /// Composes the shared bounded-column list between live borders.
 fn bordered_select_list(
@@ -175,20 +163,16 @@ fn bordered_select_list(
 }
 
 pub(crate) mod show_images_selector;
-pub use show_images_selector::*;
 
 pub(crate) mod theme_selector;
-pub use theme_selector::*;
 
 pub(crate) mod user_message_selector;
-pub use user_message_selector::*;
+pub use user_message_selector::{UserMessageItem, UserMessageList, UserMessageSelectorOptions};
 
 pub(crate) mod model_selector;
-pub use model_selector::*;
 pub mod oauth_selector;
 
 pub(crate) mod extension_selector;
-pub use extension_selector::*;
 
 /// Builds padded dialog chrome and its live countdown title updater.
 fn dialog_chrome(
@@ -254,7 +238,6 @@ fn dialog_countdown(
 }
 
 pub(crate) mod extension_input;
-pub use extension_input::*;
 
 /// Builds the shared bounded primary-column list.
 fn bounded_select_list(
@@ -276,15 +259,11 @@ fn bounded_select_list(
 }
 
 pub(crate) mod settings_selector;
-pub use settings_selector::*;
+pub use settings_selector::ThemeCallback;
 
-pub(crate) mod login_dialog;
-pub use login_dialog::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) mod extension_editor;
-#[cfg(not(target_arch = "wasm32"))]
-pub use extension_editor::*;
-
+pub(crate) mod login_dialog;
 #[cfg(test)]
 mod tests;
 
@@ -308,10 +287,8 @@ fn shorten_path_with_home(
     home.map_or_else(|| path.to_owned(), |home| shorten(path, &home))
 }
 
-pub(crate) mod session_selector;
-pub use session_selector::*;
 pub(crate) mod bash_execution;
-pub use bash_execution::*;
+pub(crate) mod session_selector;
 /// Navigates a nonempty captured view, releasing its borrow before redraw.
 fn navigate_list<T>(
     selected: &Cell<usize>,
@@ -332,12 +309,14 @@ fn navigate_list<T>(
 }
 
 pub(crate) mod scoped_models_selector;
-pub use scoped_models_selector::*;
+pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
 
 pub(crate) mod tool_execution;
-pub use tool_execution::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) mod config_selector;
 #[cfg(not(target_arch = "wasm32"))]
-pub use config_selector::*;
+pub use config_selector::{
+    ComponentOptions, ConfigSelectorCallbacks, ConfigSelectorComponent, ResourceItem, ResourceList,
+    ResourceToggle, ResourceType,
+};

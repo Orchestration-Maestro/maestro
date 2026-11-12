@@ -1,6 +1,6 @@
 //! Existing tools owners exposed at the application root.
 
-pub use maestro_tools::text::{Change, diff_lines};
+pub use maestro_tools::{Change, diff_lines};
 
 /// The two search programs the terminal frontend prepares before its first completion.
 #[cfg(not(target_arch = "wasm32"))]
@@ -31,7 +31,7 @@ pub use maestro_tools::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::process::{ExecOptions, ExecResult, exec_command};
+pub use maestro_tools::{ExecOptions, ExecResult, exec_command};
 
 pub use maestro_tools::{
     RenderDiffOptions, expand_hint, format_key_text, key_display_text, key_hint, key_text,

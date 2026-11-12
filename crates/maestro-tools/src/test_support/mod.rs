@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) mod immediate;
 #[cfg(not(target_arch = "wasm32"))]
-pub use immediate::*;
+pub use immediate::{Immediate, ImmediateCallback};
 /// Shared display context helper.
 pub mod display_context;
 /// Shared display palette helper.

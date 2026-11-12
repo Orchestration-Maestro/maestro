@@ -2,9 +2,10 @@
 use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, PresentedSelector,
 };
-use maestro_chat::components::{
-    ComponentOptions, ConfigSelectorComponent, ExtensionSelectorComponent,
-    ExtensionSelectorOptions, SessionSelectorComponent, SessionSelectorOptions,
+use maestro_chat::components::{ComponentOptions, ConfigSelectorComponent};
+use maestro_chat::{
+    ExtensionSelectorComponent, ExtensionSelectorOptions, SessionSelectorComponent,
+    SessionSelectorOptions,
 };
 use maestro_cli::{
     input::{
