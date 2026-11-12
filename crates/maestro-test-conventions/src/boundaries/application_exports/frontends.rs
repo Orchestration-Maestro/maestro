@@ -29,7 +29,7 @@ pub(crate) fn checked(member: &Member) -> bool {
 }
 
 /// One written path below the application crate, with its line.
-type Reach = (usize, Vec<String>);
+pub(crate) type Reach = (usize, Vec<String>);
 
 /// Paths one frontend source writes below the application crate, gathered by the shared syntax
 /// walk.

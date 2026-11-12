@@ -1,36 +1,36 @@
 //! Private declaration fragments for the application interface.
 
-/// Existing browser storage re-exports.
+/// Browser storage stores, records and the application storage accessor.
 mod browser_storage;
-/// Existing browser tools re-exports.
+/// Browser document extraction, sandbox runtime and JavaScript execution tools.
 mod browser_tools;
-/// Existing clipboard re-exports.
+/// Clipboard copy helpers.
 mod clipboard;
-/// Existing configuration re-exports.
+/// Application name, version, directory names and environment variable names.
 mod configuration;
-/// Existing credentials re-exports.
+/// Credential records and the credential storage backends.
 mod credentials;
-/// Existing extensions re-exports.
+/// Extension runtime, context, event and registration types.
 mod extensions;
-/// Existing models re-exports.
+/// The model registry and command-line model resolution.
 mod models;
-/// Existing packages re-exports.
+/// The package manager and its resolved resource records.
 mod packages;
-/// Existing presentation data re-exports.
+/// Footer data provider, keybinding manager and slash command records.
 mod presentation_data;
-/// Existing resources re-exports.
+/// Resource loader, its options, diagnostics and collisions.
 mod resources;
 /// The JSONL protocol records and server.
 #[cfg(not(target_arch = "wasm32"))]
 mod rpc;
-/// Existing session re-exports.
+/// Session manager, session entry records and skill block parsing.
 mod session;
-/// Existing settings re-exports.
+/// The settings manager and its compaction, image and retry records.
 mod settings;
-/// Existing theme re-exports.
+/// Theme records, highlighting and markdown theme helpers.
 #[cfg(not(target_arch = "wasm32"))]
 mod theme;
-/// Existing tools re-exports.
+/// Built-in tool constructors, options and execution records.
 mod tools;
 
 pub use browser_storage::*;

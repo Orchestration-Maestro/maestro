@@ -61,7 +61,7 @@ pub(crate) struct Walk {
     /// Imports of an application source in its logical module.
     pub(crate) imports: Option<Vec<application_exports::Import>>,
     /// Paths a frontend source writes below the application crate, with their lines.
-    pub(crate) reach: Vec<(usize, Vec<String>)>,
+    pub(crate) reach: Vec<application_exports::frontends::Reach>,
     /// First public credentials name its declared surface does not carry, with its line.
     pub(crate) credentials: Option<(usize, String)>,
     /// Lint-level attributes and root layout of a guest source.

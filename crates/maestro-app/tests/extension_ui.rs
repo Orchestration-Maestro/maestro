@@ -14,8 +14,7 @@ use maestro_extensions::types::{
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterFactory,
     NotificationType, ThemeSelection, WidgetContent, WidgetPlacement, WorkingIndicatorOptions,
 };
-use maestro_models::Cancellation;
-use maestro_models::Local;
+use maestro_models::{Cancellation, Local};
 use maestro_resources::{SourceOrigin, SourceScope};
 use maestro_theme::{Theme, ThemeState};
 use serde_json::{Value, json};

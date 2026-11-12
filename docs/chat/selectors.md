@@ -75,7 +75,7 @@ schedules no cancellation.
 
 ## Provider authentication picker
 
-`OAuthSelectorComponent::new` takes an `Arc<maestro_app::AuthStorage>`, ordered
+`OAuthSelectorComponent::new` takes an `Arc<maestro_credentials::AuthStorage>`, ordered
 `AuthSelectorProvider` records, select/cancel callbacks and `OAuthSelectorOptions`.
 Options supply `OAuthSelectorMode::Login` or `Logout`, a `LiveTheme`, an optional
 fallible `get_auth_status` callback and an owned `TuiRuntime`. `AuthType::OAuth` offers subscription authentication;
@@ -115,7 +115,7 @@ confirmation alone do not rebuild the list. Text and cursor layout belong to the
 # Model picker
 
 `ModelSelectorComponent::new` takes a `TUI`, shared mutable
-`maestro_app::SettingsManager`, mutable `maestro_app::ModelRegistry`,
+`maestro_settings::SettingsManager`, mutable `maestro_catalog::ModelRegistry`,
 `ModelSelectorCallbacks` and `ModelSelectorOptions`. Construction refreshes the
 registry, propagates refresh failures and requests one render after a completed
 load or caught availability failure. Options supply the
@@ -301,7 +301,7 @@ cell widths belong to the [terminal components](../terminal/components.md).
 
 Native callers use
 [`components::ConfigSelectorComponent`](../../crates/maestro-chat/src/components/config_selector/mod.rs).
-Pass `maestro_app::ResolvedPaths`, a shared mutable `SettingsManager`,
+Pass `maestro_packages::ResolvedPaths`, a shared mutable `SettingsManager`,
 `components::ComponentOptions` and `ConfigSelectorCallbacks`. The options supply
 project and agent directories, a prepared `Collator`, live theme and a live bold-style
 policy.
