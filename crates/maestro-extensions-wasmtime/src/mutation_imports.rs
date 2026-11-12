@@ -1,4 +1,9 @@
 //! Component ownership of the original native mutation future, without another queue.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::callback_imports::CallbackView;
 use std::{
     future::{Future, poll_fn},
@@ -28,7 +33,7 @@ struct Work {
 }
 
 /// The component resource owns one original native future, not a second queue entry.
-struct FileMutation {
+pub struct FileMutation {
     /// Shared only with a currently waiting import.
     work: Arc<Mutex<Work>>,
     /// Set by the native operation when all predecessors have finished.

@@ -1,5 +1,10 @@
 //! Component abort listeners observe the original native signal on its owning thread.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     Cancellation, EventBus, ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local,
     create_event_bus_for, types::ProviderActions,

@@ -1,5 +1,10 @@
 //! Compiled guest model dispatch reaches the original registered native adapter.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_models::*;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock};

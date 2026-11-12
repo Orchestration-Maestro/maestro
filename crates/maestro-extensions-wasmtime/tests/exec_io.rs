@@ -1,5 +1,10 @@
 //! Explicit command execution through the authored component and production factory.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::example_process::{install, run};
 use maestro_extensions::{
     Cancellation, EventBus, ExtensionRunner, Local, create_event_bus_for, types::ExtensionHandle,

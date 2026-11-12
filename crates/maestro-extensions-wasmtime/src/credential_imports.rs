@@ -1,4 +1,9 @@
 //! Canonical credential imports delegate through the existing local resource pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     catalog_reads,
     credential_reads::{Endpoint, Request},

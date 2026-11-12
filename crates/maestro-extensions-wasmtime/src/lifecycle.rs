@@ -1,4 +1,9 @@
 //! One per-extension Store owns entry, cached faults and quiescent destruction.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     api_reads::Endpoint,
     guest_calls::{Call, Callbacks},

@@ -1,5 +1,10 @@
 //! Replacement operands and genuine callback failures cross the real authored frame.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     CommandContextOperations, CustomMessageInput, EventBus, ExtensionCommandContextActions,
     ExtensionRunner, Local, ReplacedSessionContext, create_event_bus_for,

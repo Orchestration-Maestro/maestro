@@ -1,4 +1,9 @@
 //! Concurrent command imports await the operation admitted by the single local pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{command_reads::Request, context_imports::CommandContext};
 use wasmtime::component::{ComponentType, LinkerInstance, Lower, Resource};
 use wasmtime_wasi::WasiView;

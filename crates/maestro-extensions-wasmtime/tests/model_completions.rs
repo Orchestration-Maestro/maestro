@@ -1,5 +1,10 @@
 //! Eager compiled-guest completion observes results without consuming native events.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_models::*;
 use std::sync::{Arc, Mutex, RwLock};
 

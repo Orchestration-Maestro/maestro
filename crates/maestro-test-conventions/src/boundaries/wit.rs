@@ -56,6 +56,11 @@ impl WitInputs {
         }
         for path in input.paths {
             let root = context.canonical_input(&path, &location)?;
+            if input.inline {
+                // An inline package only borrows its directory for dependencies; the directory
+                // is not an interface root the host shares.
+                continue;
+            }
             if is_guest {
                 self.guest.insert(root);
             } else {

@@ -1,4 +1,9 @@
 //! Canonical continuation methods preserve the creating session's native operations.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     context_imports::{CommandContext, add_resource},
     replaced_reads::{Endpoint, Request},

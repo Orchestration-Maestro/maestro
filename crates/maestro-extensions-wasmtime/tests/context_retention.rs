@@ -1,5 +1,10 @@
 //! Retained context reads and continued messages keep their own owners.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     CommandContextOperations, ContextUsage, CustomMessageInput, ExtensionCommandContextActions,
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, ReplacedSessionContext,

@@ -1,4 +1,9 @@
 //! Canonical imports of the completion providers the host lends to the guest.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::callback_imports::CallbackView;
 use crate::guest_calls::providers::{Cursor, Lent, ProviderEndpoint};
 use crate::guest_calls::widget_calls::Item;

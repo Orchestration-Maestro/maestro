@@ -1,4 +1,9 @@
 //! Canonical read shims share one typed request path to each original native capability.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::Message;
 use std::sync::mpsc::Sender;
 use wasmtime::{

@@ -1,4 +1,9 @@
 //! Canonical catalog imports preserve current descriptors and exact lookup operands.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::read_imports::{
     ReadEndpoint, add_operand, add_read, add_routed, add_routed_operand, operand, resource,
 };

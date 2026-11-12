@@ -1,4 +1,9 @@
 //! Retained provider setup and returned-stream operations share the Store lifecycle.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::Handle,
     lifecycle::replies::Reply,

@@ -1,4 +1,9 @@
 //! Real domain owners shared by the adapter's unit witnesses.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{ExtensionRunner, Local, create_extension_runtime};
 use std::{rc::Rc, sync::RwLock};
 

@@ -1,4 +1,9 @@
 //! A native editor over an authored editor, reaching it through the original frame.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::{
     Call, Handle,
     editors::{Answered, EditorCall, Request, RetainedEditor, TextCallbackEndpoint},

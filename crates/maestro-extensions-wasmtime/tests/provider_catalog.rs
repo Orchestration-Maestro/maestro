@@ -1,5 +1,10 @@
 //! Provider operations exercised through the production component loader.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::types::ExtensionHandle;
 use maestro_extensions::{
     ExtensionActions, ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local,

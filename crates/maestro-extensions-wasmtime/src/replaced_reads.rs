@@ -1,4 +1,9 @@
 //! Replacement operations retain the actual creating session, not the current API.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     api_reads::delivery,
     local_resources::{Lease, Message, Work},
@@ -58,7 +63,7 @@ fn settle(
 
 /// An independently retained original-session capability in the Store.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
     /// Retains a distinct guarded command view without retargeting the replacement.

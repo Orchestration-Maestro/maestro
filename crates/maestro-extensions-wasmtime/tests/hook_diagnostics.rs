@@ -4,6 +4,11 @@
 //! those fields into the attributed failure it reports, and a failure known only by its message
 //! keeps no stack.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::component_events::{Harness, cases};
 use crate::components::local;
 use serde_json::{Value, json};

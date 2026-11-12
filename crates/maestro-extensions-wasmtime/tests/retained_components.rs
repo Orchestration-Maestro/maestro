@@ -1,5 +1,10 @@
 //! Canonical retained components use the production factory and native renderer owner.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::types::ExtensionHandle;
 use maestro_extensions::{
     ComponentHandle, EventBus, EventError, ExtensionRunner, Local, MessageRenderOptions,

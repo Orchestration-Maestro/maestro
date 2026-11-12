@@ -1,4 +1,9 @@
 //! Host editors and the application's custom editors, served on the local owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::Handle;
 use crate::guest_calls::widget_calls::{Answered, Event};
 use crate::keys_reads::KeysEndpoint;

@@ -1,5 +1,10 @@
 //! Selected guest cancellation controls the native pending content-generation transport.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 mod transport;
 
 use maestro_extensions::{

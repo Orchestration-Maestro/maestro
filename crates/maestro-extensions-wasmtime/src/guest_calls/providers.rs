@@ -98,7 +98,7 @@ pub(crate) struct FactoryCall<H = Handle> {
 
 /// Store-safe identity of a native completion provider lent to the guest.
 #[derive(Clone)]
-pub(crate) struct ProviderEndpoint(pub(crate) Arc<Lease>);
+pub struct ProviderEndpoint(pub(crate) Arc<Lease>);
 
 /// One request on a lent native completion provider.
 pub(crate) enum Lent {

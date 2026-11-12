@@ -1,4 +1,9 @@
 //! Retained native definitions; execution stays in the tools-owned wrapper.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     AgentToolResult, Cancellation, Local, Model, ReadContext, ToolDefinitionInput,
     local::{ToolDefinition, wrap_tool_definition},

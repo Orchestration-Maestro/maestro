@@ -1,4 +1,9 @@
 //! Typed primitive context requests between the Store thread and its local owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Registry, SignalEndpoint, UiEndpoint};
 use maestro_extensions::{ContextUsage, ExtensionCommandContext, ExtensionContext};
 use std::sync::{Arc, mpsc};

@@ -1,5 +1,10 @@
 //! Awaited compiled-guest edits reach a real protocol request only after each gate opens.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 mod http;
 mod reverse;
 

@@ -4,7 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// The guest crate's own lint table: the fixture workspace table with the three lints its
+/// The lint table of each crate that generates extension bindings: the fixture workspace table with the three lints its
 /// generated bindings need at `deny`.
 pub const GUEST_LINTS: &str = "[lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[lints.clippy]\npedantic = { level = \"deny\", priority = -1 }\nmodule_name_repetitions = \"forbid\"\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"deny\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"deny\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n";
 
@@ -48,7 +48,10 @@ impl Workspace {
         let root = self.root.path().join("crates").join(directory);
         fs::create_dir_all(root.join("src")).unwrap();
         fs::write(root.join("src/lib.rs"), "").unwrap();
-        let lints = if name == "maestro-extensions-wasm" {
+        let lints = if matches!(
+            name,
+            "maestro-extensions-wasm" | "maestro-extensions-wasmtime"
+        ) {
             GUEST_LINTS.to_owned()
         } else {
             "[lints]\nworkspace = true\n".to_owned()
@@ -121,7 +124,19 @@ impl Workspace {
             ),
         )
         .unwrap();
-        std::fs::write(tests.join("integration.rs"), modules.concat()).unwrap();
+        let restore = if matches!(
+            directory,
+            "maestro-extensions-wasm" | "maestro-extensions-wasmtime"
+        ) {
+            "#![forbid(clippy::pedantic, clippy::too_many_arguments, clippy::excessive_nesting)]\n"
+        } else {
+            ""
+        };
+        std::fs::write(
+            tests.join("integration.rs"),
+            format!("{restore}{}", modules.concat()),
+        )
+        .unwrap();
     }
 
     /// Writes the crate list, overwriting nextest config when it includes the test-process owner.

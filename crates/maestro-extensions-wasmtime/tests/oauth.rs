@@ -1,5 +1,10 @@
 //! OAuth capabilities exercised through a compiled guest and the production host.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use serde_json::{Value, json};
 
 #[test]

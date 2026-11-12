@@ -1,5 +1,10 @@
 //! Built components load through the extension domain's path, discovery and registration rules.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::components::{TracedBus, hooks, loader, local, place};
 use maestro_extensions::{
     ExtensionActions, ExtensionRunner, LoadExtensionsResult, Local, ModuleLoader,

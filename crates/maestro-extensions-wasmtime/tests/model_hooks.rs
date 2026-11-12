@@ -1,5 +1,10 @@
 //! Native registered providers await the compiled guest's original hooks.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_models::*;
 use serde_json::{Value, json};
 use std::sync::{Arc, RwLock};

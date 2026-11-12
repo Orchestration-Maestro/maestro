@@ -1,5 +1,10 @@
 //! Every canonical UI import forwards to the independently retained native UI.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     Cancellation, EventError, ExtensionRunner, ExtensionUIContext, ExtensionUIDialogOptions,
     ExtensionWidgetOptions, InputListenerResult, LiveTheme, Local, TerminalInputHandler,

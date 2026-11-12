@@ -1,4 +1,9 @@
 //! Canonical component records for executable schema calls and event decisions.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use wasmtime::component::{ComponentType, Lift, Lower, Resource};
 /// The canonical kind of a present JSON value.
 #[derive(ComponentType, Lift, Lower, Clone, Copy, Debug)]

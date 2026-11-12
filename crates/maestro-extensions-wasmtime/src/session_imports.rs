@@ -1,4 +1,9 @@
 //! Session-changing canonical imports retain real setup and continuation callbacks.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::{self, CallbackView},
     command_imports::{SessionChangeResult, endpoint},

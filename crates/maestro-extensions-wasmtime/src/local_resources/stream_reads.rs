@@ -36,7 +36,7 @@ pub(crate) enum Request {
 }
 /// Store-safe ownership of one native stream.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
     /// Admit through the existing synchronous callback continuation.
     pub(crate) fn push(&self, value: Handle) -> crate::import_route::Route {

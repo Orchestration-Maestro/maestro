@@ -1,4 +1,9 @@
 //! Canonical typed stream resources backed by the original native buffer.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::{CallbackView, transferred},
     guest_calls::{Callback, Handle},

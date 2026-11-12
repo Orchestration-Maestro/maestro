@@ -1,5 +1,10 @@
 //! Registered guest stream functions consume original native hooks and option variants.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 mod affinity;
 mod oauth;
 mod retention;

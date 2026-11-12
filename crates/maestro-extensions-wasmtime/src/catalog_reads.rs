@@ -1,4 +1,9 @@
 //! Live catalog reads run on the local owner and return owned model values.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Message};
 use maestro_extensions::{Model, ModelRegistry, ResolvedRequestAuth};
 use serde::Serialize;
@@ -143,7 +148,7 @@ fn encode_models<T: Serialize>(models: &[Arc<RwLock<T>>]) -> Result<String, Stri
 
 /// Store-owned identity of the original live catalog.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
     /// Resolves the selected provider through the original local catalog.

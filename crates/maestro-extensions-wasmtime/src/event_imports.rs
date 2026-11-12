@@ -1,4 +1,9 @@
 //! Canonical event imports retain native listeners and invocation frames.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::{self, CallbackView},
     event_reads::Request,

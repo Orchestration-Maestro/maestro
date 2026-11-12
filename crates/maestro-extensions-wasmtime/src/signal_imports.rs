@@ -1,4 +1,9 @@
 //! Canonical cancellation imports retain the original native signal.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::CallbackView, guest_calls::Callback, local_resources::SignalEndpoint,
 };

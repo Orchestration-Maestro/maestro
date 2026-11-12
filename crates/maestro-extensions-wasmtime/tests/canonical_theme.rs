@@ -1,5 +1,10 @@
 //! Native renderer themes stay live through independently retained component handles.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{Local, MessageRenderOptions, create_event_bus_for};
 use maestro_theme::{
     ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeDirectories, ThemeOptions, ThemeState,

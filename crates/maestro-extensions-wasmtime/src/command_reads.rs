@@ -1,4 +1,9 @@
 //! Command operations selected on consumption and settled by the local pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::Handle,
     local_resources::{Registry, Work},

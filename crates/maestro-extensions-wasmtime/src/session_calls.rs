@@ -1,4 +1,9 @@
 //! Canonical session operands become the original domain's optional records.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{guest_calls::Handle, local_resources::Registry};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use wasmtime::component::{ComponentType, Lift};

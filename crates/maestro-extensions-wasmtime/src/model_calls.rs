@@ -1,4 +1,9 @@
 //! Awaited model hooks retain their original guest identities through native producer completion.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{Call, Callback, Handle},
     lifecycle::replies::Reply,

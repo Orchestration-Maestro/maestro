@@ -1,6 +1,7 @@
 //! Native component execution through the local extension registration facade.
 mod api_imports;
 mod api_reads;
+mod bindings;
 mod builtin_imports;
 mod builtin_reads;
 /// Native named factory selection on the canonical callback transport.

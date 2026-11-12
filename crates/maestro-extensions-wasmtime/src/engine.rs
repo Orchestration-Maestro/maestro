@@ -1,4 +1,9 @@
 //! The one engine configuration and host link table every component is built from.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::lifecycle::State;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
