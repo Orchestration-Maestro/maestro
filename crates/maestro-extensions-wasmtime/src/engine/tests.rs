@@ -1,6 +1,6 @@
 //! The engine compiles the same code on every host and loads modules that
 //! throw WebAssembly exceptions.
-use super::{component_cache, component_engine, process_engine};
+use super::{component_cache, component_engine, process_engine, process_linker};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use wasmtime::{Config, Engine, Module};
 
@@ -107,4 +107,12 @@ fn component_cache_resolves_a_relative_agent_directory_against_the_working_direc
             .unwrap()
             .join("component-cache")
     );
+}
+
+/// Every instance instantiates from one link table, so the table is registered once.
+#[test]
+fn process_linker_is_built_once_and_shared() {
+    let first = process_linker("").unwrap();
+    let second = process_linker("").unwrap();
+    assert!(std::ptr::eq(first, second));
 }

@@ -1,6 +1,8 @@
-//! The one engine configuration every component engine is built from.
+//! The one engine configuration and host link table every component is built from.
+use crate::lifecycle::State;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
+use wasmtime::component::Linker;
 use wasmtime::{Cache, CacheConfig, Config, Engine, Error, Result};
 
 /// The directory below the agent directory that holds compiled components.
@@ -8,6 +10,9 @@ const COMPONENT_CACHE: &str = "component-cache";
 
 /// The engine every loaded component in this process reuses.
 static PROCESS_ENGINE: OnceLock<Result<Engine, String>> = OnceLock::new();
+
+/// The host link table every loaded component in this process instantiates from.
+static PROCESS_LINKER: OnceLock<Result<Linker<State>, String>> = OnceLock::new();
 
 /// Creates the async component engine, with `cache` as its compiled-code store.
 ///
@@ -61,6 +66,23 @@ pub(crate) fn process_engine(agent_dir: &str) -> Result<Engine> {
         component_engine(component_cache(agent_dir)).map_err(|error| format!("{error:#}"))
     });
     configured.clone().map_err(Error::msg)
+}
+
+/// Returns the one host link table every instance in this process instantiates from.
+///
+/// The table is bound to the process engine and registers every host function once; each
+/// instance then only instantiates its component against it.
+///
+/// # Errors
+/// Returns the failure to configure the engine or to register the host functions.
+pub(crate) fn process_linker(agent_dir: &str) -> Result<&'static Linker<State>> {
+    let linked = PROCESS_LINKER.get_or_init(|| {
+        let engine = process_engine(agent_dir).map_err(|error| format!("{error:#}"))?;
+        let mut linker = Linker::new(&engine);
+        crate::lifecycle::link(&mut linker).map_err(|error| format!("{error:#}"))?;
+        Ok(linker)
+    });
+    linked.as_ref().map_err(|error| Error::msg(error.clone()))
 }
 
 #[cfg(test)]
