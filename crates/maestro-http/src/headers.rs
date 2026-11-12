@@ -33,8 +33,8 @@ fn header_name(name: &str) -> Result<HeaderName, String> {
 /// Trim every value at its HTTP edges, in place, and check the headers against the Fetch
 /// Standard's header rules.
 ///
-/// Values are text whose characters each name one byte. Empty values are kept. Whether a
-/// client can carry a value is that client's rule; see [`client_pairs`].
+/// Values are text whose characters each name one byte. Empty values are kept, and what a
+/// client can carry fails when the headers are converted for that client.
 ///
 /// # Errors
 /// Fails with the text of the first header that has an invalid name, a character above
