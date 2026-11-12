@@ -12,10 +12,6 @@ use crate::providers::assistant_output::{fail, initial_message_for_api, start_pr
 use crate::providers::chat::endpoint::scope_headers;
 use crate::providers::json_text::compact_json;
 use crate::providers::openai_prompt_cache::prompt_cache_key;
-use crate::providers::transport::{
-    HttpRequest, RequestFailure, SseMessages, copied, layer, sdk_status_failure,
-    send_with_status_error,
-};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model,
     ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
@@ -24,6 +20,10 @@ use crate::{
 };
 use futures_util::stream;
 use indexmap::IndexMap;
+use maestro_http::{
+    HttpRequest, RequestFailure, SseMessages, copied, layer, sdk_status_failure,
+    send_with_status_error,
+};
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, percent_decode_str, utf8_percent_encode};
 use serde::Serialize;
 use serde_json::Value;

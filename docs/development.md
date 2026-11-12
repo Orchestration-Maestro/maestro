@@ -1011,19 +1011,20 @@ is separate and runs either way.
 
 ### FTP peer support
 
-The models tests share the scripted peer in
-`crates/maestro-models/tests/support/ftp_server.rs`. Library tests also load
-`ftp_server_timing.rs` for `Peer::reached` and `Peer::written`; the integration
-program uses only the common peer. Check both programs for unused support:
+The transport and models tests share the scripted peer in
+`crates/maestro-http/src/test_support/ftp_server.rs`, behind the `test-support`
+feature of `maestro-http`. `ftp_server_timing.rs` beside it adds `Peer::reached`
+and `Peer::written`. Check both crates after changing the peer:
 
 ```sh
-cargo clippy -p maestro-models --all-targets --locked -- -D warnings
+cargo clippy -p maestro-http -p maestro-models --all-targets --locked -- -D warnings
 ```
 
 ### TLS fixture certificates
 
 The provider tests trust fixed certificates under
-`crates/maestro-models/tests/fixtures/`. They are committed data, and no script or
+`crates/maestro-models/tests/fixtures/`, and the transport tests under
+`crates/maestro-http/tests/fixtures/` (`socks-tls/`). They are committed data, and no script or
 certificate library issues them. Each one expires on 2126-10-18, so none of them
 lapses during a test run. The three server-side certificates start on 2019-06-01,
 before 2019-07-01, because Apple's TLS policy refuses a server certificate issued on

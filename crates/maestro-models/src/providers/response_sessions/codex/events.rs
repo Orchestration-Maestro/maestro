@@ -7,13 +7,13 @@ use crate::providers::nullable::Nullable;
 use crate::providers::responses_api::openai_responses_shared::{
     OpenAIResponsesStreamOptions, process_responses_stream,
 };
-use crate::providers::transport::{HttpBody, Raced, ServerSentEvent, SseMessages, race};
 use crate::{
     AssistantMessageEventStream, Cancellation, DiagnosticErrorInfo, Model, SharedAssistantMessage,
     Usage,
 };
 use futures_util::StreamExt;
 use indexmap::IndexMap;
+use maestro_http::{HttpBody, Raced, ServerSentEvent, SseMessages, race};
 use serde_json::value::RawValue;
 use std::collections::VecDeque;
 

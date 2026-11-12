@@ -240,7 +240,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   Its storage reclaims retired registrations while no traversal runs.
 - `maestro-cancellation` owns cooperative cancellation below layer 0. Its only
   internal dependency is `maestro-listeners`, for synchronous abort observers.
-  Only models and the toolkit may depend directly on it.
+  Only `maestro-http`, models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
 - `maestro-office` is a core crate that reads office documents: spreadsheet number
   formatting and workbook reading, and Word package reading, from supplied bytes. It depends
@@ -339,7 +339,7 @@ executable's file-trigger test on the shared host fixture, the native-only,
 non-optional `maestro-theme` to `maestro-realpath` development edge for the
 browser author example's watched roots,
 and the native, non-optional dev-dependencies
-of the twenty-seven declared callers on `maestro-test-process`, the owner of
+of the twenty-eight declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
@@ -374,7 +374,7 @@ apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
-scoped tracing subscriber that sees every callsite. Only daemon, models, process,
+scoped tracing subscriber that sees every callsite. Only daemon, http, process,
 terminal and workspace may declare it, under the directory owner's rules. Tests
 capture through its `with_default` or, for a future, its `with_subscriber`. A
 conventions check rejects `tracing`'s scoped subscriber functions and the
@@ -417,22 +417,22 @@ The base owner-approved libraries are: tokio, reqwest, serde, serde_json,
 toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
 Ask before adding any unapproved crate; never add one silently.
 
-`maestro-models` pins `reqwest =0.13.5` (default features plus `stream`),
+`maestro-http` and `maestro-models` pin `reqwest =0.13.5` (default features plus `stream`),
 `url =2.5.8`, `futures-core =0.3.34` (`std`) and `futures-util =0.3.34`
-(`std` and `sink`),
-`httpdate =1.0.3` and `ryu-js =1.0.3`. Native targets add `tokio =1.53.3`
+(`std` and `sink`); `maestro-http` also pins `httpdate =1.0.3` and `maestro-models`
+`ryu-js =1.0.3`. Native targets add `tokio =1.53.3`
 (`rt`, `time`; `test-util` for tests); browser targets add `wasm-bindgen =0.2.129`,
 `wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`. All are MIT OR Apache-2.0
 except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).
-The models crate reads server-sent events with its own reader, so no event-stream
+`maestro-http` reads server-sent events with its own reader, so no event-stream
 library is a dependency.
-Native proxy scripts use `boa_engine =0.22.0` (defaults off, `system-time-zone`,
+Its native proxy scripts use `boa_engine =0.22.0` (defaults off, `system-time-zone`,
 MIT), `tracing =0.1.44` (defaults off, `std`, MIT) for authored alerts, and
 `if-addrs =0.15.0` (defaults off, `link-local`, MIT OR BSD-3-Clause) for the
 local IPv4 fallback. FTP script sources use Maestro's own native client over the
 locked Tokio, regex and chrono facilities instead of an FTP dependency. These
 dependencies do not enter browser targets.
-Native SOCKS connections use `tokio-socks =0.5.3` (MIT, defaults off, `tokio`) and its
+Its native SOCKS connections use `tokio-socks =0.5.3` (MIT, defaults off, `tokio`) and its
 `thiserror =1.0.69` closure, beside reqwest. Native connector support directly reuses locked
 `hyper =1.11.1`, `hyper-util =0.1.21`, `hyper-rustls =0.27.10`, `rustls =0.23.45`,
 `rustls-platform-verifier =0.7.1` and `tower-service =0.3.3` with the features listed in

@@ -295,6 +295,7 @@ fn check_declarations(
                 | "maestro-app"
                 | "maestro-listeners"
                 | "maestro-office"
+                | "maestro-http"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -366,6 +367,7 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
 fn single_name_owner(name: &str) -> Option<&'static str> {
     let owner = match name {
         "Listeners" => "maestro-listeners",
+        "FetchError" | "PacProxyAgent" => "maestro-http",
         "NumberFormatter" | "OpenXmlPackage" | "WorkbookError" => "maestro-office",
         "serialize_json_line" | "JsonlLineSplitter" => "maestro-json",
         "serialize_rpc_response" => "maestro-protocol",

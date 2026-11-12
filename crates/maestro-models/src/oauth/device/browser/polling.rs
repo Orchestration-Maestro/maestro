@@ -1,8 +1,8 @@
 //! Device-code validation and server-directed polling.
 use super::token::{CLIENT_ID, fetch_json, response_record, string_field};
 use crate::providers::json_text::{member, raw_json, raw_number};
-use crate::providers::transport::{Raced, race};
 use crate::{Cancellation, Fetch, HttpRequest, OAuthError};
+use maestro_http::{Raced, race};
 use std::future::pending;
 use std::time::Duration;
 

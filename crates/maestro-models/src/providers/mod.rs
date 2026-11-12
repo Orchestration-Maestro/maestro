@@ -16,5 +16,3 @@ pub(crate) mod selected_fields;
 pub mod transport;
 
 pub mod response_sessions;
-
-pub mod websocket;

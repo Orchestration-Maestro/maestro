@@ -1,5 +1,5 @@
 //! Creation of attributed diagnostics.
-pub use crate::providers::transport::timestamp_now;
+pub use maestro_http::timestamp_now;
 pub use maestro_request::diagnostics::*;
 /// Create a diagnostic using current Unix epoch milliseconds and supplied fields.
 #[must_use]

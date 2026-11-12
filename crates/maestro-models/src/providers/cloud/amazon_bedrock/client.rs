@@ -33,11 +33,11 @@ use super::BedrockOptions;
 use super::credentials::default_provider;
 use super::proxy::Environment;
 use super::request::Prepared;
-use crate::providers::transport::{
+use crate::{Cancellation, Model};
+use maestro_http::{
     Fetch, FetchError, HttpBody, HttpRequest, ProxySelector, RequestFailure, Route,
     configured_fetch,
 };
-use crate::{Cancellation, Model};
 
 /// How the request is authenticated.
 #[derive(Debug, PartialEq)]

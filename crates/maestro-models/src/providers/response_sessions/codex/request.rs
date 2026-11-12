@@ -3,8 +3,8 @@
 use crate::DiagnosticErrorInfo;
 use crate::providers::json_text::{member, raw_json};
 use crate::providers::openai_prompt_cache::prompt_cache_key;
-use crate::providers::transport::FORGIVING;
 use base64::Engine as _;
+use maestro_http::FORGIVING;
 
 /// Read the account claim without signature verification.
 pub(super) fn extract_account_id(token: &str) -> Result<String, DiagnosticErrorInfo> {
