@@ -292,10 +292,12 @@ fn browser_check_repairs_formatting() {
     }
 }
 
-/// The first check of a lane, which the lane's graph already linted, does not lint the library
-/// again.
+/// A fresh copy of the sources checked after the lane's graph holds a lint of the library does
+/// not lint it again. An earlier test of the lane may have edited the library, so a first check
+/// settles the lane before the copy under test is made.
 #[test]
 fn browser_check_reuses_the_compiled_library_of_the_lane() {
+    success(&Browser::cached().run("browser-check"));
     let output = Browser::cached().run("browser-check");
     success(&output);
     let log = String::from_utf8_lossy(&output.stderr);
