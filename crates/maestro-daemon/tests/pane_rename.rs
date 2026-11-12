@@ -1,6 +1,8 @@
 //! Pane renaming through the daemon's handler: the label and its publication.
 #![cfg(target_os = "linux")]
-use crate::support::api::{daemon_with_workspaces, events_after, failure, marked, request};
+use crate::support::api::{
+    daemon_with_workspaces, events_after, failure, marked, pane_record, request,
+};
 use maestro_daemon::state::App;
 use maestro_protocol::{
     events::EventData,
@@ -39,24 +41,19 @@ fn updated_panes(app: &App) -> Vec<PaneInfo> {
 #[test]
 fn renaming_sets_trims_and_clears_the_label() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let retained = |app: &App| {
-        let id = app.state.topology.workspaces[0]
-            .terminal_id(app.state.topology.workspaces[0].tabs[0].root_pane)
-            .unwrap();
-        app.state.terminals[id].manual_label.clone()
-    };
+    let retained = |app: &mut App| pane_record(app, "w1:p1").label;
     marked(&mut app);
     let named = label_of(request(&mut app, rename(Some("reviewer"))));
     assert_eq!(named.as_deref(), Some("reviewer"));
-    assert_eq!(retained(&app).as_deref(), Some("reviewer"));
+    assert_eq!(retained(&mut app).as_deref(), Some("reviewer"));
     assert!(marked(&mut app));
     let padded = label_of(request(&mut app, rename(Some("  padded \t"))));
     assert_eq!(padded.as_deref(), Some("padded"));
     assert_eq!(label_of(request(&mut app, rename(Some("   ")))), None);
-    assert_eq!(retained(&app), None);
+    assert_eq!(retained(&mut app), None);
     request(&mut app, rename(Some("again"))).unwrap();
     assert_eq!(label_of(request(&mut app, rename(None))), None);
-    assert_eq!(retained(&app), None);
+    assert_eq!(retained(&mut app), None);
 }
 
 #[test]

@@ -9,7 +9,9 @@ use maestro_detection::agents::{Agent, AgentState};
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,
-    schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirection},
+    schema::{
+        ErrorBody, LayoutDescription, PaneInfo, PaneLayoutSnapshot, ResponseResult, SplitDirection,
+    },
 };
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use maestro_workspace::{
@@ -181,6 +183,38 @@ pub async fn root_pane_of(app: &mut App, workspace: usize) -> PaneId {
         .unwrap();
     let number = pane.terminal_id.strip_prefix("term_").unwrap();
     PaneId::from_raw(number.parse().unwrap())
+}
+
+/// The layout `layout.export` answers with for the active tab, or for `tab_id`.
+pub fn exported_layout(app: &mut App, tab_id: Option<&str>) -> LayoutDescription {
+    let wire = tab_id.map_or(
+        json!({"type": "layout.export"}),
+        |tab| json!({"type": "layout.export", "tab_id": tab}),
+    );
+    match request(app, wire) {
+        Ok(ResponseResult::LayoutExport { layout }) => layout,
+        other => panic!("expected an exported layout: {other:?}"),
+    }
+}
+
+/// The geometry `pane.layout` answers with for the active tab.
+pub fn pane_layout(app: &mut App) -> PaneLayoutSnapshot {
+    match request(app, json!({"type": "pane.layout"})) {
+        Ok(ResponseResult::PaneLayout { layout }) => layout,
+        other => panic!("expected a pane layout: {other:?}"),
+    }
+}
+
+/// The handle of the pane that holds the focus in the active tab of the workspace at
+/// `workspace`.
+pub fn focused_pane_id(app: &mut App, workspace: usize) -> String {
+    let id = workspace_ids(app).swap_remove(workspace);
+    let Ok(ResponseResult::WorkspaceInfo { workspace }) =
+        request(app, json!({"type": "workspace.get", "workspace_id": id}))
+    else {
+        panic!("expected the workspace");
+    };
+    exported_layout(app, Some(&workspace.active_tab_id)).focused_pane_id
 }
 
 /// A daemon with one workspace whose first tab holds a pane on the left and one on the right.
