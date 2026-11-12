@@ -4531,7 +4531,6 @@ dependencies = [
  "percent-encoding",
  "rand 0.10.3",
  "regex",
- "regress",
  "reqwest",
  "rustix",
  "rustls",
