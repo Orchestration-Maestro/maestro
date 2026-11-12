@@ -14,13 +14,11 @@ use maestro_extensions::{
 };
 use maestro_models::{Cancellation, Local};
 use maestro_theme::LiveTheme;
-use maestro_tui::candidates::{
-    CompletionError, CompletionOptions, CompletionResult, CursorPosition,
-};
-use maestro_tui::interface::{InputListener, InputListenerResult};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, TUI, TerminalImage,
 };
+use maestro_tui::{CompletionError, CompletionOptions, CompletionResult, CursorPosition};
+use maestro_tui::{InputListener, InputListenerResult};
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// A frame writer over a recording terminal and a manual runtime.

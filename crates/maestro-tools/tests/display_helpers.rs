@@ -10,7 +10,7 @@ use crate::read_support::isolated;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tools::output::render_utils::{normalize_display_text, replace_tabs, str, strip_ansi};
-use maestro_tools::utils::environment::sanitize_binary_output;
+use maestro_tools::utils::sanitize_binary_output;
 use maestro_tui::{TruncateOptions, truncate_to_width, visible_width};
 use serde_json::json;
 

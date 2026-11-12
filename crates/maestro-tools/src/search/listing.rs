@@ -2,11 +2,11 @@
 use crate::output::render_utils::ToolRenderResultLike;
 use crate::{
     output::{
-        limits::{
-            DEFAULT_MAX_BYTES, TruncationOptions, TruncationResult, format_size, truncate_head,
-        },
         render_parts::{expand_hint, float, num, paint, themed},
         render_utils::{TruncationView, get_text_output},
+        truncate::{
+            DEFAULT_MAX_BYTES, TruncationOptions, TruncationResult, format_size, truncate_head,
+        },
     },
     types::{ToolRenderContext, ToolRenderResultOptions},
 };

@@ -1,9 +1,9 @@
 //! The host capability that builds the extension widgets whose look depends on the host.
 use maestro_theme::Theme;
 use maestro_tui::{
-    Cancellation, Component, Container, Editor, EditorOptions, EditorTheme, KeybindingsConfig,
-    KeybindingsManager, Markdown, MarkdownOptions, MarkdownTheme, SelectListTheme,
-    SettingsListTheme, TUI, editor_component::BorderColor, interface::ComponentHandle,
+    Cancellation, Component, ComponentHandle, Container, Editor, EditorOptions, EditorTheme,
+    KeybindingsConfig, KeybindingsManager, Markdown, MarkdownOptions, MarkdownTheme,
+    SelectListTheme, SettingsListTheme, TUI, editor_component::BorderColor,
 };
 
 /// A keybindings manager an extension holds, with the reload of an application manager that

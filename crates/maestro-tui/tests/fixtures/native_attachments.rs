@@ -4,8 +4,8 @@
 use super::attachments;
 use super::completion_native::Tree;
 use maestro_cancellation::Cancellation;
-use maestro_tui::candidates::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider};
+use maestro_tui::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use std::future::Future;
 /// Run real-search assertions with absent or unusable ambient search tools.
 ///

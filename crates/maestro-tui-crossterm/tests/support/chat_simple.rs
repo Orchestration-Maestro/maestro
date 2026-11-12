@@ -19,13 +19,9 @@ mod process_terminal;
 mod unix {
     use super::color::{Color, color, decorate};
     use maestro_tui::{
-        Editor, EditorOptions, Loader, Markdown, MarkdownOptions, MarkdownTheme, TUI,
-        TerminalImage, Text,
-        candidates::{
-            CombinedAutocompleteProvider, Command, NativeAutocompleteOperations, SlashCommand,
-        },
-        interface::{ChildArray, ComponentHandle, InputListenerResult},
-        keys::matches_key,
+        ChildArray, CombinedAutocompleteProvider, Command, ComponentHandle, Editor, EditorOptions,
+        InputListenerResult, Loader, Markdown, MarkdownOptions, MarkdownTheme,
+        NativeAutocompleteOperations, SlashCommand, TUI, TerminalImage, Text, keys::matches_key,
         text::utils::is_whitespace_char,
     };
     use std::{

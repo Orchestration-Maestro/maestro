@@ -10,9 +10,8 @@ mod process_terminal;
 mod unix {
     use base64::{Engine, engine::general_purpose::STANDARD};
     use maestro_tui::{
-        Image, ImageOptions, ImageTheme, Spacer, TUI, TerminalImage, Text,
+        Image, ImageOptions, ImageTheme, InputListenerResult, Spacer, TUI, TerminalImage, Text,
         images::terminal_image::{ImageDimensions, get_image_dimensions},
-        interface::InputListenerResult,
         keys::matches_key,
     };
     use std::{

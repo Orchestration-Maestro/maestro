@@ -5,8 +5,8 @@ use fixtures::completion::{
     ApplicationCase, CommandInput, Expected, FileInput, Files, SuggestionCase, item,
     run_applications, run_suggestions,
 };
-use maestro_tui::candidates::{CursorPosition, DirectoryEntryKind};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
+use maestro_tui::{CursorPosition, DirectoryEntryKind};
 
 #[test]
 fn prefix_classes_select_the_correct_directory() {
@@ -29,11 +29,10 @@ fn native_names_keep_case_quote_and_separator_semantics() {
 }
 
 #[test]
-fn completion_continues_inside_quoted_nested_paths()
--> Result<(), maestro_tui::candidates::CompletionError> {
+fn completion_continues_inside_quoted_nested_paths() -> Result<(), maestro_tui::CompletionError> {
     use fixtures::completion_native::Tree;
     use fixtures::futures::block_on;
-    use maestro_tui::candidates::{CompletionOptions, NativeAutocompleteOperations};
+    use maestro_tui::{CompletionOptions, NativeAutocompleteOperations};
     let tree = Tree::new()?;
     tree.directory("my folder")?;
     tree.file("my folder/test.txt")?;
@@ -85,7 +84,7 @@ fn absolute_candidates_do_not_gain_command_punctuation() {
 
 #[test]
 fn quoted_absolute_suggestions_insert_as_paths() {
-    use maestro_tui::candidates::CompletionOptions;
+    use maestro_tui::CompletionOptions;
     for (input, force) in [("/", Some(true)), ("/a", Some(true)), ("  /a", None)] {
         for (kind, value, label, offset) in [
             (DirectoryEntryKind::Other, "\"/a b\"", "a b", 6),
@@ -136,7 +135,7 @@ fn quoted_absolute_suggestions_insert_as_paths() {
 #[test]
 fn native_completion_preserves_literal_backslash_identity() {
     use fixtures::completion_native::Tree;
-    use maestro_tui::candidates::{CompletionOptions, NativeAutocompleteOperations};
+    use maestro_tui::{CompletionOptions, NativeAutocompleteOperations};
     let tree = Tree::new().expect("temporary directory created");
     tree.file("a\\b").expect("literal backslash file created");
     tree.directory("a").expect("decoy directory created");
@@ -178,16 +177,13 @@ fn native_completion_preserves_literal_backslash_identity() {
 #[test]
 fn direct_path_operations_are_replaceable() {
     use fixtures::completion_native::Tree;
-    use maestro_tui::candidates::{
-        AutocompleteOperations, CompletionOptions, NativeAutocompleteOperations,
-    };
+    use maestro_tui::{AutocompleteOperations, CompletionOptions, NativeAutocompleteOperations};
     /// Run the same generic request using either host adapter.
     fn query<O: AutocompleteOperations<Signal = S>, S: ?Sized>(
         operations: O,
         base: String,
         signal: &S,
-    ) -> Result<maestro_tui::AutocompleteSuggestions, maestro_tui::candidates::CompletionError>
-    {
+    ) -> Result<maestro_tui::AutocompleteSuggestions, maestro_tui::CompletionError> {
         let provider = CombinedAutocompleteProvider::new(vec![], base, None, operations);
         let lines = ["./al".into()];
         Ok(fixtures::futures::block_on(provider.get_suggestions(

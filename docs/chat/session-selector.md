@@ -2,7 +2,7 @@
 
 `maestro-chat` exposes `SessionSelectorComponent`, `SessionSelectorHeader`,
 `SessionList` and their options through the crate root and
-`components::session_picker`. The caller supplies discovery factories,
+`components::session_selector`. The caller supplies discovery factories,
 session records, a live theme and host observations; storage stays caller-owned.
 
 ## Discovery

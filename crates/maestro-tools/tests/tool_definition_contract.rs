@@ -17,10 +17,7 @@ use maestro_tools::{
     ToolRenderResultOptions, ToolRenderShell, create_tool_definition_from_agent_tool, define_tool,
     wrap_tool_definition, wrap_tool_definitions,
 };
-use maestro_tui::{
-    TerminalImage,
-    interface::{Component, ComponentHandle},
-};
+use maestro_tui::{Component, ComponentHandle, TerminalImage};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{

@@ -5,7 +5,7 @@ use maestro_tui::TUI;
 #[cfg(any(unix, windows))]
 use maestro_tui::TerminalImage;
 #[cfg(any(unix, windows))]
-use maestro_tui::interface::{TerminalHandle, TuiRuntime};
+use maestro_tui::{TerminalHandle, TuiRuntime};
 use std::cell::{Cell, RefCell};
 use std::io;
 use std::rc::{Rc, Weak};

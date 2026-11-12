@@ -30,18 +30,18 @@ pub use text::Text;
 pub use truncated_text::TruncatedText;
 
 /// Command-selection component.
-pub mod choices;
-pub use choices::{
+mod select_list;
+pub use select_list::{
     SelectItem, SelectList, SelectListLayoutOptions, SelectListTheme,
     SelectListTruncatePrimaryContext,
 };
 /// Searchable settings component.
-pub mod preferences;
-pub use preferences::{SettingItem, SettingsList, SettingsListTheme};
+mod settings_list;
+pub use settings_list::{SettingItem, SettingsList, SettingsListOptions, SettingsListTheme};
 
 /// Multiline editable terminal text.
-pub mod composer;
-pub use composer::{Editor, EditorOptions, EditorTheme};
+mod editor;
+pub use editor::{Editor, EditorOptions, EditorTheme, TextChunk, word_wrap_line};
 mod cursor;
-pub mod markup;
-pub use markup::{DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TextDecoration};
+mod markdown;
+pub use markdown::{DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TextDecoration};

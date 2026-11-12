@@ -7,10 +7,7 @@ use maestro_path::win32;
 pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
     if operation == "paths.make_temp_dir" {
         let (prefix,): (String,) = decode(data)?;
-        return encode(
-            &maestro_tools::output::accumulation::make_temp_dir(&prefix)
-                .map_err(|error| error.to_string())?,
-        );
+        return encode(&maestro_tools::make_temp_dir(&prefix).map_err(|error| error.to_string())?);
     }
     if operation == "paths.basename" {
         let (path,): (String,) = decode(data)?;

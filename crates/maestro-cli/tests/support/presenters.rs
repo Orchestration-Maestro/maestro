@@ -6,7 +6,7 @@ use maestro_cli::input::selection::SelectorHost;
 use maestro_theme::{
     ThemeDirectories, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
-use maestro_tui::interface::ComponentHandle;
+use maestro_tui::ComponentHandle;
 use maestro_tui::test_support::manual_runtime::ManualRuntime;
 use maestro_tui::test_support::recording_terminal::RecordingTerminal;
 use maestro_tui::{Component, Container, FocusFlag, Focusable, TUI, TerminalImage};

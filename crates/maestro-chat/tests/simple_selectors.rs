@@ -275,7 +275,7 @@ fn message_initial_identity_defaults_to_newest() {
             messages,
             events.select(),
             events.cancel(),
-            maestro_chat::components::history::UserMessageSelectorOptions {
+            maestro_chat::components::UserMessageSelectorOptions {
                 initial_selected_id: query.initial,
                 theme,
                 runtime: runtime.handle(),
@@ -326,7 +326,7 @@ fn message_text_replaces_only_lf_and_trims_defined_whitespace() {
         cases::<TextInput, Rows>("message_text_replaces_only_lf_and_trims_defined_whitespace")
     {
         let (_, theme) = published::published(&colors(0)).unwrap();
-        let records = vec![maestro_chat::components::history::UserMessageItem {
+        let records = vec![maestro_chat::components::UserMessageItem {
             id: "a".into(),
             text: query.text,
             timestamp: None,
@@ -349,7 +349,7 @@ fn message_clipping_preserves_cells_graphemes_and_escape_sequences() {
         cases::<ClipInput, Rows>("message_clipping_preserves_cells_graphemes_and_escape_sequences")
     {
         let (_, theme) = published::published(&colors(0)).unwrap();
-        let records = vec![maestro_chat::components::history::UserMessageItem {
+        let records = vec![maestro_chat::components::UserMessageItem {
             id: "a".into(),
             text: query.text,
             timestamp: None,
@@ -604,7 +604,7 @@ fn empty_message_auto_cancel_uses_one_original_delayed_callback() {
             entries(count),
             events.select(),
             on_cancel,
-            maestro_chat::components::history::UserMessageSelectorOptions {
+            maestro_chat::components::UserMessageSelectorOptions {
                 initial_selected_id: None,
                 theme,
                 runtime: runtime.handle(),
@@ -698,7 +698,7 @@ fn empty_callback_releases_captures() {
         vec![],
         Rc::new(|_| {}),
         callback,
-        maestro_chat::components::history::UserMessageSelectorOptions {
+        maestro_chat::components::UserMessageSelectorOptions {
             initial_selected_id: None,
             theme,
             runtime: runtime.handle(),

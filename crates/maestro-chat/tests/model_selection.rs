@@ -12,10 +12,7 @@ use crate::selector_failure_support;
 use crate::subprocess;
 use maestro_app::{Model, ScopedModel, SettingsManager, SharedHandle};
 use maestro_chat::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
-use maestro_tui::{
-    Component, TUI, TerminalImage,
-    interface::{Focusable, InputHandler},
-};
+use maestro_tui::{Component, Focusable, InputHandler, TUI, TerminalImage};
 use model_selector_support::*;
 use std::{
     cell::RefCell,

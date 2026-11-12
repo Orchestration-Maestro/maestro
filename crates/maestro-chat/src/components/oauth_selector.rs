@@ -3,8 +3,8 @@ use super::dynamic_border::DynamicBorder;
 use maestro_app::{AuthCredential, AuthSource, AuthStatus, AuthStorage};
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
 use maestro_tui::{
-    Component, Container, FocusFlag, Focusable, Input, Spacer, TruncatedText,
-    interface::{InputHandler, TuiRuntime},
+    Component, Container, FocusFlag, Focusable, Input, InputHandler, Spacer, TruncatedText,
+    TuiRuntime,
 };
 use std::{
     cell::{Cell, RefCell},

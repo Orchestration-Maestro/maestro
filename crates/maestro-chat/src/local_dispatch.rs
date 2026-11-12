@@ -2,7 +2,7 @@
 
 use maestro_app::DiagnosticErrorInfo;
 use maestro_lock::lock;
-use maestro_tui::interface::TuiRuntime;
+use maestro_tui::TuiRuntime;
 use std::{
     any::Any,
     cell::RefCell,
@@ -270,7 +270,7 @@ impl<T: Send + 'static> LocalDispatch<T> {
 #[cfg(unix)]
 mod tests {
     use super::{DispatchToken, local_dispatch};
-    use crate::components::session_picker::list::tests::session_picker::manual_runtime::ManualRuntime;
+    use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
     use maestro_app::DiagnosticErrorInfo;
     use maestro_test_process::executor::block_on;
     use std::{

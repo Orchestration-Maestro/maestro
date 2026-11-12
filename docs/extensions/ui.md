@@ -125,7 +125,7 @@ Every UI callback is bound to the extension facade that authored it:
 use maestro_extensions::types::{TerminalInputHandler, UIHostCall};
 use maestro_extensions::ExtensionAPI;
 use maestro_models::Local;
-use maestro_tui::interface::InputListenerResult;
+use maestro_tui::InputListenerResult;
 
 fn bind(api: &ExtensionAPI<Local>) {
     let handler: TerminalInputHandler = api.ui_callback(|data: String, events| {
