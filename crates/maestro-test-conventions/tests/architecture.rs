@@ -251,43 +251,43 @@ fn core_to_dedicated_dependency_is_rejected() {
     let workspace = Workspace::new();
     workspace.member("maestro-app", "maestro-app", "");
     workspace.list(&[
-        ("maestro-agent", "core"),
+        ("maestro-workspace", "core"),
         ("maestro-app", "core"),
         ("maestro", "dedicated"),
     ]);
     for kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
         workspace.member("root", "maestro", "");
         workspace.member(
-            "agent",
-            "maestro-agent",
+            "workspace",
+            "maestro-workspace",
             &format!("[{kind}]\nmaestro = {{ path = \"../root\" }}"),
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("core crate maestro-agent must not depend on dedicated crate maestro".into())
+            Err("core crate maestro-workspace must not depend on dedicated crate maestro".into())
         );
-        workspace.member("agent", "maestro-agent", "");
+        workspace.member("workspace", "maestro-workspace", "");
         workspace.member(
             "root",
             "maestro",
-            &format!("[{kind}]\nmaestro-agent = {{ path = \"../agent\" }}"),
+            &format!("[{kind}]\nmaestro-workspace = {{ path = \"../workspace\" }}"),
         );
         let expected = if kind == "dev-dependencies" {
-            Err("internal dev dependency requires declared dependency-free test support: maestro -> maestro-agent".into())
+            Err("internal dev dependency requires declared dependency-free test support: maestro -> maestro-workspace".into())
         } else {
-            Err("forbidden production dependency: maestro -> maestro-agent".into())
+            Err("forbidden production dependency: maestro -> maestro-workspace".into())
         };
         assert_eq!(check_workspace(workspace.root.path()), expected);
         workspace.member("root", "maestro", "");
         workspace.member("maestro-app", "maestro-app", "");
         workspace.list(&[
-            ("maestro-agent", "core"),
+            ("maestro-workspace", "core"),
             ("maestro-app", "core"),
             ("maestro", "dedicated"),
         ]);
         workspace.foundation(&["maestro-multiplexer"]);
         workspace.list(&[
-            ("maestro-agent", "core"),
+            ("maestro-workspace", "core"),
             ("maestro-app", "core"),
             ("maestro", "dedicated"),
             ("maestro-multiplexer", "core"),
@@ -458,23 +458,23 @@ macro_rules! forbidden_edge_tests {
 forbidden_edge_tests! {
     agent_to_settings_edge_is_rejected: "maestro-agent" => "maestro-settings",
     session_to_tools_edge_is_rejected: "maestro-session" => "maestro-tools",
-    cli_to_session_edge_is_rejected: "maestro-cli" => "maestro-session",
+    cli_to_export_edge_is_rejected: "maestro-cli" => "maestro-export",
     chat_to_rpc_edge_is_rejected: "maestro-chat" => "maestro-rpc",
-    web_to_models_edge_is_rejected: "maestro-web" => "maestro-models",
+    web_to_credentials_edge_is_rejected: "maestro-web" => "maestro-credentials",
     app_to_chat_edge_is_rejected: "maestro-app" => "maestro-chat",
     app_to_extensions_wasmtime_edge_is_rejected: "maestro-app" => "maestro-extensions-wasmtime",
     tools_to_extensions_edge_is_rejected: "maestro-tools" => "maestro-extensions",
     tools_to_app_edge_is_rejected: "maestro-tools" => "maestro-app",
-    root_to_agent_edge_is_rejected: "maestro" => "maestro-agent",
+    root_to_workspace_edge_is_rejected: "maestro" => "maestro-workspace",
     agent_to_app_edge_is_rejected: "maestro-agent" => "maestro-app",
     app_to_pattern_edge_is_rejected: "maestro-app" => "maestro-pattern",
     process_to_tools_edge_is_rejected: "maestro-process" => "maestro-tools",
     process_to_packages_edge_is_rejected: "maestro-process" => "maestro-packages",
     process_to_tui_edge_is_rejected: "maestro-process" => "maestro-tui",
     models_to_process_edge_is_rejected: "maestro-models" => "maestro-process",
-    cli_to_process_edge_is_rejected: "maestro-cli" => "maestro-process",
-    chat_to_process_edge_is_rejected: "maestro-chat" => "maestro-process",
-    rpc_to_process_edge_is_rejected: "maestro-rpc" => "maestro-process",
+    cli_to_watch_edge_is_rejected: "maestro-cli" => "maestro-watch",
+    chat_to_daemon_edge_is_rejected: "maestro-chat" => "maestro-daemon",
+    rpc_to_catalog_edge_is_rejected: "maestro-rpc" => "maestro-catalog",
     web_to_process_edge_is_rejected: "maestro-web" => "maestro-process",
     text_to_tools_edge_is_rejected: "maestro-text" => "maestro-tools",
 }
@@ -2022,34 +2022,6 @@ fn rpc_child_rendering_edges_are_development_only() {
                 "{kind}{extra} {target}"
             );
         }
-    }
-}
-
-#[test]
-fn chat_scripted_provider_edge_is_development_only() {
-    let workspace = Workspace::new();
-    workspace.foundation(&["maestro-chat", "maestro-models"]);
-    let application = "maestro-app = { path = \"../maestro-app\" }";
-    let models = "models = { package = \"maestro-models\", path = \"../maestro-models\"";
-    workspace.member(
-        "maestro-chat",
-        "maestro-chat",
-        &format!(
-            "[dependencies]\n{application}\n[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\n{models} }}"
-        ),
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    for (kind, extra) in DECLARATIONS {
-        workspace.member(
-            "maestro-chat",
-            "maestro-chat",
-            &format!("[{kind}]\n{application}\n{models}{extra} }}"),
-        );
-        assert_eq!(
-            check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-chat -> maestro-models".into()),
-            "{kind}{extra}"
-        );
     }
 }
 

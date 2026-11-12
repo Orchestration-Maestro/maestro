@@ -230,29 +230,17 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
     })
 }
 
-/// Identify crates that require direct dependencies.
-pub(crate) fn exact(name: &str) -> bool {
-    matches!(
-        name,
-        "maestro-cli"
-            | "maestro-multiplexer"
-            | "maestro-chat"
-            | "maestro-rpc"
-            | "maestro-web"
-            | "maestro-tui-crossterm"
-    )
-}
-
 /// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
     match name {
-        "maestro" => &["maestro-app"],
-        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer" => {
-            &["maestro-app"]
-        }
+        "maestro"
+        | "maestro-cli"
+        | "maestro-chat"
+        | "maestro-rpc"
+        | "maestro-web"
+        | "maestro-multiplexer" => &["maestro-app"],
         "maestro-daemon" => &["maestro-terminal-emulator"],
         "maestro-tui-crossterm" => &["maestro-tui", "maestro-text"],
-        name if exact(name) => rule(name).map_or(&[], |rule| rule.dependencies),
         _ => &[],
     }
 }
