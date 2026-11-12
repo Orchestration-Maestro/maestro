@@ -379,6 +379,17 @@ itself still passes,
 as do agent directory paths such as `~/.maestro/agent`, and a local page that never
 ships stays out of the check.
 
+Every name says what the code does, so the library and product words of other projects
+stay out of it. Conventions read each Rust identifier, never a string literal or a comment,
+and each file and directory name that version control tracks under `crates/` and `docs/`.
+A name splits into segments at non-alphanumerics and case changes, and a denied word matches
+when its segments appear in order, ignoring case: `ssf_load`, `SsfLoad` and `ssf-notes.md`
+hold `ssf`, while `successful` and `plugins` hold nothing. A hit names the file, the line and
+the word. `DENIED` in `crates/maestro-test-conventions/src/leaked_words.rs` is the one list to
+edit when a word joins it, and `EXEMPT` beside it holds the names a user, a provider or a
+stored file carries, each with its reason. A row that matches no name is reported, so an
+exemption cannot outlive its need.
+
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
 `timeout`/`timeout_at`, standard `recv_timeout`, `recv_deadline`, `wait_timeout`,
