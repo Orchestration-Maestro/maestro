@@ -36,7 +36,7 @@ use std::{
 use tokio::sync::{Notify, mpsc};
 
 /// Grace period before interpreting a newly identified process's screen.
-pub const AGENT_STARTUP_GRACE_WINDOW: Duration = Duration::from_secs(3);
+pub(crate) const AGENT_STARTUP_GRACE_WINDOW: Duration = Duration::from_secs(3);
 /// Suppression of immediate reacquisition after an explicit agent release.
 const RELEASE_REACQUIRE_SUPPRESSION: Duration = Duration::from_secs(1);
 
@@ -62,7 +62,7 @@ pub struct DetectionControl {
 
 impl DetectionControl {
     /// Resets fallback tracking only when lifecycle authority becomes active.
-    pub fn set_full_lifecycle_authority_active(&self, active: bool) {
+    pub(crate) fn set_full_lifecycle_authority_active(&self, active: bool) {
         let previous = self
             .full_lifecycle_authority_active
             .swap(active, Ordering::AcqRel);
@@ -72,7 +72,7 @@ impl DetectionControl {
     }
 
     /// Requests a fresh foreground identity and screen observation.
-    pub fn reset_agent_detection(&self) {
+    pub(crate) fn reset_agent_detection(&self) {
         self.reset.notify_one();
     }
 
@@ -82,7 +82,7 @@ impl DetectionControl {
     }
 
     /// Temporarily suppresses a released identity and resets fallback tracking.
-    pub fn begin_graceful_release(&self, agent: Agent) {
+    pub(crate) fn begin_graceful_release(&self, agent: Agent) {
         if let Ok(mut pending) = self.pending_release.lock() {
             *pending = Some(PendingAgentRelease {
                 agent,
@@ -114,11 +114,11 @@ pub struct DetectionTaskConfig {
     /// Retained terminal and OSC evidence.
     pub terminal: Arc<PaneTerminal>,
     /// Revision incremented by raw reads and local terminal mutations.
-    pub detection_content_seq: Arc<AtomicU64>,
+    pub(crate) detection_content_seq: Arc<AtomicU64>,
     /// Runtime lifecycle authority and reset requests.
     pub control: Arc<DetectionControl>,
     /// Workspace event queue.
-    pub state_events: mpsc::Sender<AppEvent>,
+    pub(crate) state_events: mpsc::Sender<AppEvent>,
     /// Caller-owned, replaceable compiled detection snapshot.
     pub manifests: Arc<RwLock<ManifestCache>>,
     /// Native foreground observation policy.
@@ -126,7 +126,7 @@ pub struct DetectionTaskConfig {
 }
 
 /// Initial identity and render effects for a newly spawned pane.
-pub struct SpawnedDetection {
+pub(crate) struct SpawnedDetection {
     /// Restored foreground identity, if supplied by the caller.
     pub detected_agent: Option<Agent>,
     /// Coalesced workspace render origins.
@@ -145,7 +145,7 @@ pub fn spawn_basic_detection_task(config: DetectionTaskConfig) -> tokio::task::J
 /// Starts the shared detector with optional spawned-pane scheduling and render effects.
 /// The runtime must abort and join the returned task on teardown.
 #[must_use]
-pub fn spawn_detection_task(
+pub(crate) fn spawn_detection_task(
     config: DetectionTaskConfig,
     spawned: Option<SpawnedDetection>,
 ) -> tokio::task::JoinHandle<()> {

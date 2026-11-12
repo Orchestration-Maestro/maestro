@@ -61,7 +61,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Refreshes the active name while palette construction remains renderer-owned.
-    pub fn refresh_effective_app_theme(&mut self) -> bool {
+    pub(crate) fn refresh_effective_app_theme(&mut self) -> bool {
         let name = self
             .state
             .theme_runtime

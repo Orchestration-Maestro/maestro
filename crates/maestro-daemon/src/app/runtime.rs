@@ -20,7 +20,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 
     /// Drains all queued observations when correctness requires an exhaustive boundary.
-    pub fn drain_all_internal_events(&mut self) -> bool {
+    pub(crate) fn drain_all_internal_events(&mut self) -> bool {
         let mut changed = false;
         loop {
             let (had_event, batch_changed) =

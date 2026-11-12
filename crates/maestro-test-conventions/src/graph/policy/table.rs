@@ -10,7 +10,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-realpath", &["maestro-path"]),
     ("maestro-listeners", &[]),
     ("maestro-protocol", &[]),
-    ("maestro-ipc", &["maestro-lock"]),
     ("maestro-terminal", &["maestro-text", "maestro-realpath"]),
     (
         "maestro-workspace",
@@ -36,7 +35,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-daemon",
         &[
             "maestro-protocol",
-            "maestro-ipc",
             "maestro-process",
             "maestro-terminal",
             "maestro-workspace",

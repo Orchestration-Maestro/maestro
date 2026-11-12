@@ -1,9 +1,9 @@
 # Workspace daemon libraries
 
-`maestro-ipc` uses `interprocess =2.4.2` on Unix with default features disabled and
-its `tokio` feature enabled, for the daemon's asynchronous API socket. The feature adds
-edges to the already-locked `tokio =1.53.3` and `futures-core =0.3.34`, not new
-packages. It uses the Apache-2.0 licence option.
+The daemon's `service::local_socket` module uses `interprocess =2.4.2` on Unix with
+default features disabled and its `tokio` feature enabled, for the daemon's
+asynchronous API socket. The feature adds edges to the already-locked `tokio =1.53.3`
+and `futures-core =0.3.34`, not new packages. It uses the Apache-2.0 licence option.
 It also uses the already-locked `rustix =1.1.6` on Unix with default features
 disabled and `std` and `net` enabled, under the MIT OR Apache-2.0 licence.
 `rustix` supplies the bounded connection attempts and the named native
@@ -13,7 +13,7 @@ the shared native feature unifier already activates it.
 
 The already-locked `socket2 =0.6.5`, with default features disabled, creates
 unconnected Unix streams with close-on-exec protection on every Unix platform,
-including Apple targets. It uses the MIT OR Apache-2.0 licence. The IPC owner
+including Apple targets. It uses the MIT OR Apache-2.0 licence. The socket owner
 retains its absolute-deadline retry loop: a full Unix accept queue must not count
 as a successful connection merely because the descriptor is writable.
 On Apple targets the kernel refuses a connection to a full queue, as it does for a

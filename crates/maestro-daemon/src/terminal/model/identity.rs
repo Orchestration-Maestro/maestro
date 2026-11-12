@@ -78,7 +78,7 @@ impl TerminalState {
 
     /// Clear matching authority and return any effective state change.
     #[cfg(test)]
-    pub fn clear_hook_authority(
+    pub(crate) fn clear_hook_authority(
         &mut self,
         source: Option<&str>,
         seq: Option<u64>,
@@ -202,7 +202,7 @@ impl TerminalState {
 
     /// Select effective hook identity before live detected identity.
     #[must_use]
-    pub fn effective_agent_label(&self) -> Option<&str> {
+    pub(crate) fn effective_agent_label(&self) -> Option<&str> {
         self.hook_authority
             .as_ref()
             .filter(|authority| self.hook_authority_is_effective(authority))
@@ -220,7 +220,7 @@ impl TerminalState {
 
     /// Resolve the effective identity to a catalogue entry when known.
     #[must_use]
-    pub fn effective_known_agent(&self) -> Option<Agent> {
+    pub(crate) fn effective_known_agent(&self) -> Option<Agent> {
         self.effective_agent_label()
             .and_then(maestro_detection::agents::parse_agent_label)
     }

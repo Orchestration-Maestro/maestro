@@ -49,6 +49,6 @@ pub mod monitoring;
 pub mod lifecycle;
 
 #[cfg(target_os = "linux")]
-pub use lifecycle::{
-    AgentDetection, FocusEvent, PaneRuntime, PaneRuntimeConfig, SpawnInitialState,
-};
+pub use lifecycle::SpawnInitialState;
+#[cfg(target_os = "linux")]
+pub use lifecycle::{AgentDetection, FocusEvent, PaneRuntime, PaneRuntimeConfig};

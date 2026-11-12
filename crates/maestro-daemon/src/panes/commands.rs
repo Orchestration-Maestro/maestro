@@ -10,7 +10,7 @@ use std::{
 
 /// Platform selecting shell defaults and login policy.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ShellLaunchTarget {
+pub(crate) enum ShellLaunchTarget {
     /// Windows command-line shells.
     Windows,
     /// macOS defaults to a login shell.
@@ -21,7 +21,7 @@ pub enum ShellLaunchTarget {
 
 /// Select the configured shell, inherited shell, or platform default.
 #[must_use]
-pub fn pane_shell_from(
+pub(crate) fn pane_shell_from(
     configured: &str,
     inherited: Option<&str>,
     target: ShellLaunchTarget,
@@ -62,7 +62,10 @@ impl<'a> PaneShellConfig<'a> {
 
 /// Whether the platform and configuration require a login shell.
 #[must_use]
-pub fn shell_mode_uses_login_shell(mode: ShellModeConfig, target: ShellLaunchTarget) -> bool {
+pub(crate) fn shell_mode_uses_login_shell(
+    mode: ShellModeConfig,
+    target: ShellLaunchTarget,
+) -> bool {
     match mode {
         ShellModeConfig::Auto => target == ShellLaunchTarget::Macos,
         ShellModeConfig::Login => true,
@@ -81,7 +84,10 @@ fn is_executable_file(path: &Path) -> bool {
 ///
 /// # Errors
 /// Returns `NotFound` for a missing or non-executable shell.
-pub fn resolve_shell_for_login_mode(shell: &str, path: Option<&OsStr>) -> io::Result<String> {
+pub(crate) fn resolve_shell_for_login_mode(
+    shell: &str,
+    path: Option<&OsStr>,
+) -> io::Result<String> {
     if shell.contains(std::path::MAIN_SEPARATOR) {
         return is_executable_file(Path::new(shell))
             .then(|| shell.to_owned())
@@ -108,11 +114,11 @@ pub fn resolve_shell_for_login_mode(shell: &str, path: Option<&OsStr>) -> io::Re
 
 /// Wrap the profile prompt before reporting filesystem cwd, preserving its status input.
 /// Single quotes and character codes survive Windows PowerShell argument quoting.
-pub const WINDOWS_POWERSHELL_SHELL_INTEGRATION_COMMAND: &str = r"if ($null -eq $global:__MaestroOriginalPrompt) { $global:__MaestroOriginalPrompt = $function:prompt; function global:prompt { $out = @(& $global:__MaestroOriginalPrompt) -join ' '; $loc = $ExecutionContext.SessionState.Path.CurrentLocation; if ($loc.Provider.Name -eq 'FileSystem') { try { [Environment]::CurrentDirectory = $loc.ProviderPath } catch {}; $esc = [string][char]27; $out += $esc + ']9;9;' + $loc.ProviderPath + $esc + '\' }; $out } }";
+pub(crate) const WINDOWS_POWERSHELL_SHELL_INTEGRATION_COMMAND: &str = r"if ($null -eq $global:__MaestroOriginalPrompt) { $global:__MaestroOriginalPrompt = $function:prompt; function global:prompt { $out = @(& $global:__MaestroOriginalPrompt) -join ' '; $loc = $ExecutionContext.SessionState.Path.CurrentLocation; if ($loc.Provider.Name -eq 'FileSystem') { try { [Environment]::CurrentDirectory = $loc.ProviderPath } catch {}; $esc = [string][char]27; $out += $esc + ']9;9;' + $loc.ProviderPath + $esc + '\' }; $out } }";
 
 /// Whether the direct Windows shell needs prompt-based cwd reporting.
 #[must_use]
-pub fn uses_windows_powershell_pane_shell_for_target(
+pub(crate) fn uses_windows_powershell_pane_shell_for_target(
     config: PaneShellConfig<'_>,
     target: ShellLaunchTarget,
     inherited_shell: Option<&str>,
@@ -135,7 +141,7 @@ pub fn uses_windows_powershell_pane_shell_for_target(
 ///
 /// # Errors
 /// Returns `NotFound` if a configured login shell cannot be resolved.
-pub fn pane_shell_command_builder_for_target(
+pub(crate) fn pane_shell_command_builder_for_target(
     config: PaneShellConfig<'_>,
     target: ShellLaunchTarget,
     environment: impl Fn(&str) -> Option<OsString>,

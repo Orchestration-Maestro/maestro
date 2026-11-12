@@ -8,7 +8,10 @@ use super::{
 impl TerminalState {
     /// Apply a hook report and return any effective presentation change.
     #[cfg(test)]
-    pub fn set_hook_authority(&mut self, report: HookReport) -> Option<EffectiveStateChange> {
+    pub(crate) fn set_hook_authority(
+        &mut self,
+        report: HookReport,
+    ) -> Option<EffectiveStateChange> {
         self.set_hook_authority_at(report, Instant::now())
             .and_then(|mutation| mutation.effective_state_change)
     }

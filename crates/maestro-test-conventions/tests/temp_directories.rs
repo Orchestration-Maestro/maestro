@@ -367,12 +367,6 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         &[5],
     ),
     (
-        "maestro-ipc",
-        "tests/support/mod.rs",
-        "//! Ipc fixtures.\n\n#[test]\nfn a_request_names_its_own_directory() {\n    let root = std::env::temp_dir();\n    assert!(root.is_absolute());\n}\n",
-        &[5],
-    ),
-    (
         "maestro-lock",
         "tests/replacement.rs",
         "//! Replacement fixtures.\n\n#[test]\nfn a_replacement_replaces_the_previous_file() {\n    let path: std::path::PathBuf = std::env::temp_dir().join(\"maestro-replacement\");\n    std::fs::write(&path, b\"x\").unwrap();\n}\n",

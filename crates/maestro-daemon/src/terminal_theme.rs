@@ -89,7 +89,7 @@ impl TerminalTheme {
 
 /// Emit an eight-bit default colour using lower-case two-digit RGB channels.
 #[must_use]
-pub fn osc_set_default_color_sequence(kind: DefaultColorKind, color: RgbColor) -> String {
+pub(crate) fn osc_set_default_color_sequence(kind: DefaultColorKind, color: RgbColor) -> String {
     let command = match kind {
         DefaultColorKind::Foreground => 10,
         DefaultColorKind::Background => 11,
@@ -102,7 +102,7 @@ pub fn osc_set_default_color_sequence(kind: DefaultColorKind, color: RgbColor) -
 
 /// Reset one host default colour using its xterm OSC command.
 #[must_use]
-pub fn osc_reset_default_color_sequence(kind: DefaultColorKind) -> &'static str {
+pub(crate) fn osc_reset_default_color_sequence(kind: DefaultColorKind) -> &'static str {
     match kind {
         DefaultColorKind::Foreground => "\x1b]110\x1b\\",
         DefaultColorKind::Background => "\x1b]111\x1b\\",
