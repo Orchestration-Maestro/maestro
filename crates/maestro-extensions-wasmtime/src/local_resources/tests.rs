@@ -7,6 +7,7 @@ mod lent;
 mod lock;
 mod overlay;
 mod pipes;
+mod provider;
 mod response;
 mod signal;
 mod stream;
