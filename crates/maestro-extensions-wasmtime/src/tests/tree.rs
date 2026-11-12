@@ -66,24 +66,20 @@ fn captured_nodes_outlive_reader_without_rebuilding_history() {
 
 /// Repeated child reads preserve the captured contents even after later history appends.
 fn observe(root: &tree_reads::Endpoint, root_id: &str) {
-    use tree_reads::Request as Read;
-    let entry: Value = serde_json::from_str(&root.read(Read::Entry).unwrap()).unwrap();
+    let entry: Value = serde_json::from_str(&root.entry().unwrap()).unwrap();
     assert_eq!(entry["id"], root_id);
-    assert_eq!(root.read(Read::Label).unwrap().as_deref(), Some("before"));
-    let children = root.read(Read::Children).unwrap();
+    assert_eq!(root.label().unwrap().as_deref(), Some("before"));
+    let children = root.children().unwrap();
     assert_eq!(children.len(), 1);
-    let child_entry: Value = serde_json::from_str(&children[0].read(Read::Entry).unwrap()).unwrap();
+    let child_entry: Value = serde_json::from_str(&children[0].entry().unwrap()).unwrap();
     assert_eq!(child_entry["type"], "label");
     assert_eq!(
-        root.read(Read::LabelTimestamp).unwrap(),
+        root.label_timestamp().unwrap(),
         child_entry["timestamp"].as_str().map(str::to_owned)
     );
-    assert!(children[0].read(Read::Children).unwrap().is_empty());
-    let again = root.read(Read::Children).unwrap();
-    assert_eq!(
-        again[0].read(Read::Entry).unwrap(),
-        children[0].read(Read::Entry).unwrap()
-    );
+    assert!(children[0].children().unwrap().is_empty());
+    let again = root.children().unwrap();
+    assert_eq!(again[0].entry().unwrap(), children[0].entry().unwrap());
 }
 
 #[test]
@@ -110,12 +106,11 @@ fn released_tree_node_rejects_every_kind_of_operation_with_its_ended_text() {
             assert!(pump.answer_next().await);
             drop(release);
             let worker = std::thread::spawn(move || {
-                use tree_reads::Request as Read;
                 [
-                    node.read(Read::Entry).unwrap_err(),
-                    node.read(Read::Label).unwrap_err(),
-                    node.read(Read::LabelTimestamp).unwrap_err(),
-                    node.read(Read::Children).err().unwrap(),
+                    node.entry().unwrap_err(),
+                    node.label().unwrap_err(),
+                    node.label_timestamp().unwrap_err(),
+                    node.children().err().unwrap(),
                 ]
             });
             for _ in 0..4 {

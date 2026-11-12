@@ -56,6 +56,14 @@ held!(
     Capability::Theme(theme) => theme
 );
 
+held!(
+    /// A node of one captured session tree.
+    Node,
+    crate::tree_reads::Owner,
+    "extension tree node resource ended",
+    Capability::Node(node) => node
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,

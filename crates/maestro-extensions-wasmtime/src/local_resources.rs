@@ -167,8 +167,6 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
         Admission,
     ),
-    /// Reads one retained node of an already-built tree.
-    Node(u64, crate::tree_reads::Request),
     /// Sends through the original creating session, even after guarded reads retire.
     Replaced(u64, crate::replaced_reads::Request, Admission),
     /// Retains the replacement's original guarded command view independently.

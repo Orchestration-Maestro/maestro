@@ -26,7 +26,7 @@ pub(crate) fn add_to_linker<T: WasiView + 'static>(
         |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Endpoint>,)| {
             let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
             let result =
-                crate::tree_imports::lower_nodes(&mut store, endpoint.read(Request::Tree))?;
+                crate::tree_imports::lower_nodes(store.data_mut(), endpoint.read(Request::Tree))?;
             Ok((result,))
         },
     )?;

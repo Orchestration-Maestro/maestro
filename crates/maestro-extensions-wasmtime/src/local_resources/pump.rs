@@ -221,7 +221,6 @@ impl State {
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
-            Message::Node(id, request) => self.node(id, request),
             Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
