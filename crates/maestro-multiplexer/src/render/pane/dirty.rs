@@ -65,7 +65,7 @@ fn patch(
     let mut rows = Vec::new();
     let mut symbol = String::new();
     for (y, row) in (0..area_height).zip(view.render_state.rows()) {
-        if !row.dirty() {
+        if !row.is_dirty() {
             continue;
         }
         let mut cells = Vec::with_capacity(width);

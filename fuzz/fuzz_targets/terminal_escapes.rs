@@ -3,7 +3,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use maestro_terminal::Terminal;
+use maestro_terminal_emulator::Terminal;
 use maestro_tui::{StdinBuffer, StdinBufferInput, StdinBufferOptions};
 use std::hint::black_box;
 use std::time::Instant;

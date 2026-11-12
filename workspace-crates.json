@@ -36,7 +36,7 @@
   "maestro-session": "core",
   "maestro-settings": "core",
   "maestro-subagents": "package",
-  "maestro-terminal": "core",
+  "maestro-terminal-emulator": "core",
   "maestro-test-browser": "dedicated",
   "maestro-test-conventions": "dedicated",
   "maestro-test-directory": "dedicated",

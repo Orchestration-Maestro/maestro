@@ -6,7 +6,7 @@ use crate::panes::osc::{
     maybe_filter_primary_screen_scrollback_clear, parse_reported_cwd,
 };
 use maestro_process::jobs::ForegroundJob;
-use maestro_terminal::Mode;
+use maestro_terminal_emulator::Mode;
 use maestro_workspace::tiling::PaneId;
 use std::time::{Duration, Instant};
 use std::{borrow::Cow, cell::LazyCell};
@@ -34,7 +34,7 @@ impl PaneTerminal {
         observe_evidence(&mut core, pane_id, bytes);
         let title_changed = core.agent_osc_state.observe(bytes);
         let alternate_screen =
-            core.terminal.active_screen() == maestro_terminal::screens::Key::Alternate;
+            core.terminal.active_screen() == maestro_terminal_emulator::screens::Key::Alternate;
         let filtered = if shell_pid > 0 {
             let foreground_job = (!alternate_screen && contains_scrollback_clear_sequence(bytes))
                 .then(|| foreground_job.as_ref())
