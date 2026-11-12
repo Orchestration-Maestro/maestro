@@ -27,18 +27,21 @@ pub struct FileAuthStorageBackend {
     remembered: Mutex<Option<(FileIdentity, String)>>,
 }
 
-/// What a replaced or edited credential file changes: its size, modification time and, where
-/// the platform reports one, inode. Publication renames a new file over the old one, so the
-/// inode changes with every write. Two in-place edits of equal size inside one timestamp
-/// tick are indistinguishable, and the second is seen on the read after the next change.
+/// What an edited, replaced or restored credential file changes: its size, modification time
+/// and, where the platform reports them, device, inode and change time. Maestro writes the
+/// file in place, so the inode stays; the change time moves with every write and cannot be set
+/// back, which separates an edit that restores the old modification time. Where the platform
+/// reports no change time, two equal-size edits inside one timestamp tick look the same.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct FileIdentity {
     /// Size in bytes.
     len: u64,
     /// Modification time at the platform's resolution.
     modified: SystemTime,
-    /// Inode number, absent where the platform has none.
-    inode: Option<u64>,
+    /// Device and inode numbers, absent where the platform has none.
+    node: Option<(u64, u64)>,
+    /// Change time as seconds and nanoseconds, absent where the platform has none.
+    changed: Option<(i64, i64)>,
 }
 
 impl FileIdentity {
@@ -46,13 +49,20 @@ impl FileIdentity {
     fn of(path: &Path) -> Option<Self> {
         let metadata = fs::metadata(path).ok()?;
         #[cfg(unix)]
-        let inode = Some(std::os::unix::fs::MetadataExt::ino(&metadata));
+        let (node, changed) = {
+            use std::os::unix::fs::MetadataExt;
+            (
+                Some((metadata.dev(), metadata.ino())),
+                Some((metadata.ctime(), metadata.ctime_nsec())),
+            )
+        };
         #[cfg(not(unix))]
-        let inode = None;
+        let (node, changed) = (None, None);
         Some(Self {
             len: metadata.len(),
             modified: metadata.modified().ok()?,
-            inode,
+            node,
+            changed,
         })
     }
 }

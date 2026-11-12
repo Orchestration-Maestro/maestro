@@ -141,7 +141,8 @@ on the next coordinated acquisition, not on an arbitrary native read.
 Settings and credentials hold one write lock across read, update and replace.
 Writes and reloads keep bounded synchronous acquisition; locked credential refreshes
 use scheduled asynchronous acquisition. Credential rereads use that same schedule
-while blocking the calling thread. See [credentials](credentials.md#file-and-memory-backends).
+while blocking the calling thread. A reread of a credential file whose size,
+modification time, device, inode and change time are unchanged takes no lock. See [credentials](credentials.md#file-and-memory-backends).
 Serialization and scheduling stay with callers; there is no background recovery
 service. Standalone account files, keybinding writes and session rewrites use
 the same publication owner.

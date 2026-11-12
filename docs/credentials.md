@@ -16,10 +16,14 @@ source names; it is not the stored-file writer, which stays with `AuthStorage`.
 
 `AuthStorage` loads stored records when it is created and on `reload`. Every stored
 read (`get`, `get_all`, `list`, `has`, `has_auth`, `get_auth_status` and `get_api_key`)
-rereads the document under exclusion. A successful reread replaces the accepted
-records, even when the text is unchanged, so a long-lived storage follows what
-another process stores or removes. An acquisition, read or parse failure keeps
-the accepted records and records nothing. Missing or empty text is an empty store;
+rereads the document under exclusion. The one exception is a credential file that
+still has the size, modification time, device, inode and change time of the last read:
+the remembered text answers without taking the lock. Every write moves the change time,
+even when it keeps the size or restores the modification time, so a long-lived storage
+still follows what another process stores or removes. A successful reread replaces
+the accepted records, even when the text is unchanged. An acquisition, read or parse
+failure keeps the
+accepted records and records nothing. Missing or empty text is an empty store;
 a non-object JSON value is unparsable.
 
 A reread never clears a recorded load failure. Only a successful `reload` or locked
