@@ -50,6 +50,7 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
     }
     /// Show one event: completed messages leave the stream, updates stream on the next frame.
     fn observe(&self, event: &AgentEvent<BrowserMessages<C>>) {
+        let mut streamed = false;
         let cleared = match event {
             AgentEvent::MessageEnd { .. } => Some(None),
             AgentEvent::AgentEnd { .. } => {
@@ -68,6 +69,7 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
                 self.stream.borrow_mut().is_streaming = streaming;
                 let message = AgentMessage::Assistant(Arc::clone(message));
                 report(self.stream.borrow().set_message(Some(message), !streaming));
+                streamed = true;
                 None
             }
             AgentEvent::TurnStart
@@ -78,7 +80,7 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
         if let Some(message) = cleared {
             report(self.stream.borrow().set_message(message, true));
         }
-        report(self.render());
+        report(self.draw(streamed));
     }
     /// Give the editor this view's send, abort, model and level actions.
     pub(super) fn bind_editor(self: &Rc<Self>) {
