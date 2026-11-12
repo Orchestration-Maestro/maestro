@@ -2,7 +2,6 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support;
 use maestro_daemon::{
     settings::model::Config, state::model::DaemonState, terminal::owners::TerminalRuntimeRegistry,
 };
@@ -10,16 +9,18 @@ use maestro_workspace::spaces::{
     GitSpaceMetadata, GitStatusRefreshDemand, WorkspaceGitStatus, WorktreeSpaceMembership,
 };
 use std::path::PathBuf;
-
 /// Both observations demanded.
 const ALL: GitStatusRefreshDemand = GitStatusRefreshDemand {
     branch: true,
     ahead_behind: true,
 };
-
 /// Retained state with one workspace per name, each rooted at its own directory.
 fn state_with_workspaces(names: &[&str]) -> DaemonState {
-    let mut state = DaemonState::new(&Config::default(), || 0, support::manifest_cache());
+    let mut state = DaemonState::new(
+        &Config::default(),
+        || 0,
+        maestro_daemon::state::test_support::manifest_cache().unwrap(),
+    );
     for name in names {
         state
             .topology
@@ -29,7 +30,6 @@ fn state_with_workspaces(names: &[&str]) -> DaemonState {
     state.admit_seeded_terminals();
     state
 }
-
 /// An observation of workspace `index` for the directory it currently follows.
 fn status(state: &DaemonState, index: usize) -> WorkspaceGitStatus {
     let workspace = &state.topology.workspaces[index];
@@ -44,7 +44,6 @@ fn status(state: &DaemonState, index: usize) -> WorkspaceGitStatus {
         space: None,
     }
 }
-
 #[test]
 fn daemon_apply_workspace_git_statuses_updates_matching_workspace() {
     let mut state = state_with_workspaces(&["one", "two"]);
@@ -68,7 +67,6 @@ fn daemon_apply_workspace_git_statuses_updates_matching_workspace() {
     );
     assert_eq!(state.topology.workspaces[1].git_ahead_behind(), None);
 }
-
 #[test]
 fn daemon_apply_workspace_git_statuses_ignores_stale_cwd() {
     let mut state = state_with_workspaces(&["one"]);
@@ -106,7 +104,6 @@ fn daemon_apply_workspace_git_statuses_ignores_stale_cwd() {
         Some("main")
     );
 }
-
 #[test]
 fn daemon_apply_workspace_git_statuses_ignores_unrequested_branch_changes() {
     let mut state = state_with_workspaces(&["one"]);
@@ -141,7 +138,6 @@ fn daemon_apply_workspace_git_statuses_ignores_unrequested_branch_changes() {
         Some("new")
     );
 }
-
 #[test]
 fn daemon_apply_workspace_git_statuses_clears_missing_git_status() {
     let mut state = state_with_workspaces(&["one"]);
@@ -159,7 +155,6 @@ fn daemon_apply_workspace_git_statuses_clears_missing_git_status() {
     assert_eq!(state.topology.workspaces[0].branch(), None);
     assert_eq!(state.topology.workspaces[0].git_ahead_behind(), None);
 }
-
 #[test]
 fn daemon_apply_workspace_git_statuses_does_not_change_worktree_membership() {
     let mut state = state_with_workspaces(&["one"]);

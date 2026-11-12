@@ -1,14 +1,12 @@
 //! Shared daemon state admission and invariant observations.
 
-pub mod api;
-pub mod layouts;
-pub mod runtime;
-pub mod spawning;
+pub(crate) mod layouts;
+pub(crate) mod live;
 
-use maestro_daemon::state::model::DaemonState;
+use crate::state::model::DaemonState;
 
 /// Check topology identity, focus and metadata membership after each mutation.
-pub fn assert_identity_invariants(state: &DaemonState) {
+pub(crate) fn assert_identity_invariants(state: &DaemonState) {
     use std::collections::HashSet;
     assert_navigation_invariants(state);
     let mut workspaces = HashSet::new();
@@ -58,12 +56,4 @@ fn assert_tab_geometry(tab: &maestro_workspace::tab::Tab) {
         tab.layout.pane_ids().into_iter().collect::<HashSet<_>>(),
         tab.panes.keys().copied().collect()
     );
-}
-
-/// Builds one isolated detection snapshot for state and any pane runtimes under test.
-pub fn manifest_cache()
--> std::sync::Arc<std::sync::RwLock<maestro_detection::definitions::ManifestCache>> {
-    std::sync::Arc::new(std::sync::RwLock::new(
-        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
-    ))
 }

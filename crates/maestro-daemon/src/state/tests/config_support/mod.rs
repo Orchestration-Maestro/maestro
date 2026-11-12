@@ -1,6 +1,6 @@
 //! Controlled settings storage with the real daemon application owner.
 
-use maestro_daemon::{service::event_hub::EventHub, settings::model::Config, state::App};
+use crate::{service::event_hub::EventHub, settings::model::Config, state::App};
 use maestro_settings::{InMemorySettingsStorage, SettingsManager, SettingsScope, SettingsStorage};
 use std::sync::{Arc, RwLock};
 
@@ -16,7 +16,8 @@ pub fn fixture() -> (App, SettingsManager, Arc<InMemorySettingsStorage>) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = crate::support::spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) =
+        crate::state::test_support::spawning::launch_inputs(&[], manifests).unwrap();
     let app = App::new(
         &Config::default(),
         || 0,
@@ -30,4 +31,4 @@ pub fn fixture() -> (App, SettingsManager, Arc<InMemorySettingsStorage>) {
     (app, manager, storage)
 }
 
-pub use crate::support::runtime::block_on;
+pub(crate) use crate::tests::block_on;

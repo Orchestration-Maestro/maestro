@@ -1,11 +1,9 @@
 //! Daemon geometry before the first attached view.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
-use crate::support;
+use crate::state::tests::support;
 use support::assert_identity_invariants;
 
-use maestro_daemon::{settings::model::Config, state::model::DaemonState};
+use crate::{settings::model::Config, state::model::DaemonState};
 use maestro_workspace::tiling::{Borders, PaneId, PaneInfo, Rect};
 
 #[test]
@@ -13,7 +11,11 @@ fn daemon_pane_size_estimate_uses_headless_size_before_first_view() {
     let mut config = Config::default();
     config.server.headless_cols = 132;
     config.server.headless_rows = 41;
-    let mut state = DaemonState::new(&config, || 0, support::manifest_cache());
+    let mut state = DaemonState::new(
+        &config,
+        || 0,
+        crate::state::test_support::manifest_cache().unwrap(),
+    );
     assert_eq!(state.estimate_pane_size(), (41, 132));
     let rect = Rect::new(0, 0, 72, 19);
     state.pane_infos.push(PaneInfo {
@@ -29,7 +31,11 @@ fn daemon_pane_size_estimate_uses_headless_size_before_first_view() {
 
 #[test]
 fn daemon_adversarial_identity_state_satisfies_app_invariants_after_mutation() {
-    let mut state = DaemonState::new(&Config::default(), || 0, support::manifest_cache());
+    let mut state = DaemonState::new(
+        &Config::default(),
+        || 0,
+        crate::state::test_support::manifest_cache().unwrap(),
+    );
     state
         .topology
         .new_with_tab("/workspace".into(), None, |_, _| Ok(()))

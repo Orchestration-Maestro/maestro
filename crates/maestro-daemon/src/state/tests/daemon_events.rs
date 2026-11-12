@@ -1,10 +1,9 @@
 //! Internal event delivery uses live retained terminal runtimes.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
-use crate::support::{self, spawning::launch_inputs};
+use crate::state::test_support::spawning::launch_inputs;
+use crate::state::tests::support;
 
-use maestro_daemon::{
+use crate::{
     events::AppEvent,
     panes::{
         launch::PaneLaunchEnv,
@@ -33,7 +32,7 @@ fn with_live_root(name: &str, delayed: bool) {
     if run_alone(name).unwrap() {
         return;
     }
-    TestProcess::named("daemon_events::setup_entry")
+    TestProcess::named("state::tests::daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -59,7 +58,7 @@ async fn check_live_context(args: &[String], delayed: bool) {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests)).unwrap();
     app.launch = launch;
     app.event_rx = event_rx;
     let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));
@@ -143,13 +142,14 @@ fn context_directories() -> maestro_test_directory::Scratch {
 /// Builds the background workspace without admitting the process's new directory.
 fn context_app(directory: std::path::PathBuf, delayed: bool) -> App {
     let config = Config::default();
-    let (launch, event_rx) = launch_inputs(&[], support::manifest_cache());
+    let (launch, event_rx) =
+        launch_inputs(&[], crate::state::test_support::manifest_cache().unwrap()).unwrap();
     let mut app = App::new(
         &config,
         || 0,
         launch,
         event_rx,
-        maestro_daemon::service::event_hub::EventHub::default(),
+        crate::service::event_hub::EventHub::default(),
     );
     let state = &mut app.state;
     state
@@ -160,7 +160,7 @@ fn context_app(directory: std::path::PathBuf, delayed: bool) -> App {
     state.active = Some(0);
     support::assert_identity_invariants(state);
     state.active = None;
-    state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
+    state.toast_config.delivery = crate::settings::model::ToastDelivery::Workspace;
     state.toast_config.delay_seconds = u64::from(delayed);
     state.sound.enabled = false;
     app
@@ -186,7 +186,7 @@ fn daemon_delayed_workspace_toast_context_uses_live_root_runtime_cwd_label() {
 fn overlay_app(previous_zoomed: bool) -> (App, PaneId, PaneId) {
     let mut app = context_app("/overlay".into(), false);
     app.state.active = Some(0);
-    app.state.mode = maestro_daemon::state::model::Mode::Terminal;
+    app.state.mode = crate::state::model::Mode::Terminal;
     let previous_focus = app.state.topology.workspaces[0].tabs[0].root_pane;
     let pane = app
         .state
@@ -208,7 +208,7 @@ fn overlay_app(previous_zoomed: bool) -> (App, PaneId, PaneId) {
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     app.overlay_panes.insert(
         pane,
-        maestro_daemon::state::OverlayPane {
+        crate::state::OverlayPane {
             ws_idx: 0,
             tab_idx: 0,
             previous_focus,
@@ -307,7 +307,7 @@ fn daemon_process_exit_releases_a_newer_hook_owned_agent() {
     let terminal = app.state.terminals.get_mut(&terminal_id).unwrap();
     terminal
         .set_hook_authority_at(
-            maestro_daemon::terminal::model::HookReport {
+            crate::terminal::model::HookReport {
                 source: "maestro:codex".into(),
                 agent_label: "codex".into(),
                 state: AgentState::Working,
@@ -415,7 +415,7 @@ fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
     if run_alone("daemon_pane_died_respawns_shell_and_clears_restored_agent_session").unwrap() {
         return;
     }
-    TestProcess::named("daemon_events::setup_entry")
+    TestProcess::named("state::tests::daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -433,11 +433,11 @@ fn daemon_pane_died_respawns_shell_and_clears_restored_agent_session() {
 /// A launch-command exit keeps its pane but replaces its process and clears agent ownership.
 async fn check_respawn(args: &[String]) {
     let mut app = context_app(temporary_root(), false);
-    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests));
+    let (launch, event_rx) = launch_inputs(args, Arc::clone(&app.state.manifests)).unwrap();
     app.launch = launch;
     app.event_rx = event_rx;
     app.config.terminal.default_shell = "/bin/sh".into();
-    app.config.terminal.shell_mode = maestro_daemon::settings::model::ShellModeConfig::NonLogin;
+    app.config.terminal.shell_mode = crate::settings::model::ShellModeConfig::NonLogin;
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
     let terminal_id = app.state.topology.workspaces[0]
         .terminal_id(pane)
@@ -446,10 +446,10 @@ async fn check_respawn(args: &[String]) {
     let terminal = app.state.terminals.get_mut(&terminal_id).unwrap();
     terminal.respawn_shell_on_exit = true;
     terminal.set_agent_name("codex".into());
-    terminal.set_persisted_agent_session(maestro_daemon::resume::PersistedAgentSession {
+    terminal.set_persisted_agent_session(crate::resume::PersistedAgentSession {
         source: "maestro:codex".into(),
         agent: "codex".into(),
-        session_ref: maestro_daemon::resume::AgentSessionRef::id("codex-session").unwrap(),
+        session_ref: crate::resume::AgentSessionRef::id("codex-session").unwrap(),
     });
     app.handle_internal_event(AppEvent::PaneDied { pane_id: pane });
     assert!(app.state.find_pane(pane).is_some());
@@ -483,7 +483,7 @@ fn daemon_delayed_terminal_delivery_does_not_refresh_existing_targeted_toast() {
 
 /// Keeps an existing target stable when delivery only targets the external client.
 fn assert_terminal_delivery_keeps_toast(delayed: bool) {
-    use maestro_daemon::state::model::{ToastKind, ToastNotification, ToastTarget};
+    use crate::state::model::{ToastKind, ToastNotification, ToastTarget};
     let mut app = context_app("/__maestro_original__".into(), delayed);
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
     let terminal_id = app.state.topology.workspaces[0]
@@ -492,7 +492,7 @@ fn assert_terminal_delivery_keeps_toast(delayed: bool) {
         .clone();
     let workspace_id = app.state.topology.workspaces[0].id.clone();
     app.state.terminals.get_mut(&terminal_id).unwrap().cwd = "/__maestro_projects__".into();
-    app.state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Terminal;
+    app.state.toast_config.delivery = crate::settings::model::ToastDelivery::Terminal;
     app.handle_internal_event(AppEvent::StateChanged {
         pane_id: pane,
         agent: Some(Agent::Codex),
@@ -567,7 +567,7 @@ async fn assert_shell_identity(app: &App, terminal: &maestro_workspace::terminal
 fn failed_shell_respawn_keeps_normal_pane_exit() {
     let mut app = context_app(temporary_root(), false);
     app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
-    app.config.terminal.shell_mode = maestro_daemon::settings::model::ShellModeConfig::Login;
+    app.config.terminal.shell_mode = crate::settings::model::ShellModeConfig::Login;
     let pane = app.state.topology.workspaces[0].tabs[0].root_pane;
     let terminal_id = app.state.topology.workspaces[0]
         .terminal_id(pane)
@@ -621,8 +621,8 @@ fn daemon_clipboard_feedback_can_be_disabled() {
 #[test]
 fn daemon_clipboard_feedback_does_not_replace_notification_toast() {
     let mut app = context_app(temporary_root(), false);
-    app.state.toast = Some(maestro_daemon::state::model::ToastNotification {
-        kind: maestro_daemon::state::model::ToastKind::NeedsAttention,
+    app.state.toast = Some(crate::state::model::ToastNotification {
+        kind: crate::state::model::ToastKind::NeedsAttention,
         title: "agent needs attention".into(),
         context: "background · 2".into(),
         position: None,
@@ -698,7 +698,7 @@ fn native_workspace_creation_retains_one_runtime_and_rolls_back_spawn_failure() 
     {
         return;
     }
-    TestProcess::named("daemon_events::setup_entry")
+    TestProcess::named("state::tests::daemon_events::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -717,16 +717,16 @@ fn native_workspace_creation_retains_one_runtime_and_rolls_back_spawn_failure() 
 async fn check_workspace_creation(args: &[String]) {
     let mut config = Config::default();
     config.terminal.default_shell = "/bin/sh".into();
-    config.terminal.new_cwd = maestro_daemon::settings::model::NewTerminalCwdConfig::Path(
-        temporary_root().display().to_string(),
-    );
-    let (launch, receiver) = launch_inputs(args, support::manifest_cache());
+    config.terminal.new_cwd =
+        crate::settings::model::NewTerminalCwdConfig::Path(temporary_root().display().to_string());
+    let (launch, receiver) =
+        launch_inputs(args, crate::state::test_support::manifest_cache().unwrap()).unwrap();
     let mut app = App::new(
         &config,
         || 0,
         launch,
         receiver,
-        maestro_daemon::service::event_hub::EventHub::default(),
+        crate::service::event_hub::EventHub::default(),
     );
     assert!(app.ensure_default_workspace());
     assert!(!app.ensure_default_workspace());
@@ -737,7 +737,7 @@ async fn check_workspace_creation(args: &[String]) {
     assert_eq!(app.state.terminals.len(), 1);
     assert_eq!(app.terminal_runtimes.len(), 1);
     assert!(app.terminal_runtimes.get(terminal).is_some());
-    assert_eq!(app.state.mode, maestro_daemon::state::model::Mode::Terminal);
+    assert_eq!(app.state.mode, crate::state::model::Mode::Terminal);
     assert!(app.state.session_dirty);
     app.config.terminal.default_shell = "/missing-maestro-shell-fixture/bin/sh".into();
     app.state.session_dirty = false;
@@ -780,7 +780,7 @@ fn agent_event_publication_keeps_complete_ordered_payloads() {
         .values_mut()
         .next()
         .unwrap()
-        .set_agent_metadata(maestro_daemon::terminal::model::AgentMetadataReport {
+        .set_agent_metadata(crate::terminal::model::AgentMetadataReport {
             source: "test".into(),
             agent_label: Some("codex".into()),
             applies_to_source: None,
