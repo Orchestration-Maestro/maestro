@@ -1,7 +1,7 @@
 //! Scoped files, live publication and lossless public-output observations.
 use super::records::{Frame, Scopes};
 use maestro_app::{ResolvedPaths, SettingsManager};
-use maestro_chat::components::configuration::{
+use maestro_chat::components::{
     ComponentOptions, ConfigSelectorCallbacks, ConfigSelectorComponent, ResourceItem,
 };
 use maestro_theme::{Collator, ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};

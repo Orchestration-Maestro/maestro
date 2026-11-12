@@ -1,7 +1,7 @@
 //! The host widgets an extension builds, over the toolkit and application widgets.
+use super::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
 use super::custom_editor::CustomEditor;
 use super::dynamic_border::DynamicBorder;
-use super::loading::{BorderedLoader, BorderedLoaderOptions};
 use maestro_app::{
     ExtensionEditor, ExtensionKeybindings, ExtensionLoader, ExtensionWidgets, KeybindingsManager,
 };

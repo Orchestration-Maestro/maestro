@@ -4,7 +4,7 @@ use super::{
     protocol::{resolved, scopes},
     records::Scopes,
 };
-use maestro_chat::components::configuration::ComponentOptions;
+use maestro_chat::components::ComponentOptions;
 use maestro_theme::Collator;
 use maestro_tui::{Component, InputHandler};
 use serde_json::json;

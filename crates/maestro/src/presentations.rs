@@ -3,9 +3,8 @@ use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, PresentedSelector,
 };
 use maestro_chat::components::{
-    configuration::{self, ConfigSelectorComponent},
-    extensions::{ExtensionSelectorComponent, ExtensionSelectorOptions},
-    session_picker::{SessionSelectorComponent, SessionSelectorOptions},
+    ComponentOptions, ConfigSelectorComponent, ExtensionSelectorComponent,
+    ExtensionSelectorOptions, SessionSelectorComponent, SessionSelectorOptions,
 };
 use maestro_cli::{
     input::{
@@ -53,7 +52,7 @@ pub fn config(local: Rc<LocalSet>, theme: Rc<ThemeState>) -> ConfigPresentation 
             let component = Rc::new(ConfigSelectorComponent::new(
                 request.resolved_paths,
                 request.settings_manager,
-                configuration::ComponentOptions {
+                ComponentOptions {
                     cwd: request.cwd,
                     agent_dir: request.agent_dir,
                     theme: palette.clone(),

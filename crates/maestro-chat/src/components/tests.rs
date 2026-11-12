@@ -64,7 +64,7 @@ fn shared_home_prefix_stops_at_path_component_boundaries() {
 
 #[test]
 fn shared_summary_display_cleans_emitted_markdown() {
-    use super::history_summary::{SummaryDisplay, SummaryText};
+    use super::branch_summary_message::{SummaryDisplay, SummaryText};
     use maestro_tui::Component;
     use std::rc::Rc;
     let theme = maestro_theme::Theme::new(

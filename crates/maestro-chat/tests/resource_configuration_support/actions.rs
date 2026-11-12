@@ -3,7 +3,7 @@ use super::{
     harness::{Harness, colors, item_value},
     records::{Detached, Mutation, Operation},
 };
-use maestro_chat::components::configuration::ResourceItem;
+use maestro_chat::components::ResourceItem;
 use maestro_tui::{
     Component, Focusable, KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS, set_keybindings,
 };
