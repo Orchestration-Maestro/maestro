@@ -6,7 +6,7 @@ mod path_scurry;
 mod pattern;
 mod processor;
 mod walker;
-use maestro_pattern::{Minimatch, MinimatchOptions, Platform};
+use maestro_pattern::{GlobMatcher, GlobOptions, Platform};
 use std::io;
 /// Expands a positive authored pattern before kind-specific collection.
 pub(super) fn glob_sync(pattern: &str, root: &str) -> io::Result<Vec<String>> {
@@ -17,8 +17,8 @@ pub(super) fn glob_sync(pattern: &str, root: &str) -> io::Result<Vec<String>> {
     } else {
         Platform::Posix
     };
-    let matcher = Minimatch::new(pattern, MinimatchOptions::Filesystem(platform))
-        .map_err(io::Error::other)?;
+    let matcher =
+        GlobMatcher::new(pattern, GlobOptions::Filesystem(platform)).map_err(io::Error::other)?;
     walker::walk(&matcher, root, platform)
 }
 #[cfg(test)]

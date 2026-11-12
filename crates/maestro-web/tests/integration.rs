@@ -27,7 +27,6 @@ mod diff_factory;
 mod document_card_support;
 mod document_tool_cards;
 mod document_tool_cards_browser;
-mod docx_preview_browser;
 mod dom_content_browser;
 mod excel_views;
 mod excel_views_browser;
@@ -85,6 +84,7 @@ mod theme_toggle_browser;
 mod tool_cards;
 mod tool_renderers;
 mod tool_renderers_browser;
+mod word_view_browser;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) use artifact_support::presentation;

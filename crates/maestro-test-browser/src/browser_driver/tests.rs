@@ -257,7 +257,7 @@ const CANVAS_SOURCES: &[&str] = &[
     "code_blocks.rs",
     "markdown_blocks.rs",
     "markdown_blocks_browser.rs",
-    "docx_preview_browser.rs",
+    "word_view_browser.rs",
     "export_markdown.rs",
     "offline_tool_cards.rs",
 ];

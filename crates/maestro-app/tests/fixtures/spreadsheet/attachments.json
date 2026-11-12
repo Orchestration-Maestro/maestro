@@ -6,7 +6,7 @@
       "source": "file",
       "name": "book.XLSX",
       "mime": "text/plain",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -28,7 +28,7 @@
       "source": "file",
       "name": "book.bin",
       "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -50,7 +50,7 @@
       "source": "file",
       "name": "book.xlsx",
       "mime": "application/vnd.example.sheet; kind=1",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -72,7 +72,7 @@
       "source": "file",
       "name": "book.bin",
       "mime": "application/vnd.ms-excel",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -94,7 +94,7 @@
       "source": "file",
       "name": "book.XLS",
       "mime": "image/png",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -115,7 +115,7 @@
     "input": {
       "source": "blob",
       "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -136,7 +136,7 @@
     "input": {
       "source": "buffer",
       "override": "a\"&.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -159,7 +159,7 @@
       "name": "ignore.txt",
       "override": "chosen.xlsx",
       "mime": "image/png",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -181,7 +181,7 @@
       "source": "url",
       "url": "https://example.test/book.bin",
       "mime": "APPLICATION/VND.MS-EXCEL",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "error": "Error: Unsupported file type: APPLICATION/VND.MS-EXCEL",
@@ -198,7 +198,7 @@
       "source": "file",
       "name": "book.bin",
       "mime": "application/vnd.ms-excel; charset=binary",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "error": "Error: Unsupported file type: application/vnd.ms-excel; charset=binary",
@@ -212,7 +212,7 @@
     "input": {
       "source": "buffer",
       "override": "book.xlsx?query",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "error": "Error: Unsupported file type: application/octet-stream",
@@ -227,7 +227,7 @@
       "source": "file",
       "name": "data.xlsx",
       "mime": "",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -270,7 +270,7 @@
       "source": "url",
       "url": "https://example.test/download/book.xlsx",
       "mime": "application/octet-stream",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/basic.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/basic.xlsx"
     },
     "expected": {
       "attachment": {
@@ -293,7 +293,7 @@
     "input": {
       "source": "buffer",
       "override": "formats.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/formats.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/formats.xlsx"
     },
     "expected": {
       "attachment": {
@@ -314,7 +314,7 @@
     "input": {
       "source": "buffer",
       "override": "custom.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/custom.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/custom.xlsx"
     },
     "expected": {
       "attachment": {
@@ -335,7 +335,7 @@
     "input": {
       "source": "buffer",
       "override": "epoch-false.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/epoch-false.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/epoch-false.xlsx"
     },
     "expected": {
       "attachment": {
@@ -356,7 +356,7 @@
     "input": {
       "source": "buffer",
       "override": "epoch-true.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/epoch-true.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/epoch-true.xlsx"
     },
     "expected": {
       "attachment": {
@@ -377,7 +377,7 @@
     "input": {
       "source": "buffer",
       "override": "errors.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/errors.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/errors.xlsx"
     },
     "expected": {
       "attachment": {
@@ -398,7 +398,7 @@
     "input": {
       "source": "buffer",
       "override": "unknown-error.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/unknown-error.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/unknown-error.xlsx"
     },
     "expected": {
       "attachment": {
@@ -419,7 +419,7 @@
     "input": {
       "source": "buffer",
       "override": "merges.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/merges.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/merges.xlsx"
     },
     "expected": {
       "attachment": {
@@ -440,7 +440,7 @@
     "input": {
       "source": "buffer",
       "override": "sparse.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/sparse.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/sparse.xlsx"
     },
     "expected": {
       "attachment": {
@@ -461,7 +461,7 @@
     "input": {
       "source": "buffer",
       "override": "dimension-expanded.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/dimension-expanded.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/dimension-expanded.xlsx"
     },
     "expected": {
       "attachment": {
@@ -482,7 +482,7 @@
     "input": {
       "source": "buffer",
       "override": "blank-default.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/blank-default.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/blank-default.xlsx"
     },
     "expected": {
       "attachment": {
@@ -503,7 +503,7 @@
     "input": {
       "source": "buffer",
       "override": "blank-template.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/blank-template.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/blank-template.xlsx"
     },
     "expected": {
       "attachment": {
@@ -524,7 +524,7 @@
     "input": {
       "source": "buffer",
       "override": "inline-multiline.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/inline-multiline.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/inline-multiline.xlsx"
     },
     "expected": {
       "attachment": {
@@ -545,7 +545,7 @@
     "input": {
       "source": "buffer",
       "override": "formula.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/formula.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/formula.xlsx"
     },
     "expected": {
       "attachment": {
@@ -566,7 +566,7 @@
     "input": {
       "source": "buffer",
       "override": "formula-no-cache.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/formula-no-cache.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/formula-no-cache.xlsx"
     },
     "expected": {
       "attachment": {
@@ -587,7 +587,7 @@
     "input": {
       "source": "buffer",
       "override": "truncated.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/truncated.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/truncated.xlsx"
     },
     "expected": {
       "error": {
@@ -603,7 +603,7 @@
     "input": {
       "source": "buffer",
       "override": "no-styles-part.xlsx",
-      "file": "crates/maestro-app/tests/fixtures/workbooks/no-styles-part.xlsx"
+      "file": "crates/maestro-office/tests/fixtures/workbooks/no-styles-part.xlsx"
     },
     "expected": {
       "error": {

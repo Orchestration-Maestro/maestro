@@ -1,6 +1,6 @@
 //! Strict spreadsheet recordings and complete cell projections.
 #![cfg(test)]
-use maestro_app::browser::ssf::{self, CellObject, CellValue, ExcelDataType};
+use maestro_office::spreadsheet::{self, CellObject, CellValue, ExcelDataType};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
@@ -106,17 +106,17 @@ pub fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/spreadsheet/corpus.json")).unwrap()
 }
 /// Build the recorded worksheet without changing insertion order.
-pub fn worksheet(input: Map<String, Value>) -> ssf::WorkSheet {
+pub fn worksheet(input: Map<String, Value>) -> spreadsheet::WorkSheet {
     let mut cells = indexmap::IndexMap::new();
     let mut range = None;
     for (key, value) in input {
         if key == "!ref" {
-            range = Some(ssf::decode_range(value.as_str().unwrap()).unwrap());
+            range = Some(spreadsheet::decode_range(value.as_str().unwrap()).unwrap());
         } else {
             cells.insert(key, serde_json::from_value::<Cell>(value).unwrap().owned());
         }
     }
-    ssf::WorkSheet {
+    spreadsheet::WorkSheet {
         cells,
         range,
         merges: Vec::new(),

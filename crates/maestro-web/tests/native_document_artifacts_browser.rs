@@ -1,7 +1,7 @@
 //! Word artifact bodies observed through the native document.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, select, view};
-use crate::docx_preview_browser::fetch_bytes;
+use crate::word_view_browser::fetch_bytes;
 use maestro_web::{
     page::{DomContent, DomRoot, DomView},
     tools::documents::docx_artifact::DocxArtifact,

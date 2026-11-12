@@ -1,7 +1,7 @@
 //! Spreadsheet serialization through the public application boundary.
 #![cfg(test)]
 use crate::support;
-use maestro_app::browser::ssf::{self, Ssf};
+use maestro_office::spreadsheet::{self, NumberFormatter};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
 #[cfg(not(target_arch = "wasm32"))]
 use support::spreadsheet_native::{attachments, bytes, workbooks};
@@ -16,7 +16,7 @@ fn csv_suite(name: &str) {
     for case in cases {
         let mut sheet = worksheet(case.input);
         assert_eq!(
-            ssf::sheet_to_csv(&mut sheet, &Ssf::default()),
+            spreadsheet::sheet_to_csv(&mut sheet, &NumberFormatter::default()),
             case.expected.csv,
             "{}",
             case.id
@@ -62,8 +62,9 @@ fn csv_formula_fallback_and_array_suppression() {
 #[test]
 fn workbook_formula_metadata_keeps_cached_and_missing_values() {
     for recording in workbooks() {
-        let mut ssf = Ssf::default();
-        let book = ssf::read(&bytes(&recording.file), "formula.xlsx", &mut ssf).unwrap();
+        let mut formatter = NumberFormatter::default();
+        let book =
+            spreadsheet::read(&bytes(&recording.file), "formula.xlsx", &mut formatter).unwrap();
         assert_eq!(
             book.sheets.keys().collect::<Vec<_>>(),
             recording
@@ -74,7 +75,7 @@ fn workbook_formula_metadata_keeps_cached_and_missing_values() {
         );
         for expected in recording.expected {
             let sheet = book.sheets[&expected.name].as_ref().unwrap();
-            assert_eq!(sheet.range.map(ssf::encode_range), expected.range);
+            assert_eq!(sheet.range.map(spreadsheet::encode_range), expected.range);
             assert!(sheet.merges.is_empty());
             assert_eq!(
                 sheet.cells.keys().collect::<Vec<_>>(),
@@ -92,7 +93,12 @@ fn workbook_formula_metadata_keeps_cached_and_missing_values() {
 
 /// Compare scalar state and metadata not owned by the specialized views.
 #[cfg(not(target_arch = "wasm32"))]
-fn check_metadata(actual: &ssf::CellObject, expected: &ssf::CellObject, name: &str, address: &str) {
+fn check_metadata(
+    actual: &spreadsheet::CellObject,
+    expected: &spreadsheet::CellObject,
+    name: &str,
+    address: &str,
+) {
     assert_eq!(actual.t, expected.t);
     assert_eq!(actual.v, expected.v);
     assert_eq!(actual.w, expected.w);
@@ -108,10 +114,10 @@ fn check_metadata(actual: &ssf::CellObject, expected: &ssf::CellObject, name: &s
 #[cfg(not(target_arch = "wasm32"))]
 fn formula_view(sheet_name: &str, select: impl Fn(&str) -> bool) {
     let recording = workbooks().pop().unwrap();
-    let book = ssf::read(
+    let book = spreadsheet::read(
         &bytes(&recording.file),
         "formulas.xlsx",
-        &mut Ssf::default(),
+        &mut NumberFormatter::default(),
     )
     .unwrap();
     let expected = recording
@@ -241,7 +247,7 @@ fn check_failure(
     id: &str,
 ) {
     use maestro_app::browser::utils::attachments::AttachmentError;
-    use ssf::WorkbookError;
+    use spreadsheet::WorkbookError;
     match id {
         "truncated.xlsx" => assert!(matches!(
             result,
@@ -295,14 +301,14 @@ fn spreadsheet_failures_keep_typed_workbook_sources() {
 fn workbook_written_formula_escapes_decode_once() {
     use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
     let bytes = include_bytes!("fixtures/spreadsheet/formula-escapes.xlsx");
-    let mut format = Ssf::default();
-    let mut book = ssf::read(bytes, "escapes.xlsx", &mut format).unwrap();
+    let mut format = NumberFormatter::default();
+    let mut book = spreadsheet::read(bytes, "escapes.xlsx", &mut format).unwrap();
     let sheet = book.sheets.get_mut("Escapes").unwrap().as_mut().unwrap();
     for (address, expected) in [("A1", "\"a\rb\""), ("B1", "\"a\rb\""), ("C1", "\"a\nb\"")] {
         assert_eq!(sheet.cells[address].f.as_deref(), Some(expected));
     }
     let csv = "7,\"=\"\"a\rb\"\"\",\"=\"\"a\nb\"\"\"";
-    assert_eq!(ssf::sheet_to_csv(sheet, &format), csv);
+    assert_eq!(spreadsheet::sheet_to_csv(sheet, &format), csv);
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
     let attachment = crate::support::run(load_attachment(
         AttachmentSource::File {
@@ -319,10 +325,10 @@ fn workbook_written_formula_escapes_decode_once() {
 
 #[test]
 fn workbook_shared_formulas_preserve_sheet_identifiers() {
-    let book = ssf::read(
+    let book = spreadsheet::read(
         include_bytes!("fixtures/spreadsheet/shared-identifiers.xlsx"),
         "shared.xlsx",
-        &mut Ssf::default(),
+        &mut NumberFormatter::default(),
     )
     .unwrap();
     let sheet = book.sheets["Escapes"].as_ref().unwrap();
@@ -337,10 +343,10 @@ fn workbook_shared_formulas_preserve_sheet_identifiers() {
 
 #[test]
 fn workbook_shared_formulas_preserve_structured_columns() {
-    let book = ssf::read(
+    let book = spreadsheet::read(
         include_bytes!("fixtures/spreadsheet/shared-identifiers.xlsx"),
         "shared.xlsx",
-        &mut Ssf::default(),
+        &mut NumberFormatter::default(),
     )
     .unwrap();
     let sheet = book.sheets["Escapes"].as_ref().unwrap();
@@ -355,8 +361,8 @@ fn workbook_shared_formulas_preserve_structured_columns() {
 
 /// Check retained formulas and their uncached CSV replay through the reader boundary.
 fn unicode_shared_formula(sheet_name: &str, anchor: &str, follower: &str) {
-    let mut format = Ssf::default();
-    let mut book = ssf::read(
+    let mut format = NumberFormatter::default();
+    let mut book = spreadsheet::read(
         include_bytes!("fixtures/spreadsheet/shared-unicode.xlsx"),
         "unicode.xlsx",
         &mut format,
@@ -366,7 +372,7 @@ fn unicode_shared_formula(sheet_name: &str, anchor: &str, follower: &str) {
     assert_eq!(sheet.cells["B1"].f.as_deref(), Some(anchor));
     assert_eq!(sheet.cells["B2"].f.as_deref(), Some(follower));
     assert_eq!(
-        ssf::sheet_to_csv(sheet, &format),
+        spreadsheet::sheet_to_csv(sheet, &format),
         format!("7,={anchor}\n,={follower}")
     );
 }
@@ -398,12 +404,12 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
         expected: String,
     }
     let cases: Vec<Case> = serde_json::from_str(include_str!(
-        "fixtures/ssf/legacy_metadata_attachments.json"
+        "fixtures/spreadsheet/legacy_metadata_attachments.json"
     ))
     .unwrap();
     let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
     for case in cases {
-        let bytes = crate::workbook_fixture::bytes(&format!("metadata-{}", case.file));
+        let bytes = office_workbook(&format!("metadata-{}", case.file));
         let attachment = crate::support::run(load_attachment(
             AttachmentSource::File {
                 bytes: &bytes,
@@ -427,12 +433,12 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
             Some(case.expected.as_str())
         );
         // The complete wrapper preserves both cache text and sheet ordering.
-        let mut ssf = Ssf::default();
-        let mut book = ssf::read(&bytes, &case.file, &mut ssf).unwrap();
+        let mut formatter = NumberFormatter::default();
+        let mut book = spreadsheet::read(&bytes, &case.file, &mut formatter).unwrap();
         for sheet in book.sheets.values_mut() {
             let sheet = sheet.as_mut().unwrap();
             let before = sheet.cells.clone();
-            let csv = ssf::sheet_to_csv(sheet, &ssf);
+            let csv = spreadsheet::sheet_to_csv(sheet, &formatter);
             assert!(case.expected.contains(&csv));
             assert_eq!(sheet.cells, before);
         }
@@ -492,7 +498,7 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
             "<excel filename=\"mixed-empty-valid.xlsx\">\n<sheet name=\"Data\" index=\"1\">\n\n</sheet>\n<sheet name=\"Good\" index=\"2\">\n\n</sheet>\n</excel>",
         ),
     ] {
-        let bytes = crate::workbook_fixture::bytes(file);
+        let bytes = office_workbook(file);
         let result = extract_workbook(&bytes, file).unwrap();
         assert_eq!(result.extracted_text.as_deref(), Some(expected));
         assert_eq!(
@@ -502,7 +508,7 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
             bytes
         );
     }
-    let bytes = crate::workbook_fixture::bytes("all-corrupt-two.xlsx");
+    let bytes = office_workbook("all-corrupt-two.xlsx");
     let error = extract_workbook(&bytes, "all-corrupt-two.xlsx").unwrap_err();
     assert_eq!(
         error.to_string(),
@@ -514,8 +520,8 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_extracted_output_past_the_bound_fails() {
-    use maestro_app::browser::ssf::WorkbookError;
     use maestro_app::browser::utils::attachments::AttachmentError;
+    use maestro_office::spreadsheet::WorkbookError;
     use std::io::{Cursor, Write};
 
     let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
@@ -562,4 +568,12 @@ fn spreadsheet_extracted_output_past_the_bound_fails() {
         !matches!(error, AttachmentError::Excel(WorkbookError::Reader(_))),
         "output overflow was classified as a value-reader failure"
     );
+}
+
+/// Bytes of a workbook recorded beside the office readers.
+#[cfg(not(target_arch = "wasm32"))]
+fn office_workbook(file: &str) -> Vec<u8> {
+    bytes(&format!(
+        "crates/maestro-office/tests/fixtures/workbooks/{file}"
+    ))
 }
