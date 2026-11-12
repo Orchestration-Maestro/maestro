@@ -248,3 +248,14 @@ fn released_subscription_rejects_with_its_ended_text() {
     });
     assert_eq!(errors, ["extension subscription resource ended"]);
 }
+
+#[test]
+fn released_custom_close_rejects_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let close = pump.registry().custom_close(Rc::new(|| Ok(true))).unwrap();
+    let lease = close.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [close.close().result().unwrap_err()]
+    });
+    assert_eq!(errors, ["extension custom close resource ended"]);
+}
