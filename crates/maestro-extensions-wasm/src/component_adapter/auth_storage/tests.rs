@@ -117,7 +117,7 @@ async fn backend_outcome(
     let expected_calls = usize::from(backend_error != "acquisition failed");
     assert_eq!(backend.calls.get(), expected_calls);
     assert_eq!(
-        host.observe().readers.acquire()?.queries().len(),
+        host.observe().readers.acquire()?.queries(),
         1 + expected_calls
     );
     identity.settle(true);

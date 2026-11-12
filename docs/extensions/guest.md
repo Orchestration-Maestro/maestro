@@ -804,6 +804,7 @@ both hosts with the probe handler. `src/tests/session_events.rs` and
 
 ### A greeting tool
 
+The examples live in maestro-packages.
 [`examples/extensions/hello.rs`](../../examples/extensions/hello.rs) is the
 shipped greeting extension: it registers one `hello` tool whose schema requires
 the string member `name`, and answers with `Hello, <name>!` while returning the
