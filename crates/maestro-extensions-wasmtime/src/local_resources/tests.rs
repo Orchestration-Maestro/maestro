@@ -5,6 +5,7 @@ mod component;
 mod keys;
 mod lent;
 mod lock;
+mod oauth;
 mod overlay;
 mod pipes;
 mod provider;
