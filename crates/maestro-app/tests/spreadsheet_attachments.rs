@@ -1,7 +1,7 @@
 //! Spreadsheet serialization through the public application boundary.
 #![cfg(test)]
 use crate::support;
-use maestro_office::spreadsheet::{self, Ssf};
+use maestro_office::spreadsheet::{self, NumberFormatter};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
 #[cfg(not(target_arch = "wasm32"))]
 use support::spreadsheet_native::{attachments, bytes, workbooks};
@@ -16,7 +16,7 @@ fn csv_suite(name: &str) {
     for case in cases {
         let mut sheet = worksheet(case.input);
         assert_eq!(
-            spreadsheet::sheet_to_csv(&mut sheet, &Ssf::default()),
+            spreadsheet::sheet_to_csv(&mut sheet, &NumberFormatter::default()),
             case.expected.csv,
             "{}",
             case.id
@@ -62,8 +62,9 @@ fn csv_formula_fallback_and_array_suppression() {
 #[test]
 fn workbook_formula_metadata_keeps_cached_and_missing_values() {
     for recording in workbooks() {
-        let mut ssf = Ssf::default();
-        let book = spreadsheet::read(&bytes(&recording.file), "formula.xlsx", &mut ssf).unwrap();
+        let mut formatter = NumberFormatter::default();
+        let book =
+            spreadsheet::read(&bytes(&recording.file), "formula.xlsx", &mut formatter).unwrap();
         assert_eq!(
             book.sheets.keys().collect::<Vec<_>>(),
             recording
@@ -116,7 +117,7 @@ fn formula_view(sheet_name: &str, select: impl Fn(&str) -> bool) {
     let book = spreadsheet::read(
         &bytes(&recording.file),
         "formulas.xlsx",
-        &mut Ssf::default(),
+        &mut NumberFormatter::default(),
     )
     .unwrap();
     let expected = recording
@@ -300,7 +301,7 @@ fn spreadsheet_failures_keep_typed_workbook_sources() {
 fn workbook_written_formula_escapes_decode_once() {
     use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
     let bytes = include_bytes!("fixtures/spreadsheet/formula-escapes.xlsx");
-    let mut format = Ssf::default();
+    let mut format = NumberFormatter::default();
     let mut book = spreadsheet::read(bytes, "escapes.xlsx", &mut format).unwrap();
     let sheet = book.sheets.get_mut("Escapes").unwrap().as_mut().unwrap();
     for (address, expected) in [("A1", "\"a\rb\""), ("B1", "\"a\rb\""), ("C1", "\"a\nb\"")] {
@@ -327,7 +328,7 @@ fn workbook_shared_formulas_preserve_sheet_identifiers() {
     let book = spreadsheet::read(
         include_bytes!("fixtures/spreadsheet/shared-identifiers.xlsx"),
         "shared.xlsx",
-        &mut Ssf::default(),
+        &mut NumberFormatter::default(),
     )
     .unwrap();
     let sheet = book.sheets["Escapes"].as_ref().unwrap();
@@ -345,7 +346,7 @@ fn workbook_shared_formulas_preserve_structured_columns() {
     let book = spreadsheet::read(
         include_bytes!("fixtures/spreadsheet/shared-identifiers.xlsx"),
         "shared.xlsx",
-        &mut Ssf::default(),
+        &mut NumberFormatter::default(),
     )
     .unwrap();
     let sheet = book.sheets["Escapes"].as_ref().unwrap();
@@ -360,7 +361,7 @@ fn workbook_shared_formulas_preserve_structured_columns() {
 
 /// Check retained formulas and their uncached CSV replay through the reader boundary.
 fn unicode_shared_formula(sheet_name: &str, anchor: &str, follower: &str) {
-    let mut format = Ssf::default();
+    let mut format = NumberFormatter::default();
     let mut book = spreadsheet::read(
         include_bytes!("fixtures/spreadsheet/shared-unicode.xlsx"),
         "unicode.xlsx",
@@ -432,12 +433,12 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
             Some(case.expected.as_str())
         );
         // The complete wrapper preserves both cache text and sheet ordering.
-        let mut ssf = Ssf::default();
-        let mut book = spreadsheet::read(&bytes, &case.file, &mut ssf).unwrap();
+        let mut formatter = NumberFormatter::default();
+        let mut book = spreadsheet::read(&bytes, &case.file, &mut formatter).unwrap();
         for sheet in book.sheets.values_mut() {
             let sheet = sheet.as_mut().unwrap();
             let before = sheet.cells.clone();
-            let csv = spreadsheet::sheet_to_csv(sheet, &ssf);
+            let csv = spreadsheet::sheet_to_csv(sheet, &formatter);
             assert!(case.expected.contains(&csv));
             assert_eq!(sheet.cells, before);
         }

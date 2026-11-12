@@ -35,11 +35,11 @@ pub struct FormatOptions<'a> {
 }
 /// Caller-owned spreadsheet formatting namespace.
 #[derive(Debug)]
-pub struct Ssf {
+pub struct NumberFormatter {
     /// Current table slot.
     pub(super) table: FormatTable,
 }
-impl Default for Ssf {
+impl Default for NumberFormatter {
     fn default() -> Self {
         let mut table = BTreeMap::new();
         super::init_table(&mut table);
@@ -48,7 +48,7 @@ impl Default for Ssf {
         }
     }
 }
-impl Ssf {
+impl NumberFormatter {
     /// Retain the live current table, independently of later reads.
     #[must_use]
     pub fn get_table(&self) -> FormatTable {

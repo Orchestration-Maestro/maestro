@@ -2,11 +2,11 @@
 
 `maestro-packages` re-exports the same operation and `PatternError` type.
 
-`maestro_pattern::minimatch(path, pattern)` evaluates a file pattern without
+`maestro_pattern::matches_glob(path, pattern)` evaluates a file pattern without
 filesystem access.
 
-`maestro_pattern::minimatch_with_nocase(path, pattern, nocase)` is the same
-operation with an explicit case mode; `minimatch` is `nocase = false`. With
+`maestro_pattern::matches_glob_with_nocase(path, pattern, nocase)` is the same
+operation with an explicit case mode; `matches_glob` is `nocase = false`. With
 `nocase = true`, literal and magic components compare case-insensitively, while
 pattern syntax (escapes, named class names, brackets) is never rewritten. Under
 Windows framing a nonmagic UNC server/share prefix and a drive-relative prefix
@@ -115,7 +115,7 @@ syntax follows ordinary bracket parsing.
 
 ## Filesystem expansion policy
 
-`maestro_pattern::Minimatch::new` with `MinimatchOptions::Filesystem` prepares
+`maestro_pattern::GlobMatcher::new` with `GlobOptions::Filesystem` prepares
 ordered component alternatives without I/O. `set()` borrows literal operands,
 recursive wildcards and compiled component predicates; `glob_parts()` borrows
 aligned authored components. Package manifests select this policy separately

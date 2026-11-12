@@ -18,7 +18,7 @@ pub use sheet_to_csv::sheet_to_csv;
 pub use workbook::{WorkBook, WorkSheet, WorkbookError};
 mod format;
 mod format_cell;
-pub use format::{FormatOptions, FormatTable, NumberFormat, Ssf};
+pub use format::{FormatOptions, FormatTable, NumberFormat, NumberFormatter};
 pub use format_cell::{
     CellFormatOptions, CellObject, CellValue, ExcelDataType, Hyperlink, Xf, format_cell,
 };

@@ -2,7 +2,7 @@
 #![cfg(test)]
 use crate::workbook_fixture::Bounds;
 use maestro_office::spreadsheet::{
-    self, CellFormatOptions, CellValue, ExcelDataType, Ssf, WorkbookError,
+    self, CellFormatOptions, CellValue, ExcelDataType, NumberFormatter, WorkbookError,
 };
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -19,7 +19,7 @@ struct Case {
 struct Record {
     file: String,
     date1904: bool,
-    ssf: Vec<(u32, String)>,
+    formats: Vec<(u32, String)>,
 }
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -84,8 +84,12 @@ fn check(file: &str) {
     let case: Case =
         serde_json::from_slice(&std::fs::read(path.join(format!("{file}.json"))).unwrap()).unwrap();
     assert_eq!(case.file, file);
-    let mut ssf = Ssf::default();
-    let result = spreadsheet::read(&std::fs::read(path.join(file)).unwrap(), file, &mut ssf);
+    let mut formatter = NumberFormatter::default();
+    let result = spreadsheet::read(
+        &std::fs::read(path.join(file)).unwrap(),
+        file,
+        &mut formatter,
+    );
     match case.expected {
         Outcome::Error { error } => {
             let error_value = result.unwrap_err();
@@ -93,7 +97,9 @@ fn check(file: &str) {
             check_error(&error, &error_value);
             assert!(case.record.is_none());
         }
-        Outcome::Ok { ok } => check_book(result.unwrap(), case.record.unwrap(), ok, file, &ssf),
+        Outcome::Ok { ok } => {
+            check_book(result.unwrap(), case.record.unwrap(), ok, file, &formatter);
+        }
     }
 }
 fn check_book(
@@ -101,12 +107,15 @@ fn check_book(
     record: Record,
     ok: Expected,
     file: &str,
-    ssf: &Ssf,
+    formatter: &NumberFormatter,
 ) {
     assert_eq!(record.file, file);
     assert_eq!(book.date1904, record.date1904);
-    assert_eq!(book.ssf, record.ssf.into_iter().collect::<BTreeMap<_, _>>());
-    assert_eq!(*ssf.get_table().read().unwrap(), book.ssf);
+    assert_eq!(
+        book.formats,
+        record.formats.into_iter().collect::<BTreeMap<_, _>>()
+    );
+    assert_eq!(*formatter.get_table().read().unwrap(), book.formats);
     assert_eq!(
         book.sheets.keys().collect::<Vec<_>>(),
         ok.sheets.iter().map(|s| &s.name).collect::<Vec<_>>()
@@ -139,13 +148,13 @@ fn check_book(
             check_cell(
                 sheet.cells.get_mut(&expected.address).unwrap(),
                 &expected,
-                ssf,
+                formatter,
             );
         }
     }
 }
 
-fn check_cell(cell: &mut spreadsheet::CellObject, expected: &Cell, ssf: &Ssf) {
+fn check_cell(cell: &mut spreadsheet::CellObject, expected: &Cell, formatter: &NumberFormatter) {
     let kind = match cell.t.unwrap() {
         ExcelDataType::Number => "n",
         ExcelDataType::Text => "s",
@@ -160,7 +169,7 @@ fn check_cell(cell: &mut spreadsheet::CellObject, expected: &Cell, ssf: &Ssf) {
     assert_eq!(cell.f, expected.f);
     assert_eq!(cell.array_formula, expected.array_formula);
     assert_scalar(
-        &spreadsheet::format_cell(Some(cell), None, &CellFormatOptions::default(), ssf),
+        &spreadsheet::format_cell(Some(cell), None, &CellFormatOptions::default(), formatter),
         &expected.text.scalar(),
     );
     assert_eq!(cell.w, expected.w_after_format);
@@ -328,11 +337,11 @@ fn assert_scalar(actual: &CellValue, expected: &CellValue) {
 #[test]
 fn workbook_numeric_values_follow_decimal_prefix_rules() {
     check("numeric-prefixes.xlsx");
-    let mut ssf = Ssf::default();
+    let mut formatter = NumberFormatter::default();
     let book = spreadsheet::read(
         &legacy_workbook_support::bytes("numeric-prefixes.xlsx"),
         "numeric-prefixes.xlsx",
-        &mut ssf,
+        &mut formatter,
     )
     .unwrap();
     let CellValue::Number(number) = book.sheets["Data"].as_ref().unwrap().cells["B1"].v else {
@@ -379,10 +388,10 @@ fn check_error(error: &Error, error_value: &WorkbookError) {
 /// Read a qualified byte fixture through the public workbook boundary.
 fn partial_book(file: &str) -> Result<spreadsheet::WorkBook, WorkbookError> {
     let bytes = crate::workbook_fixture::bytes(file);
-    let mut ssf = Ssf::default();
-    let book = spreadsheet::read(&bytes, file, &mut ssf)?;
+    let mut formatter = NumberFormatter::default();
+    let book = spreadsheet::read(&bytes, file, &mut formatter)?;
     assert!(!book.date1904);
-    assert_eq!(*ssf.get_table().read().unwrap(), book.ssf);
+    assert_eq!(*formatter.get_table().read().unwrap(), book.formats);
     Ok(book)
 }
 #[test]
@@ -485,7 +494,7 @@ fn workbook_many_sheet_results_keep_input_order() {
         }
     }
     let bytes = include_bytes!("fixtures/spreadsheet/operand-grammar.xlsx");
-    let book = spreadsheet::read(bytes, "largest.xlsx", &mut Ssf::default()).unwrap();
+    let book = spreadsheet::read(bytes, "largest.xlsx", &mut NumberFormatter::default()).unwrap();
     assert_eq!(book.sheets.len(), 433);
     assert!(book.sheets.values().all(Result::is_ok));
 }

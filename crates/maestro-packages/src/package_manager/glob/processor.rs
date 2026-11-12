@@ -3,7 +3,7 @@ use super::{
     path_scurry::{Children, comparison_key},
     pattern::Pattern,
 };
-use maestro_pattern::{Minimatch, ParseReturnFiltered};
+use maestro_pattern::{GlobMatcher, ParseReturnFiltered};
 use maestro_resources::catalog::ResourceFileType;
 use std::{
     collections::{HashMap, HashSet},
@@ -214,7 +214,7 @@ impl Processor {
 /// Per-expansion suffix state and filesystem port.
 pub(super) struct Context<'a> {
     /// One shared compiled matcher.
-    pub(super) matcher: &'a Minimatch,
+    pub(super) matcher: &'a GlobMatcher,
     /// Whether native child comparisons ignore case.
     pub(super) nocase: bool,
     /// Supplied filesystem effects.

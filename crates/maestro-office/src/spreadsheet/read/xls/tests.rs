@@ -99,7 +99,12 @@ fn string_record_requires_a_pending_formula_string() {
         .collect();
     assert_eq!(positions.len(), 1);
     data[positions[0] + 10] = 3;
-    let error = super::read(&data, "orphan-string.xls", &super::Ssf::default()).unwrap_err();
+    let error = super::read(
+        &data,
+        "orphan-string.xls",
+        &super::NumberFormatter::default(),
+    )
+    .unwrap_err();
     assert!(matches!(error, super::WorkbookError::Reader(_)));
     assert!(error.to_string().starts_with("orphan-string.xls:"));
 }
@@ -199,7 +204,7 @@ fn legacy_metadata_work_tracks_tokens_templates_and_link_cells() {
                     .join(&file),
             )
             .unwrap();
-            let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+            let book = super::read(&bytes, &file, &super::NumberFormatter::default()).unwrap();
             let sheet = book.sheets["Data"].as_ref().unwrap();
             let work = [
                 TOKEN_WORK.get(),
@@ -313,7 +318,7 @@ fn formula_assembly_writes_linear_bytes_for_every_composition() {
             )
             .unwrap();
             ASSEMBLY_WORK.set(0);
-            let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+            let book = super::read(&bytes, &file, &super::NumberFormatter::default()).unwrap();
             let expression = book.sheets["Data"].as_ref().unwrap().cells["A1"]
                 .f
                 .as_deref()
@@ -478,7 +483,7 @@ fn measured_range_formula(kind: &str, size: usize) -> String {
     .unwrap();
     ASSEMBLY_WORK.set(0);
     ASSEMBLY_SCAN.set(0);
-    let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+    let book = super::read(&bytes, &file, &super::NumberFormatter::default()).unwrap();
     let actual = book.sheets["Data"].as_ref().unwrap().cells["A1"]
         .f
         .clone()

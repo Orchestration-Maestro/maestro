@@ -560,8 +560,8 @@ pub fn excel_mixed_sheet_roots_keep_selection_and_release_on_rewrite() {
 /// Keep quoted number-format attributes on the native table.
 fn literal_number_format() {
     use maestro_office::spreadsheet::{
-        CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf, WorkSheet,
-        sheet_to_html,
+        CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, NumberFormatter, Range,
+        WorkSheet, sheet_to_html,
     };
     let mut sheet = WorkSheet {
         cells: [(
@@ -588,7 +588,11 @@ fn literal_number_format() {
     };
     let document = web_sys::window().unwrap().document().unwrap();
     let container = document.create_element("div").unwrap();
-    container.set_inner_html(&sheet_to_html(&mut sheet, "literal", &Ssf::default()));
+    container.set_inner_html(&sheet_to_html(
+        &mut sheet,
+        "literal",
+        &NumberFormatter::default(),
+    ));
     assert_eq!(
         container
             .query_selector("td")

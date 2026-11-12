@@ -1,14 +1,14 @@
 //! Public spreadsheet state and coordinate behavior.
 #![cfg(test)]
 use maestro_office::spreadsheet::{
-    CellFormatOptions, CellObject, CellValue, ExcelDataType, Ssf, format_cell,
+    CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormatter, format_cell,
 };
 
 #[test]
-fn ssf_reader_table_alias() {
-    let ssf = Ssf::default();
-    let table = ssf.get_table();
-    assert!(std::sync::Arc::ptr_eq(&table, &ssf.get_table()));
+fn formatter_reader_table_alias() {
+    let formatter = NumberFormatter::default();
+    let table = formatter.get_table();
+    assert!(std::sync::Arc::ptr_eq(&table, &formatter.get_table()));
     table.write().unwrap().insert(0, "0.000".into());
     let mut cell = CellObject {
         f: None,
@@ -19,7 +19,12 @@ fn ssf_reader_table_alias() {
         ..Default::default()
     };
     assert_eq!(
-        format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf),
+        format_cell(
+            Some(&mut cell),
+            None,
+            &CellFormatOptions::default(),
+            &formatter
+        ),
         CellValue::Text("1.250".into())
     );
     assert_eq!(cell.w.as_deref(), Some("1.250"));
@@ -98,15 +103,15 @@ fn assert_value(actual: &CellValue, expected: &CellValue) {
     }
 }
 #[test]
-fn ssf_default_cell_states() {
+fn formatter_default_cell_states() {
     let cases: Vec<DefaultCase> = serde_json::from_str(include_str!(
         "fixtures/spreadsheet_formatting/default-cells.json"
     ))
     .unwrap();
     for case in cases {
-        let ssf = Ssf::default();
+        let formatter = NumberFormatter::default();
         if let Some(code) = case.args.default_code {
-            ssf.get_table().write().unwrap().insert(0, code);
+            formatter.get_table().write().unwrap().insert(0, code);
         }
         let mut cell = case.args.cell.map(|c| CellObject {
             f: None,
@@ -116,7 +121,12 @@ fn ssf_default_cell_states() {
             w: c.w,
             ..Default::default()
         });
-        let text = format_cell(cell.as_mut(), None, &CellFormatOptions::default(), &ssf);
+        let text = format_cell(
+            cell.as_mut(),
+            None,
+            &CellFormatOptions::default(),
+            &formatter,
+        );
         let expected = match case.expected.text {
             DefaultText::Text(s) => CellValue::Text(s),
             DefaultText::Number(n) => CellValue::Number(n),
@@ -135,7 +145,7 @@ fn ssf_default_cell_states() {
 }
 
 #[test]
-fn ssf_address_roundtrip() {
+fn formatter_address_roundtrip() {
     use maestro_office::spreadsheet::{
         CellAddress, decode_cell, encode_cell, encode_col, encode_row,
     };
@@ -155,7 +165,7 @@ fn ssf_address_roundtrip() {
 }
 
 #[test]
-fn ssf_range_projection() {
+fn formatter_range_projection() {
     use maestro_office::spreadsheet::{CellAddress, Range, decode_range, encode_range};
     for (input, start, end, output) in [
         ("A1", (0, 0), (0, 0), "A1"),
@@ -178,19 +188,19 @@ fn ssf_range_projection() {
 }
 
 #[test]
-fn ssf_retained_identity() {
+fn formatter_retained_identity() {
     use maestro_office::spreadsheet::read;
-    spreadsheet_format_support::run("ssf_retained_identity");
-    let mut ssf = Ssf::default();
-    let old = ssf.get_table();
+    spreadsheet_format_support::run("formatter_retained_identity");
+    let mut formatter = NumberFormatter::default();
+    let old = formatter.get_table();
     old.write().unwrap().insert(164, "\"old\"0".into());
     let book = read(
         include_bytes!("fixtures/workbooks/custom.xlsx"),
         "custom.xlsx",
-        &mut ssf,
+        &mut formatter,
     )
     .unwrap();
-    let current = ssf.get_table();
+    let current = formatter.get_table();
     assert!(!std::sync::Arc::ptr_eq(&old, &current));
     current.write().unwrap().insert(164, "\"new\"0".into());
     assert_eq!(
@@ -201,119 +211,119 @@ fn ssf_retained_identity() {
         current.read().unwrap().get(&164).map(String::as_str),
         Some("\"new\"0")
     );
-    assert_eq!(book.ssf.get(&164), None);
+    assert_eq!(book.formats.get(&164), None);
 }
 
 use crate::spreadsheet_format_support;
 
 #[test]
-fn ssf_general_dispatch() {
-    spreadsheet_format_support::run("ssf_general_dispatch");
+fn formatter_general_dispatch() {
+    spreadsheet_format_support::run("formatter_general_dispatch");
 }
 
 #[test]
-fn ssf_section_layouts() {
-    spreadsheet_format_support::run("ssf_section_layouts");
+fn formatter_section_layouts() {
+    spreadsheet_format_support::run("formatter_section_layouts");
 }
 
 #[test]
-fn ssf_nonfinite_and_failures() {
-    spreadsheet_format_support::run("ssf_nonfinite_and_failures");
+fn formatter_nonfinite_and_failures() {
+    spreadsheet_format_support::run("formatter_nonfinite_and_failures");
 }
 
 #[test]
-fn ssf_conditional_selection() {
-    spreadsheet_format_support::run("ssf_conditional_selection");
+fn formatter_conditional_selection() {
+    spreadsheet_format_support::run("formatter_conditional_selection");
 }
 
 #[test]
-fn ssf_condition_thresholds() {
-    spreadsheet_format_support::run("ssf_condition_thresholds");
+fn formatter_condition_thresholds() {
+    spreadsheet_format_support::run("formatter_condition_thresholds");
 }
 
 #[test]
-fn ssf_empty_and_excess_sections() {
-    spreadsheet_format_support::run("ssf_empty_and_excess_sections");
+fn formatter_empty_and_excess_sections() {
+    spreadsheet_format_support::run("formatter_empty_and_excess_sections");
 }
 
 #[test]
-fn ssf_numeric_ids() {
-    spreadsheet_format_support::run("ssf_numeric_ids");
+fn formatter_numeric_ids() {
+    spreadsheet_format_support::run("formatter_numeric_ids");
 }
 
 #[test]
-fn ssf_quoted_delimiter_fix() {
-    spreadsheet_format_support::run("ssf_quoted_delimiter_fix");
+fn formatter_quoted_delimiter_fix() {
+    spreadsheet_format_support::run("formatter_quoted_delimiter_fix");
 }
 
 #[test]
-fn ssf_quoted_controls() {
-    spreadsheet_format_support::run("ssf_quoted_controls");
+fn formatter_quoted_controls() {
+    spreadsheet_format_support::run("formatter_quoted_controls");
 }
 
 #[test]
-fn ssf_mixed_text_numeric_sections() {
-    spreadsheet_format_support::run("ssf_mixed_text_numeric_sections");
+fn formatter_mixed_text_numeric_sections() {
+    spreadsheet_format_support::run("formatter_mixed_text_numeric_sections");
 }
 
 #[test]
-fn ssf_option_consumption() {
-    spreadsheet_format_support::run("ssf_option_consumption");
+fn formatter_option_consumption() {
+    spreadsheet_format_support::run("formatter_option_consumption");
 }
 
 #[test]
-fn ssf_date_serial_conversion() {
-    spreadsheet_format_support::run("ssf_date_serial_conversion");
+fn formatter_date_serial_conversion() {
+    spreadsheet_format_support::run("formatter_date_serial_conversion");
 }
 
 #[test]
-fn ssf_date_general() {
-    spreadsheet_format_support::run("ssf_date_general");
+fn formatter_date_general() {
+    spreadsheet_format_support::run("formatter_date_general");
 }
 
 #[test]
-fn ssf_date_epoch_routes() {
-    spreadsheet_format_support::run("ssf_date_epoch_routes");
+fn formatter_date_epoch_routes() {
+    spreadsheet_format_support::run("formatter_date_epoch_routes");
 }
 
 #[test]
-fn ssf_landed_corrections() {
-    spreadsheet_format_support::run("ssf_landed_corrections");
+fn formatter_landed_corrections() {
+    spreadsheet_format_support::run("formatter_landed_corrections");
 }
 
 #[test]
-fn ssf_load_auto() {
-    spreadsheet_format_support::run("ssf_load_auto");
+fn formatter_load_auto() {
+    spreadsheet_format_support::run("formatter_load_auto");
 }
 
 #[test]
-fn ssf_load_explicit() {
-    spreadsheet_format_support::run("ssf_load_explicit");
+fn formatter_load_explicit() {
+    spreadsheet_format_support::run("formatter_load_explicit");
 }
 
 #[test]
-fn ssf_load_full() {
-    spreadsheet_format_support::run("ssf_load_full");
+fn formatter_load_full() {
+    spreadsheet_format_support::run("formatter_load_full");
 }
 
 #[test]
-fn ssf_load_table_bounds() {
-    spreadsheet_format_support::run("ssf_load_table_bounds");
+fn formatter_load_table_bounds() {
+    spreadsheet_format_support::run("formatter_load_table_bounds");
 }
 
 #[test]
-fn ssf_table_alias() {
-    spreadsheet_format_support::run("ssf_table_alias");
+fn formatter_table_alias() {
+    spreadsheet_format_support::run("formatter_table_alias");
 }
 
 #[test]
-fn ssf_cell_cached() {
-    spreadsheet_format_support::run("ssf_cell_cached");
+fn formatter_cell_cached() {
+    spreadsheet_format_support::run("formatter_cell_cached");
 }
 
 #[test]
-fn ssf_cell_empty() {
-    spreadsheet_format_support::run("ssf_cell_empty");
+fn formatter_cell_empty() {
+    spreadsheet_format_support::run("formatter_cell_empty");
     let mut cell = CellObject::default();
     assert_eq!(cell.v, CellValue::Missing);
     assert_eq!(cell.t, None);
@@ -325,23 +335,23 @@ fn ssf_cell_empty() {
             Some(&mut cell),
             None,
             &CellFormatOptions::default(),
-            &Ssf::default()
+            &NumberFormatter::default()
         ),
         CellValue::Text(String::new()),
     );
 }
 
 #[test]
-fn ssf_cell_patterns() {
-    spreadsheet_format_support::run("ssf_cell_patterns");
+fn formatter_cell_patterns() {
+    spreadsheet_format_support::run("formatter_cell_patterns");
 }
 
 #[test]
-fn ssf_cell_double_failure_preserves_raw_scalars() {
+fn formatter_cell_double_failure_preserves_raw_scalars() {
     use maestro_office::spreadsheet::{NumberFormat, Xf};
 
-    let ssf = Ssf::default();
-    let _ = ssf.load("\"bad", Some(164));
+    let formatter = NumberFormatter::default();
+    let _ = formatter.load("\"bad", Some(164));
     let actual: Vec<_> = [
         CellValue::Boolean(true),
         CellValue::Boolean(false),
@@ -357,7 +367,12 @@ fn ssf_cell_double_failure_preserves_raw_scalars() {
             xf: Some(Xf { num_fmt_id: 164 }),
             ..CellObject::default()
         };
-        let text = format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf);
+        let text = format_cell(
+            Some(&mut cell),
+            None,
+            &CellFormatOptions::default(),
+            &formatter,
+        );
         assert_eq!(cell.v, value);
         assert_eq!(cell.w, None);
         text
@@ -370,11 +385,11 @@ fn ssf_cell_double_failure_preserves_raw_scalars() {
 }
 
 #[test]
-fn ssf_cell_single_failure_uses_xf_format() {
+fn formatter_cell_single_failure_uses_xf_format() {
     use maestro_office::spreadsheet::{NumberFormat, Xf};
 
-    let ssf = Ssf::default();
-    let _ = ssf.load("0.000", Some(164));
+    let formatter = NumberFormatter::default();
+    let _ = formatter.load("0.000", Some(164));
     let mut cell = CellObject {
         t: Some(ExcelDataType::Number),
         v: CellValue::Number(1.25),
@@ -383,21 +398,26 @@ fn ssf_cell_single_failure_uses_xf_format() {
         ..CellObject::default()
     };
     assert_eq!(
-        format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf),
+        format_cell(
+            Some(&mut cell),
+            None,
+            &CellFormatOptions::default(),
+            &formatter
+        ),
         CellValue::Text("1.250".into())
     );
     assert_eq!(cell.w.as_deref(), Some("1.250"));
 }
 
 #[test]
-fn ssf_cell_override() {
-    spreadsheet_format_support::run("ssf_cell_override");
+fn formatter_cell_override() {
+    spreadsheet_format_support::run("formatter_cell_override");
 }
 
 #[test]
-fn ssf_cell_dates() {
+fn formatter_cell_dates() {
     use maestro_office::spreadsheet::NumberFormat;
-    spreadsheet_format_support::run("ssf_cell_dates");
+    spreadsheet_format_support::run("formatter_cell_dates");
     let mut cell = CellObject {
         t: Some(ExcelDataType::Date),
         v: CellValue::Date(
@@ -413,13 +433,13 @@ fn ssf_cell_dates() {
         date_nf: Some(&override_format),
     };
     assert_eq!(
-        format_cell(Some(&mut cell), None, &options, &Ssf::default()),
+        format_cell(Some(&mut cell), None, &options, &NumberFormatter::default()),
         CellValue::Text("2023".into())
     );
     assert_eq!(cell.z, Some(NumberFormat::Code("yyyy".into())));
 }
 
 #[test]
-fn ssf_cell_error_text() {
-    spreadsheet_format_support::run("ssf_cell_error_text");
+fn formatter_cell_error_text() {
+    spreadsheet_format_support::run("formatter_cell_error_text");
 }

@@ -76,7 +76,7 @@
   "record": {
     "file": "epoch-true.xlsx",
     "date1904": true,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

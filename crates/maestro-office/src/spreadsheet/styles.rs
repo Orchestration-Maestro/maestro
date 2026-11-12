@@ -1,6 +1,6 @@
 //! Package metadata and number-format selection.
 use super::super::wordprocessing::{OpenXmlPackage, XmlParser};
-use super::{Ssf, WorkbookError, unescapexml::unescapexml};
+use super::{NumberFormatter, WorkbookError, unescapexml::unescapexml};
 use maestro_lock::write;
 /// Package access retaining the supplied workbook name at failure boundaries.
 pub(super) struct Package<'a> {
@@ -24,13 +24,17 @@ impl Package<'_> {
             .map_err(|e| WorkbookError::Xml(format!("{}: {part}: {e}", self.name)))
     }
     /// Load explicit formats and remap high IDs to the same available slot.
-    pub fn styles(&self, part: Option<&str>, ssf: &Ssf) -> Result<Vec<u32>, WorkbookError> {
+    pub fn styles(
+        &self,
+        part: Option<&str>,
+        formatter: &NumberFormatter,
+    ) -> Result<Vec<u32>, WorkbookError> {
         let Some(part) = part else {
             return Ok(Vec::new());
         };
         let text = self.text(part)?;
         let xml = self.xml(&text, part)?;
-        let mut table = write(&ssf.table);
+        let mut table = write(&formatter.table);
         let mut formats = table.clone();
         for node in xml
             .element(xml.root(), "numFmts")

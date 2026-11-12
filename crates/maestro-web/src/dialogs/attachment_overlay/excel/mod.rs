@@ -1,7 +1,7 @@
 //! One retained workbook projection for attachment and artifact consumers.
 use super::error::Text;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentHostError, ReadingContent};
-use maestro_office::spreadsheet::{Ssf, read, sheet_to_html};
+use maestro_office::spreadsheet::{NumberFormatter, read, sheet_to_html};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -46,8 +46,8 @@ impl Excel {
     /// Read and prepare each worksheet once on the caller's repaint frame.
     pub(crate) fn open(&mut self, bytes: &[u8]) -> Result<(), String> {
         self.reset(false);
-        let mut ssf = Ssf::default();
-        let workbook = read(bytes, "spreadsheet", &mut ssf).map_err(|e| e.to_string())?;
+        let mut formatter = NumberFormatter::default();
+        let workbook = read(bytes, "spreadsheet", &mut formatter).map_err(|e| e.to_string())?;
         if workbook.sheets.is_empty() {
             return Err(String::new());
         }
@@ -57,7 +57,9 @@ impl Excel {
                 .into_iter()
                 .map(|(name, sheet)| {
                     let content = sheet
-                        .map(|mut sheet| sheet_to_html(&mut sheet, &format!("sheet-{name}"), &ssf))
+                        .map(|mut sheet| {
+                            sheet_to_html(&mut sheet, &format!("sheet-{name}"), &formatter)
+                        })
                         .map_err(|error| {
                             Rc::new(RefCell::new(Text {
                                 values: [String::new(), error.to_string()],

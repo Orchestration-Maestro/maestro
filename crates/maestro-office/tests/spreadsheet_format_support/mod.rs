@@ -1,7 +1,7 @@
 //! Recorded standalone formatting operations.
 pub mod date_code;
 mod workbooks;
-use maestro_office::spreadsheet::{CellValue, FormatOptions, NumberFormat, Ssf};
+use maestro_office::spreadsheet::{CellValue, FormatOptions, NumberFormat, NumberFormatter};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -104,9 +104,9 @@ fn entries(value: &Value) -> std::collections::BTreeMap<u32, String> {
 }
 
 fn observe_format(args: &Value) -> Value {
-    let ssf = Ssf::default();
+    let formatter = NumberFormatter::default();
     if let Some(seed) = args.get("seed") {
-        ssf.get_table().write().unwrap().extend(entries(seed));
+        formatter.get_table().write().unwrap().extend(entries(seed));
     }
     let table = args["options"]
         .get("table")
@@ -116,7 +116,7 @@ fn observe_format(args: &Value) -> Value {
         date_nf: args["options"]["dateNF"].as_str(),
         table: table.as_ref(),
     };
-    outcome(ssf.format(
+    outcome(formatter.format(
         &selector(&args["format"]),
         &scalar(&args["value"]),
         &options,
@@ -125,24 +125,25 @@ fn observe_format(args: &Value) -> Value {
 
 fn observe_table(args: &Value) -> Value {
     use serde_json::json;
-    let ssf = Ssf::default();
-    let table = ssf.get_table();
+    let formatter = NumberFormatter::default();
+    let table = formatter.get_table();
     let observations: Vec<Value> = args["steps"]
         .as_array()
         .unwrap()
         .iter()
         .map(|step| match step["kind"].as_str().unwrap() {
-            "load" => json!(ssf.load(
+            "load" => json!(formatter.load(
                 step["format"].as_str().unwrap(),
                 step["index"].as_u64().map(|n| u32::try_from(n).unwrap())
             )),
             "format" => json!(
-                ssf.format(
-                    &selector(&step["format"]),
-                    &CellValue::Number(step["value"].as_f64().unwrap()),
-                    &FormatOptions::default()
-                )
-                .unwrap()
+                formatter
+                    .format(
+                        &selector(&step["format"]),
+                        &CellValue::Number(step["value"].as_f64().unwrap()),
+                        &FormatOptions::default()
+                    )
+                    .unwrap()
             ),
             "mutate" => {
                 table.write().unwrap().insert(
@@ -160,7 +161,7 @@ fn observe_table(args: &Value) -> Value {
             }
             "load_table" => {
                 let supplied = std::sync::Arc::new(std::sync::RwLock::new(entries(&step["table"])));
-                ssf.load_table(&supplied);
+                formatter.load_table(&supplied);
                 Value::Null
             }
             _ => panic!("unknown table operation"),
@@ -172,13 +173,13 @@ fn observe_table(args: &Value) -> Value {
         .iter()
         .map(|(n, s)| (*n, s.clone()))
         .collect();
-    json!({"ok": {"observations": observations, "same": std::sync::Arc::ptr_eq(&table, &ssf.get_table()), "entries": entries}})
+    json!({"ok": {"observations": observations, "same": std::sync::Arc::ptr_eq(&table, &formatter.get_table()), "entries": entries}})
 }
 
 fn owner_pair(args: &Value) -> Value {
     use std::sync::{Arc, Barrier, mpsc};
-    let left = Ssf::default();
-    let right = Ssf::default();
+    let left = NumberFormatter::default();
+    let right = NumberFormatter::default();
     left.get_table()
         .write()
         .unwrap()
@@ -196,14 +197,14 @@ fn owner_pair(args: &Value) -> Value {
     let jobs: Vec<_> = [(left, right_table), (right, left_table)]
         .into_iter()
         .enumerate()
-        .map(|(i, (ssf, table))| {
+        .map(|(i, (formatter, table))| {
             let start = Arc::clone(&start);
             let tx = tx.clone();
             let format = selector(&args["format"]);
             let value = CellValue::Number(args["values"][i].as_f64().unwrap());
             std::thread::spawn(move || {
                 start.wait();
-                let text = ssf
+                let text = formatter
                     .format(
                         &format,
                         &value,
@@ -234,9 +235,9 @@ fn observe_cell(args: &Value) -> Value {
         CellFormatOptions, CellObject, ExcelDataType, Xf, format_cell,
     };
     use serde_json::json;
-    let ssf = Ssf::default();
+    let formatter = NumberFormatter::default();
     if let Some(seed) = args.get("seed") {
-        ssf.get_table().write().unwrap().extend(entries(seed));
+        formatter.get_table().write().unwrap().extend(entries(seed));
     }
     let input = &args["cell"];
     let kind = input["t"].as_str().map(|s| match s {
@@ -266,7 +267,7 @@ fn observe_cell(args: &Value) -> Value {
         &CellFormatOptions {
             date_nf: date_nf.as_ref(),
         },
-        &ssf,
+        &formatter,
     );
     assert_eq!(cell.v, scalar(&input["v"]));
     let shown = match text {
@@ -296,14 +297,14 @@ fn encoded_scalar(value: &CellValue) -> Value {
 }
 
 fn load_empty(args: &Value) -> Value {
-    let ssf = Ssf::default();
+    let formatter = NumberFormatter::default();
     let steps = args["steps"].as_array().unwrap();
-    let explicit = ssf.load(steps[0]["format"].as_str().unwrap(), Some(164));
+    let explicit = formatter.load(steps[0]["format"].as_str().unwrap(), Some(164));
     assert_eq!(steps[0]["index"], 164);
     assert!(steps[1]["index"].is_null());
-    let auto = ssf.load(steps[1]["format"].as_str().unwrap(), None);
-    let code = ssf.get_table().read().unwrap().get(&auto).cloned();
-    let text = ssf
+    let auto = formatter.load(steps[1]["format"].as_str().unwrap(), None);
+    let code = formatter.get_table().read().unwrap().get(&auto).cloned();
+    let text = formatter
         .format(
             &NumberFormat::Id(auto),
             &CellValue::Number(7.0),
@@ -315,11 +316,11 @@ fn load_empty(args: &Value) -> Value {
 
 fn load_owner(args: &Value) -> Value {
     assert_eq!(args["table"], "same");
-    let ssf = Ssf::default();
-    let table = ssf.get_table();
+    let formatter = NumberFormatter::default();
+    let table = formatter.get_table();
     table.write().unwrap().extend(entries(&args["seed"]));
-    ssf.load_table(&table);
-    let text = ssf
+    formatter.load_table(&table);
+    let text = formatter
         .format(
             &NumberFormat::Id(164),
             &CellValue::Number(7.0),
@@ -327,24 +328,24 @@ fn load_owner(args: &Value) -> Value {
         )
         .unwrap();
     let values = table.read().unwrap();
-    serde_json::json!({"ok": {"same": std::sync::Arc::ptr_eq(&table, &ssf.get_table()), "custom": values.get(&164), "outside": values.get(&392), "text": text}})
+    serde_json::json!({"ok": {"same": std::sync::Arc::ptr_eq(&table, &formatter.get_table()), "custom": values.get(&164), "outside": values.get(&392), "text": text}})
 }
 
 fn format_owner(args: &Value) -> Value {
     assert_eq!(args["table"], "same");
-    let ssf = Ssf::default();
-    let table = ssf.get_table();
+    let formatter = NumberFormatter::default();
+    let table = formatter.get_table();
     table.write().unwrap().extend(entries(&args["seed"]));
     let options = FormatOptions {
         table: Some(&table),
         ..Default::default()
     };
-    let text = ssf
+    let text = formatter
         .format(
             &selector(&args["format"]),
             &scalar(&args["value"]),
             &options,
         )
         .unwrap();
-    serde_json::json!({"ok": {"same": std::sync::Arc::ptr_eq(&table, &ssf.get_table()), "text": text}})
+    serde_json::json!({"ok": {"same": std::sync::Arc::ptr_eq(&table, &formatter.get_table()), "text": text}})
 }

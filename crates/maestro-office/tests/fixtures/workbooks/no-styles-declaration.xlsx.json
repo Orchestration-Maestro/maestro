@@ -42,7 +42,7 @@
   "record": {
     "file": "no-styles-declaration.xlsx",
     "date1904": false,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

@@ -1,14 +1,14 @@
 //! Complete workbook observations from supplied byte fixtures.
-use maestro_office::spreadsheet::{self, CellFormatOptions, CellValue, Ssf};
+use maestro_office::spreadsheet::{self, CellFormatOptions, CellValue, NumberFormatter};
 use serde_json::{Value, json};
 
 use crate::workbook_fixture::bytes;
 
 pub(super) fn observe(args: &Value) -> Value {
     let file = args["file"].as_str().unwrap();
-    let mut ssf = Ssf::default();
-    match spreadsheet::read(&bytes(file), file, &mut ssf) {
-        Ok(book) => json!({"ok": project(book, &ssf, false)}),
+    let mut formatter = NumberFormatter::default();
+    match spreadsheet::read(&bytes(file), file, &mut formatter) {
+        Ok(book) => json!({"ok": project(book, &formatter, false)}),
         Err(error) => {
             assert!(matches!(error, spreadsheet::WorkbookError::Reader(_)));
             assert!(error.to_string().contains(file));
@@ -29,7 +29,11 @@ fn value(value: &CellValue, typed: bool) -> Value {
     }
 }
 
-pub(super) fn project(book: spreadsheet::WorkBook, ssf: &Ssf, typed: bool) -> Value {
+pub(super) fn project(
+    book: spreadsheet::WorkBook,
+    formatter: &NumberFormatter,
+    typed: bool,
+) -> Value {
     let sheets: Vec<_> = book.sheets.into_iter().map(|(name, sheet)| {
         let sheet = sheet.unwrap();
         let cells: Vec<_> = sheet.cells.into_iter().map(|(address, mut cell)| {
@@ -40,7 +44,7 @@ pub(super) fn project(book: spreadsheet::WorkBook, ssf: &Ssf, typed: bool) -> Va
             };
             let raw = value(&cell.v, typed);
             let before = cell.w.clone();
-            let text = spreadsheet::format_cell(Some(&mut cell), None, &CellFormatOptions::default(), ssf);
+            let text = spreadsheet::format_cell(Some(&mut cell), None, &CellFormatOptions::default(), formatter);
             assert_eq!(value(&cell.v, typed), raw);
             let text = value(&text, false);
             if typed {
@@ -62,28 +66,28 @@ pub(super) fn project(book: spreadsheet::WorkBook, ssf: &Ssf, typed: bool) -> Va
 }
 
 pub(super) fn seeded(args: &Value, reset: bool) -> Value {
-    let mut ssf = Ssf::default();
-    let old = ssf.get_table();
+    let mut formatter = NumberFormatter::default();
+    let old = formatter.get_table();
     old.write().unwrap().extend(super::entries(&args["seed"]));
     let file = args["file"].as_str().unwrap();
-    let book = spreadsheet::read(&bytes(file), file, &mut ssf).unwrap();
-    let current = ssf.get_table();
+    let book = spreadsheet::read(&bytes(file), file, &mut formatter).unwrap();
+    let current = formatter.get_table();
     let same = std::sync::Arc::ptr_eq(&old, &current);
     if reset {
-        assert_eq!(ssf.load("\"new\"0", Some(164)), 164);
+        assert_eq!(formatter.load("\"new\"0", Some(164)), 164);
         let old_value = old.read().unwrap().get(&164).cloned();
         let current_value = current.read().unwrap().get(&164).cloned();
-        json!({"ok": {"same": same, "old": old_value, "current": current_value, "snapshot": book.ssf.get(&164)}})
+        json!({"ok": {"same": same, "old": old_value, "current": current_value, "snapshot": book.formats.get(&164)}})
     } else {
         let code = current.read().unwrap().get(&0).cloned();
-        json!({"ok": {"same": same, "format": code, "book": project(book, &ssf, true)}})
+        json!({"ok": {"same": same, "format": code, "book": project(book, &formatter, true)}})
     }
 }
 
 pub(super) fn format_codes(args: &Value) -> Value {
-    let mut ssf = Ssf::default();
+    let mut formatter = NumberFormatter::default();
     let file = args["file"].as_str().unwrap();
-    let book = spreadsheet::read(&bytes(file), file, &mut ssf).unwrap();
+    let book = spreadsheet::read(&bytes(file), file, &mut formatter).unwrap();
     assert!(!book.date1904);
     assert_eq!(book.sheets.len(), 1);
     let sheet = book.sheets.into_values().next().unwrap().unwrap();
@@ -91,10 +95,10 @@ pub(super) fn format_codes(args: &Value) -> Value {
         assert_eq!(cell.t, Some(spreadsheet::ExcelDataType::Number));
         let CellValue::Number(raw) = cell.v else { panic!("expected numeric operand") };
         let cache = cell.w.clone();
-        let CellValue::Text(text) = spreadsheet::format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf) else { panic!("expected formatted text") };
+        let CellValue::Text(text) = spreadsheet::format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &formatter) else { panic!("expected formatted text") };
         assert_eq!(cell.w, cache);
         assert_eq!(cell.v, CellValue::Number(raw));
-        json!({"address": address, "code": book.ssf[&(164 + u32::try_from(i).unwrap())], "value": raw, "w": cache, "text": text})
+        json!({"address": address, "code": book.formats[&(164 + u32::try_from(i).unwrap())], "value": raw, "w": cache, "text": text})
     }).collect();
     json!({"ok": {"cells": cells}})
 }

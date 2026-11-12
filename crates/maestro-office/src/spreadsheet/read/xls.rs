@@ -5,8 +5,8 @@ mod records;
 mod strings;
 use super::{
     super::{
-        CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkBook, WorkSheet,
-        WorkbookError, encode_cell, format_cell::error_label, styles::repair_format,
+        CellAddress, CellObject, CellValue, ExcelDataType, NumberFormatter, Range, WorkBook,
+        WorkSheet, WorkbookError, encode_cell, format_cell::error_label, styles::repair_format,
     },
     blob::{ParseError, Result, index},
     cfb,
@@ -53,7 +53,7 @@ struct Sheet {
 /// One linear pass over the workbook stream.
 struct Reader<'s> {
     /// Live format table receiving number formats.
-    ssf: &'s Ssf,
+    formatter: &'s NumberFormatter,
     /// String representation, fixed by the first beginning record.
     encoding: Option<Encoding>,
     /// Workbook date epoch.
@@ -74,20 +74,20 @@ struct Reader<'s> {
     books: formulas::SupBooks,
 }
 
-/// Read a compound-file workbook into owned sheets, loading its formats into `ssf`.
+/// Read a compound-file workbook into owned sheets, loading its formats into `formatter`.
 pub(super) fn read(
     data: &[u8],
     name: &str,
-    ssf: &Ssf,
+    formatter: &NumberFormatter,
 ) -> std::result::Result<WorkBook, WorkbookError> {
-    workbook(data, ssf).map_err(|error| WorkbookError::Reader(format!("{name}: {error}")))
+    workbook(data, formatter).map_err(|error| WorkbookError::Reader(format!("{name}: {error}")))
 }
 
 /// Parse every record once, then order sheets by their directory positions.
-fn workbook(data: &[u8], ssf: &Ssf) -> Result<WorkBook> {
+fn workbook(data: &[u8], formatter: &NumberFormatter) -> Result<WorkBook> {
     let stream = cfb::workbook_stream(data)?;
     let mut reader = Reader {
-        ssf,
+        formatter,
         encoding: None,
         date1904: false,
         xfs: Vec::new(),
@@ -114,11 +114,11 @@ fn workbook(data: &[u8], ssf: &Ssf) -> Result<WorkBook> {
             .ok_or(ParseError::Invalid("sheet position"))?;
         sheets.insert(name, Ok(sheet.finish()));
     }
-    let table = maestro_lock::read(&ssf.table).clone();
+    let table = maestro_lock::read(&formatter.table).clone();
     Ok(WorkBook {
         sheets,
         date1904: reader.date1904,
-        ssf: table,
+        formats: table,
     })
 }
 
@@ -181,7 +181,9 @@ impl Reader<'_> {
             0x041e => {
                 let id = payload.u16()?;
                 let code = strings::format_string(&mut payload, self.encoding())?;
-                let _ = self.ssf.load(repair_format(&code), Some(u32::from(id)));
+                let _ = self
+                    .formatter
+                    .load(repair_format(&code), Some(u32::from(id)));
             }
             0x00fc => self.strings = strings::shared_strings(record)?,
             0x0200 if self.depth == 1 => {
@@ -368,7 +370,7 @@ impl Reader<'_> {
         }
         let id = format_id(&self.xfs, header.ixfe, number);
         let mut cell = cell(value);
-        safe_format_xf(&mut cell, id, self.ssf, self.date1904);
+        safe_format_xf(&mut cell, id, self.formatter, self.date1904);
         let bounds = self.sheet.bounds.get_or_insert(((0, 0), (0, 0)));
         bounds.0 = (bounds.0.0.min(header.r), bounds.0.1.min(header.c));
         bounds.1 = (bounds.1.0.max(header.r + 1), bounds.1.1.max(header.c + 1));
@@ -405,7 +407,12 @@ fn cell(value: Value) -> CellObject {
 }
 
 /// Leave unresolved formats uncached and keep General independent of slot zero.
-fn safe_format_xf(cell: &mut CellObject, id: Option<u16>, ssf: &Ssf, date1904: bool) {
+fn safe_format_xf(
+    cell: &mut CellObject,
+    id: Option<u16>,
+    formatter: &NumberFormatter,
+    date1904: bool,
+) {
     let Some(id) = id else {
         cell.w = None;
         return;
@@ -416,15 +423,16 @@ fn safe_format_xf(cell: &mut CellObject, id: Option<u16>, ssf: &Ssf, date1904: b
     cell.w = if id == 0 {
         Some(super::super::general(cell.v.scalar()))
     } else {
-        ssf.format(
-            &super::super::NumberFormat::Id(u32::from(id)),
-            &cell.v,
-            &super::super::FormatOptions {
-                date1904,
-                ..Default::default()
-            },
-        )
-        .ok()
+        formatter
+            .format(
+                &super::super::NumberFormat::Id(u32::from(id)),
+                &cell.v,
+                &super::super::FormatOptions {
+                    date1904,
+                    ..Default::default()
+                },
+            )
+            .ok()
     };
 }
 

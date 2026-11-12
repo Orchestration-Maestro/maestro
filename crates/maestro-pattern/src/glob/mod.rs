@@ -18,24 +18,24 @@ pub use assert_valid_pattern::PatternError;
 ///
 /// Matching is case-sensitive, except that native Windows framing compares a
 /// recognized absolute or extended drive without case; a drive-relative prefix such
-/// as `C:Foo` keeps its authored case. [`minimatch_with_nocase`] selects the other mode.
+/// as `C:Foo` keeps its authored case. [`matches_glob_with_nocase`] selects the other mode.
 ///
 /// # Errors
 /// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.
-pub fn minimatch(path: &str, pattern: &str) -> Result<bool, PatternError> {
-    minimatch_with_nocase(path, pattern, false)
+pub fn matches_glob(path: &str, pattern: &str) -> Result<bool, PatternError> {
+    matches_glob_with_nocase(path, pattern, false)
 }
 
-/// Matches like [`minimatch`], comparing case-insensitively when `nocase` is true.
+/// Matches like [`matches_glob`], comparing case-insensitively when `nocase` is true.
 ///
 /// Case-insensitivity applies to literal and magic components alike; pattern syntax,
 /// including named class names, is never rewritten. Under Windows framing a nonmagic
 /// UNC server/share prefix and a drive-relative prefix keep their authored case, while
-/// a recognized drive aligns without case as in [`minimatch`]; later components fold.
+/// a recognized drive aligns without case as in [`matches_glob`]; later components fold.
 ///
 /// # Errors
 /// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.
-pub fn minimatch_with_nocase(
+pub fn matches_glob_with_nocase(
     path: &str,
     pattern: &str,
     nocase: bool,
@@ -413,7 +413,7 @@ mod tests;
 
 /// Fixed matcher policy selected by filesystem expansion.
 #[derive(Clone, Copy)]
-pub enum MinimatchOptions {
+pub enum GlobOptions {
     /// Native framing with comments and leading negation disabled.
     Filesystem(Platform),
 }
@@ -456,20 +456,20 @@ impl MmRegExp {
     }
 }
 /// Ordered prepared alternatives for filesystem expansion.
-pub struct Minimatch {
+pub struct GlobMatcher {
     /// Compiled alternatives aligned with authored components.
     set: Vec<Vec<ParseReturnFiltered>>,
     /// Prepared authored components before literal escape decoding.
     glob_parts: Vec<Vec<String>>,
 }
-impl Minimatch {
+impl GlobMatcher {
     /// Prepares a filesystem pattern under its selected native policy.
     ///
     /// # Errors
     /// Returns the existing pattern-length error.
-    pub fn new(pattern: &str, options: MinimatchOptions) -> Result<Self, PatternError> {
+    pub fn new(pattern: &str, options: GlobOptions) -> Result<Self, PatternError> {
         assert_valid_pattern::assert_valid_pattern(pattern)?;
-        let MinimatchOptions::Filesystem(platform) = options;
+        let GlobOptions::Filesystem(platform) = options;
         let glob_parts = preprocess::prepare(pattern, platform);
         let set = glob_parts
             .iter()

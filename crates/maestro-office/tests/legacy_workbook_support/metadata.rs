@@ -1,6 +1,6 @@
 //! Retained binary metadata and complete writer observations.
 use super::Scalar;
-use maestro_office::spreadsheet::{self, Ssf};
+use maestro_office::spreadsheet::{self, NumberFormatter};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -73,10 +73,10 @@ pub fn run(test: &str) {
     let mut count = 0;
     for case in cases.iter().filter(|case| case.test == test) {
         count += 1;
-        let mut ssf = Ssf::default();
-        let result = spreadsheet::read(&super::bytes(&case.file), &case.file, &mut ssf);
+        let mut formatter = NumberFormatter::default();
+        let result = spreadsheet::read(&super::bytes(&case.file), &case.file, &mut formatter);
         match &case.expected {
-            Outcome::Book { ok } => check_book(result.unwrap(), ok, &ssf),
+            Outcome::Book { ok } => check_book(result.unwrap(), ok, &formatter),
             Outcome::Error { error } => {
                 assert_eq!(error.kind, "Reader");
                 assert!(case.file.ends_with(&error.workbook));
@@ -89,13 +89,13 @@ pub fn run(test: &str) {
     assert!(count > 0, "missing corpus group");
 }
 
-fn check_book(mut book: spreadsheet::WorkBook, expected: &Book, ssf: &Ssf) {
+fn check_book(mut book: spreadsheet::WorkBook, expected: &Book, formatter: &NumberFormatter) {
     check_sheets(&book, &expected.sheets);
     for view in &expected.views {
         let sheet = book.sheets.get_mut(&view.name).unwrap().as_mut().unwrap();
-        assert_eq!(spreadsheet::sheet_to_csv(sheet, ssf), view.csv);
+        assert_eq!(spreadsheet::sheet_to_csv(sheet, formatter), view.csv);
         assert_eq!(
-            spreadsheet::sheet_to_html(sheet, &format!("sheet-{}", view.name), ssf),
+            spreadsheet::sheet_to_html(sheet, &format!("sheet-{}", view.name), formatter),
             view.html
         );
         check_sheets(&book, &expected.sheets);

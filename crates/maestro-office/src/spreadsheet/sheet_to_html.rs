@@ -1,14 +1,14 @@
 //! Shared worksheet table projection with literal attribute boundaries.
 use super::{
-    CellAddress, CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormat, Ssf,
-    WorkSheet, encode_cell, format_cell,
+    CellAddress, CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormat,
+    NumberFormatter, WorkSheet, encode_cell, format_cell,
 };
 use crate::executable;
 use maestro_text::markup::{EscapeMode, escape};
 use std::fmt::Write as _;
 /// Project the declared worksheet range as a table, retaining formatter caches.
 #[must_use]
-pub fn sheet_to_html(worksheet: &mut WorkSheet, id: &str, ssf: &Ssf) -> String {
+pub fn sheet_to_html(worksheet: &mut WorkSheet, id: &str, formatter: &NumberFormatter) -> String {
     let mut out = String::from("<table");
     if !id.is_empty() {
         attribute(&mut out, "id", id);
@@ -18,7 +18,7 @@ pub fn sheet_to_html(worksheet: &mut WorkSheet, id: &str, ssf: &Ssf) -> String {
         for r in range.s.r..=range.e.r {
             out.push_str("<tr>");
             for c in range.s.c..=range.e.c {
-                table_cell(worksheet, CellAddress { r, c }, (id, ssf), &mut out);
+                table_cell(worksheet, CellAddress { r, c }, (id, formatter), &mut out);
             }
             out.push_str("</tr>");
         }
@@ -30,10 +30,10 @@ pub fn sheet_to_html(worksheet: &mut WorkSheet, id: &str, ssf: &Ssf) -> String {
 fn table_cell(
     worksheet: &mut WorkSheet,
     position: CellAddress,
-    context: (&str, &Ssf),
+    context: (&str, &NumberFormatter),
     out: &mut String,
 ) {
-    let (id, ssf) = context;
+    let (id, formatter) = context;
     let merge = worksheet.merges.iter().find(|m| m.contains(position));
     if merge.is_some_and(|m| m.s != position) {
         return;
@@ -51,7 +51,7 @@ fn table_cell(
     let body = worksheet
         .cells
         .get_mut(&address)
-        .map_or_else(String::new, |cell| project(cell, out, ssf));
+        .map_or_else(String::new, |cell| project(cell, out, formatter));
     attribute(
         out,
         "id",
@@ -76,7 +76,7 @@ fn attribute(out: &mut String, key: &str, value: &str) {
     );
 }
 /// Select content independently of raw attributes and cache ownership.
-fn project(cell: &mut CellObject, out: &mut String, ssf: &Ssf) -> String {
+fn project(cell: &mut CellObject, out: &mut String, formatter: &NumberFormatter) -> String {
     if cell.t == Some(ExcelDataType::Number)
         && let CellValue::Number(n) = cell.v
         && !n.is_finite()
@@ -94,11 +94,11 @@ fn project(cell: &mut CellObject, out: &mut String, ssf: &Ssf) -> String {
                 ..Default::default()
             },
             out,
-            ssf,
+            formatter,
         );
     }
     let present = !matches!(cell.v, CellValue::Missing | CellValue::Null);
-    let body = content(cell, ssf);
+    let body = content(cell, formatter);
     attribute(out, "data-t", cell_type(cell.t));
     if present {
         let _ = write!(
@@ -141,7 +141,7 @@ fn cell_type(kind: Option<ExcelDataType>) -> &'static str {
     }
 }
 /// Read generated markup before escaped formatted text, without caching errors.
-fn content(cell: &mut CellObject, ssf: &Ssf) -> String {
+fn content(cell: &mut CellObject, formatter: &NumberFormatter) -> String {
     if matches!(cell.v, CellValue::Missing | CellValue::Null) {
         return String::new();
     }
@@ -149,7 +149,7 @@ fn content(cell: &mut CellObject, ssf: &Ssf) -> String {
         return h.clone();
     }
     if cell.w.is_none() {
-        let _ = format_cell(Some(cell), None, &CellFormatOptions::default(), ssf);
+        let _ = format_cell(Some(cell), None, &CellFormatOptions::default(), formatter);
     }
     escape(cell.w.as_deref().unwrap_or(""), EscapeMode::SpreadsheetHtml)
 }

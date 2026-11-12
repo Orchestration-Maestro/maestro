@@ -138,7 +138,7 @@ pub fn tables(names: &[&str]) {
         let mut sheet = worksheet(row.input.worksheet);
         let raw: Vec<_> = sheet.cells.values().map(|c| c.v.clone()).collect();
         assert_eq!(
-            sheet_to_html(&mut sheet, &row.input.id, &Ssf::default()),
+            sheet_to_html(&mut sheet, &row.input.id, &NumberFormatter::default()),
             row.expected.table,
             "{}",
             row.name
@@ -194,8 +194,8 @@ pub fn workbooks(names: &[&str]) {
             row.file
         ))
         .unwrap();
-        let mut ssf = Ssf::default();
-        let mut workbook = read(&bytes, &row.file, &mut ssf).unwrap();
+        let mut formatter = NumberFormatter::default();
+        let mut workbook = read(&bytes, &row.file, &mut formatter).unwrap();
         assert_eq!(
             workbook.sheets.keys().collect::<Vec<_>>(),
             row.expected.iter().map(|s| &s.name).collect::<Vec<_>>()
@@ -212,7 +212,7 @@ pub fn workbooks(names: &[&str]) {
             assert_eq!(actual.merges, sheet.merges, "{}", row.file);
             assert_eq!(actual.cells, sheet.cells, "{}", row.file);
             assert_eq!(
-                sheet_to_html(actual, &format!("sheet-{}", expected.name), &ssf),
+                sheet_to_html(actual, &format!("sheet-{}", expected.name), &formatter),
                 expected.table,
                 "{}",
                 row.file

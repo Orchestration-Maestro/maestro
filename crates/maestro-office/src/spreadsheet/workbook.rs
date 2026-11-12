@@ -20,7 +20,7 @@ pub struct WorkBook {
     /// Whether serials use the 1904 epoch.
     pub date1904: bool,
     /// Detached number-format table snapshot.
-    pub ssf: BTreeMap<u32, String>,
+    pub formats: BTreeMap<u32, String>,
 }
 /// Failure reading workbook data or building extracted text.
 #[derive(Debug)]

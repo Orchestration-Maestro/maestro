@@ -72,7 +72,7 @@
   "record": {
     "file": "escaped-raw.xlsx",
     "date1904": false,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

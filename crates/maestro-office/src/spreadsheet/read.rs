@@ -4,7 +4,7 @@ use super::super::wordprocessing::{
 };
 use super::rich_text::{SharedString, shared_string};
 use super::{
-    CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkBook, WorkSheet,
+    CellAddress, CellObject, CellValue, ExcelDataType, NumberFormatter, Range, WorkBook, WorkSheet,
     WorkbookError, decode_cell, decode_range, encode_cell, format_cell::ERRORS, styles::Package,
 };
 use maestro_lock::write;
@@ -24,20 +24,28 @@ use std::collections::BTreeMap;
 /// # Errors
 /// Returns contextual archive, shared metadata, container, record or address failures.
 /// When every declared XLSX sheet fails, returns the first sheet's original error.
-pub fn read(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook, WorkbookError> {
+pub fn read(
+    data: &[u8],
+    workbook_name: &str,
+    formatter: &mut NumberFormatter,
+) -> Result<WorkBook, WorkbookError> {
     if data.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
-        return xls::read(data, workbook_name, ssf);
+        return xls::read(data, workbook_name, formatter);
     }
-    read_xlsx(data, workbook_name, ssf)
+    read_xlsx(data, workbook_name, formatter)
 }
 /// Read indexed modern workbook parts, replacing the active table after archive opening.
-fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook, WorkbookError> {
+fn read_xlsx(
+    data: &[u8],
+    workbook_name: &str,
+    formatter: &mut NumberFormatter,
+) -> Result<WorkBook, WorkbookError> {
     let package = Package {
         archive: OpenXmlPackage::open(data, Options::default())
             .map_err(|e| WorkbookError::Archive(format!("{workbook_name}: {e}")))?,
         name: workbook_name,
     };
-    *ssf = Ssf::default();
+    *formatter = NumberFormatter::default();
     let text = package.text("[Content_Types].xml")?;
     let xml = package.xml(&text, "[Content_Types].xml")?;
     let parts: BTreeMap<_, _> = xml
@@ -51,7 +59,7 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
             .map(|(_, part)| part.trim_start_matches('/'))
     };
     let workbook = part("main+xml").unwrap_or("xl/workbook.xml");
-    let xfs = package.styles(part("styles+xml"), ssf)?;
+    let xfs = package.styles(part("styles+xml"), formatter)?;
     let shared = super::rich_text::shared(&package, part("sharedStrings+xml"))?;
     let text = package.text(workbook)?;
     let xml = package.xml(&text, workbook)?;
@@ -59,11 +67,17 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
         .element(xml.root(), "workbookPr")
         .and_then(|n| xml.bool_attr(n, "date1904", None))
         .unwrap_or(false);
-    let sheets = read_sheets(&package, &xml, workbook, (&xfs, ssf, date1904), &shared)?;
+    let sheets = read_sheets(
+        &package,
+        &xml,
+        workbook,
+        (&xfs, formatter, date1904),
+        &shared,
+    )?;
     Ok(WorkBook {
         sheets,
         date1904,
-        ssf: maestro_lock::read(&ssf.table).clone(),
+        formats: maestro_lock::read(&formatter.table).clone(),
     })
 }
 /// Resolve worksheet-local results without discarding readable siblings.
@@ -72,7 +86,7 @@ fn read_sheets(
     package: &Package<'_>,
     xml: &XmlParser<'_>,
     workbook: &str,
-    format: (&[u32], &Ssf, bool),
+    format: (&[u32], &NumberFormatter, bool),
     shared: &[SharedString],
 ) -> Result<IndexMap<String, Result<WorkSheet, WorkbookError>>, WorkbookError> {
     let rels = package
@@ -142,7 +156,7 @@ fn sheet_targets<'a>(
 fn sheet(
     package: &Package<'_>,
     path: &str,
-    format: (&[u32], &Ssf, bool),
+    format: (&[u32], &NumberFormatter, bool),
     shared: &[SharedString],
 ) -> Result<WorkSheet, WorkbookError> {
     let text = package.text(path)?;
@@ -290,7 +304,7 @@ fn cell(
     value: Option<CellValue>,
     error: Option<String>,
     style: Option<usize>,
-    format: (&[u32], &Ssf, bool),
+    format: (&[u32], &NumberFormatter, bool),
     formulas: (Option<String>, Option<String>),
 ) -> Option<CellObject> {
     let value = value.map(|value| match value {

@@ -76,7 +76,7 @@
   "record": {
     "file": "iso-forms-True.xlsx",
     "date1904": true,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

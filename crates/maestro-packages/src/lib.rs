@@ -23,7 +23,7 @@ pub use package_manager::{
     ResolvedResource,
 };
 
-pub use maestro_pattern::{PatternError, minimatch};
+pub use maestro_pattern::{PatternError, matches_glob};
 
 pub use maestro_resources::{PathMetadata, SourceOrigin, SourceScope};
 

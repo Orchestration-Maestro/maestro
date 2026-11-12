@@ -82,8 +82,8 @@ fn workbook_preview_hyperlinks_keep_ranges_fragments_and_stubs() {
 #[test]
 fn sheet_tables_share_raw_date_spelling_with_failed_cell_formats() {
     use maestro_office::spreadsheet::*;
-    let ssf = Ssf::default();
-    let _ = ssf.load("[", Some(999));
+    let formatter = NumberFormatter::default();
+    let _ = formatter.load("[", Some(999));
     let mut cell = CellObject {
         t: Some(ExcelDataType::Date),
         v: CellValue::Date("2026-10-16T12:34:56.789Z".parse().unwrap()),
@@ -91,9 +91,12 @@ fn sheet_tables_share_raw_date_spelling_with_failed_cell_formats() {
         xf: Some(Xf { num_fmt_id: 999 }),
         ..Default::default()
     };
-    let CellValue::Text(raw) =
-        format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf)
-    else {
+    let CellValue::Text(raw) = format_cell(
+        Some(&mut cell),
+        None,
+        &CellFormatOptions::default(),
+        &formatter,
+    ) else {
         panic!("raw date must be text")
     };
     assert_eq!(raw, "2026-10-16T12:34:56.789Z");
@@ -102,7 +105,7 @@ fn sheet_tables_share_raw_date_spelling_with_failed_cell_formats() {
         range: Some(decode_range("A1").unwrap()),
         merges: Vec::new(),
     };
-    let html = sheet_to_html(&mut sheet, "date", &ssf);
+    let html = sheet_to_html(&mut sheet, "date", &formatter);
     assert!(
         html.contains(&format!("data-t=\"d\" data-v=\"{raw}\"")),
         "{html}"
@@ -128,7 +131,7 @@ fn sheet_tables_keep_numeric_format_selector_metadata() {
         merges: Vec::new(),
     };
     assert_eq!(
-        sheet_to_html(&mut sheet, "", &Ssf::default()),
+        sheet_to_html(&mut sheet, "", &NumberFormatter::default()),
         "<table><tr><td data-t=\"n\" data-v=\"1.25\" data-z=\"2\" id=\"sjs-A1\">1.25</td></tr></table>"
     );
 }

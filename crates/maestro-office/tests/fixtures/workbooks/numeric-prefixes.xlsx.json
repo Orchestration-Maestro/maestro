@@ -126,7 +126,7 @@
   "record": {
     "file": "numeric-prefixes.xlsx",
     "date1904": false,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

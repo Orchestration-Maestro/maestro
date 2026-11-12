@@ -1,11 +1,13 @@
 //! Default comma-separated worksheet serialization.
-use super::{CellAddress, CellObject, CellValue, Ssf, WorkSheet, encode_cell, format_cell};
+use super::{
+    CellAddress, CellObject, CellValue, NumberFormatter, WorkSheet, encode_cell, format_cell,
+};
 
 /// Serialize the declared rectangle with comma fields and LF rows.
 ///
 /// Formatting may populate cell text caches. Missing ranges produce empty text.
 #[must_use]
-pub fn sheet_to_csv(sheet: &mut WorkSheet, ssf: &Ssf) -> String {
+pub fn sheet_to_csv(sheet: &mut WorkSheet, formatter: &NumberFormatter) -> String {
     let Some(range) = sheet.range else {
         return String::new();
     };
@@ -19,7 +21,7 @@ pub fn sheet_to_csv(sheet: &mut WorkSheet, ssf: &Ssf) -> String {
                 output.push(',');
             }
             let cell = sheet.cells.get_mut(&encode_cell(CellAddress { r, c }));
-            let text = cell_text(cell, ssf);
+            let text = cell_text(cell, formatter);
             if r == range.s.r && c == range.s.c && text == "ID" {
                 output.push_str("\"ID\"");
             } else {
@@ -44,7 +46,7 @@ fn write_field(output: &mut String, text: &str) {
 }
 
 /// Prefer present scalar values, otherwise replay non-array formulas.
-fn cell_text(cell: Option<&mut CellObject>, ssf: &Ssf) -> String {
+fn cell_text(cell: Option<&mut CellObject>, formatter: &NumberFormatter) -> String {
     let Some(cell) = cell else {
         return String::new();
     };
@@ -55,7 +57,12 @@ fn cell_text(cell: Option<&mut CellObject>, ssf: &Ssf) -> String {
             .filter(|_| cell.array_formula.as_ref().is_none_or(String::is_empty))
             .map_or_else(String::new, |formula| format!("={formula}"));
     }
-    match format_cell(Some(cell), None, &super::CellFormatOptions::default(), ssf) {
+    match format_cell(
+        Some(cell),
+        None,
+        &super::CellFormatOptions::default(),
+        formatter,
+    ) {
         CellValue::Text(text) => text,
         value @ CellValue::Date(_) => super::format_cell::raw_text(&value),
         CellValue::Number(n) => super::write_num::spelling(n),

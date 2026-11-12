@@ -42,7 +42,7 @@
   "record": {
     "file": "iso-1904.xlsx",
     "date1904": true,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

@@ -420,7 +420,7 @@ mod tests {
 
     #[test]
     fn fingerprint_collisions_never_change_range_outputs() {
-        use crate::spreadsheet::{self, Ssf};
+        use crate::spreadsheet::{self, NumberFormatter};
         FORCE_COLLISIONS.set(true);
         let mut assembly = Assembly::default();
         let first = assembly.raw("Data".into());
@@ -441,7 +441,7 @@ mod tests {
                     .join(file),
             )
             .unwrap();
-            let book = spreadsheet::read(&bytes, file, &mut Ssf::default()).unwrap();
+            let book = spreadsheet::read(&bytes, file, &mut NumberFormatter::default()).unwrap();
             assert_eq!(
                 book.sheets[row["sheet"].as_str().unwrap()]
                     .as_ref()

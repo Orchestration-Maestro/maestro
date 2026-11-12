@@ -76,7 +76,7 @@
   "record": {
     "file": "formats.xlsx",
     "date1904": false,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

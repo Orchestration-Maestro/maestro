@@ -1,5 +1,5 @@
 {
-  "crates/maestro-app/tests/ssf_format.rs::ssf_general_dispatch": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_general_dispatch": [
     "general_dispatch-0",
     "general_dispatch-1",
     "general_dispatch-2",
@@ -72,7 +72,7 @@
     "boundary-4",
     "boundary-5"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_section_layouts": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_section_layouts": [
     "section_layouts-65",
     "section_layouts-66",
     "section_layouts-67",
@@ -111,7 +111,7 @@
     "section_layouts-100",
     "section_layouts-161"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_conditional_selection": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_conditional_selection": [
     "conditional_selection-101",
     "conditional_selection-102",
     "conditional_selection-103",
@@ -129,7 +129,7 @@
     "conditional_selection-115",
     "conditional_selection-116"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_condition_thresholds": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_condition_thresholds": [
     "condition_thresholds-117",
     "condition_thresholds-118",
     "condition_thresholds-119",
@@ -149,7 +149,7 @@
     "condition_thresholds-133",
     "condition_thresholds-134"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_empty_and_excess_sections": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_empty_and_excess_sections": [
     "empty_and_excess_sections-135",
     "empty_and_excess_sections-136",
     "empty_and_excess_sections-137",
@@ -177,7 +177,7 @@
     "empty_and_excess_sections-159",
     "empty_and_excess_sections-160"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_nonfinite_and_failures": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_nonfinite_and_failures": [
     "nonfinite_and_failures-162",
     "nonfinite_and_failures-163",
     "nonfinite_and_failures-164",
@@ -190,7 +190,7 @@
     "nonfinite_and_failures-171",
     "nonfinite_and_failures-172"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_numeric_ids": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_numeric_ids": [
     "numeric_ids-173",
     "numeric_ids-174",
     "numeric_ids-175",
@@ -218,7 +218,7 @@
     "numeric_ids-197",
     "numeric_ids-198"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_option_consumption": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_option_consumption": [
     "option_consumption-199",
     "option_consumption-200",
     "option_consumption-201",
@@ -234,7 +234,7 @@
     "boundary-6",
     "boundary-7"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_date_serial_conversion": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_date_serial_conversion": [
     "date_serial_conversion-211",
     "date_serial_conversion-215",
     "date_serial_conversion-219",
@@ -248,7 +248,7 @@
     "date_serial_conversion-251",
     "date_serial_conversion-255"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_date_general": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_date_general": [
     "date_general-212",
     "date_general-213",
     "date_general-214",
@@ -294,7 +294,7 @@
     "date_general-265",
     "date_general-266"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_date_epoch_routes": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_date_epoch_routes": [
     "date_epoch_routes-267",
     "date_epoch_routes-268",
     "date_epoch_routes-269",
@@ -302,11 +302,11 @@
     "date_epoch_routes-271",
     "date_epoch_routes-272"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_quoted_delimiter_fix": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_quoted_delimiter_fix": [
     "quoted_delimiter_fix-273",
     "quoted_delimiter_fix-274"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_quoted_controls": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_quoted_controls": [
     "quoted_controls-275",
     "quoted_controls-276",
     "quoted_controls-277",
@@ -314,7 +314,7 @@
     "quoted_controls-279",
     "quoted_controls-280"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_mixed_text_numeric_sections": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_mixed_text_numeric_sections": [
     "mixed_text_numeric_sections-281",
     "mixed_text_numeric_sections-282",
     "mixed_text_numeric_sections-283",
@@ -324,7 +324,7 @@
     "mixed_text_numeric_sections-287",
     "mixed_text_numeric_sections-288"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_landed_corrections": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_landed_corrections": [
     "landed_corrections-289",
     "landed_corrections-290",
     "landed_corrections-291",
@@ -333,35 +333,35 @@
     "landed_corrections-294",
     "landed_corrections-295"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_load_auto": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_load_auto": [
     "load_auto-296"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_load_explicit": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_load_explicit": [
     "load_explicit-297",
     "boundary-8"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_load_full": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_load_full": [
     "load_full-298"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_load_table_bounds": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_load_table_bounds": [
     "load_table_bounds-299",
     "boundary-24"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_table_alias": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_table_alias": [
     "table_alias-300",
     "boundary-21",
     "boundary-22",
     "boundary-23"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_cell_cached": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_cell_cached": [
     "cell_cached-301",
     "cell_cached-302"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_cell_empty": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_cell_empty": [
     "cell_empty-303",
     "cell_empty-304"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_cell_patterns": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_cell_patterns": [
     "cell_patterns-305",
     "cell_patterns-306",
     "cell_patterns-307",
@@ -370,7 +370,7 @@
     "cell_patterns-317",
     "boundary-17"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_cell_override": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_cell_override": [
     "cell_override-308",
     "cell_override-315",
     "boundary-9",
@@ -380,7 +380,7 @@
     "boundary-13",
     "boundary-14"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_cell_dates": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_cell_dates": [
     "cell_dates-309",
     "cell_dates-312",
     "cell_dates-313",
@@ -390,7 +390,7 @@
     "boundary-25",
     "boundary-26"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_cell_error_text": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_cell_error_text": [
     "cell_error_text-318",
     "cell_error_text-319",
     "cell_error_text-320",
@@ -402,7 +402,7 @@
     "cell_error_text-326",
     "cell_error_text-327"
   ],
-  "crates/maestro-app/tests/ssf_format.rs::ssf_retained_identity": [
+  "crates/maestro-office/tests/spreadsheet_format.rs::formatter_retained_identity": [
     "retained_identity-339"
   ],
   "crates/maestro-app/tests/workbooks.rs::workbook_numeric_codes_and_custom_sections": [

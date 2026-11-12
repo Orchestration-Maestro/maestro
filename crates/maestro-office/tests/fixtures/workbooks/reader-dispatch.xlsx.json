@@ -142,7 +142,7 @@
   "record": {
     "file": "reader-dispatch.xlsx",
     "date1904": false,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

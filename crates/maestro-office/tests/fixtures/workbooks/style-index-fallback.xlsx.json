@@ -42,7 +42,7 @@
   "record": {
     "file": "style-index-fallback.xlsx",
     "date1904": false,
-    "ssf": [
+    "formats": [
       [
         0,
         "General"

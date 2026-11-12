@@ -1,5 +1,5 @@
 //! Shared prepared suffix positions with globstar link eligibility.
-use maestro_pattern::{Minimatch, ParseReturnFiltered};
+use maestro_pattern::{GlobMatcher, ParseReturnFiltered};
 /// Identity of one prepared suffix, retained across directory transitions.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) struct Pattern {
@@ -10,18 +10,18 @@ pub(super) struct Pattern {
 }
 impl Pattern {
     /// Borrows the pending component.
-    pub(super) fn part(self, matcher: &Minimatch) -> &ParseReturnFiltered {
+    pub(super) fn part(self, matcher: &GlobMatcher) -> &ParseReturnFiltered {
         &matcher.set()[self.alternative][self.index]
     }
     /// Consumes one component without copying the suffix's state.
-    pub(super) fn rest(self, matcher: &Minimatch) -> Option<Self> {
+    pub(super) fn rest(self, matcher: &GlobMatcher) -> Option<Self> {
         (self.index + 1 < matcher.set()[self.alternative].len()).then_some(Self {
             index: self.index + 1,
             ..self
         })
     }
     /// Selects a native root and the first component after it.
-    pub(super) fn root(self, matcher: &Minimatch) -> Option<(String, usize)> {
+    pub(super) fn root(self, matcher: &GlobMatcher) -> Option<(String, usize)> {
         if self.index != 0 {
             return None;
         }

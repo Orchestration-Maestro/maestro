@@ -8,9 +8,9 @@ touches no file, clock or network, so the same code runs natively and in the bro
 Read a workbook, then write one sheet as CSV:
 
 ```rust
-use maestro_office::spreadsheet::{self, Ssf};
+use maestro_office::spreadsheet::{self, NumberFormatter};
 
-let mut format = Ssf::default();
+let mut format = NumberFormatter::default();
 let mut book = spreadsheet::read(&bytes, "book.xlsx", &mut format)?;
 if let Some(Ok(sheet)) = book.sheets.get_mut("Sheet1") {
     let csv = spreadsheet::sheet_to_csv(sheet, &format);
@@ -72,24 +72,24 @@ prepare owned data and markup; they do not mount a native preview or write files
   recognition, not validation of syntax or field widths.
 
 The [numeric/calendar library inventory](libraries/spreadsheet-formats.md)
-documents the underlying primitives. `read(bytes, name, &mut ssf)` uses the same
+documents the underlying primitives. `read(bytes, name, &mut formatter)` uses the same
 selected-section evaluator for workbook number, currency, percentage, scientific,
 fraction, date and custom conditional formats.
 
-`Ssf::format` accepts `NumberFormat::Code` (including empty codes) or
+`NumberFormatter::format` accepts `NumberFormat::Code` (including empty codes) or
 `NumberFormat::Id`, a borrowed `CellValue` and `FormatOptions`. Supplied tables
 replace direct active-table lookup; mapped fallback can still use the active
 table. Nonempty `date_nf` replaces exact `m/d/yy` or ID14. Owned UTC
 `CellValue::Date` inputs reuse the real-date serial conversion; General dispatch
 uses ID14 with the same table, date override and epoch options.
 
-`Ssf::load` overwrites an explicit ID or deduplicates before choosing the first
+`NumberFormatter::load` overwrites an explicit ID or deduplicates before choosing the first
 hole in 0..392; a full range replaces391. `load_table` copies slots through391,
 including empty codes, and leaves the same-owner table unchanged.
-`Ssf::get_table` returns a shared mutable format table. Reading XLSX replaces
+`NumberFormatter::get_table` returns a shared mutable format table. Reading XLSX replaces
 the current table slot without changing earlier handles; XLS retains that slot.
 Both readers repair the producer date code `d.m` to `d\.m` before loading it;
-direct `Ssf::load` calls preserve the supplied code.
+direct `NumberFormatter::load` calls preserve the supplied code.
 `WorkBook::spreadsheet` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
 `WorkBook::sheets` stores a `Result<WorkSheet, WorkbookError>` for each named sheet.
@@ -119,7 +119,7 @@ Raw string-cell escapes and format-code attributes decode once after XML entity
 decoding; shared and inline strings are not decoded again. XLSX text normalizes
 CRLF to LF; XLS preserves raw text.
 
-`format_cell(cell, value, options, ssf)` respects present caches, including empty
+`format_cell(cell, value, options, formatter)` respects present caches, including empty
 text, before the optional non-null value override. It tries `z` before the XF
 format ID and caches only successful formatting. Date-classified cells can
 prepare `z` from `CellFormatOptions::date_nf`; standalone table/epoch options
@@ -240,7 +240,7 @@ and brackets protect XLSX `RC`, `R1C1` and bracketed spellings.
 
 ## Default CSV
 
-`sheet_to_csv(&mut sheet, &ssf)` traverses the declared inclusive rectangle with
+`sheet_to_csv(&mut sheet, &formatter)` traverses the declared inclusive rectangle with
 comma fields and LF rows. Missing ranges produce empty text. Blank rows, columns
 and declared trailing extent remain; hidden rows/columns and merges do not change
 traversal. There is no unconditional final LF.
@@ -608,7 +608,7 @@ and list level text keeps its literal `%`, quotes and backslashes.
 
 ## Worksheet tables
 
-`sheet_to_html(&mut worksheet, id, &ssf)` returns a table fragment over the declared
+`sheet_to_html(&mut worksheet, id, &formatter)` returns a table fragment over the declared
 range. It preserves absolute cell addresses, first-match merge order, spans and
 formatted caches. Missing/null scalars have empty display content. Generated `h`
 markup precedes escaped formatted text; fallback formatting uses the existing

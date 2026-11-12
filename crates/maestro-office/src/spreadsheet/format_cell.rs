@@ -1,5 +1,5 @@
 //! Retained spreadsheet scalars and default cached text.
-use super::{GeneralValue, Ssf};
+use super::{GeneralValue, NumberFormatter};
 /// Owned scalar independent of a cell's declared type.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum CellValue {
@@ -105,7 +105,7 @@ pub fn format_cell(
     cell: Option<&mut CellObject>,
     value: Option<&CellValue>,
     options: &CellFormatOptions<'_>,
-    ssf: &Ssf,
+    formatter: &NumberFormatter,
 ) -> CellValue {
     let Some(cell) = cell.filter(|c| !matches!(c.t, None | Some(ExcelDataType::Stub))) else {
         return CellValue::Text(String::new());
@@ -126,7 +126,7 @@ pub fn format_cell(
     let value = value
         .filter(|v| !matches!(v, CellValue::Null | CellValue::Missing))
         .unwrap_or(&cell.v);
-    match safe_format(cell, value, ssf) {
+    match safe_format(cell, value, formatter) {
         Ok(text) => {
             cell.w = Some(text.clone());
             CellValue::Text(text)
@@ -145,7 +145,7 @@ fn active_format(format: &super::NumberFormat) -> bool {
 fn safe_format(
     cell: &CellObject,
     value: &CellValue,
-    ssf: &Ssf,
+    formatter: &NumberFormatter,
 ) -> Result<String, super::FormatError> {
     let date = if let (Some(ExcelDataType::Date), CellValue::Date(date)) = (cell.t, value) {
         Some(CellValue::Number(super::datenum::datenum_date(date, false)))
@@ -155,13 +155,13 @@ fn safe_format(
     let value = date.as_ref().unwrap_or(value);
     let options = super::FormatOptions::default();
     if let Some(code) = &cell.z
-        && let Ok(text) = ssf.format(code, value, &options)
+        && let Ok(text) = formatter.format(code, value, &options)
     {
         return Ok(text);
     }
     let id = cell.xf.as_ref().map_or(0, |xf| xf.num_fmt_id);
     let id = if id == 0 && date.is_some() { 14 } else { id };
-    ssf.format(&super::NumberFormat::Id(id), value, &options)
+    formatter.format(&super::NumberFormat::Id(id), value, &options)
 }
 /// Preserve readable raw scalar spelling when neither format is supported.
 pub(super) fn raw_text(value: &CellValue) -> String {
