@@ -1,7 +1,7 @@
 //! PTY effects, host colours and ordered replies.
 
 use super::super::*;
-use maestro_terminal::{Terminal, color::Rgb};
+use maestro_terminal_emulator::{Terminal, color::Rgb};
 use maestro_workspace::tiling::PaneId;
 
 fn current_palette_color(pane: &PaneTerminal, index: u8) -> Rgb {

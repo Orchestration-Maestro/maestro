@@ -4,7 +4,7 @@ use super::{
     PaneTerminal, ScrollMetrics,
     reads::{ReadFormat, recent},
 };
-use maestro_terminal::{Terminal, screens::Key, terminal::ScrollViewport};
+use maestro_terminal_emulator::{Terminal, screens::Key, terminal::ScrollViewport};
 
 impl PaneTerminal {
     /// Resize while preserving the bottom-relative scroll position and return replies.

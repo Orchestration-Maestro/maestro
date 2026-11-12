@@ -12,7 +12,7 @@ preceding text.
 17.0 `emoji-variation-sequences.txt` as inclusive constant ranges. The compiled
 property library does not expose this sequence-base property.
 
-The fixtures under `crates/maestro-terminal/tests/fixtures/unicode/` retain
+The fixtures under `crates/maestro-terminal-emulator/tests/fixtures/unicode/` retain
 captured scalar-property runs and pairwise transitions. Each property row holds
 a hexadecimal range start, scalar width, zero-width-in-cluster flag, tailored
 break property and variation-base flag. Each transition row holds the incoming

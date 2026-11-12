@@ -411,8 +411,8 @@ Each edge lands in the first commit of its delivery, with the crate-table row in
 | `maestro-detection` → `maestro-process` | foreground-job facts | 4 |
 | `maestro-workspace` → `maestro-lock` | snapshot writes | 6 |
 | `maestro-detection` → `maestro-lock` | catalog commits | 7 |
-| `maestro-daemon` → `maestro-terminal` | first daemon use of the emulator (already allowed; the required edge is added with the code) | 10 |
-| `maestro-app` → `maestro-terminal` | terminal re-exports for the multiplexer | 26 |
+| `maestro-daemon` → `maestro-terminal-emulator` | first daemon use of the emulator (already allowed; the required edge is added with the code) | 10 |
+| `maestro-app` → `maestro-terminal-emulator` | terminal re-exports for the multiplexer | 26 |
 | `maestro-multiplexer` → `maestro-protocol` | frame records for the pane render and the frame encoder | 26 |
 | `maestro-daemon` → `maestro-lock` | announcements store | 27 |
 
