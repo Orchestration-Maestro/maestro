@@ -9,7 +9,7 @@ pub(super) type Reply = std::sync::mpsc::Sender<Result<(), String>>;
 
 /// The guest resource retains only its original frame identity and admission.
 #[derive(Clone)]
-pub struct Endpoint(Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
     /// Forwards owned raw bytes on the sole request pump without storing a sink borrow.
