@@ -1,6 +1,6 @@
 //! Tool, debug and abort rows mounted directly in the page with original operands.
 use crate::contributions_support::{body, computed, localized_view, rgb, select, text};
-use maestro_app::{JsonObject, ToolCall, ToolResultMessage};
+use maestro_models::{JsonObject, ToolCall, ToolResultMessage};
 use maestro_web::{
     components::messages::{AbortedMessage, ToolMessage, ToolMessageDebugView},
     page::{DomContent, DomRoot, DomView},
@@ -27,7 +27,7 @@ type Envelope = (
     String,
     String,
     bool,
-    Vec<maestro_app::UserBlock>,
+    Vec<maestro_models::UserBlock>,
     f64,
     Option<Details>,
 );

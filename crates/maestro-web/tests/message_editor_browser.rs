@@ -4,7 +4,8 @@ use crate::{
     contributions_support::{container, frames, host, text, view},
     dialog_support::{Prompts, press, settled, type_text, until},
 };
-use maestro_app::{Model, ThinkingLevel};
+use maestro_agent::ThinkingLevel;
+use maestro_models::Model;
 use maestro_web::{EditorControls, MessageEditor, MessageEditorProps, SharedAttachment};
 use std::{
     cell::{Cell, RefCell},

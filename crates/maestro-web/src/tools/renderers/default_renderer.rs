@@ -24,7 +24,7 @@ pub(crate) fn status<D>(
 }
 /// Format a truthy input, parsing a string once and preserving array structure.
 pub(crate) fn format_params(value: &Value) -> Result<Option<String>, ToolUiError> {
-    if !maestro_app::is_truthy(value) {
+    if !maestro_json::is_truthy(value) {
         return Ok(None);
     }
     let parsed = value
@@ -34,7 +34,7 @@ pub(crate) fn format_params(value: &Value) -> Result<Option<String>, ToolUiError
 }
 /// Use the shared canonical JSON writer.
 fn pretty(value: &Value) -> Result<String, ToolUiError> {
-    maestro_app::pretty_json(value).map_err(|error| ToolUiError::Presentation(error.to_string()))
+    maestro_json::pretty_json(value).map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
 /// One literal listing and its selected language.
 #[cfg(any(target_arch = "wasm32", test))]

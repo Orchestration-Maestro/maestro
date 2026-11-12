@@ -92,7 +92,8 @@ fn document_links_decode_names_and_values_as_form_data() {
         replay(&row);
         if row.name == "decoded-link-selects-literal-entry-not-decoy" {
             let doc = session_document_support::load(&row).unwrap();
-            let maestro_app::Presence::Present(serde_json::Value::String(id)) = &doc.leaf_id else {
+            let maestro_session::Presence::Present(serde_json::Value::String(id)) = &doc.leaf_id
+            else {
                 panic!("missing selected identity")
             };
             assert_eq!(

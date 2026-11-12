@@ -4,7 +4,7 @@ use crate::{
     document_card_support as cards,
     recipes::{self, view},
 };
-use maestro_app::JsonObject;
+use maestro_models::JsonObject;
 use maestro_web::{
     get_tool_renderer, register_tool_renderer, render_tool, set_show_json_mode,
     tools::{

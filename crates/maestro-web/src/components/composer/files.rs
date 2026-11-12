@@ -178,7 +178,7 @@ async fn read(file: &File) -> Result<maestro_app::browser::utils::attachments::A
         name: &name,
         mime_type: &mime,
     };
-    load_attachment(source, None, &maestro_app::default_fetch())
+    load_attachment(source, None, &maestro_models::default_fetch())
         .await
         .map_err(|error| error.to_string())
 }

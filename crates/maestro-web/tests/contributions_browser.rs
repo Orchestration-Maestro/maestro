@@ -4,7 +4,8 @@ use crate::contributions_support::{
     PACKAGE, Text, base, body, container, contributions, document, driver, host, origin, slot,
     text, until, view,
 };
-use maestro_app::{AgentMessage, JsonObject, SharedHandle};
+use maestro_agent::AgentMessage;
+use maestro_models::{JsonObject, SharedHandle};
 use maestro_web::{
     MessageRenderer, RUNTIME_MESSAGE_ROUTER,
     browser::values::BrowserSandboxValue,
@@ -113,7 +114,7 @@ impl ToolRenderer<JsonObject, Value, Box<dyn DomContent>> for NativeTool {
 }
 /// Same-module page message renderer replacing the module's.
 struct NativeMessage;
-impl MessageRenderer<maestro_app::NoCustomMessages, Box<dyn DomContent>> for NativeMessage {
+impl MessageRenderer<maestro_agent::NoCustomMessages, Box<dyn DomContent>> for NativeMessage {
     fn render(&self, _: &AgentMessage) -> Result<Box<dyn DomContent>, ToolUiError> {
         Ok(Box::new(Text("replacement")))
     }
@@ -547,8 +548,11 @@ pub async fn undeclared_and_duplicate_definitions_are_rejected(import_module: js
     );
     assert_eq!(window.custom_elements().get("qa-page-view"), defined);
     // Defining the built-in elements again for the same page is not attempted.
-    let again =
-        ContributionHost::<maestro_app::NoCustomMessages>::new(&view, None, import_module.clone());
+    let again = ContributionHost::<maestro_agent::NoCustomMessages>::new(
+        &view,
+        None,
+        import_module.clone(),
+    );
     assert!(again.is_ok());
 }
 
@@ -597,7 +601,7 @@ pub async fn removing_a_message_renderer_keeps_a_later_replacement(
         message_text(&view, &user_message()).as_deref(),
         Some("message:user:hi")
     );
-    let replacement: Rc<dyn MessageRenderer<maestro_app::NoCustomMessages, Box<dyn DomContent>>> =
+    let replacement: Rc<dyn MessageRenderer<maestro_agent::NoCustomMessages, Box<dyn DomContent>>> =
         Rc::new(NativeMessage);
     register_message_renderer("user", replacement);
     drop(registrations);
@@ -677,8 +681,12 @@ pub async fn class_definition_outlives_mounted_views(import_module: js_sys::Func
     assert_ne!(first, second);
     assert_eq!(text(&second), "card:Two");
     assert!(
-        ContributionHost::<maestro_app::NoCustomMessages>::new(&view, None, import_module.clone())
-            .is_ok()
+        ContributionHost::<maestro_agent::NoCustomMessages>::new(
+            &view,
+            None,
+            import_module.clone()
+        )
+        .is_ok()
     );
     assert_eq!(registry.get("copy-button"), copy);
 }
@@ -709,7 +717,7 @@ impl MessageConsumer<BrowserSandboxValue> for Received {
     fn handle_message(
         &self,
         message: BrowserSandboxValue,
-    ) -> maestro_app::BoxFuture<Result<(), maestro_app::DiagnosticErrorInfo>> {
+    ) -> maestro_models::BoxFuture<Result<(), maestro_models::DiagnosticErrorInfo>> {
         let text = js_sys::JSON::stringify(&message.0)
             .unwrap()
             .as_string()

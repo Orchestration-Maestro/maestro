@@ -7,7 +7,8 @@ use crate::contributions_support::{
 use crate::native_html_artifact_support::{
     LOGGING, QUIET, before, failing, frame, listed, logged, marker, srcdoc,
 };
-use maestro_app::{DiagnosticErrorInfo, Runtime, SandboxRuntimeProvider, SharedHandle};
+use maestro_app::{Runtime, SandboxRuntimeProvider};
+use maestro_models::{DiagnosticErrorInfo, SharedHandle};
 use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::{
     HtmlArtifact,
@@ -454,7 +455,7 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Editing {
         _: maestro_app::browser::components::sandbox::providers::SandboxRespond<
             BrowserSandboxValue,
         >,
-    ) -> maestro_app::BoxFuture<Result<(), DiagnosticErrorInfo>> {
+    ) -> maestro_models::BoxFuture<Result<(), DiagnosticErrorInfo>> {
         let text = js_sys::Reflect::get(&message.0, &"text".into()).unwrap();
         let object: &js_sys::Object = message.0.unchecked_ref();
         match text.as_string().as_deref() {

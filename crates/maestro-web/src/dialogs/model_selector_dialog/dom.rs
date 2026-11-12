@@ -20,7 +20,9 @@ use crate::{
     page::{DomView, icon, report},
     tools::types::ToolUiError,
 };
-use maestro_app::{CustomProviderType, Model, Presence, get_app_storage};
+use maestro_app::{CustomProviderType, get_app_storage};
+use maestro_models::Model;
+use maestro_session::Presence;
 use std::{
     any::Any,
     cell::{Cell, RefCell},

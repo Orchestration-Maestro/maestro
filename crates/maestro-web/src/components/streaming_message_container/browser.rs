@@ -6,7 +6,7 @@ use crate::{
     page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
-use maestro_app::{AgentMessage, CustomAgentMessages};
+use maestro_agent::{AgentMessage, CustomAgentMessages};
 use std::{
     cell::RefCell,
     collections::HashSet,

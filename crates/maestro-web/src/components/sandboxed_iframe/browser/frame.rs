@@ -4,8 +4,8 @@ use super::{
 };
 use crate::components::sandboxed_iframe::PrepareHtmlOptions;
 use js_sys::Reflect;
-use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleRuntimeProvider;
+use maestro_models::SharedHandle;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use web_sys::{Document, DomParser, HtmlIFrameElement, SupportedType};

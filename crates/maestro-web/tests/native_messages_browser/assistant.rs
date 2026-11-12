@@ -1,6 +1,6 @@
 //! Assistant rows through actual native children and application-owned records.
 use crate::contributions_support::{body, select, text};
-use maestro_app::{JsonObject, SharedAssistantMessage, ToolResultMessage};
+use maestro_models::{JsonObject, SharedAssistantMessage, ToolResultMessage};
 use maestro_web::{
     components::messages::{AssistantMessage, ToolResults},
     page::{DomContent, DomRoot, DomView},
@@ -26,7 +26,7 @@ struct Seen {
     /// Name of the registration actually reached.
     selected: String,
     /// Exact result identity, error flag, timestamp and text content.
-    result: Option<(String, bool, f64, Vec<maestro_app::UserBlock>)>,
+    result: Option<(String, bool, f64, Vec<maestro_models::UserBlock>)>,
     /// Effective tool streaming state.
     streaming: bool,
 }
@@ -396,18 +396,18 @@ fn assert_live_results(recorder: &Recorder) {
     assert!(seen.iter().all(|seen| seen.streaming));
 }
 /// Required model usage populated from the recorder's independent counters.
-fn recorded_usage(fixture: &Value) -> maestro_app::Usage {
+fn recorded_usage(fixture: &Value) -> maestro_models::Usage {
     let value = &fixture["assistantUsage"];
-    maestro_app::Usage {
+    maestro_models::Usage {
         input: value["input"].as_f64().unwrap(),
         output: value["output"].as_f64().unwrap(),
         cache_read: value["cacheRead"].as_f64().unwrap(),
         cache_write: value["cacheWrite"].as_f64().unwrap(),
-        cost: maestro_app::UsageCost {
+        cost: maestro_models::UsageCost {
             total: value["cost"]["total"].as_f64().unwrap(),
-            ..maestro_app::UsageCost::default()
+            ..maestro_models::UsageCost::default()
         },
-        ..maestro_app::Usage::default()
+        ..maestro_models::Usage::default()
     }
 }
 /// Replay all thirty-six independent usage, streaming and outcome records.
@@ -508,7 +508,7 @@ fn current_action(view: &DomView, fixture: &Value) {
     );
     assert_eq!((first.get(), second.get()), (1, 1));
     row.is_streaming = false;
-    message.write().unwrap().usage = maestro_app::Usage::default();
+    message.write().unwrap().usage = maestro_models::Usage::default();
     row.update(&root, view).unwrap();
     assert_eq!(text(&select(node, ".maestro-message-usage")), "");
     let current: HtmlElement = select(node, "button.maestro-message-usage").unchecked_into();
@@ -572,7 +572,7 @@ fn localized_outcomes(view: &DomView, fixture: &Value) {
     for case in fixture["assistantStrings"].as_array().unwrap() {
         let view =
             crate::contributions_support::localized_view(view, case["language"].as_str().unwrap());
-        message.write().unwrap().stop_reason = maestro_app::StopReason::Error;
+        message.write().unwrap().stop_reason = maestro_models::StopReason::Error;
         row.update(&root, &view).unwrap();
         assert_eq!(
             text(&select(node, ".maestro-message-error")),
@@ -586,7 +586,7 @@ fn localized_outcomes(view: &DomView, fixture: &Value) {
             u64::from(node.query_selector_all("b").unwrap().length()),
             case["errorElements"].as_u64().unwrap()
         );
-        message.write().unwrap().stop_reason = maestro_app::StopReason::Aborted;
+        message.write().unwrap().stop_reason = maestro_models::StopReason::Aborted;
         row.update(&root, &view).unwrap();
         assert!(optional_text(node, ".maestro-message-error").is_none());
         assert_eq!(

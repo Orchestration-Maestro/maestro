@@ -1,6 +1,7 @@
 //! Numeric display text for browser consumers.
 use super::localization::{I18n, I18nError};
-use maestro_app::{ModelCost, browser::strip_decimal};
+use maestro_app::browser::strip_decimal;
+use maestro_models::ModelCost;
 
 /// Render a currency amount using four-place fixed number formatting.
 #[must_use]
@@ -55,7 +56,7 @@ pub fn format_token_count(count: f64) -> String {
 
 /// Render nonzero, non-NaN usage fields in input/output/read/write/cost order.
 #[must_use]
-pub fn format_usage(usage: Option<&maestro_app::Usage>) -> String {
+pub fn format_usage(usage: Option<&maestro_models::Usage>) -> String {
     let Some(usage) = usage else {
         return String::new();
     };

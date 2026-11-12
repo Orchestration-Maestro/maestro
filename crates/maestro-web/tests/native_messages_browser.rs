@@ -1,9 +1,8 @@
 //! User rows mounted directly in the page with original application operands.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, view};
-use maestro_app::{
-    AgentMessage, NoCustomMessages, browser::components::records::CustomAgentMessages,
-};
+use maestro_agent::{AgentMessage, NoCustomMessages};
+use maestro_app::browser::components::records::CustomAgentMessages;
 use maestro_web::{components::messages::UserMessage, page::DomContent as _};
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};

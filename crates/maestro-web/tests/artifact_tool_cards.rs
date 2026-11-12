@@ -20,7 +20,7 @@ struct Part {
 }
 #[test]
 fn artifact_diffs_keep_ordered_runs_prefixes_and_line_endings() {
-    use maestro_app::{Change, diff_lines};
+    use maestro_tools::{Change, diff_lines};
     let cases: Vec<DiffCase> =
         serde_json::from_str(include_str!("fixtures/artifact_diff_runs.json")).unwrap();
     assert_eq!(cases.len(), 16);

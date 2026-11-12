@@ -1,6 +1,7 @@
 //! Page operands, the fixture package and browser observations shared by contribution exports.
 #![cfg(all(test, target_arch = "wasm32"))]
-use maestro_app::{SandboxUrlProvider, SharedHandle, TextContent, ToolResultMessage, UserBlock};
+use maestro_app::SandboxUrlProvider;
+use maestro_models::{SharedHandle, TextContent, ToolResultMessage, UserBlock};
 use maestro_web::{
     I18n,
     page::{DomContent, DomRoot, DomView},

@@ -6,7 +6,7 @@ use crate::{
     page::{DomView, icon},
     tools::types::ToolUiError,
 };
-use maestro_app::{Model, ModelInput, models_are_equal};
+use maestro_models::{Model, ModelInput, models_are_equal};
 use std::collections::HashMap;
 use web_sys::{Element, Node};
 

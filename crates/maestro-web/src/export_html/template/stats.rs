@@ -1,6 +1,8 @@
 //! Whole-document message and reported-usage accounting.
 use super::document::{invalid, is_tool_call};
-use maestro_app::{SessionEntry, Usage, export_html::template::read_message, is_truthy};
+use maestro_json::is_truthy;
+use maestro_models::Usage;
+use maestro_session::{export_html::template::read_message, session_manager::SessionEntry};
 use serde_json::Value;
 use std::io;
 

@@ -9,7 +9,8 @@ use crate::{
     page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
-use maestro_app::{AutoDiscoveryProviderType, CustomProviderType, ManualProviderType, Presence};
+use maestro_app::{AutoDiscoveryProviderType, CustomProviderType, ManualProviderType};
+use maestro_session::Presence;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::closure::Closure;
 use web_sys::{Element, HtmlButtonElement};

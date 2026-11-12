@@ -12,7 +12,8 @@ use crate::{
     page::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
 };
-use maestro_app::{get_app_storage, get_providers};
+use maestro_app::get_app_storage;
+use maestro_models::get_providers;
 use std::{
     cell::{Cell, RefCell},
     rc::{Rc, Weak},

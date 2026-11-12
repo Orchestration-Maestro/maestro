@@ -273,7 +273,7 @@ fn native_binding(
     action: Rc<dyn Fn()>,
 ) -> (
     Rc<IdentityRenderer>,
-    maestro_app::ToolResultMessage<Rc<Cell<u32>>>,
+    maestro_models::ToolResultMessage<Rc<Cell<u32>>>,
 ) {
     let details = Rc::new(Cell::new(7));
     let renderer = Rc::new(IdentityRenderer {
@@ -281,7 +281,7 @@ fn native_binding(
         details: Rc::clone(&details),
         action,
     });
-    let result = maestro_app::ToolResultMessage {
+    let result = maestro_models::ToolResultMessage {
         tool_call_id: "native".into(),
         tool_name: "native".into(),
         content: Vec::new(),
@@ -337,7 +337,7 @@ pub fn native_defaults_register_once_and_keep_override_json_modes() {
     ] {
         let object = Some(ToolParams::object(members));
         let shown =
-            render_tool::<maestro_app::JsonObject, serde_json::Value>(name, object, None, false);
+            render_tool::<maestro_models::JsonObject, serde_json::Value>(name, object, None, false);
         assert_eq!(caption(shown.unwrap()), expected, "{name}");
         let json = Some(ToolParams::json(&params));
         let shown = render_tool::<serde_json::Value, serde_json::Value>(name, json, None, false);
@@ -358,7 +358,7 @@ pub fn native_defaults_register_once_and_keep_override_json_modes() {
     set_show_json_mode(true);
     let object = Some(ToolParams::object(members));
     let forced =
-        render_tool::<maestro_app::JsonObject, serde_json::Value>("bash", object, None, false);
+        render_tool::<maestro_models::JsonObject, serde_json::Value>("bash", object, None, false);
     assert_eq!(caption(forced.unwrap()), "Tool Call");
     set_show_json_mode(false);
     assert_eq!(
@@ -371,7 +371,7 @@ pub fn native_defaults_register_once_and_keep_override_json_modes() {
     drop(removed);
     let object = Some(ToolParams::object(members));
     let shown =
-        render_tool::<maestro_app::JsonObject, serde_json::Value>("bash", object, None, false);
+        render_tool::<maestro_models::JsonObject, serde_json::Value>("bash", object, None, false);
     assert_eq!(
         caption(shown.unwrap()),
         "Tool Call",
@@ -535,7 +535,7 @@ pub fn native_binding_reentrant_replacement_and_retained_handle() {
     );
     drop(retained);
     assert!(lifetime.upgrade().is_none());
-    let result = maestro_app::ToolResultMessage {
+    let result = maestro_models::ToolResultMessage {
         details: Some(Rc::clone(&replacement.details)),
         ..result
     };
@@ -905,7 +905,7 @@ fn observe_files(
 /// A rendered execution card for page content.
 fn execution_card(
     code: &str,
-    result: Option<&maestro_app::ToolResultMessage<serde_json::Value>>,
+    result: Option<&maestro_models::ToolResultMessage<serde_json::Value>>,
 ) -> Box<dyn DomContent> {
     use maestro_web::tools::javascript_repl::JavaScriptReplRenderer;
     let params = serde_json::json!({"title": "Run", "code": code});
@@ -948,7 +948,7 @@ pub async fn tool_disclosure_dom_retains_children_across_toggles_and_retargets(
         "same template keeps expansion"
     );
     let files = serde_json::json!({"files": [{"fileName": "a.txt", "mimeType": "text/plain", "contentBase64": "YQ==", "size": 1}]});
-    let result = maestro_app::ToolResultMessage {
+    let result = maestro_models::ToolResultMessage {
         details: Some(files),
         ..crate::contributions_support::result("out", false)
     };
@@ -1016,7 +1016,7 @@ fn assert_motion(header: &HtmlElement, body: &web_sys::Element) {
 async fn assert_result_branch_retains(
     (slot, parent): (&mut maestro_web::page::MountedContent, &web_sys::Element),
     view: &maestro_web::page::DomView,
-    result: &maestro_app::ToolResultMessage<serde_json::Value>,
+    result: &maestro_models::ToolResultMessage<serde_json::Value>,
 ) {
     use crate::contributions_support::{Clipboard, Recorded, select, until};
     let card = slot.root().unwrap().clone();

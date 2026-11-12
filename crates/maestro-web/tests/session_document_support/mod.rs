@@ -104,7 +104,10 @@ pub fn indexes(doc: &SessionDocument) -> Value {
 }
 /// Observe every tree occurrence and verify its record's actual borrowed owner.
 pub fn tree(doc: &SessionDocument) -> Value {
-    fn node(doc: &SessionDocument, n: &maestro_app::SessionTreeNode<'_>) -> Value {
+    fn node(
+        doc: &SessionDocument,
+        n: &maestro_session::session_manager::SessionTreeNode<'_>,
+    ) -> Value {
         let id = n.entry["id"].as_str().unwrap();
         assert!(std::ptr::eq(
             n.entry,
@@ -123,7 +126,7 @@ pub fn tree(doc: &SessionDocument) -> Value {
 pub fn stats(s: &maestro_web::export_html::template::Stats) -> Value {
     assert!(matches!(
         s.tokens.total_tokens,
-        maestro_app::Presence::Present(total)
+        maestro_session::Presence::Present(total)
             if total.to_bits() == 0.0_f64.to_bits()
     ));
     assert_eq!(s.tokens.cost.total.to_bits(), 0.0_f64.to_bits());
@@ -137,8 +140,8 @@ pub fn stats(s: &maestro_web::export_html::template::Stats) -> Value {
 /// Compare canonical public JSON, including ordered array occurrences.
 pub fn equal(actual: &Value, expected: &Value, name: &str) {
     assert_eq!(
-        maestro_app::compact_json(actual).unwrap(),
-        maestro_app::compact_json(expected).unwrap(),
+        maestro_json::compact_json(actual).unwrap(),
+        maestro_json::compact_json(expected).unwrap(),
         "{name}"
     );
 }
@@ -208,13 +211,13 @@ fn check_document(doc: &SessionDocument, expected: &Value, name: &str) {
     actual["globalStats"] = stats(&doc.global_stats);
     actual["tree"] = tree;
     match &doc.leaf_id {
-        maestro_app::Presence::Missing => {}
-        maestro_app::Presence::Null => actual["leafId"] = Value::Null,
-        maestro_app::Presence::Present(value) => actual["leafId"] = value.clone(),
+        maestro_session::Presence::Missing => {}
+        maestro_session::Presence::Null => actual["leafId"] = Value::Null,
+        maestro_session::Presence::Present(value) => actual["leafId"] = value.clone(),
     }
     if expected.get("keys").is_some() {
         let raw = &doc.data["raw"];
-        let compact = maestro_app::compact_json(raw).unwrap();
+        let compact = maestro_json::compact_json(raw).unwrap();
         let canonical: serde_json::Map<String, Value> = serde_json::from_str(&compact).unwrap();
         actual["keys"] = json!(canonical.keys().collect::<Vec<_>>());
         actual["negativeZero"] = json!(raw["zero"].as_f64().unwrap().is_sign_negative());

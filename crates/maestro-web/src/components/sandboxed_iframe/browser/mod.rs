@@ -8,7 +8,7 @@ use crate::components::sandbox::runtime_message_router::MessageConsumer;
 use js_sys::{JSON, Object, Reflect};
 use maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider;
 use maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider;
-use maestro_app::{DiagnosticErrorInfo, SharedHandle};
+use maestro_models::{DiagnosticErrorInfo, SharedHandle};
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsValue, closure::Closure};

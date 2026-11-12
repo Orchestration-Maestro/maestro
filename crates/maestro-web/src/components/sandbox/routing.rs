@@ -1,6 +1,7 @@
 //! Source generation for sandbox and extension runtime messages.
 use super::runtime_bundle::BUNDLE;
-use maestro_app::{DiagnosticErrorInfo, compact_json};
+use maestro_json::compact_json;
+use maestro_models::DiagnosticErrorInfo;
 
 /// Messaging intent available to runtime callers.
 pub enum MessageType {

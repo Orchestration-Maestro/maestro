@@ -18,7 +18,7 @@ struct Row {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct Input {
     params: Option<Value>,
-    result: Option<maestro_app::ToolResultMessage>,
+    result: Option<maestro_models::ToolResultMessage>,
     is_streaming: bool,
 }
 #[derive(Deserialize)]

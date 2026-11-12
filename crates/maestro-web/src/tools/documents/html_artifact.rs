@@ -9,7 +9,8 @@ use crate::{
         types::ToolUiError,
     },
 };
-use maestro_app::{SandboxRuntimeProvider, SandboxUrlProvider, SharedHandle};
+use maestro_app::{SandboxRuntimeProvider, SandboxUrlProvider};
+use maestro_models::SharedHandle;
 use std::{
     cell::{Cell, RefCell},
     rc::{Rc, Weak},

@@ -1,7 +1,8 @@
 //! List preparation reads each history entry a bounded number of times.
 use super::{MessageList, index};
 use crate::components::messages::{AssistantMessage, ToolResults};
-use maestro_app::{AgentMessage, NoCustomMessages, ToolResultMessage};
+use maestro_agent::{AgentMessage, NoCustomMessages};
+use maestro_models::ToolResultMessage;
 use serde_json::json;
 use std::{
     cell::Cell,

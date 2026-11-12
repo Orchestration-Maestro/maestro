@@ -67,7 +67,7 @@ pub fn run() {
     rows.push(normal);
     for row in rows {
         let params = &row["input"]["params"];
-        let mut message: maestro_app::ToolResultMessage =
+        let mut message: maestro_models::ToolResultMessage =
             serde_json::from_value(row["input"]["result"].clone()).unwrap();
         message.details = row["input"]["result"].get("details").cloned();
         let renderer = Forwarding {
