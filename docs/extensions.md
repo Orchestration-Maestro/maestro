@@ -8,7 +8,7 @@ system interfaces it imports. Installing an extension never compiles Rust.
 Use an extension to change how a session works: register a tool the model can
 call, inspect or block tool calls, change the assembled prompt, manage session
 history, add a provider, or offer dialogs and terminal components. The
-[working examples](../examples/extensions/README.md) show the patterns available in the shipped examples. Start with
+[working examples](../examples/extensions/README.md), which live in maestro-packages and which `just setup` fetches into a source checkout, show the available patterns. Start with
 [`hello.rs`](../examples/extensions/hello.rs), which registers one greeting tool.
 For terminal views, follow [component authoring and recipes](extensions/components.md)
 to connect host widgets, input, focus and cleanup.
@@ -40,7 +40,8 @@ Keep that checkout beside your extension project:
 
 ```text
 work/
-├── maestro/                 # SDK, canonical WIT and hello.rs
+├── maestro/                 # SDK and canonical WIT
+├── maestro-packages/        # hello.rs
 └── hello-extension/
     ├── Cargo.toml           # Rust dependencies and component library
     ├── Cargo.lock           # committed dependency resolution
@@ -51,17 +52,18 @@ work/
     └── dist/index.wasm      # built component, added before packaging
 ```
 
-From the directory that should contain both projects, obtain Maestro if it is
-not already there. Select the revision matching your installation before copying
-its toolchain or source:
+From the directory that should contain the projects, obtain Maestro and
+maestro-packages if they are not already there. Select the revisions matching your
+installation before copying the toolchain or source:
 
 ```sh
 git clone https://github.com/Orchestration-Maestro/maestro.git maestro
+git clone https://github.com/Orchestration-Maestro/maestro-packages.git maestro-packages
 mkdir hello-extension
 cd hello-extension
 mkdir src
 cp ../maestro/rust-toolchain.toml .
-cp ../maestro/examples/extensions/hello.rs src/lib.rs
+cp ../maestro-packages/examples/extensions/hello.rs src/lib.rs
 ```
 
 Create `Cargo.toml` with the following contents. The relative dependency path
@@ -155,12 +157,12 @@ unexpected resolution change. Commit the toolchain, manifest, lockfile and
 source together. Ignore `target/`; distribute the copied component rather than
 that build directory.
 
-For comparison, from the Maestro checkout you can build its unchanged greeting
-example with the registered example target:
+For comparison, from the maestro-packages checkout you can build the unchanged
+greeting example with its registered example target:
 
 ```sh
 cargo build --locked \
-  -p maestro-extensions-wasm --example hello --target wasm32-wasip2 --release
+  -p maestro-extension-examples --example hello --target wasm32-wasip2 --release
 ```
 
 That output is under `target/wasm32-wasip2/release/examples/hello.wasm`.
@@ -275,12 +277,12 @@ instead of continuing work with the old command context. See
 
 ### Check the recipe without a model
 
-From a Maestro checkout, run:
+From a maestro-packages checkout, run:
 
 ```sh
-cargo test --locked \
-  -p maestro-extensions-wasmtime --test integration \
-  extension_guide_builds_and_loads_from_a_clean_folder -- --nocapture
+just prepare-tests
+TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked \
+  -p maestro-extension-examples -E 'test(extension_guide)'
 ```
 
 This check creates a disposable project outside the Cargo workspace, uses the

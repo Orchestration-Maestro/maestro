@@ -1,4 +1,7 @@
 /target
+/examples/
+/.examples-fetch/
+/.examples-previous/
 node_modules/
 dist/
 *.log

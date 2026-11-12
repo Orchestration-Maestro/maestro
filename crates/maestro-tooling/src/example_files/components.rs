@@ -4,6 +4,7 @@ use std::{
     collections::HashSet,
     fs, io,
     path::{Path, PathBuf},
+    process::Command,
 };
 
 /// Gather documented files recursively in portable path order, excluding index pages and the
@@ -43,17 +44,37 @@ fn collect_into(folder: &Path, files: &mut Vec<PathBuf>) -> io::Result<()> {
     Ok(())
 }
 
+/// The shipped extension folder, beside the workspace manifest.
+const SHIPPED: &str = "examples/extensions";
+
+/// The workspace's shipped extension folder, when it has one that git does not ignore.
+///
+/// A checkout that fetches the package repository's tree ignores it, so a tree that is only
+/// fetched is never read as the workspace's own examples. A directory outside a repository
+/// ignores nothing.
+#[must_use]
+pub fn shipped(workspace: &Path) -> Option<PathBuf> {
+    let folder = workspace.join(SHIPPED);
+    if !folder.is_dir() {
+        return None;
+    }
+    let ignored = Command::new("git")
+        .current_dir(workspace)
+        .args(["check-ignore", "--quiet", "--", SHIPPED])
+        .status()
+        .is_ok_and(|status| status.success());
+    (!ignored).then_some(folder)
+}
+
 /// The folders whose source markers name components: the component crate's own fixture folder
 /// and the shipped extension folder at the workspace root, each when it exists.
 #[must_use]
 pub fn folders(workspace: &Path, component: &Path) -> Vec<PathBuf> {
-    [
-        component.join("tests/support"),
-        workspace.join("examples/extensions"),
-    ]
-    .into_iter()
-    .filter(|folder| folder.is_dir())
-    .collect()
+    [Some(component.join("tests/support")), shipped(workspace)]
+        .into_iter()
+        .flatten()
+        .filter(|folder| folder.is_dir())
+        .collect()
 }
 
 /// The guest package: it holds the setup example and Maestro's own fixed components.
