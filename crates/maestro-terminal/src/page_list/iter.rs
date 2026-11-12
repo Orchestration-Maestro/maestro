@@ -128,7 +128,7 @@ impl Chunk {
 
     /// Whether this chunk covers every addressable row of its current page.
     #[must_use]
-    pub fn full_page(self, list: &PageList) -> bool {
+    pub(crate) fn full_page(self, list: &PageList) -> bool {
         self.start == 0
             && list
                 .page(self.node)

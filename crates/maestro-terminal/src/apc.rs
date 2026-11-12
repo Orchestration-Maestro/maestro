@@ -12,7 +12,7 @@ pub enum Protocol {
 impl Protocol {
     /// Default encoded-payload limit for this protocol.
     #[must_use]
-    pub const fn default_max_bytes(self) -> usize {
+    pub(crate) const fn default_max_bytes(self) -> usize {
         match self {
             Self::Kitty => 65 * 1024 * 1024,
         }
