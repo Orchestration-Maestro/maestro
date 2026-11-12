@@ -171,6 +171,46 @@ held!(
     Capability::CustomClose(close) => close
 );
 
+held!(
+    /// A host style the extension may apply to text.
+    LentStyle,
+    maestro_extensions::presentation::BorderColor,
+    "extension style resource ended",
+    Capability::Style(style) => style
+);
+
+held!(
+    /// The host's code highlighting.
+    LentHighlighter,
+    std::rc::Rc<crate::guest_calls::paints::HighlightFn>,
+    "extension style resource ended",
+    Capability::Highlighter(highlight) => highlight
+);
+
+held!(
+    /// A settings row style the host lent.
+    LentRowStyle,
+    std::rc::Rc<crate::widget_lists::RowStyleFn>,
+    "extension style resource ended",
+    Capability::RowStyle(style) => style
+);
+
+held!(
+    /// The closer of an open settings submenu.
+    SubmenuCloser,
+    std::rc::Rc<dyn Fn(Option<String>)>,
+    "extension style resource ended",
+    Capability::SubmenuDone(done) => done
+);
+
+held!(
+    /// A native text callback lent to an authored editor.
+    LentText,
+    maestro_extensions::presentation::TextCallback,
+    "extension style resource ended",
+    Capability::Text(callback) => callback
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
