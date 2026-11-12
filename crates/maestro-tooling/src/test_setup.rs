@@ -323,9 +323,9 @@ fn stage_browser(
 
 /// Copy this command into `output`, keeping it intact when it already runs there.
 fn stage_tool(output: &Path) -> io::Result<()> {
-    let source = maestro_realpath::canonicalize(std::env::current_exe()?)?;
+    let source = maestro_path::fs::canonicalize(std::env::current_exe()?)?;
     let destination =
-        maestro_realpath::canonicalize(output)?.join(executable(EXPORTER, EXE_EXTENSION));
+        maestro_path::fs::canonicalize(output)?.join(executable(EXPORTER, EXE_EXTENSION));
     if source == destination {
         return Ok(());
     }
@@ -479,7 +479,7 @@ pub(crate) fn install_bundle(
     directory: &Path,
     environment: &Path,
 ) -> io::Result<Option<CompiledInstall>> {
-    let output = maestro_realpath::canonicalize(output).map_err(|error| at(output, &error))?;
+    let output = maestro_path::fs::canonicalize(output).map_err(|error| at(output, &error))?;
     if output.to_string_lossy().contains(['\n', '\r']) {
         return Err(at(&output, "the path must stay on one line"));
     }

@@ -72,7 +72,7 @@ Direct completion filters names by lowercase prefix. Resolved directories preced
 files, with stable host comparison within each class. Listing, home and comparison
 failures yield no suggestions; failed link metadata leaves that entry file-like.
 Candidates retain relative, `./`, home and absolute prefix styles; reconstructed
-components follow the [path utility](../../crates/maestro-path/src/lib.rs).
+components follow [`maestro-path`](../../crates/maestro-path/src/lib.rs).
 Only Windows separators are normalized to slashes; literal Unix backslashes remain
 filename characters. Paths containing ASCII spaces or an already quoted prefix
 are quoted.

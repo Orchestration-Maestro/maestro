@@ -113,7 +113,7 @@ pub(super) fn identities(metadata: &Metadata) -> Result<(), String> {
 
 /// Resolve a filesystem path or report its native failure.
 pub(super) fn canonical(path: &Path) -> Result<PathBuf, String> {
-    maestro_realpath::canonicalize(path)
+    maestro_path::fs::canonicalize(path)
         .map_err(|error| format!("cannot resolve {}: {error}", path.display()))
 }
 

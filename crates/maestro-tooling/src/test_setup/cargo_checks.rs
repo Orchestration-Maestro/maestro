@@ -39,7 +39,7 @@ struct Prepared {
 
 /// Validate the complete pair before returning paths that nextest can export.
 pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<Vec<(String, PathBuf)>> {
-    let output = maestro_realpath::canonicalize(output)?;
+    let output = maestro_path::fs::canonicalize(output)?;
     if output.to_string_lossy().contains(['\r', '\n']) {
         return Err(at(&output, "the path must stay on one line"));
     }

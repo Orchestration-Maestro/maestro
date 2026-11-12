@@ -148,16 +148,26 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - Dependencies point one way; core crates never use dedicated
   (non-core) crates as normal or build dependencies; the declared test-support
   development edges are permitted under their owners' target rules.
-- `maestro-path` is the foundation utility for lexical path strings. It sits
+- `maestro-path` owns path operations: lexical operations on path strings, and
+  the file-system module `maestro_path::fs`. It sits
   below layer 0 and depends on no workspace crate. Native normalization reuses its
   segment reducer without decoding path bytes or accessing the filesystem.
+  On native targets, `maestro_path::fs::read_dir` lists one directory's entries
+  sorted by file name on every platform; callers keep kind filtering, name
+  decoding and further ordering. `maestro_path::fs::canonicalize` resolves a
+  native path to its real path; on Windows it returns the ordinary form
+  (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes `\\s\sh\x`) through the
+  lexical conversion in `maestro_path::win32`. Callers keep their own fallback
+  and error policy. Conventions reject `std::fs::canonicalize`,
+  `tokio::fs::canonicalize` and the `canonicalize` method in production code
+  outside that module.
   Native crates may declare it as a production dependency without changing their
   layer, subject to the
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
-  Shared path helpers take supplied directory observations
+  Lexical path helpers take supplied directory observations
   and add no filesystem service, directory cache, scheduler or workspace dependency.
   `native_homedir` alone reads the native home environment and account entry.
-  Final-link traversal uses a supplied observation callback; the utility owns
+  Final-link traversal uses a supplied observation callback; `maestro-path` owns
   relative-target joining and the forty-link bound, while callers retain native
   link I/O and error interpretation.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
@@ -182,7 +192,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   Never hand-edit its generated manifest section.
 - `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
   `maestro-lock` depends only on `maestro-path` for final-link resolution and
-  `maestro-realpath` for canonical targets, and uses the existing external
+  canonical targets, and uses the existing external
   `sha2 =0.11.0` to shorten lock and record names for long file names. Only
   theme/application may depend on watch. Every crate that holds
   shared state behind a mutex or read-write lock may depend on lock: settings,
@@ -214,22 +224,6 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   default action, while each native mode keeps its own exit policy. Synchronous
   capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
-- `maestro-listing` is a declared core leaf below layer 0 with no workspace
-  dependencies, including the path utility. It lists one directory's entries sorted
-  by file name on every platform. Only resources, theme, the toolkit, tools,
-  session, repository tooling and the application may depend on it, on native
-  targets; callers keep kind filtering, name decoding and further ordering.
-- `maestro-realpath` is a declared core leaf below layer 0 depending only on
-  `maestro-path`. It resolves a native path to its real path; on Windows it
-  returns the ordinary form (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes
-  `\\s\sh\x`) through the lexical conversion in `maestro_path::win32`. Only the
-  application, daemon, detection, lock, models, packages, terminal, tools,
-  workspace, repository tooling, browser qualification, the conventions checker
-  and the test-directory owner may depend on it, on native targets; theme's
-  browser author example uses a native development edge. Callers keep their own
-  fallback and error policy. Conventions reject `std::fs::canonicalize`,
-  `tokio::fs::canonicalize` and the `canonicalize` method in production code
-  outside this leaf.
 - `maestro-listeners` is a declared core leaf below layer 0 with no workspace
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
@@ -309,12 +303,11 @@ conventions checker, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
-optional utility and the unifier. Sparse workspaces need
+no internal dependencies apart from the optional `maestro-path` edge and the unifier. Sparse workspaces need
 no placeholder crates. Chat, CLI, RPC and web require the application edge, and every frontend declares only the
 edges in its row of the dependency table, when used. The terminal adapter
 requires toolkit and text. The
-utility edge never supplies a required edge. The daemon requires the terminal
+`maestro-path` edge never supplies a required edge. The daemon requires the terminal
 engine. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic. The internal development
 edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
@@ -335,9 +328,7 @@ development edge for the product's one engine configuration, the native-only,
 non-optional `maestro-extensions-wasm` to `maestro-listeners` development edge for the
 controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
-executable's file-trigger test on the shared host fixture, the native-only,
-non-optional `maestro-theme` to `maestro-realpath` development edge for the
-browser author example's watched roots,
+executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
 of the twenty-seven declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -348,13 +339,14 @@ the required toolkit/text set.
 
 The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
 creation and cleanup. Its only internal edges are the native unifier and
-`maestro-realpath`, and it has no foundation utility permission. Only the
+`maestro-path`, which its table row names because the general `maestro-path`
+permission excludes it. Only the
 crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
 as a non-optional native development dependency when used; the checked child
 launcher declares it instead, and alone, as a native normal dependency, whose
 launch route reads `temporary_root` for its cleared children. `Scratch::new`
-resolves its chosen root through `maestro-realpath`, in the ordinary Windows
+resolves its chosen root through `maestro_path::fs`, in the ordinary Windows
 form; `Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
 and `enter_unreadable` put a test process in a removed or unreadable working
 directory, and `deny(path, mode)` sets a mode and
@@ -369,7 +361,7 @@ The dedicated, unpublished `maestro-test-fixtures` portable leaf owns shared tes
 fixture operations. Only models, request, catalog, chat, tools and export may declare
 it as a development dependency, portable or target-specific; models, request, catalog
 and chat use portable declarations, while tools and export use native declarations. It
-has no product or utility edge, only the native unifier exception. Both cycle checks
+has no product or `maestro-path` edge, only the native unifier exception. Both cycle checks
 apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 

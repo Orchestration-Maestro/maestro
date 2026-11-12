@@ -35,7 +35,7 @@ impl Scratch {
     /// Returns a directory creation or canonicalization failure.
     pub fn new() -> io::Result<Self> {
         let mut scratch = Self::new_in(&temporary_root())?;
-        scratch.path = maestro_realpath::canonicalize(&scratch.path)?;
+        scratch.path = maestro_path::fs::canonicalize(&scratch.path)?;
         Ok(scratch)
     }
 

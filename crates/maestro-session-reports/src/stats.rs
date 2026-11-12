@@ -179,7 +179,7 @@ fn collect(
 ) -> io::Result<(BTreeMap<String, DayStats>, Totals)> {
     let mut days: BTreeMap<String, DayStats> = BTreeMap::new();
     let mut grand = Totals::default();
-    for entry in maestro_listing::read_dir(sessions.as_str())? {
+    for entry in maestro_path::fs::read_dir(sessions.as_str())? {
         let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
             continue;
         };

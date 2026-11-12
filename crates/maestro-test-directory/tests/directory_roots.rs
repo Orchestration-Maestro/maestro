@@ -18,7 +18,7 @@ fn chosen_root_is_canonical_and_keeps_written_files() {
 
 /// The real path of `path`, in the ordinary form on Windows.
 fn canonical(path: &std::path::Path) -> std::io::Result<std::ffi::OsString> {
-    maestro_realpath::canonicalize(path).map(std::path::PathBuf::into_os_string)
+    maestro_path::fs::canonicalize(path).map(std::path::PathBuf::into_os_string)
 }
 
 #[test]

@@ -19,7 +19,7 @@ maestro-protocol = { path = "../maestro-protocol" }
 maestro-process = { path = "../maestro-process" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-realpath = { path = "../maestro-realpath" }
+maestro-path = { path = "../maestro-path" }
 maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

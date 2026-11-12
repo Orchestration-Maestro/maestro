@@ -4,7 +4,9 @@
 mod directory_observations;
 mod drive_prefix;
 mod home_directory;
+mod listing_order;
 mod path_behavior;
+mod real_paths;
 mod slash_spelling;
 mod tilde;
 mod verbatim_spelling;

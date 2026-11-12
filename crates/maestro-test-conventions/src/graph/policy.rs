@@ -57,7 +57,6 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro", "maestro-credentials"),
     ("maestro", "maestro-json"),
     ("maestro", "maestro-session"),
-    ("maestro-theme", "maestro-realpath"),
 ];
 
 /// Whether the policy permits this internal development edge between the two crates.
@@ -73,7 +72,7 @@ pub(crate) fn permitted_build(from: &str, to: &str) -> bool {
     BUILD.contains(&(from, to))
 }
 
-/// Foundation utility that native crates may use beyond their table row.
+/// The path crate, which native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";
 
 /// Dependency-free test-support crate reachable only through native development edges.
@@ -127,7 +126,6 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
-    "maestro-listing",
     "maestro-lock",
     "maestro-models",
     "maestro-packages",
@@ -199,7 +197,7 @@ pub(crate) fn directory_observation(from: &str, to: &str) -> bool {
     from == TEST_PROCESS && to == TEST_DIRECTORY
 }
 
-/// Report whether a crate may declare the foundation utility as a production dependency.
+/// Report whether a crate may declare the path crate as a production dependency.
 pub(crate) fn uses_utility(name: &str) -> bool {
     !matches!(name, UTILITY | UNIFIER)
         && test_support_callers(name).is_none()
@@ -207,7 +205,6 @@ pub(crate) fn uses_utility(name: &str) -> bool {
             name,
             "maestro-watch"
                 | "maestro-process"
-                | "maestro-listing"
                 | "maestro-pattern"
                 | "maestro-markdown"
                 | "maestro-office"

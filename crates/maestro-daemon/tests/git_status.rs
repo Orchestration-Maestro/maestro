@@ -73,7 +73,7 @@ fn space_cache_key_keeps_a_non_utf8_checkout_path() {
 
     assert_eq!(
         git_status_cache_key_for_space(&space),
-        maestro_realpath::canonicalize(&root).unwrap()
+        maestro_path::fs::canonicalize(&root).unwrap()
     );
 }
 
@@ -89,7 +89,7 @@ fn cache_key_is_absent_below_an_invalid_git_marker() {
     assert_eq!(git_status_cache_key(&cwd), None);
     assert_eq!(
         git_status_cache_key(&valid),
-        Some(maestro_realpath::canonicalize(&valid).unwrap())
+        Some(maestro_path::fs::canonicalize(&valid).unwrap())
     );
 }
 

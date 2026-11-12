@@ -41,7 +41,6 @@ regex.workspace = true
 maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-realpath = { path = "../maestro-realpath" }
 maestro-export = { path = "../maestro-export" }
 maestro-workspace = { path = "../maestro-workspace" }
 maestro-daemon = { path = "../maestro-daemon" }
@@ -50,7 +49,6 @@ maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
 maestro-tools = { path = "../maestro-tools" }
 maestro-process = { path = "../maestro-process" }
-maestro-listing = { path = "../maestro-listing" }
 maestro-theme = { path = "../maestro-theme" }
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
 uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }

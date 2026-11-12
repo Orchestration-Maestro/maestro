@@ -18,7 +18,6 @@ maestro-lock = { path = "../maestro-lock" }
 tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

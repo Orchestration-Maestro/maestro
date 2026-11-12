@@ -3944,7 +3944,6 @@ dependencies = [
  "maestro-extensions",
  "maestro-json",
  "maestro-listeners",
- "maestro-listing",
  "maestro-lock",
  "maestro-models",
  "maestro-office",
@@ -3952,7 +3951,6 @@ dependencies = [
  "maestro-path",
  "maestro-process",
  "maestro-protocol",
- "maestro-realpath",
  "maestro-resources",
  "maestro-session",
  "maestro-settings",
@@ -4136,7 +4134,6 @@ dependencies = [
  "maestro-path",
  "maestro-process",
  "maestro-protocol",
- "maestro-realpath",
  "maestro-settings",
  "maestro-terminal-emulator",
  "maestro-test-directory",
@@ -4257,9 +4254,9 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-lock",
+ "maestro-path",
  "maestro-process",
  "maestro-protocol",
- "maestro-realpath",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -4401,20 +4398,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-listing"
-version = "0.1.0"
-dependencies = [
- "maestro-dependencies",
- "maestro-test-directory",
-]
-
-[[package]]
 name = "maestro-lock"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-path",
- "maestro-realpath",
  "maestro-test-directory",
  "maestro-test-process",
  "rustix",
@@ -4469,7 +4457,6 @@ dependencies = [
  "maestro-lock",
  "maestro-models-catalog",
  "maestro-path",
- "maestro-realpath",
  "maestro-request",
  "maestro-schema-validator",
  "maestro-test-directory",
@@ -4569,7 +4556,6 @@ dependencies = [
  "maestro-path",
  "maestro-pattern",
  "maestro-process",
- "maestro-realpath",
  "maestro-resources",
  "maestro-settings",
  "maestro-test-directory",
@@ -4637,14 +4623,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-realpath"
-version = "0.1.0"
-dependencies = [
- "maestro-dependencies",
- "maestro-path",
-]
-
-[[package]]
 name = "maestro-request"
 version = "0.1.0"
 dependencies = [
@@ -4663,7 +4641,6 @@ version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
  "maestro-json",
- "maestro-listing",
  "maestro-path",
  "maestro-pattern",
  "maestro-request",
@@ -4737,7 +4714,6 @@ dependencies = [
  "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
- "maestro-listing",
  "maestro-lock",
  "maestro-models",
  "maestro-path",
@@ -4763,7 +4739,6 @@ dependencies = [
  "maestro-app",
  "maestro-dependencies",
  "maestro-json",
- "maestro-listing",
  "maestro-models",
  "maestro-path",
  "maestro-process",
@@ -4818,7 +4793,7 @@ dependencies = [
  "flate2",
  "icu_properties",
  "maestro-dependencies",
- "maestro-realpath",
+ "maestro-path",
  "maestro-test-directory",
  "maestro-test-tracing",
  "maestro-text",
@@ -4842,7 +4817,6 @@ dependencies = [
  "hyper",
  "hyper-util",
  "maestro-path",
- "maestro-realpath",
  "maestro-test-directory",
  "maestro-tooling",
  "percent-encoding",
@@ -4861,7 +4835,7 @@ dependencies = [
  "cargo_metadata",
  "maestro-dependencies",
  "maestro-markdown",
- "maestro-realpath",
+ "maestro-path",
  "maestro-test-directory",
  "maestro-test-process",
  "proc-macro2",
@@ -4877,7 +4851,7 @@ name = "maestro-test-directory"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
- "maestro-realpath",
+ "maestro-path",
 ]
 
 [[package]]
@@ -4935,9 +4909,7 @@ dependencies = [
  "maestro-brand",
  "maestro-dependencies",
  "maestro-json",
- "maestro-listing",
  "maestro-path",
- "maestro-realpath",
  "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
@@ -4971,9 +4943,7 @@ version = "0.1.0"
 dependencies = [
  "cargo_metadata",
  "maestro-dependencies",
- "maestro-listing",
  "maestro-path",
- "maestro-realpath",
  "maestro-test-directory",
  "maestro-test-process",
  "serde",
@@ -4997,12 +4967,10 @@ dependencies = [
  "maestro-agent",
  "maestro-dependencies",
  "maestro-json",
- "maestro-listing",
  "maestro-lock",
  "maestro-models",
  "maestro-path",
  "maestro-process",
- "maestro-realpath",
  "maestro-resources",
  "maestro-test-directory",
  "maestro-test-fixtures",
@@ -5033,7 +5001,6 @@ dependencies = [
  "maestro-cancellation",
  "maestro-dependencies",
  "maestro-listeners",
- "maestro-listing",
  "maestro-markdown",
  "maestro-path",
  "maestro-process",
@@ -5136,7 +5103,6 @@ dependencies = [
  "maestro-lock",
  "maestro-path",
  "maestro-protocol",
- "maestro-realpath",
  "maestro-test-directory",
  "maestro-test-tracing",
  "maestro-text",

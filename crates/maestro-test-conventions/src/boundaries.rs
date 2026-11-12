@@ -30,7 +30,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         .iter()
         .find(|member| member.name == "maestro-extensions-wasm")
         .map(|member| {
-            maestro_realpath::canonicalize(&member.directory)
+            maestro_path::fs::canonicalize(&member.directory)
                 .map_err(|error| format!("cannot resolve guest member: {error}"))
         })
         .transpose()?;

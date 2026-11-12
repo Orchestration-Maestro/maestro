@@ -167,7 +167,7 @@ pub(super) struct ScanContext<'a> {
 impl ScanContext<'_> {
     /// Resolve an input to its canonical guest-owned source directory.
     fn canonical_input(&self, input: &str, location: &str) -> Result<PathBuf, String> {
-        let input = maestro_realpath::canonicalize(self.directory.join(input))
+        let input = maestro_path::fs::canonicalize(self.directory.join(input))
             .map_err(|error| format!("{location}: cannot resolve WIT input: {error}"))?;
         let guest = self
             .guest
