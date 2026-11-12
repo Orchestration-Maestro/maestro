@@ -2,9 +2,10 @@
 
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
+use std::process::Stdio;
 
 use crate::child::{repeat_stderr, write_stderr};
-use crate::{TestProcess, TestProcessError};
+use crate::{CheckedChild, TestProcess, TestProcessError};
 
 /// Variable that carries the selected environment group into its child.
 const GROUP: &str = "MAESTRO_TEST_GROUP";
@@ -13,7 +14,8 @@ const GROUP: &str = "MAESTRO_TEST_GROUP";
 const SETTINGS_ZONE_PREMISE: &str =
     "premise not met: this host takes the local time zone from its settings, not TZ\n";
 
-/// Run the calling test's cases in one cleared child per distinct environment.
+/// Run the calling test's cases in one cleared child per distinct environment, all started
+/// before the first is collected.
 ///
 /// `environment` gives the edits a case's child applies: `Some` sets a variable and `None`
 /// removes it, in key order after the child's cleared environment. Cases with equal edits
@@ -58,18 +60,17 @@ where
             TestProcessError::new(&name, "the selected environment group does not exist")
         });
     }
-    for (index, edits) in groups.keys().enumerate() {
-        let mut child = TestProcess::named(name.as_str())?
-            .nocapture()
-            .env_clear()
-            .temp_dir(maestro_test_directory::temporary_root());
-        for (key, value) in edits {
-            child = match value {
-                Some(value) => child.env(key, value),
-                None => child.env_remove(key),
-            };
-        }
-        let output = child.env(GROUP, index.to_string()).output()?;
+    let children = groups
+        .keys()
+        .enumerate()
+        .map(|(index, edits)| start_group(&name, index, edits))
+        .collect::<Result<Vec<_>, _>>()?;
+    let outputs: Vec<_> = children
+        .into_iter()
+        .map(CheckedChild::wait_with_output)
+        .collect();
+    for (index, output) in outputs.into_iter().enumerate() {
+        let output = output?;
         if !output.status.success() {
             return Err(TestProcessError::new(
                 &name,
@@ -80,6 +81,33 @@ where
         repeat_stderr(&name, &output.stderr)?;
     }
     Ok(None)
+}
+
+/// Start the cleared child of one environment group without waiting for it.
+fn start_group<K, V>(
+    name: &str,
+    index: usize,
+    edits: &BTreeMap<K, Option<V>>,
+) -> Result<CheckedChild, TestProcessError>
+where
+    K: AsRef<OsStr>,
+    V: AsRef<OsStr>,
+{
+    let mut child = TestProcess::named(name)?
+        .nocapture()
+        .env_clear()
+        .temp_dir(maestro_test_directory::temporary_root());
+    for (key, value) in edits {
+        child = match value {
+            Some(value) => child.env(key, value),
+            None => child.env_remove(key),
+        };
+    }
+    child
+        .env(GROUP, index.to_string())
+        .stdin(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
 }
 
 /// The cases selected for this process; its wire format stays private to this crate.

@@ -2788,9 +2788,11 @@ comes from `maestro-test-directory::temporary_root`. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept
 variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
-instead of compiling it again. In the parent, `run_per_environment` returns
+instead of compiling it again. The parent starts every group's child before it collects the first, so a test takes
+the time of its slowest group, and one group child runs per group at the same time.
+In the parent, `run_per_environment` returns
 `None` once every child passes, and repeats each passing child's standard error
-as it goes, so a case that left one out keeps its reason. `run_per_environment`
+in group order, so a case that left one out keeps its reason. `run_per_environment`
 writes those lines through the standard error handle instead of the print macros the
 harness keeps: `cargo test` writes them to the terminal, and a runner that captures
 the test process, as `just test` does, shows them on a failure or when asked for a
