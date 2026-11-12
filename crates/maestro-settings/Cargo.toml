@@ -10,7 +10,6 @@ repository.workspace = true
 ryu-js.workspace = true
 maestro-json = { path = "../maestro-json" }
 maestro-path = { path = "../maestro-path" }
-maestro-resources = { path = "../maestro-resources" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
