@@ -60,7 +60,7 @@ enum PaneLaunchIdentity {
 impl PaneLaunchEnv {
     /// Supply user environment pairs while retaining inherited identity.
     #[must_use]
-    pub fn from_extra(extra: Vec<(String, String)>) -> Self {
+    pub(crate) fn from_extra(extra: Vec<(String, String)>) -> Self {
         Self {
             extra,
             identity: PaneLaunchIdentity::Inherit,
@@ -69,7 +69,12 @@ impl PaneLaunchEnv {
 
     /// Replace inherited workspace, tab and pane identifiers.
     #[must_use]
-    pub fn with_identity(mut self, workspace_id: String, tab_id: String, pane_id: String) -> Self {
+    pub(crate) fn with_identity(
+        mut self,
+        workspace_id: String,
+        tab_id: String,
+        pane_id: String,
+    ) -> Self {
         self.identity = PaneLaunchIdentity::Managed {
             workspace_id,
             tab_id,

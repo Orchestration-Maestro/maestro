@@ -254,7 +254,7 @@ pub fn tab_renamed(workspace_id: &str, tab_id: &str) {
 }
 
 /// Session saved.
-pub fn session_saved(path: &Path, workspaces: usize) {
+pub(crate) fn session_saved(path: &Path, workspaces: usize) {
     tracing::info!(
         event = "persist.save",
         subsystem = "persist",
@@ -266,7 +266,7 @@ pub fn session_saved(path: &Path, workspaces: usize) {
 }
 
 /// Session save failed.
-pub fn session_save_failed(path: &Path, err: &str) {
+pub(crate) fn session_save_failed(path: &Path, err: &str) {
     tracing::error!(
         event = "persist.save",
         subsystem = "persist",
@@ -278,7 +278,7 @@ pub fn session_save_failed(path: &Path, err: &str) {
 }
 
 /// Session cleared.
-pub fn session_cleared(path: &Path) {
+pub(crate) fn session_cleared(path: &Path) {
     tracing::info!(
         event = "persist.clear",
         subsystem = "persist",
@@ -289,7 +289,7 @@ pub fn session_cleared(path: &Path) {
 }
 
 /// Session clear failed.
-pub fn session_clear_failed(path: &Path, err: &str) {
+pub(crate) fn session_clear_failed(path: &Path, err: &str) {
     tracing::error!(
         event = "persist.clear",
         subsystem = "persist",

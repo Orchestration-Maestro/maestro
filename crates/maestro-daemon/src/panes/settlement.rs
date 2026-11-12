@@ -4,13 +4,13 @@ use super::display::TerminalCursorState;
 use std::time::{Duration, Instant};
 
 /// Quiet interval before presenting a pending cursor position.
-pub const CURSOR_POSITION_SETTLE: Duration = Duration::from_millis(20);
+pub(crate) const CURSOR_POSITION_SETTLE: Duration = Duration::from_millis(20);
 /// Longest burst over which the settled position is held.
 const CURSOR_POSITION_MAX_HOLD: Duration = Duration::from_millis(100);
 
 /// Retains a stable cursor position across short output bursts.
 #[derive(Debug, Default)]
-pub struct CursorPositionSettleState {
+pub(crate) struct CursorPositionSettleState {
     /// Last stable or hidden cursor.
     settled: Option<TerminalCursorState>,
     /// Latest pending position.
@@ -68,7 +68,7 @@ impl CursorPositionSettleState {
 
     /// Read the presented cursor without advancing the settle state.
     #[must_use]
-    pub fn reported_cursor(
+    pub(crate) fn reported_cursor(
         &self,
         current: Option<TerminalCursorState>,
         now: Instant,

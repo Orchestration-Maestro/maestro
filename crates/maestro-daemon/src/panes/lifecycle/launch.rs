@@ -30,7 +30,7 @@ pub struct SpawnInitialState {
     /// Initial foreground identity awaiting native confirmation.
     pub detected_agent: Option<Agent>,
     /// Retained ANSI history seeded before live output.
-    pub history_ansi: Option<String>,
+    pub(crate) history_ansi: Option<String>,
 }
 
 /// Whether the descriptor was spawned here or received from another server.
@@ -60,7 +60,7 @@ impl PaneRuntime {
     ///
     /// # Errors
     /// Returns shell resolution, terminal creation or native setup failures.
-    pub fn spawn_with_initial_history(
+    pub(crate) fn spawn_with_initial_history(
         config: PaneRuntimeConfig,
         shell: PaneShellConfig<'_>,
         cwd: PathBuf,
@@ -101,7 +101,7 @@ impl PaneRuntime {
     ///
     /// # Errors
     /// Returns an empty-argv error, terminal creation or native setup failures.
-    pub fn spawn_argv_command(
+    pub(crate) fn spawn_argv_command(
         config: PaneRuntimeConfig,
         argv: &[String],
         cwd: PathBuf,
@@ -128,7 +128,7 @@ impl PaneRuntime {
     ///
     /// # Errors
     /// Returns terminal creation, entry launch or target setup failures.
-    pub fn spawn_command_builder(
+    pub(crate) fn spawn_command_builder(
         config: PaneRuntimeConfig,
         command: PtyCommand,
         initial: SpawnInitialState,
@@ -230,17 +230,17 @@ impl PaneRuntime {
     }
 
     /// Resets fallback observations when full lifecycle authority activates.
-    pub fn set_full_lifecycle_authority_active(&self, active: bool) {
+    pub(crate) fn set_full_lifecycle_authority_active(&self, active: bool) {
         self.control.set_full_lifecycle_authority_active(active);
     }
 
     /// Requests a fresh native and screen observation.
-    pub fn reset_agent_detection(&self) {
+    pub(crate) fn reset_agent_detection(&self) {
         self.control.reset_agent_detection();
     }
 
     /// Suppresses immediate reacquisition of an explicitly released foreground identity.
-    pub fn begin_graceful_release(&self, agent: Agent) {
+    pub(crate) fn begin_graceful_release(&self, agent: Agent) {
         self.control.begin_graceful_release(agent);
     }
 }

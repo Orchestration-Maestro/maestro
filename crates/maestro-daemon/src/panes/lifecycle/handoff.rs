@@ -10,7 +10,7 @@ const MAX_REPLAY_BYTES_PER_PANE: usize = 8 * 1024;
 impl PaneRuntime {
     /// Retained primary-screen ANSI history, absent when no content is retained.
     #[must_use]
-    pub fn snapshot_history(&self) -> Option<String> {
+    pub(crate) fn snapshot_history(&self) -> Option<String> {
         let ansi = self.recent_unwrapped_ansi(usize::MAX);
         (!ansi.trim().is_empty()).then_some(ansi)
     }
@@ -114,7 +114,7 @@ impl PaneRuntime {
     ///
     /// # Errors
     /// Returns the actor's native or handoff-budget error.
-    pub async fn pause_handoff_reader(&self, budget: std::time::Duration) -> io::Result<()> {
+    pub(crate) async fn pause_handoff_reader(&self, budget: std::time::Duration) -> io::Result<()> {
         self.io.begin_handoff(budget).await
     }
 
@@ -130,7 +130,7 @@ impl PaneRuntime {
     ///
     /// # Errors
     /// Returns the actor's quiescence or rollback failure.
-    pub async fn set_handoff_reader_paused(&self, paused: bool) -> io::Result<()> {
+    pub(crate) async fn set_handoff_reader_paused(&self, paused: bool) -> io::Result<()> {
         if paused {
             self.pause_handoff_reader(std::time::Duration::from_secs(1))
                 .await

@@ -364,7 +364,7 @@ fn stop_errors_and_both_endpoints_preserve_the_deadline() {
     let api_path = PathBuf::from(&selection.api_socket_path);
     let client_path = selection.client_socket_path.clone();
 
-    let native = maestro_ipc::local_socket::connect_local_stream(&api_path).unwrap_err();
+    let native = crate::service::local_socket::connect_local_stream(&api_path).unwrap_err();
     assert_eq!(
         stop_with_timeout(&selection, SHORT),
         Err(format!(
@@ -507,7 +507,7 @@ impl Saturated {
 
 /// Fills an unaccepted listener and keeps the queue full until [`Saturated::finish`].
 fn saturate_endpoint(path: &Path) -> Saturated {
-    use maestro_ipc::local_socket::connect_local_stream_until;
+    use crate::service::local_socket::connect_local_stream_until;
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     let listener = UnixListener::bind(path).unwrap();
     rustix::net::listen(&listener, 1).unwrap();

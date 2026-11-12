@@ -5,52 +5,52 @@ use std::time::Duration;
 use maestro_detection::agents::Agent;
 
 /// Identified agents receive a periodic process check.
-pub const PROCESS_RECHECK_IDENTIFIED: Duration = Duration::from_secs(5);
+pub(crate) const PROCESS_RECHECK_IDENTIFIED: Duration = Duration::from_secs(5);
 /// Unknown panes without a foreground group receive a safety check.
-pub const PROCESS_RECHECK_MISSING_FOREGROUND_GROUP: Duration = Duration::from_secs(30);
+pub(crate) const PROCESS_RECHECK_MISSING_FOREGROUND_GROUP: Duration = Duration::from_secs(30);
 /// Maximum duration of a same-group acquisition burst.
-pub const PROCESS_ACQUISITION_WINDOW: Duration = Duration::from_secs(8);
+pub(crate) const PROCESS_ACQUISITION_WINDOW: Duration = Duration::from_secs(8);
 /// Initial fast portion of an acquisition burst.
-pub const PROCESS_ACQUISITION_FAST_WINDOW: Duration = Duration::from_millis(1500);
+pub(crate) const PROCESS_ACQUISITION_FAST_WINDOW: Duration = Duration::from_millis(1500);
 /// Process check interval during fast acquisition.
-pub const PROCESS_ACQUISITION_FAST_RECHECK: Duration = Duration::from_millis(500);
+pub(crate) const PROCESS_ACQUISITION_FAST_RECHECK: Duration = Duration::from_millis(500);
 /// Process check interval during slow acquisition.
-pub const PROCESS_ACQUISITION_SLOW_RECHECK: Duration = Duration::from_secs(2);
+pub(crate) const PROCESS_ACQUISITION_SLOW_RECHECK: Duration = Duration::from_secs(2);
 /// Quiet interval required before restarting an expired burst.
-pub const PROCESS_ACQUISITION_IDLE_RESET: Duration = Duration::from_secs(2);
+pub(crate) const PROCESS_ACQUISITION_IDLE_RESET: Duration = Duration::from_secs(2);
 
 /// Observations used to decide whether a full process scan is due.
 #[derive(Debug, Clone, Copy)]
 pub struct ProcessProbeInput {
     /// Currently retained identity.
-    pub current_agent: Option<Agent>,
+    pub(crate) current_agent: Option<Agent>,
     /// Identity whose lifecycle release is pending.
-    pub suppressed_agent: Option<Agent>,
+    pub(crate) suppressed_agent: Option<Agent>,
     /// Kernel-observed foreground group.
-    pub foreground_pgid: Option<u32>,
+    pub(crate) foreground_pgid: Option<u32>,
     /// Previously tracked kernel-observed group.
-    pub last_foreground_pgid: Option<u32>,
+    pub(crate) last_foreground_pgid: Option<u32>,
     /// Whether a full scan has already completed.
-    pub has_process_probe: bool,
+    pub(crate) has_process_probe: bool,
     /// Time since the current acquisition burst began.
-    pub acquisition_age: Option<Duration>,
+    pub(crate) acquisition_age: Option<Duration>,
     /// Whether process exit still needs to be published.
-    pub pending_foreground_shell_clear: bool,
+    pub(crate) pending_foreground_shell_clear: bool,
     /// Whether restored identity needs confirmation.
-    pub pending_restore_probe: bool,
+    pub(crate) pending_restore_probe: bool,
     /// Time since the last full process scan.
-    pub elapsed_since_process_check: Duration,
+    pub(crate) elapsed_since_process_check: Duration,
 }
 
 /// Returns whether the observed group changed, including disappearance.
 #[must_use]
-pub fn foreground_group_changed(current: Option<u32>, previous: Option<u32>) -> bool {
+pub(crate) fn foreground_group_changed(current: Option<u32>, previous: Option<u32>) -> bool {
     current != previous
 }
 
 /// Tracks only kernel observations, never a group inferred by a full scan.
 #[must_use]
-pub fn process_group_for_change_tracking(
+pub(crate) fn process_group_for_change_tracking(
     observed: Option<u32>,
     probed: Option<u32>,
 ) -> Option<u32> {
@@ -60,7 +60,7 @@ pub fn process_group_for_change_tracking(
 
 /// Skips routine stable-group scans when lifecycle reports own the identity.
 #[must_use]
-pub fn should_skip_process_probe_for_lifecycle_authority(
+pub(crate) fn should_skip_process_probe_for_lifecycle_authority(
     active: bool,
     input: ProcessProbeInput,
 ) -> bool {
@@ -93,16 +93,16 @@ pub fn should_observe_foreground_process_group(
 #[derive(Debug, Clone, Copy)]
 pub struct ForegroundObservation {
     /// Whether integration reports own lifecycle transitions.
-    pub lifecycle_authority: bool,
+    pub(crate) lifecycle_authority: bool,
     /// Whether terminal content changed.
-    pub content_changed: bool,
+    pub(crate) content_changed: bool,
     /// Time since the last foreground-group observation.
     pub elapsed: Duration,
 }
 
 /// Returns whether a full process scan is due.
 #[must_use]
-pub fn should_probe_foreground_job(input: ProcessProbeInput) -> bool {
+pub(crate) fn should_probe_foreground_job(input: ProcessProbeInput) -> bool {
     if input.pending_foreground_shell_clear || input.pending_restore_probe {
         return true;
     }
@@ -131,11 +131,11 @@ pub fn should_probe_foreground_job(input: ProcessProbeInput) -> bool {
 
 /// Bounded retry window for terminal output from unidentified processes.
 #[derive(Debug, Default)]
-pub struct AcquisitionWindow {
+pub(crate) struct AcquisitionWindow {
     /// Beginning of the current retry burst.
     pub started_at: Option<std::time::Instant>,
     /// Most recent content change during the burst.
-    pub last_content_change_at: Option<std::time::Instant>,
+    pub(crate) last_content_change_at: Option<std::time::Instant>,
 }
 
 impl AcquisitionWindow {

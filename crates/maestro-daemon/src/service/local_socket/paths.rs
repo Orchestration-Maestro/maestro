@@ -1,6 +1,6 @@
 //! Client-socket path selection from caller-supplied observations.
 
-use crate::local_socket::SocketClaim;
+use super::SocketClaim;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -57,7 +57,7 @@ fn derive_client_socket_from_api_socket(api_socket_path: &Path) -> PathBuf {
 /// # Errors
 /// Returns the shared socket preparation failure.
 pub fn prepare_socket_path(path: &Path) -> io::Result<SocketClaim> {
-    crate::local_socket::prepare_socket_path(path, |path| {
+    super::prepare_socket_path(path, |path| {
         format!(
             "maestro server is already running (socket busy at {})",
             path.display()
@@ -70,5 +70,5 @@ pub fn prepare_socket_path(path: &Path) -> io::Result<SocketClaim> {
 /// # Errors
 /// Returns the shared permission-setting failure.
 pub fn restrict_socket_permissions(path: &Path) -> io::Result<()> {
-    crate::local_socket::restrict_socket_permissions(path, SOCKET_PERMISSION_MODE)
+    super::restrict_socket_permissions(path, SOCKET_PERMISSION_MODE)
 }

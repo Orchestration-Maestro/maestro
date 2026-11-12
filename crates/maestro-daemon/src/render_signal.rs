@@ -12,9 +12,9 @@ pub struct RenderRequest {
     /// Work not attributed to pane damage or title changes.
     pub generic: bool,
     /// Panes whose terminal content changed.
-    pub pty_sources: HashSet<PaneId>,
+    pub(crate) pty_sources: HashSet<PaneId>,
     /// Panes whose terminal titles changed, independently of content damage.
-    pub terminal_title_sources: HashSet<PaneId>,
+    pub(crate) terminal_title_sources: HashSet<PaneId>,
 }
 
 /// Coalesces render requests so consumers can defer hidden pane damage.

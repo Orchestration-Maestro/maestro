@@ -3,14 +3,14 @@ use super::{AgentMetadata, AgentState, EffectivePresentation, HashMap, Instant, 
 impl TerminalState {
     /// Select the newest guarded, unexpired title override.
     #[must_use]
-    pub fn effective_title(&self) -> Option<String> {
+    pub(crate) fn effective_title(&self) -> Option<String> {
         self.effective_presentation_for_state_at(self.state, Instant::now())
             .title
     }
 
     /// Select the newest guarded, unexpired display-agent override.
     #[must_use]
-    pub fn effective_display_agent(&self) -> Option<String> {
+    pub(crate) fn effective_display_agent(&self) -> Option<String> {
         self.effective_presentation_for_state_at(self.state, Instant::now())
             .display_agent
     }

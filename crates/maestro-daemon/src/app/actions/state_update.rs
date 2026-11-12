@@ -38,15 +38,15 @@ pub struct PaneStateUpdate {
     /// Workspace display position when applied.
     pub ws_idx: usize,
     /// Effective label before the transition.
-    pub previous_agent_label: Option<String>,
+    pub(crate) previous_agent_label: Option<String>,
     /// Known identity before the transition.
-    pub previous_known_agent: Option<Agent>,
+    pub(crate) previous_known_agent: Option<Agent>,
     /// Execution state before the transition.
     pub previous_state: AgentState,
     /// Attention acknowledgement before the transition.
-    pub previous_seen: bool,
+    pub(crate) previous_seen: bool,
     /// Presentation before the transition.
-    pub previous_presentation: EffectivePresentation,
+    pub(crate) previous_presentation: EffectivePresentation,
     /// Effective or released agent label.
     pub agent_label: Option<String>,
     /// Effective or released known identity.
@@ -58,7 +58,7 @@ pub struct PaneStateUpdate {
     /// Resulting presentation.
     pub presentation: EffectivePresentation,
     /// Whether the retained agent name changed.
-    pub agent_name_changed: bool,
+    pub(crate) agent_name_changed: bool,
     /// Ownership release and its associated shared status.
     pub release: AgentRelease,
     /// Whether initial acquisition or a managed launch suppresses completion.
@@ -170,7 +170,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
 
 /// Projects execution and acknowledgement into the shared agent status.
 #[must_use]
-pub fn pane_agent_status(state: AgentState, seen: bool) -> AgentStatus {
+pub(crate) fn pane_agent_status(state: AgentState, seen: bool) -> AgentStatus {
     match (state, seen) {
         (AgentState::Idle, false) => AgentStatus::Done,
         (AgentState::Idle, true) => AgentStatus::Idle,

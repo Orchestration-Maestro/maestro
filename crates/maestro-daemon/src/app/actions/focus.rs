@@ -39,7 +39,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
 
     /// Returns the active pane's logical identity.
     #[must_use]
-    pub fn current_pane_focus_target(&self) -> Option<PaneFocusTarget> {
+    pub(crate) fn current_pane_focus_target(&self) -> Option<PaneFocusTarget> {
         let workspace = self.topology.workspaces.get(self.active?)?;
         Some(PaneFocusTarget {
             workspace_id: workspace.id.clone(),
@@ -49,7 +49,10 @@ impl<C: FnMut() -> u128> DaemonState<C> {
 
     /// Resolves a retained target only while its workspace and pane remain live.
     #[must_use]
-    pub fn pane_focus_target_indices(&self, target: &PaneFocusTarget) -> Option<(usize, usize)> {
+    pub(crate) fn pane_focus_target_indices(
+        &self,
+        target: &PaneFocusTarget,
+    ) -> Option<(usize, usize)> {
         let workspace = self
             .topology
             .workspaces
@@ -105,7 +108,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 
     /// Marks every pane of the active tab seen.
-    pub fn mark_active_tab_seen(&mut self) {
+    pub(crate) fn mark_active_tab_seen(&mut self) {
         let active = self
             .active
             .and_then(|index| self.topology.workspaces.get_mut(index));
@@ -116,7 +119,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 
     /// Returns to terminal input after a focus change, keeping copy context only on its pane.
-    pub fn settle_terminal_mode_after_focus(&mut self) {
+    pub(crate) fn settle_terminal_mode_after_focus(&mut self) {
         self.mode = Mode::Terminal;
         self.sync_copy_mode_with_focus();
     }
@@ -150,7 +153,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 
     /// Clears selection while retaining the copy pane for return navigation.
-    pub fn clear_copy_mode_selection(&mut self) {
+    pub(crate) fn clear_copy_mode_selection(&mut self) {
         self.clear_selection();
         if let Some(copy) = self.copy_mode.as_mut() {
             copy.selection = None;
@@ -158,7 +161,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 
     /// Restores copy context only when its retained pane is currently focused.
-    pub fn sync_copy_mode_with_focus(&mut self) {
+    pub(crate) fn sync_copy_mode_with_focus(&mut self) {
         let Some(copy) = self.copy_mode.as_ref() else {
             return;
         };
