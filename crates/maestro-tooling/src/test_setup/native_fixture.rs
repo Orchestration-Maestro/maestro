@@ -98,16 +98,21 @@ fn receipt<T: serde::de::DeserializeOwned>(output: &Path, name: &str) -> io::Res
         .map_err(|error| at(&path, error))
 }
 
-/// Require the record's host to be this one.
-fn check_host(output: &Path, host_name: &str) -> io::Result<()> {
+/// Require the host of the record file `name` to be this one.
+fn check_host(output: &Path, name: &str, host_name: &str) -> io::Result<()> {
     if host_name == host() {
         Ok(())
     } else {
         Err(at(
-            output,
+            &output.join(name),
             "prepared native fixture belongs to another host",
         ))
     }
+}
+
+/// Whether the workspace builds the application, so a conversion child is staged too.
+fn converts(workspace: &Workspace) -> bool {
+    workspace.member(CONVERSION_PACKAGE).is_some()
 }
 
 /// Validate source freshness, platform and bytes before returning the staged paths.
@@ -115,18 +120,22 @@ fn check_host(output: &Path, host_name: &str) -> io::Result<()> {
 /// # Errors
 /// Returns a stale record, another host's artifact, or bytes that differ from the record.
 pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<Vec<(String, PathBuf)>> {
-    let mut paths = fixtures(checkout, output)?;
-    if receipt::<Prepared>(output, RECEIPT)?.converts {
+    let record: Prepared = receipt(output, RECEIPT)?;
+    let mut paths = fixtures(checkout, output, &record)?;
+    if record.converts {
         paths.push(conversion_prepared(checkout, output)?);
     }
     Ok(paths)
 }
 
 /// Validate the native fixture and the probe, which share one record.
-fn fixtures(checkout: &Path, output: &Path) -> io::Result<Vec<(String, PathBuf)>> {
-    let record: Prepared = receipt(output, RECEIPT)?;
+fn fixtures(
+    checkout: &Path,
+    output: &Path,
+    record: &Prepared,
+) -> io::Result<Vec<(String, PathBuf)>> {
     record.inputs.verify(checkout, output)?;
-    check_host(output, &record.host)?;
+    check_host(output, RECEIPT, &record.host)?;
     let mut paths = vec![(
         VARIABLE.to_owned(),
         staged(output, filename(), &record.fixture)?,
@@ -144,7 +153,7 @@ fn fixtures(checkout: &Path, output: &Path) -> io::Result<Vec<(String, PathBuf)>
 fn conversion_prepared(checkout: &Path, output: &Path) -> io::Result<(String, PathBuf)> {
     let record: Conversion = receipt(output, CONVERSION_RECEIPT)?;
     record.inputs.verify(checkout, output)?;
-    check_host(output, &record.host)?;
+    check_host(output, CONVERSION_RECEIPT, &record.host)?;
     Ok((
         CONVERSION_VARIABLE.to_owned(),
         staged(output, conversion_filename(), &record.child)?,
@@ -164,11 +173,11 @@ pub(crate) fn prepare(
     output: &Path,
     target: &Path,
 ) -> io::Result<Vec<(String, PathBuf)>> {
-    let converts = workspace.member(CONVERSION_PACKAGE).is_some();
-    let conversion = converts
+    let conversion = converts(workspace)
         .then(|| prepare_conversion(cargo, checkout, workspace, output, target))
         .transpose()?;
-    let mut paths = fixtures(checkout, output)
+    let mut paths = receipt(output, RECEIPT)
+        .and_then(|record| fixtures(checkout, output, &record))
         .or_else(|_| prepare_fixtures(cargo, checkout, workspace, output, target))?;
     paths.extend(conversion);
     Ok(paths)
@@ -253,11 +262,11 @@ fn prepare_fixtures(
         inputs,
         fixture,
         probe,
-        converts: workspace.member(CONVERSION_PACKAGE).is_some(),
+        converts: converts(workspace),
         host: host(),
     };
     std::fs::write(output.join(RECEIPT), serde_json::to_vec(&record)?)?;
-    fixtures(checkout, output)
+    fixtures(checkout, output, &record)
 }
 
 /// The inputs of the named packages: the crates they build from and the shared workspace files,

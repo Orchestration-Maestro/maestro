@@ -1858,13 +1858,13 @@ recreating or republishing the history for each form.
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
 `maestro-test-process` and every crate the crate graph allows to depend on it, and
 the instrumented parent `MAESTRO_CHILD_TOOLCHAIN_PROBE` to `maestro-tooling`.
-It also exports the startup conversion child, `MAESTRO_STARTUP_CONVERSION`, to `maestro-app`.
+`maestro-app` also reads the startup conversion child, `MAESTRO_STARTUP_CONVERSION`.
 That child is the `startup_conversion` example of `maestro-app`: it runs one conversion, `auth`
 or `sessions`, as its first argument names, and prints one `PROBE` line with the outcome.
 `--file-limit-kib N` runs the conversion under a file-size limit that is lifted before it
 reports, and `--exit-write PATH` then writes 4096 bytes to `PATH`. A test starts it as a plain
 command: it needs no libtest arguments and starts in milliseconds where the whole
-`maestro-app` test program takes tens. The test sets `MAESTRO_CODING_AGENT_DIR` and its working
+`maestro-app` test program takes tens of seconds. The test sets `MAESTRO_CODING_AGENT_DIR` and its working
 directory, and passes `IsolatedSetup::environment` for effects such as continuing past the
 file-size limit. Preparation builds the child once, like the other fixtures. It keeps its own
 record, keyed on the crates `maestro-app` builds on, so an edit to one of them rebuilds the
