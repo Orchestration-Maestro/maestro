@@ -1,6 +1,6 @@
 //! Case-insensitive standalone matching through the public operation.
 #![cfg(test)]
-use maestro_pattern::{PatternError, minimatch, minimatch_with_nocase};
+use maestro_pattern::{PatternError, matches_glob, matches_glob_with_nocase};
 use std::collections::BTreeMap;
 
 /// One recorded observation under an explicit platform and case mode.
@@ -27,11 +27,11 @@ fn replay(group: &str) {
     let rows = &groups[group];
     let mut replayed = 0;
     for (index, row) in rows.iter().filter(|row| row.platform == host).enumerate() {
-        let result = minimatch_with_nocase(&row.input, &row.pattern, row.nocase);
+        let result = matches_glob_with_nocase(&row.input, &row.pattern, row.nocase);
         assert_eq!(result, Ok(row.expected), "{group} row {index}");
         if !row.nocase {
             assert_eq!(
-                minimatch(&row.input, &row.pattern),
+                matches_glob(&row.input, &row.pattern),
                 Ok(row.expected),
                 "{group} default row {index}"
             );
@@ -98,9 +98,9 @@ fn nocase_validates_scalars_before_shortcuts() {
     let astral_admitted = "😀".repeat(65_536);
     let astral_rejected = "😀".repeat(65_537);
     for nocase in [false, true] {
-        assert_eq!(minimatch_with_nocase("b", &admitted, nocase), Ok(false));
+        assert_eq!(matches_glob_with_nocase("b", &admitted, nocase), Ok(false));
         assert_eq!(
-            minimatch_with_nocase("b", &astral_admitted, nocase),
+            matches_glob_with_nocase("b", &astral_admitted, nocase),
             Ok(false)
         );
         for pattern in [
@@ -108,7 +108,7 @@ fn nocase_validates_scalars_before_shortcuts() {
             format!("#{admitted}"),
             astral_rejected.clone(),
         ] {
-            let error = minimatch_with_nocase("b", &pattern, nocase).unwrap_err();
+            let error = matches_glob_with_nocase("b", &pattern, nocase).unwrap_err();
             assert_eq!(error, PatternError::TooLong);
             assert_eq!(error.to_string(), "pattern is too long");
         }

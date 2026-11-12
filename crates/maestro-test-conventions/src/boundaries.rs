@@ -294,6 +294,7 @@ fn check_declarations(
                 | "maestro-entry"
                 | "maestro-app"
                 | "maestro-listeners"
+                | "maestro-office"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -349,23 +350,27 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     ) || (shared_event_record(name) && kind != "type")
     {
         "maestro-request"
+    } else if name == "ModelConstructor" {
+        "maestro-models-catalog"
+    } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
+        "maestro-entry"
+    } else if input_presenter_record(name) {
+        "maestro-app"
     } else {
-        return single_declaration_owner(name);
+        return single_name_owner(name);
     };
     Some(owner)
 }
 
-/// The crate that owns a declaration named by one fixed name or a small fixed group.
-fn single_declaration_owner(name: &str) -> Option<&'static str> {
+/// The crate that owns a declaration known by its exact name alone.
+fn single_name_owner(name: &str) -> Option<&'static str> {
     let owner = match name {
-        "ModelConstructor" => "maestro-models-catalog",
-        "ObjectNode" | "Relation" => "maestro-schema-validator",
-        "ForkPosition" | "NavigateTreeOptions" => "maestro-entry",
         "Listeners" => "maestro-listeners",
+        "NumberFormatter" | "OpenXmlPackage" | "WorkbookError" => "maestro-office",
+        "ObjectNode" | "Relation" => "maestro-schema-validator",
         "serialize_json_line" | "JsonlLineSplitter" => "maestro-json",
         "serialize_rpc_response" => "maestro-protocol",
         "session_transcripts" => "maestro-session-reports",
-        _ if input_presenter_record(name) => "maestro-app",
         _ => return None,
     };
     Some(owner)

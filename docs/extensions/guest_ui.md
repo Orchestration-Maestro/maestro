@@ -463,7 +463,7 @@ rendering.
 | --- | --- | --- |
 | `overlay-options` | `Rc<RefCell<maestro_tui::OverlayOptions>>` | Retains one shared record; `get`/`set` carry only placement, not executable code. |
 | `overlay-options.set-visible` | `OverlayOptions::visible` | The host keeps the authored check until it is replaced or the record is dropped. |
-| `overlay-handle` | `Rc<RefCell<Box<dyn OverlayHandle>>>` | Shares the shown overlay's handle; dropping it does not hide the overlay. |
+| `overlay-handle` | `OverlayHandle` | A cloneable handle on the shown overlay; dropping it does not hide the overlay. |
 
 ## Custom components
 

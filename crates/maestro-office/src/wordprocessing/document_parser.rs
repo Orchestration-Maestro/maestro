@@ -1,0 +1,440 @@
+//! Word body framing and selected CSS property parsing.
+use super::{
+    DocxError, DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData as Data,
+    OpenXmlElementTree, OwnedXmlElement, WmlHyperlink, WmlSmartTag, XmlElement, XmlParser,
+    parse_xml_string,
+};
+
+/// Parse the immediate body elements of an owned XML selection.
+/// `ignore_width` suppresses cell widths in every property group.
+///
+/// # Errors
+/// Returns an XML error for invalid input or missing required picture structure.
+pub fn parse_body_elements(
+    input: &OwnedXmlElement,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    parse(input, Framing::Body, ignore_width)
+}
+/// Parse a paragraph with distinct run and parent identities.
+/// `ignore_width` suppresses cell widths in every property group.
+///
+/// # Errors
+/// Returns an XML error for invalid input or missing required picture structure.
+pub fn parse_paragraph(
+    input: &OwnedXmlElement,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    parse(input, Framing::Paragraph, ignore_width)
+}
+/// Parse one run, retaining ordered inline content.
+/// `ignore_width` suppresses cell widths in every property group.
+///
+/// # Errors
+/// Returns an XML error for invalid input or missing required picture structure.
+pub fn parse_run(
+    input: &OwnedXmlElement,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    parse(input, Framing::Run, ignore_width)
+}
+/// Selected immediate-child framing.
+#[derive(Clone, Copy)]
+pub(super) enum Framing {
+    /// Body children.
+    Body,
+    /// One paragraph.
+    Paragraph,
+    /// One run.
+    Run,
+}
+/// Reparse and select the input once for one public operation.
+fn parse(
+    input: &OwnedXmlElement,
+    framing: Framing,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    let xml = parse_xml_string(input.source(), false)?;
+    let selected = xml.selected(input)?;
+    parse_selected(&xml, selected, framing, ignore_width)
+}
+/// Construct one arena from an already admitted selection.
+pub(super) fn parse_selected<'doc, 'input: 'doc>(
+    xml: &'doc XmlParser<'input>,
+    element: XmlElement<'doc, 'input>,
+    framing: Framing,
+    ignore_width: bool,
+) -> Result<OpenXmlElementTree, DocxError> {
+    let mut parser = DocumentParser {
+        xml,
+        ignore_width,
+        tree: OpenXmlElementTree::default(),
+    };
+    parser.tree.roots = match framing {
+        Framing::Body => parser.body(element)?,
+        Framing::Paragraph => vec![parser.paragraph(element)?],
+        Framing::Run => vec![parser.run(element, None)?],
+    };
+    Ok(parser.tree)
+}
+/// One parse's borrowed XML view and owned result arena.
+pub(super) struct DocumentParser<'doc, 'input> {
+    /// Reparsed complete XML input.
+    pub(super) xml: &'doc XmlParser<'input>,
+    /// Cell-width suppression for every property group.
+    ignore_width: bool,
+    /// Output arena under construction.
+    pub(super) tree: OpenXmlElementTree,
+}
+impl<'input> DocumentParser<'_, 'input> {
+    /// Allocate one node and return its arena position.
+    pub(super) fn push(&mut self, data: Data) -> usize {
+        let id = self.tree.nodes.len();
+        self.tree.nodes.push(OpenXmlElement {
+            base: OpenXmlElementBase::default(),
+            data,
+        });
+        id
+    }
+    /// Parse immediate body children.
+    pub(super) fn body(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+    ) -> Result<Vec<usize>, DocxError> {
+        let mut children = Vec::new();
+        for child in self.xml.elements(element, None) {
+            match child.local_name() {
+                "p" => children.push(self.paragraph(child)?),
+                "tbl" => children.push(self.parse_table(child)?),
+                "sdt" => children.extend(
+                    self.xml
+                        .element(child, "sdtContent")
+                        .map(|c| self.body(c))
+                        .transpose()?
+                        .unwrap_or_default(),
+                ),
+                "altChunk" => children.push(self.push(Data::AltChunk {
+                    id: self.attr(child, "id"),
+                })),
+                _ => {}
+            }
+        }
+        Ok(children)
+    }
+    /// Build a paragraph whose run parents keep this arena identity.
+    fn paragraph(&mut self, element: XmlElement<'_, 'input>) -> Result<usize, DocxError> {
+        let id = self.push(Data::Paragraph {
+            properties: Box::default(),
+        });
+        self.tree.nodes[id].base.children = self.paragraph_children(element, id)?;
+        Ok(id)
+    }
+    /// Recognize paragraph children using the supplied parent identity.
+    fn paragraph_children(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+    ) -> Result<Vec<usize>, DocxError> {
+        let mut children = Vec::new();
+        for child in self.xml.elements(element, None) {
+            match child.local_name() {
+                "r" => children.push(self.run(child, Some(parent))?),
+                "fldSimple" => {
+                    let field = self.push(self.field(child));
+                    self.tree.nodes[field].base.children = self.paragraph_children(child, field)?;
+                    children.push(field);
+                }
+                "pPr" => {
+                    properties::parse_paragraph_properties(
+                        self.xml,
+                        child,
+                        &mut self.tree.nodes[parent].data,
+                        self.ignore_width,
+                    );
+                }
+                "sdt" => children.extend(
+                    self.xml
+                        .element(child, "sdtContent")
+                        .map(|c| self.hidden_children(c))
+                        .transpose()?
+                        .unwrap_or_default(),
+                ),
+                "bookmarkStart" => children.push(self.push(
+                    super::document::bookmarks::parse_bookmark_start(self.xml, child),
+                )),
+                "bookmarkEnd" => children.push(self.push(
+                    super::document::bookmarks::parse_bookmark_end(self.xml, child),
+                )),
+                "commentRangeStart" => children.push(self.push(Data::CommentRangeStart(
+                    super::WmlCommentRangeStart {
+                        id: self.attr(child, "id"),
+                    },
+                ))),
+                "commentRangeEnd" => {
+                    children.push(self.push(Data::CommentRangeEnd(super::WmlCommentRangeEnd {
+                        id: self.attr(child, "id"),
+                    })));
+                }
+                "oMath" | "oMathPara" => children.push(self.math(child)?),
+                "ins" | "del" => children.push(self.change(child)?),
+                "hyperlink" => children.push(self.parse_hyperlink(child, parent)?),
+                "smartTag" => children.push(self.parse_smart_tag(child, parent)?),
+                _ => {}
+            }
+        }
+        Ok(children)
+    }
+    /// Build a hyperlink with its nullable relationship and anchor.
+    fn parse_hyperlink(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+    ) -> Result<usize, DocxError> {
+        let data = Data::Hyperlink(WmlHyperlink {
+            id: self.attr(element, "id"),
+            anchor: self.attr(element, "anchor"),
+        });
+        self.inline_wrapper(element, parent, data)
+    }
+    /// Build a smart tag, keeping only nonempty metadata.
+    fn parse_smart_tag(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+    ) -> Result<usize, DocxError> {
+        let nonempty = |name| self.attr(element, name).filter(|s| !s.is_empty());
+        let data = Data::SmartTag(WmlSmartTag {
+            uri: nonempty("uri"),
+            element: nonempty("element"),
+        });
+        self.inline_wrapper(element, parent, data)
+    }
+    /// Link a hyperlink or smart tag to its paragraph or simple field and its immediate runs
+    /// to it.
+    fn inline_wrapper(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+        data: Data,
+    ) -> Result<usize, DocxError> {
+        let id = self.push(data);
+        self.tree.nodes[id].base.parent = Some(parent);
+        for child in self.xml.elements(element, Some("r")) {
+            let run = self.run(child, Some(id))?;
+            self.tree.nodes[id].base.children.push(run);
+        }
+        Ok(id)
+    }
+    /// Build a change wrapper while retaining its hidden paragraph parents.
+    fn change(&mut self, element: XmlElement<'_, 'input>) -> Result<usize, DocxError> {
+        let children = self.hidden_children(element)?;
+        let data = if element.local_name() == "ins" {
+            Data::Inserted
+        } else {
+            Data::Deleted
+        };
+        let id = self.push(data);
+        self.tree.nodes[id].base.children = children;
+        Ok(id)
+    }
+    /// Retain a hidden paragraph identity while flattening its child positions.
+    fn hidden_children(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+    ) -> Result<Vec<usize>, DocxError> {
+        let id = self.paragraph(element)?;
+        Ok(self.tree.nodes[id].base.children.clone())
+    }
+    /// Copy one nullable decoded attribute into its payload.
+    pub(super) fn attr(&self, element: XmlElement<'_, 'input>, name: &str) -> Option<String> {
+        self.xml.attr(element, name).map(str::to_owned)
+    }
+    /// Read shared field flags with the kind-specific open metadata.
+    fn field(&self, element: XmlElement<'_, 'input>) -> Data {
+        let lock_name = self
+            .xml
+            .attr(element, "fldLock")
+            .map_or("lock", |_| "fldLock");
+        let lock = self
+            .xml
+            .bool_attr(element, lock_name, Some(false))
+            .unwrap_or(false);
+        let dirty = self
+            .xml
+            .bool_attr(element, "dirty", Some(false))
+            .unwrap_or(false);
+        if element.local_name() == "fldChar" {
+            Data::ComplexField {
+                char_type: self.attr(element, "fldCharType"),
+                lock,
+                dirty,
+            }
+        } else {
+            Data::SimpleField {
+                instruction: self.attr(element, "instr"),
+                lock,
+                dirty,
+            }
+        }
+    }
+    /// Build a run and its ordered inline text.
+    fn run(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: Option<usize>,
+    ) -> Result<usize, DocxError> {
+        let id = self.push(Data::Run {
+            r#type: DomType::Run,
+            field_run: false,
+            properties: super::RunProperties::default(),
+        });
+        self.tree.nodes[id].base.parent = parent;
+        for child in self.xml.elements(element, None) {
+            if let Some(child) = Self::alternate_content(self.xml, child) {
+                self.run_element(child, id)?;
+            }
+        }
+        Ok(id)
+    }
+    /// Select only the first fallback element when an alternate wrapper is encountered.
+    fn alternate_content<'doc>(
+        xml: &'doc XmlParser<'input>,
+        child: XmlElement<'doc, 'input>,
+    ) -> Option<XmlElement<'doc, 'input>> {
+        if child.local_name() == "AlternateContent" {
+            xml.element(child, "Fallback")
+                .and_then(|fallback| xml.elements(fallback, None).next())
+        } else {
+            Some(child)
+        }
+    }
+    /// Append one inline element or update the owning run properties.
+    fn run_element(&mut self, child: XmlElement<'_, 'input>, id: usize) -> Result<(), DocxError> {
+        let node = match child.local_name() {
+            "rPr" => {
+                properties::parse_run_properties(
+                    self.xml,
+                    child,
+                    &mut self.tree.nodes[id].data,
+                    self.ignore_width,
+                );
+                None
+            }
+            "pict" => Some(self.vml_picture(child)?),
+            "drawing" => self.drawing(child)?,
+            _ => self.run_child(child).map(|data| {
+                if matches!(data, Data::ComplexField { .. } | Data::Instruction { .. })
+                    && let Data::Run { field_run, .. } = &mut self.tree.nodes[id].data
+                {
+                    *field_run = true;
+                }
+                self.push(data)
+            }),
+        };
+        self.tree.nodes[id].base.children.extend(node);
+        Ok(())
+    }
+    /// Construct one recognized inline payload.
+    fn run_child(&self, child: XmlElement<'_, 'input>) -> Option<Data> {
+        Some(match child.local_name() {
+            "t" => Data::Text {
+                text: child.text_content(),
+            },
+            "instrText" => Data::Instruction {
+                text: child.text_content(),
+            },
+            "fldSimple" | "fldChar" => self.field(child),
+            "noBreakHyphen" => Data::NoBreakHyphen,
+            "tab" => Data::Tab,
+            "commentReference" => Data::CommentReference(super::WmlCommentReference {
+                id: self.attr(child, "id"),
+            }),
+            "sym" => Data::Symbol {
+                font: self
+                    .xml
+                    .attr(child, "font")
+                    .map(super::names::enclose_font_family),
+                char: self.attr(child, "char"),
+            },
+            "lastRenderedPageBreak" => Data::Break {
+                r#break: "lastRenderedPageBreak".into(),
+            },
+            "footnoteReference" => Data::FootnoteReference {
+                id: self.attr(child, "id"),
+            },
+            "endnoteReference" => Data::EndnoteReference {
+                id: self.attr(child, "id"),
+            },
+            "delText" => Data::DeletedText {
+                text: child.text_content(),
+            },
+            "br" => Data::Break {
+                r#break: self
+                    .xml
+                    .attr(child, "type")
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or("textWrapping")
+                    .into(),
+            },
+            _ => return None,
+        })
+    }
+}
+
+mod values;
+mod xml_util;
+
+/// Update physical border sides from immediate children, retaining existing slots.
+pub fn parse_border_properties<'doc, 'input: 'doc>(
+    xml: &'doc XmlParser<'input>,
+    element: XmlElement<'doc, 'input>,
+    output: &mut indexmap::IndexMap<String, Option<String>>,
+) {
+    for child in xml.elements(element, None) {
+        let side = match child.local_name() {
+            "start" | "left" => "border-left",
+            "end" | "right" => "border-right",
+            "top" => "border-top",
+            "bottom" => "border-bottom",
+            _ => continue,
+        };
+        output.insert(side.into(), Some(values::value_of_border(xml, child)));
+    }
+}
+
+/// Return the selected element's background color when present.
+#[must_use]
+pub fn parse_background<'doc, 'input: 'doc>(
+    xml: &'doc XmlParser<'input>,
+    element: XmlElement<'doc, 'input>,
+) -> indexmap::IndexMap<String, Option<String>> {
+    xml_util::color_attr(xml, element, "color", "black")
+        .map(|color| ("background-color".into(), Some(color)))
+        .into_iter()
+        .collect()
+}
+
+mod default_properties;
+pub use default_properties::{DefaultPropertiesOptions, parse_default_properties};
+
+mod formatting;
+
+mod table_style;
+pub use table_style::{TableStyle, parse_table_style};
+
+mod document_file;
+pub use document_file::{WordBody, parse_document_file};
+
+mod properties;
+pub(super) mod styles;
+
+mod drawing;
+
+mod table;
+
+mod math;
+pub use math::MathProperties;
+
+pub(super) mod comments;
+
+pub(crate) mod numbering;

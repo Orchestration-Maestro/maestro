@@ -24,6 +24,7 @@
   "maestro-models": "core",
   "maestro-models-catalog": "core",
   "maestro-multiplexer": "core",
+  "maestro-office": "core",
   "maestro-package": "core",
   "maestro-packages": "core",
   "maestro-path": "core",

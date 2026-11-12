@@ -1578,9 +1578,6 @@ impl std::fmt::Display for Marked {
 }
 impl std::error::Error for Marked {}
 
-/// A shown overlay's handle, shared by the host and the extension.
-type SharedOverlay = Rc<RefCell<Box<dyn OverlayHandle>>>;
-
 /// One admitted custom operation; the host owns its single close gate.
 struct Session {
     /// The real writer the editor is restored on.
@@ -1596,7 +1593,7 @@ struct Session {
     /// The installed component.
     component: RefCell<Option<ExtensionComponent>>,
     /// The shown overlay's shared handle.
-    overlay: RefCell<Option<SharedOverlay>>,
+    overlay: RefCell<Option<OverlayHandle>>,
 }
 impl Session {
     /// Settles the caller's observation once.
@@ -1613,7 +1610,7 @@ impl Session {
         }
         let overlay = self.overlay.borrow_mut().take();
         if let Some(overlay) = overlay {
-            overlay.borrow_mut().hide()?;
+            overlay.hide()?;
         } else if let Some(message) = self.restore_error {
             self.finish(Err(message.into()));
             return Err(message.into());
@@ -1652,7 +1649,7 @@ impl Session {
         let width = resolved
             .as_ref()
             .and_then(|options| options.borrow().min_width);
-        let handle = Rc::new(RefCell::new(tui.show_overlay(shown, resolved)?));
+        let handle = tui.show_overlay(shown, resolved)?;
         *self.overlay.borrow_mut() = Some(handle.clone());
         mark(&self.trace, format!("overlay {width:?}"));
         if let Some(on_handle) = &options.on_handle {
@@ -1954,14 +1951,14 @@ async fn failures_and_restoration(ui: &Ui, host: &Customs) {
 /// An overlay handle callback that hides and then refocuses the shown overlay.
 fn refocusing(
     api: &ExtensionAPI<Local>,
-    seen: &Rc<RefCell<Vec<SharedOverlay>>>,
+    seen: &Rc<RefCell<Vec<OverlayHandle>>>,
 ) -> OverlayHandleCallback {
     let seen = seen.clone();
-    api.ui_callback(move |handle: SharedOverlay, _| {
-        handle.borrow_mut().set_hidden(true);
-        assert!(handle.borrow().is_hidden());
-        handle.borrow_mut().set_hidden(false);
-        handle.borrow_mut().focus();
+    api.ui_callback(move |handle: OverlayHandle, _| {
+        handle.set_hidden(true);
+        assert!(handle.is_hidden());
+        handle.set_hidden(false);
+        handle.focus();
         seen.borrow_mut().push(handle);
         Ok(())
     })
@@ -1970,7 +1967,7 @@ fn refocusing(
 /// Absent, disabled, static, resolved and default overlay options, in that order.
 fn overlay_sources(
     api: &ExtensionAPI<Local>,
-    seen: &Rc<RefCell<Vec<SharedOverlay>>>,
+    seen: &Rc<RefCell<Vec<OverlayHandle>>>,
     width: &Rc<Cell<isize>>,
 ) -> [Option<CustomUIOptions>; 6] {
     let resolver: OverlayOptionsResolver = {
@@ -2038,8 +2035,10 @@ async fn overlays(ui: &Ui, host: &Customs) {
                 .borrow()
                 .clone()
                 .unwrap();
-            assert!(Rc::ptr_eq(&seen.borrow()[0], &shown));
-            assert!(!shown.borrow().is_hidden() && shown.borrow().is_focused());
+            assert!(!shown.is_hidden() && shown.is_focused());
+            seen.borrow()[0].set_hidden(true);
+            assert!(shown.is_hidden());
+            seen.borrow()[0].set_hidden(false);
         }
         if index == 3 {
             width.set(9);
