@@ -8,7 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use crate::recipe_support::{executable, installed, without_prepared_bundles};
+use crate::recipe_support::{executable, installed};
 use maestro_test_directory::Scratch;
 
 use tooling::workspace::{REGION_END, REGION_START};
@@ -257,7 +257,7 @@ fn executable_setup(root: &Path, bundle: &Path) -> std::process::Output {
         .args(["nextest-setup", "executable"])
         .current_dir(root)
         .env("NEXTEST_ENV", root.join("nextest-env"));
-    without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     command.env("TEST_PREPARE_OUTPUT", bundle).output().unwrap()
 }
 

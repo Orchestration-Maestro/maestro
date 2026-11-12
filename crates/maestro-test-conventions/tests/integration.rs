@@ -22,6 +22,7 @@ mod quality;
 mod real_paths;
 mod repetition;
 mod rpc_ownership;
+mod setup_children;
 mod standard_error;
 mod support;
 mod temp_directories;

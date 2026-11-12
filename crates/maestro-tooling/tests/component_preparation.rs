@@ -243,7 +243,7 @@ fn normalize_run(root: &Path, archived: bool) {
         .args(["nextest-setup", "normalize-component-cache"])
         .arg(root.join("target/debug"))
         .current_dir(root);
-    crate::recipe_support::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
     }

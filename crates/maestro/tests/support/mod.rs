@@ -1,14 +1,20 @@
 //! Disposable configuration, a cleared executable environment and the shipped theme.
 use maestro_test_directory::Scratch;
+use maestro_test_process::{SearchGuard, install_stub_search_programs};
 use std::{
     path::Path,
     process::{Command, Output},
+    sync::OnceLock,
 };
 
-/// A root command with no ambient credentials or user settings.
+/// A root command with no ambient credentials or user settings. Its children find stub `fd` and
+/// `rg` programs in the root's `bin` directory, and dropping the root fails the test when a
+/// child ran a search program from the host instead.
 pub struct Root {
     /// Owned temporary directories.
     pub scratch: Scratch,
+    /// The guard on the command path, set by the first command.
+    search: OnceLock<SearchGuard>,
 }
 impl Root {
     /// Create the user configuration root and project directory.
@@ -18,7 +24,25 @@ impl Root {
             std::fs::create_dir(scratch.path().join(path)).unwrap();
         }
         share_component_cache(&scratch.path().join("agent"));
-        Self { scratch }
+        Self {
+            scratch,
+            search: OnceLock::new(),
+        }
+    }
+    /// The command path of the root's children: the stub search programs, then the host path,
+    /// with the guard ahead of the first host directory.
+    fn command_path(&self) -> &std::ffi::OsStr {
+        self.search
+            .get_or_init(|| {
+                let bin = self.path("bin");
+                install_stub_search_programs(&bin).unwrap();
+                let host = std::env::var_os("PATH").unwrap_or_default();
+                let path =
+                    std::env::join_paths(std::iter::once(bin).chain(std::env::split_paths(&host)))
+                        .unwrap();
+                SearchGuard::new(self.scratch.path(), &path).unwrap()
+            })
+            .path()
     }
     /// Root executable invocation with supplied literal arguments.
     pub fn command(&self, args: &[&str]) -> Command {
@@ -27,7 +51,7 @@ impl Root {
             .env_clear()
             .current_dir(self.path("project"))
             .env("HOME", self.scratch.path())
-            .env("PATH", std::env::var_os("PATH").unwrap_or_default())
+            .env("PATH", self.command_path())
             // A Windows process without its system root cannot open sockets.
             .envs(std::env::var_os("SYSTEMROOT").map(|root| ("SYSTEMROOT", root)))
             .env("MAESTRO_CODING_AGENT_DIR", self.path("agent"))
@@ -51,6 +75,16 @@ impl Root {
     /// A path under the disposable root.
     pub fn path(&self, path: &str) -> std::path::PathBuf {
         self.scratch.path().join(path)
+    }
+}
+
+impl Drop for Root {
+    fn drop(&mut self) {
+        if let Some(search) = self.search.get()
+            && !std::thread::panicking()
+        {
+            search.assert_unreached();
+        }
     }
 }
 
@@ -126,6 +160,45 @@ fn root_agent_reuses_the_component_cache_the_run_prepared() {
         .join("modules/namespace/entry");
         assert_eq!(std::fs::read(shared).unwrap(), b"compiled");
     }
+}
+
+/// The command path `root` gives its executable children.
+#[cfg(unix)]
+fn command_path(root: &Root) -> std::ffi::OsString {
+    let command = root.command(&[]);
+    command
+        .get_envs()
+        .find(|(key, _)| *key == "PATH")
+        .and_then(|(_, value)| value.map(std::ffi::OsStr::to_owned))
+        .unwrap()
+}
+
+#[cfg(unix)]
+#[test]
+fn root_command_resolves_fd_and_rg_inside_its_root() {
+    let root = Root::new();
+    let path = command_path(&root);
+    for program in ["fd", "rg"] {
+        let found = std::env::split_paths(&path)
+            .find(|directory| directory.join(program).exists())
+            .unwrap();
+        assert!(
+            found.starts_with(root.scratch.path()),
+            "{program}: {found:?}"
+        );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn root_fails_when_a_command_ran_a_host_search_program() {
+    let root = Root::new();
+    let path = command_path(&root);
+    std::fs::remove_file(root.path("bin/rg")).unwrap();
+    let ran = std::process::Command::new("rg").env("PATH", path).output();
+    drop(ran);
+    let ended = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| drop(root)));
+    assert!(ended.is_err(), "the root accepted a host search program");
 }
 
 #[cfg(unix)]
