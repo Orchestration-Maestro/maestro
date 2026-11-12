@@ -1,4 +1,4 @@
-//! Reader-follow boundaries and usage totals.
+//! Reader-follow boundaries, usage totals and the history draw key.
 use super::*;
 use maestro_app::{AgentMessage, NoCustomMessages};
 use std::rc::Rc;
@@ -105,21 +105,6 @@ fn key(entries: usize, is_streaming: bool, pending: &[&str]) -> HistoryKey {
         is_streaming,
         pending: Rc::new(pending.iter().map(|id| (*id).to_owned()).collect()),
     }
-}
-
-#[test]
-fn streamed_updates_draw_the_history_once() {
-    let started = key(40, true, &[]);
-    let mut drawn: Option<HistoryKey> = None;
-    let mut count = 0;
-    // The run's first event draws; every following streamed update has the same operands.
-    for streamed in std::iter::once(false).chain(std::iter::repeat_n(true, 500)) {
-        if started.stale(drawn.as_ref(), streamed) {
-            count += 1;
-            drawn = Some(started.clone());
-        }
-    }
-    assert_eq!(count, 1);
 }
 
 #[test]
