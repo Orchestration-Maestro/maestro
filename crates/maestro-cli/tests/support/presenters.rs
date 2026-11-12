@@ -1,8 +1,9 @@
 //! Presenter harness shared by the selector and configuration command tests.
 
 use maestro_app::presentation_data::input_selectors::{ConfigSelectorOptions, PresentedSelector};
-use maestro_app::{ResolvedPaths, Settings, SettingsManager};
 use maestro_cli::input::selection::SelectorHost;
+use maestro_packages::ResolvedPaths;
+use maestro_settings::{Settings, SettingsManager};
 use maestro_theme::{
     ThemeDirectories, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };

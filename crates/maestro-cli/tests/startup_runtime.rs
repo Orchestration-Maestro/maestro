@@ -1,10 +1,13 @@
 //! Startup construction through real directory-bound application services.
 use crate::support::{presenters, startup};
 use maestro_app::{
-    AgentSessionServices, CreateAgentSessionServicesOptions, Local, ModelResolverOutput,
-    ReadonlySessionManager, ResourceKind, ResourceLoaderOptions, SessionManager, SettingsManager,
+    AgentSessionServices, CreateAgentSessionServicesOptions, ResourceKind, ResourceLoaderOptions,
 };
+use maestro_catalog::ModelResolverOutput;
 use maestro_cli::startup::entrypoint::initialization::{RuntimeCreation, create_runtime};
+use maestro_models::Local;
+use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
+use maestro_settings::SettingsManager;
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 #[cfg(unix)]
@@ -216,7 +219,7 @@ fn created_session_receives_every_selected_option() {
             assert_eq!(created.session.model().read().unwrap().id, "first");
             assert_eq!(
                 created.session.thinking_level(),
-                maestro_app::ThinkingLevel::High
+                maestro_agent::ThinkingLevel::High
             );
             assert_eq!(created.session.scoped_models().len(), 2);
             assert_eq!(created.session.get_active_tool_names(), ["read"]);
@@ -376,19 +379,19 @@ fn thinking_is_reapplied_only_for_cli_override() {
             for (tokens, level) in [
                 (
                     vec!["--model", "startup/first", "--thinking", "high"],
-                    maestro_app::ThinkingLevel::High,
+                    maestro_agent::ThinkingLevel::High,
                 ),
                 (
                     vec!["--model", "startup/first:low"],
-                    maestro_app::ThinkingLevel::Low,
+                    maestro_agent::ThinkingLevel::Low,
                 ),
                 (
                     vec!["--models", "startup/first:low"],
-                    maestro_app::ThinkingLevel::Low,
+                    maestro_agent::ThinkingLevel::Low,
                 ),
                 (
                     vec!["--models", "startup/first:high"],
-                    maestro_app::ThinkingLevel::High,
+                    maestro_agent::ThinkingLevel::High,
                 ),
             ] {
                 let (created, _) = fixture.create(&tokens).await;
@@ -416,7 +419,7 @@ fn runtime_empty_catalog_keeps_inert_model() {
             );
             assert_eq!(
                 created.session.thinking_level(),
-                maestro_app::ThinkingLevel::Off
+                maestro_agent::ThinkingLevel::Off
             );
             assert!(
                 created
@@ -490,7 +493,7 @@ fn runtime_diagnostics_keep_all_producer_groups() {
 fn refuse_extensions(resources: &mut ResourceLoaderOptions<Local>) {
     resources.extensions_override = Some(Box::new(|mut loaded| {
         loaded.errors = ["first", "second"]
-            .map(|path| maestro_app::ExtensionLoadError {
+            .map(|path| maestro_extensions::ExtensionLoadError {
                 path: path.into(),
                 error: format!("{path} refusal"),
             })
@@ -503,42 +506,48 @@ fn refuse_extensions(resources: &mut ResourceLoaderOptions<Local>) {
 const PROBE_TOOL: &str = "extension_probe";
 
 /// An extension registering [`PROBE_TOOL`] through the real registration owner.
-fn register_probe_tool() -> maestro_app::ExtensionFactory<Local> {
+fn register_probe_tool() -> maestro_extensions::ExtensionFactory<Local> {
     Rc::new(|api| {
-        let tool =
-            maestro_app::local::ToolDefinition::<maestro_app::ExtensionContext, Value, Value, ()> {
-                definition: serde_json::from_value(json!({
-                    "name": PROBE_TOOL,
-                    "description": "probe",
-                    "parameters": {"type": "object", "properties": {}},
-                }))
-                .unwrap(),
-                label: PROBE_TOOL.into(),
-                prompt_snippet: None,
-                prompt_guidelines: None,
-                render_shell: None,
-                prepare_arguments: None,
-                execution_mode: None,
-                execute: Rc::new(|_, _, _, _, _| {
-                    Box::pin(std::future::ready(Ok(maestro_app::AgentToolResult {
+        let tool = maestro_tools::types::local::ToolDefinition::<
+            maestro_extensions::ExtensionContext,
+            Value,
+            Value,
+            (),
+        > {
+            definition: serde_json::from_value(json!({
+                "name": PROBE_TOOL,
+                "description": "probe",
+                "parameters": {"type": "object", "properties": {}},
+            }))
+            .unwrap(),
+            label: PROBE_TOOL.into(),
+            prompt_snippet: None,
+            prompt_guidelines: None,
+            render_shell: None,
+            prepare_arguments: None,
+            execution_mode: None,
+            execute: Rc::new(|_, _, _, _, _| {
+                Box::pin(std::future::ready(Ok(
+                    maestro_extensions::AgentToolResult {
                         content: vec![],
                         details: None,
                         terminate: None,
-                    })))
-                }),
-                render_call: None,
-                render_result: None,
-            };
+                    },
+                )))
+            }),
+            render_call: None,
+            render_result: None,
+        };
         Box::pin(std::future::ready(api.register_tool(tool)))
     })
 }
 
 /// Record events through the real extension registration and dispatch owners.
-fn record_starts(events: &Rc<RefCell<Vec<String>>>) -> maestro_app::ExtensionFactory<Local> {
+fn record_starts(events: &Rc<RefCell<Vec<String>>>) -> maestro_extensions::ExtensionFactory<Local> {
     let record = Rc::clone(events);
     Rc::new(move |api| {
         let record = Rc::clone(&record);
-        let registered = api.on::<maestro_app::SessionStartEvent, ()>(
+        let registered = api.on::<maestro_extensions::types::events::SessionStartEvent, ()>(
             "session_start".into(),
             Rc::new(move |event, _| {
                 record
@@ -558,10 +567,10 @@ pub(crate) const SHUTDOWN_UNDER_WAY: &str = "print run disposing its session";
 /// Record each shutdown event to `report` through the real extension registration and dispatch
 /// owners, so a run that ends its process can still report what it delivered.
 #[cfg(unix)]
-fn report_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
+fn report_shutdowns(report: PathBuf) -> maestro_extensions::ExtensionFactory<Local> {
     Rc::new(move |api| {
         let report = report.clone();
-        let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
+        let registered = api.on::<maestro_extensions::types::events::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(move |event, _| {
                 append_shutdown(&report, event);
@@ -574,10 +583,10 @@ fn report_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
 
 /// Record each shutdown event to `report`, then never answer, so the disposal stays pending.
 #[cfg(unix)]
-fn hold_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
+fn hold_shutdowns(report: PathBuf) -> maestro_extensions::ExtensionFactory<Local> {
     Rc::new(move |api| {
         let report = report.clone();
-        let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
+        let registered = api.on::<maestro_extensions::types::events::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(move |event, _| {
                 append_shutdown(&report, event);
@@ -591,7 +600,7 @@ fn hold_shutdowns(report: PathBuf) -> maestro_app::ExtensionFactory<Local> {
 
 /// Appends `event` to the shutdown report at `report`.
 #[cfg(unix)]
-fn append_shutdown(report: &Path, event: &maestro_app::SessionShutdownEvent) {
+fn append_shutdown(report: &Path, event: &maestro_extensions::types::events::SessionShutdownEvent) {
     let mut delivered: Vec<Value> = match std::fs::read_to_string(report) {
         Ok(text) => serde_json::from_str(&text).unwrap(),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
@@ -602,11 +611,13 @@ fn append_shutdown(report: &Path, event: &maestro_app::SessionShutdownEvent) {
 }
 
 /// Record each shutdown event through the real extension registration and dispatch owners.
-fn record_shutdowns(shutdowns: &Rc<RefCell<Vec<Value>>>) -> maestro_app::ExtensionFactory<Local> {
+fn record_shutdowns(
+    shutdowns: &Rc<RefCell<Vec<Value>>>,
+) -> maestro_extensions::ExtensionFactory<Local> {
     let record = Rc::clone(shutdowns);
     Rc::new(move |api| {
         let record = Rc::clone(&record);
-        let registered = api.on::<maestro_app::SessionShutdownEvent, ()>(
+        let registered = api.on::<maestro_extensions::types::events::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(move |event, _| {
                 record

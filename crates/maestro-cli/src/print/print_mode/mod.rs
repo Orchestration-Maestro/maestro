@@ -3,13 +3,19 @@ mod signals;
 #[cfg(test)]
 mod tests;
 
+use maestro_agent::AgentMessage;
 use maestro_app::{
-    AgentMessage, AgentSession, AgentSessionEvent, AgentSessionEventListener, AgentSessionRuntime,
-    AssistantContent, DiagnosticErrorInfo, ExtensionBindings, ExtensionCommandContextActions,
-    FileEntry, ImageContent, PromptOptions, ReadonlySessionManager, RebindSession,
-    SharedAssistantMessage, StopReason, TerminationSignal, kill_tracked_detached_children,
-    serialize_json_line,
+    AgentSession, AgentSessionEvent, AgentSessionEventListener, AgentSessionRuntime,
+    ExtensionBindings, PromptOptions, RebindSession,
 };
+use maestro_extensions::ExtensionCommandContextActions;
+use maestro_json::lines::serialize_json_line;
+use maestro_models::{
+    AssistantContent, DiagnosticErrorInfo, ImageContent, SharedAssistantMessage, StopReason,
+};
+use maestro_process::TerminationSignal;
+use maestro_session::session_manager::{FileEntry, ReadonlySessionManager};
+use maestro_tools::utils::kill_tracked_detached_children;
 pub(crate) use signals::{NativeSignals, SignalPort};
 use std::{
     borrow::Cow,
@@ -135,7 +141,7 @@ impl PrintEffects {
     pub(crate) fn native() -> Self {
         Self {
             write_stdout: Rc::new(maestro_app::output_guard::write_raw_stdout),
-            write_stderr_line: Rc::new(maestro_app::diagnostics::write_stderr_line),
+            write_stderr_line: Rc::new(maestro_agent::diagnostics::write_stderr_line),
             flush_stdout: Rc::new(maestro_app::output_guard::flush_raw_stdout),
             kill_children: Rc::new(kill_tracked_detached_children),
             signals: Rc::new(NativeSignals),
@@ -318,7 +324,7 @@ impl PrintRun {
     /// standard output is a terminal, byte-exact for a pipe or a file.
     fn terminal_safe<'a>(&self, text: &'a str) -> Cow<'a, str> {
         if self.effects.stdout_is_terminal {
-            Cow::Owned(maestro_app::clean_controls(text))
+            Cow::Owned(maestro_text::terminal::clean_controls(text))
         } else {
             Cow::Borrowed(text)
         }
@@ -432,12 +438,14 @@ pub(crate) async fn run_print_mode_with(
 
 /// The listener that reports extension failures.
 type ErrorListener = Rc<
-    dyn Fn(&maestro_app::ExtensionError) -> Result<(), Box<dyn std::error::Error + Send + Sync>>,
+    dyn Fn(
+        &maestro_extensions::ExtensionError,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>,
 >;
 
 /// The listener that reports extension failures on standard error.
 fn error_listener(run: Weak<PrintRun>) -> ErrorListener {
-    Rc::new(move |error: &maestro_app::ExtensionError| {
+    Rc::new(move |error: &maestro_extensions::ExtensionError| {
         let Some(run) = run.upgrade() else {
             return Ok(());
         };

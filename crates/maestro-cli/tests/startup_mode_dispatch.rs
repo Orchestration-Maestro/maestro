@@ -286,11 +286,11 @@ fn interactive_dispatch_moves_every_startup_operand() {
             let mut h = Harness::new(local, false).await;
             let observed = Arc::new(Mutex::new(Vec::new()));
             let seen = Arc::clone(&observed);
-            let fetch: maestro_app::Fetch = Arc::new(move |request| {
+            let fetch: maestro_models::Fetch = Arc::new(move |request| {
                 seen.lock()
                     .unwrap()
                     .push((request.method, request.url, request.body));
-                Box::pin(async { Err(maestro_app::FetchError::Aborted) })
+                Box::pin(async { Err(maestro_models::FetchError::Aborted) })
             });
             for images in [
                 None,
@@ -331,8 +331,8 @@ fn interactive_dispatch_moves_every_startup_operand() {
 /// Exact moved operands, including a real call through the supplied transport.
 async fn assert_startup_operands(
     h: &Harness,
-    images: Option<Vec<maestro_app::ImageContent>>,
-    fetch: &maestro_app::Fetch,
+    images: Option<Vec<maestro_models::ImageContent>>,
+    fetch: &maestro_models::Fetch,
 ) {
     use std::{rc::Rc, sync::Arc};
     assert_eq!(h.recorder.events(), ["factory", "run"]);
@@ -354,7 +354,7 @@ async fn assert_startup_operands(
     let received = options.fetch.unwrap();
     assert!(Arc::ptr_eq(&received, fetch));
     assert!(matches!(
-        received(maestro_app::HttpRequest {
+        received(maestro_models::HttpRequest {
             method: "POST".into(),
             url: "https://service.example.test/probe".into(),
             headers: indexmap::IndexMap::default(),
@@ -362,13 +362,13 @@ async fn assert_startup_operands(
             signal: None
         })
         .await,
-        Err(maestro_app::FetchError::Aborted)
+        Err(maestro_models::FetchError::Aborted)
     ));
 }
 
 /// Distinguishable ordered image operands.
-fn image(data: &str) -> maestro_app::ImageContent {
-    maestro_app::ImageContent {
+fn image(data: &str) -> maestro_models::ImageContent {
+    maestro_models::ImageContent {
         data: data.into(),
         mime_type: "image/png".into(),
     }
@@ -649,7 +649,7 @@ fn print_failure_does_not_restore_or_close_outer_owners() {
             let error = h.dispatch(request(AppMode::Json)).await.unwrap_err();
             assert!(
                 error
-                    .downcast_ref::<maestro_app::DiagnosticErrorInfo>()
+                    .downcast_ref::<maestro_models::DiagnosticErrorInfo>()
                     .is_some()
             );
             assert!(maestro_app::output_guard::is_stdout_taken_over());

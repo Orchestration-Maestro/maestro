@@ -1,8 +1,8 @@
 //! Complete help rendering observed through the public writer.
 
 use crate::support;
-use maestro_app::{ExtensionFlag, FlagType};
 use maestro_cli::input::arguments::print_help;
+use maestro_extensions::types::{ExtensionFlag, FlagType};
 use std::sync::{Arc, RwLock};
 
 /// Build one retained registration from a recorded flag description.

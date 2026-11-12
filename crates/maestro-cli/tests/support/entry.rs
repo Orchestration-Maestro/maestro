@@ -83,7 +83,7 @@ pub struct Entry {
     /// The missing-directory dialog's choice.
     pub missing: Cell<&'static str>,
     /// The extension module adapter supplied to the entry.
-    pub module_loader: maestro_app::ModuleLoader<maestro_app::Local>,
+    pub module_loader: maestro_extensions::ModuleLoader<maestro_models::Local>,
     /// The last clock reading.
     pub clock: Cell<f64>,
     /// A controlled effect at each supplied clock reading.
