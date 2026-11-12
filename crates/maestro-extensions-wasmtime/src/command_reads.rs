@@ -7,7 +7,7 @@
 use crate::{
     context_reads::Endpoint,
     guest_calls::Handle,
-    local_resources::{Work, held::CommandContext},
+    local_resources::{Work, held::SessionCommands},
     session_calls::{self, NewSession, Switch},
 };
 use maestro_extensions::{EventError, types::SessionChangeResult};
@@ -24,14 +24,14 @@ impl Endpoint {
     /// Waits for the selected agent operation.
     pub(crate) async fn wait_for_idle(&self) -> Result<(), String> {
         self.0
-            .admit::<CommandContext, _, _>(|context, _| Ok(settled(context.wait_for_idle())))
+            .admit::<SessionCommands, _, _>(|context, _| Ok(settled(context.wait_for_idle())))
             .await
     }
 
     /// Reloads through the selected application operation.
     pub(crate) async fn reload(&self) -> Result<(), String> {
         self.0
-            .admit::<CommandContext, _, _>(|context, _| Ok(settled(context.reload())))
+            .admit::<SessionCommands, _, _>(|context, _| Ok(settled(context.reload())))
             .await
     }
 
@@ -41,7 +41,7 @@ impl Endpoint {
         options: NewSession,
     ) -> Result<SessionChangeResult, String> {
         self.0
-            .admit::<CommandContext, _, _>(move |context, registry| {
+            .admit::<SessionCommands, _, _>(move |context, registry| {
                 Ok(settled(context.new_session(options.options(registry))))
             })
             .await
@@ -55,7 +55,7 @@ impl Endpoint {
         callback: Option<Handle>,
     ) -> Result<SessionChangeResult, String> {
         self.0
-            .admit::<CommandContext, _, _>(move |context, registry| {
+            .admit::<SessionCommands, _, _>(move |context, registry| {
                 session_calls::fork_options(data.as_deref(), callback, registry)
                     .map(|options| settled(context.fork(id, options)))
             })
@@ -69,7 +69,7 @@ impl Endpoint {
         options: Option<Switch>,
     ) -> Result<SessionChangeResult, String> {
         self.0
-            .admit::<CommandContext, _, _>(move |context, registry| {
+            .admit::<SessionCommands, _, _>(move |context, registry| {
                 let options = options.map(|options| options.options(registry));
                 Ok(settled(context.switch_session(path, options)))
             })
@@ -83,7 +83,7 @@ impl Endpoint {
         options: Option<maestro_extensions::NavigateTreeOptions>,
     ) -> Result<SessionChangeResult, String> {
         self.0
-            .admit::<CommandContext, _, _>(move |context, _| {
+            .admit::<SessionCommands, _, _>(move |context, _| {
                 Ok(settled(context.navigate_tree(id, options)))
             })
             .await

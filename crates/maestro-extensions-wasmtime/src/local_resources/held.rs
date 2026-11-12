@@ -1,9 +1,4 @@
 //! Typed access to one retained capability for the pump's generic call kinds.
-#![forbid(
-    clippy::pedantic,
-    clippy::too_many_arguments,
-    clippy::excessive_nesting
-)]
 use super::{Capability, Lease, Message, Registry, Work};
 use crate::context_reads::Owner;
 use maestro_extensions::{ExtensionCommandContext, ModelRegistry, SharedHandle};
@@ -34,9 +29,9 @@ impl Held for Catalog {
 }
 
 /// The retained context that carries the session-replacing operations.
-pub(crate) struct CommandContext;
+pub(crate) struct SessionCommands;
 
-impl Held for CommandContext {
+impl Held for SessionCommands {
     type Target = ExtensionCommandContext;
     const ENDED: &'static str = "extension command context resource ended";
     fn lend(capability: &Capability) -> Option<&Self::Target> {

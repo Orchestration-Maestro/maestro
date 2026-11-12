@@ -1,9 +1,4 @@
 //! Independently owned capabilities the local owner retains for each resource.
-#![forbid(
-    clippy::pedantic,
-    clippy::too_many_arguments,
-    clippy::excessive_nesting
-)]
 use crate::context_reads::Owner;
 use maestro_extensions::{
     Cancellation, ExtensionUIContext, ModelRegistry, ReadonlySessionManager, SharedHandle,

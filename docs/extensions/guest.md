@@ -238,29 +238,6 @@ waits on synchronous host imports; the original native request receiver continue
 servicing requests. No synchronous callback tries to suspend through an async
 canonical import, and no additional registry or work queue is involved.
 
-### Host calls on the local owner
-
-A host import runs on the local owner, the thread that holds the extension's native
-capabilities. The Store thread never touches them: it sends the call itself, a closure
-built from the import's operands, and the owner runs it against the retained capability
-the resource names. Two call kinds carry every import.
-
-- **Run** answers inline. The Store thread waits on its reply channel while the owner
-  runs the closure. A native operation that may call back into the instance returns a
-  route the guest drives, as in the section above.
-- **Admit** starts work and returns. The owner polls the work with the rest of the
-  pending set and keeps the lease's admission until it settles, so a cancelled import
-  never revokes an operation already started. The concurrent import awaits the reply
-  without blocking the Store.
-
-When the capability has ended, the call settles with that capability's own text, for
-example `extension catalog resource ended`. The text is exact per capability kind.
-
-The host generates its traits and records from the same interface files as the guest.
-Each resource maps to the type the Store already holds, so a trait method receives the
-handle the guest passed. The model registry and the command context run this way today;
-the other imports still register by hand and move as their families convert.
-
 This relies on Wasmtime's blocking [`func_wrap` contract][schema-sync-import],
 not on suspending a synchronous component task. Wasmtime [rejects such
 suspension][schema-sync-task] and [prevents reentry into an active stackful
@@ -278,6 +255,29 @@ Ordinary extension results and string-error APIs are unchanged.
 [schema-sync-task]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L2728-L2736
 [schema-reentry]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasmtime/src/runtime/component/concurrent.rs#L784-L793
 [schema-wasi]: https://github.com/bytecodealliance/wasmtime/blob/ffff2e2db24a291f02429f123aba1631fa8eea67/crates/wasi/src/p2/mod.rs#L314-L324
+
+### Host calls on the local owner
+
+A host import runs on the local owner, the thread that holds the extension's native
+capabilities. The Store thread never touches them: it sends the call itself, a closure
+built from the import's operands, and the owner runs it against the retained capability
+the resource names. Two call kinds carry each converted import.
+
+- **Run** answers inline. The Store thread waits on its reply channel while the owner
+  runs the closure. A native operation that may call back into the instance returns a
+  route the guest drives, as in the section above.
+- **Admit** starts work and returns. The owner polls the work with the rest of the
+  pending set and keeps the lease's admission until it settles, so a cancelled import
+  never revokes an operation already started. The concurrent import awaits the reply
+  without blocking the Store.
+
+When the capability has ended, the call settles with that capability's own text, for
+example `extension catalog resource ended`. The text is exact per capability kind.
+
+The host generates its traits and records from the same interface files as the guest.
+Each resource maps to the type the Store already holds, so a trait method receives the
+handle the guest passed. The model registry and the command context use this route; the
+other imports register by hand.
 
 ## Event channels
 
