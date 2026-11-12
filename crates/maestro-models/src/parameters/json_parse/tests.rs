@@ -1,8 +1,8 @@
 //! Tests of the streaming parse's skip of attempts that cannot succeed.
 
-use super::{parse_json_with_repair, parse_streaming_json, partial, repair_json};
+use super::*;
 
-/// The streaming parse as it read before incomplete text skipped the strict attempt.
+/// The streaming parse with every strict and partial attempt tried in order.
 fn every_attempt(input: &str) -> serde_json::Value {
     parse_json_with_repair(input)
         .ok()

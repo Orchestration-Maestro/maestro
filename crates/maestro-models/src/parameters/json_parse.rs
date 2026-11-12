@@ -370,11 +370,11 @@ fn partial(input: &str) -> Option<serde_json::Value> {
     }
 }
 
-#[cfg(test)]
-mod tests;
-
 /// Parse streamed argument text into the complete value it spells, else an empty object.
 #[must_use]
 pub fn parsed_arguments(partial: &str) -> Value {
     parse_streaming_json(Some(partial))
 }
+
+#[cfg(test)]
+mod tests;
