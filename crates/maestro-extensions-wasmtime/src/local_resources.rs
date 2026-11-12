@@ -102,20 +102,6 @@ pub(crate) enum Message {
         Option<Cancellation>,
         std::sync::mpsc::Sender<Result<SignalEndpoint, String>>,
     ),
-    /// Runs the retained provider's native authorization with original interaction.
-    OAuthLogin(
-        u64,
-        crate::oauth_callbacks::Controls,
-        tokio::sync::oneshot::Sender<Result<String, String>>,
-        Admission,
-    ),
-    /// Awaits token rotation while retaining the originally selected provider.
-    OAuthRefresh(
-        u64,
-        String,
-        tokio::sync::oneshot::Sender<Result<String, String>>,
-        Admission,
-    ),
     /// Uses native interaction callbacks on this same local owner.
     OAuthInteraction(crate::oauth_interaction::Request),
     /// Authorizes and persists through the retained credential owner.

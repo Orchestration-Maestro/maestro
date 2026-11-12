@@ -59,16 +59,32 @@ impl Endpoint {
         controls: crate::oauth_callbacks::Controls,
     ) -> Result<String, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                crate::local_resources::Message::OAuthLogin(id, controls, reply, admission)
+            .admit::<OAuth, _, _>(move |provider, registry| {
+                let callbacks = controls.callbacks(registry)?;
+                let provider = provider.clone();
+                Ok(async move {
+                    let credentials = provider
+                        .login(callbacks, None)
+                        .await
+                        .map_err(|error| error.to_string())?;
+                    serde_json::to_string(&credentials).map_err(|error| error.to_string())
+                })
             })
             .await
     }
     /// Awaits token rotation on the original native owner and pending-work service.
     pub(crate) async fn refresh(&self, credentials: String) -> Result<String, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                crate::local_resources::Message::OAuthRefresh(id, credentials, reply, admission)
+            .admit::<OAuth, _, _>(move |provider, _| {
+                let provider = provider.clone();
+                Ok(async move {
+                    let credentials = crate::writer_reads::decode(&credentials)?;
+                    let refreshed = provider
+                        .refresh_token(credentials, None)
+                        .await
+                        .map_err(|error| error.to_string())?;
+                    serde_json::to_string(&refreshed).map_err(|error| error.to_string())
+                })
             })
             .await
     }

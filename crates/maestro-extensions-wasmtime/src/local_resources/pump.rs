@@ -201,9 +201,7 @@ impl State {
             Message::Registration(id, request) => self.api_request(id, request),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
-            message @ (Message::OAuthLogin(..)
-            | Message::OAuthRefresh(..)
-            | Message::OAuthInteraction(..)) => self.oauth(message),
+            Message::OAuthInteraction(request) => self.oauth_interaction(request),
             Message::CredentialLogin(id, provider, controls, reply, admission) => {
                 self.start_credential_login(id, (provider, controls), reply, admission);
             }
