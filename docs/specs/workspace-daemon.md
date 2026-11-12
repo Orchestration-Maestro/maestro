@@ -112,7 +112,7 @@ converts topology rectangles to frame rectangles with free functions.
 
 ### Daemon state, view state and the render surface
 
-- **Daemon state.** `maestro-daemon::app::model::DaemonState` holds every field that daemon code reads or
+- **Daemon state.** `maestro-daemon::state::model::DaemonState` holds every field that daemon code reads or
   writes, directly or through a state method. Examples are sizes, popup geometry, persisted sidebar values,
   toasts, the mode, copy mode, selection, focus records, notification delivery and the worktree-open dialog.
   It is shared by every client of one daemon.

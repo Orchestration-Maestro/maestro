@@ -5,7 +5,7 @@
 use crate::support;
 use support::{assert_identity_invariants, populate_terminals};
 
-use maestro_daemon::{app::model::DaemonState, settings::model::Config};
+use maestro_daemon::{settings::model::Config, state::model::DaemonState};
 
 /// Creates pure workspace topology with an active first workspace.
 fn app_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
@@ -25,7 +25,7 @@ fn app_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
     state.toast_config.delay_seconds = 0;
     state.sound.enabled = false;
     if state.active.is_some() {
-        state.mode = maestro_daemon::app::model::Mode::Terminal;
+        state.mode = maestro_daemon::state::model::Mode::Terminal;
     }
     state
 }
@@ -121,7 +121,7 @@ fn daemon_notification_context_formats_resolved_workspace_label() {
     let mut state = app_with_workspaces(&["stale"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
     assert_eq!(
-        maestro_daemon::app::actions::notification_context(
+        maestro_daemon::state::actions::notification_context(
             &state.topology.workspaces[0],
             "__maestro_projects__",
             0,
@@ -136,7 +136,7 @@ fn daemon_notification_context_formats_resolved_workspace_label() {
         .unwrap();
     state.topology.workspaces[0].tabs[1].custom_name = Some("logs".into());
     assert_eq!(
-        maestro_daemon::app::actions::notification_context(
+        maestro_daemon::state::actions::notification_context(
             &state.topology.workspaces[0],
             "resolved",
             2,
@@ -145,7 +145,7 @@ fn daemon_notification_context_formats_resolved_workspace_label() {
         "resolved · 3 · logs"
     );
     assert_eq!(
-        maestro_daemon::app::actions::notification_context(
+        maestro_daemon::state::actions::notification_context(
             &state.topology.workspaces[0],
             "resolved",
             2,
@@ -335,8 +335,8 @@ fn daemon_switch_workspace_out_of_bounds_is_noop() {
 #[test]
 fn focus_navigation_retains_copy_pane_but_clears_cross_pane_selection() {
     use maestro_daemon::{
-        app::model::{CopyModeSelection, CopyModeState, Mode},
         selection::Selection,
+        state::model::{CopyModeSelection, CopyModeState, Mode},
     };
     let mut state = app_with_workspaces(&["one", "two"]);
     let root = state.topology.workspaces[0].tabs[0].root_pane;
@@ -420,7 +420,7 @@ fn daemon_close_non_focused_workspace_keeps_focus() {
 
 #[test]
 fn daemon_close_workspace_removes_unattached_terminal_states() {
-    use maestro_daemon::app::model::PluginPaneRecord;
+    use maestro_daemon::state::model::PluginPaneRecord;
     let mut state = app_with_workspaces(&["one", "two"]);
     let pane = state.topology.workspaces[0].tabs[0].root_pane;
     let terminal = state.topology.workspaces[0]
@@ -452,7 +452,7 @@ fn daemon_pane_died_last_pane_removes_workspace() {
 
 #[test]
 fn daemon_pane_died_last_workspace_enters_navigate() {
-    use maestro_daemon::app::model::Mode;
+    use maestro_daemon::state::model::Mode;
     let mut state = app_with_workspaces(&["only"]);
     state.mode = Mode::Terminal;
     let pane = state.topology.workspaces[0].tabs[0].root_pane;
@@ -500,8 +500,8 @@ fn pane_death_keeps_logical_focus_after_earlier_workspace_removal() {
 #[test]
 fn pane_death_clears_only_its_selection_and_retires_detached_metadata() {
     use maestro_daemon::{
-        app::model::{SelectionAutoscroll, SelectionAutoscrollDirection},
         selection::Selection,
+        state::model::{SelectionAutoscroll, SelectionAutoscrollDirection},
     };
     let mut state = app_with_workspaces(&["active", "background"]);
     let active = state.topology.workspaces[0].tabs[0].root_pane;
@@ -553,7 +553,9 @@ fn daemon_state_changed_updates_pane() {
 
 #[test]
 fn daemon_state_changed_idle_in_background_marks_unseen() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent, settings::model::ToastDelivery};
+    use maestro_daemon::{
+        events::AppEvent, settings::model::ToastDelivery, state::model::ToastKind,
+    };
     use maestro_detection::agents::{Agent, AgentState};
     let mut state = app_with_workspaces(&["active", "background"]);
     state.toast_config.delivery = ToastDelivery::Workspace;
@@ -585,7 +587,7 @@ fn report_state(
     state: &mut DaemonState<fn() -> u128>,
     pane: maestro_workspace::tiling::PaneId,
     next: maestro_detection::agents::AgentState,
-) -> Vec<maestro_daemon::app::actions::PaneStateUpdate> {
+) -> Vec<maestro_daemon::state::actions::PaneStateUpdate> {
     report_detected(
         state,
         pane,
@@ -647,7 +649,7 @@ fn daemon_idle_after_known_unknown_agent_in_background_marks_done() {
 
 #[test]
 fn daemon_waiting_sound_plays_even_in_active_workspace() {
-    use maestro_daemon::app::actions::notification_sound_for_state_change;
+    use maestro_daemon::state::actions::notification_sound_for_state_change;
     use maestro_detection::agents::AgentState;
     assert_eq!(
         notification_sound_for_state_change(true, AgentState::Working, AgentState::Blocked),
@@ -657,7 +659,7 @@ fn daemon_waiting_sound_plays_even_in_active_workspace() {
 
 #[test]
 fn daemon_done_sound_only_plays_in_background() {
-    use maestro_daemon::app::actions::notification_sound_for_state_change;
+    use maestro_daemon::state::actions::notification_sound_for_state_change;
     use maestro_detection::agents::AgentState;
     assert_eq!(
         notification_sound_for_state_change(false, AgentState::Working, AgentState::Idle),
@@ -675,7 +677,7 @@ fn daemon_done_sound_only_plays_in_background() {
 
 #[test]
 fn daemon_background_waiting_sets_attention_toast() {
-    use maestro_daemon::{app::model::ToastKind, settings::model::ToastDelivery};
+    use maestro_daemon::{settings::model::ToastDelivery, state::model::ToastKind};
     let mut state = app_with_workspaces(&["active", "background"]);
     state.toast_config.delivery = ToastDelivery::Workspace;
     let pane = state.topology.workspaces[1].tabs[0].root_pane;
@@ -692,7 +694,7 @@ fn daemon_background_waiting_sets_attention_toast() {
 
 #[test]
 fn daemon_delayed_background_waiting_schedules_before_toast() {
-    use maestro_daemon::{app::model::ToastKind, settings::model::ToastDelivery};
+    use maestro_daemon::{settings::model::ToastDelivery, state::model::ToastKind};
     let mut state = app_with_workspaces(&["active", "background"]);
     state.toast_config.delivery = ToastDelivery::Workspace;
     state.toast_config.delay_seconds = 1;
@@ -801,7 +803,7 @@ fn report_detected(
     state: &mut DaemonState<fn() -> u128>,
     pane: maestro_workspace::tiling::PaneId,
     update: maestro_daemon::terminal::model::DetectedStateUpdate,
-) -> Vec<maestro_daemon::app::actions::PaneStateUpdate> {
+) -> Vec<maestro_daemon::state::actions::PaneStateUpdate> {
     state.handle_app_event(maestro_daemon::events::AppEvent::StateChanged {
         pane_id: pane,
         agent: update.agent,
@@ -828,7 +830,7 @@ fn detect_agent(
 
 #[test]
 fn daemon_first_idle_after_process_detection_is_not_completion() {
-    use maestro_daemon::app::{actions::CompletionPolicy, model::ToastKind};
+    use maestro_daemon::state::{actions::CompletionPolicy, model::ToastKind};
     use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
     let mut state = app_with_workspaces(&["active", "background"]);
     state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
@@ -872,7 +874,7 @@ fn assert_acquired_process_exit_is_completion(
     state: &mut DaemonState<fn() -> u128>,
     pane: maestro_workspace::tiling::PaneId,
 ) {
-    use maestro_daemon::{app::actions::CompletionPolicy, terminal::model::DetectedStateUpdate};
+    use maestro_daemon::{state::actions::CompletionPolicy, terminal::model::DetectedStateUpdate};
     use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
     detect_agent(state, pane, Agent::Codex);
     for next in [AgentState::Working, AgentState::Idle] {
@@ -931,7 +933,7 @@ fn delayed_notifications_recheck_live_context_and_select_independent_outputs() {
 
 #[test]
 fn daemon_hook_reported_unknown_agent_sets_toast_title_from_label() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent};
+    use maestro_daemon::{events::AppEvent, state::model::ToastKind};
     use maestro_detection::agents::AgentState;
     let mut state = app_with_workspaces(&["active", "background"]);
     state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
@@ -953,7 +955,7 @@ fn daemon_hook_reported_unknown_agent_sets_toast_title_from_label() {
 
 #[test]
 fn daemon_visible_blocker_overrides_hook_working_and_notifies() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent};
+    use maestro_daemon::{events::AppEvent, state::model::ToastKind};
     use maestro_detection::agents::{Agent, AgentState};
     let mut state = app_with_workspaces(&["active", "background"]);
     state.active = Some(0);
@@ -1251,7 +1253,7 @@ fn daemon_terminal_cwd_report_updates_terminal_cwd_and_marks_session_dirty() {
 
 #[test]
 fn daemon_background_idle_sets_finished_toast() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent};
+    use maestro_daemon::{events::AppEvent, state::model::ToastKind};
     use maestro_detection::agents::{Agent, AgentState};
     let mut state = app_with_workspaces(&["active", "background"]);
     state.active = Some(0);
@@ -1285,7 +1287,7 @@ fn daemon_background_idle_sets_finished_toast() {
 
 #[test]
 fn daemon_background_toast_includes_tab_name_when_workspace_has_multiple_tabs() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent};
+    use maestro_daemon::{events::AppEvent, state::model::ToastKind};
     use maestro_detection::agents::{Agent, AgentState};
     let mut state = app_with_workspaces(&["active", "background"]);
     state.active = Some(0);
@@ -1315,7 +1317,7 @@ fn daemon_background_toast_includes_tab_name_when_workspace_has_multiple_tabs() 
 
 #[test]
 fn daemon_background_tab_in_active_workspace_still_sets_toast() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent};
+    use maestro_daemon::{events::AppEvent, state::model::ToastKind};
     use maestro_detection::agents::{Agent, AgentState};
     let mut state = app_with_workspaces(&["active"]);
     state.active = Some(0);
@@ -1391,7 +1393,7 @@ fn daemon_active_workspace_active_tab_keeps_workspace_toast_suppressed_when_oute
 
 #[test]
 fn daemon_active_tab_suppression_preserves_unknown_focus_behavior() {
-    use maestro_daemon::app::actions::active_tab_suppresses_notifications;
+    use maestro_daemon::state::actions::active_tab_suppresses_notifications;
     assert!(active_tab_suppresses_notifications(true, None));
     assert!(active_tab_suppresses_notifications(true, Some(true)));
     assert!(!active_tab_suppresses_notifications(true, Some(false)));
@@ -1400,7 +1402,7 @@ fn daemon_active_tab_suppression_preserves_unknown_focus_behavior() {
 
 #[test]
 fn daemon_update_ready_sets_manual_update_toast() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent};
+    use maestro_daemon::{events::AppEvent, state::model::ToastKind};
     let mut state = app_with_workspaces(&[]);
     state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
 
@@ -1492,7 +1494,7 @@ fn update_guidance_keeps_install_manager_and_delivery_policies_separate() {
 
 #[test]
 fn daemon_agent_detection_manifest_update_event_updates_status_and_toast() {
-    use maestro_daemon::{app::model::ToastKind, events::AppEvent};
+    use maestro_daemon::{events::AppEvent, state::model::ToastKind};
     use maestro_detection::{
         agents::Agent,
         updates::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
@@ -1625,7 +1627,7 @@ fn daemon_close_pane_removes_from_workspace() {
     assert_eq!(state.topology.workspaces[0].tabs[0].panes.len(), 2);
     state.plugin_panes.insert(
         closed,
-        maestro_daemon::app::model::PluginPaneRecord {
+        maestro_daemon::state::model::PluginPaneRecord {
             plugin_id: "example.pane".into(),
             entrypoint: "board".into(),
         },
@@ -1639,8 +1641,8 @@ fn daemon_close_pane_removes_from_workspace() {
 #[test]
 fn daemon_pane_process_exit_publish_marks_agent_idle_before_pane_removal() {
     use maestro_daemon::{
-        app::{actions::AgentRelease, model::ToastKind},
         events::AppEvent,
+        state::{actions::AgentRelease, model::ToastKind},
     };
     use maestro_detection::agents::{Agent, AgentState};
     let mut state = app_with_workspaces(&["active", "background"]);
@@ -1709,7 +1711,7 @@ fn daemon_close_tab_removes_unattached_terminal_states() {
         .clone();
     state.plugin_panes.insert(
         pane,
-        maestro_daemon::app::model::PluginPaneRecord {
+        maestro_daemon::state::model::PluginPaneRecord {
             plugin_id: "example.pane".into(),
             entrypoint: "board".into(),
         },
@@ -1773,7 +1775,7 @@ fn mark_worktree(state: &mut DaemonState<fn() -> u128>, index: usize, linked: bo
 
 #[test]
 fn daemon_close_pane_last_pane_in_parent_worktree_group_prompts() {
-    use maestro_daemon::app::model::Mode;
+    use maestro_daemon::state::model::Mode;
     let mut state = app_with_workspaces(&["parent", "child"]);
     mark_worktree(&mut state, 0, false);
     mark_worktree(&mut state, 1, true);
@@ -1808,7 +1810,7 @@ fn daemon_close_tab_in_linked_worktree_closes_workspace_only() {
 
 #[test]
 fn daemon_close_tab_last_tab_in_parent_worktree_group_prompts() {
-    use maestro_daemon::app::model::Mode;
+    use maestro_daemon::state::model::Mode;
     let mut state = app_with_workspaces(&["parent", "child"]);
     mark_worktree(&mut state, 0, false);
     mark_worktree(&mut state, 1, true);

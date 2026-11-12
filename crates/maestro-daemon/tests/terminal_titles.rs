@@ -4,7 +4,7 @@
 
 use crate::support::spawning;
 
-use maestro_daemon::{app::App, service::event_hub::EventHub, settings::model::Config};
+use maestro_daemon::{service::event_hub::EventHub, settings::model::Config, state::App};
 use maestro_workspace::tiling::PaneId;
 use std::{
     collections::HashSet,
@@ -195,7 +195,7 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
 #[test]
 fn daemon_sidebar_redraws_only_for_the_configured_title_form() {
     use maestro_daemon::{
-        app::terminal_titles::TerminalTitleChanges, settings::navigation::AgentSidebarToken,
+        settings::navigation::AgentSidebarToken, state::terminal_titles::TerminalTitleChanges,
     };
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),

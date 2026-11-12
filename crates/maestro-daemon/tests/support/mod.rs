@@ -5,7 +5,7 @@ pub mod layouts;
 pub mod runtime;
 pub mod spawning;
 
-use maestro_daemon::app::model::DaemonState;
+use maestro_daemon::state::model::DaemonState;
 
 /// Admit terminal metadata for each pane using its topology-owned identity.
 pub fn populate_terminals<C: FnMut() -> u128>(state: &mut DaemonState<C>) {

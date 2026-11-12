@@ -2,17 +2,6 @@
 
 /// The daemon operations and records used by native frontends.
 pub mod daemon_api {
-    #[cfg(target_os = "linux")]
-    #[doc(inline)]
-    pub use maestro_daemon::app::App;
-    #[cfg(target_os = "linux")]
-    #[doc(inline)]
-    pub use maestro_daemon::app::construction::{
-        ManifestCache, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry, setup_entry,
-    };
-    #[cfg(target_os = "linux")]
-    #[doc(inline)]
-    pub use maestro_daemon::app::model::ThemeRuntimeConfig;
     #[doc(inline)]
     pub use maestro_daemon::locations::DaemonPaths;
     #[doc(inline)]
@@ -49,6 +38,17 @@ pub mod daemon_api {
         appearance::{CustomThemeColors, THEME_NAMES, canonical_theme_name},
         model::{Config, NewTerminalCwdConfig},
     };
+    #[cfg(target_os = "linux")]
+    #[doc(inline)]
+    pub use maestro_daemon::state::App;
+    #[cfg(target_os = "linux")]
+    #[doc(inline)]
+    pub use maestro_daemon::state::construction::{
+        ManifestCache, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry, setup_entry,
+    };
+    #[cfg(target_os = "linux")]
+    #[doc(inline)]
+    pub use maestro_daemon::state::model::ThemeRuntimeConfig;
     #[doc(inline)]
     pub use maestro_daemon::terminal_theme::{HostAppearance, RgbColor, TerminalTheme};
     #[doc(inline)]

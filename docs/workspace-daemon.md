@@ -125,7 +125,7 @@ The topology API starts no terminal, background task or daemon listener. See the
 
 ## Retained daemon state
 
-`maestro_daemon::app::model::DaemonState` retains one `WorkspaceTopology`,
+`maestro_daemon::state::model::DaemonState` retains one `WorkspaceTopology`,
 terminal metadata, active and selected workspace positions, and historical pane
 aliases. Its supplied clock feeds the topology allocator. Pane-size estimation
 uses the first supplied pane rectangle, falling back to the configured headless
@@ -614,7 +614,7 @@ connection rules.
 ## Panes and layouts
 
 The pane commands and the `layout_updated` event read one projection of a tab,
-`maestro_daemon::app::layout`, available to attached clients. It combines the tab's
+`maestro_daemon::state::layout`, available to attached clients. It combines the tab's
 split tree, the view area and the pane chrome.
 
 - **View area.** `DaemonState::view_area` is the region panes are laid out in. With no
@@ -787,7 +787,7 @@ retain their event, subsystem, outcome and operation-specific fields.
 
 ## Snapshot operations
 
-The live `app`, `tab` and `workspace` modules and `persist::capture` and
+The live `state`, `tab` and `workspace` modules and `persist::capture` and
 `capture_history` use the Linux pane runtime and are available only on Linux.
 Snapshot save and clear operations remain available on other native targets.
 
@@ -819,7 +819,7 @@ group requests confirmation when enabled; closing a linked workspace leaves its
 checkout directory untouched. Agent completion can be published before removing
 the pane, while its identity and notification context are still available.
 
-`app::App` retains daemon state beside the existing terminal runtime registry.
+`state::App` retains daemon state beside the existing terminal runtime registry.
 Immediate workspace toasts use the first tab's live root directory for their
 context, falling back to terminal metadata and then the workspace identity.
 Delayed deliveries reread that directory at delivery time for both workspace and

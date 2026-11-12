@@ -9,8 +9,8 @@ use crate::support::{
     layouts::{balanced, chain, shell, sleeper, split},
 };
 use maestro_daemon::{
-    app::model::{Mode, PluginPaneRecord},
     settings::model::NewTerminalCwdConfig,
+    state::model::{Mode, PluginPaneRecord},
 };
 use maestro_protocol::{
     events::EventData,

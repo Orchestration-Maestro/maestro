@@ -4,8 +4,8 @@
 use crate::repository_support::{init_repo_with_commit, run_git};
 use crate::support::spawning;
 use maestro_daemon::{
-    app::App,
     settings::model::Config,
+    state::App,
     terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_test_process::{TestProcess, run_alone};

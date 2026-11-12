@@ -501,7 +501,7 @@ fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
 #[test]
 fn daemon_first_reload_retains_startup_area_document() {
     use crate::config_support::put;
-    use maestro_daemon::{app::App, service::event_hub::EventHub};
+    use maestro_daemon::{service::event_hub::EventHub, state::App};
     let storage = Arc::new(InMemorySettingsStorage::new());
     put(&*storage, r#"{"multiplexer":{"mouseCapture":false}}"#);
     let mut manager = SettingsManager::from_storage(storage.clone());

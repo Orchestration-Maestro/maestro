@@ -64,7 +64,7 @@ pub mod keys;
 
 /// Retained daemon state and workspace operations.
 #[cfg(target_os = "linux")]
-pub mod app;
+pub mod state;
 
 #[cfg(test)]
 mod tests;

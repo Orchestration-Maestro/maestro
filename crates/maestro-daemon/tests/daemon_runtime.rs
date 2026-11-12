@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use maestro_daemon::{app::model::DaemonState, settings::model::Config};
+use maestro_daemon::{settings::model::Config, state::model::DaemonState};
 
 #[test]
 fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
@@ -36,7 +36,7 @@ use crate::support::spawning;
 
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
-fn app(config: &Config) -> maestro_daemon::app::App<fn() -> u128> {
+fn app(config: &Config) -> maestro_daemon::state::App<fn() -> u128> {
     app_with_args(config, &[])
 }
 
@@ -45,12 +45,12 @@ fn app(config: &Config) -> maestro_daemon::app::App<fn() -> u128> {
 pub(crate) fn app_with_args(
     config: &Config,
     args: &[String],
-) -> maestro_daemon::app::App<fn() -> u128> {
+) -> maestro_daemon::state::App<fn() -> u128> {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(args, manifests);
-    maestro_daemon::app::App::new(
+    maestro_daemon::state::App::new(
         config,
         (|| 0) as fn() -> u128,
         launch,
@@ -156,7 +156,7 @@ fn daemon_workspace_creation_in_navigate_mode_uses_selected_workspace_seed_cwd()
         .build()
         .unwrap()
         .block_on(async {
-            use maestro_daemon::app::model::Mode;
+            use maestro_daemon::state::model::Mode;
             let mut config = Config::default();
             config.ui.prompt_new_workspace_name.0 = true;
             let mut app = app(&config);
@@ -236,7 +236,7 @@ fn daemon_new_terminal_cwd_path_uses_configured_path() {
 /// Adds one viewport and its retained terminal metadata without starting a process.
 #[cfg(unix)]
 fn target_app() -> (
-    maestro_daemon::app::App<fn() -> u128>,
+    maestro_daemon::state::App<fn() -> u128>,
     maestro_workspace::tiling::PaneId,
 ) {
     let mut app = app(&Config::default());
@@ -253,7 +253,7 @@ fn target_app() -> (
 /// Supplies the terminal metadata normally installed by a successful native spawn.
 #[cfg(unix)]
 fn attach_terminal(
-    app: &mut maestro_daemon::app::App<fn() -> u128>,
+    app: &mut maestro_daemon::state::App<fn() -> u128>,
     pane: maestro_workspace::tiling::PaneId,
 ) {
     let id = app.state.topology.workspaces[0]
@@ -279,7 +279,7 @@ fn daemon_terminal_and_agent_targets_treat_terminal_ids_differently() {
     assert_eq!(resolved.terminal_id, id);
     assert!(matches!(
         app.resolve_agent_target(&id),
-        Err(maestro_daemon::app::terminal_targets::TerminalTargetError::NotFound { .. })
+        Err(maestro_daemon::state::terminal_targets::TerminalTargetError::NotFound { .. })
     ));
 }
 
@@ -293,7 +293,7 @@ fn daemon_agent_target_rejects_a_pane_that_only_has_a_launch_command() {
     assert!(app.resolve_terminal_target(&id).is_ok());
     assert!(matches!(
         app.resolve_agent_target(&id),
-        Err(maestro_daemon::app::terminal_targets::TerminalTargetError::NotFound { .. })
+        Err(maestro_daemon::state::terminal_targets::TerminalTargetError::NotFound { .. })
     ));
 }
 
@@ -359,7 +359,7 @@ fn daemon_terminal_target_reports_missing_target() {
     let (app, _) = target_app();
     assert_eq!(
         app.resolve_terminal_target("missing-agent").unwrap_err(),
-        maestro_daemon::app::terminal_targets::TerminalTargetError::NotFound {
+        maestro_daemon::state::terminal_targets::TerminalTargetError::NotFound {
             target: "missing-agent".into()
         }
     );
@@ -368,7 +368,7 @@ fn daemon_terminal_target_reports_missing_target() {
 #[test]
 #[cfg(unix)]
 fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
-    use maestro_daemon::app::terminal_targets::TerminalTargetError;
+    use maestro_daemon::state::terminal_targets::TerminalTargetError;
     let (mut app, first) = target_app();
     let (second, ()) = app
         .state
@@ -409,7 +409,7 @@ fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
 /// Admits the same process identity observation consumed by live panes.
 #[cfg(unix)]
 fn detect_agent(
-    app: &mut maestro_daemon::app::App<fn() -> u128>,
+    app: &mut maestro_daemon::state::App<fn() -> u128>,
     pane: maestro_workspace::tiling::PaneId,
 ) {
     app.state
@@ -423,7 +423,7 @@ fn detect_agent(
 #[test]
 #[cfg(unix)]
 fn terminal_target_precedence_and_agent_labels_do_not_admit_historical_pane_aliases() {
-    use maestro_daemon::app::terminal_targets::TerminalTargetError;
+    use maestro_daemon::state::terminal_targets::TerminalTargetError;
     let (mut app, pane) = target_app();
     detect_agent(&mut app, pane);
     let id = app.state.public_pane_id(0, pane).unwrap();
@@ -454,7 +454,7 @@ fn terminal_target_precedence_and_agent_labels_do_not_admit_historical_pane_alia
 #[test]
 #[cfg(unix)]
 fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous() {
-    use maestro_daemon::app::terminal_targets::TerminalTargetError;
+    use maestro_daemon::state::terminal_targets::TerminalTargetError;
     let (mut app, pane) = target_app();
     let (other, ()) = app
         .state
@@ -644,7 +644,7 @@ async fn check_shutdown(args: &[String]) {
 async fn live_shutdown_app(
     args: &[String],
 ) -> (
-    maestro_daemon::app::App<fn() -> u128>,
+    maestro_daemon::state::App<fn() -> u128>,
     maestro_workspace::tiling::PaneId,
 ) {
     use maestro_daemon::{

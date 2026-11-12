@@ -5,9 +5,9 @@
 use crate::support::spawning;
 
 use maestro_daemon::{
-    app::{App, model::AgentPanelSort},
     service::event_hub::EventHub,
     settings::model::{AgentPanelSortConfig, Config},
+    state::{App, model::AgentPanelSort},
 };
 use std::sync::{Arc, RwLock};
 
@@ -80,7 +80,7 @@ fn pending_workspace_creation_blocks_default_until_cancelled() {
 
 #[test]
 fn pending_creation_follows_navigation_selection_before_active_terminal() {
-    use maestro_daemon::{app::model::Mode, terminal::model::TerminalState};
+    use maestro_daemon::{state::model::Mode, terminal::model::TerminalState};
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
     let mut app = app(&config);
@@ -263,7 +263,7 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
 
 #[test]
 fn theme_siblings_preserve_aliases_custom_names_and_authored_pair_overrides() {
-    use maestro_daemon::{app::model::ThemeRuntimeConfig, terminal_theme::HostAppearance};
+    use maestro_daemon::{state::model::ThemeRuntimeConfig, terminal_theme::HostAppearance};
     let mut config = Config::default();
     config.theme.auto_switch = true;
     for (name, dark, light) in [

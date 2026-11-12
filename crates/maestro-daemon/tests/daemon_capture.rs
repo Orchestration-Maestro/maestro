@@ -3,9 +3,9 @@
 #![cfg(target_os = "linux")]
 
 use maestro_daemon::{
-    app::model::DaemonState,
     persist::capture,
     settings::model::Config,
+    state::model::DaemonState,
     terminal::{model::TerminalState, owners::TerminalRuntimeRegistry},
 };
 use maestro_workspace::{
