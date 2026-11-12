@@ -275,6 +275,14 @@ held!(
     Capability::NativeResponse(response) => response
 );
 
+held!(
+    /// The native assistant event buffer of one model invocation.
+    AssistantStream,
+    maestro_extensions::AssistantMessageEventStream,
+    "extension assistant stream resource ended",
+    Capability::AssistantStream(stream) => stream
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
