@@ -560,6 +560,7 @@ fn generated_exclusions_keep_exact_owner_and_path() {
         ("maestro-extensions-wasm", "src/handwritten.rs"),
         ("maestro-models", "src/catalog/other.rs"),
         ("maestro-models", "src/provider_openai.rs"),
+        ("maestro-models-catalog", "tests/provider_openai.rs"),
     ] {
         let body = if name == "maestro-extensions-wasm" {
             format!(

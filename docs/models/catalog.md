@@ -1,4 +1,4 @@
-# Offline model catalog
+# Model catalog
 
 `get_providers` and `get_models` enumerate the embedded providers and descriptors
 in their recorded insertion order. `get_model` matches provider and model keys
