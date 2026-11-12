@@ -4,6 +4,7 @@ mod builtin;
 mod component;
 mod keys;
 mod lent;
+mod lock;
 mod overlay;
 mod pipes;
 mod response;
