@@ -12,6 +12,7 @@ mod git_worktree;
 mod key_combo;
 mod local_sockets;
 mod pane_chrome;
+mod pane_swap;
 mod repository_discovery;
 mod repository_identity;
 mod repository_support;
