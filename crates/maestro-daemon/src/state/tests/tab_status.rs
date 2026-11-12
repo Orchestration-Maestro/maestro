@@ -2,9 +2,9 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::{self, spawning};
+use crate::state::tests::support::{self, spawning};
 
-use maestro_daemon::{
+use crate::{
     events::AppEvent,
     service::event_hub::EventHub,
     settings::{model::Config, tabs::TabBarRightEntryConfig},
@@ -249,7 +249,7 @@ fn local_datetime_observes_supplied_timezone_inside_runtime() {
             .unwrap()
             .block_on(async {
                 let before = time::OffsetDateTime::now_utc().unix_timestamp();
-                let local = maestro_daemon::platform::local_datetime().unwrap();
+                let local = crate::platform::local_datetime().unwrap();
                 let after = time::OffsetDateTime::now_utc().unix_timestamp();
                 assert!((before..=after).contains(&local.assume_offset(offset).unix_timestamp()));
             });

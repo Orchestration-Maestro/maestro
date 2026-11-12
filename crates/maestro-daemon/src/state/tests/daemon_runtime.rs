@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use maestro_daemon::{settings::model::Config, state::model::DaemonState};
+use crate::{settings::model::Config, state::model::DaemonState};
 
 #[test]
 fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
@@ -32,27 +32,27 @@ fn daemon_legacy_bare_tab_id_uses_tab_position_not_public_tab_number() {
 }
 
 #[cfg(unix)]
-use crate::support::spawning;
+use crate::state::tests::support::spawning;
 
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
-fn app(config: &Config) -> maestro_daemon::state::App {
+fn app(config: &Config) -> crate::state::App {
     app_with_args(config, &[])
 }
 
 /// Builds the daemon with the setup entry's own harness arguments.
 #[cfg(unix)]
-pub(crate) fn app_with_args(config: &Config, args: &[String]) -> maestro_daemon::state::App {
+pub(crate) fn app_with_args(config: &Config, args: &[String]) -> crate::state::App {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(args, manifests);
-    maestro_daemon::state::App::new(
+    crate::state::App::new(
         config,
         || 0,
         launch,
         receiver,
-        maestro_daemon::service::event_hub::EventHub::default(),
+        crate::service::event_hub::EventHub::default(),
     )
 }
 
@@ -81,7 +81,7 @@ fn daemon_tab_info_number_uses_stable_public_tab_number() {
 #[test]
 #[cfg(unix)]
 fn tab_projection_keeps_focus_and_agent_attention_independent_of_identity() {
-    use maestro_daemon::terminal::model::TerminalState;
+    use crate::terminal::model::TerminalState;
     use maestro_detection::agents::AgentState;
     use maestro_protocol::schema::AgentStatus;
     let mut app = app(&Config::default());
@@ -126,7 +126,7 @@ fn tab_projection_keeps_focus_and_agent_attention_independent_of_identity() {
 /// Resolves creation through the real pending-name route without starting a child.
 #[cfg(unix)]
 async fn pending_cwd(
-    policy: maestro_daemon::settings::model::NewTerminalCwdConfig,
+    policy: crate::settings::model::NewTerminalCwdConfig,
     source: Option<&str>,
 ) -> std::path::PathBuf {
     let mut config = Config::default();
@@ -153,7 +153,7 @@ fn daemon_workspace_creation_in_navigate_mode_uses_selected_workspace_seed_cwd()
         .build()
         .unwrap()
         .block_on(async {
-            use maestro_daemon::state::model::Mode;
+            use crate::state::model::Mode;
             let mut config = Config::default();
             config.ui.prompt_new_workspace_name.0 = true;
             let mut app = app(&config);
@@ -187,7 +187,7 @@ fn daemon_new_terminal_cwd_follow_uses_source_cwd() {
         .unwrap()
         .block_on(async {
             let cwd = pending_cwd(
-                maestro_daemon::settings::model::NewTerminalCwdConfig::Follow,
+                crate::settings::model::NewTerminalCwdConfig::Follow,
                 Some("/source"),
             )
             .await;
@@ -204,11 +204,7 @@ fn daemon_new_terminal_cwd_follow_without_source_uses_home() {
         .unwrap()
         .block_on(async {
             let home = std::env::var_os("HOME").unwrap();
-            let cwd = pending_cwd(
-                maestro_daemon::settings::model::NewTerminalCwdConfig::Follow,
-                None,
-            )
-            .await;
+            let cwd = pending_cwd(crate::settings::model::NewTerminalCwdConfig::Follow, None).await;
             assert_eq!(cwd, std::path::PathBuf::from(home));
         });
 }
@@ -222,7 +218,7 @@ fn daemon_new_terminal_cwd_path_uses_configured_path() {
         .unwrap()
         .block_on(async {
             let cwd = pending_cwd(
-                maestro_daemon::settings::model::NewTerminalCwdConfig::Path("/fixed".into()),
+                crate::settings::model::NewTerminalCwdConfig::Path("/fixed".into()),
                 Some("/source"),
             )
             .await;
@@ -232,10 +228,7 @@ fn daemon_new_terminal_cwd_path_uses_configured_path() {
 
 /// Adds one viewport and its retained terminal metadata without starting a process.
 #[cfg(unix)]
-fn target_app() -> (
-    maestro_daemon::state::App,
-    maestro_workspace::tiling::PaneId,
-) {
+fn target_app() -> (crate::state::App, maestro_workspace::tiling::PaneId) {
     let mut app = app(&Config::default());
     let (pane, ()) = app
         .state
@@ -249,14 +242,14 @@ fn target_app() -> (
 
 /// Supplies the terminal metadata normally installed by a successful native spawn.
 #[cfg(unix)]
-fn attach_terminal(app: &mut maestro_daemon::state::App, pane: maestro_workspace::tiling::PaneId) {
+fn attach_terminal(app: &mut crate::state::App, pane: maestro_workspace::tiling::PaneId) {
     let id = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
         .clone();
     app.state.terminals.insert(
         id.clone(),
-        maestro_daemon::terminal::model::TerminalState::new(id, "/target".into()),
+        crate::terminal::model::TerminalState::new(id, "/target".into()),
     );
 }
 
@@ -273,7 +266,7 @@ fn daemon_terminal_and_agent_targets_treat_terminal_ids_differently() {
     assert_eq!(resolved.terminal_id, id);
     assert!(matches!(
         app.resolve_agent_target(&id),
-        Err(maestro_daemon::state::terminal_targets::TerminalTargetError::NotFound { .. })
+        Err(crate::state::terminal_targets::TerminalTargetError::NotFound { .. })
     ));
 }
 
@@ -287,7 +280,7 @@ fn daemon_agent_target_rejects_a_pane_that_only_has_a_launch_command() {
     assert!(app.resolve_terminal_target(&id).is_ok());
     assert!(matches!(
         app.resolve_agent_target(&id),
-        Err(maestro_daemon::state::terminal_targets::TerminalTargetError::NotFound { .. })
+        Err(crate::state::terminal_targets::TerminalTargetError::NotFound { .. })
     ));
 }
 
@@ -353,7 +346,7 @@ fn daemon_terminal_target_reports_missing_target() {
     let (app, _) = target_app();
     assert_eq!(
         app.resolve_terminal_target("missing-agent").unwrap_err(),
-        maestro_daemon::state::terminal_targets::TerminalTargetError::NotFound {
+        crate::state::terminal_targets::TerminalTargetError::NotFound {
             target: "missing-agent".into()
         }
     );
@@ -362,7 +355,7 @@ fn daemon_terminal_target_reports_missing_target() {
 #[test]
 #[cfg(unix)]
 fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
-    use maestro_daemon::state::terminal_targets::TerminalTargetError;
+    use crate::state::terminal_targets::TerminalTargetError;
     let (mut app, first) = target_app();
     let (second, ()) = app
         .state
@@ -402,9 +395,9 @@ fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
 
 /// Admits the same process identity observation consumed by live panes.
 #[cfg(unix)]
-fn detect_agent(app: &mut maestro_daemon::state::App, pane: maestro_workspace::tiling::PaneId) {
+fn detect_agent(app: &mut crate::state::App, pane: maestro_workspace::tiling::PaneId) {
     app.state
-        .handle_app_event(maestro_daemon::events::AppEvent::AgentProcessDetected {
+        .handle_app_event(crate::events::AppEvent::AgentProcessDetected {
             pane_id: pane,
             agent: maestro_detection::agents::Agent::Claude,
             observed_at: std::time::Instant::now(),
@@ -414,7 +407,7 @@ fn detect_agent(app: &mut maestro_daemon::state::App, pane: maestro_workspace::t
 #[test]
 #[cfg(unix)]
 fn terminal_target_precedence_and_agent_labels_do_not_admit_historical_pane_aliases() {
-    use maestro_daemon::state::terminal_targets::TerminalTargetError;
+    use crate::state::terminal_targets::TerminalTargetError;
     let (mut app, pane) = target_app();
     detect_agent(&mut app, pane);
     let id = app.state.public_pane_id(0, pane).unwrap();
@@ -445,7 +438,7 @@ fn terminal_target_precedence_and_agent_labels_do_not_admit_historical_pane_alia
 #[test]
 #[cfg(unix)]
 fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous() {
-    use maestro_daemon::state::terminal_targets::TerminalTargetError;
+    use crate::state::terminal_targets::TerminalTargetError;
     let (mut app, pane) = target_app();
     let (other, ()) = app
         .state
@@ -493,8 +486,8 @@ fn terminal_identity_precedes_a_colliding_name_and_agent_names_remain_ambiguous(
 fn state_event(
     pane_id: maestro_workspace::tiling::PaneId,
     state: maestro_detection::agents::AgentState,
-) -> maestro_daemon::events::AppEvent {
-    maestro_daemon::events::AppEvent::StateChanged {
+) -> crate::events::AppEvent {
+    crate::events::AppEvent::StateChanged {
         pane_id,
         state,
         agent: Some(maestro_detection::agents::Agent::Claude),
@@ -519,7 +512,7 @@ fn daemon_full_internal_event_queue_eventually_applies_working_to_idle_transitio
     let sender = app.launch.events.clone();
     for _ in 0..sender.max_capacity() {
         sender
-            .try_send(maestro_daemon::events::AppEvent::TerminalBell {
+            .try_send(crate::events::AppEvent::TerminalBell {
                 pane_id: pane,
                 count: 1,
             })
@@ -557,7 +550,7 @@ fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("daemon_runtime::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::daemon_runtime::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -575,7 +568,7 @@ fn shutdown_drains_pending_exit_hooks_before_runtime_release() {
 /// Holds a real child until shutdown while the critical event queue is full.
 #[cfg(unix)]
 async fn check_shutdown(args: &[String]) {
-    use maestro_daemon::{events::AppEvent, locations::DaemonPaths};
+    use crate::{events::AppEvent, locations::DaemonPaths};
     let (mut app, pane) = live_shutdown_app(args).await;
     app.state
         .terminals
@@ -634,11 +627,8 @@ async fn check_shutdown(args: &[String]) {
 #[cfg(unix)]
 async fn live_shutdown_app(
     args: &[String],
-) -> (
-    maestro_daemon::state::App,
-    maestro_workspace::tiling::PaneId,
-) {
-    use maestro_daemon::{
+) -> (crate::state::App, maestro_workspace::tiling::PaneId) {
+    use crate::{
         events::AppEvent,
         panes::{
             launch::PaneLaunchEnv,
@@ -737,14 +727,14 @@ fn unspellable_home(root: &maestro_test_directory::Scratch) -> Option<std::path:
 fn default_workspace_cwd(policy: &str) -> std::path::PathBuf {
     let mut config = Config::default();
     config.terminal.default_shell = "/bin/sh".into();
-    config.terminal.new_cwd =
-        maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into());
-    let args = maestro_test_process::TestProcess::named("daemon_runtime::setup_entry")
-        .unwrap()
-        .nocapture()
-        .single_threaded()
-        .invoke_with(|args| Ok::<_, std::io::Error>(args.to_vec()))
-        .unwrap();
+    config.terminal.new_cwd = crate::settings::model::NewTerminalCwdConfig::Path(policy.into());
+    let args =
+        maestro_test_process::TestProcess::named("state::tests::daemon_runtime::setup_entry")
+            .unwrap()
+            .nocapture()
+            .single_threaded()
+            .invoke_with(|args| Ok::<_, std::io::Error>(args.to_vec()))
+            .unwrap();
     let mut app = app_with_args(&config, &args);
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -785,7 +775,7 @@ fn daemon_new_terminal_cwd_follows_the_link_above_a_tilde_path() {
         .build()
         .unwrap()
         .block_on(pending_cwd(
-            maestro_daemon::settings::model::NewTerminalCwdConfig::Path("~/link/../f".into()),
+            crate::settings::model::NewTerminalCwdConfig::Path("~/link/../f".into()),
             None,
         ));
     assert_eq!(
@@ -820,7 +810,7 @@ fn daemon_tilde_paths_join_their_rest_natively() {
         .block_on(async {
             for (policy, expected) in cases {
                 let cwd = pending_cwd(
-                    maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into()),
+                    crate::settings::model::NewTerminalCwdConfig::Path(policy.into()),
                     None,
                 )
                 .await;
@@ -846,7 +836,7 @@ fn daemon_workspace_creation_keeps_native_home_bytes() {
         .block_on(async {
             for (policy, expected) in [("~", home.clone()), ("~/child", home.join("child"))] {
                 let cwd = pending_cwd(
-                    maestro_daemon::settings::model::NewTerminalCwdConfig::Path(policy.into()),
+                    crate::settings::model::NewTerminalCwdConfig::Path(policy.into()),
                     None,
                 )
                 .await;

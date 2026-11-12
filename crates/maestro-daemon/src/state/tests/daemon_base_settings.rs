@@ -3,7 +3,7 @@
 
 use std::{path::Path, sync::Arc};
 
-use maestro_daemon::settings::{
+use crate::settings::{
     io::{load_config, project_global_settings},
     model::UpdateChannelConfig,
     tabs::TabBarRightEntryConfig,
@@ -116,7 +116,7 @@ fn daemon_global_locks_win_for_every_governed_key_without_project_settings() {
 
 #[test]
 fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() {
-    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    use crate::settings::{io::reload_config, model::ConfigReloadStatus};
     use maestro_test_directory::Scratch;
     let root = Scratch::new().unwrap();
     let agent = root.path().join("agent");
@@ -178,9 +178,9 @@ fn assert_malformed_reload(
     user: &Value,
     base: Value,
     path: &str,
-    expected: &maestro_daemon::settings::model::Config,
-) -> maestro_daemon::settings::model::ConfigReloadReport {
-    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    expected: &crate::settings::model::Config,
+) -> crate::settings::model::ConfigReloadReport {
+    use crate::settings::{io::reload_config, model::ConfigReloadStatus};
     let text = user.to_string();
     let storage = Arc::new(InMemorySettingsStorage::new());
     storage
@@ -224,10 +224,7 @@ fn assert_malformed_reload(
 }
 
 /// Require one provenance-bearing diagnostic for a restored locked path.
-fn assert_lock_diagnostic(
-    report: &maestro_daemon::settings::model::ConfigReloadReport,
-    path: &str,
-) {
+fn assert_lock_diagnostic(report: &crate::settings::model::ConfigReloadReport, path: &str) {
     let locks: Vec<_> = report
         .diagnostics
         .iter()
@@ -240,7 +237,7 @@ fn assert_lock_diagnostic(
 
 #[test]
 fn daemon_locks_restore_absent_and_present_values_under_malformed_ancestors() {
-    use maestro_daemon::settings::model::Config;
+    use crate::settings::model::Config;
     for (base, channel) in [
         (json!({}), Config::default().update.channel),
         (
@@ -293,7 +290,7 @@ fn assert_valid_locked_area_unchanged(
     manager: &mut SettingsManager,
     storage: &InMemorySettingsStorage,
 ) {
-    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    use crate::settings::{io::reload_config, model::ConfigReloadStatus};
     let user = json!({"update":{"channel":"stable","versionCheck":false},"daemon":{"paneShell":"user-shell"}});
     storage
         .with_lock(SettingsScope::Global, &mut |_| Ok(Some(user.to_string())))
@@ -316,7 +313,7 @@ fn assert_valid_locked_area_unchanged(
 
 #[test]
 fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current() {
-    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    use crate::settings::{io::reload_config, model::ConfigReloadStatus};
     let user = json!({"update":{"versionCheck":"bad"},"daemon":{"paneShell":17}});
     let storage = Arc::new(InMemorySettingsStorage::new());
     storage
@@ -377,7 +374,7 @@ fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current
 
 #[test]
 fn daemon_locked_area_fallback_covers_ui_and_flattened_source_namespaces() {
-    use maestro_daemon::settings::model::Config;
+    use crate::settings::model::Config;
     let mut ui = Config::default();
     ui.terminal.default_shell = "retained".into();
     let mut ui_present = ui.clone();
@@ -460,7 +457,7 @@ fn daemon_startup_keeps_base_locks_when_user_document_is_unavailable() {
 #[cfg(target_os = "linux")]
 #[test]
 fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
-    use crate::config_support::{block_on, fixture, put};
+    use crate::state::tests::config_support::{block_on, fixture, put};
     let (mut app, mut manager, storage) = fixture();
     put(
         &*storage,
@@ -500,8 +497,8 @@ fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
 #[cfg(target_os = "linux")]
 #[test]
 fn daemon_first_reload_retains_startup_area_document() {
-    use crate::config_support::put;
-    use maestro_daemon::{service::event_hub::EventHub, state::App};
+    use crate::state::tests::config_support::put;
+    use crate::{service::event_hub::EventHub, state::App};
     let storage = Arc::new(InMemorySettingsStorage::new());
     put(&*storage, r#"{"multiplexer":{"mouseCapture":false}}"#);
     let mut manager = SettingsManager::from_storage(storage.clone());
@@ -509,7 +506,7 @@ fn daemon_first_reload_retains_startup_area_document() {
     let manifests = Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
-    let (launch, receiver) = crate::support::spawning::launch_inputs(&[], manifests);
+    let (launch, receiver) = crate::state::tests::support::spawning::launch_inputs(&[], manifests);
     let mut app = App::from_loaded(&loaded, || 0, launch, receiver, EventHub::default());
     storage
         .write_base_layer(
@@ -532,7 +529,7 @@ fn daemon_first_reload_retains_startup_area_document() {
 #[cfg(target_os = "linux")]
 #[test]
 fn daemon_runtime_rejected_documents_do_not_replace_accepted_areas() {
-    use crate::config_support::{fixture, put};
+    use crate::state::tests::config_support::{fixture, put};
     let (mut app, mut manager, storage) = fixture();
     put(
         &*storage,
@@ -567,7 +564,7 @@ fn daemon_runtime_rejected_documents_do_not_replace_accepted_areas() {
 #[cfg(target_os = "linux")]
 #[test]
 fn daemon_no_layer_rejected_ui_does_not_reset_scroll() {
-    use crate::config_support::{fixture, put};
+    use crate::state::tests::config_support::{fixture, put};
     let (mut app, mut manager, storage) = fixture();
     put(&*storage, "{}");
     block_on(app.reload_config(&mut manager, Path::new(".")));
@@ -580,7 +577,7 @@ fn daemon_no_layer_rejected_ui_does_not_reset_scroll() {
 #[cfg(target_os = "linux")]
 #[test]
 fn daemon_typed_constructor_retains_ui_on_first_invalid_no_layer_reload() {
-    use crate::config_support::{fixture, put};
+    use crate::state::tests::config_support::{fixture, put};
     let (mut app, mut manager, storage) = fixture();
     app.config.ui.mouse_capture.0 = false;
     put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
@@ -672,7 +669,7 @@ impl maestro_settings::SettingsDecider for ResolveCatalogCheck {
 
 #[test]
 fn daemon_area_recovery_resolves_stored_values_and_restores_locks_after_decider() {
-    use maestro_daemon::settings::io::{AcceptedAreas, reload_config};
+    use crate::settings::io::{AcceptedAreas, reload_config};
     let storage = Arc::new(InMemorySettingsStorage::new());
     storage
         .with_lock(SettingsScope::Global, &mut |_| {
@@ -737,7 +734,7 @@ fn daemon_startup_resolution_diagnostic_preserves_user_preferences() {
 /// A successful resolution is a diagnostic rather than a failed live reload.
 #[test]
 fn daemon_reload_resolution_diagnostic_applies_user_preferences() {
-    use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
+    use crate::settings::{io::reload_config, model::ConfigReloadStatus};
     let storage = Arc::new(InMemorySettingsStorage::new());
     let mut manager = SettingsManager::from_storage(storage.clone());
     let mut current = load_config(&mut manager, Path::new(".")).0;
@@ -812,7 +809,7 @@ fn daemon_startup_collects_fallback_only_resolution_diagnostics() {
 /// Live recovery returns each fallback diagnostic once and leaves none queued.
 #[test]
 fn daemon_live_load_collects_fallback_only_resolution_diagnostics() {
-    use maestro_daemon::settings::io::{AcceptedAreas, load_live_config};
+    use crate::settings::io::{AcceptedAreas, load_live_config};
     let mut manager = fallback_diagnostic_manager();
     let (loaded, errors) = block_on(load_live_config(
         &mut manager,

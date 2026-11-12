@@ -2,10 +2,10 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::config_support;
+use crate::state::tests::config_support;
 
+use crate::state::App;
 use config_support::fixture;
-use maestro_daemon::state::App;
 
 /// Admits one named workspace with retained terminal metadata and no native child.
 pub(crate) fn app() -> App {
@@ -22,7 +22,7 @@ pub(crate) fn app() -> App {
         .clone();
     app.state.terminals.insert(
         id.clone(),
-        maestro_daemon::terminal::model::TerminalState::new(id, "/herd".into()),
+        crate::terminal::model::TerminalState::new(id, "/herd".into()),
     );
     app
 }

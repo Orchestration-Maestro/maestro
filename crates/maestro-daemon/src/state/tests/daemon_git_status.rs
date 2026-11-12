@@ -2,8 +2,8 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support;
-use maestro_daemon::{
+use crate::state::tests::support;
+use crate::{
     settings::model::Config, state::model::DaemonState, terminal::owners::TerminalRuntimeRegistry,
 };
 use maestro_workspace::spaces::{

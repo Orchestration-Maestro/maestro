@@ -102,6 +102,9 @@ pub struct OverlayPane {
 /// Retained daemon data independent of attached views.
 pub mod model;
 
+#[cfg(test)]
+mod tests;
+
 mod ids;
 
 /// Workspace actions and notification context.

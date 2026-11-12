@@ -2,9 +2,9 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::spawning;
+use crate::state::tests::support::spawning;
 
-use maestro_daemon::{
+use crate::{
     service::event_hub::EventHub,
     settings::model::{AgentPanelSortConfig, Config},
     state::{App, model::AgentPanelSort},
@@ -74,7 +74,7 @@ fn pending_workspace_creation_blocks_default_until_cancelled() {
 
 #[test]
 fn pending_creation_follows_navigation_selection_before_active_terminal() {
-    use maestro_daemon::{state::model::Mode, terminal::model::TerminalState};
+    use crate::{state::model::Mode, terminal::model::TerminalState};
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
     let mut app = app(&config);
@@ -121,7 +121,7 @@ fn pending_creation_follows_navigation_selection_before_active_terminal() {
 
 #[test]
 fn pending_creation_retains_current_and_authored_directory_policies() {
-    use maestro_daemon::settings::model::NewTerminalCwdConfig;
+    use crate::settings::model::NewTerminalCwdConfig;
     let mut config = Config::default();
     config.ui.prompt_new_workspace_name.0 = true;
     let mut app = app(&config);
@@ -161,18 +161,13 @@ fn construction_keeps_manual_theme_policy() {
     let mut app = app(&config);
     assert!(!app.state.theme_runtime.auto_switch);
     assert_eq!(app.state.theme_name, "tokyo-night");
-    assert!(
-        !app.set_host_terminal_appearance(
-            maestro_daemon::terminal_theme::HostAppearance::Light,
-            true,
-        )
-    );
+    assert!(!app.set_host_terminal_appearance(crate::terminal_theme::HostAppearance::Light, true,));
     assert_eq!(app.state.theme_name, "tokyo-night");
 }
 
 #[test]
 fn construction_selects_sibling_theme_for_explicit_host_appearance() {
-    use maestro_daemon::terminal_theme::HostAppearance;
+    use crate::terminal_theme::HostAppearance;
     let mut config = Config::default();
     config.theme.name = Some("tokyo-night".into());
     config.theme.auto_switch = true;
@@ -187,7 +182,7 @@ fn construction_selects_sibling_theme_for_explicit_host_appearance() {
 
 #[test]
 fn construction_retains_custom_overrides_when_selecting_active_theme() {
-    use maestro_daemon::{settings::appearance::CustomThemeColors, terminal_theme::HostAppearance};
+    use crate::{settings::appearance::CustomThemeColors, terminal_theme::HostAppearance};
     let mut config = Config::default();
     config.theme.name = Some("gruvbox".into());
     config.theme.auto_switch = true;
@@ -205,7 +200,7 @@ fn construction_retains_custom_overrides_when_selecting_active_theme() {
 
 #[test]
 fn daemon_inferred_background_appearance_does_not_override_explicit_report() {
-    use maestro_daemon::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
+    use crate::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
     let mut config = Config::default();
     config.theme.name = Some("catppuccin".into());
     config.theme.auto_switch = true;
@@ -228,7 +223,7 @@ fn daemon_inferred_background_appearance_does_not_override_explicit_report() {
 
 #[test]
 fn construction_shares_supplied_host_observations_with_later_launches() {
-    use maestro_daemon::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
+    use crate::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
     let mut config = Config::default();
     config.theme.auto_switch = true;
     let manifests = Arc::new(RwLock::new(
@@ -257,7 +252,7 @@ fn construction_shares_supplied_host_observations_with_later_launches() {
 
 #[test]
 fn theme_siblings_preserve_aliases_custom_names_and_authored_pair_overrides() {
-    use maestro_daemon::{state::model::ThemeRuntimeConfig, terminal_theme::HostAppearance};
+    use crate::{state::model::ThemeRuntimeConfig, terminal_theme::HostAppearance};
     let mut config = Config::default();
     config.theme.auto_switch = true;
     for (name, dark, light) in [
@@ -296,7 +291,7 @@ fn theme_siblings_preserve_aliases_custom_names_and_authored_pair_overrides() {
 
 #[test]
 fn background_inference_selects_theme_until_explicit_appearance_is_reported() {
-    use maestro_daemon::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
+    use crate::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
     let mut config = Config::default();
     config.theme.auto_switch = true;
     let mut app = app(&config);

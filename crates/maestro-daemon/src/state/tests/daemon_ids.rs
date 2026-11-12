@@ -3,11 +3,11 @@
 #![cfg(target_os = "linux")]
 
 #[cfg(unix)]
-use crate::support::spawning;
+use crate::state::tests::support::spawning;
 
-use maestro_daemon::{settings::model::Config, state::model::DaemonState};
+use crate::{settings::model::Config, state::model::DaemonState};
 #[cfg(unix)]
-use maestro_daemon::{
+use crate::{
     state::{
         App,
         terminal_targets::{TerminalTargetCandidate, TerminalTargetError},
@@ -134,7 +134,7 @@ fn target_app() -> (App, PaneId, TerminalId) {
         || 0,
         launch,
         receiver,
-        maestro_daemon::service::event_hub::EventHub::default(),
+        crate::service::event_hub::EventHub::default(),
     );
     let (removed, ()) = app
         .state

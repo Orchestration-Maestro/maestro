@@ -2,12 +2,12 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::config_support;
+use crate::state::tests::config_support;
 
-use config_support::{block_on, fixture, put};
-use maestro_daemon::settings::model::{
+use crate::settings::model::{
     AgentPanelSortConfig, ConfigReloadStatus, StatusIndicatorStyle, ToastDelivery,
 };
+use config_support::{block_on, fixture, put};
 use maestro_settings::{SettingsScope, SettingsStorage};
 use serde_json::Value;
 use std::path::Path;

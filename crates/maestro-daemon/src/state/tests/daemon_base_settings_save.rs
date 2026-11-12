@@ -1,10 +1,10 @@
 //! Global configuration edits remain governed independently of project layers.
 #![cfg(all(test, target_os = "linux"))]
 
-use crate::{config_support, daemon_base_settings::layer};
+use crate::settings::model::{ConfigReloadStatus, StatusIndicatorStyle};
+use crate::state::App;
+use crate::state::tests::{config_support, daemon_base_settings::layer};
 use config_support::{block_on, fixture};
-use maestro_daemon::settings::model::{ConfigReloadStatus, StatusIndicatorStyle};
-use maestro_daemon::state::App;
 use maestro_settings::{Settings, SettingsErrorKind, SettingsManager, SettingsScope};
 use maestro_test_directory::Scratch;
 use serde_json::json;

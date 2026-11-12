@@ -2,10 +2,10 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support;
+use crate::state::tests::support;
 use support::assert_identity_invariants;
 
-use maestro_daemon::{settings::model::Config, state::model::DaemonState};
+use crate::{settings::model::Config, state::model::DaemonState};
 use maestro_workspace::tiling::{Borders, PaneId, PaneInfo, Rect};
 
 #[test]

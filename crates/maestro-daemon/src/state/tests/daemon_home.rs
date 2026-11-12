@@ -1,8 +1,8 @@
 //! Workspace directories and labels observe the environment without an account fallback.
 #![cfg(target_os = "linux")]
 
-use crate::window_title::app;
-use maestro_daemon::settings::model::NewTerminalCwdConfig;
+use crate::settings::model::NewTerminalCwdConfig;
+use crate::state::tests::window_title::app;
 use maestro_protocol::shared::Flag;
 use std::{collections::BTreeMap, path::PathBuf};
 
@@ -40,7 +40,7 @@ fn expected(case: Home) -> Option<PathBuf> {
 fn daemon_home_uses_only_the_environment() {
     let cases = [Home::Unset, Home::Empty, Home::Set];
     let Some(cases) = maestro_test_process::run_per_environment(
-        "daemon_home::daemon_home_uses_only_the_environment",
+        "state::tests::daemon_home::daemon_home_uses_only_the_environment",
         cases,
         |case| variable(*case),
     )
@@ -90,7 +90,7 @@ fn new_workspace_directory(policy: NewTerminalCwdConfig) -> PathBuf {
     app.state.topology.workspaces.clear();
     app.state.active = None;
     app.state.prompt_new_workspace_name = Flag(true);
-    crate::support::runtime::block_on(app.begin_workspace_create()).unwrap();
+    crate::tests::block_on(app.begin_workspace_create()).unwrap();
     app.state.pending_workspace_create_cwd.take().unwrap()
 }
 
@@ -106,7 +106,7 @@ fn window_title(home: &std::path::Path) -> String {
 #[test]
 fn daemon_home_without_readable_cwd_uses_root() {
     let Some(_) = maestro_test_process::run_per_environment(
-        "daemon_home::daemon_home_without_readable_cwd_uses_root",
+        "state::tests::daemon_home::daemon_home_without_readable_cwd_uses_root",
         [Home::Unset],
         |case| variable(*case),
     )
@@ -124,7 +124,7 @@ fn daemon_home_without_readable_cwd_uses_root() {
 #[test]
 fn daemon_creation_without_home_labels_the_account_directory_by_name() {
     let Some(_) = maestro_test_process::run_per_environment(
-        "daemon_home::daemon_creation_without_home_labels_the_account_directory_by_name",
+        "state::tests::daemon_home::daemon_creation_without_home_labels_the_account_directory_by_name",
         [Home::Unset],
         |case| variable(*case),
     )
@@ -134,15 +134,15 @@ fn daemon_creation_without_home_labels_the_account_directory_by_name() {
     let Some(account) = std::env::home_dir() else {
         return;
     };
-    maestro_test_process::TestProcess::named("repository_identity::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::daemon_runtime::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
         .invoke_with(|args| {
-            crate::support::runtime::block_on(async {
-                let mut config = maestro_daemon::settings::model::Config::default();
+            crate::tests::block_on(async {
+                let mut config = crate::settings::model::Config::default();
                 config.terminal.default_shell = "/bin/sh".into();
-                let mut app = crate::daemon_runtime::app_with_args(&config, args);
+                let mut app = crate::state::tests::daemon_runtime::app_with_args(&config, args);
                 app.create_workspace_with_options(account.clone(), true)
                     .unwrap();
                 let expected = account

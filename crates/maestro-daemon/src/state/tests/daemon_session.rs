@@ -2,9 +2,10 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::{runtime::block_on, spawning};
+use crate::state::tests::support::spawning;
+use crate::tests::block_on;
 
-use maestro_daemon::{
+use crate::{
     locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config, state::App,
 };
 use std::{
@@ -161,12 +162,12 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
     app.config_diagnostic_deadline = Some(past);
     app.state.config_diagnostic = Some("temporary diagnostic".into());
     app.copy_feedback_deadline = Some(past);
-    app.state.copy_feedback = Some(maestro_daemon::state::model::CopyFeedback {
+    app.state.copy_feedback = Some(crate::state::model::CopyFeedback {
         message: "copied".into(),
     });
     app.launch
         .events
-        .try_send(maestro_daemon::events::AppEvent::UpdateReady {
+        .try_send(crate::events::AppEvent::UpdateReady {
             version: "9.9.9".into(),
             install_command: "maestro update".into(),
         })
@@ -178,7 +179,7 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
         .block_on(app.run(
             &paths,
             &mut tokio::sync::mpsc::unbounded_channel().1,
-            &mut crate::support::api::settings(),
+            &mut crate::state::tests::support::settings(),
             std::future::ready(()),
         ));
     assert!(app.state.should_quit.0);
@@ -193,8 +194,8 @@ fn run_consumes_due_work_and_queued_observations_before_final_save() {
 fn unchanged_toasts_keep_their_original_deadline_and_expire_exactly_once() {
     let (_directory, paths) = paths();
     let mut app = app();
-    app.state.toast_config.delivery = maestro_daemon::settings::model::ToastDelivery::Workspace;
-    let update = || maestro_daemon::events::AppEvent::UpdateReady {
+    app.state.toast_config.delivery = crate::settings::model::ToastDelivery::Workspace;
+    let update = || crate::events::AppEvent::UpdateReady {
         version: "9.9.9".into(),
         install_command: "maestro update".into(),
     };
@@ -235,7 +236,7 @@ fn disabled_dirty_saves_stay_idle_and_an_empty_enabled_save_removes_both_files()
 
 #[test]
 fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
-    use maestro_daemon::terminal::model::AgentMetadataReport;
+    use crate::terminal::model::AgentMetadataReport;
     let (_directory, paths) = paths();
     let mut app = app();
     // No sidebar row asks for repository status, so no refresh deadline joins the metadata ones.
@@ -249,8 +250,7 @@ fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    let mut terminal =
-        maestro_daemon::terminal::model::TerminalState::new(id.clone(), "/expiry".into());
+    let mut terminal = crate::terminal::model::TerminalState::new(id.clone(), "/expiry".into());
     terminal
         .set_agent_metadata(AgentMetadataReport {
             source: "user".into(),
@@ -295,7 +295,7 @@ fn scheduled_metadata_expiry_publishes_presentation_and_token_changes() {
 
 #[test]
 fn scheduled_managed_timeout_publishes_the_changed_pane() {
-    use maestro_daemon::terminal::model::{ManagedAgentLaunch, TerminalState};
+    use crate::terminal::model::{ManagedAgentLaunch, TerminalState};
     let (_directory, paths) = paths();
     let mut app = app();
     let (pane, ()) = app
@@ -349,7 +349,7 @@ fn assert_metadata_expiry_events(hub: &EventHub) {
 
 #[test]
 fn simultaneous_metadata_and_managed_expiry_still_publishes_the_managed_pane() {
-    use maestro_daemon::terminal::model::{AgentMetadataReport, ManagedAgentLaunch, TerminalState};
+    use crate::terminal::model::{AgentMetadataReport, ManagedAgentLaunch, TerminalState};
     let (_directory, paths) = paths();
     let mut app = app();
     let (pane, ()) = app

@@ -2,9 +2,9 @@
 #![cfg(test)]
 #![cfg(target_os = "linux")]
 
-use crate::support::spawning;
+use crate::state::tests::support::spawning;
 
-use maestro_daemon::{service::event_hub::EventHub, settings::model::Config, state::App};
+use crate::{service::event_hub::EventHub, settings::model::Config, state::App};
 use maestro_workspace::tiling::PaneId;
 use std::{
     collections::HashSet,
@@ -41,20 +41,18 @@ fn fixture(args: &[String]) -> (App, PaneId) {
         .terminal_id(pane)
         .unwrap()
         .clone();
-    let mut terminal = maestro_daemon::terminal::model::TerminalState::new(
-        id.clone(),
-        std::env::current_dir().unwrap(),
-    );
+    let mut terminal =
+        crate::terminal::model::TerminalState::new(id.clone(), std::env::current_dir().unwrap());
     terminal.detected_agent = Some(maestro_detection::agents::Agent::Claude);
     terminal.state = maestro_detection::agents::AgentState::Working;
     app.state.terminals.insert(id.clone(), terminal);
     let mut config = app.launch.runtime_config(&app.config, pane, (24, 80));
-    config.agent_detection = maestro_daemon::panes::lifecycle::AgentDetection::Disabled;
-    let runtime = maestro_daemon::panes::lifecycle::PaneRuntime::spawn_shell_command(
+    config.agent_detection = crate::panes::lifecycle::AgentDetection::Disabled;
+    let runtime = crate::panes::lifecycle::PaneRuntime::spawn_shell_command(
         config,
         "read -r line",
         std::env::current_dir().unwrap(),
-        &maestro_daemon::panes::launch::PaneLaunchEnv::default(),
+        &crate::panes::launch::PaneLaunchEnv::default(),
     )
     .unwrap();
     app.terminal_runtimes.insert(id, runtime);
@@ -92,7 +90,7 @@ fn daemon_sync_keeps_latest_raw_title_and_emits_only_for_stripped_changes() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("terminal_titles::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -123,7 +121,7 @@ async fn check_titles(args: &[String]) {
     assert_eq!(info.terminal_title_stripped, None);
     assert_eq!(info.revision, 3);
     assert_eq!(updates(&app), 3);
-    app.shutdown(&maestro_daemon::locations::DaemonPaths::new("/unused", None).unwrap())
+    app.shutdown(&crate::locations::DaemonPaths::new("/unused", None).unwrap())
         .await;
 }
 
@@ -164,7 +162,7 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("terminal_titles::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -176,16 +174,14 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
                 .block_on(async {
                     let (mut app, pane) = fixture(args);
                     app.config.ui.sidebar.agents.rows = vec![vec![
-                        maestro_daemon::settings::navigation::AgentSidebarToken::TerminalTitleStripped,
+                        crate::settings::navigation::AgentSidebarToken::TerminalTitleStripped,
                     ]];
                     title(&app, b"\x1b]0;building\x07");
                     let _ = app.launch.render_dirty.request_terminal_title(pane);
                     assert!(app.sync_pending_terminal_titles().await.stripped_changed);
                     assert!(app.launch.render_dirty.take().generic);
-                    app.shutdown(
-                        &maestro_daemon::locations::DaemonPaths::new("/unused", None).unwrap(),
-                    )
-                    .await;
+                    app.shutdown(&crate::locations::DaemonPaths::new("/unused", None).unwrap())
+                        .await;
                 });
             Ok::<_, std::io::Error>(())
         })
@@ -194,7 +190,7 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
 
 #[test]
 fn daemon_sidebar_redraws_only_for_the_configured_title_form() {
-    use maestro_daemon::{
+    use crate::{
         settings::navigation::AgentSidebarToken, state::terminal_titles::TerminalTitleChanges,
     };
     let manifests = Arc::new(RwLock::new(
@@ -235,7 +231,7 @@ fn daemon_loop_consumes_titles_and_publishes_complete_pane_records() {
     if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_process::TestProcess::named("terminal_titles::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -266,9 +262,9 @@ async fn check_loop_projection(args: &[String]) {
     app.launch.render_notify.notify_one();
     let hub = app.event_hub.clone();
     app.run(
-        &maestro_daemon::locations::DaemonPaths::new("/unused", None).unwrap(),
+        &crate::locations::DaemonPaths::new("/unused", None).unwrap(),
         &mut tokio::sync::mpsc::unbounded_channel().1,
-        &mut crate::support::api::settings(),
+        &mut crate::state::tests::support::settings(),
         async {
             while hub.current_sequence() == 0 {
                 tokio::task::yield_now().await;
