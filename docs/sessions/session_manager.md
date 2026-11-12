@@ -179,10 +179,11 @@ reads one keeps that record through its consuming helpers and borrows its text f
 filesystem paths and displayed output.
 
 A fresh history publishes at its first assistant message, writing the header and every
-record so far in one append. A failed first write leaves the history unpublished, and
-the next save writes it again from the start. Loaded and recovered
-histories stay published: each later append writes one record. An append error
-leaves the accepted memory and any partial bytes in place, and a failed switch
+record so far in one append. A failed first write is cut back to the file's earlier
+length and leaves the history unpublished, so the next save writes it once from the
+start. Loaded and recovered histories stay published: each later append writes one
+record. A later append error leaves the accepted memory and any partial bytes in
+place, and a failed switch
 keeps the prior manager state. An empty file is initialised immediately at the
 selected path. A nonempty file without a valid session header is refused with
 `Session file is not a valid maestro session: <path>` and keeps its bytes, so

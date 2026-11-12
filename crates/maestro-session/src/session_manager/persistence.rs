@@ -241,7 +241,9 @@ impl SessionManager {
             if !has_assistant(&self.file_entries)? {
                 return Ok(());
             }
-            append(path, &encode_entries(&self.file_entries)?)?;
+            let bytes = encode_entries(&self.file_entries)?;
+            let before = fs::metadata(path).map_or(0, |metadata| metadata.len());
+            append(path, &bytes).map_err(|error| restore_length(path, before, error))?;
             self.flushed = true;
         } else if let Some(entry) = self.file_entries.last() {
             append(path, &encode(entry)?)?;
@@ -260,6 +262,25 @@ pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
             .open(path)?
             .write_all(bytes),
     })
+}
+
+/// Cut a failed first save back to its earlier length so the retry writes it once.
+///
+/// Returns the save error, extended with the restore error when the cut also fails.
+fn restore_length(path: &str, length: u64, error: io::Error) -> io::Error {
+    let cut = super::storage::with_write_lock(path, |_holder| {
+        fs::OpenOptions::new()
+            .write(true)
+            .open(path)?
+            .set_len(length)
+    });
+    match cut {
+        Err(restore) if restore.kind() != io::ErrorKind::NotFound => io::Error::new(
+            error.kind(),
+            format!("{error}; restoring the session file failed: {restore}"),
+        ),
+        _ => error,
+    }
 }
 
 /// Read message roles only until the first assistant is encountered.

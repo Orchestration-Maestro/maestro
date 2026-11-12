@@ -166,7 +166,7 @@ fn failed_probe_releases_its_owned_file() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn append_failure_keeps_memory_and_partial_bytes() {
+fn first_save_failure_part_way_leaves_nothing_for_the_retry() {
     use std::io::Write;
     let scratch = Scratch::new().unwrap();
     let directory = scratch.path().join("sessions");
@@ -191,14 +191,15 @@ fn append_failure_keeps_memory_and_partial_bytes() {
         })
         .unwrap_err();
     assert_eq!(error.raw_os_error(), Some(5));
-    assert_eq!(std::fs::read(&path).unwrap(), b"{\"type\"");
+    assert_eq!(std::fs::read(&path).unwrap(), b"");
     assert_eq!(manager.get_entries().len(), 1);
     manager
         .append_message(serde_json::json!({"role":"user","content":"next"}))
         .unwrap();
     let bytes = std::fs::read_to_string(&path).unwrap();
-    assert!(bytes.starts_with("{\"type\"{\"type\":\"session\""));
-    assert_eq!(super::parse_session_entries(&bytes).len(), 2);
+    assert!(bytes.starts_with("{\"type\":\"session\""));
+    assert_eq!(bytes.matches("\"type\":\"session\"").count(), 1);
+    assert_eq!(super::parse_session_entries(&bytes).len(), 3);
 }
 
 #[cfg(not(target_arch = "wasm32"))]
