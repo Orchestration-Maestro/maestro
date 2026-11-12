@@ -1,8 +1,8 @@
 #![doc = include_str!("../../../../docs/compaction.md")]
 mod estimate;
 pub use estimate::{
-    calculate_context_tokens, estimate_context_tokens, estimate_tokens, get_last_assistant_usage,
-    should_compact,
+    calculate_context_tokens, estimate_context_tokens, estimate_message_context_tokens,
+    estimate_tokens, get_last_assistant_usage, should_compact,
 };
 pub use maestro_entry::summarization::{CompactionSettings, FileOperations};
 /// Library policy for automatic compaction and the retained window.

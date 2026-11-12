@@ -272,6 +272,68 @@ fn reread_keeps_accepted_records_after_the_last_scheduled_wait() {
     }
 }
 
+/// Stored literal key for one provider.
+fn api_key(key: &str) -> AuthCredential {
+    AuthCredential::ApiKey(super::types::ApiKeyCredential {
+        key: key.into(),
+        env: None,
+    })
+}
+
+#[test]
+fn repeated_reads_of_an_unchanged_file_take_no_lock() {
+    use super::backend::FileAuthStorageBackend;
+
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let path = dir.path().join("auth.json").to_str().unwrap().to_owned();
+    let backend = FileAuthStorageBackend::new(&path)
+        .with_draw(|| 0.75)
+        .with_wait(record_wait);
+    let storage = AuthStorage::from_storage(backend);
+    storage.set("p", api_key("accepted"));
+    assert_eq!(storage.get("p"), Some(api_key("accepted")));
+
+    let _holder = hold_file(&path);
+    WAITING_READ.with_borrow_mut(|trace| *trace = WaitingRead::default());
+    for _ in 0..50 {
+        assert_eq!(storage.get("p"), Some(api_key("accepted")));
+        assert!(storage.has("p"));
+    }
+    let waits = WAITING_READ.with_borrow_mut(std::mem::take).delays.len();
+    assert_eq!(waits, 0);
+}
+
+#[test]
+fn reread_follows_another_storage_and_in_place_edits() {
+    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let path = dir.path().join("auth.json").to_str().unwrap().to_owned();
+    let other = AuthStorage::create(&path);
+    other.set("p", api_key("old-1"));
+    let storage = AuthStorage::create(&path);
+    assert_eq!(storage.get("p"), Some(api_key("old-1")));
+
+    // Restoring the time needs a change time to tell the edit apart, which only Unix reports.
+    #[cfg(unix)]
+    {
+        let first_write = std::fs::metadata(&path).unwrap().modified().unwrap();
+        other.set("p", api_key("new-1"));
+        // The write is in place at the same size; restoring the time reproduces one timestamp tick.
+        std::fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(first_write)
+            .unwrap();
+        assert_eq!(storage.get("p"), Some(api_key("new-1")));
+    }
+
+    std::fs::write(&path, r#"{"p":{"type":"api_key","key":"edited-in-place"}}"#).unwrap();
+    assert_eq!(storage.get("p"), Some(api_key("edited-in-place")));
+
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(storage.get("p"), None);
+}
+
 /// Exercise acquisition with the competing writer released just before one scheduled retry.
 async fn acquire_after_release(path: &str, release_before: usize) {
     use super::backend::{AuthStorageBackend, FileAuthStorageBackend};

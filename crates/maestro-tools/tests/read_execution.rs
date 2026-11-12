@@ -771,3 +771,36 @@ fn read_image_abort_settles_before_blocking_resize_finishes() {
         tokio::task::yield_now().await;
     });
 }
+
+#[test]
+fn read_text_decodes_off_the_calling_task() {
+    let ops = Arc::new(ScriptedOps::new(b"first\nsecond\n"));
+    let tool = tool_over(&ops);
+    let (started, waiting) = std::sync::mpsc::channel();
+    let (release, finish) = std::sync::mpsc::channel::<()>();
+    let finish = std::sync::Mutex::new(finish);
+    let runtime = crate::runtime::builder()
+        .on_thread_start(move || {
+            started.send(()).unwrap();
+            // Hold the decode off the async thread until the first poll is observed.
+            let _ = finish.lock().unwrap().recv();
+        })
+        .build()
+        .unwrap();
+    runtime.block_on(async move {
+        let mut call = (tool.execute)(
+            "call".into(),
+            input("/work/notes.txt", None, None),
+            None,
+            None,
+            None,
+        );
+        assert!(
+            call.as_mut().now_or_never().is_none(),
+            "text must be decoded on the blocking pool, not on the calling task"
+        );
+        waiting.recv().unwrap();
+        drop(release);
+        assert_eq!(call.await.unwrap().content.len(), 1);
+    });
+}

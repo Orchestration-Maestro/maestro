@@ -85,16 +85,23 @@ impl Reader {
         .await?;
         let model = context.and_then(|context| context.model());
         let bytes = guarded(signal, || operations.read_file(absolute_path)).await?;
-        let result = match mime.filter(|mime| !mime.is_empty()) {
-            Some(mime) => {
-                let auto_resize = self.auto_resize;
-                guarded(signal, || {
-                    blocking(move || Ok(image_result(&bytes, mime, auto_resize, model.as_deref())))
-                })
-                .await
-            }
-            None => read_text(&bytes, &input.path, input.offset, input.limit)
-                .map(|(text, details)| AgentToolResult::text_result(text, details)),
+        let result = if let Some(mime) = mime.filter(|mime| !mime.is_empty()) {
+            let auto_resize = self.auto_resize;
+            guarded(signal, || {
+                blocking(move || Ok(image_result(&bytes, mime, auto_resize, model.as_deref())))
+            })
+            .await
+        } else {
+            let ReadToolInput {
+                path,
+                offset,
+                limit,
+            } = input;
+            let decoded = guarded(signal, || {
+                blocking(move || Ok(read_text(&bytes, &path, offset, limit)))
+            })
+            .await?;
+            decoded.map(|(text, details)| AgentToolResult::text_result(text, details))
         };
         check_aborted(signal)?;
         result

@@ -1,8 +1,11 @@
 //! Context usage and message-size estimates.
 use super::CompactionSettings;
+use crate::message_records::CustomAgentMessages;
 use crate::session_manager::history::property;
+use maestro_agent::AgentMessage;
 use maestro_json::is_truthy;
-use maestro_models::{ESTIMATED_IMAGE_CHARS, tokens_for_chars, utf16_units};
+use maestro_lock::read;
+use maestro_models::{ESTIMATED_IMAGE_CHARS, StopReason, tokens_for_chars, utf16_units};
 use serde::Deserialize;
 use serde::de::Error as _;
 use serde_json::Value;
@@ -153,25 +156,54 @@ fn timestamp(message: &Value) -> Option<f64> {
 /// A message stamped after an answer, such as a compaction summary inserted ahead of the
 /// retained span, replaces the context that answer measured, so that usage is stale until
 /// a newer answer reports. A message without a numeric timestamp is never stale.
-fn latest_usage(messages: &[Value]) -> Result<Option<(usize, f64)>, serde_json::Error> {
+/// `usage_tokens` reports the context tokens of the answer at an index, when it has any.
+fn latest_usage_by<E>(
+    stamps: &[Option<f64>],
+    mut usage_tokens: impl FnMut(usize) -> Result<Option<f64>, E>,
+) -> Result<Option<(usize, f64)>, E> {
     let mut newest = f64::NEG_INFINITY;
-    let preceding: Vec<f64> = messages
+    let preceding: Vec<f64> = stamps
         .iter()
-        .map(|message| {
+        .map(|stamp| {
             let before = newest;
-            newest = timestamp(message).map_or(newest, |stamp| newest.max(stamp));
+            newest = stamp.map_or(newest, |stamp| newest.max(stamp));
             before
         })
         .collect();
-    for (index, message) in messages.iter().enumerate().rev() {
-        if timestamp(message).is_some_and(|stamp| stamp < preceding[index]) {
+    for (index, stamp) in stamps.iter().enumerate().rev() {
+        if stamp.is_some_and(|stamp| stamp < preceding[index]) {
             continue;
         }
-        if let Some(usage) = assistant_usage(Some(message))? {
-            return Ok(Some((index, calculate_context_tokens(usage)?)));
+        if let Some(tokens) = usage_tokens(index)? {
+            return Ok(Some((index, tokens)));
         }
     }
     Ok(None)
+}
+/// The newest applicable usage among raw message records.
+fn latest_usage(messages: &[Value]) -> Result<Option<(usize, f64)>, serde_json::Error> {
+    let stamps: Vec<Option<f64>> = messages.iter().map(timestamp).collect();
+    latest_usage_by(&stamps, |index| {
+        assistant_usage(Some(&messages[index]))?
+            .map(calculate_context_tokens)
+            .transpose()
+    })
+}
+/// Add the estimate of the messages after the selected usage to that usage.
+fn estimate_after(
+    latest: Option<(usize, f64)>,
+    trailing: &[Value],
+) -> Result<super::ContextUsageEstimate, serde_json::Error> {
+    let usage_tokens = latest.map_or(0.0, |(_, tokens)| tokens);
+    let trailing_tokens = trailing.iter().try_fold(0.0, |sum, message| {
+        Ok::<_, serde_json::Error>(sum + estimate_tokens(message)?)
+    })?;
+    Ok(super::ContextUsageEstimate {
+        tokens: usage_tokens + trailing_tokens,
+        usage_tokens,
+        trailing_tokens,
+        last_usage_index: latest.map(|(index, _)| index),
+    })
 }
 /// Estimate context from the latest applicable successful usage and the trailing messages.
 ///
@@ -181,16 +213,55 @@ pub fn estimate_context_tokens(
     messages: &[Value],
 ) -> Result<super::ContextUsageEstimate, serde_json::Error> {
     let latest = latest_usage(messages)?;
-    let usage_tokens = latest.map_or(0.0, |(_, tokens)| tokens);
-    let trailing_tokens = messages[latest.map_or(0, |(index, _)| index + 1)..]
+    estimate_after(
+        latest,
+        &messages[latest.map_or(0, |(index, _)| index + 1)..],
+    )
+}
+/// A typed application message.
+type TypedMessage = AgentMessage<CustomAgentMessages>;
+/// The numeric timestamp the message's record carries; a nonfinite one serializes as null.
+fn message_timestamp(message: &TypedMessage) -> Option<f64> {
+    let stamp = match message {
+        AgentMessage::User(message) => read(message).timestamp,
+        AgentMessage::Assistant(message) => read(message).timestamp,
+        AgentMessage::ToolResult(message) => read(message).timestamp,
+        AgentMessage::Custom(message) => match &*read(message) {
+            CustomAgentMessages::BashExecution(message) => message.timestamp,
+            CustomAgentMessages::Custom(message) => message.timestamp,
+            CustomAgentMessages::BranchSummary(message) => message.timestamp,
+            CustomAgentMessages::CompactionSummary(message) => message.timestamp,
+            CustomAgentMessages::Other(never) => match *never {},
+        },
+    };
+    stamp.is_finite().then_some(stamp)
+}
+/// The context tokens of a successful answer that reports any; aborted, failed and all-zero
+/// usage describe no context.
+fn message_usage_tokens(message: &TypedMessage) -> Result<Option<f64>, serde_json::Error> {
+    let AgentMessage::Assistant(answer) = message else {
+        return Ok(None);
+    };
+    let answer = read(answer);
+    if matches!(answer.stop_reason, StopReason::Aborted | StopReason::Error) {
+        return Ok(None);
+    }
+    let tokens = calculate_context_tokens(&serde_json::to_value(&answer.usage)?)?;
+    Ok((tokens > 0.0).then_some(tokens))
+}
+/// Estimate context from typed messages like [`estimate_context_tokens`], converting to records
+/// only the messages after the latest applicable usage.
+///
+/// # Errors
+/// Returns a native JSON error for reached usage or message fields.
+pub fn estimate_message_context_tokens(
+    messages: &[TypedMessage],
+) -> Result<super::ContextUsageEstimate, serde_json::Error> {
+    let stamps: Vec<Option<f64>> = messages.iter().map(message_timestamp).collect();
+    let latest = latest_usage_by(&stamps, |index| message_usage_tokens(&messages[index]))?;
+    let trailing = messages[latest.map_or(0, |(index, _)| index + 1)..]
         .iter()
-        .try_fold(0.0, |sum, message| {
-            Ok::<_, serde_json::Error>(sum + estimate_tokens(message)?)
-        })?;
-    Ok(super::ContextUsageEstimate {
-        tokens: usage_tokens + trailing_tokens,
-        usage_tokens,
-        trailing_tokens,
-        last_usage_index: latest.map(|(index, _)| index),
-    })
+        .map(serde_json::to_value)
+        .collect::<Result<Vec<_>, _>>()?;
+    estimate_after(latest, &trailing)
 }

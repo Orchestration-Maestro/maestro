@@ -8,7 +8,6 @@ use display_support::{
     Env, Probe, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context, padded,
     theme_keys,
 };
-use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, UserBlock};
 use maestro_theme::SyntaxHighlighter;
@@ -529,16 +528,17 @@ fn read_definition_keeps_render_alias_separate_from_execution_input() {
         strip_ansi(&row.render(WIDTH)[0]).unwrap().trim_end(),
         "read alias.txt:2"
     );
-    let rejected = (executable.execute)("call".into(), args, None, None)
-        .now_or_never()
-        .unwrap()
+    let rejected = crate::runtime::run((executable.execute)("call".into(), args, None, None))
         .err()
         .unwrap();
     assert!(rejected.message.contains("path"), "{}", rejected.message);
-    let served = (executable.execute)("call".into(), json!({"path": "alias.txt"}), None, None)
-        .now_or_never()
-        .unwrap()
-        .unwrap();
+    let served = crate::runtime::run((executable.execute)(
+        "call".into(),
+        json!({"path": "alias.txt"}),
+        None,
+        None,
+    ))
+    .unwrap();
     let UserBlock::Text(text) = &served.content[0] else {
         panic!("expected text content");
     };
