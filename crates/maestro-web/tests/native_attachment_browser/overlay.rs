@@ -150,7 +150,7 @@ pub(super) fn sheet_replacement(view: &Rc<DomView>) {
     );
     let old = select(root.as_ref(), ".maestro-excel");
     record.write().unwrap().content = base64::engine::general_purpose::STANDARD.encode(
-        include_bytes!("../../../maestro-app/tests/fixtures/spreadsheet_html/one-sheet.xlsx"),
+        include_bytes!("../../../maestro-office/tests/fixtures/spreadsheet_html/one-sheet.xlsx"),
     );
     refresh(&overlay, view, &root);
     assert!(!old.is_connected());
@@ -178,7 +178,7 @@ pub(super) fn sheet_failure(view: &Rc<DomView>) {
     let (overlay, root) = opened(view, Arc::clone(&record));
     let error = select(root.as_ref(), ".maestro-file-error");
     record.write().unwrap().content = base64::engine::general_purpose::STANDARD.encode(
-        include_bytes!("../../../maestro-app/tests/fixtures/spreadsheet_html/one-sheet.xlsx"),
+        include_bytes!("../../../maestro-office/tests/fixtures/spreadsheet_html/one-sheet.xlsx"),
     );
     refresh(&overlay, view, &root);
     assert!(error.is_same_node(Some(&select(root.as_ref(), ".maestro-file-error"))));

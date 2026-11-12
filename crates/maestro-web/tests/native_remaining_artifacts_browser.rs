@@ -319,7 +319,7 @@ fn assert_workbook_recovery(
             .is_some()
     );
     let linked =
-        include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/active-links.xlsx");
+        include_bytes!("../../maestro-office/tests/fixtures/spreadsheet_html/active-links.xlsx");
     artifact.set_content(base64::engine::general_purpose::STANDARD.encode(linked));
     artifact.update(root, view).unwrap();
     assert_eq!(

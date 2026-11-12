@@ -5,7 +5,7 @@ use super::{
 };
 use crate::ModelRegistry;
 use maestro_models::{Model, ModelThinkingLevel, models_are_equal};
-use maestro_pattern::minimatch_with_nocase;
+use maestro_pattern::matches_glob_with_nocase;
 use std::{
     cmp::Ordering,
     sync::{Arc, PoisonError, RwLock},
@@ -67,8 +67,8 @@ fn glob_matches(pattern: &str, available: &[Arc<RwLock<Model>>]) -> Result<Match
     let mut matches = Vec::new();
     for handle in available {
         let model = handle.read().unwrap_or_else(PoisonError::into_inner);
-        let hit = minimatch_with_nocase(&format!("{}/{}", model.provider, model.id), glob, true)
-            .and_then(|by_full| Ok(by_full || minimatch_with_nocase(&model.id, glob, true)?))
+        let hit = matches_glob_with_nocase(&format!("{}/{}", model.provider, model.id), glob, true)
+            .and_then(|by_full| Ok(by_full || matches_glob_with_nocase(&model.id, glob, true)?))
             .map_err(|error| diagnostic(error.to_string()))?;
         drop(model);
         if hit {

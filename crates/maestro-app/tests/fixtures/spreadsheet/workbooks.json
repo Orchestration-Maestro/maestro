@@ -1,6 +1,6 @@
 [
   {
-    "file": "crates/maestro-app/tests/fixtures/workbooks/formula-no-cache.xlsx",
+    "file": "crates/maestro-office/tests/fixtures/workbooks/formula-no-cache.xlsx",
     "expected": [
       {
         "name": "Cached",
