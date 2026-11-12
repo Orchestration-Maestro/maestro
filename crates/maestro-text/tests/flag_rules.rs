@@ -1,4 +1,17 @@
-//! Environment flag truth against recorded results.
+//! Environment reads and flag truth against recorded results.
+
+/// Probe name that no environment sets.
+const ABSENT: &str = "MAESTRO_TEXT_ABSENT_ENVIRONMENT_PROBE";
+
+#[test]
+fn an_absent_environment_variable_reads_as_no_value() {
+    assert_eq!(maestro_text::environment_variable(ABSENT), None);
+}
+
+#[test]
+fn a_present_environment_variable_reads_its_value() {
+    assert!(maestro_text::environment_variable("PATH").is_some_and(|value| !value.is_empty()));
+}
 
 #[test]
 fn truthy_env_flags_accept_one_true_or_yes_exactly() {
