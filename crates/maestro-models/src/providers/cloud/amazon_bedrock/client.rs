@@ -3,11 +3,12 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, LazyLock, Mutex, PoisonError};
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 use aws_config::BehaviorVersion;
 use aws_sdk_bedrockruntime::config::{Credentials, Region, StalledStreamProtectionConfig, Token};
@@ -269,14 +270,30 @@ pub(super) fn transport(settings: &Settings) -> Route {
     }
 }
 
+/// Senders by connector deadlines, each owning one connection pool.
+type Senders = Mutex<BTreeMap<(Option<Duration>, Option<Duration>), Fetch>>;
+
+/// The senders every request shares, by the proxy and protocol that shape their connections,
+/// so that a later request reuses the connections an earlier one opened.
+static POOLS: LazyLock<Mutex<HashMap<PoolKey, Arc<Senders>>>> = LazyLock::new(Mutex::default);
+
+/// What shapes the connections of a pool: the proxy and whether HTTP/1 only is spoken.
+type PoolKey = (Option<Url>, bool);
+
+/// The shared senders of requests that go through `proxy` over HTTP/1 only when `http1`.
+fn pool(proxy: Option<&Url>, http1: bool) -> Arc<Senders> {
+    let mut pools = POOLS.lock().unwrap_or_else(PoisonError::into_inner);
+    Arc::clone(pools.entry((proxy.cloned(), http1)).or_default())
+}
+
 /// Adapt a sender to the native SDK through the single connector implementation.
 fn bridge(
     fetch: Option<Fetch>,
     route: Route,
+    senders: Arc<Senders>,
     signal: Option<Cancellation>,
     observed: Arc<Mutex<Option<Observed>>>,
 ) -> SharedHttpClient {
-    let senders = Mutex::new(BTreeMap::new());
     http_client_fn(move |settings, _| {
         let fetch = fetch.clone().unwrap_or_else(|| {
             let key = (settings.connect_timeout(), settings.read_timeout());
@@ -313,6 +330,7 @@ pub(super) async fn connect<E: crate::ProviderExecution>(
     let http = bridge(
         options.common.fetch.clone(),
         transport(settings),
+        pool(settings.proxy.as_ref(), settings.http1),
         options.common.signal.clone(),
         Arc::clone(&observed),
     );
@@ -333,7 +351,13 @@ pub(super) async fn connect<E: crate::ProviderExecution>(
     }
     config = match &settings.auth {
         Auth::Chain => {
-            let direct = bridge(None, Route::default(), None, Arc::new(Mutex::new(None)));
+            let direct = bridge(
+                None,
+                Route::default(),
+                pool(None, false),
+                None,
+                Arc::new(Mutex::new(None)),
+            );
             config.credentials_provider(default_provider(
                 settings.profile.as_deref(),
                 &shared,
