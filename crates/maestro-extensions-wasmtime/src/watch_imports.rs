@@ -42,9 +42,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
         "[method]fs-watcher.close",
         |mut store: StoreContextMut<'_, T>, (watch,): (Resource<Watcher>,)| {
             let watch = store.data_mut().ctx().table.get(&watch)?.clone();
-            Ok((watch
-                .0
-                .request(|id, reply| Message::Watch(id, Request::Close(reply))),))
+            Ok((watch.close(),))
         },
     )
 }

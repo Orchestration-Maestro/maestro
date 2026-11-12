@@ -5,6 +5,7 @@ mod keys;
 mod lent;
 mod overlay;
 mod synchronous;
+mod watch;
 mod worker;
 use super::Pump;
 use crate::{

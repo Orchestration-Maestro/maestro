@@ -9,6 +9,13 @@ use std::{
 /// Store-safe lease of one native registration.
 #[derive(Clone)]
 pub struct Watcher(pub(crate) Arc<Lease>);
+impl Watcher {
+    /// Stops delivery from the registration this lease retains.
+    pub(crate) fn close(&self) -> Result<(), String> {
+        self.0
+            .request(|id, reply| super::Message::Watch(id, Request::Close(reply)))
+    }
+}
 /// Operations on the original watch owner.
 pub(crate) enum Request {
     /// Registers the authored callback under its creating facade.
