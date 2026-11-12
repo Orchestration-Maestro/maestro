@@ -1,5 +1,7 @@
 //! Connector deadline tests against a controlled stalled HTTP response.
 
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -285,13 +287,10 @@ async fn read_request(socket: &mut tokio::net::TcpStream) -> Option<()> {
 }
 
 /// Answer every request on every connection with an empty event stream, counting connections.
-async fn serve_empty_streams(
-    listener: tokio::net::TcpListener,
-    connections: Arc<std::sync::atomic::AtomicUsize>,
-) {
+async fn serve_empty_streams(listener: tokio::net::TcpListener, connections: Arc<AtomicUsize>) {
     loop {
         let (mut socket, _) = listener.accept().await.unwrap();
-        connections.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        connections.fetch_add(1, Ordering::SeqCst);
         tokio::spawn(async move {
             while read_request(&mut socket).await.is_some() {
                 let reply = b"HTTP/1.1 200 OK\r\ncontent-type: application/vnd.amazon.eventstream\r\ncontent-length: 0\r\n\r\n";
@@ -306,7 +305,7 @@ fn successive_requests_reuse_one_connection() {
     crate::tests::runtime::run(async {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
-        let connections = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let connections = Arc::new(AtomicUsize::new(0));
         let server = tokio::spawn(serve_empty_streams(listener, Arc::clone(&connections)));
         let settings = Settings {
             endpoint: Some(format!("http://{address}")),
@@ -317,7 +316,7 @@ fn successive_requests_reuse_one_connection() {
             proxy: None,
         };
         for _ in 0..3 {
-            let environment = Environment(std::collections::HashMap::new());
+            let environment = Environment(HashMap::new());
             let service = connect(
                 &settings,
                 &BedrockOptions::<crate::Threaded>::default(),
@@ -331,7 +330,7 @@ fn successive_requests_reuse_one_connection() {
             service.send(prepared).await.unwrap();
         }
         server.abort();
-        assert_eq!(connections.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert_eq!(connections.load(Ordering::SeqCst), 1);
     });
 }
 
