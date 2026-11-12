@@ -185,6 +185,11 @@ impl ToolExecutionComponent {
         row.rebuild()?;
         Ok(Self(row))
     }
+    /// Whether the row already holds exactly `args`.
+    #[must_use]
+    pub fn has_args(&self, args: &Value) -> bool {
+        self.0.args.borrow().as_deref() == Some(args)
+    }
     /// Replaces raw arguments and rebuilds the retained shell.
     ///
     /// # Errors
