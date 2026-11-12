@@ -1,9 +1,9 @@
 //! Pane swap through the daemon's handler: explicit and directional swaps, no-ops and refusals.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_tab, daemon_with_workspaces, event_names, events_after, failure, pair, request,
-    split_pane,
+    add_tab, daemon_with_workspaces, event_names, events_after, failure, pair, request, split_pane,
 };
+use maestro_daemon::state::App;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{
     ErrorBody, PaneSwapReason, PaneSwapResult, ResponseResult, SplitDirection,
@@ -20,12 +20,12 @@ fn swap_of(result: Result<ResponseResult, ErrorBody>) -> PaneSwapResult {
 }
 
 /// The leaves of the first tab of the first workspace, in layout order.
-fn leaves(app: &TestApp) -> Vec<PaneId> {
+fn leaves(app: &App) -> Vec<PaneId> {
     app.state.topology.workspaces[0].tabs[0].layout.pane_ids()
 }
 
 /// Asks for a swap of `source` and `target` and returns the answer.
-fn swap_named(app: &mut TestApp, source: &str, target: &str) -> PaneSwapResult {
+fn swap_named(app: &mut App, source: &str, target: &str) -> PaneSwapResult {
     let wire = json!({"type": "pane.swap", "source_pane_id": source, "target_pane_id": target});
     swap_of(request(app, wire))
 }

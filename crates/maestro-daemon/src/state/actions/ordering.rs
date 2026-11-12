@@ -2,7 +2,7 @@
 
 use super::super::model::DaemonState;
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Moves one workspace before an insertion position, preserving active identities.
     pub fn move_workspace(&mut self, source: usize, insert: usize) -> bool {
         let len = self.topology.workspaces.len();
@@ -55,7 +55,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Moves a supplied ordered block before another workspace, or to the end.
     pub fn move_workspace_block(&mut self, ids: &[String], before: Option<&str>) -> bool {
         use std::collections::{HashMap, HashSet};
@@ -131,7 +131,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Places each workspace directly in its validated destination, without sorting.
     fn reorder_workspaces(&mut self, positions: &std::collections::HashMap<String, usize>) {
         let mut ordered: Vec<_> = (0..positions.len()).map(|_| None).collect();

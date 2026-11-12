@@ -229,7 +229,7 @@ pub(crate) fn navigation_direction(direction: PaneDirection) -> NavDirection {
     }
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Projects one tab's cells and dividers as laid out in the current view area.
     #[must_use]
     pub fn pane_layout_snapshot(&self, workspace: usize, tab: usize) -> Option<PaneLayoutSnapshot> {

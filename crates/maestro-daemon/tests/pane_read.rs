@@ -2,9 +2,10 @@
 //! the record a read answers with.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, answer, daemon_with_workspaces, failure, request, run_in_pane, with_live_daemon,
+    answer, daemon_with_workspaces, failure, request, run_in_pane, with_live_daemon,
 };
 use maestro_daemon::panes::display::TerminalReadSnapshot;
+use maestro_daemon::state::App;
 use maestro_protocol::schema::{
     ErrorBody, PaneInfo, PaneReadResult, ReadFormat, ReadSource, ResponseResult,
 };
@@ -21,7 +22,7 @@ fn read_of(result: Result<ResponseResult, ErrorBody>) -> PaneReadResult {
 /// A live workspace whose shell has run `script` up to a line that starts with `marker`.
 ///
 /// Returns the workspace identity and its root pane.
-async fn printed(app: &mut TestApp, script: &str, marker: &str) -> (String, PaneInfo) {
+async fn printed(app: &mut App, script: &str, marker: &str) -> (String, PaneInfo) {
     let created = answer(app, json!({"type": "workspace.create"})).await;
     let Ok(ResponseResult::WorkspaceCreated {
         workspace,

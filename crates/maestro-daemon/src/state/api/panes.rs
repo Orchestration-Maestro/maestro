@@ -65,7 +65,7 @@ fn observe_foreground(
     Some((job.process_group_id, processes))
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Routes pane and layout commands to their handlers; commands of undelivered families
     /// fail.
     pub(super) async fn dispatch_pane_request(

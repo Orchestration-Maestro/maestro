@@ -7,10 +7,10 @@ use maestro_workspace::tiling::PaneId;
 use std::sync::{Arc, RwLock};
 
 /// Builds `count` workspaces of one tab and one pane each, without child processes.
-fn state(count: usize) -> DaemonState<fn() -> u128> {
+fn state(count: usize) -> DaemonState {
     let mut state = DaemonState::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         Arc::new(RwLock::new(ManifestCache::new(None, None).unwrap())),
     );
     for index in 0..count {
@@ -33,7 +33,7 @@ fn state(count: usize) -> DaemonState<fn() -> u128> {
 }
 
 /// The recovery context of the workspace at `index` and its tab at `tab`.
-fn recovery_of(state: &DaemonState<fn() -> u128>, index: usize, tab: usize) -> PaneMoveRecovery {
+fn recovery_of(state: &DaemonState, index: usize, tab: usize) -> PaneMoveRecovery {
     let workspace = &state.topology.workspaces[index];
     PaneMoveRecovery {
         workspace: index,
@@ -46,7 +46,7 @@ fn recovery_of(state: &DaemonState<fn() -> u128>, index: usize, tab: usize) -> P
 }
 
 /// Takes the root pane of the tab at `tab` of the workspace at `index` out of its workspace.
-fn take(state: &mut DaemonState<fn() -> u128>, index: usize, tab: usize) -> (PaneId, MovedPane) {
+fn take(state: &mut DaemonState, index: usize, tab: usize) -> (PaneId, MovedPane) {
     let pane = state.topology.workspaces[index].tabs[tab].root_pane;
     let taken = state.topology.workspaces[index]
         .take_pane_for_move(pane)

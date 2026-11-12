@@ -1,8 +1,9 @@
 //! Agent reports through the daemon's handler: state, session identity, authority and release.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, accepted, daemon_with_workspaces, event_names, failure, pane_record, pilot, request,
+    accepted, daemon_with_workspaces, event_names, failure, pane_record, pilot, request,
 };
+use maestro_daemon::state::App;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{AgentSessionInfo, AgentStatus, ErrorBody, ResponseResult};
 use maestro_protocol::shared::AgentSessionRefKind;
@@ -12,19 +13,19 @@ use serde_json::{Value, json};
 const SESSION: &str = "/sessions/pi-session.jsonl";
 
 /// A daemon whose only pane runs a recognized agent process that looks idle.
-fn piloted() -> TestApp {
+fn piloted() -> App {
     let mut app = daemon_with_workspaces(&["/one"]);
     pilot(&mut app, AgentState::Idle);
     app
 }
 
 /// Anchors the official integration's authority with session and working-state reports.
-fn anchored(app: &mut TestApp) {
+fn anchored(app: &mut App) {
     anchored_under(app, "maestro:pi");
 }
 
 /// Anchors the official integration's authority with reports under the supplied `source`.
-fn anchored_under(app: &mut TestApp, source: &str) {
+fn anchored_under(app: &mut App, source: &str) {
     let session = json!({
         "type": "pane.report_agent_session", "pane_id": "w1:p1", "source": source,
         "agent": "pi", "agent_session_path": SESSION, "session_start_source": "startup",

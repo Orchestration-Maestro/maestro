@@ -26,7 +26,7 @@ use maestro_protocol::{
 };
 use maestro_settings::SettingsManager;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Answers one workspace command after applying every queued internal observation.
     ///
     /// A command that changes what a view shows marks render work. `settings` and `paths`

@@ -4,7 +4,7 @@ use crate::{state::model::DaemonState, terminal::model::TerminalState};
 use maestro_workspace::tiling::PaneId;
 use std::{collections::HashSet, time::Instant};
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Earliest settling or launch deadline across the retained terminal owners.
     pub(crate) fn next_managed_agent_deadline(&self) -> Option<Instant> {
         self.terminals

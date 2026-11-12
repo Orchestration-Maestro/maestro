@@ -11,7 +11,7 @@ use crate::settings::{
 use maestro_settings::{SettingsError, SettingsManager};
 use std::{path::Path, time::Instant};
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Reloads settings, retaining rejected areas and reporting unrelated storage errors separately.
     pub async fn reload_config(
         &mut self,

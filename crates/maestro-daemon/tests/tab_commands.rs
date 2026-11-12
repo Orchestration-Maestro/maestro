@@ -1,10 +1,11 @@
 //! Tab commands through the daemon's handler: targets, ordering, close and creation.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group,
-    request, run_in_pane, with_live_daemon, workspace_ids,
+    add_workspaces, answer, daemon_with_workspaces, events_after, failure, join_group, request,
+    run_in_pane, with_live_daemon, workspace_ids,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, TabInfo};
@@ -12,7 +13,7 @@ use serde_json::json;
 use std::path::PathBuf;
 
 /// Adds `count` tabs without processes to the workspace at `index`.
-fn add_tabs(app: &mut TestApp, index: usize, count: usize) {
+fn add_tabs(app: &mut App, index: usize, count: usize) {
     for _ in 0..count {
         app.state
             .topology
@@ -40,7 +41,7 @@ fn reported(result: Result<ResponseResult, ErrorBody>) -> TabInfo {
 }
 
 /// The public tab identities of the workspace at `index`, in display order.
-fn tab_ids(app: &TestApp, index: usize) -> Vec<String> {
+fn tab_ids(app: &App, index: usize) -> Vec<String> {
     let workspace = &app.state.topology.workspaces[index];
     workspace
         .tabs
@@ -50,7 +51,7 @@ fn tab_ids(app: &TestApp, index: usize) -> Vec<String> {
 }
 
 /// A workspace with three tabs and a second workspace with one.
-fn three_tabs() -> TestApp {
+fn three_tabs() -> App {
     let mut app = daemon_with_workspaces(&["/tabs", "/other"]);
     add_tabs(&mut app, 0, 2);
     app
@@ -91,7 +92,7 @@ fn tab_targets_and_creation_preserve_source_policy() {
 }
 
 /// Every command naming a missing tab fails with its exact text and publishes nothing.
-fn assert_missing_tabs_change_nothing(app: &mut TestApp) {
+fn assert_missing_tabs_change_nothing(app: &mut App) {
     let sequence = app.event_hub.current_sequence();
     for missing in ["w1:t9", "w1:9", "t_w1_9", "w9:t1", "", "w1"] {
         let expected = failure("tab_not_found", &format!("tab {missing} not found"));
@@ -109,7 +110,7 @@ fn assert_missing_tabs_change_nothing(app: &mut TestApp) {
 }
 
 /// Creation targets are resolved before any child starts.
-fn assert_creation_targets_resolve_before_spawning(app: &mut TestApp) {
+fn assert_creation_targets_resolve_before_spawning(app: &mut App) {
     let create = json!({"type": "tab.create", "workspace_id": "w9"});
     assert_eq!(
         request(app, create),

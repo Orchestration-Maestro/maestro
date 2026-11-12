@@ -5,7 +5,7 @@ use crate::{
     state::model::{DaemonState, ToastKind, ToastNotification},
 };
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Refreshes detection diagnostics and summaries from the runtime's shared snapshot.
     pub(super) fn record_manifest_update(
         &mut self,

@@ -6,7 +6,7 @@ use maestro_settings::SettingsManager;
 use maestro_workspace::terminal_id::TerminalId;
 use std::{future::Future, time::Instant};
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Runs current daemon producers over one channel selection and one deadline timer,
     /// answering each workspace command from `requests` in arrival order.
     ///

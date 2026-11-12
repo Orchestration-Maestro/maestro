@@ -19,7 +19,7 @@ const TITLE_MAX_CHARS: usize = 80;
 /// Longest notification body, in Unicode scalars.
 const BODY_MAX_CHARS: usize = 240;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Shows a caller's notification as a workspace toast when that delivery is configured.
     ///
     /// A retained toast reports `busy` and a delivery less than one second after the last

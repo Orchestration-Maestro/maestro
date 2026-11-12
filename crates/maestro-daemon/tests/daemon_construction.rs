@@ -12,18 +12,12 @@ use maestro_daemon::{
 use std::sync::{Arc, RwLock};
 
 /// Constructs the real daemon owner without creating a workspace or native child.
-fn app(config: &Config) -> App<fn() -> u128> {
+fn app(config: &Config) -> App {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(&[], manifests);
-    App::new(
-        config,
-        (|| 0) as fn() -> u128,
-        launch,
-        receiver,
-        EventHub::default(),
-    )
+    App::new(config, || 0, launch, receiver, EventHub::default())
 }
 
 #[test]

@@ -56,7 +56,7 @@ struct TabBarCommandRuntime {
     task: Option<StatusCommandTask>,
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Replaces status producers and invalidates every previous command result.
     pub fn configure_tab_bar_status(
         &mut self,

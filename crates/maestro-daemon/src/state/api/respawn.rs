@@ -7,7 +7,7 @@ use crate::{
 };
 use maestro_workspace::tiling::PaneId;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Attempts replacement before pane removal; failure leaves ordinary close policy intact.
     pub(super) fn respawn_shell_after_exit(&mut self, event: &AppEvent) -> bool {
         if self.state.should_quit.0 {

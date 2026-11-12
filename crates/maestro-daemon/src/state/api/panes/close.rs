@@ -7,7 +7,7 @@ use maestro_protocol::{
     schema::{ErrorBody, ResponseResult},
 };
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Closes one pane with its terminal; the last pane of a tab closes the tab, and the
     /// last pane of a workspace closes the workspace.
     ///

@@ -19,14 +19,14 @@ fn setup_entry() {
 }
 
 /// Constructs real native ownership without a shell emitting unsolicited titles.
-fn fixture(args: &[String]) -> (App<fn() -> u128>, PaneId) {
+fn fixture(args: &[String]) -> (App, PaneId) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(args, manifests);
     let mut app = App::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         EventHub::default(),
@@ -62,7 +62,7 @@ fn fixture(args: &[String]) -> (App<fn() -> u128>, PaneId) {
 }
 
 /// Feeds the actual terminal parser independently of native process output timing.
-fn title(app: &App<fn() -> u128>, bytes: &[u8]) {
+fn title(app: &App, bytes: &[u8]) {
     let runtime = app.terminal_runtimes.values().next().unwrap();
     let _ = runtime.process_pty_bytes(
         app.state.topology.workspaces[0].tabs[0].root_pane,
@@ -73,7 +73,7 @@ fn title(app: &App<fn() -> u128>, bytes: &[u8]) {
 }
 
 /// Counts the shared protocol events, not a separate title notification.
-fn updates(app: &App<fn() -> u128>) -> usize {
+fn updates(app: &App) -> usize {
     app.event_hub
         .events_after(0)
         .iter()
@@ -128,7 +128,7 @@ async fn check_titles(args: &[String]) {
 }
 
 /// First publication exposes complete pane and agent presentation.
-async fn check_initial_title(app: &mut App<fn() -> u128>, pane: PaneId, sources: &HashSet<PaneId>) {
+async fn check_initial_title(app: &mut App, pane: PaneId, sources: &HashSet<PaneId>) {
     title(app, "\x1b]0;⠋ 修复🙂标题\x07".as_bytes());
     let changes = app.sync_terminal_titles(sources).await;
     assert!(changes.raw_changed && changes.stripped_changed);
@@ -147,7 +147,7 @@ async fn check_initial_title(app: &mut App<fn() -> u128>, pane: PaneId, sources:
 }
 
 /// Spinner-only updates retain raw text without semantic publication.
-async fn check_spinner_title(app: &mut App<fn() -> u128>, pane: PaneId, sources: &HashSet<PaneId>) {
+async fn check_spinner_title(app: &mut App, pane: PaneId, sources: &HashSet<PaneId>) {
     title(app, "\x1b]2;⠙ 修复🙂标题\x1b\\".as_bytes());
     let changes = app.sync_terminal_titles(sources).await;
     assert!(changes.raw_changed && !changes.stripped_changed);
@@ -203,7 +203,7 @@ fn daemon_sidebar_redraws_only_for_the_configured_title_form() {
     let (launch, receiver) = spawning::launch_inputs(&[], manifests);
     let mut app = App::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         EventHub::default(),

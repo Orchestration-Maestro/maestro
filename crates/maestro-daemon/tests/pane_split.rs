@@ -1,10 +1,11 @@
 //! Pane split through the daemon's handler: targets, focus, ratio, launch inputs and publication.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_tab, add_workspaces, answer, daemon_with_workspaces, event_names, events_after,
-    failure, request, root_pane, run_in_pane, split_pane, with_live_daemon,
+    add_tab, add_workspaces, answer, daemon_with_workspaces, event_names, events_after, failure,
+    request, root_pane, run_in_pane, split_pane, with_live_daemon,
 };
 use maestro_daemon::settings::model::NewTerminalCwdConfig;
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirection};
@@ -23,7 +24,7 @@ fn split_of(result: Result<ResponseResult, ErrorBody>) -> PaneInfo {
 /// A workspace with a background second tab of two panes, the first tab's root focused.
 ///
 /// Returns the first tab's root, the background tab's root and the background tab's focused pane.
-fn background_tab(app: &mut TestApp) -> (PaneId, PaneId, PaneId) {
+fn background_tab(app: &mut App) -> (PaneId, PaneId, PaneId) {
     add_workspaces(app, &["/tabs"]);
     let active = root_pane(app, 0);
     let target = add_tab(app, 0);

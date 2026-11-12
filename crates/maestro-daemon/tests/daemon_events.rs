@@ -18,8 +18,6 @@ use maestro_test_directory::temporary_root;
 use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::tiling::PaneId;
 
-/// Daemon owner driven by a deterministic public-identity clock.
-type TestApp = App<fn() -> u128>;
 use std::{sync::Arc, time::Instant};
 use tokio::sync::mpsc;
 
@@ -106,7 +104,7 @@ async fn check_live_context(args: &[String], delayed: bool) {
 }
 
 /// Checks both notification destinations after the exact scheduled deadline.
-fn assert_delayed_context(app: &mut TestApp) {
+fn assert_delayed_context(app: &mut App) {
     assert!(app.state.toast.is_none());
     let deadline = app
         .state
@@ -143,12 +141,12 @@ fn context_directories() -> maestro_test_directory::Scratch {
 }
 
 /// Builds the background workspace without admitting the process's new directory.
-fn context_app(directory: std::path::PathBuf, delayed: bool) -> TestApp {
+fn context_app(directory: std::path::PathBuf, delayed: bool) -> App {
     let config = Config::default();
     let (launch, event_rx) = launch_inputs(&[], support::manifest_cache());
     let mut app = App::new(
         &config,
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         event_rx,
         maestro_daemon::service::event_hub::EventHub::default(),
@@ -185,7 +183,7 @@ fn daemon_delayed_workspace_toast_context_uses_live_root_runtime_cwd_label() {
 }
 
 /// Adds one temporary overlay split through the topology's consuming callback.
-fn overlay_app(previous_zoomed: bool) -> (TestApp, PaneId, PaneId) {
+fn overlay_app(previous_zoomed: bool) -> (App, PaneId, PaneId) {
     let mut app = context_app("/overlay".into(), false);
     app.state.active = Some(0);
     app.state.mode = maestro_daemon::state::model::Mode::Terminal;
@@ -539,10 +537,7 @@ fn assert_terminal_delivery_keeps_toast(delayed: bool) {
 }
 
 /// Observes a running replacement shell and its actual injected public identities.
-async fn assert_shell_identity(
-    app: &TestApp,
-    terminal: &maestro_workspace::terminal_id::TerminalId,
-) {
+async fn assert_shell_identity(app: &App, terminal: &maestro_workspace::terminal_id::TerminalId) {
     let runtime = app.terminal_runtimes.get(terminal).unwrap();
     runtime.send_bytes(b"printf '\\nspawned:<%s>|<%s>|<%s>\\n' \"$MAESTRO_WORKSPACE_ID\" \"$MAESTRO_TAB_ID\" \"$MAESTRO_PANE_ID\"\n".to_vec()).await.unwrap();
     loop {
@@ -728,7 +723,7 @@ async fn check_workspace_creation(args: &[String]) {
     let (launch, receiver) = launch_inputs(args, support::manifest_cache());
     let mut app = App::new(
         &config,
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         maestro_daemon::service::event_hub::EventHub::default(),
@@ -825,7 +820,7 @@ fn agent_event_publication_keeps_complete_ordered_payloads() {
 }
 
 /// Initial identity precedes its complete execution-state payload.
-fn assert_initial_agent_events(app: &TestApp) {
+fn assert_initial_agent_events(app: &App) {
     use maestro_protocol::{events::EventData, schema::AgentStatus};
     let events = app.event_hub.events_after(0);
     assert_eq!(events.len(), 2);

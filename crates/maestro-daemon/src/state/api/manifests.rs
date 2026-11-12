@@ -10,7 +10,7 @@ use maestro_detection::{
 use maestro_protocol::schema::{AgentManifestInfo, ErrorBody, ResponseResult};
 use std::path::Path;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Reports every active manifest and the last catalogue check, leaving detection as it is.
     pub(super) fn agent_manifest_status(&mut self, paths: &DaemonPaths) -> ResponseResult {
         self.state.agent_manifest_summaries = self

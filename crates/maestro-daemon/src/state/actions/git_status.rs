@@ -6,7 +6,7 @@ use crate::{
 };
 use maestro_workspace::spaces::{Workspace, WorkspaceGitStatus};
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Apply observations to the workspaces they still describe and report visible changes.
     ///
     /// An observation applies only while its workspace still follows the directory it was

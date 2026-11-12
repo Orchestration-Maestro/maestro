@@ -52,7 +52,7 @@ pub enum TerminalTargetError {
     },
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Resolves terminal identity, current public pane identity, then agent name or label.
     ///
     /// # Errors

@@ -71,7 +71,7 @@ pub(super) enum Resolution {
     Move(Destination),
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Resolves the requested destination against the live topology.
     pub(super) fn resolve_move_destination(
         &self,

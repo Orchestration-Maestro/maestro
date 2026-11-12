@@ -1,6 +1,7 @@
 //! Pane renaming through the daemon's handler: the label and its publication.
 #![cfg(target_os = "linux")]
-use crate::support::api::{TestApp, daemon_with_workspaces, events_after, failure, request};
+use crate::support::api::{daemon_with_workspaces, events_after, failure, request};
+use maestro_daemon::state::App;
 use maestro_protocol::{
     events::EventData,
     schema::{ErrorBody, PaneInfo, ResponseResult},
@@ -25,7 +26,7 @@ fn rename(label: Option<&str>) -> Value {
 }
 
 /// The records of the panes published as updated, in order.
-fn updated_panes(app: &TestApp) -> Vec<PaneInfo> {
+fn updated_panes(app: &App) -> Vec<PaneInfo> {
     events_after(app, 0)
         .into_iter()
         .filter_map(|event| match event {
@@ -38,7 +39,7 @@ fn updated_panes(app: &TestApp) -> Vec<PaneInfo> {
 #[test]
 fn renaming_sets_trims_and_clears_the_label() {
     let mut app = daemon_with_workspaces(&["/one"]);
-    let retained = |app: &TestApp| {
+    let retained = |app: &App| {
         let id = app.state.topology.workspaces[0]
             .terminal_id(app.state.topology.workspaces[0].tabs[0].root_pane)
             .unwrap();

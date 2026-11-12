@@ -34,7 +34,7 @@ fn resolve_new_terminal_cwd(policy: &NewTerminalCwdConfig, follow_cwd: Option<Pa
     }
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Retains creation intent or creates immediately, through the workspace command
     /// handler, when no name prompt is configured.
     ///
@@ -320,7 +320,7 @@ pub(super) fn spawn_root(
     Ok((terminal, runtime))
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Projects a tab's stable identity independently of its display position.
     #[must_use]
     pub fn tab_info(
@@ -392,7 +392,7 @@ impl<C: FnMut() -> u128> App<C> {
     }
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Publishes a new workspace, then its first tab with each of its panes.
     pub(super) async fn emit_workspace_open_events(&self, index: usize) {
         let Some(workspace) = self.workspace_info(index) else {

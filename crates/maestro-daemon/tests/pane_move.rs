@@ -1,10 +1,11 @@
 //! Pane move through the daemon's handler: destinations, identity, focus, events and refusals.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_tab, daemon_with_workspaces, event_names, events_after, failure, join_group,
-    request, root_pane, split_pane, workspace_ids,
+    add_tab, daemon_with_workspaces, event_names, events_after, failure, join_group, request,
+    root_pane, split_pane, workspace_ids,
 };
 use maestro_daemon::events::AppEvent;
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::{CopyModeState, Mode};
 use maestro_daemon::state::terminal_targets::TerminalTargetError;
 use maestro_detection::agents::Agent;
@@ -33,7 +34,7 @@ fn into_tab(tab: &str, target: Option<&str>, split: &str) -> Value {
 }
 
 /// One workspace with a first tab of a single pane and a second tab of a single pane.
-fn two_tabs() -> TestApp {
+fn two_tabs() -> App {
     let mut app = daemon_with_workspaces(&["/issue"]);
     add_tab(&mut app, 0);
     app
@@ -41,7 +42,7 @@ fn two_tabs() -> TestApp {
 
 /// The first tab's only pane moved beside the second tab's pane at ratio 0.25, with focus,
 /// together with the terminal identity the pane had before.
-fn into_the_second_tab() -> (TestApp, PaneMoveResult, String) {
+fn into_the_second_tab() -> (App, PaneMoveResult, String) {
     let mut app = two_tabs();
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root_pane(&app, 0))
@@ -141,7 +142,7 @@ fn a_focused_move_returns_copy_mode_to_the_moved_pane() {
 
 /// An agent pane alone in the first of two workspaces, moved beside the second's pane
 /// without focus, with the terminal identity it had before.
-fn across_workspaces() -> (TestApp, PaneMoveResult, String) {
+fn across_workspaces() -> (App, PaneMoveResult, String) {
     let mut app = daemon_with_workspaces(&["/issue", "/other"]);
     let source = root_pane(&app, 0);
     let terminal = app.state.topology.workspaces[0]
@@ -298,7 +299,7 @@ fn moving_a_pane_to_a_new_tab_of_another_workspace_renumbers_it_there() {
 
 /// The only pane of the only workspace promoted to a focused new workspace, with the
 /// terminal identity the pane had before.
-fn promoted() -> (TestApp, PaneMoveResult, String) {
+fn promoted() -> (App, PaneMoveResult, String) {
     let mut app = daemon_with_workspaces(&["/issue"]);
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root_pane(&app, 0))

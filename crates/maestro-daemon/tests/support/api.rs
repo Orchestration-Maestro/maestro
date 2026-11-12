@@ -20,35 +20,26 @@ use maestro_workspace::{
 use serde_json::{Value, json};
 use std::{sync::Arc, time::Instant};
 
-/// Daemon owner with a deterministic identity clock.
-pub type TestApp = App<fn() -> u128>;
-
 /// A daemon without workspaces, built from `config`.
-pub fn daemon_with(config: &Config) -> TestApp {
+pub fn daemon_with(config: &Config) -> App {
     let (launch, receiver) = launch_inputs(&[], manifest_cache());
-    App::new(
-        config,
-        (|| 0) as fn() -> u128,
-        launch,
-        receiver,
-        EventHub::default(),
-    )
+    App::new(config, || 0, launch, receiver, EventHub::default())
 }
 
 /// A daemon without workspaces.
-pub fn daemon() -> TestApp {
+pub fn daemon() -> App {
     daemon_with(&Config::default())
 }
 
 /// A daemon with one workspace per directory, without processes; the first is active.
-pub fn daemon_with_workspaces(cwds: &[&str]) -> TestApp {
+pub fn daemon_with_workspaces(cwds: &[&str]) -> App {
     let mut app = daemon();
     add_workspaces(&mut app, cwds);
     app
 }
 
 /// Adds one workspace per directory, without processes, activating the first if none is.
-pub fn add_workspaces(app: &mut TestApp, cwds: &[&str]) {
+pub fn add_workspaces(app: &mut App, cwds: &[&str]) {
     for cwd in cwds {
         app.state
             .topology
@@ -63,7 +54,7 @@ pub fn add_workspaces(app: &mut TestApp, cwds: &[&str]) {
 
 /// Splits `target` in the workspace at `workspace` without a process or a focus change.
 pub fn split_pane(
-    app: &mut TestApp,
+    app: &mut App,
     workspace: usize,
     target: PaneId,
     direction: SplitDirection,
@@ -88,7 +79,7 @@ pub fn split_pane(
 }
 
 /// Adds a tab without a process to the workspace at `workspace` and returns its root pane.
-pub fn add_tab(app: &mut TestApp, workspace: usize) -> PaneId {
+pub fn add_tab(app: &mut App, workspace: usize) -> PaneId {
     let (pane, ()) = app
         .state
         .topology
@@ -100,7 +91,7 @@ pub fn add_tab(app: &mut TestApp, workspace: usize) -> PaneId {
 }
 
 /// Joins the workspace at `index` to the repository group `key`.
-pub fn join_group(app: &mut TestApp, index: usize, key: &str, linked: bool) {
+pub fn join_group(app: &mut App, index: usize, key: &str, linked: bool) {
     app.state.topology.workspaces[index].worktree_space = Some(WorktreeSpaceMembership {
         key: key.into(),
         label: "repo".into(),
@@ -111,7 +102,7 @@ pub fn join_group(app: &mut TestApp, index: usize, key: &str, linked: bool) {
 }
 
 /// Records that fallback detection saw `agent` in `state` on the first pane of the first workspace.
-pub fn detect(app: &mut TestApp, agent: Agent, state: AgentState) {
+pub fn detect(app: &mut App, agent: Agent, state: AgentState) {
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root_pane(app, 0))
         .unwrap()
@@ -132,7 +123,7 @@ pub fn detect(app: &mut TestApp, agent: Agent, state: AgentState) {
 }
 
 /// Gives the first pane of the first workspace a recognized agent process with fallback `state`.
-pub fn pilot(app: &mut TestApp, state: AgentState) {
+pub fn pilot(app: &mut App, state: AgentState) {
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root_pane(app, 0))
         .unwrap()
@@ -146,12 +137,12 @@ pub fn pilot(app: &mut TestApp, state: AgentState) {
 }
 
 /// The root pane of the first tab of the workspace at `workspace`.
-pub fn root_pane(app: &TestApp, workspace: usize) -> PaneId {
+pub fn root_pane(app: &App, workspace: usize) -> PaneId {
     app.state.topology.workspaces[workspace].tabs[0].root_pane
 }
 
 /// A daemon with one workspace whose first tab holds a pane on the left and one on the right.
-pub fn pair() -> (TestApp, PaneId, PaneId) {
+pub fn pair() -> (App, PaneId, PaneId) {
     let mut app = daemon_with_workspaces(&["/one"]);
     let left = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, left, SplitDirection::Right);
@@ -175,13 +166,13 @@ pub fn command(wire: Value) -> RpcCommand {
 }
 
 /// Answers `wire`, which must succeed with the plain acknowledgement.
-pub fn accepted(app: &mut TestApp, wire: Value) {
+pub fn accepted(app: &mut App, wire: Value) {
     let text = wire.to_string();
     assert_eq!(request(app, wire), Ok(ResponseResult::Ok {}), "{text}");
 }
 
 /// The pane record `pane.get` returns for the pane the workspace owns.
-pub fn pane_record(app: &mut TestApp, pane: &str) -> PaneInfo {
+pub fn pane_record(app: &mut App, pane: &str) -> PaneInfo {
     match request(app, json!({"type": "pane.get", "pane_id": pane})) {
         Ok(ResponseResult::PaneInfo { pane }) => pane,
         other => panic!("expected a pane: {other:?}"),
@@ -189,18 +180,18 @@ pub fn pane_record(app: &mut TestApp, pane: &str) -> PaneInfo {
 }
 
 /// Answers the wire-form `command` through the daemon's handler.
-pub fn request(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
+pub fn request(app: &mut App, wire: Value) -> Result<ResponseResult, ErrorBody> {
     block_on(answer(app, wire))
 }
 
 /// Answers `wire` through the handler from inside a running test runtime.
-pub async fn answer(app: &mut TestApp, wire: Value) -> Result<ResponseResult, ErrorBody> {
+pub async fn answer(app: &mut App, wire: Value) -> Result<ResponseResult, ErrorBody> {
     answer_command(app, command(wire)).await
 }
 
 /// Answers a decoded `command` from inside a running test runtime.
 pub async fn answer_command(
-    app: &mut TestApp,
+    app: &mut App,
     command: RpcCommand,
 ) -> Result<ResponseResult, ErrorBody> {
     let mut settings = settings();
@@ -217,7 +208,7 @@ pub fn failure(code: &str, message: &str) -> Result<ResponseResult, ErrorBody> {
 }
 
 /// Every event published after `sequence`.
-pub fn events_after(app: &TestApp, sequence: u64) -> Vec<EventData> {
+pub fn events_after(app: &App, sequence: u64) -> Vec<EventData> {
     app.event_hub
         .events_after(sequence)
         .into_iter()
@@ -226,7 +217,7 @@ pub fn events_after(app: &TestApp, sequence: u64) -> Vec<EventData> {
 }
 
 /// The wire names of every event published after `sequence`, in order.
-pub fn event_names(app: &TestApp, sequence: u64) -> Vec<String> {
+pub fn event_names(app: &App, sequence: u64) -> Vec<String> {
     events_after(app, sequence)
         .iter()
         .map(|event| {
@@ -239,7 +230,7 @@ pub fn event_names(app: &TestApp, sequence: u64) -> Vec<String> {
 }
 
 /// The stable identities of the workspaces in display order.
-pub fn workspace_ids(app: &TestApp) -> Vec<String> {
+pub fn workspace_ids(app: &App) -> Vec<String> {
     app.state
         .topology
         .workspaces
@@ -250,12 +241,7 @@ pub fn workspace_ids(app: &TestApp) -> Vec<String> {
 
 /// Types `script` into the shell of `terminal` and returns the visible text once a line
 /// starts with `marker`.
-pub async fn run_in_pane(
-    app: &TestApp,
-    terminal: &TerminalId,
-    script: &str,
-    marker: &str,
-) -> String {
+pub async fn run_in_pane(app: &App, terminal: &TerminalId, script: &str, marker: &str) -> String {
     let runtime = app.terminal_runtimes.get(terminal).unwrap();
     runtime
         .send_bytes(script.as_bytes().to_vec())
@@ -265,7 +251,7 @@ pub async fn run_in_pane(
 }
 
 /// The visible text of `terminal` once a line starts with `marker`.
-pub async fn wait_for_line(app: &TestApp, terminal: &TerminalId, marker: &str) -> String {
+pub async fn wait_for_line(app: &App, terminal: &TerminalId, marker: &str) -> String {
     let runtime = app.terminal_runtimes.get(terminal).unwrap();
     loop {
         let _ = app.launch.render_dirty.take();
@@ -279,7 +265,7 @@ pub async fn wait_for_line(app: &TestApp, terminal: &TerminalId, marker: &str) -
 
 /// Runs `body` alone in a process of its own, against a daemon whose panes start real
 /// `/bin/sh` shells in the temporary root, then stops every pane it started.
-pub fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut TestApp)) {
+pub fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut App)) {
     use maestro_daemon::settings::model::NewTerminalCwdConfig;
     use maestro_test_process::{TestProcess, run_alone};
     if run_alone(test).unwrap() {
@@ -298,13 +284,7 @@ pub fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut TestApp)) {
                     .to_string(),
             );
             let (launch, receiver) = launch_inputs(args, manifest_cache());
-            let mut app = App::new(
-                &config,
-                (|| 0) as fn() -> u128,
-                launch,
-                receiver,
-                EventHub::default(),
-            );
+            let mut app = App::new(&config, || 0, launch, receiver, EventHub::default());
             block_on(async {
                 body(&mut app).await;
                 for (_, runtime) in app.terminal_runtimes.drain_for_handoff() {

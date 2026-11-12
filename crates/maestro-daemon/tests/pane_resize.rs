@@ -1,10 +1,11 @@
 //! Pane resize through the daemon's handler: which divider moves, by how much, and what is published.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, answer_command, daemon_with_workspaces, event_names, events_after, failure, request,
-    root_pane, split_pane,
+    answer_command, daemon_with_workspaces, event_names, events_after, failure, request, root_pane,
+    split_pane,
 };
 use crate::support::runtime::block_on;
+use maestro_daemon::state::App;
 use maestro_protocol::events::EventData;
 use maestro_protocol::rpc_types::RpcCommand;
 use maestro_protocol::schema::{
@@ -23,7 +24,7 @@ fn resize_of(result: Result<ResponseResult, ErrorBody>) -> PaneResizeResult {
 }
 
 /// A one-workspace daemon whose first tab holds a pane on the left and the focused one on the right.
-fn pair() -> (TestApp, PaneId, PaneId) {
+fn pair() -> (App, PaneId, PaneId) {
     let mut app = daemon_with_workspaces(&["/one"]);
     let left = root_pane(&app, 0);
     let right = split_pane(&mut app, 0, left, SplitDirection::Right);
@@ -34,7 +35,7 @@ fn pair() -> (TestApp, PaneId, PaneId) {
 }
 
 /// The ratio of the tab's only divider.
-fn ratio(app: &TestApp) -> f32 {
+fn ratio(app: &App) -> f32 {
     app.state.topology.workspaces[0].tabs[0]
         .layout
         .splits(app.state.view_area())[0]
@@ -42,7 +43,7 @@ fn ratio(app: &TestApp) -> f32 {
 }
 
 /// Resizes `pane` rightward by a decoded amount, which the wire form cannot carry.
-fn resize_by(app: &mut TestApp, amount: Option<f32>) -> PaneResizeResult {
+fn resize_by(app: &mut App, amount: Option<f32>) -> PaneResizeResult {
     let command = RpcCommand::PaneResize(PaneResizeParams {
         pane_id: Some("w1:p1".into()),
         direction: PaneDirection::Right,
