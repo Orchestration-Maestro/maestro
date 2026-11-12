@@ -164,8 +164,9 @@ Failures report at most eight field diagnostics in evaluation order,
 followed by the original arguments as two-space-indented JSON. Repeated identical
 ordinary messages, including missing-dependency messages, appear only once;
 separate refinements may retain equal messages. Numeric-index
-keys precede ordinary insertion-ordered keys. Returned diagnostics have an error name and message, without a manufactured
-stack or code. A supplied callback error instead retains its original fields.
+keys precede ordinary insertion-ordered keys. Returned diagnostics have an error
+name and message, without a manufactured stack or code. A supplied callback error
+instead retains its original fields.
 
 The agent's local tool records retain schema callbacks through preparation and typed
 execution. Model requests use `Tool::data()` to copy the schema without its executable
