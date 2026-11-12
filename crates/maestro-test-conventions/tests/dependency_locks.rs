@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use cargo_metadata::{Metadata, MetadataCommand};
+use cargo_metadata::{DependencyKind, Metadata, MetadataCommand};
 
 /// Resolve the complete delivered workspace without rewriting its owning inputs.
 #[test]
@@ -68,6 +68,8 @@ fn shipped_binary_tokio_has_no_test_util() {
             "--offline",
             "-p",
             "maestro",
+            "--target",
+            "all",
             "-e",
             "features,normal,build",
             "-i",
@@ -76,7 +78,11 @@ fn shipped_binary_tokio_has_no_test_util() {
         .current_dir(&root)
         .output()
         .unwrap();
-    assert!(tree.status.success());
+    assert!(
+        tree.status.success(),
+        "{}",
+        String::from_utf8_lossy(&tree.stderr)
+    );
     let tree = String::from_utf8(tree.stdout).unwrap();
     assert!(
         tree.lines()
@@ -89,6 +95,70 @@ fn shipped_binary_tokio_has_no_test_util() {
     assert!(
         leaked.is_empty(),
         "tokio test-util reaches production: {leaked:?}"
+    );
+}
+
+/// Production sources under `dir`, in the order found, excluding unit-test files.
+fn production_sources(dir: &Path, out: &mut Vec<PathBuf>) {
+    for entry in fs::read_dir(dir).unwrap() {
+        let path = entry.unwrap().path();
+        let name = path.file_name().unwrap().to_string_lossy().into_owned();
+        if path.is_dir() {
+            if name != "tests" {
+                production_sources(&path, out);
+            }
+        } else if path.extension().is_some_and(|ext| ext == "rs") && name != "tests.rs" {
+            out.push(path);
+        }
+    }
+}
+
+/// Every member whose production code calls a tokio macro declares tokio's `macros` feature.
+#[test]
+fn members_declare_tokio_macros_where_production_code_uses_them() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let metadata = MetadataCommand::new()
+        .current_dir(&root)
+        .other_options(vec!["--offline".into(), "--locked".into()])
+        .exec()
+        .unwrap();
+    let mut undeclared = Vec::new();
+    for package in metadata.workspace_packages() {
+        let declared: Vec<&String> = package
+            .dependencies
+            .iter()
+            .filter(|dep| dep.name == "tokio" && dep.kind == DependencyKind::Normal)
+            .flat_map(|dep| &dep.features)
+            .collect();
+        if declared.is_empty() || declared.iter().any(|feature| *feature == "macros") {
+            continue;
+        }
+        let mut sources = Vec::new();
+        production_sources(
+            package
+                .manifest_path
+                .parent()
+                .unwrap()
+                .join("src")
+                .as_std_path(),
+            &mut sources,
+        );
+        for path in sources {
+            let text = fs::read_to_string(&path).unwrap();
+            let production = text.split("#[cfg(test)]").next().unwrap();
+            if production.lines().any(|line| {
+                !line.trim_start().starts_with("//")
+                    && ["select", "join", "try_join", "pin"]
+                        .iter()
+                        .any(|name| line.contains(&format!("tokio::{name}!")))
+            }) {
+                undeclared.push(format!("{}: {}", package.name, path.display()));
+            }
+        }
+    }
+    assert!(
+        undeclared.is_empty(),
+        "tokio macros used without the `macros` feature: {undeclared:#?}"
     );
 }
 
