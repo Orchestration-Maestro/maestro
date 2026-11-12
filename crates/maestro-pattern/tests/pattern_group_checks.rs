@@ -1,6 +1,6 @@
 //! Group behavior through package matching.
 
-use maestro_pattern::minimatch;
+use maestro_pattern::matches_glob;
 use std::collections::BTreeMap;
 
 /// Replays exact tuples through the public operation.
@@ -14,7 +14,7 @@ fn check_group(name: &str) {
         let (pattern, input, expected): (String, String, bool) =
             serde_json::from_value(row.clone()).unwrap();
         assert_eq!(
-            minimatch(&input, &pattern),
+            matches_glob(&input, &pattern),
             Ok(expected),
             "{name} case {index}"
         );
@@ -97,13 +97,13 @@ fn group_members_consume_unicode_scalars() {
 /// Named members keep delimiters inside the complete outer class.
 #[test]
 fn named_classes_shield_group_delimiters() {
-    assert_eq!(minimatch("xa", "x@([[:alpha:]|])"), Ok(true));
-    assert_eq!(minimatch("x]", "x@([[:alpha:]|])"), Ok(false));
-    assert_eq!(minimatch("b", "[[:alpha:]@(a)]"), Ok(true));
+    assert_eq!(matches_glob("xa", "x@([[:alpha:]|])"), Ok(true));
+    assert_eq!(matches_glob("x]", "x@([[:alpha:]|])"), Ok(false));
+    assert_eq!(matches_glob("b", "[[:alpha:]@(a)]"), Ok(true));
 }
 
 /// An invalid named range endpoint does not swallow following alternatives.
 #[test]
 fn invalid_classes_preserve_following_group_alternatives() {
-    assert_eq!(minimatch("xbz", "x@([a-[:alpha:]]|b)z"), Ok(true));
+    assert_eq!(matches_glob("xbz", "x@([a-[:alpha:]]|b)z"), Ok(true));
 }

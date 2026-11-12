@@ -60,6 +60,7 @@ No reverse dependency is permitted.
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
 owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
 only on `maestro-request`, and `maestro-brand` depends on text and JSON.
+The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; application and the web frontend consume it.
 The `maestro-package` leaf owns portable package interchange records; native
 packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
@@ -381,6 +382,17 @@ report each file once at its first line naming a program in `.local/bin`, `~/bin
 itself still passes,
 as do agent directory paths such as `~/.maestro/agent`, and a local page that never
 ships stays out of the check.
+
+Names say what the code does, so another project's library and product words stay out
+of them. The check reads each Rust identifier and each file and directory name that version
+control tracks under `crates/` and `docs/`; string literals and comments are not read. It
+splits a name at non-alphanumerics and case changes, and a denied word matches when its
+segments appear in order, ignoring case: `ssf_load`, `SsfLoad` and `ssf-notes.md` hold
+`ssf`, while `successful` and `plugins` hold nothing. A hit names the file, the line and
+the word. `DENIED` in `crates/maestro-test-conventions/src/leaked_words.rs` is the one list
+to edit when a word joins it. `EXEMPT` beside it holds the names a user, a provider or a
+stored file carries, each with its reason; a row that matches no name is reported, so an
+exemption cannot outlive its need.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio

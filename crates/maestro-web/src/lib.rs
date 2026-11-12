@@ -6,9 +6,9 @@ pub mod components;
 #[cfg(target_arch = "wasm32")]
 pub mod conversation;
 pub mod dialogs;
-pub mod docx_preview;
 pub mod page;
 pub mod runtime_contributions;
+pub mod word_view;
 pub use components::attachment_tile::AttachmentTile;
 #[cfg(target_arch = "wasm32")]
 pub use components::composer::MessageEditor;

@@ -1,10 +1,11 @@
 //! Authored formula operands observed through workbook, CSV and attachment APIs.
-use maestro_app::browser::ssf::{self, Ssf};
+use maestro_office::spreadsheet::{self, NumberFormatter};
 use serde::Deserialize;
 use std::collections::BTreeSet;
 
 /// Pinned-writer workbook with shared records encoded without formula changes.
-const BYTES: &[u8] = include_bytes!("../fixtures/spreadsheet/operand-grammar.xlsx");
+const BYTES: &[u8] =
+    include_bytes!("../../../maestro-office/tests/fixtures/spreadsheet/operand-grammar.xlsx");
 
 /// Independent worked expectations and annotated coordinate leaves.
 #[derive(Deserialize)]
@@ -46,7 +47,10 @@ enum Piece {
 
 /// Load strict readable recordings.
 fn corpus() -> Corpus {
-    serde_json::from_str(include_str!("../fixtures/spreadsheet/operand-grammar.json")).unwrap()
+    serde_json::from_str(include_str!(
+        "../../../maestro-office/tests/fixtures/spreadsheet/operand-grammar.json"
+    ))
+    .unwrap()
 }
 
 /// Render an annotated fragment without parsing any formula text.
@@ -127,8 +131,8 @@ fn expected_csv(case: &Case) -> String {
 
 /// Accumulate every failing row so the red run records each branch independently.
 fn failures(select: impl Fn(usize, &Case) -> bool) -> Vec<String> {
-    let mut format = Ssf::default();
-    let mut book = ssf::read(BYTES, "operands.xlsx", &mut format).unwrap();
+    let mut format = NumberFormatter::default();
+    let mut book = spreadsheet::read(BYTES, "operands.xlsx", &mut format).unwrap();
     let mut failures = Vec::new();
     let mut selected = 0;
     for (i, case) in cases().iter().enumerate().filter(|(i, c)| select(*i, c)) {
@@ -155,11 +159,11 @@ fn failures(select: impl Fn(usize, &Case) -> bool) -> Vec<String> {
             );
         }
         assert!(
-            matches!(sheet.cells[&case.end].v, ssf::CellValue::Missing),
+            matches!(sheet.cells[&case.end].v, spreadsheet::CellValue::Missing),
             "{} uncached",
             case.id
         );
-        if ssf::sheet_to_csv(sheet, &format) != expected_csv(case) {
+        if spreadsheet::sheet_to_csv(sheet, &format) != expected_csv(case) {
             failures.push(format!("{}: uncached CSV differs", case.id));
         }
     }
@@ -264,7 +268,7 @@ fn workbook_shared_boundaries_and_displacement_properties() {
 #[test]
 fn workbook_shared_opaque_spans_and_absolute_bindings() {
     let data = corpus();
-    let book = ssf::read(BYTES, "operands.xlsx", &mut Ssf::default()).unwrap();
+    let book = spreadsheet::read(BYTES, "operands.xlsx", &mut NumberFormatter::default()).unwrap();
     for (i, pieces) in data.fragments.iter().enumerate() {
         for j in 0..4 {
             let text = book.sheets[&format!("Case{}", 30 + i * 4 + j)]

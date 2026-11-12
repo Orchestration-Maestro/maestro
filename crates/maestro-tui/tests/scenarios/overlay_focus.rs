@@ -40,7 +40,7 @@ fn show(
     scene: &Scene,
     label: &str,
     non_capturing: bool,
-) -> std::io::Result<(Rc<Probe>, Box<dyn maestro_tui::OverlayHandle>)> {
+) -> std::io::Result<(Rc<Probe>, maestro_tui::OverlayHandle)> {
     let probe = Probe::shared(&[label]);
     let handle = scene.tui.show_overlay(
         probe.clone(),
@@ -64,7 +64,7 @@ fn top(scene: &Scene, expected: &str) {
 #[test]
 fn maestro_overlays_focus_transfers_focus_to_the_overlay() {
     let scene = focused_scene();
-    let (overlay, mut handle) = show(&scene, "A", true).unwrap();
+    let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.focus();
     assert!(overlay.focus.get() && handle.is_focused());
     assert!(!scene.probe.focus.get());
@@ -74,7 +74,7 @@ fn maestro_overlays_focus_transfers_focus_to_the_overlay() {
 #[test]
 fn maestro_overlays_unfocus_restores_previous_focus() {
     let scene = focused_scene();
-    let (overlay, mut handle) = show(&scene, "A", true).unwrap();
+    let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.focus();
     handle.unfocus();
     assert!(scene.probe.focus.get());
@@ -85,7 +85,7 @@ fn maestro_overlays_unfocus_restores_previous_focus() {
 #[test]
 fn maestro_overlays_sethidden_false_on_non_capturing_overlay_does_not_auto_focus() {
     let scene = focused_scene();
-    let (overlay, mut handle) = show(&scene, "A", true).unwrap();
+    let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.set_hidden(true);
     handle.set_hidden(false);
     assert!(scene.probe.focus.get() && !overlay.focus.get());
@@ -95,7 +95,7 @@ fn maestro_overlays_sethidden_false_on_non_capturing_overlay_does_not_auto_focus
 #[test]
 fn maestro_overlays_hide_when_overlay_is_not_focused_does_not_change_focus() {
     let scene = focused_scene();
-    let (_, mut handle) = show(&scene, "A", true).unwrap();
+    let (_, handle) = show(&scene, "A", true).unwrap();
     handle.hide().unwrap();
     assert!(scene.probe.focus.get());
     scene.stop();
@@ -104,7 +104,7 @@ fn maestro_overlays_hide_when_overlay_is_not_focused_does_not_change_focus() {
 #[test]
 fn maestro_overlays_hide_when_focused_restores_focus_correctly() {
     let scene = focused_scene();
-    let (overlay, mut handle) = show(&scene, "A", true).unwrap();
+    let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.focus();
     handle.hide().unwrap();
     assert!(scene.probe.focus.get() && !overlay.focus.get());
@@ -115,7 +115,7 @@ fn maestro_overlays_hide_when_focused_restores_focus_correctly() {
 fn maestro_overlays_capturing_overlay_removed_with_non_capturing_below_restores_focus_to_editor() {
     let scene = focused_scene();
     let (noncapturing, _) = show(&scene, "N", true).unwrap();
-    let (capturing, mut handle) = show(&scene, "C", false).unwrap();
+    let (capturing, handle) = show(&scene, "C", false).unwrap();
     assert!(capturing.focus.get());
     handle.hide().unwrap();
     assert!(scene.probe.focus.get() && !noncapturing.focus.get());
@@ -126,7 +126,7 @@ fn maestro_overlays_capturing_overlay_removed_with_non_capturing_below_restores_
 fn maestro_overlays_sub_overlay_cleanup_then_hideoverlay_restores_focus_and_input_to_editor() {
     let _input = crate::input_support::globals();
     let scene = focused_scene();
-    let (timer, mut handle) = show(&scene, "T", true).unwrap();
+    let (timer, handle) = show(&scene, "T", true).unwrap();
     let (controller, _) = show(&scene, "C", false).unwrap();
     assert!(controller.focus.get() && !scene.probe.focus.get());
     handle.hide().unwrap();
@@ -161,9 +161,8 @@ fn maestro_overlays_deferred_sub_overlay_restores_focus() {
     let completed = Rc::new(Cell::new(false));
     let witness = completed.clone();
     let owner = scene.tui.clone();
-    let timer_handle = RefCell::new(timer_handle);
     controller.on_input(move |_| {
-        timer_handle.borrow_mut().hide().unwrap();
+        timer_handle.hide().unwrap();
         owner.hide_overlay().unwrap();
         witness.set(true);
     });
@@ -217,9 +216,9 @@ fn maestro_overlays_hideoverlay_does_not_reassign_focus_when_topmost_overlay_is_
 #[test]
 fn maestro_overlays_multiple_capturing_and_non_capturing_overlays_restore_focus_through_removals() {
     let scene = focused_scene();
-    let (first, mut first_handle) = show(&scene, "A", false).unwrap();
+    let (first, first_handle) = show(&scene, "A", false).unwrap();
     show(&scene, "N", true).unwrap();
-    let (second, mut second_handle) = show(&scene, "B", false).unwrap();
+    let (second, second_handle) = show(&scene, "B", false).unwrap();
     show(&scene, "M", true).unwrap();
     assert!(second.focus.get());
     second_handle.hide().unwrap();
@@ -233,7 +232,7 @@ fn maestro_overlays_multiple_capturing_and_non_capturing_overlays_restore_focus_
 fn maestro_overlays_capturing_overlay_unfocus_on_topmost_capturing_overlay_falls_back_to_prefocus()
 {
     let scene = focused_scene();
-    let (overlay, mut handle) = show(&scene, "C", false).unwrap();
+    let (overlay, handle) = show(&scene, "C", false).unwrap();
     assert!(overlay.focus.get());
     handle.unfocus();
     assert!(scene.probe.focus.get() && !overlay.focus.get());
@@ -243,7 +242,7 @@ fn maestro_overlays_capturing_overlay_unfocus_on_topmost_capturing_overlay_falls
 #[test]
 fn maestro_overlays_focus_on_hidden_overlay_is_a_no_op() {
     let scene = focused_scene();
-    let (_, mut handle) = show(&scene, "A", true).unwrap();
+    let (_, handle) = show(&scene, "A", true).unwrap();
     handle.set_hidden(true);
     handle.focus();
     assert!(scene.probe.focus.get() && !handle.is_focused());
@@ -253,7 +252,7 @@ fn maestro_overlays_focus_on_hidden_overlay_is_a_no_op() {
 #[test]
 fn maestro_overlays_focus_after_hide_is_a_no_op() {
     let scene = focused_scene();
-    let (_, mut handle) = show(&scene, "A", true).unwrap();
+    let (_, handle) = show(&scene, "A", true).unwrap();
     handle.hide().unwrap();
     handle.focus();
     assert!(scene.probe.focus.get() && !handle.is_focused());
@@ -263,7 +262,7 @@ fn maestro_overlays_focus_after_hide_is_a_no_op() {
 #[test]
 fn maestro_overlays_unfocus_when_overlay_does_not_have_focus_is_a_no_op() {
     let scene = focused_scene();
-    let (overlay, mut handle) = show(&scene, "A", true).unwrap();
+    let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.unfocus();
     assert!(scene.probe.focus.get() && !overlay.focus.get());
     scene.stop();
@@ -275,7 +274,7 @@ fn maestro_overlays_unfocus_with_null_prefocus_clears_focus_and_does_not_route_i
     let _input = crate::input_support::globals();
     let scene = Scene::new(20, 6);
     scene.start(&[]);
-    let (overlay, mut handle) = show(&scene, "A", false).unwrap();
+    let (overlay, handle) = show(&scene, "A", false).unwrap();
     assert!(overlay.focus.get());
     handle.unfocus();
     scene.terminal.send_input("x");
@@ -287,8 +286,8 @@ fn maestro_overlays_unfocus_with_null_prefocus_clears_focus_and_does_not_route_i
 #[test]
 fn maestro_overlays_toggle_focus_between_non_capturing_overlays_then_unfocus_returns_to_editor() {
     let scene = focused_scene();
-    let (a, mut ah) = show(&scene, "A", true).unwrap();
-    let (b, mut bh) = show(&scene, "B", true).unwrap();
+    let (a, ah) = show(&scene, "A", true).unwrap();
+    let (b, bh) = show(&scene, "B", true).unwrap();
     ah.focus();
     bh.focus();
     ah.focus();
@@ -300,7 +299,7 @@ fn maestro_overlays_toggle_focus_between_non_capturing_overlays_then_unfocus_ret
 #[test]
 fn maestro_overlays_focus_on_already_focused_overlay_bumps_visual_order() {
     let scene = focused_scene();
-    let (_, mut a) = show(&scene, "A", true).unwrap();
+    let (_, a) = show(&scene, "A", true).unwrap();
     show(&scene, "B", true).unwrap();
     a.focus();
     show(&scene, "C", true).unwrap();
@@ -323,7 +322,7 @@ fn maestro_overlays_default_rendering_order_for_overlapping_overlays_follows_cre
 #[test]
 fn maestro_overlays_focus_on_lower_overlay_renders_it_on_top() {
     let scene = focused_scene();
-    let (_, mut lower) = show(&scene, "A", true).unwrap();
+    let (_, lower) = show(&scene, "A", true).unwrap();
     show(&scene, "B", true).unwrap();
     top(&scene, "B");
     lower.focus();
@@ -336,8 +335,8 @@ fn maestro_overlays_focusing_middle_overlay_places_it_on_top_while_preserving_ot
  {
     let scene = focused_scene();
     show(&scene, "A", true).unwrap();
-    let (_, mut middle) = show(&scene, "B", true).unwrap();
-    let (_, mut upper) = show(&scene, "C", true).unwrap();
+    let (_, middle) = show(&scene, "B", true).unwrap();
+    let (_, upper) = show(&scene, "C", true).unwrap();
     top(&scene, "C");
     middle.focus();
     top(&scene, "B");
@@ -352,7 +351,7 @@ fn maestro_overlays_focusing_middle_overlay_places_it_on_top_while_preserving_ot
 fn maestro_overlays_capturing_overlay_hidden_and_shown_again_renders_on_top_after_unhide() {
     let scene = focused_scene();
     show(&scene, "A", true).unwrap();
-    let (_, mut capturing) = show(&scene, "B", false).unwrap();
+    let (_, capturing) = show(&scene, "B", false).unwrap();
     top(&scene, "B");
     capturing.set_hidden(true);
     show(&scene, "C", true).unwrap();
@@ -365,8 +364,8 @@ fn maestro_overlays_capturing_overlay_hidden_and_shown_again_renders_on_top_afte
 #[test]
 fn maestro_overlays_unfocus_does_not_change_visual_order_until_another_overlay_is_focused() {
     let scene = focused_scene();
-    let (_, mut a) = show(&scene, "A", true).unwrap();
-    let (_, mut b) = show(&scene, "B", true).unwrap();
+    let (_, a) = show(&scene, "A", true).unwrap();
+    let (_, b) = show(&scene, "B", true).unwrap();
     top(&scene, "B");
     a.focus();
     top(&scene, "A");
@@ -381,7 +380,7 @@ fn maestro_overlays_unfocus_does_not_change_visual_order_until_another_overlay_i
 fn overlay_removed_handles_cannot_mutate_focus_or_visibility() {
     let _input = crate::input_support::globals();
     let scene = focused_scene();
-    let (_, mut handle) = show(&scene, "A", true).unwrap();
+    let (_, handle) = show(&scene, "A", true).unwrap();
     handle.set_hidden(true);
     handle.hide().unwrap();
     scene.render();
@@ -418,7 +417,7 @@ fn overlay_restoration_skips_unavailable_predecessors() {
         }
         let visible = Rc::new(Cell::new(true));
         let a = Probe::shared(&["A"]);
-        let mut ah = visibility_overlay(
+        let ah = visibility_overlay(
             &scene,
             a.clone(),
             visible.clone(),
@@ -431,7 +430,7 @@ fn overlay_restoration_skips_unavailable_predecessors() {
         if unavailable == "two-invisible" {
             visibility_overlay(&scene, Probe::shared(&["M"]), visible.clone(), false).unwrap();
         }
-        let mut bh = if unavailable == "duplicate" {
+        let bh = if unavailable == "duplicate" {
             scene.tui.show_overlay(a.clone(), None).unwrap()
         } else {
             show(&scene, "B", false).unwrap().1
@@ -464,7 +463,7 @@ fn overlay_visibility_observes_dimensions_and_short_circuits_hidden() {
         let log = seen.clone();
         let visible = Rc::new(Cell::new(allowed));
         let flag = visible.clone();
-        let mut handle = scene
+        let handle = scene
             .tui
             .show_overlay(
                 Probe::shared(&["A"]),
@@ -518,7 +517,7 @@ fn overlay_options_remain_live_across_render_callbacks() {
         options.row = Some(maestro_tui::SizeValue::Cells(3));
         options.col = Some(maestro_tui::SizeValue::Cells(5));
     });
-    let mut handle = scene
+    let handle = scene
         .tui
         .show_overlay(probe.clone(), Some(options.clone()))
         .unwrap();
@@ -539,13 +538,12 @@ fn overlay_render_selection_captures_visible_entries() {
     let scene = focused_scene();
     let (a, _) = show(&scene, "A", true).unwrap();
     let (b, bh) = show(&scene, "B", true).unwrap();
-    let bh = RefCell::new(bh);
     let owner = scene.tui.clone();
     let added = Probe::shared(&["C"]);
     let c = added.clone();
     a.on_render(move |count| {
         if count == 1 {
-            bh.borrow_mut().hide().unwrap();
+            bh.hide().unwrap();
             owner.show_overlay(c.clone(), None).unwrap();
         }
     });
@@ -605,7 +603,7 @@ fn overlay_invalidation_walks_live_entries() {
     scene
         .probe
         .on_invalidate(move || log.borrow_mut().push("base"));
-    let (a, mut ah) = show(&scene, "A", true).unwrap();
+    let (a, ah) = show(&scene, "A", true).unwrap();
     ah.set_hidden(true);
     let (b, bh) = show(&scene, "B", true).unwrap();
     let log = order.clone();
@@ -616,10 +614,9 @@ fn overlay_invalidation_walks_live_entries() {
     let log = order.clone();
     let owner = scene.tui.clone();
     let target = c.clone();
-    let bh = RefCell::new(bh);
     a.on_invalidate(move || {
         log.borrow_mut().push("A");
-        bh.borrow_mut().hide().unwrap();
+        bh.hide().unwrap();
         owner.show_overlay(target.clone(), None).unwrap();
     });
     scene.tui.invalidate();
@@ -649,13 +646,13 @@ fn overlay_invalidation_walks_live_entries() {
 #[test]
 fn overlay_capture_restore_uses_creation_order_not_visual_order() {
     let scene = focused_scene();
-    let (a, mut ah) = show(&scene, "A", false).unwrap();
-    let (b, mut bh) = show(&scene, "B", false).unwrap();
+    let (a, ah) = show(&scene, "A", false).unwrap();
+    let (b, bh) = show(&scene, "B", false).unwrap();
     ah.focus();
     top(&scene, "A");
     scene.tui.hide_overlay().unwrap();
     assert!(a.focus.get() && !b.focus.get());
-    let (c, mut ch) = show(&scene, "C", false).unwrap();
+    let (c, ch) = show(&scene, "C", false).unwrap();
     ah.focus();
     ah.set_hidden(true);
     assert!(c.focus.get());
@@ -669,7 +666,7 @@ fn overlay_capture_restore_uses_creation_order_not_visual_order() {
 #[test]
 fn overlay_handle_noops_preserve_hidden_state_and_render_requests() {
     let scene = focused_scene();
-    let (_, mut handle) = show(&scene, "A", true).unwrap();
+    let (_, handle) = show(&scene, "A", true).unwrap();
     scene.render();
     handle.set_hidden(false);
     handle.unfocus();
@@ -688,7 +685,7 @@ fn overlay_handle_noops_preserve_hidden_state_and_render_requests() {
     handle.hide().unwrap();
     scene.tui.hide_overlay().unwrap();
     assert_eq!(scene.runtime.pending(), 0);
-    let mut invisible = scene
+    let invisible = scene
         .tui
         .show_overlay(
             Probe::shared(&["I"]),
@@ -732,7 +729,7 @@ fn overlay_cursor_failures_remove_failed_admission_and_keep_completed_removal() 
     assert!(!overlay.focus.get());
     assert_eq!(runtime.pending(), 0);
     terminal.set_hide_error(None);
-    let mut handle = tui.show_overlay(overlay, None).unwrap();
+    let handle = tui.show_overlay(overlay, None).unwrap();
     runtime.settle().unwrap();
     terminal.clear_writes();
     terminal.set_hide_error(Some(ErrorKind::BrokenPipe));
@@ -845,7 +842,7 @@ fn overlay_cursor_markers_follow_composition_without_repainting() {
 fn overlay_padding_ignores_highwater_and_suspends_clear_on_shrink() {
     let scene = focused_scene();
     scene.tui.set_clear_on_shrink(true);
-    let (_, mut handle) = show(&scene, "A", true).unwrap();
+    let (_, handle) = show(&scene, "A", true).unwrap();
     handle.set_hidden(true);
     scene.show(&["1", "2", "3", "4", "5", "6", "7", "8", "9"]);
     let redraws = scene.tui.full_redraws();
@@ -868,21 +865,21 @@ fn overlay_handles_preserve_component_identity_when_owner_is_cloned() {
     let owner = scene.tui.clone();
     let same_a = Probe::shared(&["same"]);
     let same_b = Probe::shared(&["same"]);
-    let mut a = owner.show_overlay(same_a.clone(), None).unwrap();
-    let mut b = scene.tui.show_overlay(same_b.clone(), None).unwrap();
+    let a = owner.show_overlay(same_a.clone(), None).unwrap();
+    let b = scene.tui.show_overlay(same_b.clone(), None).unwrap();
     a.focus();
     scene.terminal.send_input("a");
     b.focus();
     scene.terminal.send_input("b");
     assert_eq!(*same_a.inputs.borrow(), ["a"]);
     assert_eq!(*same_b.inputs.borrow(), ["b"]);
-    let mut duplicate = owner.show_overlay(same_b, None).unwrap();
+    let duplicate = owner.show_overlay(same_b, None).unwrap();
     duplicate.hide().unwrap();
     b.hide().unwrap();
     a.hide().unwrap();
     assert!(!owner.has_overlay());
     drop((a, b, duplicate));
-    let mut retained = owner.show_overlay(same_a, None).unwrap();
+    let retained = owner.show_overlay(same_a, None).unwrap();
     let terminal = scene.terminal.clone();
     drop(owner);
     drop(scene);
@@ -897,7 +894,7 @@ fn visibility_overlay(
     probe: Rc<Probe>,
     flag: Rc<std::cell::Cell<bool>>,
     non_capturing: bool,
-) -> std::io::Result<Box<dyn maestro_tui::OverlayHandle>> {
+) -> std::io::Result<maestro_tui::OverlayHandle> {
     scene.tui.show_overlay(
         probe,
         Some(Rc::new(RefCell::new(OverlayOptions {
@@ -978,16 +975,14 @@ fn overlay_focus_restoration_uses_post_callback_stack_slot() {
         let scene = focused_scene();
         let armed = Rc::new(std::cell::Cell::new(false));
         let replacement = Probe::shared(&["C"]);
-        let replacement_handle = Rc::new(RefCell::new(None::<Box<dyn maestro_tui::OverlayHandle>>));
+        let replacement_handle = Rc::new(RefCell::new(None::<maestro_tui::OverlayHandle>));
         let options = Rc::new(RefCell::new(OverlayOptions::default()));
         let original = Probe::shared(&["B"]);
-        let removed = Rc::new(RefCell::new(
-            scene
-                .tui
-                .show_overlay(original.clone(), Some(options.clone()))
-                .unwrap(),
-        ));
-        let (_, mut top) = show(&scene, "A", false).unwrap();
+        let removed = scene
+            .tui
+            .show_overlay(original.clone(), Some(options.clone()))
+            .unwrap();
+        let (_, top) = show(&scene, "A", false).unwrap();
         let calls = Rc::new(std::cell::Cell::new(0));
         let callback_calls = calls.clone();
         let tui = scene.tui.clone();
@@ -1000,7 +995,7 @@ fn overlay_focus_restoration_uses_post_callback_stack_slot() {
             if !callback_armed.replace(false) {
                 return true;
             }
-            callback_removed.borrow_mut().hide().unwrap();
+            callback_removed.hide().unwrap();
             *callback_handle.borrow_mut() =
                 Some(replacement_overlay(&tui, &callback_replacement, replacement_state).unwrap());
             true
@@ -1022,8 +1017,8 @@ fn overlay_focus_restoration_uses_post_callback_stack_slot() {
         }
         assert!(original.inputs.borrow().is_empty());
         replacement_handle
-            .borrow_mut()
-            .as_mut()
+            .borrow()
+            .as_ref()
             .unwrap()
             .hide()
             .unwrap();
@@ -1054,7 +1049,7 @@ fn overlay_focus_candidates_cannot_commit_callback_removed_targets() {
         if operation == "create" {
             options.borrow_mut().visible = Some(callback.clone());
         }
-        let mut handle = scene
+        let handle = scene
             .tui
             .show_overlay(candidate.clone(), Some(options.clone()))
             .unwrap();
@@ -1086,14 +1081,12 @@ fn overlay_predecessor_rechecks_callback_hidden_or_removed_identity() {
             non_capturing: Some(true),
             ..OverlayOptions::default()
         }));
-        let handle = Rc::new(RefCell::new(
-            scene
-                .tui
-                .show_overlay(candidate.clone(), Some(options.clone()))
-                .unwrap(),
-        ));
-        handle.borrow_mut().focus();
-        let (_, mut top) = show(&scene, "top", true).unwrap();
+        let handle = scene
+            .tui
+            .show_overlay(candidate.clone(), Some(options.clone()))
+            .unwrap();
+        handle.focus();
+        let (_, top) = show(&scene, "top", true).unwrap();
         top.focus();
         let calls = Rc::new(std::cell::Cell::new(0));
         options.borrow_mut().visible = Some(Rc::new({
@@ -1141,14 +1134,14 @@ fn overlay_visibility_query_returns_callback_observation_after_self_removal() {
 
 /// Makes a retained predecessor unavailable during its visibility observation.
 fn unavailable_callback(
-    handle: Rc<RefCell<Box<dyn maestro_tui::OverlayHandle>>>,
+    handle: maestro_tui::OverlayHandle,
     remove: bool,
 ) -> Rc<dyn Fn(usize, usize) -> bool> {
     Rc::new(move |_, _| {
         if remove {
-            assert!(handle.borrow_mut().hide().is_ok());
+            assert!(handle.hide().is_ok());
         } else {
-            handle.borrow_mut().set_hidden(true);
+            handle.set_hidden(true);
         }
         true
     })
@@ -1165,16 +1158,16 @@ fn overlay_captured_component_survives_removal_of_its_original_alias() {
             ..OverlayOptions::default()
         })))
     };
-    let mut original = scene
+    let original = scene
         .tui
         .show_overlay(component.clone(), options())
         .unwrap();
     original.focus();
-    let mut alias = scene
+    let alias = scene
         .tui
         .show_overlay(component.clone(), options())
         .unwrap();
-    let (_, mut capturing) = show(&scene, "C", false).unwrap();
+    let (_, capturing) = show(&scene, "C", false).unwrap();
     original.hide().unwrap();
     capturing.hide().unwrap();
     assert!(alias.is_focused());
@@ -1233,22 +1226,19 @@ fn overlay_top_walk_stops_when_an_accepted_slot_is_vacated() {
         }
     }));
     let options = Rc::new(RefCell::new(OverlayOptions::default()));
-    let middle = Rc::new(RefCell::new(
-        scene
-            .tui
-            .show_overlay(Probe::shared(&["B"]), Some(options.clone()))
-            .unwrap(),
-    ));
+    let middle = scene
+        .tui
+        .show_overlay(Probe::shared(&["B"]), Some(options.clone()))
+        .unwrap();
     let external = Probe::shared(&["Q"]);
     scene.tui.set_focus(Some(external.clone()));
-    let (_, mut top) = show(&scene, "A", false).unwrap();
+    let (_, top) = show(&scene, "A", false).unwrap();
     let calls = Rc::new(std::cell::Cell::new(0));
     options.borrow_mut().visible = Some(Rc::new({
-        let middle = middle.clone();
         let calls = calls.clone();
         move |_, _| {
             calls.set(calls.get() + 1);
-            middle.borrow_mut().hide().unwrap();
+            middle.hide().unwrap();
             true
         }
     }));
@@ -1273,7 +1263,7 @@ fn overlay_input_keeps_the_first_alias_visibility_trigger() {
             non_capturing: Some(true),
             ..OverlayOptions::default()
         }));
-        let mut original = scene
+        let original = scene
             .tui
             .show_overlay(candidate.clone(), Some(options.clone()))
             .unwrap();
@@ -1288,7 +1278,7 @@ fn overlay_input_keeps_the_first_alias_visibility_trigger() {
                 }))),
             )
             .unwrap();
-        let (_, mut top) = show(&scene, "C", false).unwrap();
+        let (_, top) = show(&scene, "C", false).unwrap();
         let calls = Rc::new(std::cell::Cell::new(0));
         if hidden {
             original.set_hidden(true);
@@ -1357,10 +1347,10 @@ fn overlay_creation_retains_its_component_when_callback_replaces_the_entry() {
 fn overlay_same_label_is_not_a_component_availability_witness() {
     let _input = crate::input_support::globals();
     let scene = focused_scene();
-    let (original, mut handle) = show(&scene, "X", true).unwrap();
+    let (original, handle) = show(&scene, "X", true).unwrap();
     handle.focus();
     let (decoy, _) = show(&scene, "X", true).unwrap();
-    let (_, mut top) = show(&scene, "C", false).unwrap();
+    let (_, top) = show(&scene, "C", false).unwrap();
     handle.hide().unwrap();
     top.hide().unwrap();
     assert!(scene.probe.focus.get());
@@ -1376,12 +1366,12 @@ fn replacement_overlay(
     tui: &maestro_tui::TUI,
     probe: &Rc<Probe>,
     state: &str,
-) -> std::io::Result<Box<dyn maestro_tui::OverlayHandle>> {
+) -> std::io::Result<maestro_tui::OverlayHandle> {
     let options = Rc::new(RefCell::new(OverlayOptions {
         non_capturing: Some(state != "capturing"),
         ..OverlayOptions::default()
     }));
-    let mut handle = tui.show_overlay(probe.clone(), Some(options.clone()))?;
+    let handle = tui.show_overlay(probe.clone(), Some(options.clone()))?;
     if state == "invisible" {
         options.borrow_mut().visible = Some(Rc::new(|_, _| false));
     }

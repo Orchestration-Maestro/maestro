@@ -109,7 +109,7 @@ fn pptx_extracted_output_past_the_bound_fails() {
         !matches!(
             &result,
             Err(AttachmentError::Pptx(
-                maestro_app::browser::docx_preview::DocxError::Archive(_)
+                maestro_office::wordprocessing::DocxError::Archive(_)
             ))
         ),
         "output overflow was classified as an archive failure"

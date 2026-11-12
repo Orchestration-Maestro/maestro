@@ -1359,6 +1359,13 @@ fn session_operation_records_have_one_shared_owner() {
 }
 
 #[test]
+fn office_document_records_have_one_shared_owner() {
+    for name in ["NumberFormatter", "OpenXmlPackage", "WorkbookError"] {
+        assert_single_owner(name, "maestro-office", &["maestro-app"]);
+    }
+}
+
+#[test]
 fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     let workspace = Workspace::new();
     let root = workspace.root.path();

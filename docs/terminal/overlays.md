@@ -1,8 +1,9 @@
 # Retained overlays
 
-`TUI::show_overlay` adds a component to the writer's shared stack. Its handle keeps
-that writer alive; dropping the handle does not remove the entry. Options are
-shared with the caller and read again on subsequent operations.
+`TUI::show_overlay` adds a component to the writer's shared stack. Its handle is a
+cloneable value that keeps that writer alive. Every clone controls the same
+overlay, and dropping the last one does not remove the entry. Options are shared
+with the caller and read again on subsequent operations.
 
 ```rust
 use std::cell::RefCell;
@@ -26,7 +27,7 @@ fn show_notice(tui: &TUI) -> io::Result<()> {
         non_capturing: Some(true),
         ..OverlayOptions::default()
     }));
-    let mut handle = tui.show_overlay(Rc::new(Notice), Some(options.clone()))?;
+    let handle = tui.show_overlay(Rc::new(Notice), Some(options.clone()))?;
     options.borrow_mut().offset_y = Some(1);
     tui.request_render(false);
     handle.focus();

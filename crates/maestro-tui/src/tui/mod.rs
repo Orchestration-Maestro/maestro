@@ -30,8 +30,9 @@ pub use component::{CURSOR_MARKER, Component, FocusFlag, Focusable, InputHandler
 pub use container::{ChildArray, ComponentHandle, Container};
 pub use input::{InputListener, InputListenerResult};
 pub use overlay_types::{
-    OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
+    OverlayAnchor, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
 };
+pub use overlays::OverlayHandle;
 pub use repeating_timer::RepeatingTimer;
 pub use runtime::{
     LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,

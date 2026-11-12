@@ -150,13 +150,12 @@ impl ExtensionUIContextPort for OverlayUi {
             let shown = tui
                 .show_overlay(built.component.clone(), Some(placement))
                 .unwrap();
-            let shown = Rc::new(RefCell::new(shown));
-            options.on_handle.unwrap().call(Rc::clone(&shown))?;
+            options.on_handle.unwrap().call(shown.clone())?;
             drive(&tui, &built.component);
             receive
                 .await
                 .map_err(|error| EventError::from(error.to_string()))?;
-            shown.borrow_mut().hide().unwrap();
+            shown.hide().unwrap();
             Ok(())
         })
     }

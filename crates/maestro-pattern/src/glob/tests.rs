@@ -109,7 +109,7 @@ fn class_platform_framing_precedes_scalar_matching() {
         );
         let native = if cfg!(windows) { windows } else { posix };
         assert_eq!(
-            super::minimatch(&input, &pattern),
+            super::matches_glob(&input, &pattern),
             Ok(native),
             "native case {index}"
         );
@@ -138,7 +138,7 @@ fn group_platform_framing_precedes_matching() {
         );
         let expected = if cfg!(windows) { windows } else { posix };
         assert_eq!(
-            super::minimatch(&input, &pattern),
+            super::matches_glob(&input, &pattern),
             Ok(expected),
             "native case {index}"
         );
