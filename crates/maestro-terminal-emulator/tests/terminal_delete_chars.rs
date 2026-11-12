@@ -1,67 +1,12 @@
 //! Character deletion through the direct terminal interface.
 
-use super::support::terminal::{assert_text, cell, clear_dirty, dirty, row};
+use super::support::terminal::{assert_text, assert_text_in, cell, clear_dirty, dirty, row};
 use maestro_terminal_emulator::{
     Mode, Terminal,
     color::Rgb,
     page::cell::{Content, Wide},
     sgr::Attribute,
 };
-
-#[test]
-fn editing_delete_chars() {
-    let mut t = Terminal::new(5, 5, 0).unwrap();
-    t.print_string("ABCDE").unwrap();
-    t.set_cursor_pos(1, 2);
-    clear_dirty(&mut t);
-    t.delete_chars(2);
-    assert!(dirty(&t, 0));
-    assert_text(&t, "ADE");
-}
-
-#[test]
-fn editing_delete_chars_zero_count() {
-    let mut t = Terminal::new(5, 5, 0).unwrap();
-    t.print_string("ABCDE").unwrap();
-    t.set_cursor_pos(1, 2);
-    clear_dirty(&mut t);
-    t.delete_chars(0);
-    assert!(!dirty(&t, 0));
-    assert_text(&t, "ABCDE");
-}
-
-#[test]
-fn editing_delete_chars_more_than_half() {
-    let mut t = Terminal::new(5, 5, 0).unwrap();
-    t.print_string("ABCDE").unwrap();
-    t.set_cursor_pos(1, 2);
-    clear_dirty(&mut t);
-    t.delete_chars(3);
-    assert!(dirty(&t, 0));
-    assert_text(&t, "AE");
-}
-
-#[test]
-fn editing_delete_chars_more_than_line_width() {
-    let mut t = Terminal::new(5, 5, 0).unwrap();
-    t.print_string("ABCDE").unwrap();
-    t.set_cursor_pos(1, 2);
-    clear_dirty(&mut t);
-    t.delete_chars(10);
-    assert!(dirty(&t, 0));
-    assert_text(&t, "A");
-}
-
-#[test]
-fn editing_delete_chars_should_shift_left() {
-    let mut t = Terminal::new(5, 5, 0).unwrap();
-    t.print_string("ABCDE").unwrap();
-    t.set_cursor_pos(1, 2);
-    clear_dirty(&mut t);
-    t.delete_chars(1);
-    assert!(dirty(&t, 0));
-    assert_text(&t, "ACDE");
-}
 
 #[test]
 fn editing_delete_chars_resets_pending_wrap() {
@@ -84,17 +29,6 @@ fn editing_delete_chars_resets_wrap() {
     assert!(!row(&t, 0).wrap());
     t.print('X').unwrap();
     assert_text(&t, "XCDE\n123");
-}
-
-#[test]
-fn editing_delete_chars_simple_operation() {
-    let mut t = Terminal::new(10, 10, 0).unwrap();
-    t.print_string("ABC123").unwrap();
-    t.set_cursor_pos(1, 3);
-    clear_dirty(&mut t);
-    t.delete_chars(2);
-    assert!(dirty(&t, 0));
-    assert_text(&t, "AB23");
 }
 
 #[test]
@@ -228,4 +162,93 @@ fn editing_delete_chars_wide_char_across_right_margin() {
     t.set_cursor_pos(1, 2);
     t.delete_chars(1);
     assert_text(&t, "13456");
+}
+
+/// One deletion: the terminal, the cursor, the count, whether row 0 is dirtied and the text.
+struct DeleteCase {
+    /// Name that a failing assertion reports.
+    name: &'static str,
+    /// Terminal width and height.
+    size: (u16, u16),
+    /// Text printed before the cursor moves.
+    printed: &'static str,
+    /// Cursor row and column, one-based.
+    cursor: (usize, usize),
+    /// Characters deleted.
+    count: usize,
+    /// Whether the first row is dirty afterwards.
+    dirty: bool,
+    /// The text left on the screen.
+    expected: &'static str,
+}
+
+/// The deletion cases.
+const DELETE_CASES: &[DeleteCase] = &[
+    DeleteCase {
+        name: "editing_delete_chars",
+        size: (5, 5),
+        printed: "ABCDE",
+        cursor: (1, 2),
+        count: 2,
+        dirty: true,
+        expected: "ADE",
+    },
+    DeleteCase {
+        name: "editing_delete_chars_zero_count",
+        size: (5, 5),
+        printed: "ABCDE",
+        cursor: (1, 2),
+        count: 0,
+        dirty: false,
+        expected: "ABCDE",
+    },
+    DeleteCase {
+        name: "editing_delete_chars_more_than_half",
+        size: (5, 5),
+        printed: "ABCDE",
+        cursor: (1, 2),
+        count: 3,
+        dirty: true,
+        expected: "AE",
+    },
+    DeleteCase {
+        name: "editing_delete_chars_more_than_line_width",
+        size: (5, 5),
+        printed: "ABCDE",
+        cursor: (1, 2),
+        count: 10,
+        dirty: true,
+        expected: "A",
+    },
+    DeleteCase {
+        name: "editing_delete_chars_should_shift_left",
+        size: (5, 5),
+        printed: "ABCDE",
+        cursor: (1, 2),
+        count: 1,
+        dirty: true,
+        expected: "ACDE",
+    },
+    DeleteCase {
+        name: "editing_delete_chars_simple_operation",
+        size: (10, 10),
+        printed: "ABC123",
+        cursor: (1, 3),
+        count: 2,
+        dirty: true,
+        expected: "AB23",
+    },
+];
+
+#[test]
+fn delete_chars_cases_shift_the_rest_of_the_row_left() {
+    for case in DELETE_CASES {
+        let mut t = Terminal::new(case.size.0, case.size.1, 0).unwrap();
+        t.print_string(case.printed).unwrap();
+        t.set_cursor_pos(case.cursor.0, case.cursor.1);
+        clear_dirty(&mut t);
+        t.delete_chars(case.count);
+        assert_eq!(dirty(&t, 0), case.dirty, "{}", case.name);
+        assert_text_in(&t, case.expected, case.name);
+    }
 }
