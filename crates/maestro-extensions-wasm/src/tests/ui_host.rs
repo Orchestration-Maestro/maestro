@@ -326,39 +326,11 @@ impl Bank {
         self.message.take()
     }
 
-    /// Restores the state a fresh host starts from.
-    pub fn reset(&mut self) {
-        self.binding = 0;
-        self.error = None;
-        self.rules = Rules::default();
-    }
-
     /// Hands out the identity of the binding current at acquisition time and records the
     /// working directory of the context the acquisition was made through.
     pub fn acquire(&mut self, owner: &str) -> usize {
         self.acquired.push(owner.into());
         self.binding
-    }
-
-    /// Rejects the next request of `method` with `message`, leaving other requests accepted.
-    pub fn reject(&mut self, method: &str, message: &str) {
-        self.method = Some(method.to_owned());
-        self.message = Some(message.to_owned());
-    }
-
-    /// Rejects the next request after `index` accepted ones with `error`, once.
-    pub fn reject_at(&mut self, index: usize, error: &str) {
-        self.rules.reject_after = Some(index);
-        self.rules.accepted = 0;
-        self.error = Some(Refusal {
-            method: None,
-            message: error.to_owned(),
-        });
-    }
-
-    /// Resolves the binding `binding` for acquisitions after the next accepted request.
-    pub fn switch_after_first(&mut self, binding: usize) {
-        self.rules.switch_after = Some(binding);
     }
 
     /// Applies the armed rules to the request recorded next, taking a refusal armed for every method.
@@ -676,23 +648,9 @@ pub fn receipts_on<K: FromStr>(kind: &str, lines: &[String]) -> Vec<Receipt<K>> 
         .collect()
 }
 
-/// The UI request `line` records, if it records one.
-pub fn receipt(line: &str) -> Option<Receipt> {
-    receipt_on("ui", line)
-}
-
 /// The UI requests recorded in `lines`, in time order.
 pub fn receipts(lines: &[String]) -> Vec<Receipt> {
     receipts_on("ui", lines)
-}
-
-/// The notification messages a host received and their exact severities.
-pub fn notifications(observed: &Observed) -> Vec<Value> {
-    receipts(&observed.transcript)
-        .into_iter()
-        .filter(|r| r.method == "notify")
-        .map(|r| r.operands)
-        .collect()
 }
 
 impl State {

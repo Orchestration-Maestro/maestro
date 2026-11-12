@@ -87,7 +87,14 @@ fn scratch(directory: &std::path::Path) -> std::path::PathBuf {
     directory.join("docs/guide.md")
 }
 "#;
-    let (workspace, _) = workspace(contents, "\"docs/\" = [], \"examples/\" = []");
+    let (workspace, _) = workspace(contents, "\"docs/\" = []");
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
+fn the_examples_directory_is_not_a_routed_input() {
+    let contents = "fn folder() -> String {\n    get_examples_path().unwrap()\n}\nconst READ: &str = \"../../examples/shared.rs\";\n";
+    let (workspace, _) = workspace(contents, "\"fuzz/\" = []");
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
@@ -102,7 +109,6 @@ fn production_code_is_not_a_test_read() {
 fn unrouted_read_through_a_package_directory_resolver_is_named() {
     for (call, prefix) in [
         ("get_docs_path()", "docs/"),
-        ("get_examples_path()", "examples/"),
         ("paths::get_docs_path(&package)", "docs/"),
     ] {
         let contents = format!("fn folder() -> String {{\n    {call}.unwrap()\n}}\n");
@@ -116,17 +122,13 @@ fn unrouted_read_through_a_package_directory_resolver_is_named() {
 }
 
 #[test]
-fn package_directory_read_names_the_docs_and_examples_it_holds() {
+fn package_directory_read_names_the_docs_it_holds() {
     let contents = "fn package() -> String {\n    get_package_dir().unwrap()\n}\n";
     let (workspace, path) = workspace(contents, "\"fuzz/\" = []");
 
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err(format!(
-            "{}\n{}",
-            unrouted(&path, 2, "docs/"),
-            unrouted(&path, 2, "examples/")
-        ))
+        Err(unrouted(&path, 2, "docs/"))
     );
 }
 

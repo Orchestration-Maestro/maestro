@@ -1,9 +1,10 @@
 # Embedding examples
 
-Run an example from the repository root:
+The samples live in maestro-packages, which `just setup` fetches into a source
+checkout as `examples/sdk`. Run one from a maestro-packages checkout:
 
 ```sh
-cargo run -p maestro-app --example minimal
+cargo run -p maestro-sdk-examples --example minimal
 ```
 
 These samples use the public session SDK and its scripted model provider. Model
@@ -18,13 +19,12 @@ separately from the SDK values returned by each workflow.
 
 ## Samples
 
-The sources are in [`crates/maestro-app/examples/sdk`](../../crates/maestro-app/examples/sdk).
-Each target has executable behavior tests selected by the default application
-test command:
+The sources are in [`examples/sdk`](../../examples/sdk). Each target has executable
+behavior tests in maestro-packages, selected by its default test command:
 
 ```sh
 just prepare-tests
-cargo nextest run -p maestro-app
+cargo nextest run -p maestro-sdk-examples
 ```
 
 | Target | Demonstrates |

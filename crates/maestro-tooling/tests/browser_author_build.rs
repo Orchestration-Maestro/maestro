@@ -72,11 +72,12 @@ fn fail_setup(stage: &str) {
         browser.generate_lockfile();
         return;
     }
-    let status = recipe_support::setup_status(
-        compiler::command(env!("CARGO_BIN_EXE_development"))
-            .args(["nextest-setup", "fixture-sources", "workspace"])
-            .current_dir(browser.workspace.path()),
-    );
+    let mut command = compiler::command(env!("CARGO_BIN_EXE_development"));
+    command
+        .args(["nextest-setup", "fixture-sources", "workspace"])
+        .current_dir(browser.workspace.path());
+    maestro_test_process::without_prepared_bundles(&mut command);
+    let status = recipe_support::setup_status(&mut command);
     assert!(!status.success());
 }
 

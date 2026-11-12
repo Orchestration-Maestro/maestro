@@ -40,8 +40,8 @@ or above that directory, the build runs from its source checkout: the layout is
 package and the walk starts at that workspace root, which holds `README.md`,
 `docs/` and `examples/`. Any other build is standalone. `config::get_readme_path`,
 `config::get_docs_path` and `config::get_examples_path` resolve their paths in
-that package directory. A checkout ships the examples folder there, and the copy
-recipes put it in a standalone layout. `config::get_theme_directories`
+that package directory. A source checkout holds the examples folder there once `just setup` has fetched
+it from maestro-packages, and the copy recipes put it in a standalone layout. `config::get_theme_directories`
 probes the layout without the executable, and locates the executable only when
 no override applies. It pairs its shipped theme directory with the custom theme
 directory of the native agent directory; see

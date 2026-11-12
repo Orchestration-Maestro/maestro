@@ -57,7 +57,7 @@ use maestro_app::{
     SourceScope, create_extension_runtime, load_extension_from_factory, strip_ansi,
 };
 use maestro_app::{AssistantMessage, AssistantMessageEventStream, StopReason, Usage};
-use maestro_test_process::{IsolatedSetup, TestProcess};
+use maestro_test_process::{IsolatedSetup, SearchGuard, TestProcess};
 use maestro_theme::{
     Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
@@ -105,7 +105,7 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
     let package = directory.join("package");
     std::fs::create_dir(&package).unwrap();
     controlled_search_programs(directory);
-    let guard = SearchGuard::new(directory, &std::env::var_os("PATH").unwrap_or_default());
+    let guard = search_guard(directory, &std::env::var_os("PATH").unwrap_or_default());
     let output = TestProcess::current(test)
         .unwrap()
         .case("child")
@@ -118,7 +118,7 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
             (ENV_AGENT_DIR.as_str(), directory.to_str().unwrap()),
             (ENV_PACKAGE_DIR.as_str(), package.to_str().unwrap()),
         ])
-        .env("PATH", &guard.path)
+        .env("PATH", guard.path())
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
@@ -140,75 +140,13 @@ fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
 /// Installs stub `fd` and `rg`, which answer at once with nothing, in the binary directory,
 /// which is searched before the command path.
 fn controlled_search_programs(directory: &Path) {
-    let bin = directory.join("bin");
-    for name in ["fd", "rg"] {
-        install_output(&bin, name, b"", 0);
-    }
+    maestro_test_process::install_stub_search_programs(&directory.join("bin"))
+        .expect("the stub search programs install");
 }
 
-/// A guard `fd` and `rg` on a child's command path, ahead of its first directory outside the
-/// child's root, so a child that finds neither its own nor its root's search programs runs a
-/// guard copy rather than a host one; every run is recorded.
-struct SearchGuard {
-    /// The disposable directory holding the guard programs and their record.
-    directory: maestro_test_directory::Scratch,
-    /// The child's command path with the guard directory in place.
-    path: std::ffi::OsString,
-}
-
-impl SearchGuard {
-    /// Guards `path`, the command path of a child over `root`. A path naming no directory
-    /// outside `root` keeps its directories as they are.
-    fn new(root: &Path, path: &OsStr) -> Self {
-        let directory = maestro_test_directory::Scratch::new().expect("scratch directory is new");
-        let mut directories: Vec<_> = std::env::split_paths(path).collect();
-        let outside = directories
-            .iter()
-            .position(|entry| entry.is_absolute() && !entry.starts_with(root));
-        if let Some(outside) = outside {
-            for name in ["fd", "rg"] {
-                let record = json!({
-                    "path": directory.path().join("reached"),
-                    "cwd": false,
-                    "bytes": format!("{name}\n").into_bytes(),
-                });
-                let scenario = json!({
-                    "scenario": "output", "stdout": [], "stderr": [], "code": 0, "append": record
-                });
-                install(directory.path(), name, "command", &scenario);
-            }
-            directories.insert(outside, directory.path().to_owned());
-        }
-        let path = std::env::join_paths(directories).unwrap();
-        Self { directory, path }
-    }
-
-    /// The search programs the child ran from the guard, sorted and without repeats.
-    fn reached(&self) -> Vec<String> {
-        let record = self.directory.path().join("reached");
-        if !record.try_exists().unwrap() {
-            return Vec::new();
-        }
-        let mut names: Vec<String> = std::fs::read_to_string(record)
-            .unwrap()
-            .lines()
-            .map(str::to_owned)
-            .collect();
-        names.sort_unstable();
-        names.dedup();
-        names
-    }
-
-    /// Fails when the child ran a search program from the guard.
-    fn assert_unreached(&self) {
-        let reached = self.reached();
-        assert!(
-            reached.is_empty(),
-            "the child ran {} from outside its test's directories; a test that supplies \
-             the command path installs its own search programs",
-            reached.join(", ")
-        );
-    }
+/// Guards `path`, the command path of a child over `root`, with the shared search guard.
+fn search_guard(root: &Path, path: &OsStr) -> SearchGuard {
+    SearchGuard::new(root, path).expect("the search guard installs")
 }
 
 /// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
@@ -280,7 +218,7 @@ fn guarded_output(
     }
     let supplied = envs.iter().rev().find(|(key, _)| *key == "PATH");
     let guard = if let Some((_, path)) = supplied {
-        SearchGuard::new(root, path)
+        search_guard(root, path)
     } else {
         controlled_search_programs(root);
         let path = format!(
@@ -288,7 +226,7 @@ fn guarded_output(
             root.join("bin").display(),
             std::env::var("PATH").unwrap_or_default()
         );
-        SearchGuard::new(root, OsStr::new(&path))
+        search_guard(root, OsStr::new(&path))
     };
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE");
     let mut all: Vec<(&OsStr, &OsStr)> = vec![
@@ -302,7 +240,7 @@ fn guarded_output(
             .map(|artifact| (OsStr::new("MAESTRO_NATIVE_FIXTURE"), artifact.as_os_str())),
     );
     all.extend(envs.iter().copied());
-    all.push((OsStr::new("PATH"), guard.path.as_os_str()));
+    all.push((OsStr::new("PATH"), guard.path()));
     let output = TestProcess::current(test)
         .unwrap()
         .env_clear()
@@ -343,7 +281,7 @@ fn a_child_without_its_own_search_programs_reaches_the_guard_not_the_host() {
             String::from_utf8_lossy(&output.stderr)
         );
         assert_eq!(
-            guard.reached(),
+            guard.reached().unwrap(),
             ["fd", "rg"],
             "the guard answers before the host copies"
         );

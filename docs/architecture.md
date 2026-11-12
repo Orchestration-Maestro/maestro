@@ -192,10 +192,7 @@ The listing leaf `maestro-listing` is declared core below layer 0 with no worksp
 dependencies, including `maestro-path`. It owns directory listing: one directory's
 entries, sorted by file name on every platform. Only resources, theme, the toolkit,
 tools, session, repository tooling and the application may depend on it, on native
-targets; they keep kind filtering, name decoding and any further ordering. The
-guest crate declares it as one build dependency for its build script, and
-guest-authoring examples as one portable development dependency from
-`maestro-extensions-wasm`; a normal dependency stays forbidden.
+targets; they keep kind filtering, name decoding and any further ordering.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
@@ -422,13 +419,6 @@ excluded. Macro definitions are not expanded, but authored invocation tokens
 inside functions are compared. Unparsed fragments produce no candidates;
 compound configurations are not evaluated. There is no baseline, allowlist or
 suppression attribute.
-
-The shipped extension example tests share their document decoding and
-registration release in `src/tests/example_support.rs`. That release also asserts
-the names the caller expects the host to have admitted and that nothing stays
-lent. A per-example test beside it that writes the decode or the release walk
-inline is rejected with its file and line, wherever the copy sits: a bare call, a
-macro argument, a closure or a method.
 
 Conventions reject a platform temporary directory that any member's test code
 names itself. Test-owned code is a test file layout and every item inside an

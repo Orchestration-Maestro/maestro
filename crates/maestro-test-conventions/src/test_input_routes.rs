@@ -8,15 +8,12 @@ use proc_macro2::{TokenStream, TokenTree};
 use crate::source::{Member, Source};
 
 /// Repository directories whose changes select only the packages that read them.
-const DIRECTORIES: [&str; 3] = ["docs", "examples", "assets"];
+const DIRECTORIES: [&str; 2] = ["docs", "assets"];
 
 /// Package-directory resolvers and the repository directories each one leads to; in a source
 /// checkout the package directory is the workspace root.
-const RESOLVERS: [(&str, &[&str]); 3] = [
-    ("get_docs_path", &["docs"]),
-    ("get_examples_path", &["examples"]),
-    ("get_package_dir", &["docs", "examples"]),
-];
+const RESOLVERS: [(&str, &[&str]); 2] =
+    [("get_docs_path", &["docs"]), ("get_package_dir", &["docs"])];
 
 /// Read the CI configuration's `test_inputs` routes, or `None` when the workspace has none.
 fn routes(root: &Path) -> Result<Option<toml::Table>, String> {

@@ -7,8 +7,9 @@ use crate::{
     tokenizer::capture,
 };
 use maestro_text::is_whitespace_scalar;
+mod record;
 mod state;
-pub(crate) use state::LineEnds;
+pub(crate) use record::LineEnds;
 use state::{CompletedItem, ItemLines};
 
 /// Marker identity and indentation at the start of one list item.
@@ -338,6 +339,10 @@ impl ListFrame {
 
     /// Admit the next physical line, or admit the trailing item once lines end.
     fn lines<E>(&mut self, lexer: &mut Lexer<'_, E>) -> Option<Step> {
+        if let Some(taken) = self.adopt() {
+            self.offset += taken;
+            return None;
+        }
         let Some(line) = self.next_line() else {
             return Some(self.begin_item(lexer, false, None, None));
         };
@@ -351,6 +356,13 @@ impl ListFrame {
             Some(marker) => self.begin_item(lexer, true, Some(Next { line, marker }), None),
             None => self.begin_item(lexer, false, None, None),
         })
+    }
+
+    /// Bytes of aligned continuation lines the open item takes as the enclosing item recorded them.
+    fn adopt(&mut self) -> Option<usize> {
+        let lines = self.lines.as_ref()?;
+        let state = self.state.as_deref_mut()?;
+        Some(state.item.adopt(&self.source, lines, self.offset)).filter(|taken| *taken > 0)
     }
 
     /// Frame the next physical line, by the enclosing item's recorded line ends when present.

@@ -398,7 +398,7 @@ The SDK examples, the RPC client demo, the browser chat example and the other-la
 
 - maestro-packages depends on Maestro crates through git dependencies pinned to one exact commit (`rev`). Every crate both workspaces share uses Maestro's exact version.
 - Maestro has no crate, build, test or CI edge to maestro-packages. The one edge in that direction is release data: a Maestro release copies the `examples/` tree of the maestro-packages release with the same version into its bundle.
-- A source checkout fetches the tree with `just setup`, which runs `development examples`. Git ignores the fetched tree, and no Maestro test or CI step reads it. Without it, `copy-assets` fails because the tree is missing.
+- A source checkout fetches the tree with `just setup`, which runs `development examples [<ref>]`. The command copies maestro-packages' `examples/` at `<ref>` (default: its default branch) into the checkout's `examples/` with the `git` command. The new tree replaces the old one only after a complete fetch, so a failed fetch reports git's error and keeps the previous tree. A test-only source option points the command at a local repository. Git ignores the fetched tree, and no Maestro test or CI step reads it. Without it, `copy-assets` fails because the tree is missing.
 
 **Qualification.** maestro-packages' shared CI builds every example and runs its tests:
 
@@ -716,10 +716,7 @@ case-insensitive name order on NTFS. The JavaScript runtime sorts its listing on
 Unix only; that platform difference is a runtime mechanic, so the leaf does not
 copy it. Only resources, theme, the terminal toolkit, tools, session, repository
 tooling and the application may depend on it, and only on native targets. Callers
-keep their own kind filtering, name decoding and any further ordering. The guest
-crate declares one build dependency for its build script, which reads the example
-test files in the leaf's name order, and the guest-authoring examples declare one
-portable development dependency for their own directory reads.
+keep their own kind filtering, name decoding and any further ordering.
 
 `maestro-realpath` is a core leaf below layer 0 whose only workspace dependency is
 `maestro-path`. Its one job is resolving a native path to its real path: links
@@ -882,12 +879,6 @@ product's one engine configuration. It permits no normal or build edge.
 non-optional development dependency, lets the controlled guest bus keep its
 callback registrations in the shared listener collection. It permits no normal or
 build edge.
-`maestro-extensions-wasm` to `maestro-listing` lets the guest crate read a
-directory in name order. The crate declares one portable build dependency for its
-build script, so the generated example-module inventory keeps that order, and the
-guest-authoring examples declare one portable development dependency for their own
-directory reads.
-Neither declaration permits a normal dependency on the leaf.
 `maestro` to `maestro-lock`, declared as a native, non-optional development
 dependency, serializes the executable's file-trigger test on the shared host
 fixture. It permits no normal or build edge.
