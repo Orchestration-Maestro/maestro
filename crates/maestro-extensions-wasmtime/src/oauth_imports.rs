@@ -12,9 +12,8 @@ use wasmtime::{
     StoreContextMut,
     component::{LinkerInstance, Resource},
 };
-use wasmtime_wasi::WasiView;
 
-/// Links native provider metadata, callable key conversion and credential enumeration.
+/// Links native provider metadata and callable key conversion.
 pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
@@ -53,35 +52,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     )?;
     crate::oauth_interaction::add_to_linker(host)?;
     login(host)?;
-    credential_login(host)?;
-    enumeration(host)
-}
-
-/// Transfers the native owner's ordered implementations as independently owned resources.
-fn enumeration<T: WasiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]auth-storage.get-oauth-providers",
-        |mut store: StoreContextMut<'_, T>,
-         (resource,): (Resource<crate::credential_reads::Endpoint>,)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let result = endpoint
-                .read(crate::credential_reads::Request::Providers)
-                .and_then(|providers| {
-                    providers
-                        .into_iter()
-                        .map(|provider| {
-                            store
-                                .data_mut()
-                                .ctx()
-                                .table
-                                .push(provider)
-                                .map_err(|error| error.to_string())
-                        })
-                        .collect::<Result<Vec<_>, _>>()
-                });
-            Ok((result,))
-        },
-    )
+    credential_login(host)
 }
 
 /// Canonical login operands retain their typed callback and cancellation capabilities.

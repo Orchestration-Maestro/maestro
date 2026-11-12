@@ -126,7 +126,7 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
     );
     assert!(!path.exists());
     assert!(accepted.has_auth("valid").unwrap());
-    rejected_json_keeps_credentials(&accepted, &first.registry());
+    rejected_json_keeps_credentials(&accepted);
     rejected_catalog_keeps_paths_lazy(
         &api,
         &other.registry(),
@@ -137,15 +137,9 @@ fn provider_boundary_rejections_leave_other_resources_usable() {
 }
 
 /// Malformed transport text is rejected before accepting any credential mutation.
-fn rejected_json_keeps_credentials(
-    owner: &maestro_extensions::AuthStorage,
-    registry: &crate::local_resources::Registry,
-) {
-    let (reply, result) = std::sync::mpsc::channel();
-    crate::credential_reads::Request::Set("valid".into(), "{".into(), reply)
-        .answer(owner, registry);
+fn rejected_json_keeps_credentials(owner: &maestro_extensions::AuthStorage) {
     assert_eq!(
-        result.recv().unwrap(),
+        crate::credential_reads::set(owner, "valid", "{"),
         Err("EOF while parsing an object at line 1 column 1".into())
     );
     assert!(owner.get_all().is_empty());
@@ -191,12 +185,14 @@ fn released_credentials_reject(endpoint: crate::credential_reads::Endpoint, mut 
             );
             let valid = survivor.clone();
             let worker = std::thread::spawn(move || {
-                use crate::read_imports::ReadEndpoint;
                 assert_eq!(
-                    endpoint.read(crate::credential_reads::Request::List),
+                    endpoint.list().result(),
                     Err("extension credential resource ended".into())
                 );
-                valid.read(crate::credential_reads::Request::List)
+                match valid.list().next() {
+                    Err(Ok(crate::import_route::Value::Lines(names))) => Ok(names),
+                    _ => Err("unexpected route outcome".to_owned()),
+                }
             });
             assert!(pump.answer_next().await);
             assert!(pump.answer_next().await);
@@ -317,7 +313,6 @@ fn assert_original_thread(
 
 #[test]
 fn released_credentials_reject_every_kind_of_operation_with_their_ended_text() {
-    use crate::{credential_reads::Request, read_imports::ReadEndpoint};
     let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let credentials = pump
         .registry()
@@ -331,38 +326,28 @@ fn released_credentials_reject_every_kind_of_operation_with_their_ended_text() {
     let lease = credentials.0.clone();
     let errors = crate::tests::ended_errors(lease, pump, admission, move || {
         [
-            credentials.read(Request::Providers).err().unwrap(),
+            credentials.get_oauth_providers().err().unwrap(),
             credentials
-                .read(|reply| Request::Runtime("p".into(), "k".into(), reply))
+                .set_runtime_api_key("p".into(), "k".into())
                 .unwrap_err(),
+            credentials.remove_runtime_api_key("p".into()).unwrap_err(),
+            credentials.reload().result().unwrap_err(),
+            credentials.get("p".into()).result().unwrap_err(),
             credentials
-                .read(|reply| Request::RemoveRuntime("p".into(), reply))
+                .set("p".into(), "{}".into())
+                .result()
                 .unwrap_err(),
-            credentials.read(Request::Reload).unwrap_err(),
+            credentials.remove("p".into()).result().unwrap_err(),
+            credentials.list().result().unwrap_err(),
+            credentials.has("p".into()).result().unwrap_err(),
+            credentials.has_auth("p".into()).result().unwrap_err(),
             credentials
-                .read(|reply| Request::Get("p".into(), reply))
+                .get_auth_status("p".into())
+                .result()
                 .unwrap_err(),
-            credentials
-                .read(|reply| Request::Set("p".into(), "{}".into(), reply))
-                .unwrap_err(),
-            credentials
-                .read(|reply| Request::Remove("p".into(), reply))
-                .unwrap_err(),
-            credentials.read(Request::List).unwrap_err(),
-            credentials
-                .read(|reply| Request::Has("p".into(), reply))
-                .unwrap_err(),
-            credentials
-                .read(|reply| Request::HasAuth("p".into(), reply))
-                .unwrap_err(),
-            credentials
-                .read(|reply| Request::Status("p".into(), reply))
-                .unwrap_err(),
-            credentials.read(Request::All).unwrap_err(),
-            credentials.read(Request::Errors).unwrap_err(),
-            credentials
-                .read(|reply| Request::Logout("p".into(), reply))
-                .unwrap_err(),
+            credentials.get_all().result().unwrap_err(),
+            credentials.drain_errors().unwrap_err(),
+            credentials.logout("p".into()).result().unwrap_err(),
         ]
     });
     assert_eq!(errors, ["extension credential resource ended"; 14]);

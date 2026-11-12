@@ -29,18 +29,6 @@ impl State {
 }
 
 impl State {
-    /// Dispatches a credential request outside the capability-table borrow.
-    pub(super) fn credentials(&self, id: u64, request: crate::credential_reads::Request) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Credentials(owner, _)) = capability.as_deref() {
-            request.answer(owner, &self.registry);
-        } else {
-            request.reject("extension credential resource ended");
-        }
-    }
-}
-
-impl State {
     /// Starts an OAuth login or refresh, or serves an OAuth provider or interaction request.
     pub(super) fn oauth(&self, message: super::Message) {
         match message {

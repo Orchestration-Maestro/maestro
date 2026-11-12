@@ -174,6 +174,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::ui_imports::add_to_linker(&mut host)?;
     crate::custom_imports::add_close(&mut host)?;
     crate::lent_imports::add_to_linker(&mut host)?;
+    crate::credential_imports::add_storage(&mut host)?;
     crate::watch_imports::add_watcher(&mut host)?;
     crate::keys_imports::add_manager(&mut host)?;
     crate::overlay_imports::add_options(&mut host)?;

@@ -138,8 +138,6 @@ pub(crate) enum Message {
     OAuthInteraction(crate::oauth_interaction::Request),
     /// Calls an independently retained OAuth implementation.
     OAuthProvider(u64, crate::oauth_reads::Request),
-    /// Uses independently retained accepted credentials.
-    Credentials(u64, crate::credential_reads::Request),
     /// Authorizes and persists through the retained credential owner.
     CredentialLogin(
         u64,

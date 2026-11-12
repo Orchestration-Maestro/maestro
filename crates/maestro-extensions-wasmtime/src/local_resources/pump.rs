@@ -210,7 +210,6 @@ impl State {
             | Message::OAuthRefresh(..)
             | Message::OAuthProvider(..)
             | Message::OAuthInteraction(..)) => self.oauth(message),
-            Message::Credentials(id, request) => self.credentials(id, request),
             Message::CredentialLogin(id, provider, controls, reply, admission) => {
                 self.start_credential_login(id, (provider, controls), reply, admission);
             }

@@ -243,6 +243,14 @@ held!(
     Capability::NativeWatcher(watch) => watch
 );
 
+held!(
+    /// The accepted credentials of one credential owner.
+    Credentials,
+    std::sync::Arc<maestro_extensions::AuthStorage>,
+    "extension credential resource ended",
+    Capability::Credentials(owner, _) => owner
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
