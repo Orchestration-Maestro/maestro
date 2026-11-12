@@ -1,8 +1,63 @@
 //! Setup entries for tests that need a topology without live processes.
 //!
 //! Each entry runs through the owners production uses, so the save mark and the retained
-//! terminal metadata behave as they do for a created workspace. Reads and assertions go
-//! through commands and events, never through these entries.
+//! terminal metadata behave as they do for a created workspace. The readers here (`root_pane`,
+//! `leaves`, `tokens`) answer from the retained topology for fixtures that need an id, and the
+//! asserting helpers state the one outcome their name says.
+
+/// A daemon answering workspace commands, with workspaces that need no live process.
+pub mod api;
+/// Helpers that the daemon api tests share between the integration program and the unit tests.
+pub mod daemon_api;
+/// Helpers that the layout apply tests share between the integration program and the unit tests.
+pub mod layout_apply;
+/// Helpers that the layout commands tests share between the integration program and the unit tests.
+pub mod layout_commands;
+/// Helpers that the pane close tests share between the integration program and the unit tests.
+pub mod pane_close;
+/// Helpers that the pane commands tests share between the integration program and the unit tests.
+pub mod pane_commands;
+/// Helpers that the pane metadata tests share between the integration program and the unit tests.
+pub mod pane_metadata;
+/// Helpers that the pane move tests share between the integration program and the unit tests.
+pub mod pane_move;
+/// Helpers that the pane read tests share between the integration program and the unit tests.
+pub mod pane_read;
+/// Helpers that the pane rename tests share between the integration program and the unit tests.
+pub mod pane_rename;
+/// Helpers that the pane resize tests share between the integration program and the unit tests.
+pub mod pane_resize;
+/// Helpers that the pane swap tests share between the integration program and the unit tests.
+pub mod pane_swap;
+/// Helpers that the pane zoom tests share between the integration program and the unit tests.
+pub mod pane_zoom;
+/// Native launch adapters for the daemon-owner tests.
+pub mod spawning;
+/// Helpers that the workspace commands tests share between the integration program and the unit tests.
+pub mod workspace_commands;
+
+use std::sync::{Arc, RwLock};
+
+/// Drives one future on a current-thread runtime without test deadlines.
+///
+/// # Errors
+/// Returns why the runtime could not be built.
+pub fn run<T>(future: impl std::future::Future<Output = T>) -> std::io::Result<T> {
+    Ok(tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(future))
+}
+
+/// Builds one isolated detection snapshot for state and any pane runtimes under test.
+///
+/// # Errors
+/// Returns the validation error of an invalid bundled document.
+pub fn manifest_cache() -> Result<Arc<RwLock<maestro_detection::definitions::ManifestCache>>, String>
+{
+    maestro_detection::definitions::ManifestCache::new(None, None)
+        .map(|cache| Arc::new(RwLock::new(cache)))
+}
 
 use super::App;
 use crate::terminal::model::TerminalState;

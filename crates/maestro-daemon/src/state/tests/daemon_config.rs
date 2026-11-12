@@ -1,18 +1,16 @@
 //! Live daemon preferences retain independent areas through the settings owner.
-#![cfg(test)]
-#![cfg(target_os = "linux")]
 
-use crate::config_support;
+use crate::state::tests::config_support;
 
-use config_support::{block_on, fixture, put};
-use maestro_daemon::state::App;
-use maestro_daemon::{
+use crate::state::App;
+use crate::{
     settings::model::{
         AgentPanelSortConfig, ConfigReloadStatus, NewTerminalCwdConfig, ShellModeConfig,
         ToastDelivery,
     },
     state::model::{Mode, ToastKind},
 };
+use config_support::{block_on, fixture, put};
 use serde_json::json;
 use std::{path::Path, time::Instant};
 
@@ -60,11 +58,9 @@ fn live_reload_applies_daemon_areas_without_binding_loader() {
         .topology
         .new_with_tab("/selected".into(), None, |_, _| Ok(()))
         .unwrap();
-    app.state.selection = Some(maestro_daemon::selection::Selection::range(
-        pane, 0, 0, 1, None,
-    ));
-    app.state.selection_autoscroll = Some(maestro_daemon::state::model::SelectionAutoscroll {
-        direction: maestro_daemon::state::model::SelectionAutoscrollDirection::Down,
+    app.state.selection = Some(crate::selection::Selection::range(pane, 0, 0, 1, None));
+    app.state.selection_autoscroll = Some(crate::state::model::SelectionAutoscroll {
+        direction: crate::state::model::SelectionAutoscrollDirection::Down,
         last_mouse_screen_col: 1,
         last_mouse_screen_row: 1,
         inner_rect: maestro_workspace::tiling::Rect::new(0, 0, 2, 2),
@@ -95,7 +91,7 @@ fn live_reload_applies_daemon_areas_without_binding_loader() {
 
 #[test]
 fn live_reload_requests_client_reload_for_host_cursor_only_change() {
-    use maestro_daemon::settings::model::HostCursorModeConfig;
+    use crate::settings::model::HostCursorModeConfig;
     let (mut app, mut manager, storage) = fixture();
     put(&*storage, r#"{"multiplexer":{"hostCursor":"native"}}"#);
     assert!(!app.state.request_client_config_reload.0);
@@ -107,7 +103,7 @@ fn live_reload_requests_client_reload_for_host_cursor_only_change() {
 
 #[test]
 fn live_reload_updates_sidebar_width_only_when_config_owned() {
-    use maestro_daemon::state::model::SidebarWidthSource;
+    use crate::state::model::SidebarWidthSource;
     let (mut app, mut manager, storage) = fixture();
     assert_eq!(
         app.state.sidebar_width_source,
@@ -137,7 +133,7 @@ fn live_reload_updates_sidebar_width_only_when_config_owned() {
 
 #[test]
 fn live_reload_updates_sidebar_token_rows() {
-    use maestro_daemon::settings::navigation::{AgentSidebarToken, SpaceSidebarToken};
+    use crate::settings::navigation::{AgentSidebarToken, SpaceSidebarToken};
     let (mut app, mut manager, storage) = fixture();
     put(&*storage, &json!({"multiplexer":{"sidebar":{
         "agents":{"rows":[["state_icon", "$summary"]],"rowGap":1,"rowsByAgent":{"claude":[["terminal_title_stripped"]]}},
@@ -204,7 +200,7 @@ fn live_reload_does_not_reset_sidebar_to_startup_state() {
 
 #[test]
 fn live_reload_updates_sidebar_collapsed_mode() {
-    use maestro_daemon::settings::model::SidebarCollapsedModeConfig;
+    use crate::settings::model::SidebarCollapsedModeConfig;
     let (mut app, mut manager, storage) = fixture();
     assert_eq!(
         app.config.ui.sidebar_collapsed_mode,
@@ -228,7 +224,7 @@ fn live_reload_updates_sidebar_collapsed_mode() {
 
 #[test]
 fn live_reload_updates_sidebar_bounds_and_reclamps() {
-    use maestro_daemon::state::model::SidebarWidthSource;
+    use crate::state::model::SidebarWidthSource;
     let (mut app, mut manager, storage) = fixture();
     assert_eq!(app.config.ui.sidebar_min_width, 18);
     assert_eq!(app.config.ui.sidebar_max_width, 36);
@@ -417,22 +413,20 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     let (mut app, mut manager, storage) = fixture();
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
-    let paths = maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+    let paths = crate::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
     app.config.experimental.pane_history.0 = true;
     std::fs::write(paths.history_path(), "old history").unwrap();
-    let snapshot = maestro_daemon::persistence::capture(&app.state, &app.terminal_runtimes);
+    let snapshot = crate::persistence::capture(&app.state, &app.terminal_runtimes);
     let expected = serde_json::to_string_pretty(&snapshot).unwrap();
-    let history = maestro_daemon::persistence::capture_history(
-        &app.state.topology.workspaces,
-        &app.terminal_runtimes,
-    );
+    let history =
+        crate::persistence::capture_history(&app.state.topology.workspaces, &app.terminal_runtimes);
     let (release, wait) = std::sync::mpsc::channel();
     let (ready, waiting) = std::sync::mpsc::channel();
     let target = paths.clone();
     app.session_save_thread = Some(std::thread::spawn(move || {
         ready.send(()).unwrap();
         wait.recv().unwrap();
-        maestro_daemon::persistence::save(&target, &snapshot, Some(&history));
+        crate::persistence::save(&target, &snapshot, Some(&history));
     }));
     waiting.recv().unwrap();
     put(
@@ -449,7 +443,7 @@ fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_
     block_on(app.run(
         &paths,
         &mut tokio::sync::mpsc::unbounded_channel().1,
-        &mut crate::support::api::settings(),
+        &mut crate::state::test_support::api::settings(),
         std::future::ready(()),
     ));
     assert!(!Path::new(&paths.history_path()).exists());
@@ -469,8 +463,7 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
         block_on(app.reload_config(&mut manager, Path::new(".")));
         let directory = maestro_test_directory::Scratch::new().unwrap();
         let root = directory.path().to_path_buf();
-        let paths =
-            maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+        let paths = crate::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "retained history").unwrap();
         std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
         put(
@@ -490,7 +483,7 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
         block_on(app.run(
             &paths,
             &mut tokio::sync::mpsc::unbounded_channel().1,
-            &mut crate::support::api::settings(),
+            &mut crate::state::test_support::api::settings(),
             std::future::ready(()),
         ));
         assert_eq!(
@@ -511,8 +504,7 @@ fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_sn
         let (mut app, mut manager, storage) = fixture();
         let directory = maestro_test_directory::Scratch::new().unwrap();
         let root = directory.path().to_path_buf();
-        let paths =
-            maestro_daemon::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
+        let paths = crate::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "old history").unwrap();
         std::fs::write(paths.snapshot_path(), "unrelated snapshot").unwrap();
         put(
@@ -530,7 +522,7 @@ fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_sn
             block_on(app.run(
                 &paths,
                 &mut tokio::sync::mpsc::unbounded_channel().1,
-                &mut crate::support::api::settings(),
+                &mut crate::state::test_support::api::settings(),
                 std::future::ready(()),
             ));
         }

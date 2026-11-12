@@ -279,14 +279,25 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
   | Raw client-socket cases | deliveries 29 and 30 |
   | Command cases | deliveries 21–23 |
   | Attached-client cases | delivery 34 |
-- **Tests drive the daemon through its commands and events.** An integration test sends commands to
+- **Tests drive the daemon through its commands and events.** A test sends commands to
   `App::handle_api_request`, feeds background observations to `App::handle_internal_event`, and reads what the
   daemon published through `App::event_hub`. Topology that needs no live process comes from the seed entries
   behind the daemon's `test-support` feature (`seed_workspace`, `seed_tab`, `seed_split`,
   `seed_worktree_membership`). The entries run through the same owner methods as creation. Every structural
   change that must be saved goes through `DaemonState::edit_topology`, which sets the save mark;
-  `take_session_dirty` is the one production reader. The state fields stay public, and tests read and write
-  them directly where no command exposes the state.
+  `take_session_dirty` is the one production reader.
+- **Daemon state stays inside the crate.** The fields of `App` and `DaemonState` are crate-private, apart
+  from `App::state`, `App::config`, `App::launch`, `DaemonState::topology`, `DaemonState::manifests` and
+  `DaemonState::sidebar_collapsed`. The integration program and the standard-stream adapter's tests read or
+  set the first five; `sidebar_collapsed` is start state the sidebar will read once it is wired, so it
+  stays public without an accessor. Each test sorts by what it reads. A test that answers
+  through commands and events, or reads a public field, lives in the crate's one integration program. A test
+  that asserts on state no command exposes (the save mark, terminal metadata, mode, copy mode, deadlines,
+  launch and configuration values) or drives live panes through the private runtime table is a unit test
+  under `state::tests`, beside the module that owns the state. The command driver, the launch inputs and any
+  helper both places call live once in the `test-support` feature and return a result instead of panicking;
+  a helper that needs the development-only crates stays with the side that uses it. Every test keeps its
+  platform gate.
 - **Harness floors.** A test that needs a later harness, such as the server's own test harness, lands with
   that harness.
 - **PTY children in tests.** Tests that spawn PTY children use `maestro-test-process` to run a named test as

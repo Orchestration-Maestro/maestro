@@ -1,10 +1,10 @@
 //! Global configuration edits remain governed independently of project layers.
-#![cfg(all(test, target_os = "linux"))]
 
-use crate::{config_support, daemon_base_settings::layer};
+use crate::settings::model::{ConfigReloadStatus, StatusIndicatorStyle};
+use crate::settings::test_support::layer;
+use crate::state::App;
+use crate::state::tests::config_support;
 use config_support::{block_on, fixture};
-use maestro_daemon::settings::model::{ConfigReloadStatus, StatusIndicatorStyle};
-use maestro_daemon::state::App;
 use maestro_settings::{Settings, SettingsErrorKind, SettingsManager, SettingsScope};
 use maestro_test_directory::Scratch;
 use serde_json::json;
@@ -17,21 +17,27 @@ fn governed_app() -> (App, SettingsManager, Scratch) {
     publisher.set_global_key_path("multiplexer", &["statusIndicators"], Some(json!("symbols")));
     publisher.publish_base_layer(
         SettingsScope::Global,
-        Some(layer(
-            json!({
-                "multiplexer":{"statusIndicators":"symbols"}
-            }),
-            &["multiplexer.statusIndicators"],
-        )),
+        Some(
+            layer(
+                json!({
+                    "multiplexer":{"statusIndicators":"symbols"}
+                }),
+                &["multiplexer.statusIndicators"],
+            )
+            .unwrap(),
+        ),
     );
     publisher.publish_base_layer(
         SettingsScope::Project,
-        Some(layer(
-            json!({
-                "multiplexer":{"sound":{"enabled":false}}
-            }),
-            &["multiplexer.sound.enabled"],
-        )),
+        Some(
+            layer(
+                json!({
+                    "multiplexer":{"sound":{"enabled":false}}
+                }),
+                &["multiplexer.sound.enabled"],
+            )
+            .unwrap(),
+        ),
     );
     block_on(publisher.flush());
     let mut manager = SettingsManager::create(path, path, ".maestro");
