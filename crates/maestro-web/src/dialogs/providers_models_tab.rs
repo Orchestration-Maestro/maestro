@@ -1,5 +1,8 @@
 //! Settings tab listing built-in provider keys and the configured custom servers.
 use super::{custom_provider_dialog::CustomProviderDialog, settings_dialog::SettingsTab};
+use crate::persistence::{
+    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, get_app_storage,
+};
 use crate::{
     CustomProviderCard,
     browser::{
@@ -11,7 +14,6 @@ use crate::{
     page::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
 };
-use maestro_app::{AutoDiscoveryProviderType, CustomProvider, CustomProviderType, get_app_storage};
 use maestro_models::get_providers;
 use maestro_session::Presence;
 use std::{

@@ -335,13 +335,13 @@ Each entry names its owner, its blocking observation and what the [bootstrap qua
 
 ### Public source evidence
 
-These citations establish requirements or source behavior, not passing replacement tests. Paths reflect the inspected tree; coordinated owner renames update citations rather than retaining duplicate modules. `A` below is the public path `crates/maestro-app/src/browser/components/sandbox`; `W` is `crates/maestro-web/src/components`; `I` is `W/sandboxed_iframe`.
+These citations establish requirements or source behavior, not passing replacement tests. Paths reflect the inspected tree; coordinated owner renames update citations rather than retaining duplicate modules. `A` below is the public path `crates/maestro-web/src/components/browser/sandbox`; `W` is `crates/maestro-web/src/components`; `I` is `W/sandboxed_iframe`.
 
 | ID | Confidence | Public evidence |
 | --- | --- | --- |
 | C01 | proven | #3973 and its parent #3768: Rust runtime, retained globals/messages/order/sender checks, supplied content, generated glue, reviewed CSP and docs. |
 | C02 | proven | `A/providers.rs:15-57`; built-in `get_runtime` implementations; `crates/maestro-web/src/runtime_contributions/adapters.rs:253-269`. |
-| C03 | proven | `A/artifacts_runtime_provider/runtime.js:1-82`; host owner `A/artifacts_runtime_provider.rs:141-265`; `crates/maestro-app/tests/artifact_runtime_access.rs`. |
+| C03 | proven | `A/artifacts_runtime_provider/runtime.js:1-82`; host owner `A/artifacts_runtime_provider.rs:141-265`; `crates/maestro-web/tests/artifact_runtime_access.rs`. |
 | C04 | proven | `A/attachments_runtime_provider/runtime.js:1-31`; data owner `A/attachments_runtime_provider.rs:21-49`; app `tests/sandbox_runtime_providers.rs`. |
 | C05 | proven | `A/console_runtime_provider/runtime.js:1-93`; host owner `A/console_runtime_provider.rs:77-160`; web execution witnesses. |
 | C06 | proven | `A/file_download_runtime_provider/runtime.js:1-51`; host owner `A/file_download_runtime_provider.rs:28-78`; `I/browser/values.rs:62-98`. |

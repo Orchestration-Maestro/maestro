@@ -1,9 +1,9 @@
 # Browser provider access
 
-The application owns provider access policy in
-[`browser::utils`](../../crates/maestro-app/src/browser/utils/mod.rs).
-The browser facade exports the four proxy operations; discovery remains an
-application operation for callers that manage provider settings.
+The web frontend owns provider access policy in
+[`maestro_web::utils`](../../crates/maestro-web/src/utils/mod.rs).
+The crate root exports the four proxy operations; discovery stays in
+`utils::model_discovery` for callers that manage provider settings.
 
 ## CORS proxy
 

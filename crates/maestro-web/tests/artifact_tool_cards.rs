@@ -194,7 +194,7 @@ fn assert_unused_diffs() {
 
 #[test]
 fn artifact_recipes_own_selected_inputs_and_panel_handles() {
-    use maestro_app::browser::tools::documents::{
+    use maestro_web::tools::browser::documents::{
         ArtifactCommand, ArtifactsParams, LocalArtifactsPanel,
     };
     use maestro_web::{ArtifactsToolRenderer, ToolRenderer};
@@ -254,7 +254,7 @@ fn artifact_empty_logs_keep_localized_output_fallback() {
 /// An update owns its signed difference rows; a finished delete shows only its header template.
 #[test]
 fn artifact_updates_keep_signed_rows_and_finished_deletes_have_no_body() {
-    use maestro_app::browser::tools::documents::{ArtifactCommand, ArtifactsParams};
+    use maestro_web::tools::browser::documents::{ArtifactCommand, ArtifactsParams};
     use maestro_web::{ArtifactsToolRenderer, ToolRenderer};
     let renderer = ArtifactsToolRenderer::new(None);
     let mut params = ArtifactsParams {

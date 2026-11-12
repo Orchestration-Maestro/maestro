@@ -188,7 +188,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   shared state behind a mutex or read-write lock may depend on lock: settings,
   credentials, workspace, detection, session, models, agent, tools, extensions, office,
   application, the daemon, the runtime adapter, the terminal adapter, the interactive
-  frontend and the command-line frontend, and the composed executable
+  frontend, the command-line frontend and the web frontend, and the composed executable
   crate only as a native development dependency so its tests serialize one shared
   native fixture. The edge is portable, so the shared-state operations serve
   browser callers; file exclusion stays native.
@@ -244,8 +244,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
 - `maestro-office` is a core crate that reads office documents: spreadsheet number
   formatting and workbook reading, and Word package reading, from supplied bytes. It depends
-  only on text, JSON and lock, builds for the browser, and only the application and the web
-  frontend depend on it.
+  only on text, JSON and lock, builds for the browser, and only the web frontend depends on it.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
@@ -311,7 +310,7 @@ repository tooling and the feature unifier (`maestro-dependencies`) are dedicate
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
 optional utility and the unifier. Sparse workspaces need
-no placeholder crates. Chat, CLI, RPC and web require the application edge, and every frontend declares only the
+no placeholder crates. Chat, CLI and RPC require the application edge, web declares it only when it calls an application operation, and every frontend declares only the
 edges in its row of the dependency table, when used. The terminal adapter
 requires toolkit and text. The
 utility edge never supplies a required edge. The daemon requires the terminal
@@ -339,7 +338,7 @@ executable's file-trigger test on the shared host fixture, the native-only,
 non-optional `maestro-theme` to `maestro-realpath` development edge for the
 browser author example's watched roots,
 and the native, non-optional dev-dependencies
-of the twenty-seven declared callers on `maestro-test-process`, the owner of
+of the twenty-eight declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build

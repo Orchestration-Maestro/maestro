@@ -645,7 +645,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 ```
 
 The PDF qualification corpus carries the Apache-2.0 collection notice in
-[its LICENSE](crates/maestro-app/tests/fixtures/pdf/LICENSE).
+[its LICENSE](crates/maestro-web/tests/fixtures/pdf/LICENSE).
 
 ## Byte download control
 

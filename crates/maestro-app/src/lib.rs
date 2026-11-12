@@ -3,7 +3,6 @@
 //! [`presentation_data`] holds the data frontends render but do not own.
 
 pub mod adapters;
-pub mod browser;
 pub mod configuration;
 pub mod contribution_files;
 pub mod presentation_data;

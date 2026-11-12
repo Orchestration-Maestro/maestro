@@ -1,6 +1,6 @@
 //! Retained native sandbox values and browser-owned display semantics.
+use crate::components::browser::sandboxed_iframe::SandboxValue;
 use js_sys::{Function, JSON, Reflect};
-use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
 use maestro_models::DiagnosticErrorInfo;
 use std::borrow::Cow;
 use wasm_bindgen::{JsCast, JsValue};

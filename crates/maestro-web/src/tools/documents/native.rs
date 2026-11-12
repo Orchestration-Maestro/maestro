@@ -5,11 +5,11 @@ use super::{
     image_artifact::ImageArtifact, markdown_artifact::MarkdownArtifact, pdf_artifact::PdfArtifact,
     svg_artifact::SvgArtifact, text_artifact::TextArtifact,
 };
+use crate::tools::browser::documents::{FileType, get_file_type};
 use crate::{
     page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
-use maestro_app::browser::tools::documents::{FileType, get_file_type};
 mod element;
 pub(crate) use element::define;
 pub(super) use element::{mount, update};

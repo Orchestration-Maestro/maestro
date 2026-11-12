@@ -629,7 +629,7 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
 #[test]
 fn repl_tool_conversion_captures_description_once() {
     let corpus: Value = serde_json::from_str(include_str!(
-        "../../maestro-app/tests/fixtures/javascript_execution/fixtures.json"
+        "../../maestro-web/tests/fixtures/javascript_execution/fixtures.json"
     ))
     .unwrap();
     let state = Arc::new(Mutex::new(

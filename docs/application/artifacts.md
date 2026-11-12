@@ -1,10 +1,10 @@
 # Artifact commands
 
-[`ArtifactsPanel`](../../crates/maestro-app/src/browser/tools/documents.rs)
+[`ArtifactsPanel`](../../crates/maestro-web/src/tools/browser/documents.rs)
 retains an ordered collection of mutable, dated files. Its `tool()` returns an
 executable `artifacts` declaration that remains usable after the caller releases
-the panel. The application SDK exports `Artifact`, `ArtifactsParams` and
-`ArtifactsPanel`.
+the panel. The web frontend owns it in `maestro_web::tools::browser::documents`,
+with `Artifact` and `ArtifactsParams`; the crate root exports the two records.
 
 ## Commands
 
@@ -42,7 +42,7 @@ or clears the selection if no file remains. Opening an unknown file does nothing
 calling the host-open notification. Empty and unknown names remain observable;
 `open_artifact(filename)` additionally notifies only for an existing map key.
 
-`browser::tools::documents::get_file_type` is the single filename discriminator.
+`tools::browser::documents::get_file_type` is the single filename discriminator.
 It selects HTML, SVG, Markdown, image, PDF, spreadsheet, Word, text/code or generic
 from the last literal dot-separated segment with Unicode lowercase. It does not
 trim whitespace or normalize paths. HTML selection (including the filename
@@ -58,7 +58,7 @@ descriptions; their actual runtime operations are separate from this command
 owner.
 
 `ArtifactsPanel` defaults to the existing shared presentation pointer.
-`browser::tools::documents::LocalArtifactsPanel::new_local` instead returns a panel
+`tools::browser::documents::LocalArtifactsPanel::new_local` instead returns a panel
 retaining the existing local execution pointer, permitting native `Rc` captures; its
 `tool()` then builds the local executable tool over that panel's command state. Both
 panels use the same command state, declarations and policy.

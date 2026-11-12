@@ -22,10 +22,10 @@ pub mod pdf_artifact;
 pub mod svg_artifact;
 pub mod text_artifact;
 use crate::browser::attachment_content::AttachmentHost;
+use crate::tools::browser::documents::ArtifactPresentation;
+use crate::tools::browser::documents::{FileType, get_file_type};
 pub use artifact_element::ArtifactElement;
 use artifact_element::ArtifactView;
-use maestro_app::browser::tools::documents::ArtifactPresentation;
-use maestro_app::browser::tools::documents::{FileType, get_file_type};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -225,7 +225,7 @@ impl ArtifactsPanel {
     /// Returns retained-visibility or incompatible view-borrow failures.
     pub fn connected_callback<P>(
         &self,
-        caller: &maestro_app::browser::tools::documents::ArtifactsPanel<P>,
+        caller: &crate::tools::browser::documents::ArtifactsPanel<P>,
     ) -> Result<(), ArtifactUiError>
     where
         P: Clone + std::ops::Deref,
@@ -336,7 +336,7 @@ mod retained;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod panel;
-pub use maestro_app::browser::tools::documents::{Artifact, ArtifactsParams};
+pub use crate::tools::browser::documents::{Artifact, ArtifactsParams};
 
 #[cfg(target_arch = "wasm32")]
 pub use html_artifact::HtmlArtifact;

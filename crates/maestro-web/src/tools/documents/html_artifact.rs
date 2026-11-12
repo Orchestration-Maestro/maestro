@@ -1,4 +1,6 @@
 //! HTML artifact keeping its original source beside an isolated preview and its logs.
+use crate::components::browser::sandbox::providers::SandboxRuntimeProvider;
+use crate::components::browser::sandboxed_iframe::SandboxUrlProvider;
 use crate::{
     I18n, SandboxIframe,
     browser::values::BrowserSandboxValue,
@@ -9,7 +11,6 @@ use crate::{
         types::ToolUiError,
     },
 };
-use maestro_app::{SandboxRuntimeProvider, SandboxUrlProvider};
 use maestro_models::SharedHandle;
 use std::{
     cell::{Cell, RefCell},
