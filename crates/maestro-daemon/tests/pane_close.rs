@@ -1,19 +1,17 @@
 //! Pane close through the daemon's handler: the pane, its tab or its workspace goes, with its terminal.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_tab, daemon_with_workspaces, events_after, failure, join_group, request,
-    root_pane, split_pane, workspace_ids,
+    add_tab, daemon_with_workspaces, events_after, failure, join_group, request, root_pane,
+    split_pane, workspace_ids,
 };
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::Mode;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, SplitDirection};
 use serde_json::json;
 
 /// Closes the pane with the public handle `pane`.
-fn close(
-    app: &mut TestApp,
-    pane: &str,
-) -> Result<ResponseResult, maestro_protocol::schema::ErrorBody> {
+fn close(app: &mut App, pane: &str) -> Result<ResponseResult, maestro_protocol::schema::ErrorBody> {
     request(app, json!({"type": "pane.close", "pane_id": pane}))
 }
 

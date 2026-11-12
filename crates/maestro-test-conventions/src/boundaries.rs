@@ -350,6 +350,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     ) || (shared_event_record(name) && kind != "type")
     {
         "maestro-request"
+    } else if name == "ModelConstructor" {
+        "maestro-models-catalog"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
         "maestro-entry"
     } else if input_presenter_record(name) {

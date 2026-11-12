@@ -18,12 +18,8 @@ const ALL: GitStatusRefreshDemand = GitStatusRefreshDemand {
 };
 
 /// Retained state with one workspace per name, each rooted at its own directory.
-fn state_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
-    let mut state = DaemonState::new(
-        &Config::default(),
-        (|| 0) as fn() -> u128,
-        support::manifest_cache(),
-    );
+fn state_with_workspaces(names: &[&str]) -> DaemonState {
+    let mut state = DaemonState::new(&Config::default(), || 0, support::manifest_cache());
     for name in names {
         state
             .topology
@@ -35,7 +31,7 @@ fn state_with_workspaces(names: &[&str]) -> DaemonState<fn() -> u128> {
 }
 
 /// An observation of workspace `index` for the directory it currently follows.
-fn status(state: &DaemonState<fn() -> u128>, index: usize) -> WorkspaceGitStatus {
+fn status(state: &DaemonState, index: usize) -> WorkspaceGitStatus {
     let workspace = &state.topology.workspaces[index];
     WorkspaceGitStatus {
         workspace_id: workspace.id.clone(),

@@ -11,7 +11,7 @@ const DEFAULT_RESIZE_AMOUNT: f32 = 0.05;
 /// Largest fraction of the split one request moves.
 const MAX_RESIZE_AMOUNT: f32 = 0.5;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Moves the divider nearest the pane's edge in a direction; focus stays where it was.
     ///
     /// The sign of the amount is ignored and a non-finite amount means the default.

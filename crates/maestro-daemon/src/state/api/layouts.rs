@@ -10,7 +10,7 @@ use maestro_protocol::schema::{
     ErrorBody, LayoutDescription, LayoutExportParams, LayoutSetSplitRatioParams, ResponseResult,
 };
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Describes the tab named by `tab_id`, or holding `pane_id`, or the active tab.
     ///
     /// # Errors

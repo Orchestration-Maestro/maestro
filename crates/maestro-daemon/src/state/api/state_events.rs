@@ -6,7 +6,7 @@ use crate::state::{
 };
 use maestro_protocol::events::EventData;
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Synchronizes detection controls after retained state accepts the observation.
     pub(super) fn sync_runtime_detection_controls(
         &self,

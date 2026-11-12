@@ -10,10 +10,10 @@ use maestro_detection::definitions::ManifestCache;
 use std::sync::{Arc, RwLock};
 
 /// Builds two workspaces with two tabs each, without child processes.
-fn state() -> DaemonState<fn() -> u128> {
+fn state() -> DaemonState {
     let mut state = DaemonState::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         Arc::new(RwLock::new(ManifestCache::new(None, None).unwrap())),
     );
     for index in 0..2 {

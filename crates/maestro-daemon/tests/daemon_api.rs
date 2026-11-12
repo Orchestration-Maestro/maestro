@@ -2,12 +2,13 @@
 //! notifications, workspace metadata and the one fallback.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, daemon, daemon_with_workspaces, events_after, failure, request, settings,
+    daemon, daemon_with_workspaces, events_after, failure, request, settings,
 };
 use crate::support::runtime::block_on;
 use maestro_daemon::locations::DaemonPaths;
 use maestro_daemon::service::RequestMessage;
 use maestro_daemon::settings::model::ToastDelivery;
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::{ToastKind, ToastNotification};
 use maestro_protocol::events::EventData;
 use maestro_protocol::rpc_types::RpcCommand;
@@ -70,7 +71,7 @@ fn undelivered_families_use_one_source_fallback() {
 }
 
 /// A daemon delivering notifications through `delivery`.
-fn delivering(delivery: ToastDelivery) -> TestApp {
+fn delivering(delivery: ToastDelivery) -> App {
     let mut app = daemon();
     app.state.toast_config.delivery = delivery;
     app
@@ -78,7 +79,7 @@ fn delivering(delivery: ToastDelivery) -> TestApp {
 
 /// Shows a notification titled `title` with `extra` members.
 fn show(
-    app: &mut TestApp,
+    app: &mut App,
     title: &str,
     extra: &Value,
 ) -> Result<ResponseResult, maestro_protocol::schema::ErrorBody> {
@@ -315,7 +316,7 @@ fn notification_without_a_foreground_client_preserves_policy() {
 
 /// Reports `tokens` from `source` for workspace `w1`, with `extra` members.
 fn report(
-    app: &mut TestApp,
+    app: &mut App,
     source: &str,
     tokens: &Value,
     extra: &Value,
@@ -333,7 +334,7 @@ fn report(
 }
 
 /// The tokens workspace `w1` currently holds.
-fn tokens(app: &TestApp) -> HashMap<String, String> {
+fn tokens(app: &App) -> HashMap<String, String> {
     app.state.topology.workspaces[0].metadata_tokens.values()
 }
 
@@ -346,7 +347,7 @@ fn values(pairs: &[(&str, &str)]) -> HashMap<String, String> {
 }
 
 /// The tokens each metadata event since `sequence` published.
-fn published(app: &TestApp, sequence: u64) -> Vec<HashMap<String, String>> {
+fn published(app: &App, sequence: u64) -> Vec<HashMap<String, String>> {
     events_after(app, sequence)
         .into_iter()
         .map(|event| match event {
@@ -593,7 +594,7 @@ fn metadata_source_and_ttl_boundaries_keep_error_order() {
 
 /// Sources and lifetimes on the accepted side of each boundary apply without tracking a
 /// sequence.
-fn assert_boundary_sources_and_lifetimes_apply(app: &mut TestApp, token: &Value) {
+fn assert_boundary_sources_and_lifetimes_apply(app: &mut App, token: &Value) {
     for (reporter, extra) in [
         ("s".repeat(80).as_str(), json!({})),
         ("\u{85}a:b.c_d-e\u{85}", json!({"ttl_ms": null})),

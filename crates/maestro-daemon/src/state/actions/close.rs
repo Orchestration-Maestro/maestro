@@ -6,7 +6,7 @@ mod tests;
 use crate::state::model::{DaemonState, Mode};
 use maestro_workspace::tiling::PaneId;
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Retires one non-final tab and its detached pane and terminal records.
     pub(crate) fn retire_tab(&mut self, workspace: usize, tab: usize) -> bool {
         let Some(workspace) = self.topology.workspaces.get_mut(workspace) else {

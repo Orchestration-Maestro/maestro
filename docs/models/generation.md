@@ -16,12 +16,13 @@ include only unique winners; provider reports put canonical integer keys first,
 then other providers in encounter order. Emitted provider and model keys use
 UTF-16 code-unit order.
 
-Output lives in `crates/maestro-models/src/catalog/models_generated/`: one native
-Rust file per provider plus its registry. The owning module declaration skips
-rustfmt; committed generated files retain the emitter's exact bytes. Text is
-escaped as Rust literals;
-finite numbers retain their values, with either zero sign emitted as positive
-zero. Optional empty maps, null thinking entries and ordered headers are retained.
+Output lives in `crates/maestro-models-catalog/src/`: one native Rust file per
+provider plus the crate root that assembles them. That crate holds only generated
+data, so it declares no tests. Its crate root and the provider module declarations
+skip rustfmt, so committed generated files retain the emitter's exact bytes. Text
+is escaped as Rust literals; finite numbers retain their values, with either zero
+sign emitted as positive zero. Optional empty maps, null thinking entries and
+ordered headers are retained.
 The operation creates the generated leaf directory, whose parent must exist.
 It replaces its generated modules and removes obsolete provider files bearing its
 generation instructions; unrelated files are retained. Writes are not atomic:

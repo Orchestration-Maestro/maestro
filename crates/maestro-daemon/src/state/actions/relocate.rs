@@ -28,7 +28,7 @@ pub struct PaneMoveRecovery {
     pub identity_cwd: PathBuf,
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Removes a workspace left without tabs, keeping the active and selected workspaces.
     pub fn remove_emptied_workspace(&mut self, index: usize) {
         if index >= self.topology.workspaces.len() {

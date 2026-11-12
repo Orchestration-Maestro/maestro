@@ -877,7 +877,7 @@ async fn check_manifest_resets(args: &[String]) {
 fn manifest_test_app(
     runtime_config: &PaneRuntimeConfig,
     receiver: mpsc::Receiver<AppEvent>,
-) -> crate::state::App<fn() -> u128> {
+) -> crate::state::App {
     use crate::{
         service::event_hub::EventHub,
         settings::model::Config,
@@ -898,7 +898,7 @@ fn manifest_test_app(
     };
     App::new(
         &Config::default(),
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         EventHub::default(),
@@ -907,7 +907,7 @@ fn manifest_test_app(
 
 /// Compares actual reset readiness after matching, nonmatching and empty publications.
 fn assert_manifest_reset_selection(
-    app: &mut crate::state::App<fn() -> u128>,
+    app: &mut crate::state::App,
     id: &maestro_workspace::terminal_id::TerminalId,
 ) {
     use maestro_detection::{
@@ -950,7 +950,7 @@ fn assert_manifest_reset_selection(
 
 /// Checks lifecycle pause and release routing on the actual retained runtime control.
 fn assert_hook_runtime_controls(
-    app: &mut crate::state::App<fn() -> u128>,
+    app: &mut crate::state::App,
     id: &maestro_workspace::terminal_id::TerminalId,
 ) {
     use maestro_detection::agents::{Agent, AgentState};
@@ -1104,7 +1104,7 @@ fn manifest_status_keeps_detector_state() {
 /// The codex record a status request reports: the retained summary's fields, the local
 /// override's path and version, and the agent's last remote update.
 fn assert_codex_status(
-    app: &crate::state::App<fn() -> u128>,
+    app: &crate::state::App,
     paths: &crate::locations::DaemonPaths,
     codex: &maestro_protocol::schema::AgentManifestInfo,
 ) {
@@ -1143,7 +1143,7 @@ const CODEX_OVERRIDE: &str = "id = \"codex\"\nversion = \"2026.10.21.1\"\n[[rule
 fn with_manifest_app(
     name: &str,
     body: impl AsyncFnOnce(
-        &mut crate::state::App<fn() -> u128>,
+        &mut crate::state::App,
         &maestro_workspace::terminal_id::TerminalId,
         &crate::locations::DaemonPaths,
     ),

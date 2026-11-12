@@ -82,12 +82,12 @@ impl PaneLaunchInputs {
     }
 }
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Constructs from loaded preferences whenever a loaded result is available.
     /// Retains the loader's accepted documents for the first subsequent reload.
     pub fn from_loaded(
         loaded: &crate::settings::model::LoadedConfig,
-        clock: C,
+        clock: impl FnMut() -> u128 + 'static,
         launch: PaneLaunchInputs,
         event_rx: mpsc::Receiver<AppEvent>,
         event_hub: EventHub,
@@ -100,7 +100,7 @@ impl<C: FnMut() -> u128> App<C> {
     /// Constructs one daemon owner from accepted preferences and supplied runtime adapters.
     pub fn new(
         config: &Config,
-        clock: C,
+        clock: impl FnMut() -> u128 + 'static,
         launch: PaneLaunchInputs,
         event_rx: mpsc::Receiver<AppEvent>,
         event_hub: EventHub,

@@ -6,11 +6,11 @@ use maestro_workspace::{
     tiling::{PaneId, SplitRequest},
 };
 
-pub fn topology() -> WorkspaceTopology<fn() -> u128> {
-    WorkspaceTopology::new((|| 0xabc) as fn() -> u128)
+pub fn topology() -> WorkspaceTopology {
+    WorkspaceTopology::new(|| 0xabc)
 }
 
-pub fn workspace() -> WorkspaceTopology<fn() -> u128> {
+pub fn workspace() -> WorkspaceTopology {
     let mut owner = topology();
     owner
         .new_with_tab("/checkout".into(), None, |_, _| Ok(()))
@@ -28,7 +28,7 @@ pub fn request(target: PaneId, direction: SplitDirection) -> SplitRequest {
 }
 
 pub fn split(
-    owner: &mut WorkspaceTopology<fn() -> u128>,
+    owner: &mut WorkspaceTopology,
     workspace: usize,
     target: PaneId,
     direction: SplitDirection,
@@ -40,7 +40,7 @@ pub fn split(
         .0
 }
 
-pub fn add_tab(owner: &mut WorkspaceTopology<fn() -> u128>, workspace: usize) -> PaneId {
+pub fn add_tab(owner: &mut WorkspaceTopology, workspace: usize) -> PaneId {
     owner
         .create_tab_with_runtime(workspace, |_, _| Ok(()))
         .unwrap()
@@ -71,7 +71,5 @@ pub fn assert_invariants(workspace: &maestro_workspace::spaces::Workspace) {
     assert_eq!(ids.len(), workspace.public_pane_numbers.len());
     assert!(workspace.tabs.is_empty() || workspace.active_tab < workspace.tabs.len());
 }
-
-pub type Topology = WorkspaceTopology<fn() -> u128>;
 
 pub mod snapshot;

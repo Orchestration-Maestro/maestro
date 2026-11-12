@@ -4,7 +4,7 @@ use super::super::responses::pane_not_found;
 use crate::state::App;
 use maestro_protocol::schema::{ErrorBody, PaneRenameParams, ResponseResult};
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Sets the named pane's label, or clears it when none is given or it is blank, and
     /// answers with the pane. A changed label is published as an updated pane.
     ///

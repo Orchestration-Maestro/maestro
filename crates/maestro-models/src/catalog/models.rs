@@ -1,6 +1,5 @@
 #![doc = include_str!("../../../../docs/models/catalog.md")]
 
-use super::models_generated;
 use crate::{Model, ModelThinkingLevel, Provider};
 use ModelThinkingLevel::{High, Low, Medium, Minimal, Off, Xhigh};
 use indexmap::IndexMap;
@@ -9,7 +8,7 @@ use std::sync::LazyLock;
 /// Ordered provider registries keyed by exact model identifiers.
 pub(super) type ModelRegistry = IndexMap<&'static str, IndexMap<&'static str, Model>>;
 /// Lazily initialized catalog shared by descriptor lookups.
-static MODEL_REGISTRY: LazyLock<ModelRegistry> = LazyLock::new(models_generated::models);
+static MODEL_REGISTRY: LazyLock<ModelRegistry> = LazyLock::new(maestro_models_catalog::models);
 
 /// Look up an exact provider/model key, returning an independently owned descriptor.
 /// Unknown keys return `None`; identifiers are never normalized.

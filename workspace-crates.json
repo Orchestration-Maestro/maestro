@@ -22,6 +22,7 @@
   "maestro-lock": "core",
   "maestro-markdown": "core",
   "maestro-models": "core",
+  "maestro-models-catalog": "core",
   "maestro-multiplexer": "core",
   "maestro-office": "core",
   "maestro-package": "core",

@@ -4,7 +4,7 @@ use crate::state::model::{DaemonState, Mode};
 use maestro_workspace::{terminal_id::TerminalId, tiling::PaneId};
 use std::collections::HashSet;
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Removes pane-owned records and invalidates focus or copy targets.
     pub(crate) fn remove_action_pane_records(&mut self, panes: &HashSet<PaneId>) {
         if self

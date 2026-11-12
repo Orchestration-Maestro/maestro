@@ -238,10 +238,7 @@ fn wiring_only(file: &syn::File) -> bool {
 
 /// Identify generated catalog source with the existing owner and path rule.
 pub(crate) fn catalog_source(member: &Member, source: &Source) -> bool {
-    member.name == "maestro-models"
-        && source
-            .path
-            .starts_with(member.directory.join("src/catalog/models_generated"))
+    member.name == "maestro-models-catalog" && source.path.starts_with(member.directory.join("src"))
 }
 
 /// Identify the generated guest binding source exactly.

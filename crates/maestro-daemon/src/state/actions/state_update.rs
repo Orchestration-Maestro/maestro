@@ -93,7 +93,7 @@ impl PaneStateUpdate {
     }
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Publishes an agent's completion while its pane and terminal still exist.
     pub fn publish_pane_process_exit_if_agent(&mut self, pane: PaneId) -> Option<PaneStateUpdate> {
         let observed_at = Instant::now();

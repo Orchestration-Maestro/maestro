@@ -3,11 +3,12 @@
 #![cfg(target_os = "linux")]
 use crate::support::{
     api::{
-        TestApp, add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
+        add_tab, add_workspaces, answer, event_names, events_after, failure, root_pane,
         wait_for_line, with_live_daemon, workspace_ids,
     },
     layouts::{balanced, chain, shell, sleeper, split},
 };
+use maestro_daemon::state::App;
 use maestro_daemon::{
     settings::model::NewTerminalCwdConfig,
     state::model::{ActionPaneRecord, Mode},
@@ -55,12 +56,12 @@ fn apply_wire(root: &Value, extra: &Value) -> Value {
 }
 
 /// Makes new panes follow the directory of the pane they come from.
-fn follow(app: &mut TestApp) {
+fn follow(app: &mut App) {
     app.config.terminal.new_cwd = NewTerminalCwdConfig::Follow;
 }
 
 /// Records `cwd` as the last known directory of `pane` in the first workspace.
-fn set_cwd(app: &mut TestApp, pane: PaneId, cwd: &Path) {
+fn set_cwd(app: &mut App, pane: PaneId, cwd: &Path) {
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
@@ -69,7 +70,7 @@ fn set_cwd(app: &mut TestApp, pane: PaneId, cwd: &Path) {
 }
 
 /// The directory recorded for the root pane of tab `tab` in the first workspace.
-fn root_cwd(app: &TestApp, tab: usize) -> PathBuf {
+fn root_cwd(app: &App, tab: usize) -> PathBuf {
     let tab = &app.state.topology.workspaces[0].tabs[tab];
     app.state.terminals[tab.terminal_id(tab.root_pane).unwrap()]
         .cwd
@@ -267,7 +268,7 @@ fn a_layout_may_hold_sixteen_levels_and_twenty_four_panes() {
 
 /// Applies `wire`, which cannot start a process, and checks that the workspace is as it was:
 /// one tab holding only `original`, no runtime, no event and no pending save.
-async fn assert_rolled_back(app: &mut TestApp, original: PaneId, wire: Value) {
+async fn assert_rolled_back(app: &mut App, original: PaneId, wire: Value) {
     let Err(error) = answer(app, wire.clone()).await else {
         panic!("a missing directory must refuse the layout: {wire}");
     };
@@ -337,7 +338,7 @@ fn a_replaced_tab_keeps_its_name_unless_the_layout_names_one() {
             add_workspaces(app, &["/tabs"]);
             app.state.topology.workspaces[0].tabs[0].set_custom_name("build".into());
             applied(answer(app, apply_wire(&sleeper(), &json!({"tab_id": "w1:t1"}))).await);
-            let name = |app: &TestApp| app.state.topology.workspaces[0].tab_display_name(0);
+            let name = |app: &App| app.state.topology.workspaces[0].tab_display_name(0);
             assert_eq!(name(app).as_deref(), Some("build"));
             let wire = apply_wire(&sleeper(), &json!({"tab_id": "w1:t2", "tab_label": "dev"}));
             applied(answer(app, wire).await);
@@ -541,7 +542,7 @@ fn holds_until_terminated(directory: &Path, socket: &Path) -> Value {
 }
 
 /// Waits until the focused pane of `layout` has blocked hangup, so shutdown cannot reach it first.
-async fn wait_until_ready(app: &TestApp, layout: &LayoutDescription) {
+async fn wait_until_ready(app: &App, layout: &LayoutDescription) {
     let (workspace, pane) = app.state.parse_pane_id(&layout.focused_pane_id).unwrap();
     let terminal = app.state.topology.workspaces[workspace]
         .terminal_id(pane)

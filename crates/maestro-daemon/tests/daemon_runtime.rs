@@ -36,23 +36,20 @@ use crate::support::spawning;
 
 /// Builds the daemon with retained adapters but no native process.
 #[cfg(unix)]
-fn app(config: &Config) -> maestro_daemon::state::App<fn() -> u128> {
+fn app(config: &Config) -> maestro_daemon::state::App {
     app_with_args(config, &[])
 }
 
 /// Builds the daemon with the setup entry's own harness arguments.
 #[cfg(unix)]
-pub(crate) fn app_with_args(
-    config: &Config,
-    args: &[String],
-) -> maestro_daemon::state::App<fn() -> u128> {
+pub(crate) fn app_with_args(config: &Config, args: &[String]) -> maestro_daemon::state::App {
     let manifests = std::sync::Arc::new(std::sync::RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
     let (launch, receiver) = spawning::launch_inputs(args, manifests);
     maestro_daemon::state::App::new(
         config,
-        (|| 0) as fn() -> u128,
+        || 0,
         launch,
         receiver,
         maestro_daemon::service::event_hub::EventHub::default(),
@@ -236,7 +233,7 @@ fn daemon_new_terminal_cwd_path_uses_configured_path() {
 /// Adds one viewport and its retained terminal metadata without starting a process.
 #[cfg(unix)]
 fn target_app() -> (
-    maestro_daemon::state::App<fn() -> u128>,
+    maestro_daemon::state::App,
     maestro_workspace::tiling::PaneId,
 ) {
     let mut app = app(&Config::default());
@@ -252,10 +249,7 @@ fn target_app() -> (
 
 /// Supplies the terminal metadata normally installed by a successful native spawn.
 #[cfg(unix)]
-fn attach_terminal(
-    app: &mut maestro_daemon::state::App<fn() -> u128>,
-    pane: maestro_workspace::tiling::PaneId,
-) {
+fn attach_terminal(app: &mut maestro_daemon::state::App, pane: maestro_workspace::tiling::PaneId) {
     let id = app.state.topology.workspaces[0]
         .terminal_id(pane)
         .unwrap()
@@ -408,10 +402,7 @@ fn daemon_terminal_target_reports_ambiguous_duplicate_agent_name() {
 
 /// Admits the same process identity observation consumed by live panes.
 #[cfg(unix)]
-fn detect_agent(
-    app: &mut maestro_daemon::state::App<fn() -> u128>,
-    pane: maestro_workspace::tiling::PaneId,
-) {
+fn detect_agent(app: &mut maestro_daemon::state::App, pane: maestro_workspace::tiling::PaneId) {
     app.state
         .handle_app_event(maestro_daemon::events::AppEvent::AgentProcessDetected {
             pane_id: pane,
@@ -644,7 +635,7 @@ async fn check_shutdown(args: &[String]) {
 async fn live_shutdown_app(
     args: &[String],
 ) -> (
-    maestro_daemon::state::App<fn() -> u128>,
+    maestro_daemon::state::App,
     maestro_workspace::tiling::PaneId,
 ) {
     use maestro_daemon::{

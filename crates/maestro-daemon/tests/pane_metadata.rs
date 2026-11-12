@@ -2,9 +2,9 @@
 //! sequences and publication.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, accepted, daemon_with_workspaces, detect, events_after, pane_record, pilot, request,
-    root_pane,
+    accepted, daemon_with_workspaces, detect, events_after, pane_record, pilot, request, root_pane,
 };
+use maestro_daemon::state::App;
 use maestro_daemon::terminal::model::{DetectedStateUpdate, TerminalState};
 use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
 use maestro_protocol::{
@@ -41,12 +41,12 @@ fn titled(fields: Value) -> Value {
 }
 
 /// The tokens the first pane holds.
-fn tokens(app: &mut TestApp) -> HashMap<String, String> {
+fn tokens(app: &mut App) -> HashMap<String, String> {
     pane_record(app, "w1:p1").tokens
 }
 
 /// What the failure of `wire` is, by code and message.
-fn refusal(app: &mut TestApp, wire: Value) -> (String, String) {
+fn refusal(app: &mut App, wire: Value) -> (String, String) {
     let text = wire.to_string();
     match request(app, wire) {
         Err(ErrorBody { code, message }) => (code, message),
@@ -55,7 +55,7 @@ fn refusal(app: &mut TestApp, wire: Value) -> (String, String) {
 }
 
 /// The retained state of the first pane's terminal.
-fn terminal_of(app: &TestApp) -> &TerminalState {
+fn terminal_of(app: &App) -> &TerminalState {
     let id = app.state.topology.workspaces[0]
         .terminal_id(root_pane(app, 0))
         .unwrap();
@@ -73,7 +73,7 @@ fn update(agent: Option<Agent>, state: AgentState, process_exited: bool) -> Dete
 }
 
 /// Feeds the first pane's terminal a detection of `update` at `at`.
-fn observe(app: &mut TestApp, update: DetectedStateUpdate, at: Instant) {
+fn observe(app: &mut App, update: DetectedStateUpdate, at: Instant) {
     let terminal = app.state.topology.workspaces[0]
         .terminal_id(root_pane(app, 0))
         .unwrap()

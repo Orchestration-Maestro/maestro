@@ -12,7 +12,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Saves notification delivery and removes its superseded enabled key in one write.
     pub async fn save_toast_delivery(
         &mut self,

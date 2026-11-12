@@ -49,7 +49,7 @@ pub fn notification_sound_for_state_change(
         .and_then(|kind| sound_for_toast_kind(kind, suppressed))
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Whether a pane belongs to the active workspace's selected tab.
     #[must_use]
     pub fn pane_is_in_active_tab(&self, workspace: usize, pane: PaneId) -> bool {

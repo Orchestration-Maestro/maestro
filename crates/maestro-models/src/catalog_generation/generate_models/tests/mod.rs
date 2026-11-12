@@ -235,7 +235,7 @@ fn source_emission_sorts_utf16_keys() {
     let catalog = super::assemble(serde_json::from_value(case.input).unwrap());
     let scratch = Scratch::new().unwrap();
     super::emit::write_catalog(&catalog, &scratch.path().join("generated")).unwrap();
-    let registry = std::fs::read_to_string(scratch.path().join("generated/mod.rs")).unwrap();
+    let registry = std::fs::read_to_string(scratch.path().join("generated/lib.rs")).unwrap();
     assert!(registry.find("😀").unwrap() < registry.find("\\u{e000}").unwrap());
     let provider = std::fs::read_to_string(scratch.path().join("generated/provider_a.rs")).unwrap();
     for (left, right) in [("01", "10"), ("10", "2"), ("2", "😀"), ("😀", "\u{e000}")] {

@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 /// Smallest interval between attempts on either rendering clock.
 const MIN_RENDER_INTERVAL: Duration = Duration::from_millis(16);
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Includes terminal-size polling only for an interactive caller.
     #[must_use]
     pub fn next_loop_deadline(&self, now: Instant, needs_render: bool) -> Option<Instant> {

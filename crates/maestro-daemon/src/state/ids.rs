@@ -7,7 +7,7 @@ use maestro_workspace::{
     tiling::PaneId,
 };
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Resolves a stable workspace handle or a historical positional spelling.
     #[must_use]
     pub fn parse_workspace_id(&self, id: &str) -> Option<usize> {
@@ -49,7 +49,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 }
 
-impl<C: FnMut() -> u128> DaemonState<C> {
+impl DaemonState {
     /// Finds the owning workspace and viewport of a live pane.
     #[must_use]
     pub fn find_pane(&self, pane: PaneId) -> Option<(usize, &PaneState)> {

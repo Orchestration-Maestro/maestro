@@ -26,7 +26,7 @@ use std::{
     path::PathBuf,
 };
 
-impl<C: FnMut() -> u128> App<C> {
+impl App {
     /// Lists every workspace in display order.
     pub(super) fn handle_workspace_list(&self) -> ResponseResult {
         ResponseResult::WorkspaceList {
