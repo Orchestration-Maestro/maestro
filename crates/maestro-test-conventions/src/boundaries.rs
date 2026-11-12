@@ -294,6 +294,7 @@ fn check_declarations(
                 | "maestro-entry"
                 | "maestro-app"
                 | "maestro-listeners"
+                | "maestro-office"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(

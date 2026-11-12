@@ -1326,32 +1326,7 @@ fn session_operation_records_have_one_shared_owner() {
 #[test]
 fn office_document_records_have_one_shared_owner() {
     for name in ["NumberFormatter", "OpenXmlPackage", "WorkbookError"] {
-        let workspace = Workspace::new();
-        workspace.foundation(&["maestro-office", "maestro-app"]);
-        source(
-            &workspace,
-            "maestro-app",
-            "src/lib.rs",
-            &format!("pub struct {name};"),
-        );
-        let error = check_workspace(workspace.root.path()).unwrap_err();
-        assert!(
-            error.contains(&format!("{name} declaration belongs to maestro-office")),
-            "{error}"
-        );
-        source(
-            &workspace,
-            "maestro-app",
-            "src/lib.rs",
-            &format!("pub use shared::{name};"),
-        );
-        source(
-            &workspace,
-            "maestro-office",
-            "src/lib.rs",
-            &format!("pub struct {name};"),
-        );
-        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+        assert_single_owner(name, "maestro-office", &["maestro-app"]);
     }
 }
 
