@@ -16,8 +16,8 @@ pub fn is_install_telemetry_enabled(
 #[cfg(not(target_arch = "wasm32"))]
 use {
     super::{config::service_endpoint, identification::get_maestro_user_agent},
-    crate::utils::uri::encode_uri_component,
     maestro_models::{BoxFuture, Fetch, HttpRequest, default_fetch, providers::transport::race},
+    maestro_text::uri::encode_uri_component,
     std::time::Duration,
 };
 

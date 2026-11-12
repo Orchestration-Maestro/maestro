@@ -29,9 +29,9 @@ pub struct Capacity {
 }
 
 /// Default cluster suffix byte budget.
-pub const GRAPHEME_BYTES_DEFAULT: u32 = 1024;
+pub(crate) const GRAPHEME_BYTES_DEFAULT: u32 = 1024;
 /// Default hyperlink string byte budget.
-pub const STRING_BYTES_DEFAULT: u32 = 2048;
+pub(crate) const STRING_BYTES_DEFAULT: u32 = 2048;
 /// Standard page capacity used by terminal storage.
 pub const STD_CAPACITY: Capacity = Capacity {
     cols: 215,

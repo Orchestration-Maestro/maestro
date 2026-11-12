@@ -6,7 +6,7 @@ use maestro_tui::keys::{Code, Identifier, Target};
 use crate::ingress::parse::{project_code, toolkit_modifiers_to_wire};
 
 /// Semantic key code with protocol modifier bits.
-pub type KeyCombo = (ClientKeyCode, u8);
+pub(crate) type KeyCombo = (ClientKeyCode, u8);
 
 /// Parses one key-combination spelling through the toolkit's key grammar, rejecting multiple
 /// or absent keys.

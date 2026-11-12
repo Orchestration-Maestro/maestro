@@ -174,7 +174,7 @@ fn session_roots_follow_the_account_home() {
             // The reports print the working directory they resolved, natively joined.
             let project = maestro_path::join(&[base, "project"]);
             std::fs::create_dir_all(&project).expect("the fixture directory is creatable");
-            let account = maestro_resources::paths::native_home_directory()
+            let account = maestro_path::native_homedir()
                 .expect("the child has an account home directory")
                 .display()
                 .to_string();

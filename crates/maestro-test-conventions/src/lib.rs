@@ -27,6 +27,8 @@ mod graph;
 /// Handwritten JavaScript in crate sources.
 /// Single-target integration-test packaging checks.
 mod integration_tests;
+/// Library test-target agreement with in-source tests.
+mod lib_tests;
 /// Native platform viewer ownership.
 mod platform_opener;
 /// Shared-state acquisition ownership.
@@ -80,6 +82,12 @@ mod tracked_sizes;
 /// and one runnable `integration` target at `tests/integration.rs`, whose root
 /// declares each other top-level test file as an unconditional out-of-line module.
 /// Each failing member is reported.
+///
+/// A library's `[lib] test` setting must agree with whether its `src` holds in-source
+/// tests: a test module, a `tests.rs` or `tests/` source, a `#[cfg(test)]` gate or a
+/// test attribute. A library with them may not disable the target, and a library
+/// without them must disable it, so no test build links an empty test executable.
+/// Each disagreeing member is reported at its manifest.
 ///
 /// The default nextest profile must flag a test as slow every 30 seconds and
 /// terminate it after four periods, a 120-second hang limit that no profile may
@@ -177,6 +185,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| graph::packages::check(&metadata, &members, &packages),
         &|| child_tests::check(&members),
         &|| integration_tests::check(&members),
+        &|| lib_tests::check(&members),
         &|| boundaries::check(&members),
         &|| platform_opener::check(&members),
         &|| poison::check(&members),

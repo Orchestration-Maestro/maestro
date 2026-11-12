@@ -49,7 +49,7 @@ impl Page {
     }
 
     /// Clear the styled flag when no addressable cell has a style ID.
-    pub fn update_row_styled_flag(&mut self, y: u16) {
+    pub(crate) fn update_row_styled_flag(&mut self, y: u16) {
         if !self.get_cells(y).iter().any(|cell| cell.has_styling()) {
             self.get_row_mut(y).set_styled(false);
         }

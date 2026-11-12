@@ -30,6 +30,7 @@ mod git_worktree;
 mod key_combo;
 mod layout_apply;
 mod layout_commands;
+mod local_sockets;
 mod pane_chrome;
 mod pane_close;
 mod pane_commands;
@@ -47,6 +48,7 @@ mod repository_discovery;
 mod repository_identity;
 mod repository_support;
 mod settings_routes;
+mod socket_paths;
 #[cfg(target_os = "linux")]
 mod support;
 mod tab_commands;

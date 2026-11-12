@@ -7,10 +7,12 @@ mod modifier;
 mod toast;
 
 pub use modifier::RightClickPassthroughModifierConfig;
-pub use toast::{
-    ClipboardToastConfig, MAX_TOAST_DELAY_SECONDS, ToastClipboardPosition, ToastConfig,
-    ToastDelivery, ToastMaestroPosition, WorkspaceToastConfig,
-};
+pub use toast::ClipboardToastConfig;
+pub use toast::MAX_TOAST_DELAY_SECONDS;
+pub use toast::ToastClipboardPosition;
+pub use toast::ToastConfig;
+pub use toast::WorkspaceToastConfig;
+pub use toast::{ToastDelivery, ToastMaestroPosition};
 
 /// Interactive shell startup mode.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -173,7 +175,7 @@ impl ServerConfig {
 
     /// Explain an invalid dimension pair.
     #[must_use]
-    pub fn invalid_headless_size_diagnostic(&self) -> Option<String> {
+    pub(crate) fn invalid_headless_size_diagnostic(&self) -> Option<String> {
         (self.headless_cols == 0 || self.headless_rows == 0).then(|| {
             format!(
                 "daemon.headlessCols and daemon.headlessRows must be greater than zero (got {}x{})",
@@ -205,7 +207,7 @@ impl Default for WorktreesConfig {
 #[serde(default, rename_all = "camelCase")]
 pub struct AdvancedConfig {
     /// Maximum retained scrollback bytes per terminal.
-    pub scrollback_limit_bytes: usize,
+    pub(crate) scrollback_limit_bytes: usize,
 }
 
 impl Default for AdvancedConfig {
@@ -261,11 +263,11 @@ pub struct ExperimentalConfig {
     /// Persist terminal screen history.
     pub pane_history: Flag,
     /// Expose an input-method anchor even when the pane hides its cursor.
-    pub reveal_hidden_cursor_for_cjk_ime: Flag,
+    pub(crate) reveal_hidden_cursor_for_cjk_ime: Flag,
     /// Restrict input-method cursor anchoring to these detected agent names.
-    pub cjk_ime_agents: Vec<String>,
+    pub(crate) cjk_ime_agents: Vec<String>,
     /// Cursor shape used for the input-method anchor.
-    pub cjk_ime_cursor_shape: ImeCursorShape,
+    pub(crate) cjk_ime_cursor_shape: ImeCursorShape,
     /// Temporarily select an ASCII input source while prefix mode is active.
     pub switch_ascii_input_source_in_prefix: Flag,
 }
@@ -273,12 +275,12 @@ pub struct ExperimentalConfig {
 mod ui;
 pub use ui::{
     AgentPanelSortConfig, HostCursorModeConfig, SidebarCollapsedModeConfig, StatusIndicatorStyle,
-    TabBarPositionConfig, UiConfig,
 };
+pub use ui::{TabBarPositionConfig, UiConfig};
 
 /// Accept ordered sidebar bounds before they reach a clamp operation.
 #[must_use]
-pub fn validated_sidebar_bounds(min: u16, max: u16) -> Option<(u16, u16)> {
+pub(crate) fn validated_sidebar_bounds(min: u16, max: u16) -> Option<(u16, u16)> {
     (min <= max).then_some((min, max))
 }
 
@@ -299,4 +301,5 @@ impl Default for RemoteConfig {
 }
 
 mod config;
-pub use config::{Config, ConfigReloadReport, ConfigReloadStatus, LoadedConfig};
+pub use config::LoadedConfig;
+pub use config::{Config, ConfigReloadReport, ConfigReloadStatus};

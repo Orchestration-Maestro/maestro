@@ -561,7 +561,7 @@ fn terminal_bytes_device_replies_are_queued_in_order() {
     t.write(b"\x05\x1b[5n\x1b[c\x1b[>c\x1b[=c\x1b[>q");
     assert_eq!(
         t.take_pty_reply(),
-        b"\x1b[0n\x1b[?62;22c\x1b[>1;0;0c\x1bP!|00000000\x1b\\\x1bP>|libghostty\x1b\\"
+        b"\x1b[0n\x1b[?62;22c\x1b[>1;0;0c\x1bP!|00000000\x1b\\\x1bP>|maestro\x1b\\"
     );
     assert!(t.take_pty_reply().is_empty());
 }
@@ -574,7 +574,7 @@ fn terminal_bytes_fixed_embedding_replies() {
     t.write(b"\x1b[>0q\x1b[>q");
     assert_eq!(
         t.take_pty_reply(),
-        b"\x1bP>|libghostty\x1b\\\x1bP>|libghostty\x1b\\"
+        b"\x1bP>|maestro\x1b\\\x1bP>|maestro\x1b\\"
     );
 }
 

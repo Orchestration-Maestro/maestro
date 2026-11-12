@@ -42,7 +42,6 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
     for name in [
         "maestro-tui",
         "maestro-tui-crossterm",
-        "maestro-test-terminal",
         "maestro-extensions-wasm",
         "maestro-extensions-wasmtime",
         "maestro-chat",
@@ -1106,64 +1105,33 @@ fn frontends_require_application_without_unused_allowed_edges() {
 }
 
 #[test]
-fn terminal_adapter_and_harness_require_toolkit() {
-    for owner in ["maestro-tui-crossterm", "maestro-test-terminal"] {
-        let text = if owner == "maestro-tui-crossterm" {
-            "maestro-text = { path = \"../maestro-text\" }\n"
-        } else {
-            ""
-        };
-        let workspace = Workspace::new();
-        workspace.foundation(&[owner, "maestro-models", "maestro-text"]);
-        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-        workspace.member(owner, owner, "");
+fn terminal_adapter_requires_toolkit() {
+    const OWNER: &str = "maestro-tui-crossterm";
+    let workspace = Workspace::new();
+    workspace.foundation(&[OWNER, "maestro-models", "maestro-text"]);
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    workspace.member(OWNER, OWNER, "");
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err(format!(
+            "{OWNER}: missing required direct dependency maestro-tui"
+        ))
+    );
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(OWNER, OWNER, &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\" }}\ntext = {{ package = \"maestro-text\", path = \"../maestro-text\" }}\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\"{extra} }}"));
         assert_eq!(
             check_workspace(workspace.root.path()),
             Err(format!(
-                "{owner}: missing required direct dependency maestro-tui"
+                "forbidden production dependency: {OWNER} -> maestro-models"
             ))
         );
-        for (kind, extra) in DECLARATIONS {
-            workspace.member(owner, owner, &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\" }}\n{text}models = {{ package = \"maestro-models\", path = \"../maestro-models\"{extra} }}"));
-            assert_eq!(
-                check_workspace(workspace.root.path()),
-                Err(format!(
-                    "forbidden production dependency: {owner} -> maestro-models"
-                ))
-            );
-            workspace.member(
-                owner,
-                owner,
-                &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\"{extra} }}\n{text}"),
-            );
-            assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-        }
+        workspace.member(
+            OWNER,
+            OWNER,
+            &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\"{extra} }}\ntext = {{ package = \"maestro-text\", path = \"../maestro-text\" }}"),
+        );
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
-    for &(from, _) in support::policy::POLICY {
-        if from == "maestro-test-terminal" || TERMINAL_CALLERS.contains(&from) {
-            continue;
-        }
-        let workspace = Workspace::new();
-        workspace.foundation(&[from, "maestro-test-terminal"]);
-        for (kind, extra) in DECLARATIONS
-            .iter()
-            .copied()
-            .chain([("dev-dependencies", "")])
-        {
-            workspace.member(from, from, &format!("[{kind}]\nharness = {{ package = \"maestro-test-terminal\", path = \"../maestro-test-terminal\"{extra} }}"));
-            let error = check_workspace(workspace.root.path()).unwrap_err();
-            assert!(
-                error.contains(from)
-                    && error.contains("maestro-test-terminal")
-                    && !error.contains("missing required"),
-                "{error}"
-            );
-        }
-    }
-    let workspace = Workspace::new();
-    let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
-    workspace.foundation(&names);
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -1898,7 +1866,6 @@ fn terminal_adapter_text_edge_is_scoped() {
         );
     }
     adapter_text_may_not_be_dev_only(&workspace, toolkit);
-    harness_may_not_declare_text(toolkit);
 }
 
 /// Reject the text owner as an adapter dev-dependency.
@@ -1914,21 +1881,6 @@ fn adapter_text_may_not_be_dev_only(workspace: &Workspace, toolkit: &str) {
         Err(format!(
             "internal dev dependency requires declared dependency-free test support: {ADAPTER} -> maestro-text"
         ))
-    );
-}
-
-/// Reject the text owner from the terminal scenario harness.
-fn harness_may_not_declare_text(toolkit: &str) {
-    let harness = Workspace::new();
-    harness.foundation(&["maestro-test-terminal", "maestro-text"]);
-    harness.member(
-        "maestro-test-terminal",
-        "maestro-test-terminal",
-        &format!("[dependencies]\n{toolkit}maestro-text = {{ path = \"../maestro-text\" }}"),
-    );
-    assert_eq!(
-        check_workspace(harness.root.path()),
-        Err("forbidden production dependency: maestro-test-terminal -> maestro-text".into())
     );
 }
 
@@ -2318,7 +2270,6 @@ fn feature_unifier_preserves_required_domain_edges() {
         "maestro-rpc",
         "maestro-web",
         "maestro-tui-crossterm",
-        "maestro-test-terminal",
     ] {
         let required = required_targets(from);
         let workspace = Workspace::new();
@@ -2452,7 +2403,6 @@ fn test_process_inventory_matches_foundation_contract() {
 fn workspace_daemon_owners_are_core() {
     for name in [
         "maestro-protocol",
-        "maestro-ipc",
         "maestro-terminal",
         "maestro-workspace",
         "maestro-detection",
@@ -2763,12 +2713,6 @@ const DIRECTORY: &str = "maestro-test-directory";
 /// The scoped test tracing owner.
 const TRACING: &str = "maestro-test-tracing";
 
-/// The recording-terminal and manual-runtime owner.
-const TERMINAL: &str = "maestro-test-terminal";
-
-/// Independently declared terminal scenario consumers.
-const TERMINAL_CALLERS: &[&str] = &["maestro-cli"];
-
 /// Independently declared native tracing consumers.
 const TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
@@ -2792,7 +2736,6 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
-    "maestro-ipc",
     "maestro-listing",
     "maestro-lock",
     "maestro-models",
@@ -2806,7 +2749,6 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-test-browser",
     "maestro-test-conventions",
     "maestro-test-process",
-    "maestro-test-terminal",
     "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
@@ -2860,11 +2802,6 @@ fn child_launcher_reaches_the_directory_owner_normally() {
 #[test]
 fn tracing_support_edges_are_native_development_only() {
     support_declarations_match_owner(TRACING, TRACING_CALLERS);
-}
-
-#[test]
-fn terminal_support_edges_are_native_development_only() {
-    support_declarations_match_owner(TERMINAL, TERMINAL_CALLERS);
 }
 
 /// Check the permitted declaration forms for each support owner and its callers.
@@ -3065,11 +3002,6 @@ fn tracing_support_edges_keep_cycle_checks() {
     support_edges_keep_cycle_checks(TRACING, "maestro-daemon");
 }
 
-#[test]
-fn terminal_support_edges_keep_cycle_checks() {
-    support_edges_keep_cycle_checks(TERMINAL, "maestro-cli");
-}
-
 /// A native development edge from `caller` to `owner` still meets the test-graph cycle check.
 fn support_edges_keep_cycle_checks(owner: &str, caller: &str) {
     let workspace = Workspace::new();
@@ -3105,22 +3037,6 @@ fn directory_support_inventory_matches_contract() {
         ))
         .collect::<Vec<_>>();
     support_inventory_matches_contract(DIRECTORY, DIRECTORY_CALLERS, &documented);
-}
-
-#[test]
-fn terminal_support_inventory_matches_contract() {
-    assert_eq!(
-        support::policy::test_support_callers(TERMINAL),
-        Some(TERMINAL_CALLERS)
-    );
-    assert_eq!(TERMINAL_CALLERS, support::policy::TEST_TERMINAL_CALLERS);
-    let documented = std::iter::once("maestro-cli")
-        .chain(specification_names(
-            "from\n`maestro-cli`",
-            "; a caller\ndeclares it only when it uses it",
-        ))
-        .collect::<Vec<_>>();
-    support_inventory_matches_contract(TERMINAL, TERMINAL_CALLERS, &documented);
 }
 
 #[test]
@@ -3862,16 +3778,11 @@ fn product_dependencies_cannot_enable_test_support() {
 #[test]
 fn test_support_self_activation_keeps_default_tests_available() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-tui", "maestro-test-terminal"]);
+    workspace.foundation(&["maestro-tui"]);
     workspace.member(
         "maestro-tui",
         "maestro-tui",
         "[features]\ntest-support = []\n[dev-dependencies]\nmaestro-tui = { path = \".\", features = [\"test-support\"] }",
-    );
-    workspace.member(
-        "maestro-test-terminal",
-        "maestro-test-terminal",
-        "[dependencies]\nmaestro-tui = { path = \"../maestro-tui\", features = [\"test-support\"] }",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }

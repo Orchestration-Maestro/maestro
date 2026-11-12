@@ -6,6 +6,9 @@ license.workspace = true
 repository.workspace = true
 autotests = false
 
+[lib]
+test = false
+
 [dependencies]
 maestro-request = { path = "../maestro-request" }
 serde.workspace = true

@@ -4,7 +4,8 @@ mod handoff;
 mod input;
 mod launch;
 mod shutdown;
-pub use launch::{AgentDetection, SpawnInitialState};
+pub use launch::AgentDetection;
+pub use launch::SpawnInitialState;
 mod reader;
 pub use input::FocusEvent;
 
@@ -39,7 +40,7 @@ pub struct PaneRuntimeConfig {
     /// Initial terminal geometry.
     pub size: PtySize,
     /// Retained terminal history byte limit.
-    pub scrollback_limit_bytes: usize,
+    pub(crate) scrollback_limit_bytes: usize,
     /// Initial host colour palette.
     pub theme: TerminalTheme,
     /// Initial host appearance.

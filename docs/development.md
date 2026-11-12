@@ -976,6 +976,18 @@ behaviour it shows in the crate's integration program, as the `maestro-app` SDK
 examples do with the scripted workspace in
 [`sdk_sample.rs`](../crates/maestro-app/tests/support/sdk_sample.rs).
 
+### Library test targets
+
+A library with no tests in its `src` still builds an empty test executable on every test
+build. Set `[lib] test = false` in its manifest to stop building it, and remove the flag
+when a test moves into `src`.
+
+The conventions check keeps the flag and the sources in step. It reports a library that
+holds in-source tests and disables the target, and one that holds none and leaves the flag
+off. In-source tests are a test module, a `tests.rs` or `tests/` source under `src`, a
+`#[cfg(test)]` gate or a test attribute. The integration target at `tests/integration.rs`
+is separate and runs either way.
+
 ### FTP peer support
 
 The models tests share the scripted peer in

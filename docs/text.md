@@ -50,6 +50,15 @@ stable sorting and comparator lifetime.
   writes `&#039;` for literal HTML export. `XmlAttribute` retains XML attribute
   tabs/newlines as character references. `SpreadsheetHtml` uses named apostrophes,
   LF break tags and four-digit lowercase hexadecimal references for other C0 controls.
+- **Author-written numbers.** `numeric::decimal_integer_prefix` and
+  `numeric::integer_prefix` read a signed integer prefix at a radix, admitting
+  hexadecimal notation only where the caller does, and return NaN without digits.
+  `numeric::round` rounds half toward positive infinity and keeps the sign of a
+  rounded negative zero. Office document readers, spreadsheet formatting and the
+  cost and usage reports share them.
+- **URI components.** `uri::encode_uri_component` percent-encodes authored UTF-8
+  and leaves `-_.!~*'()` literal. Install downloads and browser proxy requests
+  share it.
 - **CSS strings.** `css::string` quotes text, escapes quotation marks and backslashes,
   replaces NUL with U+FFFD and hex-escapes C0 controls, DEL and `<`. Brand font
   stacks and invalid document font names share it. `css::escape_control` supplies

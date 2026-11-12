@@ -189,6 +189,7 @@ fn message_renderer_owner_requires_one_declaration_in_its_owner_file() {
 fn message_renderer_owner_accepts_projected_calls_and_test_scopes() {
     let workspace = workspace();
     for (name, contents) in ACCEPTED {
+        workspace.library_test_target("maestro-chat", *name == "tests.rs");
         let path = source(&workspace, "maestro-chat", &format!("src/{name}"), contents);
         assert_eq!(
             check_workspace(workspace.root.path()),
@@ -198,6 +199,7 @@ fn message_renderer_owner_accepts_projected_calls_and_test_scopes() {
         );
         std::fs::remove_file(path).unwrap();
     }
+    workspace.library_test_target("maestro-chat", false);
     source(
         &workspace,
         "maestro-extensions",

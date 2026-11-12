@@ -10,8 +10,8 @@ pub fn should_use_proxy_for_provider(provider: &str, api_key: &str) -> bool {
     }
 }
 
-use crate::utils::uri::encode_uri_component;
 use maestro_models::Model;
+use maestro_text::uri::encode_uri_component;
 
 /// Rewrite only the model base URL when the supplied proxy is required.
 #[must_use]

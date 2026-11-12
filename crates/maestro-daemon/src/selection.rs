@@ -144,7 +144,7 @@ impl Selection {
 
     /// Whether this selection should be rendered (highlight visible).
     #[must_use]
-    pub fn is_visible(&self) -> bool {
+    pub(crate) fn is_visible(&self) -> bool {
         self.phase == Phase::Dragging || self.phase == Phase::Done
     }
 
@@ -189,7 +189,7 @@ impl Selection {
 
     /// Return the inclusive endpoints in reading order.
     #[must_use]
-    pub fn ordered_cells(&self) -> ((u32, u16), (u32, u16)) {
+    pub(crate) fn ordered_cells(&self) -> ((u32, u16), (u32, u16)) {
         let (ar, ac) = self.anchor;
         let (cr, cc) = self.cursor;
         if ar < cr || (ar == cr && ac <= cc) {

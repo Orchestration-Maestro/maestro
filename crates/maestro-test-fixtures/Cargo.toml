@@ -6,6 +6,9 @@ license.workspace = true
 repository.workspace = true
 publish = false
 
+[lib]
+test = false
+
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true

@@ -39,13 +39,23 @@ fn detach(
     let runner = Rc::downgrade(&session.extension_runner());
     drop(session.start_operation(async move {
         if let (Err(error), Some(runner)) = (work.await, runner.upgrade()) {
-            drop(runner.emit_error(&ExtensionError {
-                extension_path: "<runtime>".into(),
-                event: event.into(),
-                error: error.message,
-                stack: None,
-            }));
+            report_runtime_failure(&runner, event, error);
         }
+    }));
+}
+
+/// Reports a runtime failure of `event` to the extensions' error listeners; a failing
+/// listener has nowhere further to report to.
+pub(super) fn report_runtime_failure(
+    runner: &ExtensionRunner<Local>,
+    event: &str,
+    error: DiagnosticErrorInfo,
+) {
+    drop(runner.emit_error(&ExtensionError {
+        extension_path: "<runtime>".into(),
+        event: event.into(),
+        error: error.message,
+        stack: None,
     }));
 }
 

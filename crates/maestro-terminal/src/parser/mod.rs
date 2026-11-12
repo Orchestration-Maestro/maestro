@@ -94,9 +94,9 @@ pub enum Sep {
 }
 
 /// Retained intermediate-byte capacity.
-pub const MAX_INTERMEDIATE: usize = 4;
+pub(crate) const MAX_INTERMEDIATE: usize = 4;
 /// Retained numeric parameter capacity.
-pub const MAX_PARAMS: usize = 24;
+pub(crate) const MAX_PARAMS: usize = 24;
 
 /// Writable control-sequence view, valid until the next mutable parser use.
 #[derive(Debug, PartialEq, Eq)]
