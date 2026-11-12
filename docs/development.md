@@ -1023,8 +1023,8 @@ cargo clippy -p maestro-http -p maestro-models --all-targets --locked -- -D warn
 ### TLS fixture certificates
 
 The provider tests trust fixed certificates under
-`crates/maestro-models/tests/fixtures/`, and the transport tests under
-`crates/maestro-http/tests/fixtures/` (`socks-tls/`). They are committed data, and no script or
+`crates/maestro-models/tests/fixtures/`; the transport tests trust the ones under
+`crates/maestro-http/tests/fixtures/socks-tls/`. They are committed data, and no script or
 certificate library issues them. Each one expires on 2126-10-18, so none of them
 lapses during a test run. The three server-side certificates start on 2019-06-01,
 before 2019-07-01, because Apple's TLS policy refuses a server certificate issued on
