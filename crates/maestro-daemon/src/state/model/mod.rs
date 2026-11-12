@@ -102,7 +102,7 @@ pub struct DaemonState {
     /// Live ordering selection for the agent panel.
     pub(crate) agent_panel_sort: AgentPanelSort,
     /// Current sidebar collapse state, initialized only on construction.
-    pub(crate) sidebar_collapsed: maestro_protocol::shared::Flag,
+    pub sidebar_collapsed: maestro_protocol::shared::Flag,
     /// Whether outer focus gain requests a full host redraw.
     pub(crate) redraw_on_focus_gained: maestro_protocol::shared::Flag,
     /// Ordered retained right-side status segments.
@@ -260,12 +260,6 @@ impl DaemonState {
     /// Reads and clears the save mark, reporting whether a change awaits a snapshot.
     pub(crate) fn take_session_dirty(&mut self) -> bool {
         std::mem::take(&mut self.session_dirty)
-    }
-
-    /// Whether the sidebar starts collapsed, as the configuration set it at construction.
-    #[must_use]
-    pub fn sidebar_collapsed(&self) -> bool {
-        self.sidebar_collapsed.0
     }
 
     /// Region in which panes are laid out: the headless surface at its configured size.
