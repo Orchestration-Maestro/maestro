@@ -8,6 +8,7 @@ fn an_absent_environment_variable_reads_as_no_value() {
     assert_eq!(maestro_text::environment_variable(ABSENT), None);
 }
 
+/// Relies on `PATH`, which every supported runner sets.
 #[test]
 fn a_present_environment_variable_reads_its_value() {
     assert!(maestro_text::environment_variable("PATH").is_some_and(|value| !value.is_empty()));
