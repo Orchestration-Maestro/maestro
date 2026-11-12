@@ -9,6 +9,28 @@ use tokio::sync::oneshot;
 /// Store-safe ownership of one original response.
 #[derive(Clone)]
 pub struct Response(pub(crate) Arc<Lease>);
+impl Response {
+    /// Reads the native status without consuming the body.
+    pub(crate) fn status(&self) -> Result<u16, String> {
+        self.0
+            .request(|id, reply| super::Message::Http(id, Request::Status(reply)))
+    }
+    /// Reads the original native reason phrase.
+    pub(crate) fn status_text(&self) -> Result<String, String> {
+        self.0
+            .request(|id, reply| super::Message::Http(id, Request::StatusText(reply)))
+    }
+    /// Reads the normalized response header pairs.
+    pub(crate) fn headers(&self) -> Result<Vec<(String, String)>, String> {
+        self.0
+            .request(|id, reply| super::Message::Http(id, Request::Headers(reply)))
+    }
+    /// Acquires the original consuming body with independent resource ownership.
+    pub(crate) fn body(&self) -> Result<Option<Reader>, String> {
+        self.0
+            .request(|id, reply| super::Message::Http(id, Request::Body(reply)))
+    }
+}
 /// Supplied HTTP operands with a retained original signal endpoint.
 pub(crate) struct Fetch {
     /// Literal destination.

@@ -74,10 +74,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
         "[method]response.status",
         |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
             let response = store.data_mut().ctx().table.get(&response)?.clone();
-            let result = response
-                .0
-                .request(|id, reply| Message::Http(id, Request::Status(reply)))
-                .map_err(wasmtime::Error::msg)?;
+            let result = response.status().map_err(wasmtime::Error::msg)?;
             Ok((result,))
         },
     )
@@ -89,30 +86,21 @@ fn metadata<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime:
         "[method]response.status-text",
         |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
             let response = store.data_mut().ctx().table.get(&response)?.clone();
-            Ok((response
-                .0
-                .request(|id, reply| Message::Http(id, Request::StatusText(reply)))
-                .map_err(wasmtime::Error::msg)?,))
+            Ok((response.status_text().map_err(wasmtime::Error::msg)?,))
         },
     )?;
     host.func_wrap(
         "[method]response.headers",
         |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
             let response = store.data_mut().ctx().table.get(&response)?.clone();
-            Ok((response
-                .0
-                .request(|id, reply| Message::Http(id, Request::Headers(reply)))
-                .map_err(wasmtime::Error::msg)?,))
+            Ok((response.headers().map_err(wasmtime::Error::msg)?,))
         },
     )?;
     host.func_wrap(
         "[method]response.body",
         |mut store: StoreContextMut<'_, T>, (response,): (Resource<Response>,)| {
             let response = store.data_mut().ctx().table.get(&response)?.clone();
-            let body = response
-                .0
-                .request(|id, reply| Message::Http(id, Request::Body(reply)))
-                .map_err(wasmtime::Error::msg)?;
+            let body = response.body().map_err(wasmtime::Error::msg)?;
             let body: Option<Resource<Reader>> = body
                 .map(|body| store.data_mut().ctx().table.push(body))
                 .transpose()?;
