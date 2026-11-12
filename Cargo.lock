@@ -3938,7 +3938,6 @@ dependencies = [
  "maestro-agent",
  "maestro-catalog",
  "maestro-credentials",
- "maestro-daemon",
  "maestro-dependencies",
  "maestro-export",
  "maestro-extensions",

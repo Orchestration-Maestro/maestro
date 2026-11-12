@@ -44,7 +44,6 @@ maestro-lock = { path = "../maestro-lock" }
 maestro-realpath = { path = "../maestro-realpath" }
 maestro-export = { path = "../maestro-export" }
 maestro-workspace = { path = "../maestro-workspace" }
-maestro-daemon = { path = "../maestro-daemon" }
 maestro-packages = { path = "../maestro-packages" }
 maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
