@@ -168,3 +168,51 @@ fn check_navigation_options(options: &maestro_extensions::NavigateTreeOptions) {
         assert_eq!(options.label, None);
     }
 }
+
+#[test]
+fn command_on_a_released_or_ordinary_context_is_rejected_with_the_ended_text() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(ended_command());
+}
+
+/// A command reaches an ordinary context and a released command context, never a live command.
+async fn ended_command() {
+    let runner = runner("/ended");
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
+    let registry = pump.registry();
+    let ordinary = registry
+        .context(Owner::Base(runner.create_context()))
+        .unwrap();
+    let released = registry
+        .context(Owner::Command(runner.create_command_context()))
+        .unwrap();
+    let release = released
+        .0
+        .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
+    assert!(pump.answer_next().await);
+    drop(release);
+    let worker = std::thread::spawn(move || {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(ended_waits([ordinary, released]));
+    });
+    for _ in 0..2 {
+        assert!(pump.answer_next().await);
+    }
+    drop(admission);
+    pump.serve().await;
+    worker.join().unwrap();
+}
+
+/// Waiting on either context settles with the command context's ended text.
+async fn ended_waits(endpoints: [crate::context_reads::Endpoint; 2]) {
+    for endpoint in endpoints {
+        assert_eq!(
+            endpoint.command(Request::Wait).await.unwrap_err(),
+            "extension command context resource ended"
+        );
+    }
+}

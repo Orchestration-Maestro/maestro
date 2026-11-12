@@ -78,3 +78,52 @@ fn observe(catalog: &catalog_reads::Endpoint) {
         None
     );
 }
+
+#[test]
+fn released_catalog_rejects_every_kind_of_operation_with_its_ended_text() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(released_catalog());
+}
+
+/// Releases the catalog's capability, then drives one operation of each kind against it.
+async fn released_catalog() {
+    let (session, _) = session::runner_session("/ended");
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
+    let endpoint = pump.registry().catalog(session.model_registry).unwrap();
+    let release = endpoint
+        .0
+        .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
+    assert!(pump.answer_next().await);
+    drop(release);
+    let worker = std::thread::spawn(move || ended_operations(&endpoint));
+    for _ in 0..4 {
+        assert!(pump.answer_next().await);
+    }
+    drop(admission);
+    pump.serve().await;
+    worker.join().unwrap();
+}
+
+/// Each operation kind settles with the text of the ended catalog.
+fn ended_operations(endpoint: &catalog_reads::Endpoint) {
+    const ENDED: &str = "extension catalog resource ended";
+    assert_eq!(
+        endpoint.read(catalog_reads::Request::All),
+        Err(ENDED.into())
+    );
+    let refresh = endpoint.route(catalog_reads::Request::Refresh);
+    assert_eq!(refresh.result(), Err(ENDED.into()));
+    let model = model_support::model("ended").read().unwrap().clone();
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            assert_eq!(endpoint.auth(model).await.err().as_deref(), Some(ENDED));
+            assert_eq!(
+                endpoint.provider_key("fixture".into()).await,
+                Err(ENDED.into())
+            );
+        });
+}
