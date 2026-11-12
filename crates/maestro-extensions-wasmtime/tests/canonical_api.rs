@@ -1,5 +1,10 @@
 //! Canonical API imports reach the original loader runtime and application effects.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     ExtensionActions, ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local,
     types::{ExtensionHandle, ProviderActions},

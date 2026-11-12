@@ -1,5 +1,10 @@
 //! Failed authored initialization releases the Store and its original native request owner.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     ExtensionRunner, Local, create_event_bus_for, create_extension_runtime,
     load_extension_from_factory, types::FlagValue,

@@ -1,4 +1,9 @@
 //! Rendering imports preserve original native row and component ownership.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::effects::ThemeEndpoint;
 use crate::{
     builtin_reads::Endpoint,

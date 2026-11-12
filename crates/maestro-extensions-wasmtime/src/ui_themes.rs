@@ -1,4 +1,9 @@
 //! Theme lookup, selection and tool expansion on the originally acquired UI.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     local_resources::{Registry, effects::ThemeEndpoint},
     read_imports::{ReadEndpoint, add_operand, add_read, add_routed_operand, operand, resource},

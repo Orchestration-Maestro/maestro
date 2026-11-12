@@ -1,4 +1,9 @@
 //! Constructors retain native owners through the original capability table.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{api_imports::ApiView, local_resources::Registry};
 use maestro_extensions::{AuthStorage, ModelRegistry, SharedHandle};
 use std::sync::{Arc, mpsc::Sender};

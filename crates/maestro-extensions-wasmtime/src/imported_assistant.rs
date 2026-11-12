@@ -1,4 +1,9 @@
 //! Native consumers front the original guest stream and cache only its final message.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{Call, Handle},
     local_resources::{Message, Registry},

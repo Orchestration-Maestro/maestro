@@ -1,4 +1,9 @@
 //! Typed file operands cross the existing pump to the application owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::api_imports::ApiView;
 use crate::local_resources::{Message, native_resources::Request};
 use wasmtime::{StoreContextMut, component::LinkerInstance};

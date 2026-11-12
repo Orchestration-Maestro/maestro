@@ -5,8 +5,16 @@ use syn::punctuated::Punctuated;
 
 use crate::source::{Member, Source, read_manifest as read};
 
-/// Crate that generates the extension bindings and holds their only lint exception.
+/// Crate that generates the guest side of the extension bindings.
 pub(crate) const GUEST: &str = "maestro-extensions-wasm";
+
+/// Crates that generate bindings from the interface files and hold their only lint exception.
+const GENERATED: [&str; 2] = [GUEST, "maestro-extensions-wasmtime"];
+
+/// Whether a member generates extension bindings.
+pub(crate) fn generates(name: &str) -> bool {
+    GENERATED.contains(&name)
+}
 
 /// Lints the manifest lowers from `forbid` to `deny` so the generated bindings can compile.
 const LOWERED: &[&str] = &["pedantic", "too_many_arguments", "excessive_nesting"];
@@ -41,8 +49,8 @@ pub(crate) fn check_manifest(name: &str, manifest: &Path, root: &Path) -> Result
                 .get("workspace")
                 .and_then(|w| w.get("lints")?.get(group)),
         );
-        let (changed, level): (&[&str], &str) = match (name, group) {
-            (GUEST, "clippy") => (LOWERED, "deny"),
+        let (changed, level): (&[&str], &str) = match (generates(name), group) {
+            (true, "clippy") => (LOWERED, "deny"),
             _ => (&[], ""),
         };
         for lint in changed {
@@ -89,7 +97,7 @@ pub(crate) struct LintAttribute {
     lints: Vec<String>,
 }
 
-/// Lint-level attributes and root layout of one guest file, gathered by the shared syntax walk.
+/// Lint-level attributes and root layout of one source file, gathered by the shared syntax walk.
 pub(crate) struct Attributes {
     /// Every lint-level attribute, in source order.
     levels: Vec<LintAttribute>,
@@ -148,7 +156,7 @@ fn path_text(path: &syn::Path) -> String {
         .join("::")
 }
 
-/// Check one source file of the guest crate against the exception.
+/// Check one source file of a generated-bindings crate against the exception.
 pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), String> {
     let relative = source
         .path
@@ -158,7 +166,12 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
         .walk
         .as_ref()
         .and_then(|walk| walk.guest.as_ref())
-        .ok_or_else(|| format!("{}: cannot parse a guest source", source.path.display()))?;
+        .ok_or_else(|| {
+            format!(
+                "{}: cannot parse a generated-bindings crate source",
+                source.path.display()
+            )
+        })?;
     let at = source.path.display();
     if bindings_source(member, source) {
         let widened = attributes
@@ -178,7 +191,7 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
             Ok(())
         } else {
             Err(format!(
-                "{at}: the guest root may only declare modules and re-exports"
+                "{at}: the crate root may only declare modules and re-exports"
             ))
         };
     }
@@ -186,7 +199,7 @@ pub(crate) fn check_source(member: &Member, source: &Source) -> Result<(), Strin
         Ok(())
     } else {
         Err(format!(
-            "{at}: every handwritten guest file must forbid pedantic, too_many_arguments and \
+            "{at}: every handwritten file must forbid pedantic, too_many_arguments and \
              excessive_nesting"
         ))
     }
@@ -225,7 +238,7 @@ fn restores_forbid(file: &syn::File) -> bool {
         })
 }
 
-/// Whether the guest root declares modules and re-exports only, with no crate-wide lint level.
+/// Whether the crate root declares modules and re-exports only, with no crate-wide lint level.
 fn wiring_only(file: &syn::File) -> bool {
     file.items.iter().all(|item| {
         matches!(item, syn::Item::Mod(module) if module.content.is_none())
@@ -241,7 +254,7 @@ pub(crate) fn catalog_source(member: &Member, source: &Source) -> bool {
     member.name == "maestro-models-catalog" && source.path.starts_with(member.directory.join("src"))
 }
 
-/// Identify the generated guest binding source exactly.
+/// Identify the generated binding source of either extension crate exactly.
 pub(crate) fn bindings_source(member: &Member, source: &Source) -> bool {
-    member.name == GUEST && source.path == member.directory.join("src/bindings.rs")
+    generates(&member.name) && source.path == member.directory.join("src/bindings.rs")
 }

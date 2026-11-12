@@ -2,7 +2,6 @@
 use super::runner;
 use crate::read_imports::ReadEndpoint;
 use crate::{
-    command_reads::Request,
     context_reads::{Owner, Request as Read},
     local_resources::Pump,
 };
@@ -52,11 +51,8 @@ async fn admitted_wait() {
             .build()
             .unwrap()
             .block_on(async {
-                waiting.command(Request::Wait).await.unwrap();
-                assert_eq!(
-                    waiting.command(Request::Reload).await.unwrap_err(),
-                    "retired wait"
-                );
+                waiting.wait_for_idle().await.unwrap();
+                assert_eq!(waiting.reload().await.unwrap_err(), "retired wait");
             });
     });
     assert!(pump.answer_next().await);
@@ -98,10 +94,7 @@ fn reload_uses_the_operation_selected_when_consumed() {
                     .build()
                     .unwrap()
                     .block_on(async {
-                        assert_eq!(
-                            endpoint.command(Request::Reload).await.unwrap_err(),
-                            "selected reload"
-                        );
+                        assert_eq!(endpoint.reload().await.unwrap_err(), "selected reload");
                     });
             });
             assert!(pump.answer_next().await);
@@ -146,7 +139,7 @@ async fn navigation() {
         tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(async {
             for options in [None, Some("{}"), Some(r#"{"summarize":true,"customInstructions":" focus ","replaceInstructions":false,"label":" checkpoint "}"#)] {
                 let options = options.map(crate::writer_reads::decode::<maestro_extensions::NavigateTreeOptions>).transpose().unwrap();
-                assert!(endpoint.command(|reply| Request::Navigate("  e\u{feff}\u{85} ".into(), options, reply)).await.unwrap().cancelled);
+                assert!(endpoint.navigate_tree("  e\u{feff}\u{85} ".into(), options).await.unwrap().cancelled);
             }
         });
     });
@@ -167,4 +160,52 @@ fn check_navigation_options(options: &maestro_extensions::NavigateTreeOptions) {
         assert_eq!(options.replace_instructions, None);
         assert_eq!(options.label, None);
     }
+}
+
+#[test]
+fn command_on_a_released_or_ordinary_context_is_rejected_with_the_ended_text() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(ended_command());
+}
+
+/// A command reaches an ordinary context and a released command context, never a live command.
+async fn ended_command() {
+    let runner = runner("/ended");
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
+    let registry = pump.registry();
+    let ordinary = registry
+        .context(Owner::Base(runner.create_context()))
+        .unwrap();
+    let released = registry
+        .context(Owner::Command(runner.create_command_context()))
+        .unwrap();
+    let release = released
+        .0
+        .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
+    assert!(pump.answer_next().await);
+    drop(release);
+    let worker = std::thread::spawn(move || {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(ended_waits([ordinary, released]))
+    });
+    for _ in 0..2 {
+        assert!(pump.answer_next().await);
+    }
+    drop(admission);
+    pump.serve().await;
+    let outcomes = worker.join().unwrap();
+    assert_eq!(outcomes, ["extension command context resource ended"; 2]);
+}
+
+/// The failure of waiting on each context.
+async fn ended_waits(endpoints: [crate::context_reads::Endpoint; 2]) -> [String; 2] {
+    let [ordinary, released] = endpoints;
+    [
+        ordinary.wait_for_idle().await.unwrap_err(),
+        released.wait_for_idle().await.unwrap_err(),
+    ]
 }

@@ -1,5 +1,10 @@
 //! Native component execution and retained context integration tests.
 #![cfg(all(test, not(target_arch = "wasm32")))]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 
 mod abort_observers;
 mod asynchronous_reentry;

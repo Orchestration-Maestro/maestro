@@ -40,5 +40,22 @@ path = "tests/integration.rs"
 [features]
 test-support = ["maestro-extensions/test-support"]
 
-[lints]
-workspace = true
+# The workspace table, except that the generated bindings need three groups at
+# `deny`; every handwritten module restores them as `forbid`.
+[lints.rust]
+unsafe_code = "forbid"
+forbidden_lint_groups = "forbid"
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+module_name_repetitions = "forbid"
+missing_docs_in_private_items = "forbid"
+redundant_clone = "forbid"
+too_many_arguments = "deny"
+fn_params_excessive_bools = "forbid"
+too_many_lines = "forbid"
+cognitive_complexity = "forbid"
+excessive_nesting = "deny"
+unwrap_used = "forbid"
+expect_used = "forbid"
+panic = "forbid"

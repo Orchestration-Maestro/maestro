@@ -1,0 +1,68 @@
+//! Host bindings generated from the canonical interface files the guest crate owns.
+//!
+//! This file carries the host crate's only lint exception, in the shape of the guest crate's: the
+//! generator emits code that the workspace's strictest lint levels cannot accept, and Cargo lint
+//! tables apply to a whole crate. The crate manifest lowers three groups to `deny` and every
+//! handwritten module restores them as `forbid`. The workspace conventions check both.
+//!
+//! Each resource maps to the representation type the host already stores in its resource table,
+//! so a generated trait method receives the very handle the linker closures use today.
+
+wasmtime::component::bindgen!({
+    path: "../maestro-extensions-wasm/wit",
+    world: "extension",
+    imports: { default: trappable },
+    with: {
+        "maestro:extension/host.file-mutation": crate::mutation_imports::FileMutation,
+        "maestro:extension/host.builtin-tool": crate::builtin_reads::Endpoint,
+        "maestro:extension/host.local-bash-operations": crate::local_resources::local_bash::Endpoint,
+        "maestro:extension/host.native-row": crate::native_renders::RowEndpoint,
+        "maestro:extension/host.native-component": crate::native_renders::ComponentEndpoint,
+        "maestro:extension/host.fs-watcher": crate::local_resources::watches::Watcher,
+        "maestro:extension/host.response": crate::local_resources::http::Response,
+        "maestro:extension/host.readable": crate::local_resources::native_resources::Reader,
+        "maestro:extension/host.writable": crate::local_resources::native_resources::Writer,
+        "maestro:extension/host.child-process": crate::local_resources::native_resources::Child,
+        "maestro:extension/host.auth-lock-update": crate::local_resources::credential_scope::Endpoint,
+        "maestro:extension/host.bash-output": crate::local_resources::bash_output::Endpoint,
+        "maestro:extension/host.session-manager": crate::writer_reads::Endpoint,
+        "maestro:extension/host.theme": crate::theme_reads::Endpoint,
+        "maestro:extension/host.json-node": crate::schema_reads::Endpoint,
+        "maestro:extension/host.callback": crate::guest_calls::Callback,
+        "maestro:extension/host.stream-value": crate::guest_calls::Handle,
+        "maestro:extension/host.assistant-stream": crate::local_resources::model_streams::Endpoint,
+        "maestro:extension/host.provider-controls": crate::local_resources::provider_controls::Endpoint,
+        "maestro:extension/host.event-stream": crate::local_resources::stream_reads::Endpoint,
+        "maestro:extension/host.subscription": crate::local_resources::effects::SubscriptionEndpoint,
+        "maestro:extension/host.callback-emitter": crate::local_resources::effects::EmitterEndpoint,
+        "maestro:extension/host.import-route": crate::import_route::Route,
+        "maestro:extension/host.local-settlement": crate::import_route::Settlement,
+        "maestro:extension/host.abort-signal": crate::local_resources::SignalEndpoint,
+        "maestro:extension/host.tool-update": crate::local_resources::effects::ToolUpdate,
+        "maestro:extension/host.readonly-session-manager": crate::history_reads::Endpoint,
+        "maestro:extension/host.session-tree-node": crate::tree_reads::Endpoint,
+        "maestro:extension/host.custom-close": crate::custom_reads::CloseEndpoint,
+        "maestro:extension/host.overlay-options": crate::overlay_reads::OptionsEndpoint,
+        "maestro:extension/host.overlay-handle": crate::overlay_reads::HandleEndpoint,
+        "maestro:extension/host.tui": crate::local_resources::effects::TuiEndpoint,
+        "maestro:extension/host.style": crate::widget_reads::StyleEndpoint,
+        "maestro:extension/host.highlighter": crate::widget_reads::HighlighterEndpoint,
+        "maestro:extension/host.row-style": crate::widget_lists::RowStyleEndpoint,
+        "maestro:extension/host.submenu-done": crate::widget_lists::SubmenuDoneEndpoint,
+        "maestro:extension/host.widget": crate::widget_reads::WidgetEndpoint,
+        "maestro:extension/host.keybindings-manager": crate::keys_reads::KeysEndpoint,
+        "maestro:extension/host.text-callback": crate::guest_calls::editors::TextCallbackEndpoint,
+        "maestro:extension/host.editor-factory": crate::widget_foreign::FactoryEndpoint,
+        "maestro:extension/host.completion-provider": crate::guest_calls::providers::ProviderEndpoint,
+        "maestro:extension/host.tool-invalidator": crate::local_resources::effects::InvalidatorEndpoint,
+        "maestro:extension/host.footer-data": crate::footer_data::Endpoint,
+        "maestro:extension/host.extension-ui-context": crate::ui_reads::Endpoint,
+        "maestro:extension/host.oauth-interaction": crate::oauth_interaction::Interaction,
+        "maestro:extension/host.oauth-provider": crate::oauth_reads::Endpoint,
+        "maestro:extension/host.auth-storage": crate::credential_reads::Endpoint,
+        "maestro:extension/host.model-registry": crate::catalog_reads::Endpoint,
+        "maestro:extension/host.context": crate::context_imports::Context,
+        "maestro:extension/host.command-context": crate::context_imports::CommandContext,
+        "maestro:extension/host.replaced-session-context": crate::replaced_reads::Endpoint,
+    },
+});

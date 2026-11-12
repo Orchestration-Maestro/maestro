@@ -1,4 +1,9 @@
 //! Both registration routes attach the same retained executable provider owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{guest_calls::Handle, local_resources::Registry, provider_calls::Provider};
 use maestro_extensions::{ProviderConfig, SharedHandle};
 use std::sync::RwLock;

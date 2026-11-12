@@ -34,7 +34,7 @@ pub(crate) enum Request {
 }
 /// Store-safe lease of one native assistant stream.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
     /// Forward synchronous admission without adding an event queue.
     pub(crate) fn push(&self, event: String) -> Result<(), String> {

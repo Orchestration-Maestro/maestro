@@ -1,4 +1,9 @@
 //! Artifact initialization uses the existing native factory and its original facade.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     engine::{process_engine, process_linker},
     guest_calls::{Call, Callbacks},

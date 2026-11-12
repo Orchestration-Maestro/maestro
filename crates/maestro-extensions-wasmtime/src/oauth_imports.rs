@@ -1,4 +1,9 @@
 //! Canonical OAuth resources use the existing local request pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     oauth_reads::{Endpoint, Request},
     read_imports::{ReadEndpoint, add_read, resource},

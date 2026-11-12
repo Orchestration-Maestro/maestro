@@ -1,5 +1,10 @@
 //! Authored completion providers stack on the native provider through the production runtime.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 
 use maestro_extensions::{
     EventError, ExtensionRunner, ExtensionUIContext, Local, create_event_bus_for,

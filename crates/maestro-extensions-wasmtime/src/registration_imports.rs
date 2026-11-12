@@ -1,4 +1,9 @@
 //! Canonical registrations retain actual command, shortcut and tool callbacks.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::{self, CallbackView},
     guest_calls::Callback,

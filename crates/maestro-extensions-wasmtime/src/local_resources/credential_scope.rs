@@ -59,7 +59,7 @@ pub(super) struct AsyncFrame {
 }
 /// Identity and Send admission of one borrowed lock-update operand.
 #[derive(Clone)]
-pub(crate) struct Endpoint {
+pub struct Endpoint {
     /// Stable invocation identity, shared with the scoped operand service.
     pub(crate) id: u64,
     /// The original local receiver, not an alternative pump.

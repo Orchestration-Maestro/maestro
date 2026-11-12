@@ -1,21 +1,16 @@
 //! Canonical session operands become the original domain's optional records.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{guest_calls::Handle, local_resources::Registry};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
-use wasmtime::component::{ComponentType, Lift};
-
-/// Canonical plain new-session data; outer record presence is independent of its parent.
-#[derive(ComponentType, Lift)]
-#[component(record)]
-pub(crate) struct NewSessionData {
-    /// Exact optional parent-session path.
-    #[component(name = "parent-session")]
-    pub(crate) parent_session: Option<String>,
-}
 
 /// A new-session operation's original setup and continuation operands.
 pub(crate) struct NewSession {
     /// Absent versus present-empty options remains observable by the native owner.
-    pub(crate) data: Option<NewSessionData>,
+    pub(crate) data: Option<crate::bindings::maestro::extension::host::NewSessionCommandData>,
     /// Guest setup invoked with the real writable session.
     pub(crate) setup: Option<Handle>,
     /// Guest continuation invoked with the real replacement context.

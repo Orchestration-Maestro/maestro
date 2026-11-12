@@ -1,5 +1,10 @@
 //! Values returned by component callbacks reach their native consumers unchanged.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     CompactOptions, CompactionResult, ExtensionContextActions, ExtensionExecution, Local,
     types::ProviderActions, wrap_registered_tool,

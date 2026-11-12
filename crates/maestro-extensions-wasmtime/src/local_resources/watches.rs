@@ -8,7 +8,7 @@ use std::{
 
 /// Store-safe lease of one native registration.
 #[derive(Clone)]
-pub(crate) struct Watcher(pub(crate) Arc<Lease>);
+pub struct Watcher(pub(crate) Arc<Lease>);
 /// Operations on the original watch owner.
 pub(crate) enum Request {
     /// Registers the authored callback under its creating facade.

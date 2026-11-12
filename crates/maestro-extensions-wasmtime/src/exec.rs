@@ -1,4 +1,9 @@
 //! Plain command operands forwarded to the existing native execution owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{SignalEndpoint, Work};
 use maestro_extensions::{Cancellation, ExtensionAPI, Local};
 use serde::Deserialize;

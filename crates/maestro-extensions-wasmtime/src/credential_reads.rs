@@ -1,4 +1,9 @@
 //! Requests use the retained native credential owner, not a serialized snapshot.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Message};
 use maestro_extensions::{AuthStorage, DiagnosticErrorInfo};
 use std::sync::{Arc, mpsc::Sender};
@@ -150,7 +155,7 @@ fn send<T, E: std::fmt::Display>(reply: &Reply<T>, result: Result<T, E>) {
 
 /// Store-safe lease of the independently retained credential owner.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
     /// Leaves provider selection, login and persistence with the retained credential owner.
     pub(crate) async fn login(

@@ -1,5 +1,10 @@
 //! Native waits cross the compiled guest and production request pump.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::example_process::run;
 use maestro_extensions::{
     Cancellation, ExtensionRunner, Local, create_event_bus_for, create_extension_runtime,

@@ -1,4 +1,9 @@
 //! Keybindings managers and keybinding hints, served on the local owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Message, Registry};
 use crate::widget_reads::{Reply, WidgetMessage};
 use maestro_extensions::presentation::{
@@ -218,7 +223,7 @@ pub(crate) fn hint(hint: Hint, widgets: &dyn ExtensionWidgets) -> Result<String,
 
 /// Store-safe identity of one keybindings manager.
 #[derive(Clone)]
-pub(crate) struct KeysEndpoint(pub(crate) Arc<Lease>);
+pub struct KeysEndpoint(pub(crate) Arc<Lease>);
 
 impl KeysEndpoint {
     /// Sends one request.

@@ -1,5 +1,10 @@
 //! Compiled author observations through the production loader and native helper owners.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     ExtensionRunner, Local, create_extension_runtime, load_extension_from_factory,
 };

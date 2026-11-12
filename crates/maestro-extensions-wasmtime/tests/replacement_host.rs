@@ -1,5 +1,10 @@
 //! A supplied host that runs the phases around a replacement or reload.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     CommandContextOperations, EventError, ExtensionCommandContextActions, ExtensionRunner,
     ForkPosition, Local, Presence, ReplacedSessionContext, ResourcesDiscoverReason,

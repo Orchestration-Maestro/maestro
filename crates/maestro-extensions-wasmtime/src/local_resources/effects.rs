@@ -26,7 +26,7 @@ pub(crate) enum Request {
 
 /// Independently retained progress observer, not the context that supplied it.
 #[derive(Clone)]
-pub(crate) struct ToolUpdate(Arc<Lease>);
+pub struct ToolUpdate(Arc<Lease>);
 
 impl ToolUpdate {
     /// Validates a native result before invoking its observer on the local owner.
@@ -38,7 +38,7 @@ impl ToolUpdate {
 
 /// Independently retained explicit remover; dropping it does not unsubscribe.
 #[derive(Clone)]
-pub(crate) struct SubscriptionEndpoint(pub(super) Arc<Lease>);
+pub struct SubscriptionEndpoint(pub(super) Arc<Lease>);
 
 impl SubscriptionEndpoint {
     /// Applies the native owner's idempotent removal policy.
@@ -53,7 +53,7 @@ pub(crate) use crate::theme_reads::Endpoint as ThemeEndpoint;
 
 /// Redraw capability of one tool row.
 #[derive(Clone)]
-pub(crate) struct InvalidatorEndpoint(pub(super) Arc<Lease>);
+pub struct InvalidatorEndpoint(pub(super) Arc<Lease>);
 
 impl InvalidatorEndpoint {
     /// Redraws the row on the local owner.
@@ -65,7 +65,7 @@ impl InvalidatorEndpoint {
 
 /// Terminal lent to one component factory; it keeps the native terminal while the guest holds it.
 #[derive(Clone)]
-pub(crate) struct TuiEndpoint {
+pub struct TuiEndpoint {
     /// Releases the retained terminal with the last holder.
     pub(super) lease: Arc<Lease>,
 }
@@ -81,7 +81,7 @@ impl TuiEndpoint {
 
 /// Store-safe endpoint of the original native callback frame, not a second event bus.
 #[derive(Clone)]
-pub(crate) struct EmitterEndpoint(Arc<Lease>);
+pub struct EmitterEndpoint(Arc<Lease>);
 
 impl EmitterEndpoint {
     /// Announces a tail while this listener prefix still owns its frame.
@@ -263,7 +263,7 @@ impl State {
 }
 
 /// One original native emission frame with a single transferable listener continuation.
-pub(super) struct Frame {
+pub(crate) struct Frame {
     /// Native owner alone controls callback validity and foreign delivery timing.
     native: CallbackFrame<Local>,
     /// Only guest-local prefixes need an explicit split invocation owner.

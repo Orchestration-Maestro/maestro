@@ -322,6 +322,9 @@ reads the declaring member's default `wit/` directory, not a path named by the
 string. Paths resolve relative to the declaring member's Cargo manifest. Every input must
 exist inside the canonical guest-authoring member directory, not a copied host
 tree. Directory inputs are roots; file inputs use their containing directory.
+The host's generated binding names the guest's `wit/` directory as its `path`, and the
+roots of the host and guest generators must match. An inline guest package borrows its
+directory for dependencies only, so it adds no shared root.
 When host and guest both declare inputs, their canonical root sets must agree;
 world names and individual file selections may differ. With one side declared,
 ownership still applies but root-set equality is inactive. Inline WIT outside
@@ -411,8 +414,8 @@ as the package's test module root or a test-support library they already
 depend on. Whitespace and comments are ignored; token spelling, literal contents
 and delimiter kinds are preserved. Each diagnostic lists the token count and all
 native file paths with one-based signature lines, including same-line sites.
-Only the generated model catalog and the exact generated guest binding file are
-excluded. Macro definitions are not expanded, but authored invocation tokens
+Only the generated model catalog and the exact generated binding files of the guest and
+host extension crates are excluded. Macro definitions are not expanded, but authored invocation tokens
 inside functions are compared. Unparsed fragments produce no candidates;
 compound configurations are not evaluated. There is no baseline, allowlist or
 suppression attribute.
@@ -447,7 +450,7 @@ test layouts, items inside an inherited `cfg(test)` context and the
 `maestro-test-*` crates.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide. The protected `module_name_repetitions` lint rejects an item whose name starts or ends with its containing module's name; rename the module and keep the exported item name.
-Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.
+Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in the generated bindings at `maestro-extensions-wasm/src/bindings.rs` and `maestro-extensions-wasmtime/src/bindings.rs`. Line documentation in those files is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
 Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or be below a `tests` directory. A module named `tests` must carry `#[cfg(test)]`, every `#[cfg(test)]` module must be named `tests`, and test module declarations cannot carry `#[path]`. These layout conventions support production line counting; module declarations are validated throughout the syntax tree.
 Duplicate assertions are a review judgement.
@@ -481,11 +484,13 @@ counts. Ordinary comments and string contents count. Blank lines are excluded.
 A trailing test item's comment-only suffix is excluded only when no production
 item follows. Rust validity belongs to the compiler.
 
-The guest-authoring crate declares its own lint table: the workspace table
-with `pedantic`, `too_many_arguments` and `excessive_nesting` lowered from
-`forbid` to `deny`, because generated bindings cannot compile under `forbid`.
-Only that crate's generated `bindings.rs` may carry a lint attribute, the single
-allowance `clippy::same_length_and_capacity`. Every handwritten
+The guest-authoring crate and the native component host each declare their own
+lint table: the workspace table with `pedantic`, `too_many_arguments` and
+`excessive_nesting` lowered from `forbid` to `deny`, because generated bindings
+cannot compile under `forbid`. Each crate generates its bindings from the same
+interface files, the guest for the extension to run against and the host for the
+traits it implements. Only a crate's generated `bindings.rs` may carry a lint
+attribute, the single allowance `clippy::same_length_and_capacity`. Every handwritten
 top-level module, integration test and example restores the groups with
 `forbid`, nested files inherit it from their parent module, and the crate root
 stays wiring-only.

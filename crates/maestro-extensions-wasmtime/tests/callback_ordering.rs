@@ -1,5 +1,10 @@
 //! Component callbacks deliver foreign listeners at each callback's own return.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::types::{ExtensionHandle, FlagValue};
 use maestro_extensions::{
     ErrorReporter, EventBus, EventBusController, ExtensionActions, ExtensionContextActions,

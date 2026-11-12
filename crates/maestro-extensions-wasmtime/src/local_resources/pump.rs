@@ -2,7 +2,7 @@
 use super::{Admission, Capability, Message, Registry, Work};
 use crate::context_reads::{Endpoint, Owner, Request};
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Cancellation, Model, ReadonlySessionManager, ResolvedRequestAuth};
+use maestro_extensions::{Cancellation, Model, ReadonlySessionManager};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -205,11 +205,6 @@ impl State {
             Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
             Message::HostOperation(call) => self.host_operation(call),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
-            Message::Command(id, request, admission) => self.start_command(id, request, admission),
-            Message::Auth(id, model, reply, scope) => self.start_auth(id, *model, reply, scope),
-            Message::ProviderKey(id, provider, reply, admission) => {
-                self.start_provider_key(id, provider, reply, admission);
-            }
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::Signal(id, request) => self.signal(id, request),
             Message::History(id, request) => self.history(id, request),
@@ -226,7 +221,6 @@ impl State {
             Message::CredentialKey(id, request, reply, admission) => {
                 self.start_credential_key(id, request, reply, admission);
             }
-            Message::Catalog(id, request) => self.catalog(id, request),
             Message::Node(id, request) => self.node(id, request),
             Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
             Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
@@ -240,8 +234,22 @@ impl State {
             Message::Native(id, request) => self.native(id, request),
             Message::Http(id, request) => self.http(id, request),
             Message::Watch(id, request) => self.watch(id, request),
+            Message::Run(id, call) => self.run(id, call),
+            Message::Admit(id, start, admission) => self.start(id, start, admission),
             Message::Release(id) => self.release(id),
         }
+    }
+
+    /// Runs a call against its capability, outside the capability-table borrow.
+    fn run(&self, id: u64, call: super::RunCall) {
+        let capability = self.registry.capability(id);
+        call(capability.as_deref(), &self.registry);
+    }
+
+    /// Starts the work a call selects against its capability and keeps its admission.
+    fn start(&self, id: u64, start: super::AdmitCall, admission: Admission) {
+        let capability = self.registry.capability(id);
+        self.admit(start(capability.as_deref(), &self.registry), admission);
     }
 
     /// Rejects a synchronous credential update whose native frame has ended.
@@ -418,17 +426,6 @@ impl State {
         }
     }
 
-    /// Selects command work now and keeps its original admission through settlement.
-    fn start_command(&self, id: u64, request: crate::command_reads::Request, admission: Admission) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Context(Owner::Command(context))) = capability.as_deref() {
-            let work = request.start(context, &self.registry);
-            self.admit(work, admission);
-        } else {
-            request.reject("extension command context resource ended");
-        }
-    }
-
     /// Retains the same admission while an already-selected operation settles.
     pub(super) fn admit(&self, work: Work, admission: Admission) {
         self.stage(Box::pin(async move {
@@ -444,30 +441,6 @@ impl State {
         if work.as_mut().poll(&mut context).is_pending() {
             self.staging.borrow_mut().push(work);
         }
-    }
-
-    /// Retains the original catalog and caller effects across credential resolution.
-    fn start_auth(
-        &self,
-        id: u64,
-        model: Model,
-        reply: tokio::sync::oneshot::Sender<Result<ResolvedRequestAuth, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Catalog(catalog)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension catalog resource ended".to_owned()));
-            return;
-        };
-        let catalog = catalog.clone();
-        let model = Arc::new(std::sync::RwLock::new(model));
-        self.admit(
-            Box::pin(async move {
-                let result = catalog.get_api_key_and_headers(&model).await;
-                let _ = reply.send(Ok(result));
-            }),
-            admission,
-        );
     }
 
     /// Serves retained UI methods after releasing the capability table borrow.
@@ -526,4 +499,4 @@ impl Drop for State {
     }
 }
 
-mod catalog;
+mod retained;

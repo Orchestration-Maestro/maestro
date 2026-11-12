@@ -60,21 +60,69 @@ async fn retained_catalog(command: bool) {
 
 /// Exact lookup operands and owned decoding preserve absence and authored strings.
 fn observe(catalog: &catalog_reads::Endpoint) {
-    use catalog_reads::Request as Read;
-    let all: Value = serde_json::from_str(&catalog.read(Read::All).unwrap()).unwrap();
+    let all: Value = serde_json::from_str(&catalog.get_all().unwrap()).unwrap();
     assert_eq!(all.as_array().unwrap().len(), 1);
     assert_eq!(all[0]["id"], " \u{feff}\u{85} model ");
-    let available: Value = serde_json::from_str(&catalog.read(Read::Available).unwrap()).unwrap();
+    let available: Value = serde_json::from_str(&text(catalog.get_available())).unwrap();
     assert_eq!(available, json!([]));
     let found = catalog
-        .read(|reply| Read::Find("fixture".into(), " \u{feff}\u{85} model ".into(), reply))
+        .find("fixture".into(), " \u{feff}\u{85} model ".into())
         .unwrap()
         .unwrap();
     assert_eq!(serde_json::from_str::<Value>(&found).unwrap(), all[0]);
     assert_eq!(
-        catalog
-            .read(|reply| Read::Find("fixture".into(), "model".into(), reply))
-            .unwrap(),
+        catalog.find("fixture".into(), "model".into()).unwrap(),
         None
     );
+}
+
+/// The text a finished route settles with.
+fn text(mut route: crate::import_route::Route) -> String {
+    match route.next() {
+        Err(Ok(crate::import_route::Value::Text(text))) => text,
+        _ => panic!("expected a text result"),
+    }
+}
+
+#[test]
+fn released_catalog_rejects_every_kind_of_operation_with_its_ended_text() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(released_catalog());
+}
+
+/// Releases the catalog's capability, then drives one operation of each kind against it.
+async fn released_catalog() {
+    let (session, _) = session::runner_session("/ended");
+    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
+    let endpoint = pump.registry().catalog(session.model_registry).unwrap();
+    let release = endpoint
+        .0
+        .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
+    assert!(pump.answer_next().await);
+    drop(release);
+    let worker = std::thread::spawn(move || ended_operations(&endpoint));
+    for _ in 0..4 {
+        assert!(pump.answer_next().await);
+    }
+    drop(admission);
+    pump.serve().await;
+    let outcomes = worker.join().unwrap();
+    assert_eq!(outcomes, ["extension catalog resource ended"; 4]);
+}
+
+/// The failure each operation kind settles with: read, route, authentication and provider key.
+fn ended_operations(endpoint: &catalog_reads::Endpoint) -> [String; 4] {
+    let read = endpoint.get_all().unwrap_err();
+    let route = endpoint.refresh().result().unwrap_err();
+    let model = model_support::model("ended").read().unwrap().clone();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let auth = runtime.block_on(endpoint.auth(model)).err().unwrap();
+    let key = runtime
+        .block_on(endpoint.provider_key("fixture".into()))
+        .unwrap_err();
+    [read, route, auth, key]
 }

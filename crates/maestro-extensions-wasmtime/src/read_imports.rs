@@ -1,4 +1,9 @@
 //! Canonical read shims share one typed request path to each original native capability.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::Message;
 use std::sync::mpsc::Sender;
 use wasmtime::{
@@ -37,7 +42,7 @@ macro_rules! endpoints {
     )+};
 }
 endpoints! { oauth_reads => OAuthProvider, builtin_reads => Builtin, api_reads => Api, context_reads => Read, history_reads => History,
-writer_reads => Writer, credential_reads => Credentials, tree_reads => Node, catalog_reads => Catalog, theme_reads => Theme }
+writer_reads => Writer, credential_reads => Credentials, tree_reads => Node, theme_reads => Theme }
 
 /// Clones an original resource endpoint before invoking its native owner.
 pub(crate) fn resource<T: WasiView, E: ReadEndpoint>(

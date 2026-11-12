@@ -1,4 +1,9 @@
 //! Host widgets an extension built, served on the local owner over the toolkit widgets.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::Handle;
 use crate::guest_calls::paints::Failure;
 use crate::local_resources::{Lease, Message, Registry};
@@ -571,7 +576,7 @@ fn width(value: u32) -> Result<usize, String> {
 
 /// Store-safe identity of one host widget.
 #[derive(Clone)]
-pub(crate) struct WidgetEndpoint(pub(crate) Arc<Lease>);
+pub struct WidgetEndpoint(pub(crate) Arc<Lease>);
 
 impl WidgetEndpoint {
     /// Sends one request that makes no call back into this instance.
@@ -592,11 +597,11 @@ impl WidgetEndpoint {
 
 /// Store-safe identity of one lent host style.
 #[derive(Clone)]
-pub(crate) struct StyleEndpoint(pub(crate) Arc<Lease>);
+pub struct StyleEndpoint(pub(crate) Arc<Lease>);
 
 /// Store-safe identity of the lent host highlighting.
 #[derive(Clone)]
-pub(crate) struct HighlighterEndpoint(pub(crate) Arc<Lease>);
+pub struct HighlighterEndpoint(pub(crate) Arc<Lease>);
 
 impl StyleEndpoint {
     /// Applies the style.

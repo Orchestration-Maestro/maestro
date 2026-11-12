@@ -1,4 +1,9 @@
 //! Authored metadata becomes the real native local tool definition.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{guest_calls::Handle, local_resources::Registry};
 use maestro_extensions::{
     ExtensionAPI, Local, Presence, Tool, ToolExecutionMode, ToolRenderShell, local::ToolDefinition,

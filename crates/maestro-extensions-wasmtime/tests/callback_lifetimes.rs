@@ -1,5 +1,10 @@
 //! Overlapping component work and retained captures settle independently of each other.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     Cancellation, CommandContextOperations, ExtensionCommandContextActions,
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, MessageRenderOptions,

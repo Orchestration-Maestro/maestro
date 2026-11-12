@@ -1,5 +1,10 @@
 //! Built components loaded through the domain loader and driven through their `hooks` command.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     EventBusController, ExtensionRunner, Local, ModuleLoader, Subscription, create_event_bus_for,
     load_extensions, types::ExtensionHandle,

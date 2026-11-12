@@ -1,5 +1,10 @@
 //! Foreign schemas use their originating callbacks through the component route.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     ExtensionContextActions, ExtensionExecution, Local, ToolInfo, types::ProviderActions,
 };

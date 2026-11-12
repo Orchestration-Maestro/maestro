@@ -1,5 +1,10 @@
 //! A process can exit after dropping a runtime that owns multiple component Stores.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::retained_components::{loaded_on, view};
 use maestro_extensions::{Local, create_event_bus_for};
 use std::rc::Rc;

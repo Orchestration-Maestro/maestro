@@ -1,4 +1,9 @@
 //! Retained guest callbacks submit actual exports to their original Store.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::lifecycle::{
     StoreEndpoint,
     replies::{Replies, Reply},
@@ -41,7 +46,7 @@ pub(crate) use registrations::RegisteredCall;
 pub(crate) use tools::ToolCall;
 
 /// A host-owned identity, independent of resource-table slot reuse.
-pub(crate) struct Callback {
+pub struct Callback {
     /// Stable key used by the authored closure table.
     pub(crate) id: u32,
     /// An enumerated foreign node retained by the existing native registry.
@@ -306,7 +311,7 @@ impl Drop for Observer {
 
 /// Store-safe retained callback ownership; never contains a local domain context.
 #[derive(Clone)]
-pub(crate) struct Handle(Arc<Retained>);
+pub struct Handle(Arc<Retained>);
 #[derive(Clone)]
 /// A non-admitting reference to an existing retained callback.
 pub(crate) struct WeakHandle(Weak<Retained>);
