@@ -285,7 +285,7 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
   the child set-up step.
 - **Inputs without a source.** Tests whose subject has no Maestro input are not ported, and each is listed
   once: legacy setting values, legacy snapshot fixtures, registry files, removed flags and server-side
-  add-on registration.
+  extension registration.
 
 ## Corrected reference defects
 
@@ -330,7 +330,7 @@ Results match the reference. These mechanisms are replaced and each is listed on
   - TOML storage and text edits;
   - unknown top-level section reports;
   - the embedded default configuration text;
-  - the add-on registry file and its lock;
+  - the extension registry file and its lock;
   - checkout folders and the legacy folder copy;
   - the source grammar for one hosting site and its offline registry glue;
   - the release-notes store;
