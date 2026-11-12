@@ -121,8 +121,14 @@ fn corpus(name: &str) {
         read_support::isolated_temp_dir(name, "direct-corpus", dir.path());
         return;
     }
-    let cases: Vec<Case> =
-        serde_json::from_str(include_str!("fixtures/direct_shell.json")).unwrap();
+    let cases: Vec<Case> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/direct_shell.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let mut count = 0;
     for case in cases.into_iter().filter(|case| case.test == name) {
         count += 1;

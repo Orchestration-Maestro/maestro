@@ -7,7 +7,11 @@ use crate::model_streaming::{chat::TestResult, response_qualification::assert_co
 /// Execute only the named test's recorded invocations.
 pub(super) fn assert_rows(test: &str) -> TestResult {
     assert_corpus_rows(
-        include_str!("../fixtures/model_streaming.json"),
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/model_streaming.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
         &[
             (
                 "crates/maestro-models/tests/model_streaming/text.rs::maestro_completions_continue_with_actual_assistants",

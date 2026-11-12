@@ -7,7 +7,13 @@ use serde::Deserialize;
 use std::{collections::BTreeMap, path::Path, rc::Rc};
 
 /// Recorded keyboard documents and complete containing-container frames.
-const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_hotkeys.json");
+fn fixtures() -> String {
+    std::fs::read_to_string(format!(
+        "{}/tests/fixtures/interactive_hotkeys.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .expect("recorded corpus")
+}
 
 /// A real registration's supplied metadata.
 #[derive(Deserialize)]
@@ -92,7 +98,7 @@ struct DocumentExpected {
 fn hotkeys_document_keeps_rows_extensions_and_settings() {
     const TEST: &str = "hotkeys_document_keeps_rows_extensions_and_settings";
     isolated(TEST, async |directory| {
-        let documents = cases::<DocumentInput, DocumentExpected>(FIXTURES, TEST);
+        let documents = cases::<DocumentInput, DocumentExpected>(&fixtures(), TEST);
         assert_eq!(documents.len(), 19);
         for (input, expected) in documents {
             let world = configured(
@@ -188,7 +194,7 @@ fn assert_selection(world: &World, expected: &SelectionExpected) {
 fn hotkeys_observe_real_shortcut_selection_and_replacement() {
     const TEST: &str = "hotkeys_observe_real_shortcut_selection_and_replacement";
     isolated(TEST, async |directory| {
-        let scenarios = cases::<SelectionInput, SelectionExpected>(FIXTURES, TEST);
+        let scenarios = cases::<SelectionInput, SelectionExpected>(&fixtures(), TEST);
         assert_eq!(scenarios.len(), 4);
         for (input, expected) in scenarios {
             let world = configured(
@@ -228,7 +234,7 @@ fn entry(key: &str, description: Option<String>, path: &str) -> (String, Registr
 fn hotkeys_keep_display_registry_and_reserved_config_independent() {
     const TEST: &str = "hotkeys_keep_display_registry_and_reserved_config_independent";
     isolated(TEST, async |directory| {
-        let scenarios = cases::<IndependentInput, SelectionExpected<String>>(FIXTURES, TEST);
+        let scenarios = cases::<IndependentInput, SelectionExpected<String>>(&fixtures(), TEST);
         assert_eq!(scenarios.len(), 2);
         for (input, expected) in scenarios {
             let world = configured(
@@ -284,7 +290,7 @@ struct FramesExpected {
 fn hotkeys_markdown_indent_reaches_rendered_code() {
     const TEST: &str = "hotkeys_markdown_indent_reaches_rendered_code";
     isolated(TEST, async |directory| {
-        let scenarios = cases::<IndentInput, FramesExpected>(FIXTURES, TEST);
+        let scenarios = cases::<IndentInput, FramesExpected>(&fixtures(), TEST);
         assert_eq!(scenarios.len(), 3);
         for (input, expected) in scenarios {
             indent_case(directory, &input, &expected, false);
@@ -342,7 +348,7 @@ struct RetainedExpected {
 fn hotkeys_retained_panel_uses_live_theme_without_changing_title() {
     const TEST: &str = "hotkeys_retained_panel_uses_live_theme_without_changing_title";
     isolated(TEST, async |directory| {
-        let scenarios = cases::<ThemeInput, RetainedExpected>(FIXTURES, TEST);
+        let scenarios = cases::<ThemeInput, RetainedExpected>(&fixtures(), TEST);
         assert_eq!(scenarios.len(), 2);
         for (input, expected) in scenarios {
             let entries = if input.extensions {
@@ -380,7 +386,7 @@ struct DescriptionInput {
 fn hotkeys_use_current_session_without_retaining_mode() {
     const TEST: &str = "hotkeys_use_current_session_without_retaining_mode";
     isolated(TEST, async |directory| {
-        let scenarios = cases::<DescriptionInput, RetainedExpected>(FIXTURES, TEST);
+        let scenarios = cases::<DescriptionInput, RetainedExpected>(&fixtures(), TEST);
         assert_eq!(scenarios.len(), 2);
         for (input, expected) in scenarios {
             let world = configured(

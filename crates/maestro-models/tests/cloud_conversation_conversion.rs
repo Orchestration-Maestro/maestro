@@ -13,7 +13,11 @@ use chat::TestResult;
 /// Run the rows `test` owns in the conversion fixture.
 fn check_rows(test: &str) -> TestResult {
     rows::check_rows(
-        include_str!("fixtures/cloud_conversation_conversion.json"),
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/cloud_conversation_conversion.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
         test,
     )
 }

@@ -91,7 +91,7 @@ fn azure_finish_without_a_native_executor() -> chat::TestResult {
 #[test]
 fn azure_fixtures_have_unique_complete_consumers() -> chat::TestResult {
     runtime::fixture_consumers(
-        endpoint::FIXTURE,
+        &endpoint::fixture(),
         azure_cases::rows,
         concat!(
             include_str!("azure_endpoint_requests.rs"),

@@ -1,4 +1,5 @@
 //! Shared integration-test executable.
+#![cfg(test)]
 
 mod agent_shell_execution;
 mod agent_shell_native;

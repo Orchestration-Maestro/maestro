@@ -118,10 +118,11 @@ fn responses_native_runtime_failure_finishes_stream() -> chat::TestResult {
     runtime::without_runtime(runtime::Endpoint::Standard)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn responses_fixture_cases_have_complete_consumers() -> chat::TestResult {
     runtime::fixture_consumers(
-        endpoint::FIXTURE,
+        &endpoint::fixture(),
         response_cases::rows,
         concat!(
             include_str!("response_endpoint_requests.rs"),

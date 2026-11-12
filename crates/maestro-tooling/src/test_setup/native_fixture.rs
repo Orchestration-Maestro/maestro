@@ -25,8 +25,16 @@ const PACKAGE: &str = "maestro-test-process";
 const PROBE_EXAMPLE: &str = "child_toolchain_probe";
 /// The package that owns the probe.
 const PROBE_PACKAGE: &str = "maestro-tooling";
+/// The child that runs one startup conversion, started without a test harness.
+pub(crate) const CONVERSION_VARIABLE: &str = "MAESTRO_STARTUP_CONVERSION";
+/// The example target that runs one startup conversion.
+const CONVERSION_EXAMPLE: &str = "startup_conversion";
+/// The package that owns the conversion child.
+const CONVERSION_PACKAGE: &str = "maestro-app";
 /// The fixture's record in the prepared bundle.
 const RECEIPT: &str = "native-fixture.json";
+/// The conversion child's record, kept apart because its inputs are the application's closure.
+const CONVERSION_RECEIPT: &str = "startup-conversion.json";
 
 /// The staged bytes of one host executable and what Cargo reported when it built them.
 #[derive(Serialize, Deserialize)]
@@ -46,6 +54,19 @@ struct Prepared {
     fixture: Staged,
     /// The instrumented probe, in a workspace that builds its own tooling.
     probe: Option<Staged>,
+    /// Whether the workspace builds the application, so a conversion child is staged too.
+    converts: bool,
+    /// Host identity that must match the executing setup.
+    host: String,
+}
+
+/// The staged startup conversion child and the exact inputs that produced it.
+#[derive(Serialize, Deserialize)]
+struct Conversion {
+    /// Source and lock fingerprint of the application's closure.
+    inputs: Inputs,
+    /// The child that runs one startup conversion.
+    child: Staged,
     /// Host identity that must match the executing setup.
     host: String,
 }
@@ -60,16 +81,38 @@ fn probe_filename() -> String {
     format!("{PROBE_EXAMPLE}{}", std::env::consts::EXE_SUFFIX)
 }
 
+/// The staged conversion child's platform-specific name.
+fn conversion_filename() -> String {
+    format!("{CONVERSION_EXAMPLE}{}", std::env::consts::EXE_SUFFIX)
+}
+
 /// The host platform this executable can run on.
 fn host() -> String {
     format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS)
 }
 
-/// Read the fixture record from an explicit bundle directory.
-fn receipt(output: &Path) -> io::Result<Prepared> {
-    let path = output.join(RECEIPT);
+/// Read the record named `name` from an explicit bundle directory.
+fn receipt<T: serde::de::DeserializeOwned>(output: &Path, name: &str) -> io::Result<T> {
+    let path = output.join(name);
     serde_json::from_slice(&std::fs::read(&path).map_err(|error| at(&path, error))?)
         .map_err(|error| at(&path, error))
+}
+
+/// Require the host of the record file `name` to be this one.
+fn check_host(output: &Path, name: &str, host_name: &str) -> io::Result<()> {
+    if host_name == host() {
+        Ok(())
+    } else {
+        Err(at(
+            &output.join(name),
+            "prepared native fixture belongs to another host",
+        ))
+    }
+}
+
+/// Whether the workspace builds the application, so a conversion child is staged too.
+fn converts(workspace: &Workspace) -> bool {
+    workspace.member(CONVERSION_PACKAGE).is_some()
 }
 
 /// Validate source freshness, platform and bytes before returning the staged paths.
@@ -77,14 +120,22 @@ fn receipt(output: &Path) -> io::Result<Prepared> {
 /// # Errors
 /// Returns a stale record, another host's artifact, or bytes that differ from the record.
 pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<Vec<(String, PathBuf)>> {
-    let record = receipt(output)?;
-    record.inputs.verify(checkout, output)?;
-    if record.host != host() {
-        return Err(at(
-            output,
-            "prepared native fixture belongs to another host",
-        ));
+    let record: Prepared = receipt(output, RECEIPT)?;
+    let mut paths = fixtures(checkout, output, &record)?;
+    if record.converts {
+        paths.push(conversion_prepared(checkout, output)?);
     }
+    Ok(paths)
+}
+
+/// Validate the native fixture and the probe, which share one record.
+fn fixtures(
+    checkout: &Path,
+    output: &Path,
+    record: &Prepared,
+) -> io::Result<Vec<(String, PathBuf)>> {
+    record.inputs.verify(checkout, output)?;
+    check_host(output, RECEIPT, &record.host)?;
     let mut paths = vec![(
         VARIABLE.to_owned(),
         staged(output, filename(), &record.fixture)?,
@@ -98,10 +149,23 @@ pub(crate) fn prepared(checkout: &Path, output: &Path) -> io::Result<Vec<(String
     Ok(paths)
 }
 
+/// Validate the conversion child against its own record.
+fn conversion_prepared(checkout: &Path, output: &Path) -> io::Result<(String, PathBuf)> {
+    let record: Conversion = receipt(output, CONVERSION_RECEIPT)?;
+    record.inputs.verify(checkout, output)?;
+    check_host(output, CONVERSION_RECEIPT, &record.host)?;
+    Ok((
+        CONVERSION_VARIABLE.to_owned(),
+        staged(output, conversion_filename(), &record.child)?,
+    ))
+}
+
 /// Reuse current fixtures or build and stage them once through the locked host dev profile.
 ///
-/// The probe is staged only where this workspace builds its own tooling, because only that
-/// workspace's tests launch it.
+/// The probe is staged only where this workspace builds its own tooling, and the conversion
+/// child only where it builds the application, because only those workspaces' tests launch them.
+/// The child has its own record, so an edit to the application rebuilds it alone and an edit
+/// to the fixture's crates leaves it staged.
 pub(crate) fn prepare(
     cargo: &Path,
     checkout: &Path,
@@ -109,17 +173,66 @@ pub(crate) fn prepare(
     output: &Path,
     target: &Path,
 ) -> io::Result<Vec<(String, PathBuf)>> {
-    if let Ok(paths) = prepared(checkout, output) {
+    let conversion = converts(workspace)
+        .then(|| prepare_conversion(cargo, checkout, workspace, output, target))
+        .transpose()?;
+    let mut paths = receipt(output, RECEIPT)
+        .and_then(|record| fixtures(checkout, output, &record))
+        .or_else(|_| prepare_fixtures(cargo, checkout, workspace, output, target))?;
+    paths.extend(conversion);
+    Ok(paths)
+}
+
+/// Build and stage the conversion child unless its record is current.
+fn prepare_conversion(
+    cargo: &Path,
+    checkout: &Path,
+    workspace: &Workspace,
+    output: &Path,
+    target: &Path,
+) -> io::Result<(String, PathBuf)> {
+    if let Ok(paths) = conversion_prepared(checkout, output) {
         return Ok(paths);
     }
-    let inputs = inputs(workspace)?;
+    let inputs = inputs(workspace, &[CONVERSION_PACKAGE])?;
+    let emitted = build(
+        cargo,
+        checkout,
+        target,
+        CONVERSION_PACKAGE,
+        CONVERSION_EXAMPLE,
+    )?;
+    inputs.verify(checkout, output)?;
+    std::fs::create_dir_all(output)?;
+    let child = stage(output, conversion_filename(), &emitted)?;
+    let record = Conversion {
+        inputs,
+        child,
+        host: host(),
+    };
+    std::fs::write(
+        output.join(CONVERSION_RECEIPT),
+        serde_json::to_vec(&record)?,
+    )?;
+    conversion_prepared(checkout, output)
+}
+
+/// Build and stage the native fixture and the probe, and write their record.
+fn prepare_fixtures(
+    cargo: &Path,
+    checkout: &Path,
+    workspace: &Workspace,
+    output: &Path,
+    target: &Path,
+) -> io::Result<Vec<(String, PathBuf)>> {
+    let inputs = inputs(workspace, &[PACKAGE, PROBE_PACKAGE])?;
     let source = program::source(checkout, workspace, PACKAGE)?.ok_or_else(|| {
         io::Error::other(format!(
             "{PACKAGE} is neither a workspace crate nor a locked dependency"
         ))
     })?;
     let emitted = match source {
-        Source::Member => build(cargo, checkout, target)?,
+        Source::Member => build(cargo, checkout, target, PACKAGE, EXAMPLE)?,
         source @ Source::Locked { .. } => {
             let program = Program {
                 package: PACKAGE,
@@ -149,19 +262,20 @@ pub(crate) fn prepare(
         inputs,
         fixture,
         probe,
+        converts: converts(workspace),
         host: host(),
     };
     std::fs::write(output.join(RECEIPT), serde_json::to_vec(&record)?)?;
-    prepared(checkout, output)
+    fixtures(checkout, output, &record)
 }
 
-/// The fixtures' inputs: the crates they build from and the shared workspace files, which name
-/// the locked source when the workspace only depends on a package.
+/// The inputs of the named packages: the crates they build from and the shared workspace files,
+/// which name the locked source when the workspace only depends on a package.
 ///
 /// # Errors
 /// Returns a failed metadata read, or a failed listing or read of the workspace files.
-fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
-    let packages = workspace.holds(&[PACKAGE, PROBE_PACKAGE]);
+fn inputs(workspace: &Workspace, names: &[&str]) -> io::Result<Inputs> {
+    let packages = workspace.holds(names);
     let mut paths = closure_directories(workspace.metadata(), &packages)?;
     paths.extend(
         SHARED_INPUTS
@@ -199,15 +313,21 @@ fn stage(output: &Path, name: String, emitted: &Path) -> io::Result<Staged> {
 }
 
 /// Build the one target and accept only Cargo's reported executable, never a directory scan.
-fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
+fn build(
+    cargo: &Path,
+    checkout: &Path,
+    target: &Path,
+    package: &str,
+    example: &str,
+) -> io::Result<PathBuf> {
     let output = toolchain::command(cargo, checkout)
         .args([
             "build",
             "--locked",
             "-p",
-            PACKAGE,
+            package,
             "--example",
-            EXAMPLE,
+            example,
             "--profile",
             "dev",
             "--message-format=json-render-diagnostics",
@@ -215,7 +335,7 @@ fn build(cargo: &Path, checkout: &Path, target: &Path) -> io::Result<PathBuf> {
         ])
         .arg(target)
         .output()?;
-    reported(&output, EXAMPLE)
+    reported(&output, example)
 }
 
 /// Build the probe with the coverage instrumentation its counters come from.

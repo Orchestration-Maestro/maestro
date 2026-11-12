@@ -1,6 +1,7 @@
-//! Reader-follow boundaries and usage totals.
+//! Reader-follow boundaries, usage totals and the history draw key.
 use super::*;
 use maestro_app::{AgentMessage, NoCustomMessages};
+use std::rc::Rc;
 
 /// Apply observations of `(top, scroll height, viewport height)` in order.
 fn after(observations: &[(f64, f64, f64)]) -> Follow {
@@ -95,4 +96,36 @@ fn totals_sum_assistant_usage_and_need_a_counted_token() {
         "cost alone"
     );
     assert!(usage_totals::<NoCustomMessages>(&[]).is_none());
+}
+
+/// A key for a history of `entries` with `pending` calls.
+fn key(entries: usize, is_streaming: bool, pending: &[&str]) -> HistoryKey {
+    HistoryKey {
+        entries,
+        is_streaming,
+        pending: Rc::new(pending.iter().map(|id| (*id).to_owned()).collect()),
+    }
+}
+
+#[test]
+fn history_is_drawn_again_when_an_operand_or_the_event_differs() {
+    let drawn = key(40, true, &["call"]);
+    assert!(!drawn.stale(Some(&drawn.clone()), true), "same operands");
+    assert!(
+        drawn.stale(Some(&drawn.clone()), false),
+        "not a streamed update"
+    );
+    assert!(drawn.stale(None, true), "never drawn");
+    assert!(
+        key(41, true, &["call"]).stale(Some(&drawn), true),
+        "an entry arrived"
+    );
+    assert!(
+        key(40, false, &["call"]).stale(Some(&drawn), true),
+        "streaming ended"
+    );
+    assert!(
+        key(40, true, &[]).stale(Some(&drawn), true),
+        "a call finished"
+    );
 }

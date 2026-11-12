@@ -25,11 +25,24 @@ use std::{
 };
 /// Parse strict cases and reject repeated queries.
 pub fn cases(test: &str) -> Vec<Case> {
-    search_cases(include_str!("../fixtures/grep_cases.json"), test)
+    search_cases(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/grep_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+        test,
+    )
 }
 /// Use the recorded palette rather than a hard-coded color assignment.
 pub fn keys() -> Vec<String> {
-    search_keys(include_str!("../fixtures/grep_cases.json"))
+    search_keys(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/grep_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
 }
 /// Strict controlled execution input.
 #[derive(Default, Deserialize)]

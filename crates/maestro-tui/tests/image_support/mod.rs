@@ -3,7 +3,13 @@ use serde_json::Value;
 
 /// Recorded cases owned by one behavior test.
 pub fn cases(name: &str) -> Vec<Value> {
-    let parsed = serde_json::from_str::<Vec<Value>>(include_str!("../fixtures/image_cases.json"));
+    let parsed = serde_json::from_str::<Vec<Value>>(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/image_cases.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    );
     assert!(parsed.is_ok(), "invalid image corpus: {parsed:?}");
     let cases: Vec<_> = parsed
         .unwrap_or_default()

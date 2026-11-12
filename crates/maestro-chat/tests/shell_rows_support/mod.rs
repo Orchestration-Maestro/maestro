@@ -162,8 +162,14 @@ fn theme(palette: &Palette, brand: Option<&str>) -> Rc<Theme> {
 /// Replays one attributed group, preserving every frame and repeated operation.
 pub fn replay(name: &str) {
     let _guard = registry_guard();
-    let raw: serde_json::Value =
-        serde_json::from_str(include_str!("../fixtures/shell_rows.json")).unwrap();
+    let raw: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/shell_rows.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let mut unique = BTreeSet::new();
     for case in raw["cases"].as_array().unwrap() {
         assert!(
