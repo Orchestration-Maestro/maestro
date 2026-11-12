@@ -18,9 +18,10 @@ platforms = [
 [traversal-excludes]
 # Browser qualification never contributes features to native development tools.
 workspace-members = ["maestro-test-browser"]
-# Keep test-only default fonts out of production feature unification.
+# Keep test-only default fonts and the test clock out of production feature unification.
 third-party = [
     { name = "egui" },
+    { name = "tokio" },
     { name = "wasmtime", version = "=51.0.0-dev", git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67" },
     { name = "wasmtime-wasi", version = "=51.0.0-dev", git = "https://github.com/bytecodealliance/wasmtime", rev = "ffff2e2db24a291f02429f123aba1631fa8eea67" },
 ]
