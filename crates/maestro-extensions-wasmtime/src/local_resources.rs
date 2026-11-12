@@ -166,8 +166,6 @@ pub(crate) enum Message {
         Box<Message>,
         std::sync::mpsc::Sender<crate::import_route::Nested>,
     ),
-    /// Forwards an owned chunk into its original execution's data stream.
-    BashOutput(u64, Vec<u8>, bash_output::Reply),
     /// Uses the originally acquired UI independently of later bindings.
     Ui(u64, crate::ui_reads::Request),
     /// Admits one dialog on the originally acquired UI.

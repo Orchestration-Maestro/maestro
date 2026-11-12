@@ -155,6 +155,14 @@ impl Held for Remover {
     }
 }
 
+held!(
+    /// The data stream of one command execution.
+    OutputFrame,
+    std::rc::Rc<super::bash_output::Frame>,
+    "extension bash-output resource ended",
+    Capability::BashOutput(frame) => frame
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,

@@ -5,7 +5,9 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    bindings::maestro::extension::host::{HostSubscription, HostToolInvalidator, HostToolUpdate},
+    bindings::maestro::extension::host::{
+        HostBashOutput, HostSubscription, HostToolInvalidator, HostToolUpdate,
+    },
     context_imports::add_resource,
     import_route::{Route, push},
     lifecycle::State,
@@ -17,11 +19,21 @@ use crate::{
     },
     read_imports::{endpoint, forwards, release},
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
-};
-use wasmtime_wasi::WasiView;
+use wasmtime::component::{LinkerInstance, Resource};
+
+impl HostBashOutput for State {
+    fn on_data(
+        &mut self,
+        this: Resource<BashOutput>,
+        bytes: Vec<u8>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(endpoint(self, &this)?.on_data(bytes))
+    }
+
+    fn drop(&mut self, this: Resource<BashOutput>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
 
 impl HostToolUpdate for State {
     fn update(
@@ -81,13 +93,8 @@ pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::R
     forwards! { host, "tool-invalidator", HostToolInvalidator, InvalidatorEndpoint,
         "invalidate" => invalidate();
     }
-    host.func_wrap(
-        "[method]bash-output.on-data",
-        |mut store: StoreContextMut<'_, State>,
-         (resource, bytes): (Resource<BashOutput>, Vec<u8>)| {
-            let output = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((output.on_data(bytes),))
-        },
-    )?;
+    forwards! { host, "bash-output", HostBashOutput, BashOutput,
+        "on-data" => on_data(bytes: Vec<u8>);
+    }
     Ok(())
 }
