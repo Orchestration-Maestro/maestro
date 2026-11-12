@@ -84,61 +84,6 @@ fn refusing_decider_preserves_session_selection() {
     });
 }
 
-/// Protocol model and thinking failures retain the caller's correlation and session bytes.
-#[test]
-fn rpc_selection_refusals_preserve_history_and_return_the_message() {
-    use crate::support::rpc_connection::connect;
-    use crate::support::runtime_fixtures::{RuntimeOptions, runtime_with};
-    use serde_json::json;
-    use std::rc::Rc;
-    on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_with(
-            "decisions",
-            RuntimeOptions {
-                models: vec![("faux-1", true), ("faux-2", true)],
-                ..RuntimeOptions::default()
-            },
-        )
-        .await;
-        let runtime = Rc::new(runtime);
-        let session = runtime.session();
-        session
-            .settings_manager()
-            .borrow_mut()
-            .register_decider(Arc::new(Refuse::default()))
-            .unwrap();
-        session
-            .session_manager()
-            .borrow_mut()
-            .append_message(crate::support::session_harness::assistant(
-                "seed",
-                0,
-                &json!({}),
-            ))
-            .unwrap();
-        let path = session.session_file().unwrap();
-        let before = std::fs::read(&path).unwrap();
-        let mut client = connect(Rc::clone(&runtime));
-        for command in [
-            json!({"type":"set_model","provider":"faux","modelId":"faux-2"}),
-            json!({"type":"cycle_model"}),
-            json!({"type":"set_thinking_level","level":"high"}),
-            json!({"type":"cycle_thinking_level"}),
-            json!({"type":"set_steering_mode", "mode":"all"}),
-            json!({"type":"set_follow_up_mode", "mode":"all"}),
-            json!({"type":"set_auto_compaction", "enabled": false}),
-            json!({"type":"set_auto_retry", "enabled": false}),
-        ] {
-            let reply = client.ask(&command.to_string()).await;
-            assert_eq!(reply["success"], false);
-            assert_eq!(reply["error"], "configuration release refuses selection");
-            assert_eq!(std::fs::read(&path).unwrap(), before);
-        }
-        client.end(None);
-        client.outcome().await.unwrap();
-    });
-}
-
 /// Extension model refusal returns its unsuccessful result without changing the session.
 #[test]
 fn extension_selection_refusals_return_unsuccessful_without_effects() {

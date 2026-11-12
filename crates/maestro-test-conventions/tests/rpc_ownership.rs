@@ -5,7 +5,7 @@ use crate::support;
 use maestro_test_conventions::check_workspace;
 use support::{Workspace, source};
 
-/// A workspace holding the application, the adapter and a chat frontend.
+/// A workspace holding the application, the RPC crate and a chat frontend.
 fn workspace() -> Workspace {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-app", "maestro-rpc", "maestro-chat"]);
@@ -18,10 +18,22 @@ const FOREIGN_DECLARATIONS: &[(&str, &str, &str, &str)] = &[
         "maestro-chat",
         "src/records.rs",
         "//! Records.\n/// Record.\npub struct RpcResponse;\n",
-        "RpcResponse declaration belongs to maestro-app or maestro-protocol",
+        "RpcResponse declaration belongs to maestro-rpc or maestro-protocol",
     ),
     (
         "maestro-app",
+        "src/records.rs",
+        "//! Records.\n/// Record.\npub struct RpcResponse;\n",
+        "RpcResponse declaration belongs to maestro-rpc or maestro-protocol",
+    ),
+    (
+        "maestro-app",
+        "src/records.rs",
+        "//! Records.\n/// Runner.\npub type RpcModeRunner = ();\n",
+        "RpcModeRunner declaration belongs to maestro-rpc or maestro-protocol",
+    ),
+    (
+        "maestro-rpc",
         "src/connection_runner/jsonl.rs",
         "//! Framing.\n/// Item.\npub fn serialize_json_line() {}\n",
         "serialize_json_line declaration belongs to maestro-json",
@@ -31,6 +43,14 @@ const FOREIGN_DECLARATIONS: &[(&str, &str, &str, &str)] = &[
 #[test]
 fn rpc_records_and_framing_keep_their_owners() {
     assert_eq!(check_workspace(workspace().root.path()), Ok(()));
+    let dispatch = workspace();
+    source(
+        &dispatch,
+        "maestro-app",
+        "src/presentation_data/mode_dispatch.rs",
+        "//! Dispatch.\n/// Runner.\npub type RpcModeRunner = ();\n",
+    );
+    assert_eq!(check_workspace(dispatch.root.path()), Ok(()));
     for (member, file, contents, expected) in FOREIGN_DECLARATIONS {
         let workspace = workspace();
         source(&workspace, member, file, contents);

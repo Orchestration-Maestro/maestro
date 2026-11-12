@@ -1,10 +1,10 @@
 //! The protocol records against recorded response lines and the shared workspace corpus.
 #![cfg(not(target_arch = "wasm32"))]
-use maestro_app::rpc_types::{
+use maestro_json::lines::serialize_json_line;
+use maestro_rpc::rpc_types::{
     RpcCommandBody, RpcData, RpcLastAssistantText, RpcSessionCommand, parse_rpc_command,
 };
-use maestro_app::{RpcCommand, RpcResponse, RpcSessionState};
-use maestro_json::lines::serialize_json_line;
+use maestro_rpc::{RpcCommand, RpcResponse, RpcSessionState};
 use maestro_session::Presence;
 use serde_json::{Value, json};
 

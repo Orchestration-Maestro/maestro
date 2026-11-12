@@ -3,12 +3,12 @@
 use super::RpcRecord;
 use super::connection::{Connection, SessionConnection, write_to};
 use super::output::Attempt;
-use crate::agent_session::{AgentSession, BashRunOptions, CycleDirection, PromptOptions};
 use crate::rpc_types::{
     RpcAvailableModels, RpcCancelled, RpcCommandList, RpcData, RpcExportPath, RpcForkMessages,
     RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcSessionCommand,
     RpcSessionState, RpcThinkingLevel,
 };
+use maestro_app::agent_session::{AgentSession, BashRunOptions, CycleDirection, PromptOptions};
 use maestro_daemon::{diagnostics, service::request_changes_ui};
 use maestro_extensions::types::{ForkOptions, NewSessionCommandOptions, SwitchSessionOptions};
 use maestro_extensions::{ForkPosition, InputSource};

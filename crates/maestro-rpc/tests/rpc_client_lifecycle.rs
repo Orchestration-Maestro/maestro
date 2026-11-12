@@ -5,8 +5,8 @@
 use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
-use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
 use maestro_process::children::process_exists;
+use maestro_rpc::{RpcClient, RpcClientError, RpcClientOptions};
 use serde_json::{Value, json};
 use std::{
     io::{BufRead, Read},
@@ -30,7 +30,7 @@ async fn ready(client: &RpcClient) -> Value {
 #[test]
 fn client_arguments_keep_literal_order_and_child_context() {
     let peer = Peer::new();
-    let marker = peer.scratch.join("marker");
+    let marker = peer.join("marker");
     let here = std::env::current_dir().unwrap();
     let cases: [(Configure, &[&str]); 8] = [
         (|_| {}, &[]),
@@ -92,10 +92,10 @@ async fn child_context(peer: &Peer, marker: &str) {
     let mut options = peer.options(Scenario::Report);
     options.env.insert("PEER_MARKER".into(), marker.to_owned());
     options.env.insert("HOME".into(), "override".into());
-    options.cwd = Some(peer.scratch.join(""));
+    options.cwd = Some(peer.join(""));
     let ready = ready(&RpcClient::new(options)).await;
     assert_eq!(ready["argv"], json!(["--mode", "rpc"]));
-    assert_eq!(ready["cwd"], json!(peer.scratch.0.path().to_str().unwrap()));
+    assert_eq!(ready["cwd"], json!(peer.scratch.path().to_str().unwrap()));
     assert_eq!(ready["home"], json!("override"));
     assert_eq!(ready["path"], json!(std::env::var("PATH").unwrap()));
 }
@@ -103,7 +103,7 @@ async fn child_context(peer: &Peer, marker: &str) {
 #[test]
 fn relative_entry_uses_the_selected_child_directory() {
     let peer = Peer::new();
-    let dist = peer.scratch.join("dist");
+    let dist = peer.join("dist");
     std::fs::create_dir(&dist).unwrap();
     maestro_test_process::rpc_peer::install(&Path::new(&dist).join("maestro"), Scenario::Entry)
         .unwrap();
@@ -117,7 +117,7 @@ fn relative_entry_uses_the_selected_child_directory() {
         RpcClient::new(options)
     };
     on_task_set(|_| async {
-        let scratch = Some(peer.scratch.join(""));
+        let scratch = Some(peer.join(""));
         for (cli_path, cwd, entry) in [
             (None, scratch.clone(), dist.clone() + "/maestro"),
             (Some("peer"), scratch.clone(), peer.entry.clone()),
@@ -140,7 +140,7 @@ fn relative_entry_uses_the_selected_child_directory() {
         for (cli_path, cwd) in [
             (None, None),
             (Some("missing-peer"), scratch.clone()),
-            (Some(peer.entry.as_str()), Some(peer.scratch.join("absent"))),
+            (Some(peer.entry.as_str()), Some(peer.join("absent"))),
         ] {
             let error = launch(cli_path, cwd).start().await.unwrap_err();
             let RpcClientError::Io(error) = error else {

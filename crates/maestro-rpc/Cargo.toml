@@ -3,24 +3,41 @@ name = "maestro-rpc"
 version = "0.1.0"
 edition.workspace = true
 autotests = false
-license = "Apache-2.0"
+license = "MIT AND Apache-2.0"
 repository.workspace = true
 
 [dependencies]
 maestro-app = { path = "../maestro-app" }
 maestro-agent = { path = "../maestro-agent" }
 maestro-daemon = { path = "../maestro-daemon" }
+maestro-export = { path = "../maestro-export" }
+maestro-extensions = { path = "../maestro-extensions" }
 maestro-json = { path = "../maestro-json" }
+maestro-listeners.workspace = true
+maestro-lock = { path = "../maestro-lock" }
+maestro-models = { path = "../maestro-models" }
 maestro-process = { path = "../maestro-process" }
 maestro-protocol = { path = "../maestro-protocol" }
+maestro-resources = { path = "../maestro-resources" }
+maestro-session = { path = "../maestro-session" }
 maestro-settings = { path = "../maestro-settings" }
-tokio = { version = "=1.53.3", default-features = false, features = ["io-std", "macros", "rt", "signal", "sync", "time"] }
+maestro-text = { path = "../maestro-text" }
+maestro-theme = { path = "../maestro-theme" }
+maestro-tools = { path = "../maestro-tools" }
+maestro-watch = { path = "../maestro-watch" }
+futures-util.workspace = true
+serde = { workspace = true, features = ["rc"] }
+serde_json.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["io-std", "io-util", "macros", "process", "rt", "signal", "sync", "time"] }
+uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
 
 tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-serde_json.workspace = true
-tokio = { version = "=1.53.3", default-features = false, features = ["io-util", "macros", "rt", "sync", "test-util", "time"] }
+futures-util = { workspace = true, features = ["async-await"] }
+indexmap = "=2.14.2"
+num-traits.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["io-util", "macros", "net", "rt", "sync", "test-util", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
@@ -28,13 +45,12 @@ maestro-dependencies.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
-maestro-theme = { path = "../maestro-theme" }
+maestro-catalog = { path = "../maestro-catalog" }
+maestro-credentials = { path = "../maestro-credentials", features = ["test-support"] }
+maestro-extensions = { path = "../maestro-extensions", features = ["test-support"] }
+maestro-models = { path = "../maestro-models", features = ["test-support"] }
+maestro-tui = { path = "../maestro-tui" }
 maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
-maestro-export = { path = "../maestro-export" }
-maestro-extensions = { path = "../maestro-extensions" }
-maestro-models = { path = "../maestro-models" }
-maestro-session = { path = "../maestro-session" }
-maestro-tools = { path = "../maestro-tools" }
 
 [[test]]
 name = "integration"

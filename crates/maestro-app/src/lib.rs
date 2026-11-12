@@ -12,8 +12,6 @@ pub mod utils;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod agent_session;
 #[cfg(not(target_arch = "wasm32"))]
-pub mod connection_runner;
-#[cfg(not(target_arch = "wasm32"))]
 pub mod extension_native_io;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod extension_operations;
@@ -23,10 +21,6 @@ pub mod model_account;
 pub mod output_guard;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod resources;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod rpc_transport;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod rpc_types;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod runtime;
 #[cfg(not(target_arch = "wasm32"))]

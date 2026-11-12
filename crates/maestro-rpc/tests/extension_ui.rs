@@ -8,14 +8,15 @@ use crate::support::rpc_connection::{
 use crate::support::runtime_fixtures::runtime_for;
 use crate::support::session_harness::{Harness, on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
-use maestro_app::{AgentSessionRuntime, Extension, ExtensionAPI, SourceInfo};
+use maestro_app::AgentSessionRuntime;
 use maestro_extensions::types::{
     AutocompleteProviderFactory, ComponentFactory, CustomComponentFactory, EditorFactory,
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterFactory,
     NotificationType, ThemeSelection, WidgetContent, WidgetPlacement, WorkingIndicatorOptions,
 };
+use maestro_extensions::{Extension, ExtensionAPI};
 use maestro_models::{Cancellation, Local};
-use maestro_resources::{SourceOrigin, SourceScope};
+use maestro_resources::{SourceInfo, SourceOrigin, SourceScope};
 use maestro_theme::{Theme, ThemeState};
 use serde_json::{Value, json};
 use std::{
@@ -56,7 +57,7 @@ fn facade() -> ExtensionAPI<Local> {
             .for_extension();
     ExtensionAPI::new(
         &owner,
-        maestro_app::create_extension_runtime::<Local>(),
+        maestro_extensions::create_extension_runtime::<Local>(),
         events,
         ".".into(),
     )

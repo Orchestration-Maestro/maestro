@@ -1,13 +1,14 @@
 //! Workspace-only connections over byte streams: acknowledged response writes, overlapping
 //! commands, the input's end and the runner's cancellation.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{on_paused_task_set, until_idle};
-use maestro_app::connection_runner::{
+use crate::support::rpc_connection::until_idle;
+use crate::support::session_harness::on_paused_task_set;
+use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_rpc::connection_runner::{
     JsonlLineReader, RpcFuture, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, WorkspaceEventSink,
     WorkspaceOperations,
 };
-use maestro_app::{RpcConnectionOutcome, RpcResponse, run_rpc_connection};
-use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_rpc::{RpcConnectionOutcome, RpcResponse, run_rpc_connection};
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},

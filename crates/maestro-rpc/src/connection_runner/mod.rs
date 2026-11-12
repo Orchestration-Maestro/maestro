@@ -68,7 +68,7 @@ pub struct RpcModeOptions {
 /// The facilities owned by a connection serving a session.
 pub struct RpcSessionOptions {
     /// The session runtime.
-    pub runtime: Rc<crate::runtime::session_engine::AgentSessionRuntime>,
+    pub runtime: Rc<maestro_app::runtime::session_engine::AgentSessionRuntime>,
     /// The native process facilities.
     pub process: Rc<dyn RpcProcessPort>,
     /// The live theme extensions read.

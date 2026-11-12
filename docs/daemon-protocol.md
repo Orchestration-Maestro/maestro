@@ -20,12 +20,12 @@ and typed parameter fields at the top level, for example:
 ```
 
 `RpcCommand` contains the 92 workspace commands, and `Request` defaults to it. The
-application composes them with the 29 session commands under the same `type` tag in
-`maestro_app::rpc_types::RpcCommand`, which also owns the session responses, session
+RPC crate composes them with the 29 session commands under the same `type` tag in
+`maestro_rpc::rpc_types::RpcCommand`, which also owns the session responses, session
 events and extension dialog records; see the [JSONL protocol](rpc.md). Both
 response families write their envelope through `rpc_types::serialize_rpc_response`.
 There is no second command registry here. Frontends import the contracts from
-`maestro_protocol` and call the application only for what it owns.
+`maestro_protocol` and the session records from `maestro_rpc`.
 
 `RpcResponse` carries the original `command` and optional correlation `id`,
 `type: "response"`, and a boolean `success`. A successful workspace operation
@@ -72,7 +72,7 @@ JSONL framing belongs to `maestro-json::lines`, not a second codec here.
 ## Socket server
 
 `maestro_rpc::daemon::run_server` serves this protocol on the daemon's API socket.
-Each accepted connection runs the application's one connection runner without a
+Each accepted connection runs the one connection runner without a
 session, so a line read during a long request is the next command, and responses
 can arrive out of order. Match them by `id`. A connection ends when the client ends
 its input: requests still waiting on the daemon get no response, but a request the

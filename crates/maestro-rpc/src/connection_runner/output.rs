@@ -1,7 +1,7 @@
 //! The protocol's output: the records a server writes and the framed lines that carry them.
-use crate::agent_session::AgentSessionEvent;
-use crate::output_guard::write_raw_stdout;
 use crate::rpc_types::{RpcExtensionUIRequest, RpcResponse};
+use maestro_app::agent_session::AgentSessionEvent;
+use maestro_app::output_guard::write_raw_stdout;
 use maestro_extensions::ExtensionError;
 use maestro_json::lines::serialize_json_line;
 use maestro_protocol::schema as workspace_schema;
@@ -16,7 +16,7 @@ use tokio::task::JoinHandle;
 /// Only these records are written; a JSON value is not one:
 ///
 /// ```compile_fail
-/// use maestro_app::connection_runner::RpcLine;
+/// use maestro_rpc::connection_runner::RpcLine;
 /// let line = RpcLine::new(&serde_json::json!({"type": "response"}));
 /// ```
 #[derive(Clone, Copy)]
@@ -57,14 +57,14 @@ impl Serialize for RpcRecord<'_> {
 /// A line holds a framed record and nothing else:
 ///
 /// ```compile_fail
-/// let line = maestro_app::connection_runner::RpcLine(String::from("{}\n"));
+/// let line = maestro_rpc::connection_runner::RpcLine(String::from("{}\n"));
 /// ```
 ///
 /// A framed line is written, never dropped:
 ///
 /// ```compile_fail
 /// #![deny(unused_must_use)]
-/// use maestro_app::connection_runner::{RpcLine, RpcRecord};
+/// use maestro_rpc::connection_runner::{RpcLine, RpcRecord};
 /// fn discard(record: &RpcRecord<'_>) -> serde_json::Result<()> {
 ///     RpcLine::new(record)?;
 ///     Ok(())
@@ -77,8 +77,8 @@ impl RpcLine {
     /// Frames `record` through the shared JSONL framing.
     ///
     /// ```
-    /// use maestro_app::connection_runner::{RpcLine, RpcRecord};
-    /// use maestro_app::RpcResponse;
+    /// use maestro_rpc::connection_runner::{RpcLine, RpcRecord};
+    /// use maestro_rpc::RpcResponse;
     ///
     /// let response = RpcResponse::Error {
     ///     id: None,
@@ -88,7 +88,7 @@ impl RpcLine {
     /// let line = RpcLine::new(&RpcRecord::Response(&response)).unwrap();
     /// assert!(line.as_str().ends_with('\n'));
     /// let _output =
-    ///     maestro_app::connection_runner::RpcOutput::synchronous(std::rc::Rc::new(|_: &RpcLine| Ok(())));
+    ///     maestro_rpc::connection_runner::RpcOutput::synchronous(std::rc::Rc::new(|_: &RpcLine| Ok(())));
     /// ```
     ///
     /// # Errors
@@ -109,7 +109,7 @@ impl RpcLine {
 /// Hand-built text never reaches it:
 ///
 /// ```compile_fail
-/// let output = maestro_app::connection_runner::RpcOutput::synchronous(std::rc::Rc::new(
+/// let output = maestro_rpc::connection_runner::RpcOutput::synchronous(std::rc::Rc::new(
 ///     |line: &str| -> std::io::Result<()> { Ok(()) },
 /// ));
 /// ```

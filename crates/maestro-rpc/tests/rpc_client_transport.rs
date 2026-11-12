@@ -4,7 +4,7 @@
 use crate::rpc_peer::{Peer, Scenario, events, next_of, release as release_peer};
 use crate::support::session_harness::on_task_set;
 use futures_util::FutureExt;
-use maestro_app::{RpcClient, RpcClientError};
+use maestro_rpc::{RpcClient, RpcClientError};
 use maestro_session::Presence;
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -330,7 +330,7 @@ fn available_models_keep_complete_descriptors() {
     on_task_set(|_| async {
         let answers = json!({"get_available_models": {"models": [first, second, first]}});
         let client = started(&peer, Scenario::Serve, &answers).await;
-        let models: Vec<maestro_app::ModelInfo> = client
+        let models: Vec<maestro_rpc::ModelInfo> = client
             .get_available_models()
             .await
             .unwrap()

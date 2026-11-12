@@ -13,13 +13,13 @@ use crate::support::session_harness::{
 };
 use maestro_app::agent_session::BashRunOptions;
 use maestro_app::{
-    AgentSessionRuntime, CreateAgentSessionRuntimeOptions, RpcConnectionOutcome,
-    create_agent_session_runtime,
+    AgentSessionRuntime, CreateAgentSessionRuntimeOptions, create_agent_session_runtime,
 };
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionFactory, InputEventResult,
 };
 use maestro_models::Local;
+use maestro_rpc::RpcConnectionOutcome;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};

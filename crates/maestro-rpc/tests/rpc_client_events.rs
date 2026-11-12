@@ -4,8 +4,8 @@
 use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
-use maestro_app::{RpcClient, RpcClientError, RpcEventListener};
 use maestro_process::children::process_exists;
+use maestro_rpc::{RpcClient, RpcClientError, RpcEventListener};
 use serde_json::{Value, json};
 use std::{cell::RefCell, pin::pin, rc::Rc, time::Duration};
 
@@ -222,7 +222,7 @@ fn request_deadlines_hold_through_a_delayed_first_poll() {
 #[test]
 fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(maestro_app::RpcClientOptions::default());
+        let client = RpcClient::new(maestro_rpc::RpcClientOptions::default());
         for (timeout, boundary) in [
             (None, 60_000),
             (Some(Duration::from_millis(17)), 17),
@@ -252,7 +252,7 @@ fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
 #[test]
 fn waits_hold_their_deadlines_through_a_delayed_first_poll() {
     on_paused_task_set(|_| async {
-        let client = RpcClient::new(maestro_app::RpcClientOptions::default());
+        let client = RpcClient::new(maestro_rpc::RpcClientOptions::default());
         let (release, hold) = hold_clock();
         let timeout = Some(Duration::from_millis(17));
         let mut idle = pin!(client.wait_for_idle(timeout));

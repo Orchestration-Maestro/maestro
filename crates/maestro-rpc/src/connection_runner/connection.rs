@@ -8,9 +8,9 @@ use super::{
     RpcConnectionOutcome, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, RpcSessionOptions,
     WorkspaceOperations,
 };
-use crate::agent_session::AgentSession;
 use crate::rpc_types::{RpcCommandBody, RpcCommandRejection, RpcResponse, parse_rpc_command};
-use crate::utils::scheduling::start_now;
+use maestro_app::agent_session::AgentSession;
+use maestro_app::utils::scheduling::start_now;
 use maestro_json::lines::JsonlLineSplitter;
 use maestro_json::object::names;
 use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};

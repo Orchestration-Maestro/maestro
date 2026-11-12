@@ -1,6 +1,6 @@
 # RPC client
 
-`maestro_app::RpcClient` runs Maestro in RPC mode as a child process and drives its
+`maestro_rpc::RpcClient` runs Maestro in RPC mode as a child process and drives its
 session through typed methods. The commands, answers and events it exchanges are
 described in [the daemon protocol](daemon-protocol.md); this page covers what the
 client itself does.

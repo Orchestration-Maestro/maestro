@@ -4,12 +4,12 @@
 //! when the session answers with a failure, and with the request failures of
 //! [`RpcClient::send`] otherwise.
 use super::{ModelInfo, RpcClient, RpcClientError, requests::unexpected_data};
-use crate::agent_session::{ForkMessage, ModelCycleResult, SessionStats};
 use crate::rpc_types::{
     RpcCancelled, RpcData, RpcExportPath, RpcForkResult, RpcSessionCommand, RpcSessionState,
     RpcSlashCommand, RpcThinkingLevel,
 };
 use maestro_agent::QueueMode;
+use maestro_app::agent_session::{ForkMessage, ModelCycleResult, SessionStats};
 use maestro_extensions::NativeAgentMessage;
 use maestro_models::{ImageContent, Model, ModelThinkingLevel};
 use maestro_session::{CompactionResult, Presence};

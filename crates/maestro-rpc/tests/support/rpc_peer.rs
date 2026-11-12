@@ -1,7 +1,7 @@
 //! A prepared native child serving finite application RPC scenarios.
 
-use crate::child::Scratch;
-use maestro_app::{RpcClient, RpcClientOptions};
+use maestro_rpc::{RpcClient, RpcClientOptions};
+use maestro_test_directory::Scratch;
 pub use maestro_test_process::rpc_peer::Scenario;
 use serde_json::Value;
 use std::{
@@ -25,8 +25,8 @@ pub struct Peer {
 impl Peer {
     /// Install the prepared executable in a fresh directory, without discovering build outputs.
     pub fn new() -> Self {
-        let scratch = Scratch::new();
-        let entry = scratch.join("peer");
+        let scratch = Scratch::new().unwrap();
+        let entry = scratch.path().join("peer").to_string_lossy().into_owned();
         maestro_test_process::rpc_peer::install(Path::new(&entry), Scenario::Serve).unwrap();
         Self {
             scratch,
@@ -35,11 +35,20 @@ impl Peer {
         }
     }
 
+    /// The path of `name` in the peer's directory.
+    pub fn join(&self, name: &str) -> String {
+        self.scratch
+            .path()
+            .join(name)
+            .to_string_lossy()
+            .into_owned()
+    }
+
     /// Options that launch one compiled scenario on the actual client transport.
     pub fn options(&self, scenario: Scenario) -> RpcClientOptions {
         if scenario == Scenario::Descendant {
             maestro_test_process::rpc_peer::install(
-                Path::new(&self.scratch.join("holder")),
+                Path::new(&self.join("holder")),
                 Scenario::PipeHolder,
             )
             .unwrap();
@@ -59,7 +68,7 @@ impl Peer {
         );
         options
             .env
-            .insert("PEER_HOLDER".into(), self.scratch.join("holder"));
+            .insert("PEER_HOLDER".into(), self.join("holder"));
         options
     }
 

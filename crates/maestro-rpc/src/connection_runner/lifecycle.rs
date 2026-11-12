@@ -2,7 +2,7 @@
 //! behind command contexts, termination signals and shutdown.
 use super::connection::{Connection, write_to};
 use super::{RpcConnectionOutcome, RpcModeOptions, RpcOutput, RpcRecord};
-use crate::agent_session::ExtensionBindings;
+use maestro_app::agent_session::ExtensionBindings;
 use maestro_extensions::EventError;
 use maestro_extensions::types::ExtensionUIContext;
 use maestro_models::DiagnosticErrorInfo;

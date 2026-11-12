@@ -3,11 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::export_fixtures::{Recording, environment, published};
 use crate::support::session_harness::answer;
-use maestro_app::connection_runner::{
-    RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcOutput, RpcProcessPort, WorkspaceEventSink,
-    WorkspaceOperations,
-};
-use maestro_app::{AgentSessionRuntime, RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
+use maestro_app::AgentSessionRuntime;
 use maestro_extensions::{
     ExtensionFactory, SessionBeforeForkEvent, SessionBeforeForkResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionStartEvent,
@@ -15,11 +11,22 @@ use maestro_extensions::{
 use maestro_models::Local;
 use maestro_process::TerminationSignal;
 use maestro_protocol::{rpc_types as workspace, schema as workspace_schema};
+use maestro_rpc::connection_runner::{
+    RpcFuture, RpcInput, RpcLine, RpcLineReader, RpcOutput, RpcProcessPort, WorkspaceEventSink,
+    WorkspaceOperations,
+};
+use maestro_rpc::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_session::Presence;
 use maestro_theme::LiveTheme;
 use serde_json::{Value, json};
 use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc};
 use tokio::sync::mpsc;
+
+/// Returns once every task of a paused-clock runtime waits: the paused clock moves only
+/// then.
+pub async fn until_idle() {
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+}
 
 /// Lines a test supplies, read in order; a dropped sender ends the input.
 struct MemoryReader {
@@ -216,7 +223,7 @@ pub fn unspawned(
     let signals = Rc::new(Signals::default());
     let options = RpcModeOptions {
         workspace: Some(Rc::new(ClosureWorkspace(workspace))),
-        session: Some(maestro_app::RpcSessionOptions {
+        session: Some(maestro_rpc::RpcSessionOptions {
             runtime,
             process: Rc::clone(&signals) as Rc<dyn RpcProcessPort>,
             theme,
