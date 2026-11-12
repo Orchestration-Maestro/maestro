@@ -1,15 +1,17 @@
 //! A daemon answering workspace commands, with workspaces that need no live process.
 
-use super::{manifest_cache, populate_terminals, runtime::block_on, spawning::launch_inputs};
+use super::{manifest_cache, runtime::block_on, spawning::launch_inputs};
 use maestro_daemon::{
-    locations::DaemonPaths, service::event_hub::EventHub, settings::model::Config, state::App,
-    terminal::model::DetectedStateUpdate,
+    events::AppEvent, locations::DaemonPaths, service::event_hub::EventHub,
+    settings::model::Config, state::App,
 };
-use maestro_detection::agents::{Agent, AgentState, AgentVisibility};
+use maestro_detection::agents::{Agent, AgentState};
 use maestro_protocol::{
     events::EventData,
     rpc_types::RpcCommand,
-    schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirection},
+    schema::{
+        ErrorBody, LayoutDescription, PaneInfo, PaneLayoutSnapshot, ResponseResult, SplitDirection,
+    },
 };
 use maestro_settings::{InMemorySettingsStorage, SettingsManager};
 use maestro_workspace::{
@@ -41,15 +43,9 @@ pub fn daemon_with_workspaces(cwds: &[&str]) -> App {
 /// Adds one workspace per directory, without processes, activating the first if none is.
 pub fn add_workspaces(app: &mut App, cwds: &[&str]) {
     for cwd in cwds {
-        app.state
-            .topology
-            .new_with_tab((*cwd).into(), None, |_, _| Ok(()))
-            .unwrap();
+        app.seed_workspace(cwd).unwrap();
     }
-    populate_terminals(&mut app.state);
-    if app.state.active.is_none() && !app.state.topology.workspaces.is_empty() {
-        app.state.active = Some(0);
-    }
+    app.state.session_dirty = false;
 }
 
 /// Splits `target` in the workspace at `workspace` without a process or a focus change.
@@ -59,86 +55,112 @@ pub fn split_pane(
     target: PaneId,
     direction: SplitDirection,
 ) -> PaneId {
-    let (pane, ()) = app
-        .state
-        .topology
-        .split_pane_with_runtime(
-            workspace,
-            SplitRequest {
-                target,
-                direction,
-                ratio: None,
-                focus_new_pane: false,
-            },
-            |_, _| Ok(()),
-        )
-        .unwrap()
-        .unwrap();
-    populate_terminals(&mut app.state);
+    split_pane_focused(app, workspace, target, direction, false)
+}
+
+/// Splits `target` in the workspace at `workspace` without a process, optionally focusing
+/// the new pane.
+pub fn split_pane_focused(
+    app: &mut App,
+    workspace: usize,
+    target: PaneId,
+    direction: SplitDirection,
+    focus_new_pane: bool,
+) -> PaneId {
+    let request = SplitRequest {
+        target,
+        direction,
+        ratio: None,
+        focus_new_pane,
+    };
+    let pane = app.seed_split(workspace, request).unwrap();
+    app.state.session_dirty = false;
     pane
 }
 
 /// Adds a tab without a process to the workspace at `workspace` and returns its root pane.
 pub fn add_tab(app: &mut App, workspace: usize) -> PaneId {
-    let (pane, ()) = app
-        .state
-        .topology
-        .create_tab_with_runtime(workspace, |_, _| Ok(()))
-        .unwrap()
-        .unwrap();
-    populate_terminals(&mut app.state);
+    let pane = app.seed_tab(workspace).unwrap();
+    app.state.session_dirty = false;
     pane
 }
 
 /// Joins the workspace at `index` to the repository group `key`.
 pub fn join_group(app: &mut App, index: usize, key: &str, linked: bool) {
-    app.state.topology.workspaces[index].worktree_space = Some(WorktreeSpaceMembership {
-        key: key.into(),
-        label: "repo".into(),
-        repo_root: "/repo".into(),
-        checkout_path: format!("/repo-{index}").into(),
-        is_linked_worktree: linked,
-    });
+    app.seed_worktree_membership(
+        index,
+        WorktreeSpaceMembership {
+            key: key.into(),
+            label: "repo".into(),
+            repo_root: "/repo".into(),
+            checkout_path: format!("/repo-{index}").into(),
+            is_linked_worktree: linked,
+        },
+    );
+    app.state.session_dirty = false;
 }
 
-/// Records that fallback detection saw `agent` in `state` on the first pane of the first workspace.
+/// Reports that fallback detection saw `agent` in `state` on the first pane of the first
+/// workspace.
 pub fn detect(app: &mut App, agent: Agent, state: AgentState) {
-    let terminal = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(app, 0))
-        .unwrap()
-        .clone();
-    app.state
-        .terminals
-        .get_mut(&terminal)
-        .unwrap()
-        .set_detected_state_with_screen_signals_at(
-            DetectedStateUpdate {
-                agent: Some(agent),
-                fallback_state: state,
-                visible: AgentVisibility::default(),
-                process_exited: false,
-            },
-            Instant::now(),
-        );
+    let pane_id = root_pane(app, 0);
+    app.handle_internal_event(AppEvent::StateChanged {
+        pane_id,
+        agent: Some(agent),
+        state,
+        visible_blocker: false,
+        visible_working: false,
+        process_exited: false,
+        observed_at: Instant::now(),
+    });
 }
 
 /// Gives the first pane of the first workspace a recognized agent process with fallback `state`.
 pub fn pilot(app: &mut App, state: AgentState) {
-    let terminal = app.state.topology.workspaces[0]
-        .terminal_id(root_pane(app, 0))
-        .unwrap()
-        .clone();
-    app.state
-        .terminals
-        .get_mut(&terminal)
-        .unwrap()
-        .set_detected_agent_process_at(Agent::Pi, Instant::now());
+    let pane_id = root_pane(app, 0);
+    app.handle_internal_event(AppEvent::AgentProcessDetected {
+        pane_id,
+        agent: Agent::Pi,
+        observed_at: Instant::now(),
+    });
     detect(app, Agent::Pi, state);
 }
 
 /// The root pane of the first tab of the workspace at `workspace`.
 pub fn root_pane(app: &App, workspace: usize) -> PaneId {
     app.state.topology.workspaces[workspace].tabs[0].root_pane
+}
+
+/// The layout `layout.export` answers with for the active tab, or for `tab_id`.
+pub fn exported_layout(app: &mut App, tab_id: Option<&str>) -> LayoutDescription {
+    let wire = tab_id.map_or(
+        json!({"type": "layout.export"}),
+        |tab| json!({"type": "layout.export", "tab_id": tab}),
+    );
+    match request(app, wire) {
+        Ok(ResponseResult::LayoutExport { layout }) => layout,
+        other => panic!("expected an exported layout: {other:?}"),
+    }
+}
+
+/// The geometry `pane.layout` answers with for the active tab.
+pub fn pane_layout(app: &mut App) -> PaneLayoutSnapshot {
+    match request(app, json!({"type": "pane.layout"})) {
+        Ok(ResponseResult::PaneLayout { layout }) => layout,
+        other => panic!("expected a pane layout: {other:?}"),
+    }
+}
+
+/// The handle of the pane that holds the focus in the active tab of the workspace at
+/// `workspace`.
+pub fn focused_pane_id(app: &mut App, workspace: usize) -> String {
+    let id = workspace_ids(app).swap_remove(workspace);
+    let Ok(ResponseResult::WorkspaceInfo { workspace }) =
+        request(app, json!({"type": "workspace.get", "workspace_id": id}))
+    else {
+        panic!("expected the workspace");
+    };
+    exported_layout(app, Some(&workspace.active_tab_id)).focused_pane_id
 }
 
 /// A daemon with one workspace whose first tab holds a pane on the left and one on the right.
@@ -209,7 +231,7 @@ pub fn failure(code: &str, message: &str) -> Result<ResponseResult, ErrorBody> {
 
 /// Every event published after `sequence`.
 pub fn events_after(app: &App, sequence: u64) -> Vec<EventData> {
-    app.event_hub
+    app.event_hub()
         .events_after(sequence)
         .into_iter()
         .map(|(_, event)| event)
@@ -230,12 +252,21 @@ pub fn event_names(app: &App, sequence: u64) -> Vec<String> {
 }
 
 /// The stable identities of the workspaces in display order.
-pub fn workspace_ids(app: &App) -> Vec<String> {
-    app.state
-        .topology
-        .workspaces
-        .iter()
-        .map(|workspace| workspace.id.clone())
+pub fn workspace_ids(app: &mut App) -> Vec<String> {
+    block_on(workspace_ids_of(app))
+}
+
+/// The stable identities of the workspaces in display order, from inside a running test
+/// runtime.
+pub async fn workspace_ids_of(app: &mut App) -> Vec<String> {
+    let Ok(ResponseResult::WorkspaceList { workspaces }) =
+        answer(app, json!({"type": "workspace.list"})).await
+    else {
+        panic!("expected the workspaces");
+    };
+    workspaces
+        .into_iter()
+        .map(|workspace| workspace.workspace_id)
         .collect()
 }
 

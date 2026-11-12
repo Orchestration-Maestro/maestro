@@ -36,9 +36,7 @@ impl App {
                 amount,
                 area,
             );
-        if changed {
-            self.state.session_dirty = true;
-        }
+        self.state.mark_session_dirty_if(changed);
         let layout = self.tab_layout(at)?;
         if changed {
             self.emit_layout_updated_snapshot(layout.clone());

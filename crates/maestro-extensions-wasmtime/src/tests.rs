@@ -93,3 +93,30 @@ pub(super) async fn during_routed_request<T: 'static>(
     store.join().unwrap();
     result.borrow_mut().take().unwrap()
 }
+
+/// Releases the capability behind `lease` (the endpoint's other handle moves into `operations`), then runs `operations` on a worker thread and
+/// answers each of its `N` requests; returns the failures the operations settled with.
+pub(super) fn ended_errors<const N: usize>(
+    lease: std::sync::Arc<crate::local_resources::Lease>,
+    mut pump: crate::local_resources::Pump,
+    admission: crate::local_resources::Admission,
+    operations: impl FnOnce() -> [String; N] + Send + 'static,
+) -> [String; N] {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let release =
+                lease.route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
+            assert!(pump.answer_next().await);
+            drop(release);
+            drop(lease);
+            let worker = std::thread::spawn(operations);
+            for _ in 0..N {
+                assert!(pump.answer_next().await);
+            }
+            drop(admission);
+            pump.serve().await;
+            worker.join().unwrap()
+        })
+}

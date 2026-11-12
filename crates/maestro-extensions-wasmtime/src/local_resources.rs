@@ -123,8 +123,6 @@ pub(crate) enum Message {
     ),
     /// Uses the original retained cancellation, not the current context signal.
     Signal(u64, signals::Request),
-    /// Reads the original live history independently of guarded contexts.
-    History(u64, crate::history_reads::Request),
     /// Mutates the original writable session supplied to setup.
     Writer(u64, crate::writer_reads::Request),
     /// Acquires an independent live reader from the writable setup capability.
@@ -167,8 +165,6 @@ pub(crate) enum Message {
         tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
         Admission,
     ),
-    /// Reads one retained node of an already-built tree.
-    Node(u64, crate::tree_reads::Request),
     /// Sends through the original creating session, even after guarded reads retire.
     Replaced(u64, crate::replaced_reads::Request, Admission),
     /// Retains the replacement's original guarded command view independently.
@@ -186,8 +182,6 @@ pub(crate) enum Message {
     Ui(u64, crate::ui_reads::Request),
     /// Admits one dialog on the originally acquired UI.
     Dialog(u64, crate::ui_reads::DialogRequest, Admission),
-    /// Reads or edits the independently retained live renderer theme.
-    Theme(u64, crate::theme_reads::Request),
     /// Reads or subscribes to the footer metadata lent to a footer factory.
     Footer(u64, crate::footer_data::Request),
     /// Builds, uses or lends host widgets and styles.

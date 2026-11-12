@@ -2,7 +2,8 @@
 #![cfg(test)]
 
 use std::collections::BTreeMap;
-use std::io::Write;
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
 use std::path::PathBuf;
 
 use maestro_test_process::{TestProcess, run_per_environment};
@@ -84,6 +85,52 @@ fn equal_environments_share_one_cleared_child() {
         first_group[0].contains(" a ") && first_group[1].contains(" c "),
         "{lines}"
     );
+}
+
+/// Variable carrying the loopback address every group child waits at.
+const BARRIER: &str = "MTP_BARRIER";
+
+/// How many groups the barrier test starts.
+const BARRIER_GROUPS: usize = 3;
+
+/// A child that waits for its siblings can only finish when every group has started before the
+/// first one is collected.
+#[test]
+fn every_group_child_starts_before_any_is_collected() {
+    let test = "every_group_child_starts_before_any_is_collected";
+    let listener = std::env::var_os(BARRIER)
+        .is_none()
+        .then(|| TcpListener::bind("127.0.0.1:0").unwrap());
+    let address = listener.as_ref().map_or_else(
+        || std::env::var(BARRIER).unwrap(),
+        |listener| listener.local_addr().unwrap().to_string(),
+    );
+    let release = listener.map(|listener| {
+        std::thread::spawn(move || {
+            let held: Vec<TcpStream> = (0..BARRIER_GROUPS)
+                .map(|_| listener.accept().unwrap().0)
+                .collect();
+            for mut stream in held {
+                stream.write_all(b"go").unwrap();
+            }
+        })
+    });
+    let selected = run_per_environment(test, 0..BARRIER_GROUPS, |case| {
+        BTreeMap::from([
+            (BARRIER, Some(address.clone())),
+            ("MTP_VALUE", Some(case.to_string())),
+        ])
+    })
+    .unwrap();
+    if selected.is_some() {
+        let mut go = [0; 2];
+        TcpStream::connect(&address)
+            .unwrap()
+            .read_exact(&mut go)
+            .unwrap();
+        return;
+    }
+    release.unwrap().join().unwrap();
 }
 
 #[test]

@@ -3,7 +3,7 @@
 #![cfg(target_os = "linux")]
 
 use crate::support;
-use support::{assert_identity_invariants, populate_terminals};
+use support::assert_identity_invariants;
 
 use maestro_daemon::{settings::model::Config, state::model::DaemonState};
 use maestro_workspace::tiling::{Borders, PaneId, PaneInfo, Rect};
@@ -46,7 +46,7 @@ fn daemon_adversarial_identity_state_satisfies_app_invariants_after_mutation() {
     state.topology.workspaces[0].active_tab = 0;
     state.active = Some(0);
     state.selected = 0;
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     assert_identity_invariants(&state);
     let workspace = &state.topology.workspaces[0];
     assert_ne!(
@@ -73,6 +73,6 @@ fn daemon_adversarial_identity_state_satisfies_app_invariants_after_mutation() {
             .public_pane_number(pane)
             .is_some()
     );
-    populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     assert_identity_invariants(&state);
 }

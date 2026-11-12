@@ -26,7 +26,7 @@ fn state_with_workspaces(names: &[&str]) -> DaemonState {
             .new_with_tab(format!("/workspaces/{name}").into(), None, |_, _| Ok(()))
             .unwrap();
     }
-    support::populate_terminals(&mut state);
+    state.admit_seeded_terminals();
     state
 }
 

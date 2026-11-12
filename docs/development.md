@@ -1067,100 +1067,55 @@ remain visible in GitHub but do not block the merge queue.
 
 ### Slowest-first test order
 
-The tests that took more than 30 seconds in the baseline merge group, and have not
-been split since, hold distinct priorities in `.config/nextest.toml`, 100 down to 37
-by duration. The cold browser build always holds 100. A split test gives up its
-priority and its table row, which leaves a gap in the ranks. Other tests keep
-priority 0. These are
+Nextest starts the slowest tests first inside each shard. The tests that took more
+than 30 seconds in the merge-group run below hold distinct priorities in
+`.config/nextest.toml`, 100 down by duration. The cold browser build always holds
+100. A test that falls under 30 seconds gives up its priority and its table row.
+Other tests keep priority 0. These are
 [nextest's built-in priorities](https://nexte.st/docs/configuration/test-priorities/),
 not a scheduler or a shard planner. They change order within each shard, not the
 count partitions (16 in CI, declared as `test_shard_count` in `.github/ci.toml`), test
 membership, retries, time limits or coverage policy.
 Existing timeout comments retain their older CI maxima; priority ranks use the
-newer measurements below, not timeout ceilings or diagnostic phase timings.
+measurements below, not timeout ceilings or diagnostic phase timings.
 
-The baseline is [merge-group run 40795869386](https://github.com/Orchestration-Maestro/maestro/actions/runs/40795869386),
-revision `15ce820ba3808f0238f20fe0c33c95886e62bde2`. Its nextest spans in shard order
+The measurements come from [merge-group run 43212429686](https://github.com/Orchestration-Maestro/maestro/actions/runs/43212429686),
+revision `288c311fa4d7b9890050fcc96a352c5150cc702b`. Its nextest spans in shard order
 (1 through 16), in seconds, are:
 
 ```text
-460.205 / 620.165 / 509.068 / 462.917 / 436.846 / 595.020 / 423.375 / 496.749
-717.762 / 421.140 / 584.600 / 443.033 / 372.985 / 462.106 / 427.599 / 621.239
+213.109 / 131.345 / 80.360 / 58.752 / 74.250 / 62.847 / 44.174 / 44.259
+48.030 / 46.890 / 34.224 / 51.338 / 35.220 / 35.749 / 40.009 / 40.175
 ```
 
-The slowest shard is **717.762 seconds**; the spread is **344.777 seconds**.
-The final successful `(binary, test)` identities total **15,620**, matching the
-sum of the shard summaries, with no identity shared by two shards. The reported
-inventory is 15,624; four intentionally ignored child probes remain excluded.
-Retries do not add identities to this accounting. Setup-script durations are
-excluded from per-test ranks, but included in the shard spans above.
-
-Hosted after-times remain to be recorded on #3613 from this change's own
-merge-group run after landing: pull-request CI skips test shards. Compare its
-slowest nextest span and max-minus-min spread against the baseline, recording
-the revision, selected inventory and any intervening slow-test fixes. No
-wall-time improvement is claimed before that comparison. Priorities cannot
-remove setup work (183.158–306.567 seconds in this baseline), serialized browser
-build work or uneven fixed count assignments, so some imbalance may remain.
+The slowest shard is **213.109 seconds**; the spread is **178.885 seconds**.
+The final successful `(binary, test)` identities total **16,961**, with no
+identity shared by two shards. Retries do not add identities to this accounting.
+Setup-script durations are excluded from per-test ranks, but included in the shard
+spans above. One test, the browser example served from rebuilt external assets,
+crossed the 30-second flag; no test reached the 120-second hang limit.
 
 The fast tooling regression
 `nextest_priorities::measured_priorities_order_tests_without_changing_shards`
 runs nextest against controlled bodies with the real tooling overrides. One
-worker proves the cold browser build starts first, then the next two tooling
-tests in descending order, before an unprioritized short test. The split is
-fixed at 16 lanes, independent of CI's `test_shard_count`. It compares every
-partition's membership with and without priorities, checks an exactly-once
-union and keeps an intentional selected failure visible. It does not run the
-expensive browser bodies.
+worker proves the cold browser build starts first, then the next ranked tooling
+test, before the unranked tests, including one that held a priority in an earlier
+measurement. The split is fixed at 16 lanes, independent of CI's
+`test_shard_count`. It compares every partition's membership with and without
+priorities, checks an exactly-once union and keeps an intentional selected failure
+visible. It does not run the expensive browser bodies.
 
 #### Measured successful test durations and priorities (seconds)
 
 The cold browser build takes every core, so it holds priority 100 whatever its
 duration. Nextest starts tests in priority order and holds the queue until the
-next one fits. In merge-group run 42491037894, a test ranked above it ran alone
-for 17 seconds while three cores sat idle. Swapping those two ranks and
-replaying the shard's durations ends the shard 8 seconds sooner: the browser
-lanes then start together once the cold build finishes.
+next one fits: a test ranked above the cold build would run alone while the
+other cores sat idle.
 
 | Priority | Package / test | Seconds |
 | ---: | --- | ---: |
-| 100 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 137.793 |
-| 99 | `maestro-tooling` / `browser_author_build::browser_check_repairs_formatting` | 155.470 |
-| 97 | `maestro-tooling` / `browser_author_build::browser_author_checks_accept_valid_sources` | 105.572 |
-| 96 | `maestro-extensions-wasmtime` / `component_events::input::component_input_chains_text_preserves_images_and_forwards_sources` | 101.546 |
-| 95 | `maestro-tooling` / `browser_author_build::browser_native_checks_keep_inputs_and_refuse_bad_sources` | 101.208 |
-| 94 | `maestro-tooling` / `browser_author_build::browser_author_preparation_is_route_local` | 85.522 |
-| 93 | `maestro-extensions-wasmtime` / `canonical_theme::canonical_standalone_theme_keeps_live_palette_without_ui` | 77.348 |
-| 92 | `maestro-extensions-wasmtime` / `component_events::component_handler_presence_tracks_registration` | 76.967 |
-| 91 | `maestro-extensions-wasmtime` / `canonical_theme::canonical_theme_strikethrough` | 72.902 |
-| 90 | `maestro-extensions-wasmtime` / `component_events::component_tool_results_consume_prior_content` | 72.483 |
-| 89 | `maestro-models` / `browser_build::maestro_browser_environment_has_no_key` | 71.882 |
-| 87 | `maestro-tooling` / `browser_author_build::browser_assets_follow_relative_selected_identity` | 60.280 |
-| 86 | `maestro-tooling` / `browser_author_build::browser_author_hook_uses_resolved_configuration_directory` | 55.338 |
-| 83 | `maestro-extensions-wasmtime` / `canonical_schema::native_registration_and_enumeration_preserve_authored_schema_kinds` | 51.407 |
-| 82 | `maestro-tooling` / `browser_author_build::browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots` | 51.184 |
-| 80 | `maestro-test-conventions` / `architecture::real_workspace_obeys_crate_rules` | 45.737 |
-| 79 | `maestro-tooling` / `browser_author_build::browser_build_emits_wasm_and_prepared_assets` | 44.135 |
-| 77 | `maestro-tooling` / `browser_author_build::browser_author_included_files_rebuild_without_source_changes` | 41.429 |
-| 75 | `maestro-markdown` / `tests::container_depth::repeated_quote_list_resumption_keeps_reference_depth` | 40.392 |
-| 73 | `maestro-tooling` / `browser_author_build::browser_example_development_serves_rebuilt_external_assets` | 39.186 |
-| 71 | `maestro-tooling` / `build_recipes::maestro_selected_watch_rebuilds_cargo_configuration` | 37.229 |
-| 70 | `maestro-tooling` / `browser_author_build::browser_compile_watch_rebuilds_external_identity` | 36.977 |
-| 69 | `maestro-extensions-wasmtime` / `asynchronous_reentry::routed_completion_keeps_its_prefix_and_absent_result` | 36.706 |
-| 67 | `maestro-markdown` / `tests::container_depth::deep_indented_list_parses_on_a_small_stack` | 36.253 |
-| 64 | `maestro-tooling` / `browser_author_build::browser_author_unrelated_workspace_bump_keeps_fixture_lock` | 36.036 |
-| 60 | `maestro-extensions-wasmtime` / `authored_streams::ending_without_a_result_keeps_observation_pending` | 33.702 |
-| 58 | `maestro-extensions-wasmtime` / `asynchronous_reentry::routed_retained_setup_runs_its_prefix_before_its_first_poll_returns` | 33.466 |
-| 57 | `maestro-extensions-wasm` / `tests::component_driver::schema_qualification::schema_callbacks_preserve_supplied_errors_on_owning_guest` | 33.437 |
-| 52 | `maestro-extensions-wasmtime` / `compilation_cache::component_load_populates_the_user_compilation_cache` | 32.216 |
-| 51 | `maestro-test-conventions` / `boundaries::runtime_dependencies_stay_in_the_runtime_adapter` | 32.167 |
-| 46 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_bash_initial_progress_failure_prevents_exec` | 31.648 |
-| 44 | `maestro-extensions-wasmtime` / `factory::tests::faulted_store_drops_once_only_after_the_last_admission_ends` | 31.525 |
-| 43 | `maestro-extensions-wasmtime` / `tests::builtin_factories::builtin_factory_construction_is_lazy_and_fresh` | 31.281 |
-| 41 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_read_options_preserve_reverse_operations` | 30.949 |
-| 40 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_mutations_release_after_error_and_alias_paths` | 30.745 |
-| 39 | `maestro-extensions-wasmtime` / `tests::builtin_operations::builtin_find_callbacks_receive_pattern_root_ignore_and_limit` | 30.323 |
-| 38 | `maestro-tooling` / `browser_author_build::browser_author_projection_failure_prevents_dependent_build` | 30.158 |
+| 100 | `maestro-tooling` / `browser_author_build::browser_author_bootstraps_from_empty_build_state` | 29.597 |
+| 99 | `maestro-tooling` / `browser_author_build::browser_example_development_serves_rebuilt_external_assets` | 31.661 |
 
 #### Refreshing priorities
 
@@ -1180,7 +1135,7 @@ To refresh the ranks:
    a priority by changing an exception limit or selection filter.
 4. Update this evidence table and run the focused tooling regression:
    `cargo nextest run --locked -p maestro-tooling --test integration -E 'test(measured_priorities_order_tests_without_changing_shards)'`.
-   If the two slowest tooling identities after the cold build change, update the
+   If the slowest tooling identity after the cold build changes, update the
    controlled bodies and expected order to match; the cold build stays first.
 5. Record the next merge-group run's slowest span and spread on #3613, with its
    inventory and revision. Explain setup, serialization or source changes rather
@@ -2834,9 +2789,12 @@ comes from `maestro-test-directory::temporary_root`. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept
 variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
-instead of compiling it again. In the parent, `run_per_environment` returns
+instead of compiling it again. The parent starts every group's child before it collects the first, so all group
+children run at once and a test takes the time of its slowest group. Nextest's
+thread count does not count these children.
+In the parent, `run_per_environment` returns
 `None` once every child passes, and repeats each passing child's standard error
-as it goes, so a case that left one out keeps its reason. `run_per_environment`
+in group order, so a case that left one out keeps its reason. `run_per_environment`
 writes those lines through the standard error handle instead of the print macros the
 harness keeps: `cargo test` writes them to the terminal, and a runner that captures
 the test process, as `just test` does, shows them on a failure or when asked for a

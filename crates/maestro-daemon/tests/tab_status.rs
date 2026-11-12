@@ -28,7 +28,7 @@ fn test_app() -> App {
         .topology
         .new_with_tab(temporary_root(), None, |_, _| Ok(()))
         .unwrap();
-    support::populate_terminals(&mut app.state);
+    app.state.admit_seeded_terminals();
     app.state.active = Some(0);
     support::assert_identity_invariants(&app.state);
     app

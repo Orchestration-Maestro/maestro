@@ -59,18 +59,19 @@ impl App {
         let tab = self
             .create_tab_with_launch(workspace, root)
             .map_err(|error| api_error("tab_create_failed", error.to_string()))?;
-        if let Some(label) = params.label
-            && let Some(tab_id) = self.state.public_tab_id(workspace, tab)
-        {
-            let target = &mut self.state.topology.workspaces[workspace];
-            target.tabs[tab].set_custom_name(label);
-            crate::diagnostics::tab_renamed(&target.id, &tab_id);
-        }
-        if params.focus {
-            self.state.switch_workspace_tab(workspace, tab);
-            self.state.mode = Mode::Terminal;
-        }
-        self.state.session_dirty = true;
+        self.state.edit_topology(|state| {
+            if let Some(label) = params.label
+                && let Some(tab_id) = state.public_tab_id(workspace, tab)
+            {
+                let target = &mut state.topology.workspaces[workspace];
+                target.tabs[tab].set_custom_name(label);
+                crate::diagnostics::tab_renamed(&target.id, &tab_id);
+            }
+            if params.focus {
+                state.switch_workspace_tab(workspace, tab);
+                state.mode = Mode::Terminal;
+            }
+        });
         self.emit_tab_created_events(workspace, tab).await;
         self.tab_created_result(workspace, tab)
             .await
@@ -91,11 +92,12 @@ impl App {
     ) -> Result<ResponseResult, ErrorBody> {
         let (workspace, tab) = self.target_tab(&params.tab_id)?;
         let tab_id = self.public_tab_id(workspace, tab, &params.tab_id)?;
-        let target = &mut self.state.topology.workspaces[workspace];
-        target.tabs[tab].set_custom_name(params.label.clone());
-        crate::diagnostics::tab_renamed(&target.id, &tab_id);
-        let workspace_id = target.id.clone();
-        self.state.session_dirty = true;
+        let workspace_id = self.state.edit_topology(|state| {
+            let target = &mut state.topology.workspaces[workspace];
+            target.tabs[tab].set_custom_name(params.label.clone());
+            crate::diagnostics::tab_renamed(&target.id, &tab_id);
+            target.id.clone()
+        });
         self.event_hub.push(EventData::TabRenamed {
             tab_id,
             workspace_id,
@@ -121,8 +123,8 @@ impl App {
         let moved = target.move_tab(tab, params.insert_index);
         let workspace_id = target.id.clone();
         let tabs = self.tab_list_info(workspace);
+        self.state.mark_session_dirty_if(moved);
         if moved {
-            self.state.session_dirty = true;
             self.event_hub.push(EventData::TabMoved {
                 tab_id,
                 workspace_id,
@@ -160,13 +162,14 @@ impl App {
             });
             return Ok(ResponseResult::Ok {});
         }
-        if !self.retire_tab_and_stop_panes(workspace, tab).await {
+        let retired = self.retire_tab_and_stop_panes(workspace, tab).await;
+        self.state.mark_session_dirty_if(retired);
+        if !retired {
             return Err(api_error(
                 "tab_close_failed",
                 format!("tab {id} could not be closed"),
             ));
         }
-        self.state.session_dirty = true;
         self.event_hub.push(EventData::TabClosed {
             tab_id,
             workspace_id,
