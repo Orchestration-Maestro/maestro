@@ -617,6 +617,8 @@ modules in that root; support modules stay in their existing directories. The
 conventions check covers every workspace member, new crates included: a member
 with top-level integration-test sources needs `autotests = false` and exactly
 one test target, the runnable `integration` target at `tests/integration.rs`.
+A library target that holds in-source tests keeps `[lib] test` on; one with none sets
+`test = false`, and the conventions check rejects either mismatch.
 
 Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
 which keeps the supplied JSON Schema value beside the kinds its author declared for

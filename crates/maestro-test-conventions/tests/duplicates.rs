@@ -656,7 +656,7 @@ fn diagnostics_include_every_site() {
 fn normalized_sources_keep_duplicate_locations() {
     let workspace = support::Workspace::new();
     workspace.foundation(&["maestro-settings"]);
-    workspace.in_source_tests("maestro-settings", true);
+    workspace.library_test_target("maestro-settings", true);
     let ordinary = workspace
         .root
         .path()

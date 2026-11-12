@@ -36,26 +36,25 @@ fn manifest(workspace: &Workspace) -> PathBuf {
 
 /// Set `test = false` on the library target.
 fn disable(workspace: &Workspace) {
-    workspace.in_source_tests(OWNER, false);
+    workspace.library_test_target(OWNER, false);
 }
 
 /// Drop the library's test setting again.
 fn enable(workspace: &Workspace) {
-    workspace.in_source_tests(OWNER, true);
+    workspace.library_test_target(OWNER, true);
 }
 
-/// The diagnostic that names the owner's manifest.
-fn rejected(workspace: &Workspace) -> String {
+/// Assert the check fails with a diagnostic that names the owner's manifest.
+fn rejected(workspace: &Workspace) {
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains(&manifest(workspace).display().to_string()),
         "{error}"
     );
-    error
 }
 
 #[test]
-fn in_source_tests_need_a_runnable_library_target() {
+fn library_test_target_need_a_runnable_library_target() {
     let workspace = workspace();
     source(&workspace, OWNER, "src/lib.rs", TESTED);
     disable(&workspace);
@@ -65,7 +64,7 @@ fn in_source_tests_need_a_runnable_library_target() {
 }
 
 #[test]
-fn a_library_without_in_source_tests_needs_the_flag() {
+fn a_library_without_library_test_target_needs_the_flag() {
     let workspace = workspace();
     enable(&workspace);
     rejected(&workspace);
