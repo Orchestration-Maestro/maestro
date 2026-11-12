@@ -1,5 +1,5 @@
 //! Concrete instance preparation from owned raw numbering.
-use super::super::document::common::integer_prefix;
+use super::super::document::property_values::integer_prefix;
 use super::super::lists::parser::{Parsed, PictureSelection, PreparedLevel, ReferenceKey};
 use super::super::{IDomNumbering, NumberingPicBullet};
 use std::collections::HashMap;

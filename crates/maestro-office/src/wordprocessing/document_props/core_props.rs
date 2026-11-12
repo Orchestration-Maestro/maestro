@@ -1,5 +1,5 @@
 //! Core document metadata.
-use super::super::document::common::integer_prefix;
+use super::super::document::property_values::integer_prefix;
 use super::super::{XmlElement, XmlParser};
 /// Selected core properties; absent fields have not been assigned.
 #[derive(Debug, Default)]

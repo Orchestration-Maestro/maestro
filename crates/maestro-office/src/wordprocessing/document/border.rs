@@ -1,6 +1,6 @@
 //! Owned raw page borders, separate from CSS border interpretation.
 use super::super::{XmlElement, XmlParser};
-use super::common::LengthUsage;
+use super::property_values::LengthUsage;
 
 /// Raw border attributes with converted dimensions.
 #[derive(Clone, Debug, Default)]

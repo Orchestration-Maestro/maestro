@@ -66,7 +66,7 @@ impl<'doc, 'input: 'doc> PropertyContext<'doc, 'input> {
         .into_iter()
         .flatten()
         .filter(|value| !value.is_empty())
-        .map(super::super::utils::enclose_font_family)
+        .map(super::super::names::enclose_font_family)
         .collect();
         if !fonts.is_empty() {
             style.insert(

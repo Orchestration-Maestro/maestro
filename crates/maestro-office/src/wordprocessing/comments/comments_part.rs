@@ -1,6 +1,6 @@
 //! Comment part preparation and shared lookup records.
 use super::super::{
-    DocxError, OwnedXmlElement, document_parser::comments::parse_comments, utils::key_by,
+    DocxError, OwnedXmlElement, document_parser::comments::parse_comments, names::key_by,
 };
 use super::WmlComment;
 use indexmap::IndexMap;

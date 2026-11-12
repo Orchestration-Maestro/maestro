@@ -1,4 +1,4 @@
-//! Package path spellings and font-family formatting.
+//! Package path spellings and font-family names.
 /// Split at the final forward slash, retaining the folder's slash.
 pub(super) fn split_path(path: &str) -> (&str, &str) {
     path.split_at(path.rfind('/').map_or(0, |i| i + 1))

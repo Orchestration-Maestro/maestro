@@ -1,7 +1,7 @@
 //! Owned section records and immediate property readers.
 use super::super::{XmlElement, XmlParser};
 use super::border::{Borders, parse_borders};
-use super::common::LengthUsage;
+use super::property_values::LengthUsage;
 
 /// Page dimensions and open orientation spelling.
 #[derive(Clone, Debug, Default)]

@@ -1,7 +1,7 @@
 //! In-memory Word package reading and borrowed XML queries.
 mod document;
-pub use document::common::{LengthUsage, convert_boolean, convert_length};
-pub(crate) use document::common::{float_prefix, integer_prefix};
+pub use document::property_values::{LengthUsage, convert_boolean, convert_length};
+pub(crate) use document::property_values::{float_prefix, integer_prefix};
 mod parser;
 pub use parser::xml_parser::decode_text;
 pub use parser::xml_parser::{
@@ -37,15 +37,15 @@ impl std::fmt::Display for DocxError {
     }
 }
 impl std::error::Error for DocxError {}
-mod common;
-pub use common::open_xml_package::OpenXmlPackage;
+mod package;
+pub use package::open_xml_package::OpenXmlPackage;
+mod names;
 #[cfg(test)]
 mod tests;
-mod utils;
-pub use utils::enclose_font_family;
-pub(crate) use utils::resolve_path;
+pub use names::enclose_font_family;
+pub(crate) use names::resolve_path;
 mod word_document;
-pub use common::{
+pub use package::{
     part::{Part, PartData, PartKind},
     relationship::Relationship,
 };
@@ -77,8 +77,8 @@ pub use document_parser::{
 };
 
 pub use document::border::{Border, Borders};
-pub use document::common::CommonProperties;
 pub use document::paragraph::{LineSpacing, Numbering, ParagraphProperties, TabStop};
+pub use document::property_values::CommonProperties;
 pub use document::run::{RunProperties, VerticalAlign};
 pub use document::section::{
     Column, Columns, FooterHeaderReference, PageMargins, PageNumber, PageSize, SectionProperties,

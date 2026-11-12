@@ -1,6 +1,6 @@
 //! Owned run formatting metadata.
 use super::super::{XmlElement, XmlParser};
-use super::common::{CommonProperties, parse_common_property};
+use super::property_values::{CommonProperties, parse_common_property};
 /// Owned run properties; outer options record property encounters.
 #[derive(Debug, Default)]
 pub struct RunProperties {

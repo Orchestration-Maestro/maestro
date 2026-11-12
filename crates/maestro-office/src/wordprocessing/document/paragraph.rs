@@ -1,6 +1,8 @@
 //! Owned paragraph metadata and immediate property readers.
 use super::super::{XmlElement, XmlParser};
-use super::common::{CommonProperties, LengthUsage, WORDML_NAMESPACE, parse_common_property};
+use super::property_values::{
+    CommonProperties, LengthUsage, WORDML_NAMESPACE, parse_common_property,
+};
 use super::section::{SectionProperties, parse_section_properties};
 /// One tab stop, including nullable attributes.
 #[derive(Clone, Debug, Default)]

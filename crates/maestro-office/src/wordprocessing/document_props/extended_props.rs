@@ -1,5 +1,5 @@
 //! Extended document metadata.
-use super::super::document::common::integer_prefix;
+use super::super::document::property_values::integer_prefix;
 use super::super::{XmlElement, XmlParser};
 /// Selected application properties.
 #[derive(Debug, Default)]

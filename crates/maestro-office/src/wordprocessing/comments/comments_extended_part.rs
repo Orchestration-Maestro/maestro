@@ -1,5 +1,5 @@
 //! Extended comment links and shared lookup records.
-use super::super::{XmlElement, XmlParser, utils::key_by};
+use super::super::{XmlElement, XmlParser, names::key_by};
 use indexmap::IndexMap;
 use maestro_lock::read;
 use std::sync::{Arc, RwLock};

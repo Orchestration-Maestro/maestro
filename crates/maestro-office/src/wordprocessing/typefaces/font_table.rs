@@ -84,7 +84,7 @@ fn deobfuscate(data: &mut [u8], key: &str) {
     let mut numbers = [0_u8; 16];
     for number in numbers.iter_mut().rev() {
         let pair: String = chars.by_ref().take(2).collect();
-        *number = super::super::document::common::integer_prefix(&pair, 16)
+        *number = super::super::document::property_values::integer_prefix(&pair, 16)
             .to_u8()
             .unwrap_or(0);
     }

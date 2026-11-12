@@ -1,5 +1,5 @@
 //! Native borrowed XML views for Word parts.
-use super::super::document::common::{float_prefix, integer_prefix};
+use super::super::document::property_values::{float_prefix, integer_prefix};
 use super::super::{DocxError, LengthUsage, convert_boolean, convert_length};
 use std::{ops::Range, sync::Arc};
 

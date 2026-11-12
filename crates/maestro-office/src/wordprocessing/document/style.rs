@@ -1,5 +1,5 @@
 //! Owned style definitions before inheritance resolution.
-use super::{common::CommonProperties, paragraph::ParagraphProperties};
+use super::{paragraph::ParagraphProperties, property_values::CommonProperties};
 /// One named style or document-default definition.
 #[derive(Clone, Debug, Default)]
 pub struct IDomStyle {

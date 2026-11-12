@@ -1,7 +1,7 @@
 //! Ordered, cached discovery of supported Word package parts.
 use super::{
-    DocxError, OpenXmlElementTree, Options, Part, PartData, PartKind, Relationship,
-    common::open_xml_package::OpenXmlPackage, utils,
+    DocxError, OpenXmlElementTree, Options, Part, PartData, PartKind, Relationship, names,
+    package::open_xml_package::OpenXmlPackage,
 };
 use std::collections::HashMap;
 
@@ -91,14 +91,14 @@ impl WordDocument {
             }
             error
         })?;
-        let folder = utils::split_path(path).0;
+        let folder = names::split_path(path).0;
         let children = rels
             .as_deref()
             .unwrap_or_default()
             .iter()
             .filter_map(|r| {
                 Some((
-                    utils::resolve_path(r.target.as_deref()?, folder),
+                    names::resolve_path(r.target.as_deref()?, folder),
                     PartKind::from_type(r.r#type.as_deref()?)?,
                 ))
             })
@@ -197,18 +197,18 @@ impl WordDocument {
         let (rels, folder) = base_part.map_or((self.rels(), ""), |part| {
             (
                 part.rels.as_deref().or(self.rels()),
-                utils::split_path(&part.path).0,
+                names::split_path(&part.path).0,
             )
         });
         let target = Relationship::find_target(rels, id)?;
         self.index
-            .get(&utils::resolve_path(target, folder))
+            .get(&names::resolve_path(target, folder))
             .map(|i| &self.parts[*i])
     }
     /// Resolve the first matching relationship ID to its package target.
     pub fn get_path_by_id(&self, part: &Part, id: &str) -> Option<String> {
         let target = Relationship::find_target(part.rels.as_deref(), id)?;
-        Some(utils::resolve_path(target, utils::split_path(&part.path).0))
+        Some(names::resolve_path(target, names::split_path(&part.path).0))
     }
     /// Read bytes by relationship ID without fetching URLs or writing files.
     ///

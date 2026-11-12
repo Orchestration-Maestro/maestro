@@ -1,5 +1,5 @@
 //! One indexed ZIP owner for Word parts and resource bytes.
-use super::super::{DocxError, Options, Relationship, XmlParser, parse_xml_string, utils};
+use super::super::{DocxError, Options, Relationship, XmlParser, names, parse_xml_string};
 use maestro_lock::lock;
 use std::{
     io::{Cursor, Read},
@@ -33,7 +33,7 @@ impl OpenXmlPackage {
             let entry = archive.by_index(index).map_err(archive_error)?;
             let candidate = (entry.central_header_start(), index);
             entries
-                .entry(utils::archive_name(&entry.name().map_err(archive_error)?))
+                .entry(names::archive_name(&entry.name().map_err(archive_error)?))
                 .and_modify(|current| *current = candidate.max(*current))
                 .or_insert(candidate);
         }
@@ -48,7 +48,7 @@ impl OpenXmlPackage {
     }
     /// Find slash spelling before the backslash fallback.
     fn index(&self, path: &str) -> Option<usize> {
-        let path = utils::normalize_path(path);
+        let path = names::normalize_path(path);
         self.entries
             .get(path)
             .or_else(|| self.entries.get(&path.replace('/', "\\")))
@@ -130,7 +130,7 @@ impl OpenXmlPackage {
         let path = path.map_or_else(
             || "_rels/.rels".into(),
             |path| {
-                let (folder, name) = utils::split_path(path);
+                let (folder, name) = names::split_path(path);
                 format!("{folder}_rels/{name}.rels")
             },
         );

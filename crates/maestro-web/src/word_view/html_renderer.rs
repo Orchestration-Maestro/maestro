@@ -1,6 +1,6 @@
 //! Rendering state, the composition of one rendering, style lookup and the element dispatch.
+use super::class_names::escape_class_name;
 use super::html_element::{HtmlContent, HtmlElement, Namespace};
-use super::utils::escape_class_name;
 use super::{Options, Rendering, Sections, WordPreview};
 use indexmap::IndexMap;
 use maestro_office::wordprocessing::{

@@ -9,11 +9,11 @@
 //! `render_document` and `render_async` mount a rendering as nodes.
 #[cfg(target_arch = "wasm32")]
 mod browser;
+mod class_names;
 mod html_element;
 mod html_renderer;
 #[cfg(test)]
 mod tests;
-mod utils;
 
 #[cfg(target_arch = "wasm32")]
 pub use browser::{RenderedDocument, render_async, render_document};

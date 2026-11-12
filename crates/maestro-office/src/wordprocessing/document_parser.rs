@@ -353,7 +353,7 @@ impl<'input> DocumentParser<'_, 'input> {
                 font: self
                     .xml
                     .attr(child, "font")
-                    .map(super::utils::enclose_font_family),
+                    .map(super::names::enclose_font_family),
                 char: self.attr(child, "char"),
             },
             "lastRenderedPageBreak" => Data::Break {
