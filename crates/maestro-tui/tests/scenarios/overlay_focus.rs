@@ -161,9 +161,8 @@ fn maestro_overlays_deferred_sub_overlay_restores_focus() {
     let completed = Rc::new(Cell::new(false));
     let witness = completed.clone();
     let owner = scene.tui.clone();
-    let timer_handle = RefCell::new(timer_handle);
     controller.on_input(move |_| {
-        timer_handle.borrow_mut().hide().unwrap();
+        timer_handle.hide().unwrap();
         owner.hide_overlay().unwrap();
         witness.set(true);
     });
@@ -539,13 +538,12 @@ fn overlay_render_selection_captures_visible_entries() {
     let scene = focused_scene();
     let (a, _) = show(&scene, "A", true).unwrap();
     let (b, bh) = show(&scene, "B", true).unwrap();
-    let bh = RefCell::new(bh);
     let owner = scene.tui.clone();
     let added = Probe::shared(&["C"]);
     let c = added.clone();
     a.on_render(move |count| {
         if count == 1 {
-            bh.borrow_mut().hide().unwrap();
+            bh.hide().unwrap();
             owner.show_overlay(c.clone(), None).unwrap();
         }
     });
@@ -616,10 +614,9 @@ fn overlay_invalidation_walks_live_entries() {
     let log = order.clone();
     let owner = scene.tui.clone();
     let target = c.clone();
-    let bh = RefCell::new(bh);
     a.on_invalidate(move || {
         log.borrow_mut().push("A");
-        bh.borrow_mut().hide().unwrap();
+        bh.hide().unwrap();
         owner.show_overlay(target.clone(), None).unwrap();
     });
     scene.tui.invalidate();

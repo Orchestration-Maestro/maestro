@@ -2035,7 +2035,6 @@ async fn overlays(ui: &Ui, host: &Customs) {
                 .borrow()
                 .clone()
                 .unwrap();
-            assert!(!seen.borrow().is_empty());
             assert!(!shown.is_hidden() && shown.is_focused());
             seen.borrow()[0].set_hidden(true);
             assert!(shown.is_hidden());
