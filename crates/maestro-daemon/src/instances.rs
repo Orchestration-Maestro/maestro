@@ -5,7 +5,7 @@ use crate::locations::DaemonPaths;
 /// Environment input selecting an inherited daemon name.
 pub const SESSION_ENV_VAR: &str = "MAESTRO_DAEMON";
 /// Reserved target identifying the daemon at the agent root.
-pub const DEFAULT_SESSION_NAME: &str = "default";
+pub(crate) const DEFAULT_SESSION_NAME: &str = "default";
 
 /// Supplied process-environment observations; never mutated by selection.
 #[derive(Clone, Copy, Debug, Default)]
@@ -139,7 +139,7 @@ fn attach_target(args: &[String]) -> Result<AttachRequest, String> {
 ///
 /// # Errors
 /// Returns a diagnostic for empty, dot, oversized or non-component names.
-pub fn validate_name(name: &str) -> Result<(), String> {
+pub(crate) fn validate_name(name: &str) -> Result<(), String> {
     if name.is_empty() {
         return Err("daemon name cannot be empty".into());
     }
@@ -162,7 +162,7 @@ pub fn validate_name(name: &str) -> Result<(), String> {
 ///
 /// # Errors
 /// Returns the daemon-name diagnostic for an invalid target.
-pub fn parse_target_name(name: &str) -> Result<Option<String>, String> {
+pub(crate) fn parse_target_name(name: &str) -> Result<Option<String>, String> {
     validate_name(name)?;
     Ok((name != DEFAULT_SESSION_NAME).then(|| name.to_owned()))
 }
@@ -170,7 +170,7 @@ pub fn parse_target_name(name: &str) -> Result<Option<String>, String> {
 impl DaemonPaths {
     /// Attach command for this target.
     #[must_use]
-    pub fn local_attach_command(&self) -> String {
+    pub(crate) fn local_attach_command(&self) -> String {
         self.name().map_or_else(
             || "maestro attach".into(),
             |name| format!("maestro attach --daemon {name}"),
@@ -179,7 +179,7 @@ impl DaemonPaths {
 
     /// Stop command for this target; stopping itself is owned by the daemon host.
     #[must_use]
-    pub fn local_stop_command(&self) -> String {
+    pub(crate) fn local_stop_command(&self) -> String {
         self.name().map_or_else(
             || "maestro daemon stop".into(),
             |name| format!("maestro daemon stop {name}"),

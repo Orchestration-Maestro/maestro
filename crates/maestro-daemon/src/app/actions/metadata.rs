@@ -42,7 +42,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
     }
 
     /// Applies due presentation mutations through the existing state-change owner.
-    pub(crate) fn expire_agent_metadata_at(
+    pub fn expire_agent_metadata_at(
         &mut self,
         deadline: Instant,
         now: Instant,

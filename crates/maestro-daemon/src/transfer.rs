@@ -20,10 +20,10 @@ pub struct HandoffRuntimeState {
     pub cell_height_px: u32,
     /// Active keyboard protocol flags.
     #[serde(default)]
-    pub keyboard_protocol_flags: u16,
+    pub(crate) keyboard_protocol_flags: u16,
     /// Replayable keyboard negotiation stack.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub keyboard_protocol_ansi: Option<String>,
+    pub(crate) keyboard_protocol_ansi: Option<String>,
     /// Negotiated terminal input modes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub input_state: Option<InputState>,
@@ -32,7 +32,7 @@ pub struct HandoffRuntimeState {
     pub terminal_title: Option<String>,
     /// Recent primary-screen ANSI history.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub initial_history_ansi: Option<String>,
+    pub(crate) initial_history_ansi: Option<String>,
 }
 
 /// Received terminal master with its retained state and owned descriptor lifetime.

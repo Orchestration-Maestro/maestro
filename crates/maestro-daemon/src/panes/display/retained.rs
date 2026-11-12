@@ -23,11 +23,11 @@ pub struct TerminalTextMatch {
     /// Inclusive last cell.
     pub end: TerminalTextPoint,
     /// Fingerprint of the exact matched UTF-8 bytes.
-    pub source_fingerprint: u64,
+    pub(crate) source_fingerprint: u64,
     /// Grid width when searched.
-    pub scan_cols: u16,
+    pub(crate) scan_cols: u16,
     /// Screen when searched.
-    pub scan_screen: Key,
+    pub(crate) scan_screen: Key,
 }
 
 /// Copy-mode word navigation.

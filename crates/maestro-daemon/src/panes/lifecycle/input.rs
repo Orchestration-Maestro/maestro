@@ -26,7 +26,7 @@ impl PaneRuntime {
     ///
     /// # Errors
     /// Preserves full versus closed and returns the original bytes.
-    pub fn try_send_bytes(&self, bytes: Vec<u8>) -> Result<(), TrySendError<Vec<u8>>> {
+    pub(crate) fn try_send_bytes(&self, bytes: Vec<u8>) -> Result<(), TrySendError<Vec<u8>>> {
         self.io.try_write_user_input(bytes)
     }
 

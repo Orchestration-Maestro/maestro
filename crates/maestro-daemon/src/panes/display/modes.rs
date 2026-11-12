@@ -10,25 +10,25 @@ use maestro_terminal::{Mode, Terminal, screens::Key};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct InputState {
     /// Whether the alternate screen is selected.
-    pub alternate_screen: InputMode,
+    pub(crate) alternate_screen: InputMode,
     /// Cursor keys use application sequences.
-    pub application_cursor: InputMode,
+    pub(crate) application_cursor: InputMode,
     /// Pasted text is bracketed.
-    pub bracketed_paste: InputMode,
+    pub(crate) bracketed_paste: InputMode,
     /// Focus transitions are reported.
-    pub focus_reporting: InputMode,
+    pub(crate) focus_reporting: InputMode,
     /// Mouse events requested by the child.
-    pub mouse_protocol_mode: MouseProtocolMode,
+    pub(crate) mouse_protocol_mode: MouseProtocolMode,
     /// Mouse report coordinates and framing.
-    pub mouse_protocol_encoding: MouseProtocolEncoding,
+    pub(crate) mouse_protocol_encoding: MouseProtocolEncoding,
     /// Wheel events become cursor keys on the alternate screen.
-    pub mouse_alternate_scroll: InputMode,
+    pub(crate) mouse_alternate_scroll: InputMode,
     /// Extended modifier-key reporting is enabled.
     #[serde(default)]
     pub modify_other_keys: InputMode,
     /// Host colour-scheme changes are reported.
     #[serde(default)]
-    pub color_scheme_reporting: InputMode,
+    pub(crate) color_scheme_reporting: InputMode,
 }
 
 #[cfg(test)]

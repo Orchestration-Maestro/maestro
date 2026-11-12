@@ -64,7 +64,7 @@ impl TerminalKey {
 
     /// Set the canonical phase, clearing text and grouped repetition on release.
     #[must_use]
-    pub fn with_kind(mut self, kind: ClientKeyKind) -> Self {
+    pub(crate) fn with_kind(mut self, kind: ClientKeyKind) -> Self {
         self.kind = kind;
         if kind == ClientKeyKind::Release {
             self.generated_text = None;
@@ -75,7 +75,7 @@ impl TerminalKey {
 
     /// Set grouped repetition to at least one, or one on a release.
     #[must_use]
-    pub fn with_repeat_count(mut self, repeat_count: u16) -> Self {
+    pub(crate) fn with_repeat_count(mut self, repeat_count: u16) -> Self {
         self.repeat_count = if self.kind == ClientKeyKind::Release {
             1
         } else {
@@ -86,7 +86,7 @@ impl TerminalKey {
 
     /// Set generated text, discarding it on a release.
     #[must_use]
-    pub fn with_generated_text(mut self, text: Option<String>) -> Self {
+    pub(crate) fn with_generated_text(mut self, text: Option<String>) -> Self {
         self.generated_text = if self.kind == ClientKeyKind::Release {
             None
         } else {
@@ -97,7 +97,7 @@ impl TerminalKey {
 
     /// Infer character text for an unmodified or uppercase Shift press.
     #[must_use]
-    pub fn with_text_commit(mut self) -> Self {
+    pub(crate) fn with_text_commit(mut self) -> Self {
         if self.kind == ClientKeyKind::Press
             && let ClientKeyCode::Char(ch) = self.code
             && (self.modifiers == KeyModifiers::NONE
@@ -146,14 +146,14 @@ impl TerminalKey {
 
     /// Replace source evidence with a native record and normalize its count.
     #[must_use]
-    pub fn with_windows_record(mut self, record: WindowsKeyRecord) -> Self {
+    pub(crate) fn with_windows_record(mut self, record: WindowsKeyRecord) -> Self {
         self.source = ClientKeySource::WindowsConsole { record };
         self.with_repeat_count(record.repeat_count)
     }
 
     /// Replace source evidence with owned VT bytes.
     #[must_use]
-    pub fn with_vt_bytes(mut self, bytes: Vec<u8>) -> Self {
+    pub(crate) fn with_vt_bytes(mut self, bytes: Vec<u8>) -> Self {
         self.source = ClientKeySource::Vt { bytes };
         self
     }
@@ -166,7 +166,7 @@ impl TerminalKey {
 
     /// Read native evidence only when the source is a Windows record.
     #[must_use]
-    pub fn windows_record(&self) -> Option<WindowsKeyRecord> {
+    pub(crate) fn windows_record(&self) -> Option<WindowsKeyRecord> {
         match self.source {
             ClientKeySource::WindowsConsole { record } => Some(record),
             _ => None,
@@ -198,7 +198,7 @@ pub enum KeyboardProtocol {
 impl KeyboardProtocol {
     /// Whether extended reporting includes key event types.
     #[must_use]
-    pub fn reports_event_types(self) -> bool {
+    pub(crate) fn reports_event_types(self) -> bool {
         matches!(self, Self::Kitty { flags } if flags & 2 != 0)
     }
 
@@ -210,7 +210,7 @@ impl KeyboardProtocol {
 
     /// Select legacy for zero flags, otherwise retain the extended flags.
     #[must_use]
-    pub fn from_kitty_flags(flags: u16) -> Self {
+    pub(crate) fn from_kitty_flags(flags: u16) -> Self {
         if flags == 0 {
             Self::Legacy
         } else {
@@ -280,7 +280,7 @@ impl ModifyOtherKeysMode {
 /// Mouse events requested by the pane program.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum MouseProtocolMode {
+pub(crate) enum MouseProtocolMode {
     /// No mouse reporting.
     None,
     /// Button presses only.
@@ -296,7 +296,7 @@ pub enum MouseProtocolMode {
 /// Mouse coordinate encoding requested by the pane program.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum MouseProtocolEncoding {
+pub(crate) enum MouseProtocolEncoding {
     /// Conventional byte encoding.
     Default,
     /// UTF-8 coordinates.

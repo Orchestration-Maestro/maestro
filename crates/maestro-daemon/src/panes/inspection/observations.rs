@@ -3,7 +3,7 @@
 use maestro_detection::agents::Agent;
 
 /// Consecutive misses required to release an agent identity.
-pub const AGENT_MISS_CONFIRMATION_ATTEMPTS: u8 = 6;
+pub(crate) const AGENT_MISS_CONFIRMATION_ATTEMPTS: u8 = 6;
 
 /// Retained identity and its missing-process confirmation count.
 #[derive(Debug, Clone, Copy)]
@@ -17,7 +17,7 @@ pub struct AgentDetectionPresence {
 impl AgentDetectionPresence {
     /// Starts tracking a supplied identity without pending misses.
     #[must_use]
-    pub fn from_agent(current_agent: Option<Agent>) -> Self {
+    pub(crate) fn from_agent(current_agent: Option<Agent>) -> Self {
         Self {
             current_agent,
             consecutive_misses: 0,
@@ -31,13 +31,13 @@ impl AgentDetectionPresence {
     }
 
     /// Clears identity and miss count, returning whether identity changed.
-    pub fn clear_current_agent(&mut self) -> bool {
+    pub(crate) fn clear_current_agent(&mut self) -> bool {
         self.consecutive_misses = 0;
         self.current_agent.take().is_some()
     }
 
     /// Applies a scan result, retaining identity until the sixth consecutive miss.
-    pub fn observe_process_probe(&mut self, identified: Option<Agent>) -> bool {
+    pub(crate) fn observe_process_probe(&mut self, identified: Option<Agent>) -> bool {
         if let Some(agent) = identified {
             self.consecutive_misses = 0;
             if self.current_agent == Some(agent) {
@@ -60,7 +60,7 @@ impl AgentDetectionPresence {
 
 /// Identity transition resulting from a foreground scan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ForegroundShellAgentAction {
+pub(crate) enum ForegroundShellAgentAction {
     /// Apply the ordinary miss-confirmation rule.
     ObserveProbe,
     /// Publish completion before clearing identity.
@@ -73,20 +73,20 @@ pub enum ForegroundShellAgentAction {
 
 /// Identity observations used to order completion and identity release.
 #[derive(Debug, Clone, Copy)]
-pub struct ForegroundShellObservation {
+pub(crate) struct ForegroundShellObservation {
     /// Previously retained identity.
-    pub previous_agent: Option<Agent>,
+    pub(crate) previous_agent: Option<Agent>,
     /// Identity recognized by the current scan.
-    pub new_agent: Option<Agent>,
+    pub(crate) new_agent: Option<Agent>,
     /// Whether the foreground job contains the pane shell.
-    pub foreground_is_pane_shell: bool,
+    pub(crate) foreground_is_pane_shell: bool,
     /// Whether completion for the previous process was already published.
-    pub process_exit_reported: bool,
+    pub(crate) process_exit_reported: bool,
 }
 
 /// Decides completion ordering without clearing identity prematurely.
 #[must_use]
-pub fn foreground_shell_agent_action(
+pub(crate) fn foreground_shell_agent_action(
     input: ForegroundShellObservation,
 ) -> ForegroundShellAgentAction {
     use ForegroundShellAgentAction::{
@@ -112,11 +112,11 @@ pub fn foreground_shell_agent_action(
 
 /// Publication state for the shell-return completion transition.
 #[derive(Debug, Default)]
-pub struct ForegroundShellState {
+pub(crate) struct ForegroundShellState {
     /// Whether completion must be published before the next identity scan.
-    pub pending_clear: bool,
+    pub(crate) pending_clear: bool,
     /// Whether completion was published for the retained identity.
-    pub exit_reported: bool,
+    pub(crate) exit_reported: bool,
 }
 
 impl ForegroundShellState {
