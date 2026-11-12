@@ -182,7 +182,7 @@ impl Connection {
                 let Some(connection) = weak.upgrade() else {
                     return;
                 };
-                maestro_tools::utils::environment::kill_tracked_detached_children();
+                maestro_tools::utils::kill_tracked_detached_children();
                 drop(tokio::task::spawn_local(async move {
                     connection
                         .shutdown(RpcConnectionOutcome::Signal(signal))

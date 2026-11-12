@@ -8,8 +8,7 @@ pub(super) fn call(operation: &str, data: &str) -> Result<String, String> {
     if operation == "paths.make_temp_dir" {
         let (prefix,): (String,) = decode(data)?;
         return encode(
-            &maestro_tools::output::accumulation::make_temp_dir(&prefix)
-                .map_err(|error| error.to_string())?,
+            &maestro_tools::output::make_temp_dir(&prefix).map_err(|error| error.to_string())?,
         );
     }
     if operation == "paths.basename" {

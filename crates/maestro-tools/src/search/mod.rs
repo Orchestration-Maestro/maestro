@@ -1,10 +1,10 @@
 //! Tools that list and search the file system.
 
-pub mod directory;
+pub(crate) mod ls;
 
-pub mod acquisition;
+pub(crate) mod tools_manager;
 
-pub mod discovery;
+pub(crate) mod find;
 mod listing;
 
-pub mod matching;
+pub(crate) mod grep;

@@ -11,10 +11,7 @@ use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInf
 use maestro_tools::{
     LsOperations, LsToolDetails, LsToolInput, LsToolOptions, ToolRenderPhase,
     ToolRenderResultOptions, create_ls_tool, create_ls_tool_definition,
-    output::{
-        limits::{TruncationBy, TruncationResult},
-        render_utils::strip_ansi,
-    },
+    output::{TruncationBy, TruncationResult, render_utils::strip_ansi},
 };
 use maestro_tui::{ComponentHandle, ImageProtocol, Text};
 use serde::Deserialize;

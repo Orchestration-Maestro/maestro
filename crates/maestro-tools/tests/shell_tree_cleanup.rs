@@ -4,7 +4,7 @@
 use crate::read_support::{self, Scratch};
 use crate::runtime::run;
 use maestro_process::children::{CapturedChild, WaitOptions, wait_for_child_process};
-use maestro_tools::utils::environment::{
+use maestro_tools::utils::{
     kill_process_tree, kill_tracked_detached_children, track_detached_child_pid,
 };
 use serde_json::json;

@@ -1,6 +1,6 @@
 //! Tool definitions: the executable declaration plus prompt and render capabilities.
+use crate::renderer_state::ToolRendererState;
 pub use crate::result_renderer::{ToolRenderResult, ToolRenderResultCallback};
-use crate::retained::ToolRendererState;
 
 use maestro_agent::{
     AgentToolResult, AgentToolUpdateCallback, PrepareArguments, ToolExecutionMode,

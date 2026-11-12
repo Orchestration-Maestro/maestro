@@ -1,6 +1,6 @@
 //! Existing tools owners exposed at the application root.
 
-pub use maestro_tools::changes::text::{Change, diff_lines};
+pub use maestro_tools::text::{Change, diff_lines};
 
 /// The two search programs the terminal frontend prepares before its first completion.
 #[cfg(not(target_arch = "wasm32"))]
@@ -10,8 +10,7 @@ pub use maestro_tools::{SearchTool, ToolsManagerOutput};
 pub use maestro_tools::{
     BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState, BashSpawnContext,
     BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, create_bash_tool,
-    create_bash_tool_definition, create_local_bash_operations,
-    utils::environment::get_shell_config,
+    create_bash_tool_definition, create_local_bash_operations, utils::get_shell_config,
 };
 
 pub use maestro_tools::output::render_utils::{
@@ -32,7 +31,7 @@ pub use maestro_tools::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::process::commands::{ExecOptions, ExecResult, exec_command};
+pub use maestro_tools::process::{ExecOptions, ExecResult, exec_command};
 
 pub use maestro_tools::{
     RenderDiffOptions, expand_hint, format_key_text, key_display_text, key_hint, key_text,
@@ -46,11 +45,11 @@ pub use maestro_tools::{VisualTruncateResult, truncate_to_visual_lines};
 
 pub use maestro_tools::output::render_utils::strip_ansi;
 
-pub use maestro_tools::utils::environment::sanitize_binary_output;
+pub use maestro_tools::utils::sanitize_binary_output;
 
 /// Kills every tracked detached child, for a frontend ending the process.
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_tools::utils::environment::kill_tracked_detached_children;
+pub use maestro_tools::utils::kill_tracked_detached_children;
 
 pub use maestro_tools::{TruncationOptions, TruncationResult, truncate_tail};
 
@@ -61,7 +60,7 @@ pub use maestro_tools::output::render_utils::num;
 pub use maestro_tools::utils::image_convert::{ConvertedImage, convert_to_png};
 
 /// Image fitting and the file effects the command-line input needs.
-pub use maestro_tools::utils::images::{
+pub use maestro_tools::utils::{
     ImageResizeOptions, ResizedImage, format_dimension_note, resize_image,
 };
 
@@ -79,11 +78,9 @@ pub use maestro_tools::{
 /// Caller-local tool definitions and native shell execution.
 pub mod local {
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::process::command::local::create_local_bash_operations;
+    pub use maestro_tools::local::create_local_bash_operations;
     #[cfg(not(target_arch = "wasm32"))]
-    pub use maestro_tools::process::executor::local::{
-        BashExecutorOptions, execute_bash_with_operations,
-    };
+    pub use maestro_tools::process::local::{BashExecutorOptions, execute_bash_with_operations};
     pub use maestro_tools::types::local::*;
 }
 

@@ -1,11 +1,15 @@
 //! Tool output selection and accounting.
 
-pub mod limits;
+pub(crate) mod truncate;
+pub use truncate::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) mod render_parts;
 pub mod render_utils;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod accumulation;
+pub(crate) mod output_accumulator;
+#[cfg(not(target_arch = "wasm32"))]
+pub use output_accumulator::*;
 
-pub mod preview;
+pub(crate) mod visual_truncate;
+pub use visual_truncate::*;

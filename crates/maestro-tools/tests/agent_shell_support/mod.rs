@@ -507,8 +507,7 @@ fn replace_paths(value: &mut Value, paths: &[String]) {
 }
 
 #[doc(inline)]
-pub use callbacks::Immediate;
-use maestro_tools::test_support::callbacks;
+pub use maestro_tools::test_support::Immediate;
 
 /// Execute the retained failure-then-success hook sequence on one definition.
 pub fn hook_sequence() {
