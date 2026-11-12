@@ -1,7 +1,7 @@
 //! Read policy over the engine's retained rows and text formatters.
 
 use super::{PaneCore, PaneTerminal, TerminalCursorState, retained::terminal_cell_text};
-use crate::{render_prof, selection::Selection, terminal_theme::TerminalTheme};
+use crate::{render_profile, selection::Selection, terminal_theme::TerminalTheme};
 use maestro_terminal::{
     Terminal,
     color::{Palette, Rgb},
@@ -70,7 +70,7 @@ impl PaneTerminal {
         read: impl FnOnce(PaneRenderView<'_>) -> T,
     ) -> Option<T> {
         let mut core = self.core.lock().ok()?;
-        let prof_started = render_prof::timer();
+        let prof_started = render_profile::timer();
         core.refresh_render_state();
         let cursor = core.reported_cursor_state(core.rendered_cursor_state(), now);
         let core = &mut *core;

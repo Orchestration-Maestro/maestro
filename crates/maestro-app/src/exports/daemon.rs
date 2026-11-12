@@ -61,9 +61,9 @@ pub mod daemon_api {
     }
 
     /// Opt-in measurements emitted by pane rendering and ANSI encoding.
-    pub mod render_prof {
+    pub mod render_profile {
         #[doc(inline)]
-        pub use maestro_daemon::render_prof::{
+        pub use maestro_daemon::render_profile::{
             counter, duration, duration_since, enabled, event, timer,
         };
     }
