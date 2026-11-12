@@ -4162,6 +4162,7 @@ dependencies = [
  "crc32fast",
  "deranged",
  "digest 0.11.3",
+ "either",
  "errno",
  "fastrand",
  "flate2",
@@ -4214,8 +4215,10 @@ dependencies = [
  "smallvec",
  "socket2",
  "stable_deref_trait",
+ "strum",
  "syn 2.0.119",
  "syn 3.0.6",
+ "thiserror 2.0.21",
  "time",
  "time-core",
  "tinystr",
@@ -4504,9 +4507,10 @@ dependencies = [
 name = "maestro-multiplexer"
 version = "0.1.0"
 dependencies = [
- "maestro-app",
+ "maestro-daemon",
  "maestro-dependencies",
  "maestro-protocol",
+ "maestro-terminal-emulator",
  "ratatui",
  "serde",
  "serde_json",

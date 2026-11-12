@@ -1,9 +1,11 @@
 use super::style::{PaletteOverrides, cell_color, cell_symbol};
 use super::*;
 use crate::render::conversion::frame_from_buffer;
-use maestro_app::daemon_api::{RgbColor, TerminalTheme};
-use maestro_app::terminal::{Color as CellColor, RenderState, Rgb, Terminal, Wide};
+use maestro_daemon::terminal_theme::{RgbColor, TerminalTheme};
 use maestro_protocol::frames::{CellData, underline_style_from_modifier};
+use maestro_terminal_emulator::{
+    Terminal, color::Rgb, page::cell::Wide, painting::RenderState, style::Color as CellColor,
+};
 use ratatui::backend::TestBackend;
 use ratatui::buffer::Buffer;
 use ratatui::style::{Color, Modifier};

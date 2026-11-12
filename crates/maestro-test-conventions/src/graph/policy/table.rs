@@ -334,7 +334,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-multiplexer",
         &[
-            "maestro-app",
             "maestro-protocol",
             "maestro-tui",
             "maestro-tui-crossterm",

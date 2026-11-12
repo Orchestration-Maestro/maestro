@@ -238,12 +238,9 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
 /// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
     match name {
-        "maestro"
-        | "maestro-cli"
-        | "maestro-chat"
-        | "maestro-rpc"
-        | "maestro-web"
-        | "maestro-multiplexer" => &["maestro-app"],
+        "maestro" | "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" => {
+            &["maestro-app"]
+        }
         "maestro-daemon" => &["maestro-terminal-emulator"],
         "maestro-tui-crossterm" => &["maestro-tui", "maestro-text"],
         _ => &[],

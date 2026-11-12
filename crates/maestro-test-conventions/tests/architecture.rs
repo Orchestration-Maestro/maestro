@@ -460,6 +460,7 @@ forbidden_edge_tests! {
     session_to_tools_edge_is_rejected: "maestro-session" => "maestro-tools",
     cli_to_export_edge_is_rejected: "maestro-cli" => "maestro-export",
     chat_to_rpc_edge_is_rejected: "maestro-chat" => "maestro-rpc",
+    multiplexer_to_app_edge_is_rejected: "maestro-multiplexer" => "maestro-app",
     web_to_credentials_edge_is_rejected: "maestro-web" => "maestro-credentials",
     app_to_chat_edge_is_rejected: "maestro-app" => "maestro-chat",
     app_to_extensions_wasmtime_edge_is_rejected: "maestro-app" => "maestro-extensions-wasmtime",
@@ -1056,13 +1057,7 @@ fn sparse_inventory_does_not_create_product_crates() {
 
 #[test]
 fn frontends_require_application_without_unused_allowed_edges() {
-    for frontend in [
-        "maestro-cli",
-        "maestro-chat",
-        "maestro-rpc",
-        "maestro-web",
-        "maestro-multiplexer",
-    ] {
+    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
         let required = support::policy::POLICY
             .iter()
             .find(|row| row.0 == frontend)
