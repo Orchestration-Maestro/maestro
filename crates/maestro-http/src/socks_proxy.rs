@@ -2,7 +2,7 @@
 
 use std::io;
 
-use super::proxy_agent::decode;
+use super::proxy::decode;
 
 /// Protocol selected by the proxy URL.
 #[derive(Clone, Copy)]

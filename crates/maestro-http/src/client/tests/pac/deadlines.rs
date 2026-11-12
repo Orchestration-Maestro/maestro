@@ -1,7 +1,7 @@
 //! PAC candidate establishment shares one connect budget; headers do not bound bodies.
 
 use super::{request, routed};
-use crate::proxy_agent::tests::{
+use crate::proxy::tests::{
     deadlines::{pending, ready},
     socks,
 };

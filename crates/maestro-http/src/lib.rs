@@ -6,22 +6,22 @@ mod base64_text;
 mod body;
 mod client;
 mod failure;
-#[cfg(not(target_arch = "wasm32"))]
-mod get_uri;
 mod headers;
 #[cfg(not(target_arch = "wasm32"))]
-mod pac_proxy_agent;
+mod pac_proxy;
 #[cfg(not(target_arch = "wasm32"))]
-mod pac_resolver;
+mod pac_script;
 #[cfg(not(target_arch = "wasm32"))]
-mod proxy_agent;
+mod pac_sources;
+#[cfg(not(target_arch = "wasm32"))]
+mod proxy;
 mod retry;
 mod runtime;
 mod server_sent_events;
 #[cfg(not(target_arch = "wasm32"))]
 mod socks_client;
 #[cfg(not(target_arch = "wasm32"))]
-mod socks_proxy_agent;
+mod socks_proxy;
 #[cfg(feature = "test-support")]
 pub mod test_support;
 #[cfg(test)]

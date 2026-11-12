@@ -7,7 +7,7 @@ use hyper_util::rt::TokioIo;
 use super::candidates::{self, Candidate};
 use super::{Failure, HttpRequest, HttpResponse};
 use crate::client::{self, Route};
-use crate::proxy_agent::{
+use crate::proxy::{
     self,
     socket::{Driver, Socket, driving, secure},
 };
@@ -38,7 +38,7 @@ pub(super) async fn request(
     let destination = url::Url::parse(&request.url)?;
     let mut prepared: hyper::Request<reqwest::Body> =
         client::prepare(client, request)?.try_into()?;
-    let tls = proxy_agent::tls(true)?;
+    let tls = proxy::tls(true)?;
     let connecting = async {
         match select(&candidates, &destination, &tls).await? {
             Established::Socket(socket, proxy) => {
@@ -51,7 +51,7 @@ pub(super) async fn request(
     let selected = if let Some(timeout) = route.connect_timeout {
         tokio::time::timeout(timeout, connecting)
             .await
-            .map_err(|_| proxy_agent::ConnectTimeout)??
+            .map_err(|_| proxy::ConnectTimeout)??
     } else {
         connecting.await?
     };
@@ -76,7 +76,7 @@ pub(super) async fn request(
             .headers_mut()
             .insert(hyper::header::PROXY_AUTHORIZATION, auth);
     }
-    let response = proxy_agent::exchange(socket, prepared, absolute).await?;
+    let response = proxy::exchange(socket, prepared, absolute).await?;
     Ok(client::finish(reqwest::Response::from(response)))
 }
 
@@ -181,7 +181,7 @@ async fn tunnel(
     let mut response = driving(&mut connection, sender.send_request(request)).await?;
     if response.status() != hyper::StatusCode::OK {
         return Ok(Established::Refused(
-            response.map(|body| proxy_agent::response_body(body, connection)),
+            response.map(|body| proxy::response_body(body, connection)),
         ));
     }
     let upgraded = driving(&mut connection, hyper::upgrade::on(&mut response)).await?;
@@ -193,8 +193,8 @@ fn authorization(proxy: &url::Url) -> Result<Option<hyper::header::HeaderValue>,
     if proxy.username().is_empty() && proxy.password().is_none() {
         return Ok(None);
     }
-    let user = proxy_agent::decode(proxy.username())?;
-    let password = proxy_agent::decode(proxy.password().unwrap_or_default())?;
+    let user = proxy::decode(proxy.username())?;
+    let password = proxy::decode(proxy.password().unwrap_or_default())?;
     let value =
         base64::engine::general_purpose::STANDARD.encode(format!("{user}:{password}").as_bytes());
     Ok(Some(format!("Basic {value}").parse()?))

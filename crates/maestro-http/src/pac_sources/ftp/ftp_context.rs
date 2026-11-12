@@ -9,7 +9,7 @@ use tokio::net::TcpStream;
 
 use super::INACTIVITY;
 use super::parse_control_response::{Frames, Reply};
-use crate::get_uri::Failure;
+use crate::pac_sources::Failure;
 
 #[cfg(test)]
 thread_local! {

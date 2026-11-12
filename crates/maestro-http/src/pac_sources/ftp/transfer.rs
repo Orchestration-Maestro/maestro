@@ -9,7 +9,7 @@ use tokio::net::TcpStream;
 use super::ftp_context::{Data, FtpContext, Payload, connect_data};
 use super::parse_control_response::Reply;
 use crate::decimal_prefix;
-use crate::get_uri::Failure;
+use crate::pac_sources::Failure;
 
 /// The extended passive reply, whose payload sits between three delimiter characters.
 static EXTENDED: LazyLock<Option<regex::Regex>> =

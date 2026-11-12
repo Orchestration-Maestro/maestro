@@ -5,8 +5,8 @@ use url::Url;
 use super::ftp_context::{FtpContext, FtpError};
 use super::transfer::{self, Passive};
 use super::{LISTING_LIMIT, port};
-use crate::get_uri::Failure;
-use crate::get_uri::listing;
+use crate::pac_sources::Failure;
+use crate::pac_sources::listing;
 
 /// The directory facts the reference client asks for before a machine listing.
 const LISTING_FACTS: &str = concat!(
@@ -47,10 +47,10 @@ impl Client {
     /// # Errors
     /// Returns a decoding, transport, feature, login or settings failure.
     pub(super) async fn access(uri: &Url) -> Result<Self, Failure> {
-        let decoded_user = super::super::super::proxy_agent::decode(uri.username())?;
+        let decoded_user = super::super::super::proxy::decode(uri.username())?;
         let user = credential(&decoded_user, "anonymous");
         let decoded_password =
-            super::super::super::proxy_agent::decode(uri.password().unwrap_or_default())?;
+            super::super::super::proxy::decode(uri.password().unwrap_or_default())?;
         let password = credential(&decoded_password, "guest");
         let host = uri
             .host_str()

@@ -27,7 +27,7 @@ const LISTING_LIMIT: usize = 40 * 1024 * 1024;
 
 /// Load one FTP script, closing the connection on every exit path.
 pub(super) async fn load(uri: &url::Url, cache: Option<&Cache>) -> Result<Source, Failure> {
-    let path = super::super::proxy_agent::decode(uri.path())?;
+    let path = super::super::proxy::decode(uri.path())?;
     let mut client = Client::access(uri).await?;
     let result = exchange(&mut client, &path, cache).await;
     client.close();

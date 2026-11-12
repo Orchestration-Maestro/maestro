@@ -11,7 +11,7 @@ use hyper_util::rt::TokioIo;
 use tower_service::Service;
 
 use super::client::ProxySelector;
-use super::socks_proxy_agent::SocksProxyAgent;
+use super::socks_proxy::SocksProxyAgent;
 
 pub(super) mod socket;
 use socket::{Driver, Socket, driving};

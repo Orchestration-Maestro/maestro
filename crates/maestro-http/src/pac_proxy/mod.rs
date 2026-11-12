@@ -9,8 +9,8 @@ use std::sync::{Arc, Mutex, PoisonError};
 use futures_util::FutureExt;
 use futures_util::future::{Shared, WeakShared};
 
-use super::get_uri::{self, Cache, Failure};
-use super::pac_resolver::Resolver;
+use super::pac_script::Resolver;
+use super::pac_sources::{self, Cache, Failure};
 use super::{Fetch, HttpRequest, HttpResponse};
 
 /// A successfully compiled source and its matching cache observation.
@@ -133,10 +133,10 @@ async fn compile(
     previous: Option<Arc<Compiled>>,
 ) -> Result<Arc<Compiled>, ReloadError> {
     let fetch: Fetch = super::client::configured_fetch(super::client::Route::default());
-    let loaded = get_uri::load(&uri, previous.as_ref().map(|old| &old.cache), &fetch).await;
+    let loaded = pac_sources::load(&uri, previous.as_ref().map(|old| &old.cache), &fetch).await;
     let source = match loaded {
         Ok(source) => source,
-        Err(error) if error.is::<get_uri::notmodified::NotModified>() => {
+        Err(error) if error.is::<pac_sources::notmodified::NotModified>() => {
             return previous.ok_or(ReloadError::Source(error));
         }
         Err(error) => return Err(ReloadError::Source(error)),

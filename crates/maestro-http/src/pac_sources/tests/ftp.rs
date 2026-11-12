@@ -2,7 +2,7 @@
 
 use super::super::ftp::parse_control_response::Frames;
 use super::super::ftp::{CONSUMED, INACTIVITY, instant_millis, payload, port};
-use super::super::{self as get_uri, notfound::NotFound, notmodified::NotModified};
+use super::super::{self as pac_sources, notfound::NotFound, notmodified::NotModified};
 use crate::tests::ftp_server::{
     self, Dribble, Features, Held, Listing, Modification, Passive, Peer, Scenario, Silence,
     Transfer,
@@ -120,7 +120,7 @@ impl<T: std::fmt::Debug + Send + 'static> Running<T> {
 }
 
 /// Load `uri` as a task.
-async fn loading(uri: String) -> Running<Result<get_uri::Source, get_uri::Failure>> {
+async fn loading(uri: String) -> Running<Result<pac_sources::Source, pac_sources::Failure>> {
     Running::spawn(async move { load(&uri, None).await }).await
 }
 
@@ -137,7 +137,7 @@ async fn to(origin: Instant, at: Duration) {
 /// Require that the work ends at the held instant, exactly `at` after `origin`, with the timeout of
 /// `socket`.
 async fn expires<T>(
-    running: Running<Result<T, get_uri::Failure>>,
+    running: Running<Result<T, pac_sources::Failure>>,
     origin: Instant,
     at: Duration,
     socket: &str,
@@ -184,10 +184,10 @@ fn source(peer: &Peer, userinfo: &str, path: &str) -> String {
 /// Load one script through the shared source loader.
 async fn load(
     uri: &str,
-    cache: Option<&get_uri::Cache>,
-) -> Result<get_uri::Source, get_uri::Failure> {
+    cache: Option<&pac_sources::Cache>,
+) -> Result<pac_sources::Source, pac_sources::Failure> {
     let fetch = configured_fetch(Route::default());
-    get_uri::load(&url::Url::parse(uri).unwrap(), cache, &fetch).await
+    pac_sources::load(&url::Url::parse(uri).unwrap(), cache, &fetch).await
 }
 
 /// A `FEAT` reply that advertises no machine listing.
@@ -387,7 +387,7 @@ fn ftp_machine_listing_supplies_the_modification_instant() {
         let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
         assert!(matches!(
             loaded.cache,
-            get_uri::Cache::Ftp(Some(1_704_110_400_000))
+            pac_sources::Cache::Ftp(Some(1_704_110_400_000))
         ));
         let commands = peer.commands();
         assert!(
@@ -439,7 +439,7 @@ fn ftp_machine_listing_keeps_every_accepted_entry() {
             .unwrap();
             let loaded = load(&source(&peer, "", path), None).await.unwrap();
             assert!(
-                matches!(loaded.cache, get_uri::Cache::Ftp(Some(found)) if found == instant),
+                matches!(loaded.cache, pac_sources::Cache::Ftp(Some(found)) if found == instant),
                 "{facts}"
             );
             peer.finish().unwrap();
@@ -613,7 +613,7 @@ fn ftp_subsecond_instants_decide_reuse() {
         let first = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
         assert!(matches!(
             first.cache,
-            get_uri::Cache::Ftp(Some(1_704_110_400_500))
+            pac_sources::Cache::Ftp(Some(1_704_110_400_500))
         ));
         let reloaded = load(&source(&peer, "", "/script.pac"), Some(&first.cache))
             .await
@@ -887,7 +887,7 @@ fn ftp_listing_fallback_asks_for_the_empty_path_segment() {
         let loaded = load(&source(&peer, "", "/a//b.pac"), None).await.unwrap();
         assert!(matches!(
             loaded.cache,
-            get_uri::Cache::Ftp(Some(1_704_110_400_000))
+            pac_sources::Cache::Ftp(Some(1_704_110_400_000))
         ));
         let commands = peer.commands();
         assert!(
@@ -1806,7 +1806,7 @@ fn ftp_list_candidates_retain_the_first_successful_choice() {
         let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
         assert!(matches!(
             loaded.cache,
-            get_uri::Cache::Ftp(Some(1_704_110_400_000))
+            pac_sources::Cache::Ftp(Some(1_704_110_400_000))
         ));
         let commands = peer.commands();
         let order: Vec<&str> = candidates(&commands);
@@ -1824,7 +1824,7 @@ fn ftp_list_candidates_retain_the_first_successful_choice() {
         let loaded = load(&source(&peer, "", "/script.pac"), None).await.unwrap();
         assert!(matches!(
             loaded.cache,
-            get_uri::Cache::Ftp(Some(1_704_110_400_000))
+            pac_sources::Cache::Ftp(Some(1_704_110_400_000))
         ));
         let commands = peer.commands();
         assert_eq!(candidates(&commands), ["LIST -a /"], "{commands:?}");

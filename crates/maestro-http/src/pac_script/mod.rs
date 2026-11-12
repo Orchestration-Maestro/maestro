@@ -22,7 +22,7 @@ use boa_engine::object::{JsObject, builtins::JsPromise};
 use boa_engine::{Context, JsNativeError, JsResult, JsValue, NativeFunction, Source, js_string};
 use tokio::sync::{mpsc, oneshot};
 
-use super::get_uri::Failure;
+use super::pac_sources::Failure;
 
 /// One invocation of the retained callable.
 struct Request {

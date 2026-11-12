@@ -1,7 +1,7 @@
 //! Case-sensitive candidate words and interpreter-compatible whitespace.
 
 use super::Failure;
-use crate::socks_proxy_agent::SocksProxyAgent;
+use crate::socks_proxy::SocksProxyAgent;
 
 /// A recognized connection policy, constructed only when its turn is reached.
 pub(super) enum Candidate {

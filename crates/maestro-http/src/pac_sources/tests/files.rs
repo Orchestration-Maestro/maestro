@@ -1,6 +1,6 @@
 //! File URL and source-error categories through actual native loaders.
 
-use super::super::{self as get_uri, notfound::NotFound, notmodified::NotModified};
+use super::super::{self as pac_sources, notfound::NotFound, notmodified::NotModified};
 use crate::{Route, configured_fetch};
 
 #[test]
@@ -15,18 +15,18 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
         let uri = url::Url::from_file_path(&file).unwrap();
         assert!(uri.as_str().contains("space%20%E9%9B%AA.pac"));
         assert_eq!(
-            get_uri::load(&uri, None, &fetch).await.unwrap().bytes,
+            pac_sources::load(&uri, None, &fetch).await.unwrap().bytes,
             b"script"
         );
         let local =
             url::Url::parse(&uri.as_str().replacen("file:///", "file://localhost/", 1)).unwrap();
         assert_eq!(
-            get_uri::load(&local, None, &fetch).await.unwrap().bytes,
+            pac_sources::load(&local, None, &fetch).await.unwrap().bytes,
             b"script"
         );
         let directory = url::Url::from_directory_path(path).unwrap();
         assert!(
-            !get_uri::load(&directory, None, &fetch)
+            !pac_sources::load(&directory, None, &fetch)
                 .await
                 .unwrap_err()
                 .is::<NotFound>()
@@ -42,7 +42,7 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
                 .to_file_path()
                 .is_ok_and(|path| std::fs::read(path).is_ok());
             assert_eq!(
-                get_uri::load(&url, None, &fetch).await.is_ok(),
+                pac_sources::load(&url, None, &fetch).await.is_ok(),
                 readable,
                 "{text}"
             );
@@ -60,7 +60,7 @@ async fn permission_failure(path: &std::path::Path, uri: &url::Url, fetch: &crat
     let Some(restore) = maestro_test_directory::deny(path, 0o0).unwrap() else {
         return;
     };
-    let result = get_uri::load(uri, None, fetch).await;
+    let result = pac_sources::load(uri, None, fetch).await;
     drop(restore);
     let error = result.unwrap_err();
     assert!(!error.is::<NotFound>());
@@ -90,7 +90,7 @@ fn pac_source_errors_keep_not_found_distinct() {
             .iter()
             .map(|link| url::Url::from_file_path(link).unwrap());
         for uri in [file, http].into_iter().chain(links) {
-            let error = get_uri::load(&uri, None, &fetch).await.unwrap_err();
+            let error = pac_sources::load(&uri, None, &fetch).await.unwrap_err();
             assert!(error.is::<NotFound>());
             assert_eq!(
                 error.to_string(),
@@ -106,15 +106,15 @@ fn pac_source_errors_keep_not_modified_distinct() {
     crate::tests::runtime::run(async {
         let fetch = configured_fetch(Route::default());
         let uri = url::Url::parse("data:,script").unwrap();
-        let source = get_uri::load(&uri, None, &fetch).await.unwrap();
-        let unchanged = get_uri::load(&uri, Some(&source.cache), &fetch)
+        let source = pac_sources::load(&uri, None, &fetch).await.unwrap();
+        let unchanged = pac_sources::load(&uri, Some(&source.cache), &fetch)
             .await
             .unwrap_err();
         let (http, peer) = super::source_server(vec![
             "HTTP/1.1 304 Not Modified\r\nConnection: close\r\n\r\n".into(),
         ])
         .await;
-        let uncached = get_uri::load(&http, None, &fetch).await.unwrap_err();
+        let uncached = pac_sources::load(&http, None, &fetch).await.unwrap_err();
         for error in [unchanged, uncached] {
             assert!(error.is::<NotModified>());
             assert!(!error.is::<NotFound>());

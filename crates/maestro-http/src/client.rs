@@ -100,7 +100,7 @@ pub struct Route {
     /// choice fails it; without one the client uses none, whatever the environment.
     pub proxy: Option<ProxySelector>,
     /// Script globals survive connector timeout changes within this bridge.
-    pub pac: Arc<super::pac_proxy_agent::PacProxyAgent>,
+    pub pac: Arc<super::pac_proxy::PacProxyAgent>,
     /// Whether the connection speaks HTTP/1 only.
     pub http1_only: bool,
     /// Deadline for establishing a connection, when supplied by the provider.
@@ -144,7 +144,7 @@ pub fn configured_fetch(route: Route) -> super::Fetch {
 #[cfg(not(target_arch = "wasm32"))]
 async fn send_selected(
     client: reqwest::Client,
-    socks: Option<super::proxy_agent::Sender>,
+    socks: Option<super::proxy::Sender>,
     selected: Option<url::Url>,
     request: HttpRequest,
     route: &Route,
@@ -181,7 +181,7 @@ async fn send_selected(
 #[cfg(not(target_arch = "wasm32"))]
 fn configured_clients(
     route: &Route,
-) -> Result<(reqwest::Client, Option<super::proxy_agent::Sender>), FetchError> {
+) -> Result<(reqwest::Client, Option<super::proxy::Sender>), FetchError> {
     let mut builder = reqwest::Client::builder()
         .retry(reqwest::retry::never())
         .redirect(reqwest::redirect::Policy::none())
@@ -197,12 +197,12 @@ fn configured_clients(
                 .filter(|proxy| matches!(proxy.scheme(), "http" | "https"))
         }));
     }
-    let tls = super::proxy_agent::tls(route.http1_only)
-        .map_err(|error| connection(chain(error.as_ref())))?;
+    let tls =
+        super::proxy::tls(route.http1_only).map_err(|error| connection(chain(error.as_ref())))?;
     let socks = route
         .proxy
         .clone()
-        .map(|select| super::proxy_agent::sender(select, tls.clone(), route.connect_timeout));
+        .map(|select| super::proxy::sender(select, tls.clone(), route.connect_timeout));
     let client = builder
         .tls_backend_preconfigured(tls)
         .build()
@@ -304,7 +304,7 @@ fn classify(error: &(dyn Error + 'static)) -> FetchError {
     #[cfg(not(target_arch = "wasm32"))]
     let timed_out = timed_out
         || std::iter::successors(Some(error), |error| (*error).source())
-            .any(<dyn Error + 'static>::is::<super::proxy_agent::ConnectTimeout>);
+            .any(<dyn Error + 'static>::is::<super::proxy::ConnectTimeout>);
     if timed_out {
         FetchError::Timeout
     } else {
