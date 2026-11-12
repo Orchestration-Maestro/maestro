@@ -353,7 +353,7 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
         "maestro-entry"
     } else if name == "Listeners" {
         "maestro-listeners"
-    } else if matches!(name, "Ssf" | "OpenXmlPackage" | "WorkbookError") {
+    } else if matches!(name, "NumberFormatter" | "OpenXmlPackage" | "WorkbookError") {
         "maestro-office"
     } else if input_presenter_record(name) {
         "maestro-app"
