@@ -303,7 +303,7 @@ extraction issues.
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
-conventions checker, terminal scenario harness, checked test-process owner,
+conventions checker, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
@@ -311,7 +311,7 @@ no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
 optional utility and the unifier. Sparse workspaces need
 no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
-requires toolkit and text, and the scenario harness requires toolkit only. The
+requires toolkit and text. The
 utility edge never supplies a required edge. The daemon requires the terminal
 engine. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic. The internal development
@@ -337,14 +337,12 @@ executable's file-trigger test on the shared host fixture, the native-only,
 non-optional `maestro-theme` to `maestro-realpath` development edge for the
 browser author example's watched roots,
 and the native, non-optional dev-dependencies
-of the twenty-eight declared callers on `maestro-test-process`, the owner of
+of the twenty-seven declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
-the required toolkit/text set. The scenario harness reexports the recording terminal and manual runtime from
-`maestro-tui::test_support`. The harness itself remains a native development
-dependency of `maestro-cli` only.
+the required toolkit/text set.
 
 The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
 creation and cleanup. Its only internal edges are the native unifier and

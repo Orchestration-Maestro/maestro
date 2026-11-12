@@ -1,5 +1,5 @@
 //! Markdown callbacks, style boundaries and retained state.
-use crate::support::markdown_cases as markdown;
+use crate::scenarios::support::markdown_cases as markdown;
 
 #[test]
 fn markdown_inline_styles_restore_parent_and_strip_terminal_prefix() {
@@ -346,8 +346,8 @@ fn maestro_markdown_heading_style_survives_inline_code_at_h1() {
 
 #[test]
 fn maestro_markdown_not_leak_h1_underline_into_padding_when_inline_code_is_the_last_token() {
-    let terminal = crate::support::virtual_terminal::VirtualTerminal::new(80, 4);
-    let runtime = crate::support::manual_runtime::ManualRuntime::new();
+    let terminal = crate::scenarios::support::virtual_terminal::VirtualTerminal::new(80, 4);
+    let runtime = crate::scenarios::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(
         terminal.handle(),
         runtime.handle(),
@@ -421,8 +421,8 @@ impl Component for MarkdownWithInput {
 
 #[test]
 fn maestro_markdown_not_leak_styles_into_following_lines_when_rendered_in_tui() {
-    let terminal = crate::support::virtual_terminal::VirtualTerminal::new(80, 6);
-    let runtime = crate::support::manual_runtime::ManualRuntime::new();
+    let terminal = crate::scenarios::support::virtual_terminal::VirtualTerminal::new(80, 6);
+    let runtime = crate::scenarios::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(
         terminal.handle(),
         runtime.handle(),

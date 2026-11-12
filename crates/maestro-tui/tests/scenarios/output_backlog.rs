@@ -4,13 +4,13 @@ use std::rc::Rc;
 
 use maestro_tui::{TUI, TerminalImage};
 
-use crate::support::components::Probe;
-use crate::support::manual_runtime::{ManualRuntime, ms};
-use crate::support::recording_terminal::RecordingTerminal;
+use crate::scenarios::support::components::Probe;
+use crate::scenarios::support::manual_runtime::{ManualRuntime, ms};
+use crate::scenarios::support::recording_terminal::RecordingTerminal;
 
 /// A controlled output port with one observable component.
 fn writer() -> (TUI, RecordingTerminal, ManualRuntime, Rc<Probe>) {
-    let (tui, terminal, runtime) = crate::support::writer::writer();
+    let (tui, terminal, runtime) = crate::scenarios::support::writer::writer();
     let probe = Probe::shared(&["frame-A"]);
     tui.add_child(probe.clone());
     (tui, terminal, runtime, probe)

@@ -4055,7 +4055,6 @@ dependencies = [
  "maestro-lock",
  "maestro-test-directory",
  "maestro-test-process",
- "maestro-test-terminal",
  "maestro-theme",
  "maestro-tui",
  "maestro-tui-crossterm",
@@ -4789,19 +4788,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-test-terminal"
-version = "0.1.0"
-dependencies = [
- "maestro-dependencies",
- "maestro-test-directory",
- "maestro-test-process",
- "maestro-tui",
- "serde",
- "serde_json",
- "vt100",
-]
-
-[[package]]
 name = "maestro-test-tracing"
 version = "0.1.0"
 dependencies = [
@@ -4949,6 +4935,7 @@ dependencies = [
  "tracing",
  "unicode-segmentation",
  "unicode-width",
+ "vt100",
 ]
 
 [[package]]

@@ -4,11 +4,11 @@ use maestro_tui::interface::ComponentHandle;
 use maestro_tui::{Component, KittyOptions, TUI, TerminalImage, delete_kitty_image, encode_kitty};
 use serde::Deserialize;
 
-use crate::support::checks::{parse, succeeds};
-use crate::support::components::Probe;
-use crate::support::manual_runtime::ManualRuntime;
-use crate::support::recording_terminal::RecordingTerminal;
-use crate::support::scene::Scene;
+use crate::scenarios::support::checks::{parse, succeeds};
+use crate::scenarios::support::components::Probe;
+use crate::scenarios::support::manual_runtime::ManualRuntime;
+use crate::scenarios::support::recording_terminal::RecordingTerminal;
+use crate::scenarios::support::scene::Scene;
 
 /// Terminal width of the frame scenarios.
 const COLUMNS: usize = 10;
@@ -259,7 +259,7 @@ fn maestro_frames_triggers_full_re_render_when_terminal_height_changes() {
 
 #[test]
 fn maestro_frames_retains_mobile_height_resize_behavior() {
-    crate::support::in_child(
+    crate::scenarios::support::in_child(
         "maestro_frames_retains_mobile_height_resize_behavior",
         &[("TERMUX_VERSION", "1")],
         || {

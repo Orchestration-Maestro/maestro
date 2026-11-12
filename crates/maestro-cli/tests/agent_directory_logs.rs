@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::rc::Rc;
 
-use maestro_test_terminal::recording_terminal::RecordingTerminal;
+use maestro_tui::test_support::recording_terminal::RecordingTerminal;
 use maestro_tui::{Component, TUI, TerminalImage};
 
 /// The variable that carries the scratch base into the child.

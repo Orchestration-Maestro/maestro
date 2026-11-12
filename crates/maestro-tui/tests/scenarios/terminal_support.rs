@@ -3,7 +3,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use crate::support::virtual_terminal::VirtualTerminal;
+use crate::scenarios::support::virtual_terminal::VirtualTerminal;
 
 #[test]
 fn virtual_terminal_exposes_screen_history_and_callbacks() {
