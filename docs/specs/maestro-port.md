@@ -254,7 +254,7 @@ Share registration lifetime handling and adapters where necessary, not one unive
 
 ### Runtime browser modules
 
-Use the package manifest's existing `maestro.contributions` resource. Data/template pages and cards remain supported. Add a renderer reference and optional browser-module descriptor to those contribution records; do not add another plugin manifest, installer or package-resolution path.
+Use the package manifest's existing `maestro.contributions` resource. Data/template pages and cards remain supported. Add a renderer reference and optional browser-module descriptor to those contribution records; do not add another add-on manifest, installer or package-resolution path.
 
 The contribution record supplies its stable package/contribution identity, attachment-point reference, consumed/provided data contract, required host API references and route references when routable. A browser module descriptor locates a prepared module entry, its matching WebAssembly/binding assets and its registration export within the resolved package. The entry initializes the matched browser module and registers its elements and contributions against the supplied host interface. Installation/use never compiles Rust. Backend extension artifacts are not browser module artifacts.
 
@@ -1081,7 +1081,7 @@ Defaults belong to the daemon. The daemon and multiplexer are native-only; brows
 builds already exclude native process crates. Every frontend calls `maestro-app`.
 
 The workspace daemon, the multiplexer and their commands share the application's single setup. They
-keep no configuration file, plugin registry, state or log root, keybinding file, installer or update
+keep no configuration file, add-on registry, state or log root, keybinding file, installer or update
 path of their own. Their preferences are members of the layered `settings.json` under `multiplexer`,
 `daemon` and `update`. The daemon reads and writes only the global scope. Multiplexer bindings and
 custom command bindings are members of `keybindings.json`. Action manifests are package content of
