@@ -63,10 +63,10 @@ RPC does not sandbox tools or shell commands. Run the child with the filesystem
 permissions you intend to grant it; do not pass untrusted shell text to `bash`.
 
 Use the [typed Rust client](client.md) for reusable subprocess operations. The
-[SDK examples](../examples/sdk/README.md#check-the-example) hold two terminal clients
-of this protocol: a streaming client with extension dialogs, and an interactive
-demo built on the Rust client. They live in maestro-packages, and their checks are Rust tests whose peers are
-native Rust programs.
+[SDK examples](../examples/sdk/README.md#check-the-example) hold two terminal
+clients of this protocol: a streaming client with extension dialogs, and an
+interactive demo built on the Rust client. They live in maestro-packages, and
+their checks are Rust tests whose peers are native Rust programs.
 
 ## Framing
 
