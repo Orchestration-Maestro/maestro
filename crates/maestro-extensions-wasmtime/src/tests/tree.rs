@@ -85,3 +85,47 @@ fn observe(root: &tree_reads::Endpoint, root_id: &str) {
         children[0].read(Read::Entry).unwrap()
     );
 }
+
+#[test]
+fn released_tree_node_rejects_every_kind_of_operation_with_its_ended_text() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (_, history) = session::runner_session("/ended-tree");
+            history
+                .borrow_mut()
+                .append_custom_entry("root", Presence::Missing)
+                .unwrap();
+            let roots = {
+                use maestro_extensions::ReadonlySessionManager as _;
+                tree_reads::Owner::capture(history.borrow().get_tree()).unwrap()
+            };
+            let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
+            let registry = pump.registry();
+            let node = registry.node(roots.into_iter().next().unwrap()).unwrap();
+            let release = node
+                .0
+                .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
+            assert!(pump.answer_next().await);
+            drop(release);
+            let worker = std::thread::spawn(move || {
+                use tree_reads::Request as Read;
+                [
+                    node.read(Read::Entry).unwrap_err(),
+                    node.read(Read::Label).unwrap_err(),
+                    node.read(Read::LabelTimestamp).unwrap_err(),
+                    node.read(Read::Children).err().unwrap(),
+                ]
+            });
+            for _ in 0..4 {
+                assert!(pump.answer_next().await);
+            }
+            drop(admission);
+            pump.serve().await;
+            assert_eq!(
+                worker.join().unwrap(),
+                ["extension tree node resource ended"; 4]
+            );
+        });
+}
