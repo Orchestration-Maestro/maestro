@@ -285,10 +285,11 @@ handle the guest passed. These resources run on this route:
   close, the file watch and the native component;
 - the lent style, highlighter, row style, submenu closer and text callback, the
   overlay options and the keybindings manager;
-- the credential owner, and the child process, byte reader and HTTP response.
+- the credential owner, the child process, the byte reader, the HTTP response and the
+  assistant stream.
 
-For the credential owner, the child process, the byte reader and the HTTP response, the
-synchronous methods run this way. Their asynchronous methods, and the free functions
+For the credential owner, the child process, the byte reader, the HTTP response and the
+assistant stream, the synchronous methods run this way. Their asynchronous methods, and the free functions
 that create resources, are still registered by hand and move with the linker switch.
 A retained capability names the entry it lends and the text its callers receive once
 it has ended.
