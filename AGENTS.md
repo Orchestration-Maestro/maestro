@@ -166,7 +166,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
   Lexical path helpers take supplied directory observations
   and add no filesystem service, directory cache, scheduler or workspace dependency.
-  `native_homedir` alone reads the native home environment and account entry.
+  `native_home_dir` alone reads the native home environment and account entry.
   Final-link traversal uses a supplied observation callback; `maestro-path` owns
   relative-target joining and the forty-link bound, while callers retain native
   link I/O and error interpretation.

@@ -85,7 +85,7 @@ pub fn package_home_directory() -> io::Result<String> {
         std::env::var_os("HOME")
             .filter(|value| !value.is_empty())
             .map(PathBuf::from)
-            .or_else(maestro_path::native_homedir),
+            .or_else(maestro_path::native_home_dir),
     )
 }
 

@@ -219,7 +219,7 @@ directory. `resolve_with` delegates to `resolve_with_flavor` using the target
 flavor; callers can select either flavor explicitly with `resolve_with_flavor`.
 Both resolve several operand groups from callbacks the caller supplies: it calls the drive callback once, and the
 working-directory callback once, only for the groups the operands and drives
-leave open, and returns that callback's error unchanged. `homedir` returns a
+leave open, and returns that callback's error unchanged. `home_dir` returns a
 supplied home, empty included, and calls its account callback only when none
 was supplied. The callbacks decide what is read and when; the crate reads
 nothing itself. Windows relative paths require matching resolved
@@ -240,7 +240,7 @@ leaf and exact-set rules, alongside the native feature unifier. Any crate in the
 specification table may declare it as a normal or build dependency (optional and target-specific forms included)
 without changing its layer, subject to the exclusions in the specification's
 [crate graph](specs/maestro-port.md#crates-and-delivery-order).
-Shared path helpers take supplied directory observations; `native_homedir` alone
+Shared path helpers take supplied directory observations; `native_home_dir` alone
 reads the native home environment and account entry. They add no filesystem
 service, directory cache, scheduler or workspace dependency. The edge is ignored when checking a crate's complete
 direct set or leaf

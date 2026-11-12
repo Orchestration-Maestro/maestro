@@ -813,7 +813,7 @@ JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 permission, so being a text consumer does not authorize the edge; the disposable
 directory owner alone lists `maestro-path` in its table row, for the real path of
 the roots it creates. Lexical path helpers
-take supplied directory observations, except `native_homedir` reads the native
+take supplied directory observations, except `native_home_dir` reads the native
 home environment and account entry. They add no filesystem service,
 directory cache, scheduler or workspace dependency.
 Final-component link traversal uses a caller-supplied observation callback:

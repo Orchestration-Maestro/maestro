@@ -91,8 +91,8 @@ impl TerminalImage {
     /// The home directory: a present Unix `HOME` from the terminal environment, even when
     /// empty, otherwise the native home directory.
     pub(crate) fn home(&self) -> Option<String> {
-        maestro_path::homedir((self.environment)("HOME").filter(|_| cfg!(unix)), || {
-            maestro_path::native_homedir().map(|home| home.to_string_lossy().into_owned())
+        maestro_path::home_dir((self.environment)("HOME").filter(|_| cfg!(unix)), || {
+            maestro_path::native_home_dir().map(|home| home.to_string_lossy().into_owned())
         })
     }
 }
