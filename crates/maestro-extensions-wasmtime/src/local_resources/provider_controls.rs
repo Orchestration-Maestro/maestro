@@ -50,7 +50,7 @@ impl Creation {
 }
 /// Retained native control lease, safe to lend to the Store.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 /// Awaited native hook request, retaining caller-supplied signal bindings.
 pub(crate) struct Request {
     /// Native hook phase.

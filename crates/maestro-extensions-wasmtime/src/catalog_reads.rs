@@ -1,135 +1,14 @@
-//! Live catalog reads run on the local owner and return owned model values.
-use crate::local_resources::{Lease, Message};
+//! Live catalog operations run on the local owner and return owned model values.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
+use crate::import_route::Route;
+use crate::local_resources::{Lease, held::Catalog};
 use maestro_extensions::{Model, ModelRegistry, ResolvedRequestAuth};
 use serde::Serialize;
-use std::sync::{Arc, RwLock, mpsc};
-
-/// A catchable result after the selected catalog operation.
-type Reply<T> = mpsc::Sender<Result<T, String>>;
-
-/// Synchronous operations on the independently retained catalog.
-pub(crate) enum Request {
-    /// Retains the catalog's original credentials and command effects.
-    Credentials(Reply<crate::credential_reads::Endpoint>),
-    /// Reloads the catalog and replays its retained providers.
-    Refresh(Reply<()>),
-    /// Reads the current model-file load diagnostic.
-    Error(Reply<Option<String>>),
-    /// Checks authentication for an independently supplied model.
-    HasConfiguredAuth(String, Reply<bool>),
-    /// Reads non-secret provider authentication metadata.
-    Status(String, Reply<String>),
-    /// Reads the existing provider display-name precedence.
-    Display(String, Reply<String>),
-    /// Checks the stored credential kind independently of key selection.
-    IsUsingOAuth(String, Reply<bool>),
-    /// Registers directly without the extension loading queue.
-    Register(
-        String,
-        String,
-        crate::provider_registration::Callbacks,
-        Reply<()>,
-    ),
-    /// Removes directly through native replay policy.
-    Unregister(String, Reply<()>),
-    /// Reads the current full descriptor list.
-    All(Reply<String>),
-    /// Reads descriptors with configured authentication, without refreshing it.
-    Available(Reply<String>),
-    /// Finds the first exact provider and model identity.
-    Find(String, String, Reply<Option<String>>),
-}
-
-impl Request {
-    /// Settles a missing catalog without leaving its caller waiting.
-    pub(crate) fn reject(self, error: &str) {
-        match self {
-            Self::Credentials(reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-            Self::All(reply)
-            | Self::Available(reply)
-            | Self::Status(_, reply)
-            | Self::Display(_, reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-            Self::Refresh(reply) | Self::Register(_, _, _, reply) | Self::Unregister(_, reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-            Self::HasConfiguredAuth(_, reply) | Self::IsUsingOAuth(_, reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-            Self::Error(reply) | Self::Find(_, _, reply) => {
-                let _ = reply.send(Err(error.to_owned()));
-            }
-        }
-    }
-
-    /// Selects current domain data only when the local pump consumes the request.
-    pub(crate) fn answer(
-        self,
-        catalog: &ModelRegistry,
-        registry: &crate::local_resources::Registry,
-    ) {
-        match self {
-            Self::Credentials(reply) => {
-                let _ = reply.send(registry.credentials(
-                    catalog.auth_storage().clone(),
-                    catalog.config_values().clone(),
-                ));
-            }
-            Self::Refresh(reply) => send(&reply, catalog.refresh()),
-            Self::Error(reply) => {
-                let _ = reply.send(Ok(catalog.get_error()));
-            }
-            Self::HasConfiguredAuth(model, reply) => {
-                let result = model_record(&model).and_then(|model| {
-                    catalog
-                        .has_configured_auth(&model)
-                        .map_err(|error| error.to_string())
-                });
-                let _ = reply.send(result);
-            }
-            Self::IsUsingOAuth(model, reply) => {
-                let result = model_record(&model).map(|model| catalog.is_using_oauth(&model));
-                let _ = reply.send(result);
-            }
-            Self::Status(provider, reply) => {
-                let result = catalog
-                    .get_provider_auth_status(&provider)
-                    .map_err(|error| error.to_string())
-                    .and_then(|status| encode(&status));
-                let _ = reply.send(result);
-            }
-            Self::Display(provider, reply) => {
-                let _ = reply.send(Ok(catalog.get_provider_display_name(&provider)));
-            }
-            Self::Register(name, config, callbacks, reply) => {
-                let result = crate::provider_registration::config(&config, callbacks, registry)
-                    .and_then(|config| {
-                        catalog
-                            .register_provider(&name, config)
-                            .map_err(|error| error.to_string())
-                    });
-                let _ = reply.send(result);
-            }
-            Self::Unregister(name, reply) => send(&reply, catalog.unregister_provider(&name)),
-            Self::All(reply) => {
-                let _ = reply.send(all(catalog));
-            }
-            Self::Available(reply) => {
-                let result = catalog
-                    .get_available()
-                    .map_err(|error| error.to_string())
-                    .and_then(|models| encode_models(&models));
-                let _ = reply.send(result);
-            }
-            Self::Find(provider, id, reply) => {
-                let _ = reply.send(find(catalog, &provider, &id));
-            }
-        }
-    }
-}
+use std::sync::{Arc, RwLock};
 
 /// Encodes the descriptors through their read guards, without copying them.
 fn encode_models<T: Serialize>(models: &[Arc<RwLock<T>>]) -> Result<String, String> {
@@ -143,14 +22,123 @@ fn encode_models<T: Serialize>(models: &[Arc<RwLock<T>>]) -> Result<String, Stri
 
 /// Store-owned identity of the original live catalog.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
+    /// Retains the catalog's original credentials and command effects.
+    pub(crate) fn credentials(&self) -> Result<crate::credential_reads::Endpoint, String> {
+        self.0.run::<Catalog, _>(|catalog, registry| {
+            registry.credentials(
+                catalog.auth_storage().clone(),
+                catalog.config_values().clone(),
+            )
+        })
+    }
+
+    /// Reads the current full descriptor list.
+    pub(crate) fn get_all(&self) -> Result<String, String> {
+        self.0.run::<Catalog, _>(|catalog, _| all(catalog))
+    }
+
+    /// Finds the first exact provider and model identity.
+    pub(crate) fn find(&self, provider: String, id: String) -> Result<Option<String>, String> {
+        self.0
+            .run::<Catalog, _>(move |catalog, _| find(catalog, &provider, &id))
+    }
+
+    /// Reads the current model-file load diagnostic.
+    pub(crate) fn get_error(&self) -> Result<Option<String>, String> {
+        self.0
+            .run::<Catalog, _>(|catalog, _| Ok(catalog.get_error()))
+    }
+
+    /// Reads the existing provider display-name precedence.
+    pub(crate) fn get_provider_display_name(&self, provider: String) -> Result<String, String> {
+        self.0
+            .run::<Catalog, _>(move |catalog, _| Ok(catalog.get_provider_display_name(&provider)))
+    }
+
+    /// Reads descriptors with configured authentication, without refreshing it.
+    pub(crate) fn get_available(&self) -> Route {
+        self.0.run_routed::<Catalog, _>(|catalog, _| {
+            catalog
+                .get_available()
+                .map_err(|error| error.to_string())
+                .and_then(|models| encode_models(&models))
+        })
+    }
+
+    /// Reloads the catalog and replays its retained providers.
+    pub(crate) fn refresh(&self) -> Route {
+        self.0.run_routed::<Catalog, _>(|catalog, _| {
+            catalog.refresh().map_err(|error| error.to_string())
+        })
+    }
+
+    /// Checks authentication for an independently supplied model.
+    pub(crate) fn has_configured_auth(&self, model: String) -> Route {
+        self.0.run_routed::<Catalog, _>(move |catalog, _| {
+            model_record(&model).and_then(|model| {
+                catalog
+                    .has_configured_auth(&model)
+                    .map_err(|error| error.to_string())
+            })
+        })
+    }
+
+    /// Reads non-secret provider authentication metadata.
+    pub(crate) fn get_provider_auth_status(&self, provider: String) -> Route {
+        self.0.run_routed::<Catalog, _>(move |catalog, _| {
+            catalog
+                .get_provider_auth_status(&provider)
+                .map_err(|error| error.to_string())
+                .and_then(|status| encode(&status))
+        })
+    }
+
+    /// Checks the stored credential kind independently of key selection.
+    pub(crate) fn is_using_oauth(&self, model: String) -> Route {
+        self.0.run_routed::<Catalog, _>(move |catalog, _| {
+            model_record(&model).map(|model| catalog.is_using_oauth(&model))
+        })
+    }
+
+    /// Registers directly without the extension loading queue.
+    pub(crate) fn register_provider(
+        &self,
+        name: String,
+        config: String,
+        callbacks: crate::provider_registration::Callbacks,
+    ) -> Route {
+        self.0.run_routed::<Catalog, _>(move |catalog, registry| {
+            crate::provider_registration::config(&config, callbacks, registry).and_then(|config| {
+                catalog
+                    .register_provider(&name, config)
+                    .map_err(|error| error.to_string())
+            })
+        })
+    }
+
+    /// Removes directly through native replay policy.
+    pub(crate) fn unregister_provider(&self, name: String) -> Route {
+        self.0.run_routed::<Catalog, _>(move |catalog, _| {
+            catalog
+                .unregister_provider(&name)
+                .map_err(|error| error.to_string())
+        })
+    }
+
     /// Resolves the selected provider through the original local catalog.
     pub(crate) async fn provider_key(&self, provider: String) -> Result<Option<String>, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::ProviderKey(id, provider, reply, admission)
+            .admit::<Catalog, _, _>(move |catalog, _| {
+                let catalog = catalog.clone();
+                Ok(async move {
+                    catalog
+                        .get_api_key_for_provider(&provider)
+                        .await
+                        .map_err(|error| error.to_string())
+                })
             })
             .await
     }
@@ -158,8 +146,10 @@ impl Endpoint {
     /// Resolves an owned model through the original catalog and caller's local effects.
     pub(crate) async fn auth(&self, model: Model) -> Result<ResolvedRequestAuth, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::Auth(id, Box::new(model), reply, admission)
+            .admit::<Catalog, _, _>(move |catalog, _| {
+                let catalog = catalog.clone();
+                let model = Arc::new(RwLock::new(model));
+                Ok(async move { Ok(catalog.get_api_key_and_headers(&model).await) })
             })
             .await
     }
@@ -173,11 +163,6 @@ fn model_record(text: &str) -> Result<Arc<RwLock<Model>>, String> {
 fn encode(value: &impl Serialize) -> Result<String, String> {
     serde_json::to_string(value).map_err(|error| error.to_string())
 }
-/// Retains the domain's error message as a catchable import failure.
-fn send<T, E: std::fmt::Display>(reply: &Reply<T>, result: Result<T, E>) {
-    let _ = reply.send(result.map_err(|error| error.to_string()));
-}
-
 /// Encodes the current descriptor slots through their read guards.
 fn all(catalog: &ModelRegistry) -> Result<String, String> {
     let list = catalog.get_all();

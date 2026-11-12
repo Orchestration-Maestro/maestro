@@ -1,5 +1,10 @@
 //! Compiled guest hooks preserve the existing native protocol exceptions and retry route.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 mod transport;
 
 use maestro_models::{ApiProvider, register_api_provider, unregister_api_providers};

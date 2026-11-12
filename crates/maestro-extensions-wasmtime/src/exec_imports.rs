@@ -1,4 +1,9 @@
 //! Ordinary asynchronous calls retain their typed native capabilities.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{api_imports::ApiView, local_resources::SignalEndpoint};
 use wasmtime::component::{LinkerInstance, Resource};
 

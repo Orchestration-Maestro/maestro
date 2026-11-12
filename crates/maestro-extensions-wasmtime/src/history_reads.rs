@@ -1,4 +1,9 @@
 //! Requests on the original read-only history, independent of guarded contexts.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Registry};
 use maestro_extensions::ReadonlySessionManager;
 use std::sync::{Arc, mpsc};
@@ -139,4 +144,4 @@ fn encode_optional(value: Option<&serde_json::Value>) -> Result<Option<String>, 
 
 /// Store-owned identity of an independently retained live history.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);

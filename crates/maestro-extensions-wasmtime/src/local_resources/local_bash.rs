@@ -11,7 +11,7 @@ use std::{rc::Rc, sync::Arc};
 
 /// Independently retained native shell identity, safe to hold on the Store thread.
 #[derive(Clone)]
-pub(crate) struct Endpoint(Arc<Lease>);
+pub struct Endpoint(Arc<Lease>);
 
 /// An execution's original operands and independently scoped observers.
 pub(crate) struct Execution {

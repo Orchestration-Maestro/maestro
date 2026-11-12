@@ -1,4 +1,9 @@
 //! Overlay placement records cross the boundary without moving toolkit layout into the adapter.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::presentation::{
     OverlayAnchor, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
 };

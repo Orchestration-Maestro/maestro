@@ -1,4 +1,9 @@
 //! A native completion provider over an authored provider, reached through its original Store.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::{
     Call, Handle,
     paints::Failure,

@@ -1,4 +1,9 @@
 //! Actual typed guest exports for retained native callbacks.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::{Call, Callback, Synchronous, SynchronousKind};
 use wasmtime::{
     Store,

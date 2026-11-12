@@ -14,13 +14,13 @@ type Async<T> = oneshot::Sender<Result<T, String>>;
 
 /// Store-safe ownership of the original native child.
 #[derive(Clone)]
-pub(crate) struct Child(pub(crate) Arc<Lease>);
+pub struct Child(pub(crate) Arc<Lease>);
 /// Store-safe ownership of the original native byte reader.
 #[derive(Clone)]
-pub(crate) struct Reader(pub(crate) Arc<Lease>);
+pub struct Reader(pub(crate) Arc<Lease>);
 /// Store-safe ownership of the original native byte writer.
 #[derive(Clone)]
-pub(crate) struct Writer(pub(crate) Arc<Lease>);
+pub struct Writer(pub(crate) Arc<Lease>);
 
 /// Literal operands for one native child launch.
 pub(crate) struct Spawn {

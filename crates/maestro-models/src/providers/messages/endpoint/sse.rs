@@ -1,13 +1,12 @@
 //! Server-sent event framing of a message stream, the repair of event data and the point at
 //! which the stream is complete.
 //!
-//! Lines come from the shared byte-line decoder: a carriage return ends its line at once and
-//! swallows one line feed that follows it, even in the next chunk. This module decodes each
-//! line as text, drops one byte-order mark from the start of the stream, and treats a stream
-//! as complete only at its stop event.
+//! Events come from the shared server-sent event reader, whose line endings a carriage return
+//! ends at once, swallowing one line feed that follows it, even in the next chunk. This module
+//! selects the framing of a message stream (one byte-order mark at the start, the lines of
+//! each event kept for error text) and treats a stream as complete only at its stop event.
 
 use futures_util::StreamExt;
-use maestro_text::{line_framing::ByteLineDecoder, lossy_string};
 use serde_json::value::RawValue;
 
 use super::ABORTED_TEXT;
@@ -15,7 +14,9 @@ use super::events::{Progress, Reducer};
 use super::wire::{self, Event};
 use crate::Cancellation;
 use crate::parameters::repair_json;
-use crate::providers::transport::{FetchError, HttpBody, Raced, RequestFailure, race};
+use crate::providers::transport::{
+    FetchError, HttpBody, Raced, RequestFailure, ServerSentEvent, SseMessages, SseOptions, race,
+};
 
 /// Text of the failure of a stream that ends before its stop event.
 const UNTERMINATED_TEXT: &str = "The event stream ended before message_stop arrived";
@@ -29,109 +30,13 @@ const MESSAGE_EVENTS: [&str; 6] = [
     "content_block_stop",
 ];
 
-/// One event of the stream with the lines that formed it.
-struct Frame {
-    /// The last `event` field of the event, if it had one.
-    event: Option<String>,
-    /// The `data` fields joined by `\n`.
-    data: String,
-    /// Every nonblank line since the previous event, comments and unknown fields included.
-    raw: Vec<String>,
-}
-
-/// Turns bytes into events: lines end at `\r\n`, `\r` or `\n`; `event` and `data` fields
-/// collect until a blank line dispatches them.
-#[derive(Default)]
-struct Decoder {
-    /// Raw-byte line framing before protocol decoding.
-    lines: ByteLineDecoder,
-    /// Whether the first line of the stream, which may start with a byte-order mark, is still
-    /// to come.
-    at_start: bool,
-    /// Name given by the latest `event` field.
-    event: Option<String>,
-    /// Values of the `data` fields so far.
-    data: Vec<String>,
-    /// Lines since the last dispatch.
-    raw: Vec<String>,
-}
-
-impl Decoder {
-    /// A decoder at the start of a stream.
-    fn new() -> Self {
-        Self {
-            at_start: true,
-            ..Self::default()
-        }
-    }
-
-    /// Add a chunk and return the events it completes.
-    fn push(&mut self, chunk: &[u8]) -> Vec<Frame> {
-        let lines = self.lines.decode(chunk);
-        self.read_all(lines)
-    }
-
-    /// End the stream: a last line without its ending is read and the event being collected
-    /// is dispatched.
-    fn finish(&mut self) -> Vec<Frame> {
-        let lines = self.lines.flush();
-        let mut frames = self.read_all(lines);
-        frames.extend(self.dispatch());
-        frames
-    }
-
-    /// Read lines in order and return the events they complete.
-    fn read_all(&mut self, lines: Vec<Vec<u8>>) -> Vec<Frame> {
-        lines
-            .into_iter()
-            .filter_map(|bytes| {
-                let line = self.text(bytes);
-                self.read(&line)
-            })
-            .collect()
-    }
-
-    /// Decode a line as text: invalid sequences become U+FFFD, and one byte-order mark is
-    /// dropped from the start of the stream.
-    fn text(&mut self, bytes: Vec<u8>) -> String {
-        let mut text = lossy_string(bytes);
-        if std::mem::take(&mut self.at_start) && text.starts_with('\u{feff}') {
-            text.remove(0);
-        }
-        text
-    }
-
-    /// Read one line; a blank line dispatches the event collected so far.
-    fn read(&mut self, line: &str) -> Option<Frame> {
-        if line.is_empty() {
-            return self.dispatch();
-        }
-        self.raw.push(line.to_owned());
-        if line.starts_with(':') {
-            return None;
-        }
-        let (field, value) = line.split_once(':').unwrap_or((line, ""));
-        let value = value.strip_prefix(' ').unwrap_or(value);
-        match field {
-            "event" => self.event = Some(value.to_owned()),
-            "data" => self.data.push(value.to_owned()),
-            _ => {}
-        }
-        None
-    }
-
-    /// Dispatch the event collected so far, if it has a nonempty name or any data field.
-    fn dispatch(&mut self) -> Option<Frame> {
-        if self.event.as_deref().is_none_or(str::is_empty) && self.data.is_empty() {
-            return None;
-        }
-        Some(Frame {
-            event: self.event.take(),
-            data: std::mem::take(&mut self.data).join("\n"),
-            raw: std::mem::take(&mut self.raw),
-        })
-    }
-}
+/// The framing of a message stream: a byte-order mark only at the start, every line kept for
+/// error text, and the event being collected dispatched when the body ends.
+const FRAMING: SseOptions = SseOptions {
+    stream_start_mark: true,
+    raw_lines: true,
+    flush_pending: true,
+};
 
 /// Read event data as JSON, retrying with the repaired text only when the first reading fails;
 /// the failure is that of the last reading.
@@ -151,7 +56,7 @@ fn parse(data: &str) -> Result<Box<RawValue>, serde_json::Error> {
 /// # Errors
 /// Fails on a frame with an `error` event name, whose data is the failure text, on event
 /// data that is not JSON or is `null`, and on a known event that lacks a member it requires.
-fn event(frame: &Frame) -> Result<Option<Event>, RequestFailure> {
+fn event(frame: &ServerSentEvent) -> Result<Option<Event>, RequestFailure> {
     let name = frame.event.as_deref().unwrap_or_default();
     if name == "error" {
         return Err(RequestFailure::new(frame.data.clone()));
@@ -195,7 +100,7 @@ pub(super) async fn consume(
     reading: Reading,
     reducer: &mut Reducer<'_>,
 ) -> Result<(), RequestFailure> {
-    let mut decoder = Decoder::new();
+    let mut decoder = SseMessages::with_options(FRAMING);
     loop {
         if signal.is_some_and(Cancellation::is_aborted) {
             return Err(RequestFailure::new(ABORTED_TEXT));

@@ -184,7 +184,8 @@ impl<'a> Walker<'a> {
             includes: fixture_includes::Includes::default(),
             uses: application_exports::Uses::new(member, source),
             credentials: application_exports::file_credentials(member, source, file),
-            attributes: (member.name == generated::GUEST).then(|| generated::Attributes::new(file)),
+            attributes: generated::generates(&member.name)
+                .then(|| generated::Attributes::new(file)),
             exports: Exports::new(source, scope),
             poison: poison::Definitions::default(),
         }

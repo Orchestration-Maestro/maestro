@@ -1,5 +1,10 @@
 //! Callback prefixes run inside the native caller; suspended tails settle afterward.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     EventBus, EventError, ExtensionActions, ExtensionCommandContextActions,
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, create_event_bus_for,

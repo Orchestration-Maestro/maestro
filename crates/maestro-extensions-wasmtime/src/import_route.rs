@@ -3,6 +3,11 @@
 //! The Store thread cannot enter an instance that is already waiting inside a synchronous
 //! import, so a call raised from that import's native code travels back through the import as
 //! a typed step and runs the same guest body the ordinary export runs.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{Call, Callback},
     lifecycle::completion::Completion,
@@ -69,7 +74,7 @@ impl Nested {
 }
 
 /// Store-side ticket for one native operation in progress.
-pub(crate) struct Route {
+pub struct Route {
     /// Structured schema outcome, present only for a schema import.
     pub(crate) schema: Option<Receiver<crate::local_resources::schema::Result>>,
     /// Nested calls of the operation, closed when the operation returns.
@@ -142,7 +147,7 @@ impl Route {
 }
 
 /// A nested asynchronous call whose prefix ran and whose result the guest delivers later.
-pub(crate) struct Settlement(Option<Nested>);
+pub struct Settlement(Option<Nested>);
 
 /// One step of a native operation, as the guest receives it.
 #[derive(ComponentType, Lower)]

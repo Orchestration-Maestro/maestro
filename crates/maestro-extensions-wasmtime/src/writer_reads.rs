@@ -1,4 +1,9 @@
 //! Writable session requests retain the real setup capability on its local owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::{Lease, Message};
 use maestro_extensions::{
     CompactionOptions, CompactionResult, CustomMessageInput, NewSessionOptions, Presence,
@@ -216,7 +221,7 @@ fn send<T, E: std::fmt::Display>(reply: &Reply<T>, result: Result<T, E>) {
 
 /// Store-owned identity of the original writable session.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
     /// Acquires an independently retained reader of the same writable history.

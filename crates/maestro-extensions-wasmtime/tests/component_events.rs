@@ -6,6 +6,11 @@
 //! outside the declared event and result types; each case states how its outcome is projected
 //! onto the declared types before the comparison.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::components::{TracedBus, hooks, local};
 use maestro_extensions::{
     Cancellation, CommandContextOperations, ExtensionCommandContextActions,

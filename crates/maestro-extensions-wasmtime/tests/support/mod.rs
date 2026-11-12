@@ -1,5 +1,10 @@
 //! Live domain bindings shared by component and typed-request witnesses.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     ExtensionContextActions, ExtensionExecution, ExtensionRunner, Local, types::ProviderActions,
 };

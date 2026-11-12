@@ -3,6 +3,11 @@
 //!
 //! [`maestro_extensions`] and the scripted provider's types are re-exported, so a package test
 //! names the runner, its events and the provider's scripts through this crate alone.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 
 use std::cell::RefCell;
 

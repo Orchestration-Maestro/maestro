@@ -1,4 +1,9 @@
 //! Canonical primitive imports sharing the original local context endpoint.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::read_imports::ReadEndpoint;
 use crate::read_imports::{add_read, add_routed};
 use crate::{
@@ -10,10 +15,10 @@ use wasmtime::component::{ComponentType, Lift, LinkerInstance, Lower, Resource, 
 use wasmtime_wasi::WasiView;
 
 /// The independently retained ordinary callback context.
-pub(crate) struct Context(pub(crate) Endpoint);
+pub struct Context(pub(crate) Endpoint);
 
 /// The independently retained command context, with a distinct canonical identity.
-pub(crate) struct CommandContext(pub(crate) Endpoint);
+pub struct CommandContext(pub(crate) Endpoint);
 
 /// Common primitive operations without merging the two resource identities.
 trait ContextResource: Send + 'static {

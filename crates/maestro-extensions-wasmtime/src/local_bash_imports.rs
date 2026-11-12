@@ -1,4 +1,9 @@
 //! Canonical local shell resources retain native operations and scoped raw observers.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::CallbackView,
     local_resources::local_bash::{Endpoint, Execution},

@@ -1,5 +1,10 @@
 //! Guest-local prefixes keep the native diagnostic and independent tail boundary.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{Local, create_event_bus_for};
 use std::{cell::RefCell, rc::Rc};
 

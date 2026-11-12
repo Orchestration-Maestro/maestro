@@ -1,5 +1,10 @@
 //! A pending compiled-guest producer outlives observers and releases its containing owner.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     ExtensionActions, ExtensionCommandContextActions, ExtensionContextActions, ExtensionExecution,
     ExtensionRunner, Local, create_event_bus_for, types::ProviderActions,

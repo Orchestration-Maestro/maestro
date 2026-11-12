@@ -1,4 +1,9 @@
 //! Scoped requests to the operand held on the validator's original stack.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{local_resources::Message, schema_wire::JsonKind};
 use std::sync::mpsc::Sender;
 /// The original requester receives one fallible operation result.
@@ -74,7 +79,7 @@ impl Request {
 }
 /// The invocation identity and admission needed to reach its borrowed operand.
 #[derive(Clone)]
-pub(crate) struct Endpoint {
+pub struct Endpoint {
     /// The stable invocation identity.
     pub(crate) id: u64,
     /// The existing local request sender.

@@ -25,7 +25,7 @@ pub(crate) enum Request {
 
 /// A cancellation resource retains its original signal independently of the context.
 #[derive(Clone)]
-pub(crate) struct SignalEndpoint(pub(super) Arc<Lease>);
+pub struct SignalEndpoint(pub(super) Arc<Lease>);
 
 impl SignalEndpoint {
     /// Reads on the local owner through the same request pump as context operations.

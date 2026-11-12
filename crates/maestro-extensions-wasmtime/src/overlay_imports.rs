@@ -1,4 +1,9 @@
 //! Canonical overlay resources delegate to the existing widget owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::CallbackView,
     guest_calls::Callback,

@@ -1,5 +1,10 @@
 //! Component callbacks invoked by the real registration loader and runner.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     ExtensionRunner, Local, SessionStartEvent, SessionStartReason, create_event_bus_for,
     create_extension_runtime, load_extension_from_factory,

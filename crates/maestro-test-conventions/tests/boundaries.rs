@@ -571,6 +571,41 @@ fn wit_options_ignore_module_paths_in_nested_values() {
 }
 
 #[test]
+fn inline_guest_generator_adds_no_shared_wit_root() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    for directory in ["wit", "wit/standard"] {
+        let root = workspace
+            .root
+            .path()
+            .join("crates/maestro-extensions-wasm")
+            .join(directory);
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(
+            root.join("world.wit"),
+            "package maestro:fixture; world fixture {}",
+        )
+        .unwrap();
+    }
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/bindings.rs",
+        concat!(
+            r#"wit_bindgen::generate!({ path: "wit" });"#,
+            r#"pub mod standard { wit_bindgen::generate!({ inline: "package maestro:fixture; world fixture {}", path: "wit/standard" }); }"#,
+        ),
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasmtime",
+        "build.rs",
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+}
+
+#[test]
 fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);

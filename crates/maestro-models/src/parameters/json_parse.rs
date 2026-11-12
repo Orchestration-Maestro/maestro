@@ -114,11 +114,24 @@ pub fn parse_streaming_json(partial_json: Option<&str>) -> serde_json::Value {
     let Some(input) = partial_json.filter(|text| !is_blank(text)) else {
         return serde_json::json!({});
     };
-    parse_json_with_repair(input)
-        .ok()
+    may_be_complete(input)
+        .then(|| parse_json_with_repair(input).ok())
+        .flatten()
         .or_else(|| partial(input))
         .or_else(|| partial(&repair_json(input)))
         .unwrap_or_else(|| serde_json::json!({}))
+}
+
+/// Whether `text` ends the way a complete JSON text does: in the last character of a container,
+/// string, number, `true`, `false` or `null`, before any JSON whitespace. Text that does not
+/// cannot parse, so the strict readings skip it.
+fn may_be_complete(text: &str) -> bool {
+    matches!(
+        text.trim_end_matches([' ', '\t', '\r', '\n'])
+            .as_bytes()
+            .last(),
+        Some(b'}' | b']' | b'"' | b'0'..=b'9' | b'e' | b'l')
+    )
 }
 
 /// Byte cursor over the incomplete JSON input.
@@ -362,3 +375,6 @@ fn partial(input: &str) -> Option<serde_json::Value> {
 pub fn parsed_arguments(partial: &str) -> Value {
     parse_streaming_json(Some(partial))
 }
+
+#[cfg(test)]
+mod tests;

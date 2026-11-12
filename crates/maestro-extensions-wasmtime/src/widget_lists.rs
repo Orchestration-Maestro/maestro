@@ -1,4 +1,9 @@
 //! Host selection lists, settings lists and loaders, served on the local owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::guest_calls::Handle;
 use crate::guest_calls::paints::Failure;
 use crate::guest_calls::widget_calls::{Answered, Event, Item, Truncate};
@@ -19,7 +24,7 @@ type SubmenuFn = dyn Fn(String, Rc<dyn Fn(Option<String>)>) -> ComponentHandle;
 
 /// Store-safe identity of the closer of one open settings submenu.
 #[derive(Clone)]
-pub(crate) struct SubmenuDoneEndpoint(pub(crate) Arc<Lease>);
+pub struct SubmenuDoneEndpoint(pub(crate) Arc<Lease>);
 
 impl SubmenuDoneEndpoint {
     /// Closes the submenu; the list's change callback may call back into this instance.
@@ -31,7 +36,7 @@ impl SubmenuDoneEndpoint {
 
 /// Store-safe identity of one lent settings row style.
 #[derive(Clone)]
-pub(crate) struct RowStyleEndpoint(pub(crate) Arc<Lease>);
+pub struct RowStyleEndpoint(pub(crate) Arc<Lease>);
 
 impl RowStyleEndpoint {
     /// Applies the row style.

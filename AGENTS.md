@@ -69,12 +69,13 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Clippy also rejects the ambiguous JSON map `remove`; see
 [quality checks](docs/architecture.md#quality-checks). Quality-lint allowances are forbidden apart from the generated-binding exception below.
-`maestro-extensions-wasm` declares its own lint table instead of inheriting the workspace's:
-the same table with `pedantic`, `too_many_arguments` and `excessive_nesting` at `deny`
-rather than `forbid`, because its generated bindings cannot compile under `forbid`. Its
-generated `src/bindings.rs` alone may carry a lint attribute, the single allowance
-`clippy::same_length_and_capacity`. Every handwritten top-level module, test and example of
-that crate restores the three groups with `forbid`, and the workspace conventions enforce it.
+`maestro-extensions-wasm` and `maestro-extensions-wasmtime` each declare their own lint table
+instead of inheriting the workspace's: the same table with `pedantic`, `too_many_arguments` and
+`excessive_nesting` at `deny` rather than `forbid`, because the bindings each generates from the
+interface files cannot compile under `forbid`. A crate's generated `src/bindings.rs` alone may
+carry a lint attribute, the single allowance `clippy::same_length_and_capacity`. Every
+handwritten top-level module, test and example of either crate restores the three groups with
+`forbid`, and the workspace conventions enforce it for both.
 The protected `redundant_clone` lint rejects unnecessary copies. The protected
 `module_name_repetitions` lint rejects an item whose name starts or ends with its
 containing module's name; rename the module and keep the exported item name.

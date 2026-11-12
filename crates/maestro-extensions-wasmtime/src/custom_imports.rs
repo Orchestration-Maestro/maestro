@@ -1,4 +1,9 @@
 //! Custom imports retain original UI operands and use its existing admitted request pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::{CallbackView, retain},
     custom_reads::{CloseEndpoint, Options, Request, Source},

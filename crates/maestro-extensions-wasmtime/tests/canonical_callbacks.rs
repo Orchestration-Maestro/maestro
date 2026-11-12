@@ -1,5 +1,10 @@
 //! Canonical registrations invoke original author callbacks through native consumers.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{ExtensionRunner, Local};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

@@ -1,5 +1,10 @@
 //! Final domain consumers own Store admissions through healthy and faulted teardown.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{ExtensionRunner, Local, create_event_bus_for};
 use std::{cell::RefCell, rc::Rc};
 

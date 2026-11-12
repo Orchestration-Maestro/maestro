@@ -1,4 +1,9 @@
 //! Canonical theme methods delegate through the original local request pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     read_imports::{ReadEndpoint, add_operand, add_read, operand, resource},
     theme_reads::{Endpoint, Request},

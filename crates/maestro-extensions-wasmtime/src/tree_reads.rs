@@ -1,4 +1,9 @@
 //! Independently retained nodes of one domain-produced session tree.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     history_reads::optional_string,
     local_resources::{Lease, Registry},
@@ -133,4 +138,4 @@ impl Owner {
 
 /// A Store-owned node identity retaining its local captured tree.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);

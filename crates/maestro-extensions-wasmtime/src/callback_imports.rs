@@ -1,4 +1,9 @@
 //! Canonical callback identities retain their original Store admission.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     api_imports::ApiView,
     guest_calls::{Callback, Callbacks, Handle},

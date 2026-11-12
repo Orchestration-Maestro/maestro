@@ -1,4 +1,9 @@
 //! Invocation-local operations on the validator's borrowed JSON operand.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::schema_wire::JsonKind;
 use serde_json::Value;
 

@@ -1,4 +1,9 @@
 //! Adds one property to a serialized object without building a JSON tree first.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use serde::Serialize;
 
 /// Serializes `value` straight to text and appends `"key": property` as its last member.

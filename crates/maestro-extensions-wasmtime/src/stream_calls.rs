@@ -1,4 +1,9 @@
 //! Synchronous authored-stream callbacks on the existing Store lifecycle and import route.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{Call, Callback, Handle},
     lifecycle::replies::Reply,

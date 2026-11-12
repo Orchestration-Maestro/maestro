@@ -1,4 +1,9 @@
 //! API requests delegate to the real registration facade and its live runtime.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     local_resources::{Lease, Message},
     writer_reads::decode,

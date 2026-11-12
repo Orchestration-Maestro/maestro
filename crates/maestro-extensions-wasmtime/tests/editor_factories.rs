@@ -1,5 +1,10 @@
 //! Authored editor factories reach the production runtime and the native editor operations.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 
 use maestro_extensions::{
     EventBusController, EventError, ExtensionRunner, ExtensionUIContext, Local,

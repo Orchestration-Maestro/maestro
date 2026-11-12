@@ -1,4 +1,9 @@
 //! Compaction callbacks retain their original guest identity and native event bus.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     api_reads::Endpoint,
     guest_calls::{Handle, SynchronousKind},

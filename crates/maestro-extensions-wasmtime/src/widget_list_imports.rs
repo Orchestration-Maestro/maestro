@@ -1,4 +1,9 @@
 //! Canonical list and loader imports delegate to the host's widgets.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::{CallbackView, retain},
     guest_calls::{Callback, widget_calls::Item},

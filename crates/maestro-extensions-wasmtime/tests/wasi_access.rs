@@ -1,5 +1,10 @@
 //! Real component environment and standard-interface access in checked isolated hosts.
 #![cfg(test)]
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use super::wasi_support::{COMPONENT, Harness, run};
 use serde_json::json;
 use std::{collections::BTreeMap, path::Path};

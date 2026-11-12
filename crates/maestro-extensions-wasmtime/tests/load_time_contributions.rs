@@ -1,4 +1,9 @@
 //! A built component offers load-time data through the original native API's admission window.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use maestro_extensions::{
     Local, create_event_bus_for, create_extension_runtime, load_extension_from_factory,
     types::FlagValue,

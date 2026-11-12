@@ -1,4 +1,9 @@
 //! Footer metadata lent to a footer factory, read from its original native owner.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{Callback, Handle, SynchronousKind},
     local_resources::{Lease, Message, Registry, effects::SubscriptionEndpoint},
@@ -87,7 +92,7 @@ impl Registry {
 
 /// Store-safe ownership of the footer metadata lent to one factory.
 #[derive(Clone)]
-pub(crate) struct Endpoint(pub(crate) Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl ReadEndpoint for Endpoint {
     type Request = Request;

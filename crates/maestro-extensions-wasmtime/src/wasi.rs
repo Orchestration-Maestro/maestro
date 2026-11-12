@@ -1,4 +1,9 @@
 //! One owned operating environment shared by both standard-interface generations.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 pub(crate) mod root;
 use maestro_extensions::helpers::guest_path;
 use std::{

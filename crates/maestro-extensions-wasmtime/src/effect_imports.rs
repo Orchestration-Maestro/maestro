@@ -1,4 +1,9 @@
 //! Canonical progress and subscription operations retain their native owners.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     context_imports::add_resource,
     local_resources::{

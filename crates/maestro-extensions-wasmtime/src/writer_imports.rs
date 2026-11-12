@@ -1,4 +1,9 @@
 //! Canonical writable setup methods forward to their retained domain session.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::read_imports::ReadEndpoint;
 use crate::read_imports::{add_operand, add_read};
 use crate::{

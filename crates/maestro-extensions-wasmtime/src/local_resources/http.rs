@@ -8,7 +8,7 @@ use tokio::sync::oneshot;
 
 /// Store-safe ownership of one original response.
 #[derive(Clone)]
-pub(crate) struct Response(pub(crate) Arc<Lease>);
+pub struct Response(pub(crate) Arc<Lease>);
 /// Supplied HTTP operands with a retained original signal endpoint.
 pub(crate) struct Fetch {
     /// Literal destination.

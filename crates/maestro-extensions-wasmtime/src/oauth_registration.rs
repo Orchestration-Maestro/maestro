@@ -1,4 +1,9 @@
 //! Authored OAuth implementations use the existing callback and provider owners.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     guest_calls::{Call, Handle},
     local_resources::{Lease, Registry},

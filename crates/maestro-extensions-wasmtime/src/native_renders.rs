@@ -1,4 +1,9 @@
 //! Opaque native rendering operands retained on the original request pump.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::local_resources::effects::ThemeEndpoint;
 use crate::local_resources::{Lease, Message};
 use maestro_extensions::{ComponentHandle, ToolRenderContext, ToolRendererState};
@@ -7,10 +12,10 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 /// Store-safe original row ownership.
 #[derive(Clone)]
-pub(crate) struct RowEndpoint(pub(crate) Arc<Lease>);
+pub struct RowEndpoint(pub(crate) Arc<Lease>);
 /// Store-safe original native component ownership.
 #[derive(Clone)]
-pub(crate) struct ComponentEndpoint(pub(crate) Arc<Lease>);
+pub struct ComponentEndpoint(pub(crate) Arc<Lease>);
 
 /// Original native effects and typed state, never reconstructed from guest values.
 pub(crate) struct Row {

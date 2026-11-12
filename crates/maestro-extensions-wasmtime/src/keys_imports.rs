@@ -1,4 +1,9 @@
 //! Canonical keybindings, hint and editor style imports delegate to the host's owners.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
 use crate::{
     callback_imports::CallbackView,
     keys_reads::{
