@@ -281,12 +281,12 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
   | Attached-client cases | delivery 34 |
 - **Tests drive the daemon through its commands and events.** An integration test sends commands to
   `App::handle_api_request`, feeds background observations to `App::handle_internal_event`, and reads what the
-  daemon published through `App::event_hub`. It does not read or write the daemon's state fields. Topology
-  that needs no live process comes from the seed entries behind the daemon's `test-support` feature
-  (`seed_workspace`, `seed_tab`, `seed_split`, `seed_worktree_membership`). The entries run through the same owner
-  methods as creation. Every structural change that must be saved goes through `DaemonState::edit_topology`,
-  which sets the save mark; `take_session_dirty` is the one reader, and a test observes it through the save
-  deadline the loop schedules. A read that no command exposes is listed in the pull request that needs it.
+  daemon published through `App::event_hub`. Topology that needs no live process comes from the seed entries
+  behind the daemon's `test-support` feature (`seed_workspace`, `seed_tab`, `seed_split`,
+  `seed_worktree_membership`). The entries run through the same owner methods as creation. Every structural
+  change that must be saved goes through `DaemonState::edit_topology`, which sets the save mark;
+  `take_session_dirty` is the one reader. The state fields stay public, and tests that read state no command
+  exposes still read the fields directly.
 - **Harness floors.** A test that needs a later harness, such as the server's own test harness, lands with
   that harness.
 - **PTY children in tests.** Tests that spawn PTY children use `maestro-test-process` to run a named test as
