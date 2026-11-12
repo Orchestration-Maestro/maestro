@@ -1,7 +1,5 @@
 //! Footer metadata lent to a factory ends with its capability.
-use crate::{
-    footer_data::Request, local_resources::Pump, read_imports::ReadEndpoint, tests::ended_errors,
-};
+use crate::{local_resources::Pump, tests::ended_errors};
 use maestro_extensions::footer::{ExtensionStatuses, ReadonlyFooterDataProvider};
 use std::rc::Rc;
 
@@ -33,9 +31,9 @@ fn released_footer_rejects_every_kind_of_operation_with_its_ended_text() {
     let lease = footer.0.clone();
     let errors = ended_errors(lease, pump, admission, move || {
         [
-            footer.read(Request::Branch).unwrap_err(),
-            footer.read(Request::Statuses).unwrap_err(),
-            footer.read(Request::Providers).unwrap_err(),
+            footer.get_git_branch().unwrap_err(),
+            footer.get_extension_statuses().unwrap_err(),
+            footer.get_available_provider_count().unwrap_err(),
         ]
     });
     assert_eq!(errors, ["extension footer resource ended"; 3]);

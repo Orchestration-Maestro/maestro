@@ -88,6 +88,14 @@ held!(
     Capability::Signal(signal) => signal
 );
 
+held!(
+    /// The footer metadata lent to a footer factory.
+    Footer,
+    std::rc::Rc<dyn maestro_extensions::footer::ReadonlyFooterDataProvider>,
+    "extension footer resource ended",
+    Capability::Footer(footer) => footer
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,

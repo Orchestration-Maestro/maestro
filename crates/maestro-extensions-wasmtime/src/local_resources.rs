@@ -21,7 +21,6 @@ pub(crate) mod builtin_selection;
 pub(crate) mod credential_scope;
 mod dialogs;
 pub(crate) mod effects;
-mod footer;
 pub(crate) mod held;
 pub(crate) mod host_operations;
 pub(crate) mod http;
@@ -173,8 +172,6 @@ pub(crate) enum Message {
     Ui(u64, crate::ui_reads::Request),
     /// Admits one dialog on the originally acquired UI.
     Dialog(u64, crate::ui_reads::DialogRequest, Admission),
-    /// Reads or subscribes to the footer metadata lent to a footer factory.
-    Footer(u64, crate::footer_data::Request),
     /// Builds, uses or lends host widgets and styles.
     Widgets(crate::widget_reads::WidgetMessage),
     /// Typed operations on original application-supplied native resources.

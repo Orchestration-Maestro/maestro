@@ -222,7 +222,6 @@ impl State {
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
-            Message::Footer(id, request) => self.footer(id, request),
             Message::Widgets(message) => self.widgets(message),
             Message::BashOutput(id, bytes, reply) => self.bash_output(id, bytes, &reply),
             Message::Native(id, request) => self.native(id, request),
