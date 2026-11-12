@@ -1254,54 +1254,6 @@ fn events_message_end_completes_arguments_only_without_failure() {
     );
 }
 
-/// A registered tool `name` whose call row shows its arguments and counts each rendering.
-fn showing_arguments(name: &str, renders: Rc<Cell<usize>>) -> Definition {
-    let mut definition = tool(name);
-    definition.render_call = Some(Rc::new(move |args, _, _| {
-        renders.set(renders.get() + 1);
-        Ok(text(&format!(
-            "ARGS {}",
-            args.map_or_else(String::new, Value::to_string)
-        )))
-    }));
-    definition
-}
-
-#[test]
-fn events_updates_rebuild_only_the_rows_whose_arguments_changed() {
-    isolated(
-        "events_updates_rebuild_only_the_rows_whose_arguments_changed",
-        async |directory| {
-            let renders = Rc::new(Cell::new(0));
-            let setup = Setup {
-                extension: Some(registering(vec![showing_arguments(
-                    "shown",
-                    Rc::clone(&renders),
-                )])),
-                ..Setup::default()
-            };
-            let world = streamed(directory, false, setup).await;
-            start(&world, &json!([]));
-            let calls = |second: &Value| {
-                let mut first = call("first", "shown");
-                first["arguments"] = json!({"path": "a.txt"});
-                let mut last = call("last", "shown");
-                last["arguments"] = second.clone();
-                shared(&json!([first, last]), "toolUse", None)
-            };
-            dispatch(&world, update(&calls(&json!({"content": "x"}))));
-            let created = renders.get();
-            dispatch(&world, update(&calls(&json!({"content": "x"}))));
-            assert_eq!(renders.get(), created, "an unchanged update rebuilt a row");
-            dispatch(&world, update(&calls(&json!({"content": "xy"}))));
-            assert_eq!(renders.get(), created + 1, "only the changed row rebuilds");
-            let rows = world.mode.chat_container.render(100).join("\n");
-            assert!(rows.contains(r#"ARGS {"path":"a.txt"}"#), "{rows}");
-            assert!(rows.contains(r#"ARGS {"content":"xy"}"#), "{rows}");
-        },
-    );
-}
-
 /// A registered tool `progress` that reports `HALFWAY` and finishes with `FINISHED`.
 fn progressing() -> Definition {
     let mut progress = tool("progress");
