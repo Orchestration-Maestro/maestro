@@ -5,7 +5,10 @@
     clippy::excessive_nesting
 )]
 use crate::local_resources::effects::ThemeEndpoint;
-use crate::local_resources::{Lease, Message};
+use crate::{
+    import_route::Value as Outcome,
+    local_resources::{Lease, Message, held::Component},
+};
 use maestro_extensions::{ComponentHandle, ToolRenderContext, ToolRendererState};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
@@ -88,18 +91,6 @@ pub(crate) enum Slot {
     /// Complete result and independent result options.
     Result(String, maestro_extensions::ToolRenderResultOptions),
 }
-/// Operations on one original native component.
-#[derive(Clone)]
-pub(crate) enum ComponentRequest {
-    /// Paint at the caller's viewport width.
-    Render(u32),
-    /// Literal input, without key normalization.
-    Input(String),
-    /// Invalidate retained component state.
-    Invalidate,
-    /// Read current key-release preference.
-    Key,
-}
 impl crate::builtin_reads::Endpoint {
     /// Enters a native renderer through the original nested-call route.
     pub(crate) fn render(&self, render: Render) -> crate::import_route::Route {
@@ -111,12 +102,40 @@ impl crate::builtin_reads::Endpoint {
     }
 }
 impl ComponentEndpoint {
-    /// Uses the original component through the same route, permitting callback reentry.
-    pub(crate) fn call(&self, request: ComponentRequest) -> crate::import_route::Route {
-        self.0.route(|id, reply| {
-            Message::BuiltinOperation(crate::local_resources::builtin::Operation::Component(
-                id, request, reply,
-            ))
+    /// Paints at the caller's viewport width, through the route that permits callback reentry.
+    pub(crate) fn render(&self, width: u32) -> crate::import_route::Route {
+        self.0.run_routed::<Component, _>(move |component, _| {
+            component
+                .try_render(width as usize)
+                .map(Outcome::Lines)
+                .map_err(|error| error.to_string())
+        })
+    }
+
+    /// Passes literal input, without key normalization.
+    pub(crate) fn handle_input(&self, data: String) -> crate::import_route::Route {
+        self.0.run_routed::<Component, _>(move |component, _| {
+            if let Some(input) = component.input_handler() {
+                input
+                    .try_handle_input(&data)
+                    .map_err(|error| error.to_string())?;
+            }
+            Ok(Outcome::Unit)
+        })
+    }
+
+    /// Invalidates retained component state.
+    pub(crate) fn invalidate(&self) -> crate::import_route::Route {
+        self.0.run_routed::<Component, _>(|component, _| {
+            component.invalidate();
+            Ok(Outcome::Unit)
+        })
+    }
+
+    /// Reads the current key-release preference.
+    pub(crate) fn wants_key_release(&self) -> crate::import_route::Route {
+        self.0.run_routed::<Component, _>(|component, _| {
+            Ok(Outcome::Key(component.wants_key_release()))
         })
     }
 }

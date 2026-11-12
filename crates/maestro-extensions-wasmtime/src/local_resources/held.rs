@@ -219,6 +219,14 @@ held!(
     Capability::OverlayOptions(placement) => placement
 );
 
+held!(
+    /// The native component a native renderer built.
+    Component,
+    maestro_extensions::ComponentHandle,
+    "extension native component resource ended",
+    Capability::NativeComponent(component) => component
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
