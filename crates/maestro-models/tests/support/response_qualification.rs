@@ -658,3 +658,39 @@ async fn execute(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Value, expand_repeated_text};
+    use sha2::{Digest, Sha256};
+
+    /// SHA-256 of the repeated paragraph the four overflow rows recorded in full.
+    const EXPANDED_DIGEST: [u8; 32] = [
+        0xbc, 0x58, 0x4b, 0x4e, 0x67, 0x09, 0x78, 0xff, 0x09, 0xdb, 0xbd, 0x1d, 0x00, 0x4e, 0xbb,
+        0x94, 0x9e, 0xd2, 0x71, 0x2f, 0xc8, 0xd0, 0x45, 0xab, 0x6b, 0x61, 0x68, 0xe0, 0x9b, 0x6b,
+        0x78, 0x93,
+    ];
+
+    #[test]
+    fn overflow_rows_expand_to_the_recorded_paragraph() {
+        let mut rows: Vec<Value> =
+            serde_json::from_str(crate::cache_overflow_images::CORPUS).unwrap();
+        let mut leaves = 0;
+        for row in &mut rows {
+            if !(18..=21).any(|n| row["id"] == format!("overflow_{n}_0")) {
+                continue;
+            }
+            expand_repeated_text(row, true).unwrap();
+            for leaf in [
+                &row["expected"]["payloads"][0]["messages"][1]["content"],
+                &row["expected"]["requests"][0]["body"]["messages"][1]["content"],
+            ] {
+                let text = leaf.as_str().unwrap();
+                assert_eq!(text.len(), 6_351_486);
+                assert_eq!(Sha256::digest(text.as_bytes()).as_slice(), &EXPANDED_DIGEST);
+                leaves += 1;
+            }
+        }
+        assert_eq!(leaves, 8);
+    }
+}

@@ -139,9 +139,6 @@ mod resource_extension_loading;
 #[path = "support/resource_fixtures.rs"]
 mod resource_fixtures;
 mod resource_loading;
-#[cfg(unix)]
-#[path = "../examples/rpc_client_demo/interactive.rs"]
-mod rpc_client_demo;
 mod rpc_client_events;
 mod rpc_client_lifecycle;
 mod rpc_client_transport;
@@ -188,7 +185,6 @@ mod settings_manager_bug_checks;
 mod settings_manager_checks;
 mod share_links;
 mod shell_root_exports;
-mod shipped_examples;
 mod skill_precedence;
 mod spreadsheet_attachments;
 mod spreadsheet_html;

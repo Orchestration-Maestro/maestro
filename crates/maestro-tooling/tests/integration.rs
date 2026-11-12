@@ -10,6 +10,7 @@ mod cargo_fixtures;
 mod component_preparation;
 mod consuming_workspace;
 mod date_time_data;
+mod examples_fetch;
 mod fixture_sources_setup;
 mod native_setup;
 mod nextest_priorities;
@@ -24,6 +25,3 @@ use maestro_test_process::compiler;
 
 #[path = "fixtures/recipe_support.rs"]
 mod recipe_support;
-
-#[path = "../../maestro-extensions-wasm/build/test_modules.rs"]
-mod example_test_modules;

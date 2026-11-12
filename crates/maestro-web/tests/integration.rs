@@ -16,7 +16,6 @@ mod browser_effects;
 mod browser_errors;
 mod browser_fixture_support;
 mod browser_formatting;
-mod chat_example_browser;
 mod chat_panel_browser;
 mod code_blocks;
 mod contributions;
