@@ -103,7 +103,8 @@ fn extension_provenance_reaches_commands_and_tools() {
             (source.path.as_str(), source.source.as_str()),
             ("<inline:1>", "inline")
         );
-    });
+    })
+    .unwrap();
 }
 
 /// A bus listener of one extension, a continuation flag and the bus another extension emits on.
@@ -164,7 +165,8 @@ fn default_event_bus_runs_local_tails_on_the_task_set() {
                 receiver.await.unwrap();
             });
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -280,5 +282,6 @@ fn supplied_event_bus_receives_extension_events() {
             loader(&root, &case, options).reload().await.unwrap();
         });
         assert_eq!(*received.borrow(), [json!({"from": "inline"})]);
-    });
+    })
+    .unwrap();
 }

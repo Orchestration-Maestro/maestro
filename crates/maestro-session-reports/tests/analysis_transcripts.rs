@@ -3,8 +3,10 @@
 
 use crate::analysis_fixtures::run_transcripts;
 #[cfg(unix)]
-use crate::isolated_home::with_environment;
-use crate::isolated_home::with_isolated_home;
+use maestro_session_reports::session_transcripts;
+#[cfg(unix)]
+use maestro_test_process::with_environment;
+use maestro_test_process::with_isolated_home;
 use serde_json::Value;
 #[cfg(unix)]
 use std::fmt::Write;
@@ -116,7 +118,8 @@ fn transcript_arguments_keep_output_and_cwd_selection() {
                     .contains(&format!("{separator}-h\nExpected: "))
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -151,7 +154,7 @@ fn transcript_reads_independent_jsonl_and_role_order() {
                     .contains(&format!("Found 2 session files in {directory}\n"))
             );
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -189,7 +192,7 @@ fn transcript_text_blocks_keep_only_nonblank_text() {
             written,
             "=== SESSION: a.jsonl ===\n[USER]\na\nb\n---\n[ASSISTANT]\n\u{85}kept\n=== END SESSION ==="
         );
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -220,7 +223,7 @@ fn transcript_blocks_keep_only_the_text_discriminant() {
                 "=== SESSION: a.jsonl ===\n[USER]\nkept\n---\n[ASSISTANT]\nkept\n=== END SESSION ==="
             );
         },
-    );
+    ).unwrap();
 }
 
 /// One split case: two sessions of `sizes`, and the lines it must report.
@@ -287,7 +290,8 @@ fn transcript_splits_at_utf16_limit_without_splitting_sessions() {
                 ],
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -319,7 +323,8 @@ fn transcript_splits_by_utf16_units_with_supplementary_characters() {
                 ],
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -358,7 +363,8 @@ fn transcript_oversized_session_stays_whole() {
         assert!(whole.starts_with("=== SESSION: b.jsonl ===\n[USER]\nxxxx"));
         assert!(whole.ends_with("=== END SESSION ==="));
         assert_eq!(whole.encode_utf16().count(), 100_001);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -390,7 +396,8 @@ fn transcript_empty_missing_and_io_failures() {
             .expect("the command reports missing transcripts");
         assert!(untranscribed.failed());
         assert_eq!(untranscribed.stderr, "No transcripts found\n");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -421,7 +428,8 @@ fn transcript_directory_lookup_matches_session_writer() {
                 assert!(run.stdout.starts_with("Found 1 session files in "));
             }
         },
-    );
+    )
+    .unwrap();
 }
 
 /// The events the controlled child prints, one JSON object per line.
@@ -437,6 +445,15 @@ const EVENTS: [&str; 8] = [
     r#"{"type":"turn_end"}"#,
 ];
 
+/// Install the prepared native fixture as `maestro` below `directory`, selected by `record`.
+#[cfg(unix)]
+fn install_child(directory: &str, record: &serde_json::Value) {
+    let aliases = std::path::Path::new(directory).join("bin");
+    std::fs::create_dir_all(&aliases).expect("the alias directory is creatable");
+    maestro_test_process::install_command(&aliases.join("maestro"), &record.to_string())
+        .expect("the native fixture installs");
+}
+
 /// Install a controlled `maestro` child below `directory` that prints the events and
 /// records its argv.
 #[cfg(unix)]
@@ -445,9 +462,8 @@ fn child(directory: &str, exit: u8, receipt: &str) {
     for event in EVENTS {
         let _ = writeln!(output, "{event}");
     }
-    crate::native::command(
-        std::path::Path::new(directory).join("bin").as_path(),
-        "maestro",
+    install_child(
+        directory,
         &serde_json::json!({
             "scenario": "output",
             "stdout": output.as_bytes(),
@@ -462,9 +478,8 @@ fn child(directory: &str, exit: u8, receipt: &str) {
 /// before it reports the recorded status.
 #[cfg(unix)]
 fn child_appending(directory: &str, path: &str, text: &str, exit: u8, receipt: &str) {
-    crate::native::command(
-        std::path::Path::new(directory).join("bin").as_path(),
-        "maestro",
+    install_child(
+        directory,
         &serde_json::json!({
             "scenario": "output",
             "stdout": b"".as_slice(),
@@ -541,7 +556,7 @@ fn analysis_stream_keeps_text_tool_and_turn_branches() {
                     .contains("\u{1b}[31mcontrolled stderr\n\u{1b}[39m")
             );
         },
-    );
+    ).unwrap();
 }
 
 #[cfg(unix)]
@@ -590,7 +605,8 @@ fn analysis_runs_each_file_before_aggregation() {
                 )
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 /// Standard output that hands each finished line to the test before the command continues.
@@ -677,9 +693,8 @@ fn held_child(
         r#"{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"first"}}"#,
         r#"{"type":"turn_end"}"#
     );
-    crate::native::command(
-        Path::new(base).join("bin").as_path(),
-        "maestro",
+    install_child(
+        base,
         &serde_json::json!({
             "scenario": "hold",
             "ready": log.path(),
@@ -725,7 +740,7 @@ fn analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_
                         pending: Vec::new(),
                         sender,
                     };
-                    crate::support::run_io(maestro_app::developer_tools::session_transcripts::main(
+                    crate::support::run_io(session_transcripts::main(
                         &arguments,
                         false,
                         &mut stdout,
@@ -771,7 +786,8 @@ fn analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_
                 assert_eq!(code, std::process::ExitCode::SUCCESS);
             });
         },
-    );
+    )
+    .unwrap();
 }
 
 /// Assert both recorded prompts name their instruction files and summary paths in order.
@@ -853,7 +869,8 @@ fn analysis_prompts_keep_paths_and_all_instruction_paragraphs() {
             let agents = format!("{base}/home/.maestro/agent/AGENTS.md\n{project}/AGENTS.md");
             assert_prompt_paths(&receipt, &agents, &output, &summaries);
         },
-    );
+    )
+    .unwrap();
 }
 
 #[cfg(unix)]
@@ -908,7 +925,8 @@ fn analysis_reports_a_child_summary_only_after_the_child_exits() {
                 "{written:?}"
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[cfg(unix)]
@@ -959,7 +977,8 @@ fn analysis_classifies_spawn_exit_and_missing_summary_outcomes() {
                 "{unwritten:?}"
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[cfg(unix)]
@@ -1006,5 +1025,5 @@ fn analysis_aggregates_existing_summary_files() {
             )));
             assert!(!prompt.contains("other.txt"));
         },
-    );
+    ).unwrap();
 }

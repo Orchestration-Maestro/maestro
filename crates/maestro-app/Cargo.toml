@@ -108,19 +108,3 @@ name = "count_prompt_tokens"
 path = "scripts/count_prompt_tokens.rs"
 test = true
 
-[[example]]
-name = "cost_report"
-path = "scripts/cost_report.rs"
-
-[[example]]
-name = "usage_report"
-path = "scripts/usage_report.rs"
-
-[[example]]
-name = "tool_report"
-path = "scripts/tool_report.rs"
-
-[[example]]
-name = "transcript_report"
-path = "scripts/transcript_report.rs"
-

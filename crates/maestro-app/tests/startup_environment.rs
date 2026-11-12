@@ -350,7 +350,8 @@ fn loader_startup_selection_reaches_configured_packages() {
             assert!(loader_acquires(&root, None));
             assert!(marker.exists());
         },
-    );
+    )
+    .unwrap();
 }
 
 /// Creates the services over `root` with the two independent offline selections.
@@ -456,7 +457,8 @@ fn session_startup_selection_reaches_find_and_grep() {
                 assert_no_search_program(&services);
             });
         },
-    );
+    )
+    .unwrap();
     with_environment(
         "session_startup_selection_reaches_find_and_grep",
         &NO_SEARCH_PROGRAMS,
@@ -469,7 +471,8 @@ fn session_startup_selection_reaches_find_and_grep() {
                 assert_search_offline(&services, &session_search(&services).await);
             });
         },
-    );
+    )
+    .unwrap();
 }
 
 /// A missing search program stays absent with no staging entry, because no download started.
@@ -512,5 +515,6 @@ fn startup_selection_survives_service_replacement() {
                 );
             });
         },
-    );
+    )
+    .unwrap();
 }

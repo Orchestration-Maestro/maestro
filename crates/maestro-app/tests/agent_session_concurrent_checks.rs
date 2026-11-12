@@ -766,7 +766,7 @@ fn empty_resource_roots_keep_the_session_isolated() {
     use maestro_app::{CreateAgentSessionOptions, ResourceLoaderOptions, SessionResources};
     let expected = expected("empty_roots");
     let test = "empty_resource_roots_keep_the_session_isolated";
-    crate::isolated_home::with_isolated_home(test, |base| {
+    maestro_test_process::with_isolated_home(test, |base| {
         let cwd = copy_empty_root(base, "empty-cwd");
         let agent_dir = copy_empty_root(base, "empty-agent");
         let counts = on_task_set(|local| async move {
@@ -808,5 +808,6 @@ fn empty_resource_roots_keep_the_session_isolated() {
             counts
         });
         assert_eq!(counts, expected);
-    });
+    })
+    .unwrap();
 }

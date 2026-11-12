@@ -2,7 +2,7 @@
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
 use crate::analysis_fixtures::{ZONE, run_cost, sessions, write_files};
-use crate::isolated_home::with_environment;
+use maestro_test_process::with_environment;
 
 const HELP: &str = "Usage: cost.ts -d <path> -n <days>
   -d, --dir <path>   Directory path (required)
@@ -68,7 +68,8 @@ fn cost_arguments_keep_required_and_help_branches() {
             );
             assert!(run.failed());
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -123,7 +124,8 @@ TOTALS BY PROVIDER
 "
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -177,7 +179,8 @@ TOTALS BY PROVIDER
 "
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -215,7 +218,7 @@ fn cost_partial_costs_and_malformed_lines() {
                 assert!(!run.stdout.contains(absent), "{absent}: {}", run.stdout);
             }
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -259,7 +262,8 @@ fn cost_rows_keep_decimal_rounding_and_utf16_padding() {
                 .expect("the private-use label is reported");
             assert!(emoji < private, "{}", run.stdout);
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -306,7 +310,8 @@ fn cost_empty_and_missing_directories() {
             .kind();
             assert_eq!(error.kind(), refused);
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -330,7 +335,8 @@ fn cost_directory_lookup_matches_session_writer() {
                 assert!(run.stdout.contains("  writer "), "{cwd}: {}", run.stdout);
             }
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -361,7 +367,7 @@ fn cost_rows_sum_individual_components() {
             assert!(run.stdout.contains("Day total:"), "{}", run.stdout);
             assert!(run.stdout.contains("$  3.0000"), "{}", run.stdout);
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -385,5 +391,6 @@ fn cost_report_reads_the_configured_sessions() {
                 run.stdout
             );
         },
-    );
+    )
+    .unwrap();
 }

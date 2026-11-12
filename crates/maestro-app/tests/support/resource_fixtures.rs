@@ -449,7 +449,7 @@ pub async fn run_loader_case(root: &Root, case: &LoaderCase, local: Rc<LocalSet>
     root.normalize(&observed)
 }
 
-pub use super::isolated_home::{with_environment, with_isolated_home};
+pub use maestro_test_process::{with_environment, with_isolated_home};
 
 /// The standard error lines of `stderr` that are warnings.
 pub fn warnings(stderr: &str) -> Vec<&str> {
@@ -534,7 +534,8 @@ pub fn check_loader_cases(test: &str, names: &[&str]) {
                 on_task_set(|local| async move { run_loader_case(&root, &case, local).await });
             assert_eq!(observed, loader_case(name).expected, "case {name}");
         }
-    });
+    })
+    .unwrap();
 }
 
 /// A recorded diagnostic projection: type, message, path and collision paths.

@@ -2843,7 +2843,10 @@ passing test's output. In a child it returns that
 group's cases in their original order, and the test checks them. Cases that share
 variables therefore share one child and one fixture parse, so don't spawn a child
 per case yourself. A case that needs a fresh process for other state, such as a
-process-wide counter or files created per case, keeps its own child. Use
+process-wide counter or files created per case, keeps its own child.
+`with_isolated_home` runs a case in one cleared child with a scratch home and the
+caller's variable edits; `with_environment` and `with_environment_without` do the
+same when the case adds or clears named variables. Use
 `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`

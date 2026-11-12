@@ -2744,6 +2744,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-resources",
     "maestro-rpc",
     "maestro-session",
+    "maestro-session-reports",
     "maestro-settings",
     "maestro-terminal-emulator",
     "maestro-test-browser",

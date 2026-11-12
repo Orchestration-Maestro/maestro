@@ -2,7 +2,7 @@
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
 use crate::analysis_fixtures::{ZONE, expected, home, resolved, run_usage, sessions, write_files};
-use crate::isolated_home::with_environment;
+use maestro_test_process::with_environment;
 
 const HELP: &str = "Usage: scripts/stats.ts [options]
 
@@ -110,7 +110,8 @@ fn usage_report_leaves_missing_total_at_zero() {
                 }
             }
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -159,7 +160,8 @@ fn usage_arguments_keep_defaults_aliases_and_decimal_prefixes() {
             assert_eq!(run.stdout, HELP);
             assert!(run.succeeded());
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -219,7 +221,8 @@ fn usage_counts_local_calendar_days_across_dst() {
                 run.stdout
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -244,7 +247,7 @@ fn usage_timestamp_presence_precedes_entry_timestamp() {
             assert!(run.stdout.contains("  inherited"), "{}", run.stdout);
             assert!(!run.stdout.contains("nulled"), "{}", run.stdout);
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -287,7 +290,7 @@ fn usage_aggregates_reported_totals_and_distinct_sessions() {
             );
             assert!(run.stdout.contains(&directory), "{}", run.stdout);
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -313,7 +316,7 @@ fn usage_ignores_nonassistant_and_missing_usage() {
             assert!(!run.stdout.contains("absent"), "{}", run.stdout);
             assert!(!run.stdout.contains("  user"), "{}", run.stdout);
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -360,7 +363,7 @@ fn usage_formats_grouped_signed_counts_and_costs() {
                 .expect("the private-use label is reported");
             assert!(emoji < private, "{}", run.stdout);
         },
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -387,7 +390,8 @@ fn usage_empty_and_missing_directories() {
                 format!("Sessions directory not found: {}\n", absent.as_str())
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -427,7 +431,8 @@ fn usage_directory_lookup_matches_session_writer() {
                 assert!(run.stdout.contains("  writer"), "{cwd}: {}", run.stdout);
             }
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -452,5 +457,6 @@ fn usage_report_reads_the_configured_sessions() {
                 run.stdout
             );
         },
-    );
+    )
+    .unwrap();
 }

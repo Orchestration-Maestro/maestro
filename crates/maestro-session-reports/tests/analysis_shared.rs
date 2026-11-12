@@ -5,8 +5,8 @@ use crate::analysis_fixtures::{
     ZONE, page_data, root, run_cost, run_tools, run_transcripts, run_usage, scratch,
     with_controlled_viewer, with_controlled_viewer_and,
 };
-use crate::isolated_home::with_environment;
-use crate::isolated_home::with_environment_without;
+use maestro_test_process::with_environment;
+use maestro_test_process::with_environment_without;
 
 /// An assistant entry carrying a reported cost.
 fn cost_entry(provider: &str, total: f64) -> String {
@@ -114,7 +114,8 @@ fn decimal_day_parsing_reuses_the_integer_owner() {
                 assert!(run.failed(), "{days} is not a positive day count");
             }
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -206,7 +207,8 @@ fn session_roots_follow_the_account_home() {
                 format!("Sessions directory not found: {expected}\n")
             );
         },
-    );
+    )
+    .unwrap();
 }
 
 #[test]

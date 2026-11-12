@@ -8,7 +8,8 @@
 //! callers keep their exit, signal and product assertions. [`TestProcess::invoke_with`]
 //! checks eligibility only; its caller proves startup through its own transport. A test that closes a pipe end
 //! while a child is live runs alone through [`run_alone`]. Cases that read process variables
-//! share one cleared child per distinct environment through [`run_per_environment`]. A child
+//! share one cleared child per distinct environment through [`run_per_environment`], each
+//! with a scratch home and its own variable edits through [`with_isolated_home`]. A child
 //! that replaces `HOME` passes the run's agent directory back through [`run_agent_directory`],
 //! and a cleared child keeps the one the run's setup exported, so neither recompiles the
 //! components the run prepared.
@@ -51,6 +52,7 @@ mod executable;
 pub mod gate;
 pub mod git_command;
 mod prepared_bundles;
+mod process_environment;
 mod proof;
 pub mod rpc_peer;
 mod search_guard;
@@ -68,6 +70,7 @@ pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_enviro
 pub use error::TestProcessError;
 pub use executable::{install_command, install_executable, install_family, install_search_program};
 pub use prepared_bundles::without_prepared_bundles;
+pub use process_environment::{with_environment, with_environment_without, with_isolated_home};
 pub use proof::{CheckedChild, CheckedStdout, HARNESS_START};
 pub use search_guard::{SearchGuard, install_stub_search_programs};
 pub use selection::test_name;

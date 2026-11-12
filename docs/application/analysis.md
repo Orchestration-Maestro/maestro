@@ -1,15 +1,15 @@
 # Session analysis reports
 
 Four developer reports read the journals Maestro already writes under the
-agent directory's session root. Two print totals for one project, one writes transcript files with
-an optional analysis run, and one writes an interactive tool report. They are
-checkout-run developer programs (sources in `crates/maestro-app/scripts/`): they
-read recorded journals and write nothing
-except their own output. No background collection or telemetry is involved, and
-the programs make no network request of their own. Two things reach the network
-beyond them: the child runs `--analyze` starts use the configured model provider,
-and the tool report page, once opened, loads its two pinned chart and style
-scripts from their source URLs.
+agent directory's session root. Two print totals for one project, one writes
+transcript files with an optional analysis run, and one writes an interactive
+tool report. They belong to the `maestro-session-reports` crate and run from a
+checkout: each reads recorded journals and writes nothing except its own output.
+No background collection or telemetry is involved, and the programs make no
+network request of their own. Two things reach the network beyond them: the
+child runs `--analyze` starts use the configured model provider, and the tool
+report page, once opened, loads its two pinned chart and style scripts from
+their source URLs.
 
 Every program accepts its arguments after `--` and decodes them lossily, so a
 non-UTF-8 argument reaches the report as replacement text instead of aborting
@@ -18,7 +18,7 @@ the process.
 ## Cost totals
 
 ```sh
-cargo run --locked -p maestro-app --example cost_report -- -d /work/project -n 7
+cargo run --locked -p maestro-session-reports --example cost_report -- -d /work/project -n 7
 ```
 
 `-d`/`--dir` selects the project and `-n`/`--days` the window; both are
@@ -49,7 +49,7 @@ grand total are listed in UTF-16 order, and amounts the record omits count as ze
 ## Usage totals
 
 ```sh
-cargo run --locked -p maestro-app --example usage_report -- --cwd /work/project --days 7
+cargo run --locked -p maestro-session-reports --example usage_report -- --cwd /work/project --days 7
 ```
 
 `-d`, `--dir` and `--cwd` select the project; `--days`/`-n` select the local
@@ -75,7 +75,7 @@ and providers are listed in UTF-16 order.
 ## Transcript files
 
 ```sh
-cargo run --locked -p maestro-app --example transcript_report -- --output ./session-transcripts --analyze /work/project
+cargo run --locked -p maestro-session-reports --example transcript_report -- --output ./session-transcripts --analyze /work/project
 ```
 
 `--output` selects the output directory, defaulting to `./session-transcripts`,
@@ -107,7 +107,7 @@ is printed and the command still exits zero.
 ## Tool report
 
 ```sh
-cargo run --locked -p maestro-app --example tool_report -- --sessions-dir ./sessions --output ./tool-stats.html
+cargo run --locked -p maestro-session-reports --example tool_report -- --sessions-dir ./sessions --output ./tool-stats.html
 ```
 
 `--sessions-dir` defaults to the session root of the agent directory and `--output`/`-o` to

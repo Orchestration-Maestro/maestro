@@ -1,8 +1,8 @@
 //! Fixtures and report runners shared by the native analysis reports.
 
-use crate::isolated_home::with_environment;
 use chrono::TimeZone;
-use maestro_app::developer_tools::{cost, session_transcripts, stats, tool_stats};
+use maestro_session_reports::{cost, session_transcripts, stats, tool_stats};
+use maestro_test_process::with_environment;
 use std::path::Path;
 use std::process::ExitCode;
 
@@ -130,7 +130,7 @@ pub fn with_controlled_viewer(test: &str, body: impl FnOnce(&str)) {
 pub fn with_controlled_viewer_and(test: &str, variables: &[(&str, &str)], body: impl FnOnce(&str)) {
     let mut selected = vec![("PATH", "/usr/bin:/bin")];
     selected.extend_from_slice(variables);
-    with_environment(test, &selected, body);
+    with_environment(test, &selected, body).unwrap();
 }
 
 /// The paths the report opener received in this test process, in order.
