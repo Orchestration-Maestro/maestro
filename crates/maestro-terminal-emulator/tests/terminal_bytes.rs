@@ -383,18 +383,18 @@ fn mouse_modes_keep_independent_flags_and_reads() {
     ] {
         t.write(format!("\x1b[?{n}h").as_bytes());
         assert_eq!(t.flags.mouse_event, event);
-        assert!(t.mouse_tracking_enabled());
+        assert!(t.is_mouse_tracking_enabled());
         t.write(b"\x1b[?1006h");
         assert_eq!(t.flags.mouse_format, Format::Sgr);
         t.write(format!("\x1b[?{n}l").as_bytes());
         assert_eq!(t.flags.mouse_event, Event::None);
-        assert!(!t.mouse_tracking_enabled());
+        assert!(!t.is_mouse_tracking_enabled());
         assert_eq!(t.flags.mouse_format, Format::Sgr);
     }
     t.write(b"\x1b[?9;1000h\x1b[?9l");
     assert!(t.modes.get(Mode::MouseEventNormal));
     assert_eq!(t.flags.mouse_event, Event::None);
-    assert!(t.mouse_tracking_enabled());
+    assert!(t.is_mouse_tracking_enabled());
     mouse_format_reads(&mut t);
 }
 

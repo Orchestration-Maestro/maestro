@@ -490,17 +490,17 @@ fn response_placement_and_message_are_exact() {
     let mut bytes = Vec::new();
     response.encode(&mut bytes).unwrap();
     assert_eq!(bytes, b"\x1b_Gi=7,I=8,p=9;ENOENT:missing\x1b\\");
-    assert!(!response.ok());
+    assert!(!response.is_ok());
     response.message = b"ok".to_vec();
-    assert!(!response.ok());
-    assert!(Response::default().ok());
+    assert!(!response.is_ok());
+    assert!(Response::default().is_ok());
     assert!(
         Response {
             placement_id: 9,
             message: b"failure".to_vec(),
             ..Response::default()
         }
-        .empty()
+        .is_empty()
     );
     let original = std::io::Error::from_raw_os_error(123);
     assert_eq!(

@@ -41,7 +41,7 @@ fn expect(bytes: &[u8], actions: &[Action]) {
 fn numeric_mode_terminal() -> maestro_terminal_emulator::Terminal {
     let mut t = maestro_terminal_emulator::Terminal::new(10, 2, 0).unwrap();
     t.write(b"ab\x1b[>4;2m");
-    assert!(t.modify_other_keys_enabled());
+    assert!(t.is_modify_other_keys_enabled());
     t
 }
 
@@ -49,7 +49,7 @@ fn numeric_mode_after(bytes: &[u8]) -> bool {
     let mut t = numeric_mode_terminal();
     t.write(bytes);
     assert_text(&t, "ab");
-    t.modify_other_keys_enabled()
+    t.is_modify_other_keys_enabled()
 }
 
 #[test]
@@ -758,7 +758,7 @@ fn apc_and_dcs_keep_payload_and_exit_order() {
                 let mut t = numeric_mode_terminal();
                 t.write(&bytes[..split]);
                 t.write(&bytes[split..]);
-                assert!(t.modify_other_keys_enabled());
+                assert!(t.is_modify_other_keys_enabled());
                 assert_text(&t, "abx");
             }
         }

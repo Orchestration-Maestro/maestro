@@ -31,7 +31,7 @@ impl RenderRow<'_> {
 
     /// Whether this row needs rendering.
     #[must_use]
-    pub fn dirty(&self) -> bool {
+    pub fn is_dirty(&self) -> bool {
         self.data.dirty
     }
 

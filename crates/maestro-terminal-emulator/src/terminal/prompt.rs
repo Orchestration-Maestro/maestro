@@ -82,7 +82,7 @@ impl Terminal {
 
     /// Whether shell semantics identify the primary cursor as prompt or input.
     #[must_use]
-    pub fn cursor_is_at_prompt(&self) -> bool {
+    pub fn is_cursor_at_prompt(&self) -> bool {
         if self.screens.active_key() == Key::Alternate {
             return false;
         }

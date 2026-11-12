@@ -73,7 +73,7 @@ impl PaneTerminal {
                 core.terminal.kitty_keyboard_flags().int(),
             ));
             protocol.reports_all_keys()
-                || protocol.reports_event_types() && core.terminal.modify_other_keys_enabled()
+                || protocol.reports_event_types() && core.terminal.is_modify_other_keys_enabled()
         })
     }
 
@@ -106,7 +106,7 @@ impl PaneTerminal {
     pub fn is_mouse_reporting_enabled(&self) -> bool {
         self.core
             .lock()
-            .is_ok_and(|core| core.terminal.mouse_tracking_enabled())
+            .is_ok_and(|core| core.terminal.is_mouse_tracking_enabled())
     }
     /// Whether mouse coordinates use pixels.
     #[must_use]
@@ -132,7 +132,7 @@ impl PaneTerminal {
         let t = &core.terminal;
         Some(
             t.active_screen() != Key::Alternate
-                && !t.mouse_tracking_enabled()
+                && !t.is_mouse_tracking_enabled()
                 && (!t.modes.get(Mode::CursorKeys) || t.modes.get(Mode::BracketedPaste)),
         )
     }
@@ -141,7 +141,7 @@ impl PaneTerminal {
     pub fn wheel_routing(&self) -> Option<WheelRouting> {
         let core = self.core.lock().ok()?;
         let t = &core.terminal;
-        Some(if t.mouse_tracking_enabled() {
+        Some(if t.is_mouse_tracking_enabled() {
             WheelRouting::MouseReport
         } else if t.active_screen() == Key::Alternate && t.modes.get(Mode::MouseAlternateScroll) {
             WheelRouting::AlternateScroll
@@ -175,7 +175,7 @@ fn input_state(t: &Terminal) -> InputState {
             MouseProtocolEncoding::Default
         },
         mouse_alternate_scroll: InputMode::from(t.modes.get(Mode::MouseAlternateScroll)),
-        modify_other_keys: InputMode::from(t.modify_other_keys_enabled()),
+        modify_other_keys: InputMode::from(t.is_modify_other_keys_enabled()),
         color_scheme_reporting: InputMode::from(t.modes.get(Mode::ReportColorScheme)),
     }
 }

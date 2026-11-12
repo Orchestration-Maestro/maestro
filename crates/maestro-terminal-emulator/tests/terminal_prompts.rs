@@ -147,32 +147,32 @@ fn editing_multiple_newlines_in_prompt_mode_marks_all_rows() {
 #[test]
 fn editing_cursor_is_at_prompt() {
     let mut t = Terminal::new(10, 3, 0).unwrap();
-    assert!(!t.cursor_is_at_prompt());
+    assert!(!t.is_cursor_at_prompt());
     phase(&mut t, Action::PromptStart);
-    assert!(t.cursor_is_at_prompt());
+    assert!(t.is_cursor_at_prompt());
     t.print_string("$ ").unwrap();
     phase(&mut t, Action::EndPromptStartInput);
-    assert!(t.cursor_is_at_prompt());
+    assert!(t.is_cursor_at_prompt());
     t.print_string("ls").unwrap();
     phase(&mut t, Action::EndInputStartOutput);
-    assert!(t.cursor_is_at_prompt());
+    assert!(t.is_cursor_at_prompt());
     t.linefeed().unwrap();
-    assert!(!t.cursor_is_at_prompt());
+    assert!(!t.is_cursor_at_prompt());
     t.linefeed().unwrap();
     phase(&mut t, Action::PromptStart);
-    assert!(t.cursor_is_at_prompt());
+    assert!(t.is_cursor_at_prompt());
 }
 #[test]
 fn editing_cursor_is_at_prompt_alternate_screen() {
     let mut t = Terminal::new(3, 2, 0).unwrap();
-    assert!(!t.cursor_is_at_prompt());
+    assert!(!t.is_cursor_at_prompt());
     phase(&mut t, Action::PromptStart);
-    assert!(t.cursor_is_at_prompt());
+    assert!(t.is_cursor_at_prompt());
     t.switch_screen_mode(SwitchScreenMode::Mode1049, true)
         .unwrap();
-    assert!(!t.cursor_is_at_prompt());
+    assert!(!t.is_cursor_at_prompt());
     phase(&mut t, Action::PromptStart);
-    assert!(!t.cursor_is_at_prompt());
+    assert!(!t.is_cursor_at_prompt());
 }
 #[test]
 fn editing_soft_wrap_with_semantic_prompt() {

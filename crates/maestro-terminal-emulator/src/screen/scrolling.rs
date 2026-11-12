@@ -21,8 +21,8 @@ impl Screen {
 
     /// Whether the viewport follows the active area.
     #[must_use]
-    pub fn viewport_is_bottom(&self) -> bool {
-        self.pages.viewport_is_active()
+    pub fn is_viewport_at_bottom(&self) -> bool {
+        self.pages.is_viewport_active()
     }
 
     /// Physically remove history through an inclusive endpoint, or all history.

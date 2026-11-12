@@ -71,7 +71,7 @@ impl KeyEncoder {
             encoding: KeyEncoding::Physical,
             modes: terminal.modes.clone(),
             kitty_flags: terminal.kitty_keyboard_flags(),
-            modify_other_keys_state_2: terminal.modify_other_keys_enabled(),
+            modify_other_keys_state_2: terminal.is_modify_other_keys_enabled(),
             macos_option_as_alt: OptionAsAlt::False,
         }
     }

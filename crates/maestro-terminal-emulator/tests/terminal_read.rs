@@ -119,7 +119,7 @@ fn keyboard_replay_excludes_cells_and_restores_both_keyboard_modes() {
     let mut restored = Terminal::new(20, 3, 100_000).unwrap();
     restored.write(replay.as_bytes());
     assert_eq!(restored.kitty_keyboard_flags().int(), 5);
-    assert!(restored.modify_other_keys_enabled());
+    assert!(restored.is_modify_other_keys_enabled());
     terminal.write(b"\x1b[?1049h");
     assert_eq!(terminal.kitty_keyboard_state_ansi().unwrap(), "\x1b[>4;2m");
 }

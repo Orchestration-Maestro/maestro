@@ -55,7 +55,7 @@ impl Scrollbar {
 
 impl PageList {
     /// Whether the viewport follows the active region rather than retained history.
-    pub(crate) fn viewport_is_active(&self) -> bool {
+    pub(crate) fn is_viewport_active(&self) -> bool {
         self.viewport == Viewport::Active
     }
 

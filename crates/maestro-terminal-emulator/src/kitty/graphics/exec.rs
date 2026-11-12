@@ -44,7 +44,7 @@ impl Terminal {
 
 /// Execute and apply the transmission's inherited response policy.
 pub fn execute(terminal: &mut Terminal, command: &Command) -> Option<Response> {
-    if !terminal.screens.active().kitty_images.enabled() {
+    if !terminal.screens.active().kitty_images.is_enabled() {
         return None;
     }
     let mut quiet = command.quiet;
@@ -80,8 +80,8 @@ pub fn execute(terminal: &mut Terminal, command: &Command) -> Option<Response> {
         | Control::ComposeAnimation(_) => failure("ERROR: unimplemented action"),
     };
     match quiet {
-        Quiet::No => (!response.empty()).then_some(response),
-        Quiet::Ok => (!response.ok()).then_some(response),
+        Quiet::No => (!response.is_empty()).then_some(response),
+        Quiet::Ok => (!response.is_ok()).then_some(response),
         Quiet::Failures => None,
     }
 }

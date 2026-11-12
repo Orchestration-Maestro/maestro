@@ -18,7 +18,7 @@ impl PaneCore {
             x: position.x,
             y: u16::try_from(position.y).ok()?,
             visible: cursor.visible,
-            shape: if self.terminal.cursor_style_is_default() {
+            shape: if self.terminal.is_cursor_style_default() {
                 0
             } else {
                 decscusr_cursor_shape(cursor.visual_style, cursor.blinking)

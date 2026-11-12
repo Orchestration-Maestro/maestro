@@ -514,12 +514,12 @@ fn screen_resize_more_cols_bounded_scrollback_keeps_viewport_valid() {
     }
     s.pages
         .scroll(maestro_terminal_emulator::page_list::Scroll::Row(28));
-    assert!(!s.viewport_is_bottom());
+    assert!(!s.is_viewport_at_bottom());
     assert!(s.pages.get_bottom_right(Tag::Viewport).is_some());
     resize(&mut s, 4, 10, true);
     assert_eq!(s.pages.cols(), 4);
     assert!(s.pages.scrollbar().total < 40);
-    assert!(s.viewport_is_bottom());
+    assert!(s.is_viewport_at_bottom());
     assert!(s.pages.get_bottom_right(Tag::Viewport).is_some());
 }
 

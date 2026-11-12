@@ -139,22 +139,22 @@ fn terminal_input_get_kitty_keyboard_flags() {
 #[test]
 fn extended_key_queries_follow_mode_two() {
     let mut t = Terminal::new(80, 24, 0).unwrap();
-    assert!(!t.modify_other_keys_enabled());
+    assert!(!t.is_modify_other_keys_enabled());
     t.write(b"\x1b[>4;2m");
-    assert!(t.modify_other_keys_enabled());
+    assert!(t.is_modify_other_keys_enabled());
     t.write(b"\x1b[>4;0m");
-    assert!(!t.modify_other_keys_enabled());
+    assert!(!t.is_modify_other_keys_enabled());
 }
 
 #[test]
 fn terminal_input_get_mouse_tracking() {
     let mut t = Terminal::new(80, 24, 0).unwrap();
-    assert!(!t.mouse_tracking_enabled());
+    assert!(!t.is_mouse_tracking_enabled());
     for mode in [9, 1000, 1002, 1003] {
         t.write(format!("\x1b[?{mode}h").as_bytes());
-        assert!(t.mouse_tracking_enabled());
+        assert!(t.is_mouse_tracking_enabled());
         t.write(format!("\x1b[?{mode}l").as_bytes());
-        assert!(!t.mouse_tracking_enabled());
+        assert!(!t.is_mouse_tracking_enabled());
     }
 }
 

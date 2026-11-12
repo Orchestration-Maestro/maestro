@@ -54,7 +54,7 @@ impl Terminal {
 impl Terminal {
     /// Whether any mouse tracking protocol is enabled, independently of the selected event.
     #[must_use]
-    pub fn mouse_tracking_enabled(&self) -> bool {
+    pub fn is_mouse_tracking_enabled(&self) -> bool {
         use crate::Mode;
         [
             Mode::MouseEventX10,
@@ -68,7 +68,7 @@ impl Terminal {
 
     /// Whether numeric extended modifier-key encoding is enabled.
     #[must_use]
-    pub fn modify_other_keys_enabled(&self) -> bool {
+    pub fn is_modify_other_keys_enabled(&self) -> bool {
         self.flags.modify_other_keys_2
     }
 }

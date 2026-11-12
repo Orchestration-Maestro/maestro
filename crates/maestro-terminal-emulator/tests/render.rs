@@ -47,16 +47,16 @@ fn dirty_state() {
     let mut state = RenderState::default();
     state.update(&mut t);
     assert_eq!(state.dirty, Dirty::Full);
-    assert!(state.rows().all(|row| row.dirty()));
+    assert!(state.rows().all(|row| row.is_dirty()));
     clean(&mut state);
     state.update(&mut t);
     assert_eq!(state.dirty, Dirty::Clean);
-    assert!(state.rows().all(|row| !row.dirty()));
+    assert!(state.rows().all(|row| !row.is_dirty()));
     feed(&mut t, "A");
     state.update(&mut t);
     assert_eq!(state.dirty, Dirty::Partial);
     assert_eq!(
-        state.rows().map(|r| r.dirty()).collect::<Vec<_>>(),
+        state.rows().map(|r| r.is_dirty()).collect::<Vec<_>>(),
         [true, false, false]
     );
 }
@@ -68,7 +68,7 @@ fn clearing_one_dirty_row_preserves_other_rows() {
     state.update(&mut t);
     state.rows().next().unwrap().clear_dirty();
     assert_eq!(
-        state.rows().map(|r| r.dirty()).collect::<Vec<_>>(),
+        state.rows().map(|r| r.is_dirty()).collect::<Vec<_>>(),
         [false, true, true]
     );
     assert_eq!(state.dirty, Dirty::Full);
@@ -96,7 +96,7 @@ fn reverse_video_transition(enabled: bool) {
         feed(&mut t, bytes);
         state.update(&mut t);
         assert_eq!(state.dirty, Dirty::Full);
-        assert!(state.rows().all(|r| r.dirty()));
+        assert!(state.rows().all(|r| r.is_dirty()));
         assert_eq!(
             (state.colors.background, state.colors.foreground),
             (background, foreground)
@@ -546,13 +546,13 @@ fn dirty_flags_persist_until_acknowledged() {
     state.update(&mut t);
     state.update(&mut t);
     assert_eq!(state.dirty, Dirty::Full);
-    assert!(state.rows().all(|row| row.dirty()));
+    assert!(state.rows().all(|row| row.is_dirty()));
     clean(&mut state);
     feed(&mut t, "B");
     state.update(&mut t);
     state.update(&mut t);
     assert_eq!(state.dirty, Dirty::Partial);
-    assert!(state.rows().next().unwrap().dirty());
+    assert!(state.rows().next().unwrap().is_dirty());
 }
 
 /// Compare the visible data rather than allocation or stale nonvisual row flags.
@@ -642,14 +642,14 @@ fn dynamic_color_transition(set: &str, reset: &str, resetting: bool) {
     state.update(&mut t);
     assert_ne!(state.colors, before);
     assert_eq!(state.dirty, Dirty::Full);
-    assert!(state.rows().all(|row| row.dirty()));
+    assert!(state.rows().all(|row| row.is_dirty()));
     let after = state.colors.clone();
     clean(&mut state);
     feed(&mut t, bytes);
     state.update(&mut t);
     assert_eq!(state.colors, after);
     assert_eq!(state.dirty, Dirty::Clean);
-    assert!(state.rows().all(|row| !row.dirty()));
+    assert!(state.rows().all(|row| !row.is_dirty()));
 }
 
 #[test]

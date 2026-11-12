@@ -420,7 +420,7 @@ fn screen_scroll_down_from_0() {
     let mut s = small_screen(10, 3, 0);
     write_text(&mut s, "1ABCD\n2EFGH\n3IJKL");
     s.scroll(maestro_terminal_emulator::screen::Scroll::DeltaRow(-1));
-    assert!(s.viewport_is_bottom());
+    assert!(s.is_viewport_at_bottom());
     assert_eq!(
         contents(&s, maestro_terminal_emulator::point::Tag::Viewport),
         "1ABCD\n2EFGH\n3IJKL"
@@ -438,7 +438,7 @@ fn screen_scrollback_various_cases() {
     assert_eq!(contents(&s, Tag::Viewport), "2EFGH\n3IJKL");
     for _ in 0..2 {
         s.scroll(Scroll::DeltaRow(-1));
-        assert!(!s.viewport_is_bottom());
+        assert!(!s.is_viewport_at_bottom());
         assert_eq!(contents(&s, Tag::Viewport), "1ABCD\n2EFGH\n3IJKL");
     }
     for behavior in [Scroll::Active, Scroll::DeltaRow(1)] {
@@ -461,7 +461,7 @@ fn screen_scrollback_with_multi_row_delta() {
     s.scroll(Scroll::Top);
     assert_eq!(contents(&s, Tag::Viewport), "1ABCD\n2EFGH\n3IJKL");
     s.scroll(Scroll::DeltaRow(5));
-    assert!(s.viewport_is_bottom());
+    assert!(s.is_viewport_at_bottom());
     assert_eq!(contents(&s, Tag::Viewport), "4ABCD\n5EFGH\n6IJKL");
 }
 
@@ -607,9 +607,9 @@ fn screen_clear_history_with_no_history() {
     use maestro_terminal_emulator::point::Tag;
     let mut s = small_screen(10, 3, 3);
     write_text(&mut s, "4ABCD\n5EFGH\n6IJKL");
-    assert!(s.viewport_is_bottom());
+    assert!(s.is_viewport_at_bottom());
     s.erase_history(None);
-    assert!(s.viewport_is_bottom());
+    assert!(s.is_viewport_at_bottom());
     assert_eq!(contents(&s, Tag::Viewport), "4ABCD\n5EFGH\n6IJKL");
     assert_eq!(contents(&s, Tag::Screen), "4ABCD\n5EFGH\n6IJKL");
 }
@@ -619,11 +619,11 @@ fn screen_clear_history() {
     use maestro_terminal_emulator::{point::Tag, screen::Scroll};
     let mut s = small_screen(10, 3, 3);
     write_text(&mut s, "1ABCD\n2EFGH\n3IJKL\n4ABCD\n5EFGH\n6IJKL");
-    assert!(s.viewport_is_bottom());
+    assert!(s.is_viewport_at_bottom());
     s.scroll(Scroll::Top);
     assert_eq!(contents(&s, Tag::Viewport), "1ABCD\n2EFGH\n3IJKL");
     s.erase_history(None);
-    assert!(s.viewport_is_bottom());
+    assert!(s.is_viewport_at_bottom());
     assert_eq!(contents(&s, Tag::Viewport), "4ABCD\n5EFGH\n6IJKL");
     assert_eq!(contents(&s, Tag::Screen), "4ABCD\n5EFGH\n6IJKL");
 }

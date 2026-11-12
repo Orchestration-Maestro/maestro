@@ -150,7 +150,7 @@ impl Default for ImageStorage {
 impl ImageStorage {
     /// Whether the screen accepts image commands.
     #[must_use]
-    pub fn enabled(&self) -> bool {
+    pub fn is_enabled(&self) -> bool {
         self.total_limit != 0
     }
 

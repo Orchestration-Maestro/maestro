@@ -29,7 +29,7 @@ impl Default for WriteState {
 impl Terminal {
     /// Whether the current DECSCUSR appearance still uses configured defaults.
     #[must_use]
-    pub fn cursor_style_is_default(&self) -> bool {
+    pub fn is_cursor_style_default(&self) -> bool {
         self.write_state
             .as_ref()
             .is_none_or(|state| state.default_cursor)

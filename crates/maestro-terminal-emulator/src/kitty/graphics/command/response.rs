@@ -29,7 +29,7 @@ impl Response {
     /// # Errors
     /// Propagates the writer's original error.
     pub fn encode<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        if self.empty() {
+        if self.is_empty() {
             return Ok(());
         }
         writer.write_all(b"\x1b_G")?;
@@ -51,12 +51,12 @@ impl Response {
     }
     /// Whether the reply is exactly the success message.
     #[must_use]
-    pub fn ok(&self) -> bool {
+    pub fn is_ok(&self) -> bool {
         self.message == b"OK"
     }
     /// Whether both image identifiers are absent, irrespective of placement.
     #[must_use]
-    pub fn empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.id == 0 && self.image_number == 0
     }
 }

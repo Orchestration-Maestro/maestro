@@ -187,7 +187,7 @@ fn anonymous_placements_coexist_and_disabling_releases_all_pins() {
     assert_eq!(screen.pages.tracked_pins().count(), baseline + 2);
     let before = storage.generation;
     storage.set_limit(&mut screen.pages, 0);
-    assert!(!storage.enabled());
+    assert!(!storage.is_enabled());
     assert_eq!(storage.total_bytes, 0);
     assert!(storage.images.is_empty());
     assert!(storage.placements.is_empty());

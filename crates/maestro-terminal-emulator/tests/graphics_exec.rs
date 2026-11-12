@@ -36,7 +36,7 @@ fn chunked_upload_inherits_and_increases_quiet_policy() {
         assert!(execute(&mut terminal, initial).is_none());
         let response = execute(&mut terminal, final_chunk);
         assert_eq!(response.is_some(), replies);
-        assert!(response.is_none_or(|r| r.ok()));
+        assert!(response.is_none_or(|r| r.is_ok()));
         assert_eq!(
             terminal.screens.active().kitty_images.images[&1].data,
             [255; 6]
@@ -51,7 +51,7 @@ fn default_format_is_rgba_and_identifiers_retain_full_width() {
     assert!(
         execute(&mut terminal, b"a=t,i=1,s=1,v=2;//////////8=")
             .unwrap()
-            .ok()
+            .is_ok()
     );
     assert_eq!(
         terminal.screens.active().kitty_images.images[&1].format,
@@ -122,7 +122,7 @@ fn display_resolves_numbers_and_preserves_cursor_for_virtual_or_stationary_place
     assert_eq!(upload.image_number, 9);
     let displayed = execute(&mut terminal, b"a=p,I=9,p=2,c=2,r=2,C=1").unwrap();
     assert_eq!(displayed.id, upload.id);
-    assert!(displayed.ok());
+    assert!(displayed.is_ok());
     assert!(
         execute(&mut terminal, b"a=p,I=9,U=1,P=1")
             .unwrap()
@@ -132,7 +132,7 @@ fn display_resolves_numbers_and_preserves_cursor_for_virtual_or_stationary_place
     assert!(
         execute(&mut terminal, b"a=p,I=9,U=1,p=3,c=1,r=1")
             .unwrap()
-            .ok()
+            .is_ok()
     );
     let screen = terminal.screens.active();
     assert_eq!((screen.cursor.x, screen.cursor.y), (0, 0));
@@ -157,7 +157,7 @@ fn quiet_errors_query_and_animation_follow_response_policy() {
     assert!(
         execute(&mut terminal, b"a=q,i=1,f=24,s=1,v=1;AAAA")
             .unwrap()
-            .ok()
+            .is_ok()
     );
     assert_eq!(
         execute(&mut terminal, b"a=t,i=1,f=24;AAAA")
@@ -171,7 +171,7 @@ fn quiet_errors_query_and_animation_follow_response_policy() {
     for command in [b"a=f,i=1,q=1".as_slice(), b"a=a,i=1,q=1", b"a=c,i=1,q=1"] {
         let response = execute(&mut terminal, command).unwrap();
         assert_eq!(response.message, b"ERROR: unimplemented action");
-        assert!(response.empty());
+        assert!(response.is_empty());
     }
 }
 
@@ -193,16 +193,16 @@ fn png_decoding_follows_each_terminals_setting() {
         quiet: Quiet::No,
         data: include_bytes!("fixtures/images/rgba8.png").to_vec(),
     };
-    assert!(enabled.kitty_graphics(&command).unwrap().ok());
+    assert!(enabled.kitty_graphics(&command).unwrap().is_ok());
     enabled.write(b"\x1bc");
-    assert!(enabled.kitty_graphics(&command).unwrap().ok());
+    assert!(enabled.kitty_graphics(&command).unwrap().is_ok());
     assert_eq!(
         disabled.kitty_graphics(&command).unwrap().message,
         b"EINVAL: unsupported format"
     );
     assert!(disabled.screens.active().kitty_images.images.is_empty());
     disabled.enable_kitty_graphics();
-    assert!(disabled.kitty_graphics(&command).unwrap().ok());
+    assert!(disabled.kitty_graphics(&command).unwrap().is_ok());
 }
 
 #[test]
@@ -309,7 +309,7 @@ fn failed_uploads_release_completion_state_and_report_quota_errors() {
     assert!(
         execute(&mut terminal, b"a=t,i=1,f=24,s=1,v=1;AAAA")
             .unwrap()
-            .ok()
+            .is_ok()
     );
 }
 
