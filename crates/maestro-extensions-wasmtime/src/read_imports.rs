@@ -41,8 +41,7 @@ macro_rules! endpoints {
         }
     )+};
 }
-endpoints! { oauth_reads => OAuthProvider, builtin_reads => Builtin, api_reads => Api, context_reads => Read,
-writer_reads => Writer, credential_reads => Credentials }
+endpoints! { oauth_reads => OAuthProvider, builtin_reads => Builtin, api_reads => Api, context_reads => Read }
 
 /// Clones an original resource endpoint before invoking its native owner.
 pub(crate) fn resource<T: WasiView, E: ReadEndpoint>(
@@ -149,6 +148,37 @@ pub(crate) fn release<E: 'static>(
     state.ctx().table.delete(this)?;
     Ok(())
 }
+
+/// Declares the methods of one resource trait that run an endpoint operation to its result:
+/// each takes the handle and its operands and answers with the operation's own failure.
+macro_rules! reads {
+    ($endpoint:ty; $($method:ident($($operand:ident: $kind:ty),*) -> $result:ty;)+) => {$(
+        fn $method(
+            &mut self,
+            this: ::wasmtime::component::Resource<$endpoint>,
+            $($operand: $kind),*
+        ) -> ::wasmtime::Result<Result<$result, String>> {
+            Ok($crate::read_imports::endpoint(self, &this)?.$method($($operand),*))
+        }
+    )+};
+}
+pub(crate) use reads;
+
+/// Declares the methods of one resource trait whose native code may call back into the
+/// instance: each hands the guest the route it drives to the operation's result.
+macro_rules! routes {
+    ($endpoint:ty; $($method:ident($($operand:ident: $kind:ty),*);)+) => {$(
+        fn $method(
+            &mut self,
+            this: ::wasmtime::component::Resource<$endpoint>,
+            $($operand: $kind),*
+        ) -> ::wasmtime::Result<::wasmtime::component::Resource<$crate::import_route::Route>> {
+            let route = $crate::read_imports::endpoint(self, &this)?.$method($($operand),*);
+            $crate::import_route::push(self, route)
+        }
+    )+};
+}
+pub(crate) use routes;
 
 /// Registers each named method of one resource as a forward to its generated trait method.
 macro_rules! forwards {

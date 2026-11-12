@@ -9,7 +9,7 @@ use crate::{
         Handle,
         widget_calls::{Answered, Event},
     },
-    local_resources::{Lease, Message, Registry},
+    local_resources::{Lease, Registry, held::Close},
     overlay_reads::OptionsEndpoint,
 };
 use maestro_extensions::{
@@ -124,10 +124,7 @@ pub struct CloseEndpoint(pub(crate) Arc<Lease>);
 impl CloseEndpoint {
     /// Calls the native close operation through the existing reentrant route.
     pub(crate) fn close(&self) -> crate::import_route::Route {
-        self.0.route(|id, reply| {
-            Message::Widgets(crate::widget_reads::WidgetMessage::Overlay(
-                crate::overlay_reads::OverlayMessage::Close(id, reply),
-            ))
-        })
+        self.0
+            .run_routed::<Close, _>(|close, _| close().map_err(|error| error.to_string()))
     }
 }

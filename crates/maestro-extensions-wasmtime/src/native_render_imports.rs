@@ -6,9 +6,14 @@
 )]
 use crate::local_resources::effects::ThemeEndpoint;
 use crate::{
+    bindings::maestro::extension::host::HostNativeComponent,
     builtin_reads::Endpoint,
     callback_imports::CallbackView,
-    native_renders::{ComponentEndpoint, ComponentRequest, Previous, Render, RowEndpoint, Slot},
+    context_imports::add_resource,
+    import_route::{Route, push},
+    lifecycle::State,
+    native_renders::{ComponentEndpoint, Previous, Render, RowEndpoint, Slot},
+    read_imports::{endpoint, forwards, release},
 };
 use wasmtime::{
     StoreContextMut,
@@ -20,7 +25,6 @@ pub(crate) fn link<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, RowEndpoint>(host, "native-row")?;
-    crate::context_imports::add_resource::<T, ComponentEndpoint>(host, "native-component")?;
     host.func_wrap(
         "[method]builtin-tool.render-call",
         |mut store: StoreContextMut<'_, T>,
@@ -59,7 +63,7 @@ pub(crate) fn link<T: CallbackView + 'static>(
             )?,))
         },
     )?;
-    component(host)
+    Ok(())
 }
 /// Exact ordinary call operands, independently of the opaque row context.
 type CallArgs = (
@@ -128,57 +132,55 @@ fn operands<T: CallbackView>(
         slot,
     })
 }
-/// Forwards native view methods through the existing nested-call route.
-fn component<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]native-component.render",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, width): (Resource<ComponentEndpoint>, u32)| {
-            let route = store
-                .data_mut()
-                .ctx()
-                .table
-                .get(&resource)?
-                .call(ComponentRequest::Render(width));
-            Ok((crate::import_route::push(store.data_mut(), route)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]native-component.handle-input",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, data): (Resource<ComponentEndpoint>, String)| {
-            let route = store
-                .data_mut()
-                .ctx()
-                .table
-                .get(&resource)?
-                .call(ComponentRequest::Input(data));
-            Ok((crate::import_route::push(store.data_mut(), route)?,))
-        },
-    )?;
-    for (name, request) in [
-        (
-            "[method]native-component.invalidate",
-            ComponentRequest::Invalidate,
-        ),
-        (
-            "[method]native-component.wants-key-release",
-            ComponentRequest::Key,
-        ),
-    ] {
-        host.func_wrap(
-            name,
-            move |mut store: StoreContextMut<'_, T>,
-                  (resource,): (Resource<ComponentEndpoint>,)| {
-                let route = store
-                    .data_mut()
-                    .ctx()
-                    .table
-                    .get(&resource)?
-                    .call(request.clone());
-                Ok((crate::import_route::push(store.data_mut(), route)?,))
-            },
-        )?;
+
+impl HostNativeComponent for State {
+    fn render(
+        &mut self,
+        this: Resource<ComponentEndpoint>,
+        width: u32,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.render(width);
+        push(self, route)
+    }
+
+    fn handle_input(
+        &mut self,
+        this: Resource<ComponentEndpoint>,
+        data: String,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.handle_input(data);
+        push(self, route)
+    }
+
+    fn invalidate(
+        &mut self,
+        this: Resource<ComponentEndpoint>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.invalidate();
+        push(self, route)
+    }
+
+    fn wants_key_release(
+        &mut self,
+        this: Resource<ComponentEndpoint>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let route = endpoint(self, &this)?.wants_key_release();
+        push(self, route)
+    }
+
+    fn drop(&mut self, this: Resource<ComponentEndpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards every native component method to its trait implementation.
+pub(crate) fn add_component(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, ComponentEndpoint>(host, "native-component")?;
+    forwards! { host, "native-component", HostNativeComponent, ComponentEndpoint,
+        "render" => render(width: u32);
+        "handle-input" => handle_input(data: String);
+        "invalidate" => invalidate();
+        "wants-key-release" => wants_key_release();
     }
     Ok(())
 }

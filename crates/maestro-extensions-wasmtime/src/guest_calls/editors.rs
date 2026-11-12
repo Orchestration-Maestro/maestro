@@ -6,6 +6,7 @@ use crate::lifecycle::replies::Reply;
 use crate::local_resources::{
     Registry,
     effects::{EmitterEndpoint, TuiEndpoint},
+    held::LentText,
 };
 use crate::widget_reads::{StyleEndpoint, WidgetEndpoint};
 use maestro_extensions::{
@@ -250,11 +251,9 @@ pub struct TextCallbackEndpoint(pub(crate) std::sync::Arc<crate::local_resources
 impl TextCallbackEndpoint {
     /// Runs the callback; its native code may call back into this instance.
     pub(crate) fn call(&self, text: String) -> crate::import_route::Route {
-        self.0.route(|id, reply| {
-            crate::local_resources::Message::Widgets(crate::widget_reads::WidgetMessage::Lent(
-                id,
-                crate::widget_reads::Lent::Text(text, reply),
-            ))
+        self.0.run_routed::<LentText, _>(move |callback, _| {
+            callback(&text);
+            Ok(())
         })
     }
 }

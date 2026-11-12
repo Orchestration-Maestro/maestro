@@ -2,7 +2,7 @@
 use super::{Capability, Registry, pump::State};
 use crate::{
     import_route::Value as Outcome,
-    native_renders::{ComponentEndpoint, ComponentRequest, Render, Row, RowEndpoint, Slot},
+    native_renders::{ComponentEndpoint, Render, Row, RowEndpoint, Slot},
 };
 use maestro_extensions::{ComponentHandle, ToolRenderContext, ToolRenderResultLike};
 use serde_json::Value;
@@ -68,36 +68,6 @@ impl State {
         self.registry
             .insert(Capability::NativeComponent(component))
             .map(|lease| Outcome::Component(ComponentEndpoint(lease)))
-    }
-    /// Forwards every component method to the retained native consumer.
-    pub(super) fn native_component(
-        &self,
-        id: u64,
-        request: ComponentRequest,
-    ) -> Result<Outcome, String> {
-        let capability = self.registry.capability(id);
-        let Some(Capability::NativeComponent(component)) = capability.as_deref() else {
-            return Err("extension native component resource ended".into());
-        };
-        match request {
-            ComponentRequest::Render(width) => component
-                .try_render(width as usize)
-                .map(Outcome::Lines)
-                .map_err(|error| error.to_string()),
-            ComponentRequest::Input(data) => {
-                if let Some(input) = component.input_handler() {
-                    input
-                        .try_handle_input(&data)
-                        .map_err(|error| error.to_string())?;
-                }
-                Ok(Outcome::Unit)
-            }
-            ComponentRequest::Invalidate => {
-                component.invalidate();
-                Ok(Outcome::Unit)
-            }
-            ComponentRequest::Key => Ok(Outcome::Key(component.wants_key_release())),
-        }
     }
 }
 

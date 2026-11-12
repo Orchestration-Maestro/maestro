@@ -3,8 +3,7 @@ use super::{Capability, Registry, pump::State};
 use crate::guest_calls::paints::{Failure, HighlightFn};
 use crate::widget_markdown::{highlighting, role};
 use crate::widget_reads::{
-    HighlighterEndpoint, Lent, LentTheme, Paint, StyleEndpoint, Widget, WidgetEndpoint,
-    WidgetMessage,
+    HighlighterEndpoint, LentTheme, Paint, StyleEndpoint, Widget, WidgetEndpoint, WidgetMessage,
 };
 use maestro_extensions::presentation::BorderColor;
 use maestro_extensions::types::UIErrorReporter;
@@ -209,7 +208,6 @@ impl State {
                 Some(Capability::Widget(widget)) => widget.answer(request, registry),
                 _ => request.reject("extension widget resource ended"),
             },
-            WidgetMessage::Lent(id, lent) => self.lent(id, lent),
             WidgetMessage::LendTheme(reply) => drop(reply.send(self.lend_theme())),
             WidgetMessage::LendSelect(reply) => drop(reply.send(self.lend_select())),
             WidgetMessage::LendSettings(reply) => {
@@ -220,10 +218,6 @@ impl State {
                     .and_then(|keys| registry.keybindings(keys));
                 let _ = reply.send(keys);
             }
-            WidgetMessage::Keys(id, request) => match registry.capability(id).as_deref() {
-                Some(Capability::Keybindings(keys)) => request.answer(keys),
-                _ => request.reject("extension keybindings resource ended"),
-            },
             WidgetMessage::Hint(hint, reply) => {
                 let _ = reply.send(crate::keys_reads::hint(hint, &*registry.widgets));
             }
@@ -312,31 +306,6 @@ impl State {
             _ => Err("extension terminal resource ended".to_owned()),
         };
         let _ = reply.send(result);
-    }
-
-    /// Applies a lent style or runs the lent highlighting.
-    fn lent(&self, id: u64, lent: Lent) {
-        let capability = self.registry.capability(id);
-        match (capability.as_deref(), lent) {
-            (Some(Capability::Style(style)), Lent::Style(text, reply)) => {
-                let _ = reply.send(Ok(style(&text)));
-            }
-            (Some(Capability::Highlighter(highlight)), Lent::Highlight(code, lang, reply)) => {
-                let _ = reply.send(Ok(highlight(&code, lang.as_deref())));
-            }
-            (Some(Capability::RowStyle(style)), Lent::Row(text, selected, reply)) => {
-                let _ = reply.send(Ok(style(&text, selected)));
-            }
-            (Some(Capability::SubmenuDone(done)), Lent::Done(value, reply)) => {
-                done(value);
-                let _ = reply.send(Ok(()));
-            }
-            (Some(Capability::Text(callback)), Lent::Text(text, reply)) => {
-                callback(&text);
-                let _ = reply.send(Ok(()));
-            }
-            (_, lent) => lent.reject("extension style resource ended"),
-        }
     }
 
     /// Lends the live theme's editor border and selection list styles.

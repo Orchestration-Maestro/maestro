@@ -105,7 +105,7 @@ fn project(value: serde_json::Value) -> crate::settings::model::LoadedConfig {
 #[test]
 fn unknown_members_do_not_hide_valid_siblings() {
     let loaded = project(json!({
-        "plugin":[], "keys":{"anything":true},
+        "unrecognized":[], "keys":{"anything":true},
         "multiplexer":{
             "theme":{"custom":{"accentt":"#ffffff"}},
             "mouseCapture":false, "mouseCaptur":true, "foo.bar":true,"foo.?.bar":false,"z.z":true,

@@ -5,10 +5,14 @@
     clippy::excessive_nesting
 )]
 use crate::{
+    bindings::maestro::extension::host::HostAssistantStream,
     callback_imports::{CallbackView, retain},
+    context_imports::add_resource,
     guest_calls::Callback,
+    lifecycle::State,
     local_resources::{SignalEndpoint, model_streams::Endpoint},
     model_calls::Controls,
+    read_imports::{endpoint, forwards, release},
 };
 use wasmtime::{
     StoreContextMut,
@@ -56,7 +60,6 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::provider_imports::add_to_linker(host)?;
-    crate::context_imports::add_resource::<T, Endpoint>(host, "assistant-stream")?;
     host.func_wrap(
         "model-stream",
         |mut s: StoreContextMut<'_, T>, (simple, data, controls): (bool, String, WireControls)| {
@@ -67,20 +70,6 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
                 Err(error) => Err(error),
             };
             Ok((stream,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]assistant-stream.push",
-        |mut s: StoreContextMut<'_, T>, (stream, event): (Resource<Endpoint>, String)| {
-            let stream = s.data_mut().ctx().table.get(&stream)?.clone();
-            Ok((stream.push(event),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]assistant-stream.end",
-        |mut s: StoreContextMut<'_, T>, (stream, value): (Resource<Endpoint>, Option<String>)| {
-            let stream = s.data_mut().ctx().table.get(&stream)?.clone();
-            Ok((stream.end(value),))
         },
     )?;
     host.func_wrap_concurrent(
@@ -101,5 +90,37 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             })
         },
     )?;
+    Ok(())
+}
+
+impl HostAssistantStream for State {
+    fn push(
+        &mut self,
+        this: Resource<Endpoint>,
+        event: String,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(endpoint(self, &this)?.push(event))
+    }
+
+    fn end(
+        &mut self,
+        this: Resource<Endpoint>,
+        value: Option<String>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(endpoint(self, &this)?.end(value))
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards the synchronous methods of an assistant stream to its trait implementation.
+pub(crate) fn add_stream(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Endpoint>(host, "assistant-stream")?;
+    forwards! { host, "assistant-stream", HostAssistantStream, Endpoint,
+        "push" => push(event: String);
+        "end" => end(value: Option<String>);
+    }
     Ok(())
 }

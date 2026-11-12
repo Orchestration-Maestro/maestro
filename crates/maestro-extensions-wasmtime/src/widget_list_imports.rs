@@ -12,7 +12,6 @@ use crate::{
     widget_imports::{StyleSource, build, paint, widget},
     widget_lists::{
         ListBuild, ListRequest, RowPaint, RowStyleEndpoint, SettingOperand, SettingsPaints, Slot,
-        SubmenuDoneEndpoint,
     },
     widget_reads::{Build, Paint, Request, StyleEndpoint, WidgetEndpoint, WidgetMessage},
 };
@@ -225,13 +224,10 @@ fn row_paint<T: CallbackView>(store: &mut T, style: &RowStyleSource) -> wasmtime
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, RowStyleEndpoint>(host, "row-style")?;
-    crate::context_imports::add_resource::<T, SubmenuDoneEndpoint>(host, "submenu-done")?;
     constructors(host)?;
     themes(host)?;
     methods(host)?;
-    reads(host)?;
-    lent(host)
+    reads(host)
 }
 
 /// Installs the selection list, settings list and loader constructors.
@@ -463,27 +459,6 @@ fn reads<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtim
                 Err(error) => Err(error),
             };
             Ok((signal,))
-        },
-    )
-}
-
-/// Installs the methods of the lent row styles and submenu closers.
-fn lent<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]row-style.apply",
-        |mut store: StoreContextMut<'_, T>,
-         (this, text, selected): (Resource<RowStyleEndpoint>, String, bool)| {
-            let style = store.data_mut().ctx().table.get(&this)?.clone();
-            Ok((style.apply(text, selected),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]submenu-done.done",
-        |mut store: StoreContextMut<'_, T>,
-         (this, value): (Resource<SubmenuDoneEndpoint>, Option<String>)| {
-            let done = store.data_mut().ctx().table.get(&this)?.clone();
-            let route = done.done(value);
-            Ok((push(store.data_mut(), route)?,))
         },
     )
 }

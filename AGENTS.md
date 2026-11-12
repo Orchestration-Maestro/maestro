@@ -630,7 +630,7 @@ which keeps the supplied JSON Schema value beside the kinds its author declared 
 individual nodes and an optional executable payload. Shared Base/refinement records
 keep native callbacks local; the guest specializes the same records with borrowed
 JSON views and its existing callback resources. Ordinary serialization omits code. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
-re-exports it, and the model argument-validation owner is its only converter.
+re-exports it, and `maestro-schema-validator` is its only converter.
 Serialization writes the supplied JSON alone; provider payloads and saved JSON never
 carry the declared kinds.
 

@@ -4,133 +4,14 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::local_resources::{Lease, Message};
+use crate::{
+    guest_calls::Handle,
+    import_route::Route,
+    local_resources::{Lease, Message, held::Credentials},
+};
 use maestro_extensions::{AuthStorage, DiagnosticErrorInfo};
-use std::sync::{Arc, mpsc::Sender};
-
-/// Catchable credential operation result.
-type Reply<T> = Sender<Result<T, String>>;
-
-/// Operations on the original accepted credential state.
-pub(crate) enum Request {
-    /// Returns the native implementations in registration order.
-    Providers(Reply<Vec<crate::oauth_reads::Endpoint>>),
-    /// Replaces only this owner's selected fallback callback.
-    Fallback(
-        crate::guest_calls::Handle,
-        tokio::sync::mpsc::UnboundedSender<Message>,
-        Reply<()>,
-    ),
-    /// Installs a runtime-only key.
-    Runtime(String, String, Reply<()>),
-    /// Removes a runtime-only key.
-    RemoveRuntime(String, Reply<()>),
-    /// Reloads and records backend failures.
-    Reload(Reply<()>),
-    /// Reads one typed credential.
-    Get(String, Reply<Option<String>>),
-    /// Accepts and persists one credential.
-    Set(String, String, Reply<()>),
-    /// Removes one credential.
-    Remove(String, Reply<()>),
-    /// Reads provider names in insertion order.
-    List(Reply<Vec<String>>),
-    /// Checks stored presence, including untyped values.
-    Has(String, Reply<bool>),
-    /// Checks configured authentication without token refresh.
-    HasAuth(String, Reply<bool>),
-    /// Reads non-secret source metadata.
-    Status(String, Reply<String>),
-    /// Reads the typed credential view.
-    All(Reply<String>),
-    /// Drains persistence and load errors.
-    Errors(Reply<String>),
-    /// Logs out one provider.
-    Logout(String, Reply<()>),
-}
-
-impl Request {
-    /// Returns an owner failure without stranding a waiting import.
-    pub(crate) fn reject(self, error: &str) {
-        match self {
-            Self::Providers(reply) => {
-                send(&reply, Err::<Vec<crate::oauth_reads::Endpoint>, _>(error));
-            }
-            Self::Fallback(_, _, reply)
-            | Self::Runtime(_, _, reply)
-            | Self::RemoveRuntime(_, reply)
-            | Self::Reload(reply)
-            | Self::Set(_, _, reply)
-            | Self::Remove(_, reply)
-            | Self::Logout(_, reply) => send(&reply, Err::<(), _>(error)),
-            Self::Get(_, reply) => send(&reply, Err::<Option<String>, _>(error)),
-            Self::List(reply) => send(&reply, Err::<Vec<String>, _>(error)),
-            Self::Has(_, reply) | Self::HasAuth(_, reply) => send(&reply, Err::<bool, _>(error)),
-            Self::Status(_, reply) | Self::All(reply) | Self::Errors(reply) => {
-                send(&reply, Err::<String, _>(error));
-            }
-        }
-    }
-
-    /// Calls the native credential algorithms outside the resource-table borrow.
-    pub(crate) fn answer(self, owner: &AuthStorage, registry: &crate::local_resources::Registry) {
-        match self {
-            Self::Providers(reply) => send(&reply, providers(owner, registry)),
-            Self::Fallback(handler, requests, reply) => {
-                owner.set_fallback_resolver(handler.fallback(requests));
-                send(&reply, Ok::<_, String>(()));
-            }
-            Self::Runtime(provider, key, reply) => {
-                owner.set_runtime_api_key(&provider, &key);
-                send(&reply, Ok::<_, String>(()));
-            }
-            Self::RemoveRuntime(provider, reply) => {
-                owner.remove_runtime_api_key(&provider);
-                send(&reply, Ok::<_, String>(()));
-            }
-            Self::Reload(reply) => {
-                owner.reload();
-                send(&reply, Ok::<_, String>(()));
-            }
-            Self::Get(provider, reply) => {
-                let result = owner.get(&provider).map(|value| encode(&value)).transpose();
-                send(&reply, result);
-            }
-            Self::Set(provider, value, reply) => {
-                let result =
-                    crate::writer_reads::decode(&value).map(|value| owner.set(&provider, value));
-                send(&reply, result);
-            }
-            Self::Remove(provider, reply) => {
-                owner.remove(&provider);
-                send(&reply, Ok::<_, String>(()));
-            }
-            Self::List(reply) => send(&reply, Ok::<_, String>(owner.list())),
-            Self::Has(provider, reply) => send(&reply, Ok::<_, String>(owner.has(&provider))),
-            Self::HasAuth(provider, reply) => send(&reply, owner.has_auth(&provider)),
-            Self::Status(provider, reply) => {
-                let result = owner
-                    .get_auth_status(&provider)
-                    .map_err(|error| error.to_string())
-                    .and_then(|value| encode(&value));
-                send(&reply, result);
-            }
-            Self::All(reply) => send(&reply, encode(&owner.get_all())),
-            Self::Errors(reply) => {
-                let errors: Vec<_> = owner
-                    .drain_errors()
-                    .into_iter()
-                    .map(|error| DiagnosticErrorInfo::error(error.to_string()))
-                    .collect();
-                send(&reply, encode(&errors));
-            }
-            Self::Logout(provider, reply) => {
-                owner.logout(&provider);
-                send(&reply, Ok::<_, String>(()));
-            }
-        }
-    }
-}
+use std::sync::Arc;
+use tokio::sync::mpsc::UnboundedSender;
 
 /// Retains each implementation in the order the credential owner supplies.
 fn providers(
@@ -148,15 +29,118 @@ fn providers(
 fn encode(value: &impl serde::Serialize) -> Result<String, String> {
     serde_json::to_string(value).map_err(|error| error.to_string())
 }
-/// Sends the original operation's catchable failure text.
-fn send<T, E: std::fmt::Display>(reply: &Reply<T>, result: Result<T, E>) {
-    let _ = reply.send(result.map_err(|error| error.to_string()));
+/// Accepts and persists one credential, rejecting malformed text before any change.
+pub(crate) fn set(owner: &AuthStorage, provider: &str, value: &str) -> Result<(), String> {
+    crate::writer_reads::decode(value).map(|value| owner.set(provider, value))
 }
 
 /// Store-safe lease of the independently retained credential owner.
 #[derive(Clone)]
 pub struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
+    /// Returns the native implementations in registration order.
+    pub(crate) fn get_oauth_providers(&self) -> Result<Vec<crate::oauth_reads::Endpoint>, String> {
+        self.0
+            .run::<Credentials, _>(|owner, registry| providers(owner, registry))
+    }
+    /// Replaces only this owner's selected fallback callback.
+    pub(crate) fn set_fallback_resolver(
+        &self,
+        handler: Handle,
+        requests: UnboundedSender<Message>,
+    ) -> Route {
+        self.0.run_routed::<Credentials, _>(move |owner, _| {
+            owner.set_fallback_resolver(handler.fallback(requests));
+            Ok(())
+        })
+    }
+    /// Installs a runtime-only key.
+    pub(crate) fn set_runtime_api_key(&self, provider: String, key: String) -> Result<(), String> {
+        self.0.run::<Credentials, _>(move |owner, _| {
+            owner.set_runtime_api_key(&provider, &key);
+            Ok(())
+        })
+    }
+    /// Removes a runtime-only key.
+    pub(crate) fn remove_runtime_api_key(&self, provider: String) -> Result<(), String> {
+        self.0.run::<Credentials, _>(move |owner, _| {
+            owner.remove_runtime_api_key(&provider);
+            Ok(())
+        })
+    }
+    /// Reloads and records backend failures.
+    pub(crate) fn reload(&self) -> Route {
+        self.0.run_routed::<Credentials, _>(|owner, _| {
+            owner.reload();
+            Ok(())
+        })
+    }
+    /// Reads one typed credential.
+    pub(crate) fn get(&self, provider: String) -> Route {
+        self.0.run_routed::<Credentials, _>(move |owner, _| {
+            owner.get(&provider).map(|value| encode(&value)).transpose()
+        })
+    }
+    /// Accepts and persists one credential.
+    pub(crate) fn set(&self, provider: String, value: String) -> Route {
+        self.0
+            .run_routed::<Credentials, _>(move |owner, _| set(owner, &provider, &value))
+    }
+    /// Removes one credential.
+    pub(crate) fn remove(&self, provider: String) -> Route {
+        self.0.run_routed::<Credentials, _>(move |owner, _| {
+            owner.remove(&provider);
+            Ok(())
+        })
+    }
+    /// Reads provider names in insertion order.
+    pub(crate) fn list(&self) -> Route {
+        self.0
+            .run_routed::<Credentials, _>(|owner, _| Ok(owner.list()))
+    }
+    /// Checks stored presence, including untyped values.
+    pub(crate) fn has(&self, provider: String) -> Route {
+        self.0
+            .run_routed::<Credentials, _>(move |owner, _| Ok(owner.has(&provider)))
+    }
+    /// Checks configured authentication without token refresh.
+    pub(crate) fn has_auth(&self, provider: String) -> Route {
+        self.0.run_routed::<Credentials, _>(move |owner, _| {
+            owner.has_auth(&provider).map_err(|error| error.to_string())
+        })
+    }
+    /// Reads non-secret source metadata.
+    pub(crate) fn get_auth_status(&self, provider: String) -> Route {
+        self.0.run_routed::<Credentials, _>(move |owner, _| {
+            owner
+                .get_auth_status(&provider)
+                .map_err(|error| error.to_string())
+                .and_then(|value| encode(&value))
+        })
+    }
+    /// Reads the typed credential view.
+    pub(crate) fn get_all(&self) -> Route {
+        self.0
+            .run_routed::<Credentials, _>(|owner, _| encode(&owner.get_all()))
+    }
+    /// Drains persistence and load errors.
+    pub(crate) fn drain_errors(&self) -> Result<String, String> {
+        self.0.run::<Credentials, _>(|owner, _| {
+            let errors: Vec<_> = owner
+                .drain_errors()
+                .into_iter()
+                .map(|error| DiagnosticErrorInfo::error(error.to_string()))
+                .collect();
+            encode(&errors)
+        })
+    }
+    /// Logs out one provider.
+    pub(crate) fn logout(&self, provider: String) -> Route {
+        self.0.run_routed::<Credentials, _>(move |owner, _| {
+            owner.logout(&provider);
+            Ok(())
+        })
+    }
     /// Leaves provider selection, login and persistence with the retained credential owner.
     pub(crate) async fn login(
         &self,

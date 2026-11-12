@@ -280,8 +280,6 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, WidgetEndpoint>(host, "widget")?;
-    crate::context_imports::add_resource::<T, StyleEndpoint>(host, "style")?;
-    crate::context_imports::add_resource::<T, HighlighterEndpoint>(host, "highlighter")?;
     host.func_wrap(
         "[method]tui.full-redraws",
         |mut store: StoreContextMut<'_, T>,
@@ -301,8 +299,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     crate::keys_imports::add_to_linker(host)?;
     crate::widget_editor_imports::add_to_linker(host)?;
     crate::completion_imports::add_to_linker(host)?;
-    crate::foreign_editor_imports::add_to_linker(host)?;
-    lent(host)
+    crate::foreign_editor_imports::add_to_linker(host)
 }
 
 /// Installs the constructors of text, boxes, containers, spacers and rules.
@@ -501,25 +498,6 @@ fn children<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasm
         "[method]widget.clear",
         |mut store: StoreContextMut<'_, T>, (this,): (Resource<WidgetEndpoint>,)| {
             Ok((widget(store.data_mut(), &this)?.read(Request::Clear),))
-        },
-    )
-}
-
-/// Installs the methods of the lent styles and highlighting.
-fn lent<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]style.apply",
-        |mut store: StoreContextMut<'_, T>, (this, text): (Resource<StyleEndpoint>, String)| {
-            let style = store.data_mut().ctx().table.get(&this)?.clone();
-            Ok((style.apply(text),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]highlighter.highlight",
-        |mut store: StoreContextMut<'_, T>,
-         (this, code, lang): (Resource<HighlighterEndpoint>, String, Option<String>)| {
-            let highlighter = store.data_mut().ctx().table.get(&this)?.clone();
-            Ok((highlighter.highlight(code, lang),))
         },
     )
 }

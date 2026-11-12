@@ -9,26 +9,13 @@ use crate::{
     context_imports::add_resource,
     history_reads::Endpoint,
     lifecycle::State,
-    read_imports::{endpoint, forwards, release},
+    read_imports::{endpoint, forwards, reads, release},
     tree_imports::lower_nodes,
 };
 use wasmtime::component::{LinkerInstance, Resource};
 
-/// Declares the methods that read one endpoint operation.
-macro_rules! reads {
-    ($($method:ident($($operand:ident: $kind:ty),*) -> $result:ty;)+) => {
-        $(fn $method(
-            &mut self,
-            this: Resource<Endpoint>,
-            $($operand: $kind),*
-        ) -> wasmtime::Result<Result<$result, String>> {
-            Ok(endpoint(self, &this)?.$method($($operand),*))
-        })+
-    };
-}
-
 impl HostReadonlySessionManager for State {
-    reads! {
+    reads! { Endpoint;
         get_cwd() -> String;
         get_session_dir() -> String;
         get_session_id() -> String;
