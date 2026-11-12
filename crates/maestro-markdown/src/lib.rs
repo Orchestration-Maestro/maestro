@@ -16,11 +16,7 @@ pub use mapped_text::MappedText;
 pub use parse::{
     BlockTokenizer, InvalidBlockToken, parse, parse_with_options, parse_with_tokenizer,
 };
-pub(crate) use records::Definition;
-pub use records::{
-    Alignment, BlockToken, Cell, Cells, Document, ImageMetadata, Kind, LinkMetadata, LinkType,
-    MarkedOptions, Node, Table, Text,
-};
+pub use records::*;
 
 #[cfg(test)]
 mod tests;
