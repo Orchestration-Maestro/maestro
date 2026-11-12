@@ -123,8 +123,8 @@ from the returned arguments and retaining other members. Partial
 pairs remain unchanged after array parsing. Hooks and progress observe this
 in-place normalization, as described in [conversation operations](loop.md).
 Preparation runs before the
-[shared argument validation](models/arguments.md) in the agent loop and performs
-no file operations. Direct execution takes already prepared arguments.
+[shared argument validation](models/schema-validation.md) in the agent loop and
+performs no file operations. Direct execution takes already prepared arguments.
 
 Empty lists fail before path resolution or queue admission. Other calls resolve
 through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs); successful

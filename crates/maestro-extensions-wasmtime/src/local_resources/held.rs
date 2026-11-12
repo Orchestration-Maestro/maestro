@@ -7,7 +7,7 @@ use std::{future::Future, sync::mpsc};
 /// One kind of retained capability, with the text its callers receive once it has ended.
 pub(crate) trait Held {
     /// What the capability lends to a call on the local owner.
-    type Target;
+    type Target: ?Sized;
     /// The failure text of a call whose capability has ended or is another kind.
     const ENDED: &'static str;
     /// Lends the capability when the entry holds this kind.
@@ -70,6 +70,217 @@ held!(
     std::rc::Rc<std::cell::RefCell<dyn maestro_extensions::ReadonlySessionManager>>,
     "extension history resource ended",
     Capability::History(history) => history
+);
+
+held!(
+    /// The writable session the setup callback received.
+    Writer,
+    std::rc::Rc<std::cell::RefCell<maestro_extensions::SessionManager>>,
+    "extension writable session resource ended",
+    Capability::Writer(session) => session
+);
+
+held!(
+    /// The cancellation a context, a signal creation or a provider call lent.
+    Signal,
+    maestro_extensions::Cancellation,
+    "extension signal resource ended",
+    Capability::Signal(signal) => signal
+);
+
+held!(
+    /// The footer metadata lent to a footer factory.
+    Footer,
+    std::rc::Rc<dyn maestro_extensions::footer::ReadonlyFooterDataProvider>,
+    "extension footer resource ended",
+    Capability::Footer(footer) => footer
+);
+
+held!(
+    /// The progress observer a tool invocation supplied.
+    Update,
+    maestro_extensions::AgentToolUpdateCallback<serde_json::Value, maestro_extensions::Local>,
+    "extension tool-update resource ended",
+    Capability::ToolUpdate(update) => update
+);
+
+held!(
+    /// The redraw capability of one tool row.
+    Invalidator,
+    std::rc::Rc<dyn Fn()>,
+    "extension tool-invalidator resource ended",
+    Capability::Invalidate(invalidate) => invalidate
+);
+
+/// An explicit remover of a registered observer or listener.
+pub(crate) trait Remove {
+    /// Removes the registration, which a drop of its resource leaves in place.
+    fn remove(&self) -> Result<(), String>;
+}
+
+impl Remove for maestro_extensions::Subscription<maestro_extensions::Local> {
+    fn remove(&self) -> Result<(), String> {
+        self.unsubscribe();
+        Ok(())
+    }
+}
+
+impl Remove for std::rc::Rc<dyn Fn()> {
+    fn remove(&self) -> Result<(), String> {
+        self();
+        Ok(())
+    }
+}
+
+impl Remove for std::rc::Rc<dyn Fn() -> Result<(), maestro_extensions::EventError>> {
+    fn remove(&self) -> Result<(), String> {
+        self().map_err(|error| error.to_string())
+    }
+}
+
+/// The remover behind a subscription resource: an event bus subscription, an abort observer
+/// or a terminal input listener.
+pub(crate) struct Remover;
+
+impl Held for Remover {
+    type Target = dyn Remove;
+    const ENDED: &'static str = "extension subscription resource ended";
+    fn lend(capability: &Capability) -> Option<&Self::Target> {
+        match capability {
+            Capability::Subscription(remover) => Some(remover),
+            Capability::SignalSubscription(remover) => Some(remover),
+            Capability::UiSubscription(remover) => Some(remover),
+            _ => None,
+        }
+    }
+}
+
+held!(
+    /// The data stream of one command execution.
+    OutputFrame,
+    std::rc::Rc<super::bash_output::Frame>,
+    "extension bash-output resource ended",
+    Capability::BashOutput(frame) => frame
+);
+
+held!(
+    /// The close operation of a custom component.
+    Close,
+    maestro_extensions::types::CustomClose,
+    "extension custom close resource ended",
+    Capability::CustomClose(close) => close
+);
+
+held!(
+    /// A host style the extension may apply to text.
+    LentStyle,
+    maestro_extensions::presentation::BorderColor,
+    "extension style resource ended",
+    Capability::Style(style) => style
+);
+
+held!(
+    /// The host's code highlighting.
+    LentHighlighter,
+    std::rc::Rc<crate::guest_calls::paints::HighlightFn>,
+    "extension style resource ended",
+    Capability::Highlighter(highlight) => highlight
+);
+
+held!(
+    /// A settings row style the host lent.
+    LentRowStyle,
+    std::rc::Rc<crate::widget_lists::RowStyleFn>,
+    "extension style resource ended",
+    Capability::RowStyle(style) => style
+);
+
+held!(
+    /// The closer of an open settings submenu.
+    SubmenuCloser,
+    std::rc::Rc<dyn Fn(Option<String>)>,
+    "extension style resource ended",
+    Capability::SubmenuDone(done) => done
+);
+
+held!(
+    /// A native text callback lent to an authored editor.
+    LentText,
+    maestro_extensions::presentation::TextCallback,
+    "extension style resource ended",
+    Capability::Text(callback) => callback
+);
+
+held!(
+    /// The placement record of an overlay.
+    Options,
+    super::overlays::Placement,
+    "extension overlay options resource ended",
+    Capability::OverlayOptions(placement) => placement
+);
+
+held!(
+    /// The native component a native renderer built.
+    Component,
+    maestro_extensions::ComponentHandle,
+    "extension native component resource ended",
+    Capability::NativeComponent(component) => component
+);
+
+held!(
+    /// A keybindings manager the host keeps.
+    Keybindings,
+    maestro_extensions::presentation::ExtensionKeybindings,
+    "extension keybindings resource ended",
+    Capability::Keybindings(keys) => keys
+);
+
+held!(
+    /// A native file watch registration.
+    Watch,
+    std::rc::Rc<dyn maestro_extensions::native_io::FsWatcher>,
+    "native watch resource ended",
+    Capability::NativeWatcher(watch) => watch
+);
+
+held!(
+    /// The accepted credentials of one credential owner.
+    Credentials,
+    std::sync::Arc<maestro_extensions::AuthStorage>,
+    "extension credential resource ended",
+    Capability::Credentials(owner, _) => owner
+);
+
+held!(
+    /// A native child process.
+    NativeChild,
+    std::rc::Rc<dyn maestro_extensions::native_io::ChildProcess>,
+    "native child resource ended",
+    Capability::NativeChild(child) => child
+);
+
+held!(
+    /// A native byte reader.
+    NativeReader,
+    std::rc::Rc<dyn maestro_extensions::native_io::Readable>,
+    "native byte resource ended",
+    Capability::NativeReader(reader) => reader
+);
+
+held!(
+    /// A native HTTP response.
+    NativeResponse,
+    std::rc::Rc<dyn maestro_extensions::native_io::Response>,
+    "native response resource ended",
+    Capability::NativeResponse(response) => response
+);
+
+held!(
+    /// The native assistant event buffer of one model invocation.
+    AssistantStream,
+    maestro_extensions::AssistantMessageEventStream,
+    "extension assistant stream resource ended",
+    Capability::AssistantStream(stream) => stream
 );
 
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.

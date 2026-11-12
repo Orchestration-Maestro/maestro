@@ -5,69 +5,19 @@
     clippy::excessive_nesting
 )]
 use crate::{
+    api_imports::ApiView,
+    bindings::maestro::extension::host::HostFooterData,
+    callback_imports::retain,
+    context_imports::add_resource,
     guest_calls::{Callback, Handle, SynchronousKind},
-    local_resources::{Lease, Message, Registry, effects::SubscriptionEndpoint},
-    read_imports::{ReadEndpoint, add_read, resource},
+    lifecycle::State,
+    local_resources::{Lease, Registry, effects::SubscriptionEndpoint, held::Footer},
+    read_imports::{endpoint, forwards, release},
 };
 use maestro_extensions::{ExtensionAPI, Local, footer::ReadonlyFooterDataProvider};
-use std::{
-    rc::Rc,
-    sync::{Arc, mpsc::Sender},
-};
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
-};
-
-/// Catchable native reply.
-type Reply<T> = Sender<Result<T, String>>;
-
-/// One read or subscription on the original footer metadata.
-pub(crate) enum Request {
-    /// Reads the current branch.
-    Branch(Reply<Option<String>>),
-    /// Reads the extension statuses in insertion order.
-    Statuses(Reply<Vec<(String, String)>>),
-    /// Reads the count of providers with available models.
-    Providers(Reply<f64>),
-    /// Adds an authored branch change listener under the original extension.
-    OnBranchChange(
-        Handle,
-        crate::api_reads::Endpoint,
-        Reply<SubscriptionEndpoint>,
-    ),
-}
-
-impl Request {
-    /// Answers from the original metadata outside all capability-table borrows.
-    pub(crate) fn answer(self, footer: &Rc<dyn ReadonlyFooterDataProvider>, registry: &Registry) {
-        match self {
-            Self::Branch(reply) => drop(reply.send(Ok(footer.get_git_branch()))),
-            Self::Statuses(reply) => {
-                let statuses = footer.get_extension_statuses().iter().collect();
-                drop(reply.send(Ok(statuses)));
-            }
-            Self::Providers(reply) => drop(reply.send(Ok(footer.get_available_provider_count()))),
-            Self::OnBranchChange(listener, api, reply) => {
-                let subscribed = registry
-                    .facade(&api)
-                    .and_then(|api| registry.branch_change(footer, listener, &api));
-                drop(reply.send(subscribed));
-            }
-        }
-    }
-
-    /// Settles a released capability without leaving the Store caller waiting.
-    pub(crate) fn reject(self, error: &str) {
-        let error = error.to_owned();
-        match self {
-            Self::Branch(reply) => drop(reply.send(Err(error))),
-            Self::Statuses(reply) => drop(reply.send(Err(error))),
-            Self::Providers(reply) => drop(reply.send(Err(error))),
-            Self::OnBranchChange(.., reply) => drop(reply.send(Err(error))),
-        }
-    }
-}
+use std::{rc::Rc, sync::Arc};
+use wasmtime::component::{LinkerInstance, Resource};
+use wasmtime_wasi::WasiView;
 
 impl Registry {
     /// Adds the authored branch change listener to the original metadata and retains its
@@ -94,60 +44,87 @@ impl Registry {
 #[derive(Clone)]
 pub struct Endpoint(pub(crate) Arc<Lease>);
 
-impl ReadEndpoint for Endpoint {
-    type Request = Request;
-    fn read<T>(
-        &self,
-        request: impl FnOnce(Sender<Result<T, String>>) -> Request,
-    ) -> Result<T, String> {
+impl Endpoint {
+    /// Reads the current branch.
+    pub(crate) fn get_git_branch(&self) -> Result<Option<String>, String> {
         self.0
-            .request(|id, reply| Message::Footer(id, request(reply)))
+            .run::<Footer, _>(|footer, _| Ok(footer.get_git_branch()))
     }
-    fn route<T: Into<crate::import_route::Value> + Send + 'static>(
-        &self,
-        request: impl FnOnce(Sender<Result<T, String>>) -> Request,
-    ) -> crate::import_route::Route {
+
+    /// Reads the extension statuses in insertion order.
+    pub(crate) fn get_extension_statuses(&self) -> Result<Vec<(String, String)>, String> {
         self.0
-            .route(|id, reply| Message::Footer(id, request(reply)))
+            .run::<Footer, _>(|footer, _| Ok(footer.get_extension_statuses().iter().collect()))
+    }
+
+    /// Reads the count of providers with available models.
+    pub(crate) fn get_available_provider_count(&self) -> Result<f64, String> {
+        self.0
+            .run::<Footer, _>(|footer, _| Ok(footer.get_available_provider_count()))
+    }
+
+    /// Adds an authored branch change listener under the original extension.
+    pub(crate) fn on_branch_change(
+        &self,
+        listener: Handle,
+        api: crate::api_reads::Endpoint,
+    ) -> Result<SubscriptionEndpoint, String> {
+        self.0.run::<Footer, _>(move |footer, registry| {
+            registry
+                .facade(&api)
+                .and_then(|api| registry.branch_change(footer, listener, &api))
+        })
     }
 }
 
-/// Installs the footer metadata resource and its reads.
-pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
-    host: &mut LinkerInstance<'_, T>,
-) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, Endpoint>(host, "footer-data")?;
-    add_read(
-        host,
-        "[method]footer-data.get-git-branch",
-        Request::Branch,
-        resource::<T, Endpoint>,
-    )?;
-    add_read(
-        host,
-        "[method]footer-data.get-extension-statuses",
-        Request::Statuses,
-        resource::<T, Endpoint>,
-    )?;
-    add_read(
-        host,
-        "[method]footer-data.get-available-provider-count",
-        Request::Providers,
-        resource::<T, Endpoint>,
-    )?;
-    host.func_wrap(
-        "[method]footer-data.on-branch-change",
-        |mut store: StoreContextMut<'_, T>,
-         (footer, listener): (Resource<Endpoint>, Resource<Callback>)| {
-            let listener = crate::callback_imports::retain(store.data_mut(), &listener)?;
-            let api = store.data().api().clone();
-            let endpoint = store.data_mut().ctx().table.get(&footer)?.clone();
-            let result = endpoint.read(|reply| Request::OnBranchChange(listener, api, reply));
-            let result = match result {
-                Ok(subscription) => Ok(store.data_mut().ctx().table.push(subscription)?),
-                Err(error) => Err(error),
-            };
-            Ok((result,))
-        },
-    )
+impl HostFooterData for State {
+    fn get_git_branch(
+        &mut self,
+        this: Resource<Endpoint>,
+    ) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(endpoint(self, &this)?.get_git_branch())
+    }
+
+    fn get_extension_statuses(
+        &mut self,
+        this: Resource<Endpoint>,
+    ) -> wasmtime::Result<Result<Vec<(String, String)>, String>> {
+        Ok(endpoint(self, &this)?.get_extension_statuses())
+    }
+
+    fn get_available_provider_count(
+        &mut self,
+        this: Resource<Endpoint>,
+    ) -> wasmtime::Result<Result<f64, String>> {
+        Ok(endpoint(self, &this)?.get_available_provider_count())
+    }
+
+    fn on_branch_change(
+        &mut self,
+        this: Resource<Endpoint>,
+        listener: Resource<Callback>,
+    ) -> wasmtime::Result<Result<Resource<SubscriptionEndpoint>, String>> {
+        let listener = retain(self, &listener)?;
+        let api = self.api().clone();
+        match endpoint(self, &this)?.on_branch_change(listener, api) {
+            Ok(subscription) => Ok(Ok(self.ctx().table.push(subscription)?)),
+            Err(error) => Ok(Err(error)),
+        }
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards every footer metadata method to its trait implementation.
+pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Endpoint>(host, "footer-data")?;
+    forwards! { host, "footer-data", HostFooterData, Endpoint,
+        "get-git-branch" => get_git_branch();
+        "get-extension-statuses" => get_extension_statuses();
+        "get-available-provider-count" => get_available_provider_count();
+        "on-branch-change" => on_branch_change(listener: Resource<Callback>);
+    }
+    Ok(())
 }

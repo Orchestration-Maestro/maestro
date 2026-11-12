@@ -1,21 +1,18 @@
 //! Per-execution owned byte streams keep borrowed native sinks out of the registry.
-use super::{Capability, Lease, Message, Registry, pump::State};
+use super::{Capability, Lease, Registry, held::OutputFrame};
 use maestro_extensions::types::ExtensionRuntimeState;
 use std::{cell::RefCell, future::Future, rc::Rc, sync::Arc, task::Poll};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 
-/// Catchable completion of forwarding one canonical output chunk.
-pub(super) type Reply = std::sync::mpsc::Sender<Result<(), String>>;
-
 /// The guest resource retains only its original frame identity and admission.
 #[derive(Clone)]
-pub struct Endpoint(Arc<Lease>);
+pub struct Endpoint(pub(crate) Arc<Lease>);
 
 impl Endpoint {
     /// Forwards owned raw bytes on the sole request pump without storing a sink borrow.
     pub(crate) fn on_data(&self, bytes: Vec<u8>) -> Result<(), String> {
         self.0
-            .request(|id, reply| Message::BashOutput(id, bytes, reply))
+            .run::<OutputFrame, _>(move |frame, _| frame.forward(bytes))
     }
 }
 
@@ -35,7 +32,7 @@ impl Frame {
     }
 
     /// Rejects retired keys before forwarding a chunk into its own execution stream.
-    fn forward(&self, bytes: Vec<u8>) -> Result<(), String> {
+    pub(super) fn forward(&self, bytes: Vec<u8>) -> Result<(), String> {
         self.state
             .assert_active()
             .map_err(|error| error.to_string())?;
@@ -109,17 +106,5 @@ impl Registry {
                 bytes,
             },
         ))
-    }
-}
-
-impl State {
-    /// Forwards through the original frame outside capability-table borrows.
-    pub(super) fn bash_output(&self, id: u64, bytes: Vec<u8>, reply: &Reply) {
-        let capability = self.registry.capability(id);
-        let result = match capability.as_deref() {
-            Some(Capability::BashOutput(frame)) => frame.forward(bytes),
-            _ => Err("extension bash-output resource ended".to_owned()),
-        };
-        let _ = reply.send(result);
     }
 }
