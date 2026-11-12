@@ -100,7 +100,7 @@ fn capture_tab(
 /// Captures settled managed ownership and the terminal owner's preferred session provenance.
 fn capture_pane(terminal: Option<&TerminalState>, cwd: PathBuf) -> PaneSnapshot {
     let (agent_name, managed_agent_kind) = terminal
-        .filter(|terminal| !terminal.managed_agent_launch_pending())
+        .filter(|terminal| !terminal.is_managed_agent_launch_pending())
         .map(|terminal| {
             (
                 terminal.agent_name.clone(),

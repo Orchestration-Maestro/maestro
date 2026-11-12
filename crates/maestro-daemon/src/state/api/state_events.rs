@@ -31,7 +31,7 @@ impl<C: FnMut() -> u128> App<C> {
                 continue;
             };
             runtime.set_full_lifecycle_authority_active(
-                terminal.full_lifecycle_hook_authority_active(),
+                terminal.is_full_lifecycle_hook_authority_active(),
             );
         }
         if let Some((pane, agent)) = released

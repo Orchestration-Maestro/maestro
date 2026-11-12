@@ -99,7 +99,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         let observed_at = Instant::now();
         let update = self.update_terminal_state(pane, |terminal| {
             let agent = terminal.effective_known_agent().or(terminal.detected_agent);
-            if agent.is_none() && !terminal.full_lifecycle_hook_authority_active() {
+            if agent.is_none() && !terminal.is_full_lifecycle_hook_authority_active() {
                 return None;
             }
             Some(terminal.set_detected_state_with_screen_signals_at(
@@ -134,7 +134,7 @@ impl<C: FnMut() -> u128> DaemonState<C> {
         let terminal_id = viewport.attached_terminal_id.clone();
         let terminal = self.terminals.get_mut(&terminal_id)?;
         let previous_name = terminal.agent_name.clone();
-        let pending = terminal.managed_agent_launch_pending();
+        let pending = terminal.is_managed_agent_launch_pending();
         let mutation = update(terminal)?;
         let now = Instant::now();
         let managed_changed = terminal.reconcile_managed_agent_at(now, false);

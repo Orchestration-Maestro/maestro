@@ -1112,7 +1112,7 @@ fn daemon_official_release_preserves_process_owned_agent_identity() {
     assert_eq!(terminal.state, AgentState::Working);
     assert_eq!(terminal.detected_agent, Some(Agent::Pi));
     assert_eq!(terminal.agent_name.as_deref(), Some("reviewer"));
-    assert!(terminal.full_lifecycle_hook_authority_active());
+    assert!(terminal.is_full_lifecycle_hook_authority_active());
     assert!(!state.session_dirty);
 }
 

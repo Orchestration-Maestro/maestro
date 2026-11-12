@@ -18,7 +18,7 @@ impl PaneRuntime {
     /// Recent primary-screen history for handoff; alternate screens are not replayed.
     #[must_use]
     pub fn handoff_history_ansi(&self) -> Option<String> {
-        if self.alternate_screen_active() {
+        if self.is_alternate_screen_active() {
             return None;
         }
         self.snapshot_history()

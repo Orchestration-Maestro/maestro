@@ -257,7 +257,7 @@ fn pane_cursor_settle_policy_controls_render_delay() {
     core.terminal.write(b"x");
     let moved = core.current_cursor_state();
     core.cursor_settle_state.observe(moved, now);
-    assert!(core.cursor_settle_state.pending());
+    assert!(core.cursor_settle_state.is_pending());
     assert_eq!(
         core.render_delay_after_pty_write(false),
         if cfg!(windows) {

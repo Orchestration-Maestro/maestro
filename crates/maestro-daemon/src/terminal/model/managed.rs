@@ -68,7 +68,7 @@ impl TerminalState {
 
     /// Whether a managed launch is still settling or blocked.
     #[must_use]
-    pub fn managed_agent_launch_pending(&self) -> bool {
+    pub fn is_managed_agent_launch_pending(&self) -> bool {
         self.managed_agent.is_some_and(|managed| {
             matches!(
                 managed.phase,
@@ -79,7 +79,7 @@ impl TerminalState {
 
     /// Whether a managed launch has reached interactive idle readiness.
     #[must_use]
-    pub fn managed_agent_interactive_ready(&self) -> bool {
+    pub fn is_managed_agent_interactive_ready(&self) -> bool {
         self.managed_agent
             .is_some_and(|managed| matches!(managed.phase, ManagedAgentPhase::Active))
     }

@@ -246,17 +246,17 @@ impl TerminalState {
 
     /// Whether a full-lifecycle integration currently owns effective state.
     #[must_use]
-    pub fn full_lifecycle_hook_authority_active(&self) -> bool {
-        self.live_full_lifecycle_hook_authority()
+    pub fn is_full_lifecycle_hook_authority_active(&self) -> bool {
+        self.has_live_full_lifecycle_hook_authority()
     }
 
     /// Whether fresh same-agent screen evidence overrides a non-lifecycle hook state.
-    pub(in crate::terminal) fn visible_blocker_overrides_hook(&self) -> bool {
-        if self.live_full_lifecycle_hook_authority() {
+    pub(in crate::terminal) fn does_visible_blocker_override_hook(&self) -> bool {
+        if self.has_live_full_lifecycle_hook_authority() {
             return false;
         }
         self.fallback_visible_blocker
-            && self.fallback_not_older_than_hook()
+            && self.is_fallback_not_older_than_hook()
             && self.hook_authority.as_ref().is_some_and(|authority| {
                 authority.state != AgentState::Blocked
                     && maestro_detection::agents::parse_agent_label(&authority.agent_label)
@@ -265,7 +265,7 @@ impl TerminalState {
     }
 
     /// Whether effective hook authority belongs to a lifecycle integration.
-    pub(in crate::terminal) fn live_full_lifecycle_hook_authority(&self) -> bool {
+    pub(in crate::terminal) fn has_live_full_lifecycle_hook_authority(&self) -> bool {
         self.hook_authority.as_ref().is_some_and(|authority| {
             self.hook_authority_is_effective(authority)
                 && maestro_detection::agents::full_lifecycle_hook_authority(

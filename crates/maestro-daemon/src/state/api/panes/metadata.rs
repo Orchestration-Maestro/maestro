@@ -36,7 +36,7 @@ struct ValidReport {
 
 impl ValidReport {
     /// Whether the report touches the pane's title, display agent or state labels.
-    fn changes_presentation(&self) -> bool {
+    fn does_change_presentation(&self) -> bool {
         let report = &self.presentation;
         report.title.is_some()
             || report.display_agent.is_some()
@@ -92,7 +92,7 @@ fn check_request(report: &ValidReport, set: [bool; 3]) -> Result<(), ErrorBody> 
             "cannot set and clear the same metadata field",
         ));
     }
-    if !report.changes_presentation() && report.tokens.is_none() {
+    if !report.does_change_presentation() && report.tokens.is_none() {
         return Err(api_error(
             "invalid_metadata_request",
             "missing metadata field to set or clear",
@@ -215,7 +215,7 @@ impl<C: FnMut() -> u128> App<C> {
         if !admit(terminal, &report)? {
             return Ok(ResponseResult::Ok {});
         }
-        let changes_presentation = report.changes_presentation();
+        let changes_presentation = report.does_change_presentation();
         let ValidReport {
             presentation,
             tokens,

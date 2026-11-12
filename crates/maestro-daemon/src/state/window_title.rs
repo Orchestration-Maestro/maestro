@@ -22,13 +22,13 @@ impl<C: FnMut() -> u128> App<C> {
 
     /// Whether the daemon owns the outer terminal title.
     #[must_use]
-    pub fn window_title_configured(&self) -> bool {
+    pub fn is_window_title_configured(&self) -> bool {
         self.window_title_template.is_some()
     }
 
     /// Whether PTY title changes can affect the outer title.
     #[must_use]
-    pub fn window_title_uses_terminal_title(&self) -> bool {
+    pub fn does_window_title_use_terminal_title(&self) -> bool {
         self.window_title_template
             .as_ref()
             .is_some_and(|(template, _)| template.uses(WindowTitleToken::TerminalTitle))

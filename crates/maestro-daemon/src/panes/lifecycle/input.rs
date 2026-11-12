@@ -84,7 +84,7 @@ impl PaneRuntime {
     /// Frames pasted text only when the child enabled paste delimiters.
     #[must_use]
     pub fn paste_payload(&self, text: String) -> Vec<u8> {
-        if self.bracketed_paste_enabled() {
+        if self.is_bracketed_paste_enabled() {
             format!("\x1b[200~{text}\x1b[201~").into_bytes()
         } else {
             text.into_bytes()
@@ -94,7 +94,7 @@ impl PaneRuntime {
     /// Returns false when focus reporting is disabled; otherwise attempts delivery.
     #[must_use]
     pub fn try_send_focus_event(&self, event: FocusEvent) -> bool {
-        if !self.focus_reporting_enabled() {
+        if !self.is_focus_reporting_enabled() {
             return false;
         }
         let bytes = match event {

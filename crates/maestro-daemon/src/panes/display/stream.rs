@@ -206,7 +206,7 @@ impl PaneCore {
             None
         } else if graphics {
             Some(Duration::from_millis(20))
-        } else if cfg!(windows) && self.cursor_settle_state.pending() {
+        } else if cfg!(windows) && self.cursor_settle_state.is_pending() {
             Some(crate::panes::settlement::CURSOR_POSITION_SETTLE)
         } else {
             None

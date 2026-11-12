@@ -31,17 +31,17 @@ fn live_modes_select_mouse_keyboard_and_wheel_policy() {
         KeyboardProtocol::Legacy
     );
     pane.seed_history_ansi("\x1b[?1049h\x1b[?1004h\x1b[?2004h\x1b[?1016h\x1b[>10u");
-    assert!(pane.alternate_screen_active());
-    assert!(pane.bracketed_paste_enabled());
-    assert!(pane.focus_reporting_enabled());
-    assert!(pane.sgr_pixel_mouse_enabled());
-    assert!(pane.keyboard_report_all_requested());
-    assert!(!pane.synchronized_output_active());
+    assert!(pane.is_alternate_screen_active());
+    assert!(pane.is_bracketed_paste_enabled());
+    assert!(pane.is_focus_reporting_enabled());
+    assert!(pane.is_sgr_pixel_mouse_enabled());
+    assert!(pane.is_keyboard_report_all_requested());
+    assert!(!pane.is_synchronized_output_active());
     assert_eq!(pane.wheel_routing(), Some(WheelRouting::AlternateScroll));
     pane.seed_history_ansi("\x1b[?1003h\x1b[?2031h\x1b[?2026h");
     assert_eq!(pane.wheel_routing(), Some(WheelRouting::MouseReport));
-    assert!(pane.mouse_reporting_enabled());
-    assert!(pane.synchronized_output_active());
+    assert!(pane.is_mouse_reporting_enabled());
+    assert!(pane.is_synchronized_output_active());
     assert_eq!(
         pane.input_state().unwrap().mouse_protocol_mode,
         MouseProtocolMode::AnyMotion
