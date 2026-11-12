@@ -1,7 +1,8 @@
 # Model selection
 
-`maestro-models-registry` resolves references against shared [model descriptors](records.md).
-Selection returns a descriptor handle; it does not invoke the model or apply thinking.
+`maestro-models-registry` resolves references against shared
+[model descriptors](records.md). Selection returns a descriptor handle; it does
+not invoke the model or apply thinking.
 
 ## References and patterns
 

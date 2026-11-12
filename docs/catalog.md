@@ -1,9 +1,9 @@
 # Local model catalog
 
-`maestro-models-registry::ModelRegistry` composes the offline descriptors with an explicit
-model file or an ordered list of files. `create` uses native file operations;
-`with_operations` accepts
-caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
+`maestro-models-registry::ModelRegistry` composes the offline descriptors with
+an explicit model file or an ordered list of files. `create` uses native file
+operations; `with_operations` accepts caller-selected `ModelFileOperations`.
+Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential
 owner. Constructors take that credential as
 `maestro_models::SharedHandle<AuthStorage>`: a shared handle on native targets
