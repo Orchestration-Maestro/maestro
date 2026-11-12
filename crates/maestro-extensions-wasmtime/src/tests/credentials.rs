@@ -314,3 +314,56 @@ fn assert_original_thread(
     );
     assert!(incoming.try_recv().is_err());
 }
+
+#[test]
+fn released_credentials_reject_every_kind_of_operation_with_their_ended_text() {
+    use crate::{credential_reads::Request, read_imports::ReadEndpoint};
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let credentials = pump
+        .registry()
+        .credentials(
+            Arc::new(maestro_extensions::AuthStorage::in_memory(
+                maestro_extensions::AuthStorageData::default(),
+            )),
+            Arc::new(ConstructorEffects("ended")),
+        )
+        .unwrap();
+    let lease = credentials.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [
+            credentials.read(Request::Providers).err().unwrap(),
+            credentials
+                .read(|reply| Request::Runtime("p".into(), "k".into(), reply))
+                .unwrap_err(),
+            credentials
+                .read(|reply| Request::RemoveRuntime("p".into(), reply))
+                .unwrap_err(),
+            credentials.read(Request::Reload).unwrap_err(),
+            credentials
+                .read(|reply| Request::Get("p".into(), reply))
+                .unwrap_err(),
+            credentials
+                .read(|reply| Request::Set("p".into(), "{}".into(), reply))
+                .unwrap_err(),
+            credentials
+                .read(|reply| Request::Remove("p".into(), reply))
+                .unwrap_err(),
+            credentials.read(Request::List).unwrap_err(),
+            credentials
+                .read(|reply| Request::Has("p".into(), reply))
+                .unwrap_err(),
+            credentials
+                .read(|reply| Request::HasAuth("p".into(), reply))
+                .unwrap_err(),
+            credentials
+                .read(|reply| Request::Status("p".into(), reply))
+                .unwrap_err(),
+            credentials.read(Request::All).unwrap_err(),
+            credentials.read(Request::Errors).unwrap_err(),
+            credentials
+                .read(|reply| Request::Logout("p".into(), reply))
+                .unwrap_err(),
+        ]
+    });
+    assert_eq!(errors, ["extension credential resource ended"; 14]);
+}
