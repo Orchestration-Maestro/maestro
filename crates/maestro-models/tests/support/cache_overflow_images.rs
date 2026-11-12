@@ -4,12 +4,18 @@
 use crate::{chat::TestResult, response_qualification::assert_corpus_rows};
 
 /// The recorded cache, overflow and tool-image rows.
-pub const CORPUS: &str = include_str!("../fixtures/cache_overflow_images.json");
+pub fn corpus() -> String {
+    std::fs::read_to_string(format!(
+        "{}/tests/fixtures/cache_overflow_images.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .expect("recorded corpus")
+}
 
 /// Execute only the named test's recorded invocations.
 pub fn assert_rows(test: &str) -> TestResult {
     assert_corpus_rows(
-        CORPUS,
+        &corpus(),
         &[
             (
                 "crates/maestro-models/tests/provider_overflow/cases.rs::maestro_overflow_errors_keep_provider_routes",

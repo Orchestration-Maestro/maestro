@@ -11,6 +11,7 @@ mod dependency_locks;
 mod development_guidance;
 mod documented_commands;
 mod duplicates;
+mod fixture_includes;
 mod integration_tests;
 mod json_dependencies;
 mod lib_tests;

@@ -195,7 +195,7 @@ fn is_join(tree: &TokenTree) -> bool {
 }
 
 /// The decoded value of a string literal token.
-fn string_value(literal: &proc_macro2::Literal) -> Option<String> {
+pub(crate) fn string_value(literal: &proc_macro2::Literal) -> Option<String> {
     #[cfg(test)]
     SPELLINGS.set(SPELLINGS.get() + 1);
     syn::parse_str::<syn::LitStr>(&literal.to_string())

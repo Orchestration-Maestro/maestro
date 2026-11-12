@@ -7,7 +7,11 @@ use crate::{chat::TestResult, response_qualification::assert_corpus_rows};
 /// Execute only the named test's recorded invocations.
 pub(super) fn assert_rows(test: &str) -> TestResult {
     assert_corpus_rows(
-        include_str!("../fixtures/usage_accounting.json"),
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/usage_accounting.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
         &[
             (
                 "crates/maestro-models/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
