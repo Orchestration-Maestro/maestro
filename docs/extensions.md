@@ -342,7 +342,9 @@ Use `Result` to propagate rejected host operations. A factory error fails that
 extension's load; the loader records the path and continues to later extensions.
 A callback error follows its event's dispatch policy, not one blanket fallback:
 for example, tool-call errors propagate to the caller while many notification
-errors go to error listeners. Event edits are not automatically rolled back.
+errors go to error listeners. A session that fails to save a finished message, for
+example on a full disk, reports it once to the error listeners (path `<runtime>`,
+event `agent_event`) and keeps running. Event edits are not automatically rolled back.
 A component trap faults that instance and affects its later calls. The
 [hooks](extensions/hooks.md) and [native executor](extensions/native-execution.md)
 pages give the exact rules.
