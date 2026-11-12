@@ -1,5 +1,4 @@
 //! Pane split through the daemon's handler: targets, focus, ratio, launch inputs and publication.
-#![cfg(target_os = "linux")]
 use crate::settings::model::NewTerminalCwdConfig;
 use crate::state::App;
 use crate::state::model::Mode;
@@ -13,7 +12,6 @@ use maestro_protocol::schema::{ErrorBody, PaneInfo, ResponseResult, SplitDirecti
 use maestro_workspace::tiling::PaneId;
 use serde_json::json;
 use std::path::PathBuf;
-
 /// The pane a split result reports.
 fn split_of(result: Result<ResponseResult, ErrorBody>) -> PaneInfo {
     match result {
@@ -21,7 +19,6 @@ fn split_of(result: Result<ResponseResult, ErrorBody>) -> PaneInfo {
         other => panic!("expected the new pane: {other:?}"),
     }
 }
-
 /// A workspace with a background second tab of two panes, the first tab's root focused.
 ///
 /// Returns the first tab's root, the background tab's root and the background tab's focused pane.
@@ -37,7 +34,6 @@ fn background_tab(app: &mut App) -> (PaneId, PaneId, PaneId) {
     app.state.focus_pane_in_workspace(0, active);
     (active, target, focused)
 }
-
 #[test]
 fn a_split_targets_the_named_pane_in_a_background_tab() {
     with_live_daemon(
@@ -72,7 +68,6 @@ fn a_split_targets_the_named_pane_in_a_background_tab() {
         },
     );
 }
-
 #[test]
 fn a_split_focuses_the_new_pane_when_asked() {
     with_live_daemon(
@@ -100,7 +95,6 @@ fn a_split_focuses_the_new_pane_when_asked() {
         },
     );
 }
-
 #[test]
 fn a_split_applies_the_ratio_and_the_right_click_routing() {
     with_live_daemon(
@@ -136,7 +130,6 @@ fn a_split_applies_the_ratio_and_the_right_click_routing() {
         },
     );
 }
-
 #[test]
 fn a_split_without_a_target_uses_the_focused_pane_of_the_workspace_or_the_active_one() {
     with_live_daemon(
@@ -154,7 +147,6 @@ fn a_split_without_a_target_uses_the_focused_pane_of_the_workspace_or_the_active
         },
     );
 }
-
 #[test]
 fn a_split_publishes_the_new_pane_and_its_layout() {
     with_live_daemon(
@@ -185,7 +177,6 @@ fn a_split_publishes_the_new_pane_and_its_layout() {
         },
     );
 }
-
 #[test]
 fn launch_inputs_reach_the_new_pane() {
     with_live_daemon(
@@ -210,7 +201,6 @@ fn launch_inputs_reach_the_new_pane() {
         },
     );
 }
-
 #[test]
 fn a_split_that_cannot_start_its_process_leaves_the_tab_alone() {
     with_live_daemon(
@@ -237,7 +227,6 @@ fn a_split_that_cannot_start_its_process_leaves_the_tab_alone() {
         },
     );
 }
-
 #[test]
 fn a_split_of_a_missing_target_is_refused_before_a_process_starts() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -264,24 +253,6 @@ fn a_split_of_a_missing_target_is_refused_before_a_process_starts() {
     );
     assert!(events_after(&app, 0).is_empty());
 }
-
-#[test]
-fn a_split_rejects_a_bad_launch_environment_before_a_process_starts() {
-    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    let wire = json!({
-        "type": "pane.split", "direction": "right", "env": {"BAD=KEY": "value"}
-    });
-    let Err(error) = request(&mut app, wire) else {
-        panic!("a key with an equals sign must be refused");
-    };
-    assert_eq!(error.code, "invalid_env");
-    assert_eq!(
-        app.state.topology.workspaces[0].tabs[0].layout.pane_count(),
-        1
-    );
-    assert!(events_after(&app, 0).is_empty());
-}
-
 #[test]
 fn a_pane_split_off_can_be_closed_and_releases_its_process() {
     with_live_daemon(

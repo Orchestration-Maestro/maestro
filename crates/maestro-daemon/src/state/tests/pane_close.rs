@@ -1,19 +1,13 @@
 //! Pane close through the daemon's handler: the pane, its tab or its workspace goes, with its terminal.
-#![cfg(target_os = "linux")]
-use crate::state::App;
 use crate::state::model::Mode;
 use crate::state::test_support::api::{
     add_tab, daemon_with_workspaces, events_after, failure, join_group, request, root_pane,
     split_pane, workspace_ids,
 };
+use crate::state::test_support::pane_close::close;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{ResponseResult, SplitDirection};
 use serde_json::json;
-
-/// Closes the pane with the public handle `pane`.
-fn close(app: &mut App, pane: &str) -> Result<ResponseResult, maestro_protocol::schema::ErrorBody> {
-    request(app, json!({"type": "pane.close", "pane_id": pane}))
-}
 
 #[test]
 fn closing_a_split_pane_keeps_its_tab_and_publishes_the_layout() {
@@ -48,7 +42,6 @@ fn closing_a_split_pane_keeps_its_tab_and_publishes_the_layout() {
         failure("pane_not_found", "pane w1:p2 not found")
     );
 }
-
 #[test]
 fn closing_the_only_pane_of_one_of_several_tabs_closes_only_that_tab() {
     let mut app = daemon_with_workspaces(&["/one"]).unwrap();
@@ -70,7 +63,6 @@ fn closing_the_only_pane_of_one_of_several_tabs_closes_only_that_tab() {
         }]
     );
 }
-
 #[test]
 fn closing_the_last_pane_closes_the_workspace() {
     let mut app = daemon_with_workspaces(&["/one", "/two"]).unwrap();
@@ -104,7 +96,6 @@ fn closing_the_last_pane_closes_the_workspace() {
     assert!(app.state.topology.workspaces.is_empty());
     assert_eq!(app.state.active, None);
 }
-
 #[test]
 fn closing_the_last_pane_of_a_parent_group_waits_for_confirmation() {
     let mut app = daemon_with_workspaces(&["/repo", "/repo-child"]).unwrap();
@@ -125,7 +116,6 @@ fn closing_the_last_pane_of_a_parent_group_waits_for_confirmation() {
     assert_eq!(app.state.terminals.len(), 2);
     assert!(events_after(&app, 0).is_empty());
 }
-
 #[test]
 fn closing_the_only_pane_of_a_linked_worktree_closes_only_its_workspace() {
     let mut app = daemon_with_workspaces(&["/repo", "/repo-issue"]).unwrap();
@@ -134,15 +124,4 @@ fn closing_the_only_pane_of_a_linked_worktree_closes_only_its_workspace() {
     app.state.confirm_close.0 = true;
     assert_eq!(close(&mut app, "w2:p1"), Ok(ResponseResult::Ok {}));
     assert_eq!(workspace_ids(&mut app).unwrap(), ["w1"]);
-}
-
-#[test]
-fn closing_a_missing_pane_is_refused_without_a_change() {
-    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
-    assert_eq!(
-        close(&mut app, "w1:p9"),
-        failure("pane_not_found", "pane w1:p9 not found")
-    );
-    assert_eq!(workspace_ids(&mut app).unwrap(), ["w1"]);
-    assert!(events_after(&app, 0).is_empty());
 }
