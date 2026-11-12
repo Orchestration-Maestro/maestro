@@ -267,6 +267,14 @@ held!(
     Capability::NativeReader(reader) => reader
 );
 
+held!(
+    /// A native HTTP response.
+    NativeResponse,
+    std::rc::Rc<dyn maestro_extensions::native_io::Response>,
+    "native response resource ended",
+    Capability::NativeResponse(response) => response
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,
