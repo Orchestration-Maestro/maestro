@@ -8,7 +8,7 @@ use maestro_app::{
     AgentSessionRuntimeError, EventError, ReadonlySessionManager, SessionChangeResult,
     SessionManager, SwitchSessionOptions, is_whitespace_scalar,
 };
-use maestro_tui::interface::LocalFuture;
+use maestro_tui::LocalFuture;
 use std::{
     error::Error,
     rc::{Rc, Weak},

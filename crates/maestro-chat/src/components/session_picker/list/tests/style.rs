@@ -1,7 +1,7 @@
 //! Private state observations through the public renderer.
 use super::super::super::SessionList;
 use super::session_picker;
-use maestro_tui::interface::Focusable;
+use maestro_tui::Focusable;
 /// Configures existing list state without adding dispatch or public setters.
 fn configure(list: &SessionList, path: bool, confirmation: Option<&str>, selected: Option<usize>) {
     list.show_path.set(path);

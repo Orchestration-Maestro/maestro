@@ -13,9 +13,9 @@ mod wrapping;
 use super::editing::LastAction;
 use crate::{
     Component, FocusFlag, Focusable, SelectListTheme, TUI,
-    candidates::{AutocompleteProvider, CursorPosition},
+    autocomplete::{AutocompleteProvider, CursorPosition},
     editor_component::{BorderColor, TextCallback},
-    interface::{InputHandler, TerminalHandle, TuiRuntime},
+    tui::{InputHandler, TerminalHandle, TuiRuntime},
     undo_stack::UndoStack,
 };
 use completion::Completion;
@@ -119,7 +119,7 @@ struct Editing {
     /// The prompt being edited when browsing began, restored when browsing returns to it.
     draft: Option<Buffer>,
     /// Retained deleted strings.
-    ring: crate::clipboard::KillRing,
+    ring: crate::kill_ring::KillRing,
     /// Invalidates completion after reentrant editing.
     revision: u64,
     /// Pending direction for a literal jump.

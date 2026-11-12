@@ -274,7 +274,7 @@ impl InteractiveMode {
 
 /// Starts immediate effects now and transfers pending work to the existing runtime.
 fn start_notice_work(
-    runtime: &dyn maestro_tui::interface::TuiRuntime,
+    runtime: &dyn maestro_tui::TuiRuntime,
     work: maestro_app::utils::scheduling::LocalTask,
 ) {
     maestro_app::utils::scheduling::start_now(work, |work| {
@@ -456,7 +456,7 @@ impl InteractiveMode {
 
 /// Eagerly admits a producer but always delivers its result through the existing task host.
 fn start_notice_check<T: 'static>(
-    runtime: &dyn maestro_tui::interface::TuiRuntime,
+    runtime: &dyn maestro_tui::TuiRuntime,
     work: impl std::future::Future<Output = T> + 'static,
     notify: impl FnOnce(T) + 'static,
 ) {

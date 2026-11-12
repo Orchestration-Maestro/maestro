@@ -1,7 +1,7 @@
 //! Command projection and argument routing.
 
 use super::{AutocompleteItem, AutocompleteSuggestions, Command, CompletionError};
-use crate::matching::fuzzy_filter;
+use crate::fuzzy::fuzzy_filter;
 use crate::text::utils::is_whitespace_scalar;
 
 /// The input form's command identity.

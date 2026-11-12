@@ -584,7 +584,7 @@ fn command_callbacks_release_mode_after_completion() {
         let weak = settle_dropped(mode, &runtime).await;
         assert!(weak.upgrade().is_none(), "settled work releases the mode");
         on_submit("/new");
-        maestro_tui::interface::InputHandler::handle_input(editor.as_ref(), "\x1bn");
+        maestro_tui::InputHandler::handle_input(editor.as_ref(), "\x1bn");
         assert_eq!(runtime.futures(), 0, "callbacks do not resurrect the mode");
         assert_eq!(guard.requests.borrow().len(), 1);
         drop((terminal, host));

@@ -1,8 +1,8 @@
 //! Live session scope, membership and ordering chrome.
 use crate::{NameFilter, SortMode};
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
-use maestro_tui::interface::{RenderTimer, TuiRuntime};
 use maestro_tui::{Component, TruncateOptions, truncate_to_width, visible_width};
+use maestro_tui::{RenderTimer, TuiRuntime};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

@@ -6,8 +6,8 @@ use std::rc::Rc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, SecondsFormat, Utc};
-use maestro_tui::interface::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
 use maestro_tui::terminal::OutputErrorHandler;
+use maestro_tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
 use tokio::task::{JoinHandle, LocalSet};
 use tokio::time::{Instant, sleep_until};
 

@@ -62,8 +62,9 @@ use maestro_theme::{
     Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
 use maestro_tui::{
-    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, Component,
-    EditorComponent, Text, candidates, interface::InputHandler,
+    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation, CompletionError,
+    CompletionOptions, CompletionResult, Component, CursorPosition, EditorComponent, InputHandler,
+    Text,
 };
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::json;
@@ -561,10 +562,7 @@ pub(super) struct Setup {
     /// The startup offline selection supplied by session services.
     pub(super) offline: Option<bool>,
     /// Supplied terminal ports for native or failing producer witnesses.
-    pub(super) terminal: Option<(
-        maestro_tui::interface::TerminalHandle,
-        Rc<dyn maestro_tui::interface::TuiRuntime>,
-    )>,
+    pub(super) terminal: Option<(maestro_tui::TerminalHandle, Rc<dyn maestro_tui::TuiRuntime>)>,
     /// Controlled native effects, with no real process exit by default.
     pub(super) lifecycle: Rc<dyn super::lifecycle::LifecycleEffects>,
     /// The mode options.
@@ -1104,15 +1102,10 @@ impl AutocompleteProvider for Numbered {
     fn get_suggestions<'a>(
         &'a self,
         _lines: &'a [String],
-        _cursor: candidates::CursorPosition,
-        _options: candidates::CompletionOptions<'a, Self::Signal>,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                    Output = Result<Option<AutocompleteSuggestions>, candidates::CompletionError>,
-                > + 'a,
-        >,
-    > {
+        _cursor: CursorPosition,
+        _options: CompletionOptions<'a, Self::Signal>,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<AutocompleteSuggestions>, CompletionError>> + 'a>>
+    {
         let items = (0..self.0)
             .map(|index| AutocompleteItem {
                 value: format!("item{index}"),
@@ -1130,11 +1123,11 @@ impl AutocompleteProvider for Numbered {
     fn apply_completion(
         &self,
         _lines: &[String],
-        _cursor: candidates::CursorPosition,
+        _cursor: CursorPosition,
         item: &AutocompleteItem,
         _prefix: &str,
-    ) -> candidates::CompletionResult {
-        candidates::CompletionResult {
+    ) -> CompletionResult {
+        CompletionResult {
             lines: vec![item.value.clone()],
             cursor_line: 0,
             cursor_col: item.value.len(),
@@ -1433,7 +1426,7 @@ fn dispatch(runtime: &ManualRuntime, errors: &Failures) {
 }
 
 /// Awaits one future the mode admitted, recording its failure.
-async fn await_work(future: maestro_tui::interface::LocalFuture, errors: &Failures) {
+async fn await_work(future: maestro_tui::LocalFuture, errors: &Failures) {
     if let Err(error) = future.await {
         errors.borrow_mut().push(error);
     }
@@ -1461,11 +1454,11 @@ pub(super) fn submit(mode: &Rc<InteractiveMode>, text: &str) {
 /// Takes the work `runtime` holds and returns what the last input handed over; work handed
 /// over earlier is spawned beside the caller, so a [`driving`] task runs it: such work, like
 /// a running shell command's output, can end only after the caller's later steps.
-fn take_admitted(runtime: &ManualRuntime) -> maestro_tui::interface::LocalFuture {
+fn take_admitted(runtime: &ManualRuntime) -> maestro_tui::LocalFuture {
     let mut work = runtime.take_futures();
     let command = work.pop().expect("the input handed over its work");
     for earlier in work {
-        maestro_tui::interface::TuiRuntime::spawn_local(runtime, earlier);
+        maestro_tui::TuiRuntime::spawn_local(runtime, earlier);
     }
     command
 }

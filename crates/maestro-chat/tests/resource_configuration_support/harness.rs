@@ -5,7 +5,7 @@ use maestro_chat::components::configuration::{
     ComponentOptions, ConfigSelectorCallbacks, ConfigSelectorComponent, ResourceItem,
 };
 use maestro_theme::{Collator, ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
-use maestro_tui::{Component, interface::ChildArray};
+use maestro_tui::{ChildArray, Component};
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},

@@ -1,11 +1,11 @@
 //! Independent request barriers and root-exported command construction.
 #![cfg(test)]
-use maestro_tui::candidates::{
-    AutocompleteOperations, Command, CompletionOptions, CursorPosition, DirectoryEntry,
-};
 use maestro_tui::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
     SlashCommand,
+};
+use maestro_tui::{
+    AutocompleteOperations, Command, CompletionOptions, CursorPosition, DirectoryEntry,
 };
 use std::cell::Cell;
 use std::future::Future;

@@ -1,7 +1,7 @@
 //! Menu key routing, selected value application, context classification and menu rows.
 use super::Owner;
 use super::completion::{Intent, Mode};
-use crate::candidates::AutocompleteItem;
+use crate::autocomplete::AutocompleteItem;
 use crate::text::utils::is_whitespace_scalar;
 use crate::{KeybindingsManager, visible_width};
 use regress::Regex;
@@ -40,7 +40,7 @@ impl Owner {
             return true;
         }
         if bindings.matches(data, "tui.select.up") || bindings.matches(data, "tui.select.down") {
-            crate::interface::InputHandler::handle_input(&*list, data);
+            crate::tui::InputHandler::handle_input(&*list, data);
             return true;
         }
         let tab = bindings.matches(data, "tui.input.tab");

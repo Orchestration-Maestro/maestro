@@ -7,7 +7,7 @@ use super::{append_user, fork_panel, tree::finish, tree::panel};
 use crate::components::session_picker::{SessionList, SessionSelectorComponent};
 use maestro_app::{ReadonlySessionManager, SessionManager};
 use maestro_test_process::IsolatedSetup;
-use maestro_tui::{Component, interface::InputHandler};
+use maestro_tui::{Component, InputHandler};
 use serde_json::json;
 use std::{path::Path, rc::Rc};
 

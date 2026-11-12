@@ -6,7 +6,7 @@ use maestro_app::{
     AgentSessionRuntime, Local, ReadonlySessionManager, RegisteredCommand, ResolvedCommand,
     SourceInfo, SourceScope, is_whitespace_scalar, parse_git_url,
 };
-use maestro_tui::candidates::{
+use maestro_tui::{
     ArgumentCompletions, AutocompleteItem, Command, CompletionError, NativeAutocompleteOperations,
     SlashCommand,
 };

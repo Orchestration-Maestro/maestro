@@ -1,8 +1,8 @@
 //! Clamped extension selection over caller-supplied string options.
 use super::{countdown_timer::CountdownTimer, dialog_chrome, dialog_countdown};
 use maestro_theme::{LiveTheme, ThemeColor, ThemeError, paint};
-use maestro_tui::interface::{InputHandler, TuiRuntime};
 use maestro_tui::{Component, Container, TUI, Text, get_keybindings};
+use maestro_tui::{InputHandler, TuiRuntime};
 use std::{cell::Cell, rc::Rc};
 
 /// Presentation and optional countdown hosts for a selection dialog.

@@ -96,7 +96,7 @@ impl Container {
 impl Component for Container {
     /// Renders the children in order, walking the array held when the render starts.
     fn render(&self, width: usize) -> Vec<String> {
-        crate::interface::render_infallible(|render| self.render_children(width, render))
+        crate::tui::render_infallible(|render| self.render_children(width, render))
     }
 
     fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {

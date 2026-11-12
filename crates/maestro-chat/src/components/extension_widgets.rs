@@ -10,9 +10,9 @@ use maestro_theme::{
     get_select_list_theme, get_settings_list_theme,
 };
 use maestro_tui::{
-    Cancellation, Container, EditorTheme, KeybindingsConfig, Markdown, MarkdownOptions,
-    MarkdownTheme, SelectListTheme, SettingsListTheme, TUI, TerminalImage,
-    editor_component::BorderColor, interface::ComponentHandle,
+    Cancellation, ComponentHandle, Container, EditorTheme, KeybindingsConfig, Markdown,
+    MarkdownOptions, MarkdownTheme, SelectListTheme, SettingsListTheme, TUI, TerminalImage,
+    editor_component::BorderColor,
 };
 use std::rc::Rc;
 

@@ -1,7 +1,7 @@
 //! Identity-preserving adaptation of bound extension input to toolkit listeners.
 use super::super::InteractiveMode;
 use maestro_app::{Listeners, TerminalInputHandler, UIUnsubscribe};
-use maestro_tui::interface::InputListenerResult;
+use maestro_tui::InputListenerResult;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// The current toolkit removal operation for each bound callback identity.

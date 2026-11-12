@@ -2,8 +2,8 @@
 use crate::components::bounded_select_list;
 use maestro_app::WarningSettings;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
-use maestro_tui::components::preferences::SettingsListOptions;
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
+use maestro_tui::components::SettingsListOptions;
 use maestro_tui::{
     Component, Container, SelectItem, SelectList, SettingItem, SettingsList, Spacer, Text,
 };

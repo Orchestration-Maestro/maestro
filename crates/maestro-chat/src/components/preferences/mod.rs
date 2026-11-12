@@ -9,7 +9,7 @@ use maestro_app::{
     TreeFilterMode, WarningSettings,
 };
 use maestro_theme::LiveTheme;
-use maestro_tui::components::preferences::SettingsListOptions;
+use maestro_tui::components::SettingsListOptions;
 use maestro_tui::{Component, Container, SettingsList, TerminalImage};
 use std::rc::Rc;
 

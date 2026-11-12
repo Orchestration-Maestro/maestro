@@ -3,7 +3,7 @@ use super::{Answer, Interception, World, active, intercepting_world, painted, pr
 use crate::{BashExecutionComponent, interaction::tests::isolated};
 use futures_util::FutureExt;
 use maestro_app::{BashError, BashExecOptions, BashExecResult, BashOperations};
-use maestro_tui::interface::LocalFuture;
+use maestro_tui::LocalFuture;
 use std::{
     future::Future,
     pin::Pin,

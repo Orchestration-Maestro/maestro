@@ -1,7 +1,7 @@
 //! Retained provider sign-in presentation.
 use super::dynamic_border::DynamicBorder;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError};
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use maestro_tui::{
     Cancellation, Component, Container, FocusFlag, Focusable, Input, Spacer, Text, hyperlink,
 };

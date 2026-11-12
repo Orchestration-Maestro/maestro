@@ -125,7 +125,7 @@ impl InteractiveMode {
         }
     }
     /// Removes handlers synchronously, then owns the pending drain and disposal.
-    pub(super) fn shutdown(self: &Rc<Self>) -> maestro_tui::interface::LocalFuture {
+    pub(super) fn shutdown(self: &Rc<Self>) -> maestro_tui::LocalFuture {
         self.begin_shutdown(ShutdownOrigin::Quit)
     }
     /// Admits the shutdown, removes the handlers and returns the rest of the sequence. A quit
@@ -133,10 +133,7 @@ impl InteractiveMode {
     /// cleanup cannot repaint the last frame. A signal disposes the runtime first: the
     /// extensions' teardown does not write to the terminal, so it must not be skipped when a
     /// later terminal write fails on a dead or stalled terminal.
-    fn begin_shutdown(
-        self: &Rc<Self>,
-        origin: ShutdownOrigin,
-    ) -> maestro_tui::interface::LocalFuture {
+    fn begin_shutdown(self: &Rc<Self>, origin: ShutdownOrigin) -> maestro_tui::LocalFuture {
         if self.lifecycle.is_shutting_down.replace(true) {
             return Box::pin(async { Ok(()) });
         }

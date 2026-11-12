@@ -1,10 +1,10 @@
 //! Completion provider ownership, cancellation, delayed starts and serial requests.
 use super::{Owner, completion_input::Context};
-use crate::candidates::{
+use crate::autocomplete::{
     AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CompletionOptions,
     CursorPosition,
 };
-use crate::{SelectItem, SelectList, SelectListLayoutOptions, interface::RenderTimer};
+use crate::{RenderTimer, SelectItem, SelectList, SelectListLayoutOptions};
 use maestro_cancellation::Cancellation;
 use std::{rc::Rc, time::Duration};
 

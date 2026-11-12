@@ -1,6 +1,6 @@
 //! Directional deleted text and callback-separated ring rotation.
 use super::{Editing, LastAction, Owner};
-use crate::clipboard::KillRingOptions;
+use crate::kill_ring::KillRingOptions;
 /// Cursor-local kill selection.
 #[derive(Clone, Copy)]
 pub(super) enum Kill {

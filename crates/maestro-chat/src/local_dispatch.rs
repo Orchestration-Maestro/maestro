@@ -2,7 +2,7 @@
 
 use maestro_app::DiagnosticErrorInfo;
 use maestro_lock::lock;
-use maestro_tui::interface::TuiRuntime;
+use maestro_tui::TuiRuntime;
 use std::{
     any::Any,
     cell::RefCell,

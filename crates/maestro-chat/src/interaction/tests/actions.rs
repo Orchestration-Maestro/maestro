@@ -7,7 +7,7 @@ use super::{
 use crate::components::session_picker::list::tests::session_picker::decode_cases;
 use maestro_app::utils::image_clipboard::ClipboardImage;
 use maestro_app::{DiagnosticErrorInfo, Model, OAuthError, ScopedModel, ThinkingLevel};
-use maestro_tui::{Component, interface::InputHandler};
+use maestro_tui::{Component, InputHandler};
 #[cfg(target_os = "linux")]
 use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
 use serde::{Deserialize, de::DeserializeOwned};

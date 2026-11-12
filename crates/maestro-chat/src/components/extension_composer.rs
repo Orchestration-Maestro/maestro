@@ -3,11 +3,11 @@ use super::dynamic_border::DynamicBorder;
 use crate::external_editor::{ExternalEditorFile, edit_external_file, external_command};
 use maestro_theme::{LiveTheme, ThemeColor, ThemeError};
 use maestro_tui::editor_component::TextCallback;
-use maestro_tui::interface::{InputHandler, TuiRuntime};
 use maestro_tui::{
     Component, Container, Editor, EditorOptions, FocusFlag, Focusable, KeybindingsManager, Spacer,
     TUI, Text,
 };
+use maestro_tui::{InputHandler, TuiRuntime};
 use std::{
     io,
     rc::{Rc, Weak},

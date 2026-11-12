@@ -3,10 +3,10 @@ use super::{FilterMode, TreeList};
 use crate::components::dynamic_border::DynamicBorder;
 use maestro_app::key_text;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
-use maestro_tui::interface::{FocusFlag, Focusable, InputHandler, TuiRuntime};
 use maestro_tui::{
     Component, Container, Input, Spacer, Text, TruncateOptions, TruncatedText, truncate_to_width,
 };
+use maestro_tui::{FocusFlag, Focusable, InputHandler, TuiRuntime};
 use std::{
     cell::RefCell,
     io,

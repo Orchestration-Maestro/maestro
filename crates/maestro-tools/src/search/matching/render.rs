@@ -11,7 +11,7 @@ use crate::{
 };
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
-use maestro_tui::interface::ComponentHandle;
+use maestro_tui::ComponentHandle;
 use serde_json::Value;
 /// Render raw partial arguments, replacing a previous text only after success.
 pub(super) fn render_call(

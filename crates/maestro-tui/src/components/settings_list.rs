@@ -1,7 +1,7 @@
 //! Settings rows with optional label search and submenu activation.
 
 use crate::{
-    Component, Input, TruncateOptions, fuzzy_filter, get_keybindings, interface::InputHandler,
+    Component, Input, InputHandler, TruncateOptions, fuzzy_filter, get_keybindings,
     truncate_to_width, visible_width, wrap_text_with_ansi,
 };
 use std::{
@@ -400,7 +400,7 @@ impl SettingsList {
 }
 impl Component for SettingsList {
     fn render(&self, width: usize) -> Vec<String> {
-        crate::interface::render_infallible(|render| self.render_children(width, render))
+        crate::tui::render_infallible(|render| self.render_children(width, render))
     }
     fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         self.render_children(width, Component::try_render)

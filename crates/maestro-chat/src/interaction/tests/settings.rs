@@ -11,7 +11,7 @@ use maestro_app::{
     strip_ansi,
 };
 use maestro_theme::{ThemeColor, ThemeDirectories};
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use maestro_tui::{Component, SettingsList, TerminalCapabilities};
 use serde_json::{Value, json};
 use std::cell::RefCell;
@@ -686,8 +686,8 @@ async fn edited_update(directory: &Path, edit: Edit, query: &str) -> (Vec<String
     late.update_result(image_result("late"), false).unwrap();
     named.push(("late", Rc::clone(&late)));
     let container = Rc::clone(&world.mode.chat_container);
-    let current: maestro_tui::interface::ComponentHandle = Rc::clone(&named[1].1) as _;
-    let late: maestro_tui::interface::ComponentHandle = late;
+    let current: maestro_tui::ComponentHandle = Rc::clone(&named[1].1) as _;
+    let late: maestro_tui::ComponentHandle = late;
     *churn.borrow_mut() = Some(match edit {
         Edit::Append => Box::new(move || container.add_child(late)),
         Edit::RemoveWithNext => Box::new(move || {

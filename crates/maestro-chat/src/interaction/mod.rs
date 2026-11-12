@@ -10,8 +10,8 @@ use maestro_app::{
     ToolRenderEnvironment,
 };
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
-use maestro_tui::interface::{TerminalHandle, TuiRuntime};
 use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
+use maestro_tui::{TerminalHandle, TuiRuntime};
 use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
@@ -131,7 +131,7 @@ pub struct InteractiveMode {
     /// Whether the one initialization continuation is still delivering events.
     event_initialization_pending: Cell<bool>,
     /// The built-in header, absent until the header is built.
-    built_in_header: RefCell<Option<maestro_tui::interface::ComponentHandle>>,
+    built_in_header: RefCell<Option<maestro_tui::ComponentHandle>>,
     /// The extension header shown in place of the built-in one.
     custom_header: RefCell<Option<Rc<maestro_app::ExtensionComponent>>>,
     /// The extension footer shown in place of the built-in one.

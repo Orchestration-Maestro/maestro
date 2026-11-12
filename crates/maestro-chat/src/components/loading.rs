@@ -1,8 +1,8 @@
 //! Loader composition with captured decoration and a construction-time hint.
 use super::dynamic_border::DynamicBorder;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError, paint};
+use maestro_tui::InputHandler;
 use maestro_tui::editor_component::BorderColor;
-use maestro_tui::interface::InputHandler;
 use maestro_tui::{CancellableLoader, Cancellation};
 use maestro_tui::{Component, Container, Loader, Spacer, TUI, Text};
 use std::{ops::Deref, rc::Rc};

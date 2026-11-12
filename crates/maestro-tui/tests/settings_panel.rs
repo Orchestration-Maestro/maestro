@@ -90,8 +90,8 @@ fn settings_search_reuses_fuzzy_ranking() {
     }
 }
 
-use maestro_tui::components::preferences::SettingsListOptions;
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
+use maestro_tui::components::SettingsListOptions;
 use maestro_tui::{Component, SettingItem, SettingsList};
 use serde_json::json;
 use std::{

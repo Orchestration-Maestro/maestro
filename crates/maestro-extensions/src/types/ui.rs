@@ -10,8 +10,8 @@ pub use editor::{
 use maestro_models::{Cancellation, Execution, Local};
 use maestro_theme::{LiveTheme, Theme, ThemeInfo};
 use maestro_tui::{
-    AutocompleteProvider, EditorTheme, OverlayHandle, OverlayOptions, TUI,
-    interface::{ComponentHandle, InputListenerResult},
+    AutocompleteProvider, ComponentHandle, EditorTheme, InputListenerResult, OverlayHandle,
+    OverlayOptions, TUI,
 };
 use std::{
     cell::{Cell, RefCell},

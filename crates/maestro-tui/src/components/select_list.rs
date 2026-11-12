@@ -2,7 +2,7 @@
 
 use crate::text::utils::is_whitespace_scalar;
 use crate::{Component, TruncateOptions, truncate_to_width, visible_width};
-use crate::{get_keybindings, interface::InputHandler};
+use crate::{InputHandler, get_keybindings};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

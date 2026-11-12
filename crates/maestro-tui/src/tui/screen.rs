@@ -420,8 +420,8 @@ impl TUI {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interface::diagnostics::{forget_measured_lines, measured_lines, oversized_row};
-    use crate::interface::drawing::SEGMENT_RESET;
+    use crate::tui::diagnostics::{forget_measured_lines, measured_lines, oversized_row};
+    use crate::tui::drawing::SEGMENT_RESET;
 
     /// The lines of the five-row transcript these tests draw.
     const TRANSCRIPT: [&str; 5] = ["one", "two", "three", "four", "five"];

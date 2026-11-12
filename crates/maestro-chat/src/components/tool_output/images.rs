@@ -2,9 +2,7 @@
 use super::{Row, ToolExecutionResult};
 use maestro_app::{DiagnosticErrorInfo, UserBlock, convert_to_png};
 use maestro_theme::ThemeColor;
-use maestro_tui::{
-    Image, ImageOptions, ImageProtocol, ImageTheme, Spacer, interface::ComponentHandle,
-};
+use maestro_tui::{ComponentHandle, Image, ImageOptions, ImageProtocol, ImageTheme, Spacer};
 use std::rc::Rc;
 
 impl Row {

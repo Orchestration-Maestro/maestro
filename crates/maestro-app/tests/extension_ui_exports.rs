@@ -11,7 +11,7 @@ use maestro_app::{
     Threaded, UIHostCall,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_tui::interface::InputListenerResult;
+use maestro_tui::InputListenerResult;
 use std::rc::Rc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, RwLock};

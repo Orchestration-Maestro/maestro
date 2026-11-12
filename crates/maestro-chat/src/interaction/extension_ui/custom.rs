@@ -6,7 +6,7 @@ use maestro_app::{
     CustomClose, CustomComponentFactory, CustomFactoryOutcome, CustomUIOptions, EventError,
     ExtensionComponent, ExtensionUIFuture, Listeners, OverlayOptionsSource,
 };
-use maestro_tui::interface::ComponentHandle;
+use maestro_tui::ComponentHandle;
 use maestro_tui::{OverlayHandle, OverlayOptions, SizeValue};
 use std::{
     cell::RefCell,

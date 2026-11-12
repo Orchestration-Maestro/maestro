@@ -2,7 +2,7 @@
 use super::kill::Kill;
 use super::navigation::Direction;
 use super::{Buffer, Owner};
-use crate::{KeybindingsManager, get_keybindings, interface::InputHandler, matches_key};
+use crate::{InputHandler, KeybindingsManager, get_keybindings, matches_key};
 /// Basic actions in dispatch precedence order.
 #[derive(Clone, Copy)]
 enum Action {

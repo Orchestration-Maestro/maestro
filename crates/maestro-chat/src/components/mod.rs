@@ -224,7 +224,7 @@ fn dialog_chrome(
 fn dialog_countdown(
     timeout: Option<f64>,
     tui: Option<&maestro_tui::TUI>,
-    runtime: Rc<dyn maestro_tui::interface::TuiRuntime>,
+    runtime: Rc<dyn maestro_tui::TuiRuntime>,
     update: Rc<dyn Fn(f64)>,
     cancel: Rc<dyn Fn()>,
 ) -> Option<countdown_timer::CountdownTimer> {

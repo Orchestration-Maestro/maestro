@@ -3,7 +3,7 @@ use super::{
     Editing, LastAction, Owner, markers,
     wrapping::{atoms, word_wrap_line},
 };
-use crate::candidates::CursorPosition;
+use crate::autocomplete::CursorPosition;
 use std::ops::Range;
 /// One wrapped row in its logical line's byte and cell coordinates.
 struct VisualRow {

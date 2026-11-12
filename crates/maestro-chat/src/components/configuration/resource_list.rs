@@ -5,9 +5,7 @@ use super::{
 };
 use maestro_app::SettingsManager;
 use maestro_tui::{
-    Component, Input, get_keybindings,
-    interface::{FocusFlag, Focusable, InputHandler},
-    matches_key,
+    Component, FocusFlag, Focusable, Input, InputHandler, get_keybindings, matches_key,
 };
 use std::{
     cell::{Cell, RefCell},

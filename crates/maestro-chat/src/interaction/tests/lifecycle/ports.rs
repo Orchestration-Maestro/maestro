@@ -1,7 +1,7 @@
 //! Controlled failures and output sources around the shared recording ports.
 use maestro_tui::Terminal;
-use maestro_tui::interface::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
 use maestro_tui::terminal::OutputErrorHandler;
+use maestro_tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
 use std::{
     cell::{Cell, RefCell},
     io,

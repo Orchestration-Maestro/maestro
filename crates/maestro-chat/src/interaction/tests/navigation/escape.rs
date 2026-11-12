@@ -6,7 +6,7 @@ use super::{append_user, fork_panel, tree::finish, tree::panel};
 use crate::TreeSelectorComponent;
 use crate::components::session_picker::SessionSelectorComponent;
 use maestro_app::DoubleEscapeAction;
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use std::{path::Path, rc::Rc};
 
 /// The interrupt key's default sequence.

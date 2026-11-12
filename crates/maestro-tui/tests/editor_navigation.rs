@@ -1,9 +1,7 @@
 #![cfg(test)]
 //! Editor navigation through public operations.
 use crate::editor_support as support;
-use maestro_tui::{
-    Component, Editor, EditorOptions, candidates::CursorPosition, interface::InputHandler,
-};
+use maestro_tui::{Component, CursorPosition, Editor, EditorOptions, InputHandler};
 
 #[test]
 fn vertical_edges_select_logical_endpoints() {
@@ -277,7 +275,7 @@ fn jump_excludes_current_match_at_line_start() {
 
 #[test]
 fn navigation_width_is_saved_before_border_callback() {
-    use maestro_tui::{Component, Editor, EditorOptions, interface::InputHandler};
+    use maestro_tui::{Component, Editor, EditorOptions, InputHandler};
     use std::{
         cell::{Cell, RefCell},
         rc::Rc,
@@ -316,7 +314,7 @@ fn navigation_width_is_saved_before_border_callback() {
     );
     assert_eq!(
         *observed.borrow(),
-        [maestro_tui::candidates::CursorPosition { line: 1, col: 6 }]
+        [maestro_tui::CursorPosition { line: 1, col: 6 }]
     );
     editor.set_border_color(Rc::new(str::to_owned));
 }

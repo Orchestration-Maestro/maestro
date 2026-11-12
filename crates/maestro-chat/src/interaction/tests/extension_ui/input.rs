@@ -3,7 +3,7 @@ use super::super::extension_widgets::with_factories;
 use super::super::isolated;
 use super::port;
 use maestro_app::{ExtensionAPI, Local, ReadonlyFooterDataProvider, TerminalInputHandler};
-use maestro_tui::interface::{InputListener, InputListenerResult};
+use maestro_tui::{InputListener, InputListenerResult};
 use std::{
     cell::{Cell, RefCell},
     path::Path,

@@ -5,8 +5,7 @@ use maestro_app::{
 };
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor};
 use maestro_tui::{
-    Box as Panel, Component, Container, MarkdownTheme, Spacer, TerminalImage, Text,
-    interface::ComponentHandle,
+    Box as Panel, Component, ComponentHandle, Container, MarkdownTheme, Spacer, TerminalImage, Text,
 };
 use std::{
     cell::{Cell, RefCell},

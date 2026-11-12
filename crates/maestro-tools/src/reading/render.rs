@@ -19,7 +19,7 @@ use crate::{
 use maestro_models::{DiagnosticErrorInfo, system_prompt::CONTEXT_FILE_NAMES};
 use maestro_path::{Cwd, SEP, basename, dirname, relative, try_resolve};
 use maestro_theme::{LiveTheme, Theme, ThemeColor, get_language_from_path, highlight_code};
-use maestro_tui::interface::ComponentHandle;
+use maestro_tui::ComponentHandle;
 use serde_json::Value;
 
 /// Result of a render step.

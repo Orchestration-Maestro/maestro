@@ -1,8 +1,8 @@
 //! Extension text submission over the toolkit's retained input editor.
 use super::{countdown_timer::CountdownTimer, dialog_chrome, dialog_countdown};
 use maestro_theme::{LiveTheme, ThemeError};
-use maestro_tui::interface::{InputHandler, TuiRuntime};
 use maestro_tui::{Component, Container, FocusFlag, Focusable, Input, TUI, get_keybindings};
+use maestro_tui::{InputHandler, TuiRuntime};
 use std::rc::Rc;
 
 /// Presentation and optional countdown hosts for a text dialog.

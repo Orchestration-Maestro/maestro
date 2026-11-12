@@ -2,8 +2,7 @@
 
 use super::{Editing, LastAction, PasteChunk};
 use crate::{
-    KeybindingsManager, clipboard::KillRingOptions, get_segmenter, is_punctuation_char,
-    is_whitespace_char,
+    KeybindingsManager, KillRingOptions, get_segmenter, is_punctuation_char, is_whitespace_char,
 };
 
 impl Editing {

@@ -9,7 +9,7 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 
 use crate::Terminal;
-use crate::interface::TerminalHandle;
+use crate::tui::TerminalHandle;
 
 /// Callback that receives the bytes of each recorded effect.
 type Tap = Box<dyn FnMut(&str)>;

@@ -3,10 +3,8 @@ use super::super::extension_ui::port;
 use super::super::extension_widgets::with_factories;
 use super::super::{World, isolated};
 use maestro_app::{AutocompleteProviderFactory, ExtensionAPI, Local, NewSessionCommandOptions};
-use maestro_tui::candidates::{
-    CompletionError, CompletionOptions, CompletionResult, CursorPosition,
-};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, Cancellation};
+use maestro_tui::{CompletionError, CompletionOptions, CompletionResult, CursorPosition};
 use std::{
     cell::{Cell, RefCell},
     future::Future,

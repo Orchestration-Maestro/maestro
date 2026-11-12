@@ -6,8 +6,7 @@ mod process_terminal;
 #[cfg(unix)]
 mod unix {
     use maestro_tui::{
-        Component, TUI, TruncateOptions, interface::InputHandler, keys::matches_key,
-        truncate_to_width,
+        Component, InputHandler, TUI, TruncateOptions, keys::matches_key, truncate_to_width,
     };
     use std::{cell::RefCell, collections::VecDeque, io, process::ExitCode, rc::Rc};
     use tokio::sync::Notify;

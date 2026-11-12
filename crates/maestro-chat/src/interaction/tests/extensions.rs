@@ -8,7 +8,7 @@ use maestro_app::{
     DefaultEventBus, Extension, ExtensionAPI, ExtensionFactory, ExtensionShortcutOptions, Local,
     ReadonlySessionManager, create_extension_runtime, strip_ansi,
 };
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
 

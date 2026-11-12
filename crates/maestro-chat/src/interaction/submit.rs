@@ -5,7 +5,7 @@ use super::bash::selected_shell_command;
 use maestro_app::messages::UserMessageDelivery;
 use maestro_app::{ImageContent, PromptOptions, is_whitespace_scalar};
 use maestro_tui::EditorComponent;
-use maestro_tui::interface::LocalFuture;
+use maestro_tui::LocalFuture;
 use std::{
     error::Error,
     future::{Future, pending},

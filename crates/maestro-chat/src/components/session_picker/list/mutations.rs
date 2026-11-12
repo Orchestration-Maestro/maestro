@@ -1,9 +1,6 @@
 //! Confirmation-first mutation dispatch and replaceable callable slots.
 use super::{Rc, RefCell, SessionList, canonicalize_path};
-use maestro_tui::{
-    get_keybindings,
-    interface::{InputHandler, LocalFuture},
-};
+use maestro_tui::{InputHandler, LocalFuture, get_keybindings};
 /// Borrowed confirmation target notification.
 type Confirmation = Rc<dyn Fn(Option<&str>)>;
 /// Owned asynchronous deletion factory.

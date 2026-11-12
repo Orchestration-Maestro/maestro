@@ -7,7 +7,7 @@ use maestro_app::{
     ComponentFactory, ExtensionAPI, ExtensionComponent, ExtensionFactory, ExtensionUIContextPort,
     FooterFactory, Local, ReadonlyFooterDataProvider, strip_ansi,
 };
-use maestro_tui::{Component, Text, interface::ComponentHandle};
+use maestro_tui::{Component, ComponentHandle, Text};
 use std::{cell::RefCell, path::Path, rc::Rc};
 
 /// Recorded callback effects in call order.

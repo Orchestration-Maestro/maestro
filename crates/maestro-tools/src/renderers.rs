@@ -55,7 +55,7 @@ type LocalResultCallback = Rc<
         crate::ToolRenderResultOptions,
         &maestro_theme::LiveTheme,
         &ToolRenderContext<'_, ToolRendererState>,
-    ) -> Result<maestro_tui::interface::ComponentHandle, DiagnosticErrorInfo>,
+    ) -> Result<maestro_tui::ComponentHandle, DiagnosticErrorInfo>,
 >;
 impl From<LocalResultCallback> for ToolRenderResultBinding {
     fn from(callback: LocalResultCallback) -> Self {

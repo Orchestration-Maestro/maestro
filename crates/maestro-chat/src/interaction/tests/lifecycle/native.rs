@@ -2,7 +2,7 @@
 use super::super::super::lifecycle::{LifecycleEffects, LifecycleState};
 use super::{Setup, ports};
 use maestro_test_process::{CheckedChild, TestProcess, selection};
-use maestro_tui::{Terminal, interface::TuiRuntime};
+use maestro_tui::{Terminal, TuiRuntime};
 use std::{
     cell::{Cell, RefCell},
     io::{self, Read, Write},

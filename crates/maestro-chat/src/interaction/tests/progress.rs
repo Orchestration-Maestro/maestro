@@ -18,7 +18,7 @@ use maestro_app::{
     SourceOrigin, SourceScope, StopReason,
 };
 use maestro_tui::Component;
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{

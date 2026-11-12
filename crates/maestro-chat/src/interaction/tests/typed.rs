@@ -1,7 +1,7 @@
 //! Typed input through the editor's installed submission and the single waiting input.
 use super::{World, cases as recorded_cases, debug::only_log, isolated, started};
 use crate::{CustomEditor, InteractiveMode};
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;
 use std::{

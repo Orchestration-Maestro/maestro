@@ -8,10 +8,10 @@ use crate::{NameFilter, SortMode, components::dynamic_border::DynamicBorder};
 use maestro_app::SessionInfo;
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::{
-    Component, Container, FocusFlag, Focusable, KeybindingsManager, Spacer,
-    interface::{InputHandler, TuiRuntime},
+    Component, Container, FocusFlag, Focusable, InputHandler, KeybindingsManager, Spacer,
+    TuiRuntime,
 };
-use maestro_tui::{Input, interface::LocalFuture};
+use maestro_tui::{Input, LocalFuture};
 use std::{
     cell::{Cell, RefCell},
     error::Error,

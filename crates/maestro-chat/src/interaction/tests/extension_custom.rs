@@ -8,7 +8,7 @@ use maestro_app::{
     ExtensionComponent, ExtensionKeybindings, Local, OverlayOptionsSource, UIHostCall,
 };
 use maestro_theme::LiveTheme;
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use maestro_tui::{
     Component, EditorComponent, FocusFlag, Focusable, OverlayHandle, OverlayOptions, SizeValue, TUI,
 };

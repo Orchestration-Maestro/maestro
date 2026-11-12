@@ -10,11 +10,11 @@ use maestro_app::{
     ExtensionFactory, ExtensionKeybindings, ExtensionShortcutCallback, Local,
 };
 use maestro_tui::editor_component::{BorderColor, EditorError, TextCallback};
-use maestro_tui::interface::{ComponentHandle, InputHandler};
 use maestro_tui::{
     AutocompleteProvider, Cancellation, Component, EditorComponent, EditorOptions, FocusFlag,
     Focusable,
 };
+use maestro_tui::{ComponentHandle, InputHandler};
 use std::{
     cell::{Cell, RefCell},
     path::Path,

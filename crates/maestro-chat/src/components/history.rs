@@ -1,8 +1,8 @@
 //! Earlier-message selection retaining chronological input order.
 use super::dynamic_border::DynamicBorder;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
-use maestro_tui::interface::{InputHandler, TuiRuntime};
 use maestro_tui::{Component, Container, Spacer, Text, TruncateOptions, truncate_to_width};
+use maestro_tui::{InputHandler, TuiRuntime};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

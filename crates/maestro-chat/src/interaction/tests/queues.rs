@@ -20,8 +20,8 @@ use maestro_app::{
 };
 use maestro_theme::ThemeColor;
 use maestro_tui::editor_component::TextCallback;
-use maestro_tui::interface::{InputHandler, LocalFuture};
 use maestro_tui::{Component, EditorComponent, KeybindingKeys, Spacer, Text};
+use maestro_tui::{InputHandler, LocalFuture};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{

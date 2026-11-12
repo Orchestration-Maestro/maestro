@@ -8,8 +8,8 @@ use maestro_app::{
 };
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::{
-    Component, Container, Input, Spacer, TUI, Text, fuzzy_filter, get_keybindings,
-    interface::{FocusFlag, Focusable, InputHandler},
+    Component, Container, FocusFlag, Focusable, Input, InputHandler, Spacer, TUI, Text,
+    fuzzy_filter, get_keybindings,
 };
 use std::{
     cell::{Cell, RefCell},

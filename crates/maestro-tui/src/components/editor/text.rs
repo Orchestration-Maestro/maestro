@@ -1,6 +1,6 @@
 //! Buffer normalization and cursor-local edits.
 use super::{Buffer, Editing, LastAction, Owner, markers};
-use crate::{candidates::CursorPosition, is_whitespace_char};
+use crate::{CursorPosition, is_whitespace_char};
 impl Owner {
     /// Replaces normalized text, captures changed content and always notifies.
     pub(super) fn set_text(&self, text: &str) {

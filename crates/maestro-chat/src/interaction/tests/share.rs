@@ -333,7 +333,7 @@ async fn drive(world: &World) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Starts the single admitted operation on the current runtime and polls it once.
-fn start(world: &World) -> maestro_tui::interface::LocalFuture {
+fn start(world: &World) -> maestro_tui::LocalFuture {
     let mut admitted = world.runtime.take_futures();
     assert_eq!(admitted.len(), 1, "one admitted operation");
     let mut operation = admitted.pop().unwrap();

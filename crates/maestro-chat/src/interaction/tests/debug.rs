@@ -3,7 +3,7 @@
 use super::info::{cases, expected, seed_messages, text_rows};
 use super::{World, isolated, started};
 use maestro_app::configuration::config::{get_agent_dir, paths::get_debug_log_path};
-use maestro_tui::interface::TuiRuntime;
+use maestro_tui::TuiRuntime;
 use maestro_tui::{Component, EditorComponent};
 use serde::Deserialize;
 use serde_json::{Value, json};

@@ -1,6 +1,6 @@
 //! Bracketed paste framing, cleaning and large-paste storage.
 use super::{Editing, Owner, markers, text};
-use crate::interface::InputHandler;
+use crate::tui::InputHandler;
 
 /// Begins a bracketed paste.
 const START: &str = "\x1b[200~";

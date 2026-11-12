@@ -16,7 +16,7 @@ use maestro_app::{
     SettingsManager, SharedHandle, ThinkingLevel, WarningSettings,
 };
 use maestro_test_process::TestProcess;
-use maestro_tui::{Component, Input, Text, interface::InputHandler};
+use maestro_tui::{Component, Input, InputHandler, Text};
 use refusing_provider::RefusingProvider;
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::json;

@@ -5,7 +5,7 @@
 #![cfg(target_os = "linux")]
 use super::{World, install, isolated, isolated_output, started};
 use maestro_test_process::IsolatedSetup;
-use maestro_tui::{Component, interface::InputHandler};
+use maestro_tui::{Component, InputHandler};
 use serde_json::json;
 use std::{
     io::{BufRead, BufReader, Lines, Write},

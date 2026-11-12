@@ -1,6 +1,6 @@
 //! Retained prompt admission and browsing.
 use super::{Buffer, Editing, Owner};
-use crate::candidates::CursorPosition;
+use crate::autocomplete::CursorPosition;
 impl Owner {
     /// Adds a trimmed nonempty prompt, suppressing the newest duplicate and retaining 100 entries.
     pub(super) fn add_to_history(&self, text: &str) {

@@ -12,7 +12,7 @@ use crate::{
 };
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
-use maestro_tui::interface::ComponentHandle;
+use maestro_tui::ComponentHandle;
 use serde_json::Value;
 /// Render the pattern and directory, retaining a previous text component on success.
 pub(super) fn render_call(

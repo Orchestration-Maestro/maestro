@@ -5,10 +5,7 @@ mod resource_list;
 mod settings;
 use maestro_app::{PathMetadata, ResolvedPaths, SettingsManager};
 use maestro_theme::{Collator, LiveTheme};
-use maestro_tui::{
-    Component, Container, Spacer,
-    interface::{FocusFlag, Focusable},
-};
+use maestro_tui::{Component, Container, FocusFlag, Focusable, Spacer};
 pub use resource_list::ResourceList;
 use std::{cell::RefCell, rc::Rc};
 

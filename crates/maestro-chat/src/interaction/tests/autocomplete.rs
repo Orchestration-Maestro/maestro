@@ -9,8 +9,8 @@ use maestro_app::{
     ProviderConfigInput, ProviderModelInput, RegisteredCommand, ResolvedCommand, ScopedModel,
     SharedHandle, Skill, SourceInfo, SourceOrigin, SourceScope,
 };
-use maestro_tui::candidates::{AutocompleteSuggestions, CompletionOptions, CursorPosition};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, Cancellation};
+use maestro_tui::{AutocompleteSuggestions, CompletionOptions, CursorPosition};
 use serde::Deserialize;
 use serde_json::json;
 use std::ffi::OsStr;
@@ -342,7 +342,7 @@ fn provider(
 async fn suggested(
     provider: &Rc<dyn AutocompleteProvider<Signal = Cancellation>>,
     line: &str,
-) -> Result<Option<AutocompleteSuggestions>, maestro_tui::candidates::CompletionError> {
+) -> Result<Option<AutocompleteSuggestions>, maestro_tui::CompletionError> {
     let signal = Cancellation::new();
     let lines = [line.to_owned()];
     let cursor = CursorPosition {

@@ -7,7 +7,7 @@ use maestro_app::{
     ResourcesDiscoverEvent, ResourcesDiscoverResult, SessionStartEvent, strip_ansi,
 };
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
-use maestro_tui::{Component, interface::InputHandler};
+use maestro_tui::{Component, InputHandler};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{

@@ -1,38 +1,32 @@
 #![doc = include_str!("../../../docs/terminal/components.md")]
 
-pub mod bindings;
-pub mod candidates;
-pub mod clipboard;
+mod autocomplete;
+mod keybindings;
+mod kill_ring;
+pub use kill_ring::*;
 pub mod components;
 pub mod editor_component;
+mod fuzzy;
 pub mod images;
-pub mod input_buffer;
-pub mod interface;
 pub mod keys;
-pub mod matching;
+mod stdin_buffer;
 pub mod terminal;
 pub mod text;
+mod tui;
 pub mod undo_stack;
 
-pub use candidates::{
-    AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions, CombinedAutocompleteProvider,
-    SlashCommand,
-};
+pub use autocomplete::*;
 pub use components::{
     Box, CancellableLoader, DefaultTextStyle, Editor, EditorOptions, EditorTheme, Image,
     ImageOptions, ImageTheme, Input, Loader, LoaderIndicatorOptions, Markdown, MarkdownOptions,
     MarkdownTheme, Spacer, Text, TextDecoration, TruncatedText,
 };
 pub use editor_component::EditorComponent;
-pub use input_buffer::{StdinBuffer, StdinBufferEventMap, StdinBufferInput, StdinBufferOptions};
-pub use interface::{
-    CURSOR_MARKER, Component, Container, FocusFlag, Focusable, OverlayAnchor, OverlayHandle,
-    OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue, TUI, is_focusable,
-};
 pub use keys::{
     Key, KeyEventType, KeyId, decode_kitty_printable, is_key_release, is_key_repeat,
     is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
 };
+pub use stdin_buffer::*;
 pub use terminal::Terminal;
 pub use text::utils::{
     AnsiCode, ColumnSlice, ExtractedSegments, TruncateOptions, apply_background_to_line,
@@ -40,6 +34,7 @@ pub use text::utils::{
     normalize_terminal_output, slice_by_column, slice_with_width, truncate_to_width, visible_width,
     wrap_text_with_ansi,
 };
+pub use tui::*;
 
 pub use images::terminal_image::{
     CellDimensions, ITerm2Options, ImageCellSize, ImageDimensions, ImageProtocol,
@@ -50,12 +45,9 @@ pub use images::terminal_image::{
     image_fallback, is_image_line,
 };
 
-pub use bindings::{
-    Keybinding, KeybindingConflict, KeybindingDefinition, KeybindingDefinitions, KeybindingKeys,
-    KeybindingsConfig, KeybindingsManager, TUI_KEYBINDINGS, get_keybindings, set_keybindings,
-};
+pub use keybindings::*;
 
-pub use matching::{FuzzyMatch, fuzzy_filter, fuzzy_match};
+pub use fuzzy::*;
 
 pub use components::{
     SelectItem, SelectList, SelectListLayoutOptions, SelectListTheme,

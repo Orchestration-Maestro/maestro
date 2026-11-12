@@ -1,7 +1,7 @@
 //! The application-owned startup presentation interface.
 use super::InteractiveMode;
 use maestro_app::presentation_data::mode_dispatch::InteractiveModeRunner;
-use maestro_tui::interface::LocalFuture;
+use maestro_tui::LocalFuture;
 use std::{io, rc::Rc};
 impl InteractiveModeRunner for InteractiveMode {
     fn init(self: Rc<Self>) -> LocalFuture {

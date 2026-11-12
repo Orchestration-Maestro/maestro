@@ -19,7 +19,7 @@ use maestro_session::message_records::{
 };
 use maestro_theme::LiveTheme;
 use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
-use maestro_tui::{AutocompleteItem, interface::ComponentHandle};
+use maestro_tui::{AutocompleteItem, ComponentHandle};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{

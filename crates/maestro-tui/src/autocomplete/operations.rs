@@ -69,7 +69,7 @@ pub trait AutocompleteOperations {
 ///
 /// ```
 /// use maestro_cancellation::Cancellation;
-/// use maestro_tui::candidates::{
+/// use maestro_tui::{
 ///     CompletionOptions, CursorPosition, NativeAutocompleteOperations,
 /// };
 /// use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};

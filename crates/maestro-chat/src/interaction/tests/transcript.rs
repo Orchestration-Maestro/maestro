@@ -11,7 +11,7 @@ use maestro_app::{
 };
 use maestro_models::test_support::zero_usage;
 use maestro_theme::{ColorMode, ColorValue, LiveTheme, Theme, ThemeBg, ThemeColor, ThemeOptions};
-use maestro_tui::interface::ComponentHandle;
+use maestro_tui::ComponentHandle;
 use maestro_tui::{Component, Container, EditorComponent, MarkdownTheme, Spacer, Text};
 use maestro_tui::{ImageProtocol, TerminalCapabilities};
 use serde::{Deserialize, de::DeserializeOwned};
@@ -461,7 +461,7 @@ fn transcript_registered_toggle_actions_release_the_mode() {
             assert!(weak.upgrade().is_none());
             runtime.settle().ok();
             for key in ["\x0f", "\x14"] {
-                maestro_tui::interface::InputHandler::handle_input(editor.as_ref(), key);
+                maestro_tui::InputHandler::handle_input(editor.as_ref(), key);
             }
             assert_eq!(runtime.pending(), 0);
             assert!(runtime.drain_futures().is_empty());
@@ -482,7 +482,7 @@ pub(super) fn history(world: &World) -> Vec<String> {
     let draft = editor.get_text();
     let mut recalled = Vec::new();
     loop {
-        maestro_tui::interface::InputHandler::handle_input(editor.as_ref(), "\x1b[A");
+        maestro_tui::InputHandler::handle_input(editor.as_ref(), "\x1b[A");
         let text = editor.get_text();
         if recalled.last().unwrap_or(&draft) == &text {
             break;

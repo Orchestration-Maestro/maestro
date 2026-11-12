@@ -370,7 +370,7 @@ pub fn empty_self_rendered() {
 pub fn empty_self_rendered_keeps_caller_children() {
     let runtime = manual_runtime::ManualRuntime::new();
     let row = empty_self_rendered_row(&runtime);
-    let kept: maestro_tui::interface::ComponentHandle =
+    let kept: maestro_tui::ComponentHandle =
         Rc::new(maestro_tui::Text::new("kept".into(), 0, 0, None));
     row.children().borrow_mut()[0] = kept;
     assert_eq!(plain(&row), ["kept"]);
@@ -378,7 +378,7 @@ pub fn empty_self_rendered_keeps_caller_children() {
 /// On its first render, appends `added` to the array and removes the child after itself.
 struct Editor {
     /// The row's children, without keeping them alive.
-    array: std::rc::Weak<std::cell::RefCell<Vec<maestro_tui::interface::ComponentHandle>>>,
+    array: std::rc::Weak<std::cell::RefCell<Vec<maestro_tui::ComponentHandle>>>,
     /// Whether the edit has happened.
     done: Cell<bool>,
 }

@@ -4,8 +4,8 @@ use crate::components::session_selector_search::filter_session_records;
 use crate::{NameFilter, SortMode};
 use maestro_app::{SessionInfo, canonicalize_path, is_whitespace_scalar};
 use maestro_theme::{LiveTheme, Theme, ThemeBg, ThemeColor, paint};
-use maestro_tui::interface::{FocusFlag, Focusable, InputHandler};
 use maestro_tui::{Component, Input, TruncateOptions, truncate_to_width, visible_width};
+use maestro_tui::{FocusFlag, Focusable, InputHandler};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -17,7 +17,7 @@ use mutations::Mutations;
 /// Constructor policies and supplied live observations.
 pub struct SessionListOptions {
     /// Existing owner for asynchronous mutation work.
-    pub runtime: Rc<dyn maestro_tui::interface::TuiRuntime>,
+    pub runtime: Rc<dyn maestro_tui::TuiRuntime>,
     /// Show each record's working directory.
     pub show_cwd: bool,
     /// Initial ordering policy.

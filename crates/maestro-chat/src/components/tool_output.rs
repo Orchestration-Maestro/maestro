@@ -5,7 +5,7 @@ use maestro_app::{
     ToolRendererState, UserBlock, expand_hint, get_text_output, pretty_json,
 };
 use maestro_theme::{Theme, ThemeBg, ThemeColor};
-use maestro_tui::{Box as Frame, Component, Container, Spacer, Text, interface::ComponentHandle};
+use maestro_tui::{Box as Frame, Component, ComponentHandle, Container, Spacer, Text};
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},

@@ -3,9 +3,8 @@ use super::{dynamic_border::DynamicBorder, list_window};
 use maestro_app::{Model, key_text};
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
 use maestro_tui::{
-    Component, Container, FocusFlag, Focusable, Input, Spacer, Text, fuzzy_filter, get_keybindings,
-    interface::{InputHandler, LocalFuture, TuiRuntime},
-    matches_key,
+    Component, Container, FocusFlag, Focusable, Input, InputHandler, LocalFuture, Spacer, Text,
+    TuiRuntime, fuzzy_filter, get_keybindings, matches_key,
 };
 use std::{
     cell::{Cell, RefCell},

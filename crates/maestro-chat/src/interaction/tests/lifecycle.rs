@@ -6,7 +6,7 @@ use super::extension_ui::{RecordingWatcher, with_custom_theme};
 use super::{Setup, World, isolated};
 use crate::InteractiveMode;
 use maestro_app::presentation_data::status_line::FooterOperations;
-use maestro_tui::interface::InputHandler;
+use maestro_tui::InputHandler;
 use maestro_tui::{Component, EditorComponent};
 use std::{
     cell::{Cell, RefCell},

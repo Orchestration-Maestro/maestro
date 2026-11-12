@@ -11,8 +11,8 @@ use maestro_app::{
     NewSessionCommandOptions, ReadonlyFooterDataProvider, TerminalInputHandler, WidgetContent,
     WidgetPlacement, WorkingIndicatorOptions,
 };
-use maestro_tui::interface::{ComponentHandle, InputListenerResult};
 use maestro_tui::{Component, EditorComponent, Text};
+use maestro_tui::{ComponentHandle, InputListenerResult};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,

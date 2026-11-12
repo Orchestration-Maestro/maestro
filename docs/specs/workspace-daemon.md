@@ -99,7 +99,7 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 | `maestro-daemon` | `terminal`, `terminal_theme`, `resume`, `settings`, `locations`, `variables`, `diagnostics`, `instances`, `ingress`, `selection`, `panes`, `render_profile`, `events`, `render_signal`, `state`, `summary`, `git`, `persistence`, `platform`, `keys`, `service`, `client`, `restore`, `actions`, `commands`, `popup`, `checkouts`, `integrations`, `server`, `pane_graphics`, `announcements` | 5, 8–20, 25, 27–31, 34 |
 | `maestro-rpc` | `daemon` (socket adapter and graphics stream channel) | 13, 15, 31 |
 | `maestro-cli` | `workspace_commands`, `completion`, `output` | 21–23, 32, 33, 35 |
-| `maestro-tui` | `input_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
+| `maestro-tui` | `stdin_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
 | `maestro-tui-crossterm` | alternate screen, mouse capture and colour-scheme report modes | 32 |
 | `maestro-multiplexer` | `render`, `palette`, `ui`, `view`, `input`, `keybindings`, `surface`, `client`, `sound`, `launch`, `remote` | 26–29, 32, 34, 35 |
 | `maestro-app` | `daemon` and `terminal` re-exports, `utils::copying` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |

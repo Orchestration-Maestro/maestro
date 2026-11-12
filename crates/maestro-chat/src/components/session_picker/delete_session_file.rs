@@ -1,6 +1,6 @@
 //! Literal trash execution with permanent unlink fallback.
 use maestro_app::{is_whitespace_scalar, truncate_utf16};
-use maestro_tui::interface::LocalFuture;
+use maestro_tui::LocalFuture;
 use std::{error::Error, path::Path, rc::Rc};
 /// Observed trash completion, preserving native failures alongside captured diagnostics.
 pub enum TrashResult {

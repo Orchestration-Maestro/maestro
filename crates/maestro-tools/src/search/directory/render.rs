@@ -13,7 +13,7 @@ use crate::{
 };
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
-use maestro_tui::interface::ComponentHandle;
+use maestro_tui::ComponentHandle;
 use serde_json::Value;
 
 /// Result of a render step.
