@@ -9,10 +9,7 @@ use aws_smithy_types::body::SdkBody;
 use http_body_util::BodyExt;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use super::{Auth, Route, Settings, WireRequest, bridge, connect};
-use crate::providers::cloud::amazon_bedrock::BedrockOptions;
-use crate::providers::cloud::amazon_bedrock::proxy::Environment;
-use crate::providers::cloud::amazon_bedrock::request::Prepared;
+use super::{Route, WireRequest, bridge};
 
 #[test]
 fn stalled_response_is_a_connector_timeout() {
@@ -35,13 +32,7 @@ fn stalled_response_is_a_connector_timeout() {
                 .write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n")
                 .await;
         });
-        let http = bridge(
-            None,
-            Route::default(),
-            Arc::default(),
-            None,
-            Arc::new(Mutex::new(None)),
-        );
+        let http = bridge(None, Route::default(), None, Arc::new(Mutex::new(None)));
         let settings = HttpConnectorSettings::builder()
             .connect_timeout(Duration::from_secs(30))
             .read_timeout(Duration::from_secs(5))
@@ -107,13 +98,7 @@ fn response_after_deadline(socks_proxy: bool) {
         } else {
             Route::default()
         };
-        let http = bridge(
-            None,
-            route,
-            Arc::default(),
-            None,
-            Arc::new(Mutex::new(None)),
-        );
+        let http = bridge(None, route, None, Arc::new(Mutex::new(None)));
         let settings = HttpConnectorSettings::builder()
             .read_timeout(Duration::from_secs(5))
             .build();
@@ -142,13 +127,7 @@ fn sequential_metadata_requests_reuse_one_connection() {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(serve_two_metadata_requests(listener));
-        let http = bridge(
-            None,
-            Route::default(),
-            Arc::default(),
-            None,
-            Arc::new(Mutex::new(None)),
-        );
+        let http = bridge(None, Route::default(), None, Arc::new(Mutex::new(None)));
         let settings = HttpConnectorSettings::builder()
             .connect_timeout(Duration::from_secs(30))
             .read_timeout(Duration::from_secs(5))
@@ -228,13 +207,7 @@ fn socks_sender_reuses_configuration_without_replaying_requests() {
             http1_only: true,
             ..Route::default()
         };
-        let http = bridge(
-            None,
-            route,
-            Arc::default(),
-            None,
-            Arc::new(Mutex::new(None)),
-        );
+        let http = bridge(None, route, None, Arc::new(Mutex::new(None)));
         let components = RuntimeComponentsBuilder::for_tests().build().unwrap();
         for (body, timeout) in [("first", 5), ("second", 5), ("third", 10)] {
             let settings = HttpConnectorSettings::builder()
@@ -262,76 +235,6 @@ fn socks_sender_reuses_configuration_without_replaying_requests() {
             received.try_iter().collect::<Vec<_>>(),
             [b"first".to_vec(), b"second".to_vec(), b"third".to_vec()]
         );
-    });
-}
-
-/// Read one request's head and body, or `None` when the connection has closed.
-async fn read_request(socket: &mut tokio::net::TcpStream) -> Option<()> {
-    let mut head = Vec::new();
-    while !head.ends_with(b"\r\n\r\n") {
-        let mut byte = [0];
-        if socket.read(&mut byte).await.ok()? == 0 {
-            return None;
-        }
-        head.push(byte[0]);
-    }
-    let head = String::from_utf8_lossy(&head).to_lowercase();
-    let length = head
-        .lines()
-        .find_map(|line| line.strip_prefix("content-length: "))
-        .map_or(0, |length| length.trim().parse().unwrap());
-    socket.read_exact(&mut vec![0; length]).await.ok()?;
-    Some(())
-}
-
-/// Answer every request on every connection with an empty event stream, counting connections.
-async fn serve_empty_streams(
-    listener: tokio::net::TcpListener,
-    connections: Arc<std::sync::atomic::AtomicUsize>,
-) {
-    loop {
-        let (mut socket, _) = listener.accept().await.unwrap();
-        connections.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        tokio::spawn(async move {
-            while read_request(&mut socket).await.is_some() {
-                let reply = b"HTTP/1.1 200 OK\r\ncontent-type: application/vnd.amazon.eventstream\r\ncontent-length: 0\r\n\r\n";
-                socket.write_all(reply).await.unwrap();
-            }
-        });
-    }
-}
-
-#[test]
-fn successive_requests_reuse_one_connection() {
-    crate::tests::runtime::run(async {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let connections = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let server = tokio::spawn(serve_empty_streams(listener, Arc::clone(&connections)));
-        let settings = Settings {
-            endpoint: Some(format!("http://{address}")),
-            region: Some("us-east-1".to_owned()),
-            profile: None,
-            auth: Auth::Placeholder,
-            http1: false,
-            proxy: None,
-        };
-        for _ in 0..3 {
-            let environment = Environment(std::collections::HashMap::new());
-            let service = connect(
-                &settings,
-                &BedrockOptions::<crate::Threaded>::default(),
-                environment,
-            )
-            .await;
-            let prepared = Prepared {
-                model_id: Some("model".to_owned()),
-                body: b"{}".to_vec(),
-            };
-            service.send(prepared).await.unwrap();
-        }
-        server.abort();
-        assert_eq!(connections.load(std::sync::atomic::Ordering::SeqCst), 1);
     });
 }
 
