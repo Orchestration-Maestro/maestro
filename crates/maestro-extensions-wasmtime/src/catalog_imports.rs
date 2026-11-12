@@ -12,17 +12,10 @@ use crate::{
     import_route::{Route, push},
     lifecycle::State,
     provider_registration::Wire,
+    read_imports::{endpoint, forwards, release},
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{Accessor, HasSelf, LinkerInstance, Resource, ResourceType},
-};
+use wasmtime::component::{Accessor, HasSelf, LinkerInstance, Resource, ResourceType};
 use wasmtime_wasi::WasiView;
-
-/// Clones the catalog endpoint a guest handle names before native code runs.
-fn endpoint(state: &mut State, this: &Resource<Endpoint>) -> wasmtime::Result<Endpoint> {
-    Ok(state.ctx().table.get(this)?.clone())
-}
 
 impl From<maestro_extensions::ResolvedRequestAuth> for ResolvedRequestAuth {
     fn from(result: maestro_extensions::ResolvedRequestAuth) -> Self {
@@ -142,8 +135,7 @@ impl HostModelRegistry for State {
     }
 
     fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
-        self.ctx().table.delete(this)?;
-        Ok(())
+        release(self, this)
     }
 }
 
@@ -177,21 +169,20 @@ pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::R
         ResourceType::host::<Endpoint>(),
         |mut store, key| HostModelRegistry::drop(store.data_mut(), Resource::new_own(key)),
     )?;
-    add_reads(host)?;
-    add_routes(host)?;
-    host.func_wrap(
-        "[method]model-registry.register-provider",
-        |mut store: StoreContextMut<'_, State>,
-         (this, name, config, callbacks): (Resource<Endpoint>, String, String, Wire)| {
-            Ok((HostModelRegistry::register_provider(
-                store.data_mut(),
-                this,
-                name,
-                config,
-                callbacks,
-            )?,))
-        },
-    )?;
+    forwards! { host, "model-registry", HostModelRegistry, Endpoint,
+        "auth-storage" => auth_storage();
+        "get-all" => get_all();
+        "find" => find(provider: String, model_id: String);
+        "get-error" => get_error();
+        "get-provider-display-name" => get_provider_display_name(provider: String);
+        "get-available" => get_available();
+        "refresh" => refresh();
+        "has-configured-auth" => has_configured_auth(model: String);
+        "get-provider-auth-status" => get_provider_auth_status(provider: String);
+        "is-using-oauth" => is_using_oauth(model: String);
+        "register-provider" => register_provider(name: String, config: String, callbacks: Wire);
+        "unregister-provider" => unregister_provider(name: String);
+    }
     host.func_wrap_concurrent(
         "[method]model-registry.get-api-key-and-headers",
         |accessor, (this, model): (Resource<Endpoint>, String)| {
@@ -216,106 +207,6 @@ pub(crate) fn add_to_linker(host: &mut LinkerInstance<'_, State>) -> wasmtime::R
                     .await?,
                 ))
             })
-        },
-    )
-}
-
-/// Forwards the methods that answer on the Store thread without a route.
-fn add_reads(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]model-registry.auth-storage",
-        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
-            Ok((HostModelRegistry::auth_storage(store.data_mut(), this)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.get-all",
-        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
-            Ok((HostModelRegistry::get_all(store.data_mut(), this)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.find",
-        |mut store: StoreContextMut<'_, State>,
-         (this, provider, model_id): (Resource<Endpoint>, String, String)| {
-            Ok((HostModelRegistry::find(
-                store.data_mut(),
-                this,
-                provider,
-                model_id,
-            )?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.get-error",
-        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
-            Ok((HostModelRegistry::get_error(store.data_mut(), this)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.get-provider-display-name",
-        |mut store: StoreContextMut<'_, State>, (this, provider): (Resource<Endpoint>, String)| {
-            Ok((HostModelRegistry::get_provider_display_name(
-                store.data_mut(),
-                this,
-                provider,
-            )?,))
-        },
-    )
-}
-
-/// Forwards the methods that return a route for the guest to drive.
-fn add_routes(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
-    host.func_wrap(
-        "[method]model-registry.get-available",
-        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
-            Ok((HostModelRegistry::get_available(store.data_mut(), this)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.refresh",
-        |mut store: StoreContextMut<'_, State>, (this,): (Resource<Endpoint>,)| {
-            Ok((HostModelRegistry::refresh(store.data_mut(), this)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.has-configured-auth",
-        |mut store: StoreContextMut<'_, State>, (this, model): (Resource<Endpoint>, String)| {
-            Ok((HostModelRegistry::has_configured_auth(
-                store.data_mut(),
-                this,
-                model,
-            )?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.get-provider-auth-status",
-        |mut store: StoreContextMut<'_, State>, (this, provider): (Resource<Endpoint>, String)| {
-            Ok((HostModelRegistry::get_provider_auth_status(
-                store.data_mut(),
-                this,
-                provider,
-            )?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.is-using-oauth",
-        |mut store: StoreContextMut<'_, State>, (this, model): (Resource<Endpoint>, String)| {
-            Ok((HostModelRegistry::is_using_oauth(
-                store.data_mut(),
-                this,
-                model,
-            )?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]model-registry.unregister-provider",
-        |mut store: StoreContextMut<'_, State>, (this, name): (Resource<Endpoint>, String)| {
-            Ok((HostModelRegistry::unregister_provider(
-                store.data_mut(),
-                this,
-                name,
-            )?,))
         },
     )
 }

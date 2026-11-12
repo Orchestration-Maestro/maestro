@@ -86,30 +86,12 @@ fn text(mut route: crate::import_route::Route) -> String {
 
 #[test]
 fn released_catalog_rejects_every_kind_of_operation_with_its_ended_text() {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(released_catalog());
-}
-
-/// Releases the catalog's capability, then drives one operation of each kind against it.
-async fn released_catalog() {
     let (session, _) = session::runner_session("/ended");
-    let (mut pump, admission) = Pump::new(crate::tests::support::widgets());
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
     let endpoint = pump.registry().catalog(session.model_registry).unwrap();
-    let release = endpoint
-        .0
-        .route::<()>(|id, _reply| crate::local_resources::Message::Release(id));
-    assert!(pump.answer_next().await);
-    drop(release);
-    let worker = std::thread::spawn(move || ended_operations(&endpoint));
-    for _ in 0..4 {
-        assert!(pump.answer_next().await);
-    }
-    drop(admission);
-    pump.serve().await;
-    let outcomes = worker.join().unwrap();
-    assert_eq!(outcomes, ["extension catalog resource ended"; 4]);
+    let lease = endpoint.0.clone();
+    let errors = ended_errors(lease, pump, admission, move || ended_operations(&endpoint));
+    assert_eq!(errors, ["extension catalog resource ended"; 4]);
 }
 
 /// The failure each operation kind settles with: read, route, authentication and provider key.
