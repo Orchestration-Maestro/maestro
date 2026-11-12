@@ -40,6 +40,7 @@ fn copy_button_keeps_titles_glyphs_and_optional_success_text() {
     }
 }
 use crate::copy_button_support;
+use crate::text_image_support::Highlighter as Counting;
 use copy_button_support::{Canvas, copied, pointer};
 
 #[test]
@@ -242,26 +243,6 @@ fn markdown_block_copies_current_native_listing_after_replacement() {
     assert_eq!(canvas.host.live(), 0);
 }
 
-/// Engine that classifies every label and counts the listings it highlights.
-#[derive(Default)]
-struct Counting(std::cell::Cell<usize>);
-impl maestro_theme::SyntaxHighlighter for Counting {
-    fn supports_language(&self, _: &str) -> bool {
-        true
-    }
-    fn highlight(
-        &self,
-        code: &str,
-        _: &str,
-    ) -> Result<Vec<maestro_theme::SyntaxSpan>, Box<dyn std::error::Error + Send + Sync>> {
-        self.0.set(self.0.get() + 1);
-        Ok(vec![maestro_theme::SyntaxSpan {
-            range: 0..code.len(),
-            color: None,
-        }])
-    }
-}
-
 /// Draw `block` once with `engine`.
 fn draw_markdown(
     canvas: &mut Canvas,
@@ -301,18 +282,22 @@ fn markdown_block_highlights_unchanged_code_once_across_draws() {
     for _ in 0..10 {
         draw_markdown(&mut canvas, &mut block, &engine);
     }
-    assert_eq!(engine.0.get(), 2, "two listings, highlighted when prepared");
+    assert_eq!(
+        engine.requests.borrow().len(),
+        2,
+        "two listings, highlighted when prepared"
+    );
     block.content.push_str("\n\n```c\nint c;\n```");
     draw_markdown(&mut canvas, &mut block, &engine);
     assert_eq!(
-        engine.0.get(),
+        engine.requests.borrow().len(),
         5,
         "changed content prepares every listing again"
     );
     let other = Counting::default();
     draw_markdown(&mut canvas, &mut block, &other);
     assert_eq!(
-        other.0.get(),
+        other.requests.borrow().len(),
         3,
         "a different engine highlights the listings again"
     );
