@@ -1,6 +1,6 @@
 //! Provider authentication choices with retained search and selection state.
 use super::dynamic_border::DynamicBorder;
-use maestro_app::{AuthCredential, AuthSource, AuthStatus, AuthStorage};
+use maestro_credentials::{AuthCredential, AuthSource, AuthStatus, AuthStorage};
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
 use maestro_tui::{
     Component, Container, FocusFlag, Focusable, Input, InputHandler, Spacer, TruncatedText,

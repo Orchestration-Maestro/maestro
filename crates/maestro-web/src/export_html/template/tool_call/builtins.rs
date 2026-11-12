@@ -32,7 +32,7 @@ fn bash(
     );
     let mut body = format!("<div class=\"tool-command\">$ {command}</div>");
     let output = result::get_result_text(result)?;
-    let output = output.trim_matches(maestro_app::is_whitespace_scalar);
+    let output = output.trim_matches(maestro_text::is_whitespace_scalar);
     if !output.is_empty() {
         body.push_str(&format_expandable_output(output, 5, None, highlighter));
     }
@@ -87,7 +87,9 @@ fn read(
 fn read_line_range(args: &Value) -> io::Result<String> {
     let numeric = |value: Option<&Value>| value.is_none_or(|v| v.is_null() || v.is_number());
     if numeric(args.get("offset")) && numeric(args.get("limit")) {
-        return Ok(maestro_app::format_read_line_range(args));
+        return Ok(maestro_tools::output::render_utils::format_read_line_range(
+            args,
+        ));
     }
     let default = Value::from(1);
     let start = args
@@ -134,7 +136,7 @@ fn write(
         )),
     }
     let output = result::get_result_text(result)?;
-    let output = output.trim_matches(maestro_app::is_whitespace_scalar);
+    let output = output.trim_matches(maestro_text::is_whitespace_scalar);
     if !output.is_empty() {
         let _ = write!(
             body,
@@ -153,7 +155,7 @@ fn edit(args: &Value, result: Option<&Value>) -> io::Result<String> {
     );
     if let Some(diff) = result
         .map(|r| &r["details"]["diff"])
-        .filter(|v| maestro_app::is_truthy(v))
+        .filter(|v| maestro_json::is_truthy(v))
     {
         let diff = diff.as_str().ok_or_else(super::invalid)?;
         body.push_str("<div class=\"tool-diff\">");
@@ -166,13 +168,13 @@ fn edit(args: &Value, result: Option<&Value>) -> io::Result<String> {
             let _ = write!(
                 body,
                 "<div class=\"diff-{role}\">{}</div>",
-                html(&maestro_app::replace_tabs(line))
+                html(&maestro_tools::output::render_utils::replace_tabs(line))
             );
         }
         body.push_str("</div>");
     } else {
         let output = result::get_result_text(result)?;
-        let output = output.trim_matches(maestro_app::is_whitespace_scalar);
+        let output = output.trim_matches(maestro_text::is_whitespace_scalar);
         if !output.is_empty() {
             let _ = write!(
                 body,
@@ -205,7 +207,7 @@ fn directory(
         "<div class=\"tool-header\"><span class=\"tool-name\">ls</span> <span class=\"tool-path\">{title}</span></div>"
     );
     let output = result::get_result_text(result)?;
-    let output = output.trim_matches(maestro_app::is_whitespace_scalar);
+    let output = output.trim_matches(maestro_text::is_whitespace_scalar);
     if !output.is_empty() {
         body.push_str(&format_expandable_output(output, 20, None, highlighter));
     }

@@ -33,7 +33,7 @@ pub(super) fn render_custom(
         |s| format!("<div class=\"tool-header ansi-rendered\">{s}</div>"),
     );
     if !supplied {
-        let args = maestro_app::pretty_json(args).map_err(io::Error::other)?;
+        let args = maestro_json::pretty_json(args).map_err(io::Error::other)?;
         let _ = write!(
             body,
             "<div class=\"tool-output\"><pre>{}</pre></div>",

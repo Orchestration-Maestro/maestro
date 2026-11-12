@@ -227,12 +227,13 @@ pub(crate) async fn tile_badge_keeps_image_pointer_route(view: &maestro_web::pag
 
 /// Construct an attachment-bearing row with the original handles, not serialized copies.
 fn wrapped_row(records: &[maestro_web::SharedAttachment]) -> maestro_web::UserMessage {
-    use maestro_app::{
-        AgentMessage, UserContent,
-        browser::components::records::{CustomAgentMessages, UserMessageWithAttachments},
+    use maestro_agent::AgentMessage;
+    use maestro_app::browser::components::records::{
+        CustomAgentMessages, UserMessageWithAttachments,
     };
+    use maestro_models::UserContent;
     use maestro_web::UserMessage;
-    UserMessage::<maestro_app::NoCustomMessages> {
+    UserMessage::<maestro_agent::NoCustomMessages> {
         message: Some(AgentMessage::Custom(std::sync::Arc::new(
             std::sync::RwLock::new(CustomAgentMessages::UserWithAttachments(
                 UserMessageWithAttachments {

@@ -4,9 +4,9 @@ use super::styles::Styles;
 use super::{HtmlRenderer, process_style_name};
 use crate::word_view::PartRecords;
 use crate::word_view::html_element::{HtmlElement, contained};
-use maestro_app::normalize_to_lf;
 use maestro_office::wordprocessing::typefaces::{EmbedFontType, FontDeclaration};
 use maestro_office::wordprocessing::{DmlTheme, enclose_font_family};
+use maestro_text::normalize_to_lf;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 

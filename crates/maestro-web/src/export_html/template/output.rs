@@ -1,5 +1,5 @@
 //! Pure preparation of plain or explicitly highlighted expandable output.
-use maestro_app::markup::{EscapeMode, escape};
+use maestro_text::markup::{EscapeMode, escape};
 use maestro_theme::SyntaxHighlighter;
 use std::fmt::Write as _;
 
@@ -12,7 +12,7 @@ pub fn format_expandable_output(
     lang: Option<&str>,
     highlighter: &dyn SyntaxHighlighter,
 ) -> String {
-    let text = maestro_app::replace_tabs(text);
+    let text = maestro_tools::output::render_utils::replace_tabs(text);
     let lines: Vec<_> = text.split('\n').collect();
     let preview = &lines[..max_lines.min(lines.len())];
     let lang = lang.filter(|lang| !lang.is_empty());

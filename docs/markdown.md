@@ -1,8 +1,8 @@
 # Owned Markdown structure
 
 `maestro_markdown::parse(source: String)` returns a `Document` owning the supplied
-source and all native nodes, metadata and authored ranges. The same operations
-are exposed through `maestro_app::markdown` for frontend consumers.
+source and all native nodes, metadata and authored ranges. Frontend consumers import the same
+operations from `maestro_markdown`.
 `Alignment` and `LinkType` belong to the shared Markdown owner. They describe
 column alignment and link handling through owned Rust types. Links distinguish
 authored labels (including resolved references) from automatic URI and email

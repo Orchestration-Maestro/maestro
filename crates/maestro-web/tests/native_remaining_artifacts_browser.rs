@@ -712,7 +712,7 @@ pub fn artifact_bodies_dom_keep_native_scroll_selection_and_focus(import: &js_sy
 pub async fn artifacts_panel_dom_reload_uses_current_sandbox_configuration(
     import: js_sys::Function,
 ) {
-    use maestro_app::SharedHandle;
+    use maestro_models::SharedHandle;
     use maestro_web::ArtifactsPanel;
     use std::{cell::Cell, rc::Rc};
     let view = view();
@@ -934,7 +934,7 @@ async fn assert_html_rewrite_recovery(
     caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
     root: &DomRoot,
 ) {
-    use maestro_app::{DiagnosticErrorInfo, SharedHandle};
+    use maestro_models::{DiagnosticErrorInfo, SharedHandle};
     for (command, source, fail) in [
         ("create", "<p>before</p>", false),
         ("rewrite", "<p>after</p>", true),

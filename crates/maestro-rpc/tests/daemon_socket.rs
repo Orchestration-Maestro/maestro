@@ -1,22 +1,33 @@
 //! The workspace daemon's API socket served in this process by `run_server`, and the daemon
 //! request adapter under one connection.
 #![cfg(target_os = "linux")]
-use maestro_app::SettingsManager;
 use maestro_app::connection_runner::{
     DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
 };
-use maestro_app::daemon_api::{
-    ApiClientError, App, Config, ConnectionTarget, DaemonClient, DaemonPaths, EventHub,
-    ManifestCache, NewTerminalCwdConfig, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry,
-    RenderSignal, RequestMessage, RuntimeStatus, TerminalTheme, diagnostics,
+use maestro_app::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
+use maestro_daemon::{
+    diagnostics,
+    locations::DaemonPaths,
+    render_signal::RenderSignal,
+    service::{
+        RequestMessage, RuntimeStatus,
+        event_hub::EventHub,
+        transport::{ApiClientError, ConnectionTarget, DaemonClient},
+    },
+    settings::model::{Config, NewTerminalCwdConfig},
+    state::{
+        App,
+        construction::{ManifestCache, PaneLaunchInputs, ProcessDetectionMode, PtySetupEntry},
+    },
+    terminal_theme::TerminalTheme,
 };
-use maestro_app::rpc_types::workspace::{Request, RpcResponse};
-use maestro_app::rpc_types::workspace_schema::{
+use maestro_protocol::rpc_types::{Request, RpcResponse};
+use maestro_protocol::schema::{
     AgentManifestInfo, AgentStatus, ErrorBody, ResponseResult, ServerCapabilities, TabInfo,
     WorkspaceInfo,
 };
-use maestro_app::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_rpc::daemon::run_server;
+use maestro_settings::SettingsManager;
 use maestro_test_directory::Scratch;
 use maestro_test_process::TestProcess;
 use serde_json::json;
@@ -97,7 +108,7 @@ fn served_by<T: Send + 'static>(
 ) -> T {
     let socket = PathBuf::from(paths.api_socket_path());
     local(false, async {
-        let mut settings = SettingsManager::in_memory(maestro_app::Settings::default());
+        let mut settings = SettingsManager::in_memory(maestro_settings::Settings::default());
         let (stop, stopped) = oneshot::channel::<()>();
         let mut server = pin!(run_server(&mut app, &mut settings, paths, async {
             drop(stopped.await);
@@ -121,7 +132,7 @@ fn served_by<T: Send + 'static>(
 fn start(paths: &DaemonPaths) -> io::Result<()> {
     let socket = PathBuf::from(paths.api_socket_path());
     local(false, async {
-        let mut settings = SettingsManager::in_memory(maestro_app::Settings::default());
+        let mut settings = SettingsManager::in_memory(maestro_settings::Settings::default());
         run_server(
             &mut daemon(&socket),
             &mut settings,
@@ -505,7 +516,7 @@ fn ordinary_dispatch_has_no_five_second_deadline() {
         );
         assert!(matches!(
             committed.command,
-            maestro_app::rpc_types::workspace::RpcCommand::WorkspaceList(_)
+            maestro_protocol::rpc_types::RpcCommand::WorkspaceList(_)
         ));
     });
 }
@@ -524,7 +535,7 @@ fn socket_ping_reports_product_and_shared_protocol_versions() {
     });
     let capabilities = ServerCapabilities {
         live_handoff: false,
-        detached_server_daemon: maestro_app::daemon_api::current_process_is_detached_server_daemon(
+        detached_server_daemon: maestro_daemon::platform::current_process_is_detached_server_daemon(
         ),
     };
     let reply: RpcResponse = serde_json::from_str(&line).unwrap();
@@ -573,7 +584,7 @@ fn socket_first_lines_close_or_answer_by_their_framing() {
     });
     let served_capabilities = ServerCapabilities {
         live_handoff: false,
-        detached_server_daemon: maestro_app::daemon_api::current_process_is_detached_server_daemon(
+        detached_server_daemon: maestro_daemon::platform::current_process_is_detached_server_daemon(
         ),
     };
     let answered = response("p", "ping", Ok(pong(Some(served_capabilities))));
@@ -754,7 +765,7 @@ fn server_startup_announces_only_bound_resources() {
 
 #[test]
 fn setup_entry() {
-    if maestro_app::daemon_api::setup_entry().is_some() {
+    if maestro_daemon::state::construction::setup_entry().is_some() {
         std::process::exit(1);
     }
 }
@@ -1407,7 +1418,7 @@ fn stopped_by_client<T: Send + 'static>(
     let socket = PathBuf::from(paths.api_socket_path());
     local(false, async {
         let mut app = daemon(&socket);
-        let mut settings = SettingsManager::in_memory(maestro_app::Settings::default());
+        let mut settings = SettingsManager::in_memory(maestro_settings::Settings::default());
         let mut server = pin!(run_server(
             &mut app,
             &mut settings,
@@ -1435,7 +1446,7 @@ fn socket_stop_drains_its_response_before_shutdown() {
     local(false, async {
         let socket = PathBuf::from(paths.api_socket_path());
         let mut app = daemon(&socket);
-        let mut settings = SettingsManager::in_memory(maestro_app::Settings::default());
+        let mut settings = SettingsManager::in_memory(maestro_settings::Settings::default());
         let mut server = pin!(run_server(
             &mut app,
             &mut settings,

@@ -117,7 +117,7 @@ pub enum Operation {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ResultRecord {
-    pub content: Vec<maestro_app::UserBlock>,
+    pub content: Vec<maestro_models::UserBlock>,
     #[serde(default, deserialize_with = "present")]
     pub details: Option<Value>,
     pub is_error: bool,

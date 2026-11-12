@@ -100,7 +100,7 @@ use std::{
 };
 #[test]
 fn application_provider_lookup_reaches_default_title() {
-    let provider = maestro_app::presentation_data::get_oauth_providers()
+    let provider = maestro_models::get_oauth_providers()
         .into_iter()
         .next()
         .unwrap();
@@ -260,8 +260,9 @@ fn login_dialog_uses_current_brand_roles() {
         let rows = dialog.render(80);
         assert_eq!(rows[3], format!(" Information{}", " ".repeat(68)));
         assert!(
-            rows[5]
-                .contains(&maestro_app::key_hint("tui.select.cancel", "to close", &live).unwrap())
+            rows[5].contains(
+                &maestro_tools::key_hint("tui.select.cancel", "to close", &live).unwrap()
+            )
         );
     }
 }
@@ -330,7 +331,7 @@ fn assert_brand_rows(
         );
     }
     assert!(rows.iter().any(|row| {
-        row.contains(&maestro_app::key_hint("tui.select.confirm", "to submit", live).unwrap())
+        row.contains(&maestro_tools::key_hint("tui.select.confirm", "to submit", live).unwrap())
     }));
     assert_eq!(
         rows[0],
@@ -344,7 +345,7 @@ fn assert_brand_rows(
             .any(|row| row.contains(maestro_tui::CURSOR_MARKER))
     );
     assert!(rows.iter().any(|row| {
-        row.contains(&maestro_app::key_hint("tui.select.cancel", "to cancel", live).unwrap())
+        row.contains(&maestro_tools::key_hint("tui.select.cancel", "to cancel", live).unwrap())
     }));
 }
 

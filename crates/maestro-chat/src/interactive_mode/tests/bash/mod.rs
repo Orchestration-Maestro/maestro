@@ -10,7 +10,8 @@ use super::{
 };
 use crate::BashExecutionComponent;
 use futures_util::FutureExt;
-use maestro_app::{ReadonlySessionManager, SettingsManager};
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_settings::SettingsManager;
 use std::{cell::RefCell, error::Error, future::Future, path::Path, pin::Pin, rc::Rc, sync::Mutex};
 use tokio::sync::oneshot;
 
@@ -243,47 +244,58 @@ fn warnings(world: &World) -> usize {
 }
 
 /// The events the registered `user_bash` handlers saw, in order.
-type Seen = Rc<RefCell<Vec<maestro_app::UserBashEvent>>>;
+type Seen = Rc<RefCell<Vec<maestro_extensions::types::events::UserBashEvent>>>;
 
 /// What one `user_bash` handler answers, from the event it is given.
-type Answer = Rc<dyn Fn(&mut maestro_app::UserBashEvent) -> Option<Interception>>;
+type Answer =
+    Rc<dyn Fn(&mut maestro_extensions::types::events::UserBashEvent) -> Option<Interception>>;
 
 /// One intercepted answer: operations, a whole result, or both.
 struct Interception {
     /// The operations to run the command through.
     operations: Option<ShellOperations>,
     /// The whole result, which replaces execution.
-    result: Option<maestro_app::BashResult>,
+    result: Option<maestro_tools::BashResult>,
 }
 
 impl Interception {
     /// The typed result the runner carries.
-    fn typed(&self) -> maestro_app::UserBashEventResult<ShellOperations, maestro_app::BashResult> {
-        maestro_app::UserBashEventResult {
+    fn typed(
+        &self,
+    ) -> maestro_extensions::types::events::UserBashEventResult<
+        ShellOperations,
+        maestro_tools::BashResult,
+    > {
+        maestro_extensions::types::events::UserBashEventResult {
             operations: self.operations.clone(),
             result: self
                 .result
                 .as_ref()
-                .map_or(maestro_app::Presence::Missing, |result| {
-                    maestro_app::Presence::Present(result.clone())
+                .map_or(maestro_session::Presence::Missing, |result| {
+                    maestro_session::Presence::Present(result.clone())
                 }),
         }
     }
 }
 
 /// An extension answering `user_bash` through `answer` and recording each event in `seen`.
-fn intercepting(seen: &Seen, answer: Answer) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+fn intercepting(
+    seen: &Seen,
+    answer: Answer,
+) -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     let seen = Rc::clone(seen);
     Rc::new(move |api| {
         let answer = Rc::clone(&answer);
         let seen = Rc::clone(&seen);
-        api.on::<maestro_app::UserBashEvent, _>(
+        api.on::<maestro_extensions::types::events::UserBashEvent, _>(
             "user_bash".to_owned(),
-            Rc::new(move |event: &mut maestro_app::UserBashEvent, _| {
-                seen.borrow_mut().push(event.clone());
-                let produced = answer(&mut *event).map(|answer| answer.typed());
-                Box::pin(std::future::ready(Ok(produced)))
-            }),
+            Rc::new(
+                move |event: &mut maestro_extensions::types::events::UserBashEvent, _| {
+                    seen.borrow_mut().push(event.clone());
+                    let produced = answer(&mut *event).map(|answer| answer.typed());
+                    Box::pin(std::future::ready(Ok(produced)))
+                },
+            ),
         )
         .unwrap();
         Box::pin(std::future::ready(Ok(())))
@@ -333,8 +345,8 @@ fn recorded(world: &World) -> Vec<serde_json::Value> {
 }
 
 /// A whole shell result with the supplied output and status.
-fn result(output: &str, exit_code: Option<f64>) -> maestro_app::BashResult {
-    maestro_app::BashResult {
+fn result(output: &str, exit_code: Option<f64>) -> maestro_tools::BashResult {
+    maestro_tools::BashResult {
         output: output.to_owned(),
         exit_code,
         cancelled: false,
@@ -365,12 +377,14 @@ async fn settled(
 
 /// An answer that replaces execution with `output` and status `code`.
 fn whole(output: &'static str, code: Option<f64>) -> Answer {
-    Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
-        Some(Interception {
-            operations: None,
-            result: Some(result(output, code)),
-        })
-    })
+    Rc::new(
+        move |_event: &mut maestro_extensions::types::events::UserBashEvent| {
+            Some(Interception {
+                operations: None,
+                result: Some(result(output, code)),
+            })
+        },
+    )
 }
 
 #[test]
@@ -433,13 +447,15 @@ async fn supplied_operations_run_the_command(directory: &Path) {
     let marker = directory.join("operations-ran");
     let script = marked_output(directory, &marker);
     let operations =
-        maestro_app::local::create_local_bash_operations(String::new(), Some(script.clone()));
-    let answer: Answer = Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
-        Some(Interception {
-            operations: Some(operations.clone()),
-            result: None,
-        })
-    });
+        maestro_tools::local::create_local_bash_operations(String::new(), Some(script.clone()));
+    let answer: Answer = Rc::new(
+        move |_event: &mut maestro_extensions::types::events::UserBashEvent| {
+            Some(Interception {
+                operations: Some(operations.clone()),
+                result: None,
+            })
+        },
+    );
     let (world, _, errors) = settled(directory, &script, answer, "!echo z").await;
     assert!(errors.is_empty(), "{errors:?}");
     assert!(marker.exists(), "the supplied operations ran the command");
@@ -454,16 +470,18 @@ async fn supplied_operations_run_the_command(directory: &Path) {
 /// A rejected execution completes the row as failed and records nothing.
 async fn rejected_execution_fails_the_row(directory: &Path) {
     let script = printing(directory, "shell", "unused\n");
-    let missing = maestro_app::local::create_local_bash_operations(
+    let missing = maestro_tools::local::create_local_bash_operations(
         String::new(),
         Some("/nonexistent/shell".to_owned()),
     );
-    let answer: Answer = Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
-        Some(Interception {
-            operations: Some(missing.clone()),
-            result: None,
-        })
-    });
+    let answer: Answer = Rc::new(
+        move |_event: &mut maestro_extensions::types::events::UserBashEvent| {
+            Some(Interception {
+                operations: Some(missing.clone()),
+                result: None,
+            })
+        },
+    );
     let (world, _, errors) = settled(directory, &script, answer, "!echo w").await;
     assert!(errors.is_empty(), "{errors:?}");
     let rows = transcript(&world);
@@ -479,27 +497,31 @@ async fn rejected_execution_fails_the_row(directory: &Path) {
 
 /// An answer that leaves the command to the session's selected operations.
 fn default_answer() -> Answer {
-    Rc::new(|_event: &mut maestro_app::UserBashEvent| {
-        Some(Interception {
-            operations: None,
-            result: None,
-        })
-    })
+    Rc::new(
+        |_event: &mut maestro_extensions::types::events::UserBashEvent| {
+            Some(Interception {
+                operations: None,
+                result: None,
+            })
+        },
+    )
 }
 
 /// An answer that runs the command through `operations`.
 fn through(operations: ShellOperations) -> Answer {
-    Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
-        Some(Interception {
-            operations: Some(operations.clone()),
-            result: None,
-        })
-    })
+    Rc::new(
+        move |_event: &mut maestro_extensions::types::events::UserBashEvent| {
+            Some(Interception {
+                operations: Some(operations.clone()),
+                result: None,
+            })
+        },
+    )
 }
 
 /// An answer that runs the command through a shell that does not exist.
 fn failing() -> Answer {
-    through(maestro_app::local::create_local_bash_operations(
+    through(maestro_tools::local::create_local_bash_operations(
         String::new(),
         Some("/nonexistent/shell".to_owned()),
     ))
@@ -528,7 +550,7 @@ struct Placement {
 async fn streaming_placement(directory: &Path, (text, excluded): (&'static str, bool)) {
     let script = printing(directory, "streaming-shell", "ran\n");
     let supplied =
-        maestro_app::local::create_local_bash_operations(String::new(), Some(script.clone()));
+        maestro_tools::local::create_local_bash_operations(String::new(), Some(script.clone()));
     let cases = [
         Placement {
             answer: default_answer(),
@@ -623,10 +645,12 @@ fn shell_hooks_preserve_selected_arguments_and_read_current_session_after_await(
 async fn hook_reads_the_selected_arguments(directory: &Path) {
     let script = printing(directory, "shell", "ran\n");
     let cwd = directory.to_str().unwrap().to_owned();
-    let answer: Answer = Rc::new(|event: &mut maestro_app::UserBashEvent| {
-        assert_eq!(event.command, "echo kept");
-        None
-    });
+    let answer: Answer = Rc::new(
+        |event: &mut maestro_extensions::types::events::UserBashEvent| {
+            assert_eq!(event.command, "echo kept");
+            None
+        },
+    );
     let (world, seen, errors) = settled(directory, &script, answer, "! echo kept ").await;
     assert!(errors.is_empty(), "{errors:?}");
     let events = seen.borrow();
@@ -649,15 +673,17 @@ async fn hook_reads_the_selected_arguments(directory: &Path) {
 /// A handler that rewrites the event cannot change what runs or what is recorded.
 async fn hook_cannot_rewrite_the_selection(directory: &Path) {
     let script = printing(directory, "shell", "ran\n");
-    let rewrite: Answer = Rc::new(|event: &mut maestro_app::UserBashEvent| {
-        event.command = "mutated".to_owned();
-        event.exclude_from_context = false;
-        event.cwd = "/elsewhere".to_owned();
-        Some(Interception {
-            operations: None,
-            result: Some(result("rewritten", Some(0.0))),
-        })
-    });
+    let rewrite: Answer = Rc::new(
+        |event: &mut maestro_extensions::types::events::UserBashEvent| {
+            event.command = "mutated".to_owned();
+            event.exclude_from_context = false;
+            event.cwd = "/elsewhere".to_owned();
+            Some(Interception {
+                operations: None,
+                result: Some(result("rewritten", Some(0.0))),
+            })
+        },
+    );
     let (world, seen, errors) = settled(directory, &script, rewrite, "!!echo kept").await;
     assert!(errors.is_empty(), "{errors:?}");
     assert!(seen.borrow()[0].exclude_from_context);
@@ -679,26 +705,28 @@ fn awaiting_interception(
     reached: Rc<tokio::sync::Notify>,
     resume: Rc<tokio::sync::Notify>,
     answer: Answer,
-) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+) -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     let seen = Rc::clone(seen);
     Rc::new(move |api| {
         let answer = Rc::clone(&answer);
         let seen = Rc::clone(&seen);
         let reached = Rc::clone(&reached);
         let resume = Rc::clone(&resume);
-        api.on::<maestro_app::UserBashEvent, _>(
+        api.on::<maestro_extensions::types::events::UserBashEvent, _>(
             "user_bash".to_owned(),
-            Rc::new(move |event: &mut maestro_app::UserBashEvent, _| {
-                seen.borrow_mut().push(event.clone());
-                let produced = answer(&mut *event).map(|answer| answer.typed());
-                let reached = Rc::clone(&reached);
-                let resume = Rc::clone(&resume);
-                Box::pin(async move {
-                    reached.notify_one();
-                    resume.notified().await;
-                    Ok(produced)
-                })
-            }),
+            Rc::new(
+                move |event: &mut maestro_extensions::types::events::UserBashEvent, _| {
+                    seen.borrow_mut().push(event.clone());
+                    let produced = answer(&mut *event).map(|answer| answer.typed());
+                    let reached = Rc::clone(&reached);
+                    let resume = Rc::clone(&resume);
+                    Box::pin(async move {
+                        reached.notify_one();
+                        resume.notified().await;
+                        Ok(produced)
+                    })
+                },
+            ),
         )
         .unwrap();
         Box::pin(std::future::ready(Ok(())))
@@ -734,7 +762,7 @@ async fn replaced_session_during_interception_records_there(directory: &Path) {
         reached.notified().await;
         let replaced = world
             .host
-            .new_session(maestro_app::NewSessionCommandOptions::default())
+            .new_session(maestro_extensions::types::NewSessionCommandOptions::default())
             .await
             .expect("the replacement session starts");
         assert!(!replaced.cancelled);
@@ -839,18 +867,20 @@ fn fields(case: &Fields) -> Answer {
     let output = case.output.to_owned();
     let path = case.path.map(str::to_owned);
     let (exit_code, cancelled, truncated) = (case.exit_code, case.cancelled, case.truncated);
-    Rc::new(move |_event: &mut maestro_app::UserBashEvent| {
-        Some(Interception {
-            operations: None,
-            result: Some(maestro_app::BashResult {
-                output: output.clone(),
-                exit_code,
-                cancelled,
-                truncated,
-                full_output_path: path.clone(),
-            }),
-        })
-    })
+    Rc::new(
+        move |_event: &mut maestro_extensions::types::events::UserBashEvent| {
+            Some(Interception {
+                operations: None,
+                result: Some(maestro_tools::BashResult {
+                    output: output.clone(),
+                    exit_code,
+                    cancelled,
+                    truncated,
+                    full_output_path: path.clone(),
+                }),
+            })
+        },
+    )
 }
 
 /// Asserts the session recorded `case` exactly once, field by field.
@@ -907,7 +937,7 @@ fn start_replacement(world: &World) -> tokio::task::JoinHandle<()> {
     tokio::task::spawn_local(async move {
         // The replacement starts a fresh session in the same directory.
         drop(
-            host.new_session(maestro_app::NewSessionCommandOptions::default())
+            host.new_session(maestro_extensions::types::NewSessionCommandOptions::default())
                 .await,
         );
     })

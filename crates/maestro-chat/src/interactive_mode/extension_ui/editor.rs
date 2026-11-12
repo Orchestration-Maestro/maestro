@@ -3,7 +3,10 @@
 use super::super::InteractiveMode;
 use crate::CustomEditor;
 use crate::components::extension_widgets::keybindings;
-use maestro_app::{CustomEditorComponent, EditorFactory, EventError};
+use maestro_extensions::{
+    EventError,
+    types::{CustomEditorComponent, EditorFactory},
+};
 use maestro_theme::get_editor_theme;
 use maestro_tui::ComponentHandle;
 use maestro_tui::{AutocompleteProvider, Cancellation, EditorComponent};

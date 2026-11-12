@@ -2,7 +2,8 @@
 
 use super::PackageCommandContext;
 use super::parse::PackageCommand;
-use maestro_app::{APP_NAME, CONFIG_DIR_NAME};
+use maestro_app::APP_NAME;
+use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_theme::Theme;
 use std::io;
 

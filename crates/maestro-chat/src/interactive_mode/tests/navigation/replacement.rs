@@ -3,7 +3,7 @@ use super::super::{
     Setup, World, actions::shows, isolated, models::register, start, typed::submit,
 };
 use super::{append_user, fork_panel, tree::finish};
-use maestro_app::{ForkOptions, ForkPosition};
+use maestro_extensions::types::{ForkOptions, events::ForkPosition};
 use maestro_tui::Component;
 use std::{
     rc::Rc,
@@ -11,10 +11,12 @@ use std::{
 };
 
 /// The rendered footer after changing only the current session model.
-async fn changed_footer(world: &World, model: Arc<RwLock<maestro_app::Model>>) {
+async fn changed_footer(world: &World, model: Arc<RwLock<maestro_models::Model>>) {
     let new = world.host.session();
     new.set_model(model).await.unwrap();
-    let rows = maestro_app::strip_ansi(&world.mode.footer.render(120).join("\n")).unwrap();
+    let rows =
+        maestro_tools::output::render_utils::strip_ansi(&world.mode.footer.render(120).join("\n"))
+            .unwrap();
     assert!(
         rows.contains("changed-model"),
         "footer retained a retired session: {rows}"
@@ -100,7 +102,10 @@ fn runtime_replacement_rebinds_before_its_continuation() {
                     let footer = Rc::clone(&footer);
                     Box::pin(async move {
                         session.set_model(changed).await?;
-                        let rows = maestro_app::strip_ansi(&footer.render(120).join("\n")).unwrap();
+                        let rows = maestro_tools::output::render_utils::strip_ansi(
+                            &footer.render(120).join("\n"),
+                        )
+                        .unwrap();
                         assert!(
                             rows.contains("changed-model"),
                             "root rebind must precede continuation: {rows}"
@@ -166,7 +171,7 @@ fn delayed_rebind(world: &World) -> tokio::sync::oneshot::Sender<()> {
         Box::pin(async move {
             mode.rebind_current_session()
                 .await
-                .map_err(|error| maestro_app::DiagnosticErrorInfo::error(error.to_string()))?;
+                .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?;
             wait.await.unwrap();
             session
                 .session_manager()

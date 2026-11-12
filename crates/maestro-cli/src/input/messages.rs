@@ -1,7 +1,7 @@
 //! Assembly of the first message from stdin, file text and authored prompts.
 
 use super::arguments::Args;
-use maestro_app::ImageContent;
+use maestro_models::ImageContent;
 
 /// The inputs combined into the first message.
 pub struct InitialMessageInput<'a> {

@@ -2,13 +2,15 @@
 use super::admission::{
     Formula, MathBlocks, MathInline, block_formula, matching, scan, starts_display,
 };
-use maestro_app::markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node};
-use maestro_app::{
+use maestro_markdown::{
+    self as markdown, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node,
+};
+use maestro_office::script_scheme;
+use maestro_text::{
     is_whitespace_scalar,
     markup::{EscapeMode, escape_into},
     normalize_to_lf,
 };
-use maestro_office::script_scheme;
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
 use std::{fmt::Write as _, ops::Range};
 

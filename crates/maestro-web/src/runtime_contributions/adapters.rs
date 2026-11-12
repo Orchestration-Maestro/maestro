@@ -9,7 +9,8 @@ use crate::{
     page::{DomContent, DomRoot, DomView},
     tools::types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
 };
-use maestro_app::{AgentMessage, CustomAgentMessages, JsonObject};
+use maestro_agent::{AgentMessage, CustomAgentMessages};
+use maestro_models::JsonObject;
 use serde_json::{Value, json};
 use std::{cell::RefCell, io};
 use wasm_bindgen::{JsCast as _, JsValue};
@@ -200,9 +201,9 @@ struct MountedFrame {
 impl FrameContent {
     /// Load the document into `frame` with this content's input.
     fn load(&self, frame: &crate::SandboxIframe) -> Result<(), ToolUiError> {
-        let provider: maestro_app::SharedHandle<
+        let provider: maestro_models::SharedHandle<
             dyn maestro_app::SandboxRuntimeProvider<BrowserSandboxValue>,
-        > = maestro_app::SharedHandle::new(InputProvider(self.input.clone()));
+        > = maestro_models::SharedHandle::new(InputProvider(self.input.clone()));
         frame
             .load_content(&self.id, &self.document, vec![provider], Vec::new())
             .map_err(|e| ToolUiError::Presentation(e.message))
@@ -253,19 +254,19 @@ struct InputProvider(Value);
 impl maestro_app::SandboxRuntimeProvider<BrowserSandboxValue> for InputProvider {
     fn get_data(
         &self,
-    ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, maestro_app::DiagnosticErrorInfo>
+    ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, maestro_models::DiagnosticErrorInfo>
     {
-        let value =
-            plain(&self.0).map_err(|e| maestro_app::DiagnosticErrorInfo::error(e.to_string()))?;
+        let value = plain(&self.0)
+            .map_err(|e| maestro_models::DiagnosticErrorInfo::error(e.to_string()))?;
         Ok(indexmap::IndexMap::from([(
             INPUT_PROPERTY.to_owned(),
             BrowserSandboxValue(value),
         )]))
     }
-    fn get_runtime(&self) -> Result<maestro_app::Runtime, maestro_app::DiagnosticErrorInfo> {
+    fn get_runtime(&self) -> Result<maestro_app::Runtime, maestro_models::DiagnosticErrorInfo> {
         Ok(maestro_app::Runtime::Empty)
     }
-    fn get_description(&self) -> Result<String, maestro_app::DiagnosticErrorInfo> {
+    fn get_description(&self) -> Result<String, maestro_models::DiagnosticErrorInfo> {
         Ok(String::new())
     }
 }

@@ -1,7 +1,7 @@
 //! Interactive resource reload with a painted loading box and retained editor focus.
 use super::{InteractiveMode, resources::ShowLoadedResourcesOptions, toggles::set_expanded};
 use crate::DynamicBorder;
-use maestro_app::EventError;
+use maestro_extensions::EventError;
 use maestro_theme::{ThemeChangeResult, ThemeColor};
 use maestro_tui::{Container, EditorComponent, Spacer, Text};
 use std::{error::Error, rc::Rc};
@@ -33,7 +33,7 @@ impl InteractiveMode {
         let result: Result<(), Box<dyn Error>> = async {
             self.ui.render_pending_frame()?;
             session.reload().await?;
-            maestro_app::configure_http_dispatcher(
+            maestro_models::configure_http_dispatcher(
                 session
                     .settings_manager()
                     .borrow()

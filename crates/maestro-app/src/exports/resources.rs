@@ -1,16 +1,6 @@
 //! Existing resources owners exposed at the application root.
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_resources::{
-    SourceOrigin, SourceScope,
-    paths::{home_directory, is_local_path, resolve},
-};
-
-pub use maestro_resources::{
-    ResourceEntry, ResourceFileType, canonicalize_path, current_directory, drive_directories,
-};
-
-#[cfg(not(target_arch = "wasm32"))]
 pub use crate::resources::loading::{
     DefaultEventBus, DefaultResourceLoader, DefaultResourceLoaderOptions, LoadPromptsResult,
     LoadThemesResult, ResourceCollision, ResourceDiagnostic, ResourceExtensionPath,
@@ -23,11 +13,9 @@ pub use crate::runtime::session_dependencies::{
     CreateAgentSessionServicesOptions, create_agent_session_services,
 };
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_extensions::{
-    ExtensionLoadError, LoadExtensionsResult, ModuleLoader, types::FlagValue,
-};
+pub use maestro_extensions::LoadExtensionsResult;
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_resources::{DiagnosticType, LoadSkillsResult};
+pub use maestro_resources::LoadSkillsResult;
 
 pub use maestro_resources::{
     LoadSkillsFromDirOptions, PromptTemplate, Skill, SkillFrontmatter, SourceInfo,

@@ -1,10 +1,13 @@
 //! Native widget and status calls through the retained UI host.
 use super::extension_ui::{Original, is_original, port};
 use super::{Setup, World, isolated, started};
-use maestro_app::{
-    ExtensionAPI, ExtensionComponent, ExtensionFactory, ExtensionWidgetOptions, Local,
-    ReadonlyFooterDataProvider, SettingsManager, WidgetContent, WidgetPlacement,
+use maestro_extensions::{
+    ExtensionAPI, ExtensionFactory, ExtensionWidgetOptions, WidgetPlacement,
+    footer::ReadonlyFooterDataProvider,
+    types::{ExtensionComponent, WidgetContent},
 };
+use maestro_models::Local;
+use maestro_settings::SettingsManager;
 use maestro_tui::{Component, Text};
 use serde::Deserialize;
 use std::{cell::RefCell, path::Path, rc::Rc};
@@ -367,7 +370,7 @@ type WidgetOperands = Rc<RefCell<Option<(maestro_tui::TUI, maestro_theme::LiveTh
 
 /// Subscribes one origin to the witness channel.
 fn observe(
-    bus: &maestro_app::EventBus<Local>,
+    bus: &maestro_extensions::EventBus<Local>,
     trace: Rc<RefCell<Vec<String>>>,
     label: &'static str,
 ) {
@@ -428,7 +431,7 @@ fn widget_factory_callbacks_retain_origin_and_release_the_last_owner() {
         async |directory| {
             let trace = Rc::new(RefCell::new(Vec::<String>::new()));
             let controller =
-                maestro_app::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
+                maestro_extensions::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
             let foreign = controller.for_extension();
             observe(&foreign, trace.clone(), "foreign");
             let stored = Rc::new(RefCell::new(None));

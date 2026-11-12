@@ -2,12 +2,12 @@
 
 ## Quick start
 
-Write a warning to standard error with `maestro_app::diagnostics::write_stderr_line`.
+Write a warning to standard error with `maestro_agent::diagnostics::write_stderr_line`.
 It adds the newline, writes once and returns nothing. If standard error is closed,
 or its reader has gone, the text is dropped and your code carries on.
 
 ```rust
-maestro_app::diagnostics::write_stderr_line("Warning: could not read the changelog");
+maestro_agent::diagnostics::write_stderr_line("Warning: could not read the changelog");
 ```
 
 Use `write_stderr` when the text already ends its own line.
@@ -16,9 +16,8 @@ Use `write_stderr` when the text already ends its own line.
 
 `eprintln!` and `eprint!` panic when the write fails. A diagnostic is a courtesy,
 so a dead terminal or a closed pipe must not turn one into a crash. Both writers in
-`maestro_app::diagnostics` ignore the failure instead. The owner is
-`maestro_agent::diagnostics`, the lowest crate the agent loop and the application
-both reach; the application re-exports it for frontends.
+`maestro_agent::diagnostics` ignore the failure instead. That crate is the lowest one
+the agent loop and the application both reach; frontends import it from there.
 
 Production code in the product crates uses these two functions for its diagnostics.
 The workspace conventions check rejects `eprint!` and `eprintln!` there. The
@@ -49,7 +48,7 @@ no sibling test forks while the pipe's reading end is still open.
 ```rust
 if maestro_test_process::selection().is_child() {
     maestro_test_process::wait_for_broken_stderr();
-    maestro_app::diagnostics::write_stderr_line("nobody reads this");
+    maestro_agent::diagnostics::write_stderr_line("nobody reads this");
     return;
 }
 if maestro_test_process::run_alone("my_test").unwrap() {

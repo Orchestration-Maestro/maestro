@@ -220,7 +220,7 @@ pub struct Fixture {
     /// Live palette publisher.
     theme: ThemeState,
     /// Original model occurrence handles.
-    models: Vec<Arc<RwLock<maestro_app::Model>>>,
+    models: Vec<Arc<RwLock<maestro_models::Model>>>,
     /// Callback release witness.
     pub release: Weak<()>,
 }

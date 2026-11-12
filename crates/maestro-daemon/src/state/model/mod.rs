@@ -32,18 +32,18 @@ pub use selection::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PaneFocusTarget {
     /// Stable workspace identity.
-    pub workspace_id: String,
+    pub(crate) workspace_id: String,
     /// Pane identity allocated by the topology.
-    pub pane_id: PaneId,
+    pub(crate) pane_id: PaneId,
 }
 
 /// Workspace-action provenance for a registered pane.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionPaneRecord {
     /// Owning workspace action identity.
-    pub action_id: String,
+    pub(crate) action_id: String,
     /// Registered pane entrypoint.
-    pub entrypoint: String,
+    pub(crate) entrypoint: String,
 }
 
 /// One retained right-side tab-bar segment.
@@ -70,107 +70,107 @@ pub enum SidebarWidthSource {
 /// Mutable workspace data retained independently of attached clients.
 pub struct DaemonState {
     /// Whether the shared daemon loop should finish its owned shutdown.
-    pub should_quit: maestro_protocol::shared::Flag,
+    pub(crate) should_quit: maestro_protocol::shared::Flag,
     /// Live expanded sidebar width, independently resizable from its configured default.
-    pub sidebar_width: u16,
+    pub(crate) sidebar_width: u16,
     /// Persisted fraction separating sidebar sections.
-    pub sidebar_section_split: f32,
+    pub(crate) sidebar_section_split: f32,
     /// Persisted collapsed repository group identities.
-    pub collapsed_space_keys: std::collections::HashSet<String>,
+    pub(crate) collapsed_space_keys: std::collections::HashSet<String>,
     /// Owner of the live sidebar width.
-    pub sidebar_width_source: SidebarWidthSource,
+    pub(crate) sidebar_width_source: SidebarWidthSource,
     /// Current agent-panel scroll position, reset when row composition reloads.
-    pub agent_panel_scroll: usize,
+    pub(crate) agent_panel_scroll: usize,
     /// Compact diagnostic for the most recently loaded settings document.
-    pub config_diagnostic: Option<String>,
+    pub(crate) config_diagnostic: Option<String>,
     /// Whether connected clients must reacquire accepted interface preferences.
-    pub request_client_config_reload: maestro_protocol::shared::Flag,
+    pub(crate) request_client_config_reload: maestro_protocol::shared::Flag,
     /// Accepted theme selection policy and renderer overrides.
-    pub theme_runtime: ThemeRuntimeConfig,
+    pub(crate) theme_runtime: ThemeRuntimeConfig,
     /// Active authored or sibling theme name, independent of palette rendering.
-    pub theme_name: String,
+    pub(crate) theme_name: String,
     /// Last observed host appearance.
-    pub host_terminal_appearance: Option<crate::terminal_theme::HostAppearance>,
+    pub(crate) host_terminal_appearance: Option<crate::terminal_theme::HostAppearance>,
     /// Whether a host report takes precedence over background inference.
-    pub host_terminal_appearance_explicit: maestro_protocol::shared::Flag,
+    pub(crate) host_terminal_appearance_explicit: maestro_protocol::shared::Flag,
     /// Host default and palette colours propagated to live panes.
-    pub host_terminal_theme: crate::terminal_theme::TerminalTheme,
+    pub(crate) host_terminal_theme: crate::terminal_theme::TerminalTheme,
     /// Whether interactive creation waits for a supplied workspace name.
-    pub prompt_new_workspace_name: maestro_protocol::shared::Flag,
+    pub(crate) prompt_new_workspace_name: maestro_protocol::shared::Flag,
     /// Directory retained while the input owner collects a new workspace name.
-    pub pending_workspace_create_cwd: Option<std::path::PathBuf>,
+    pub(crate) pending_workspace_create_cwd: Option<std::path::PathBuf>,
     /// Live ordering selection for the agent panel.
-    pub agent_panel_sort: AgentPanelSort,
+    pub(crate) agent_panel_sort: AgentPanelSort,
     /// Current sidebar collapse state, initialized only on construction.
     pub sidebar_collapsed: maestro_protocol::shared::Flag,
     /// Whether outer focus gain requests a full host redraw.
-    pub redraw_on_focus_gained: maestro_protocol::shared::Flag,
+    pub(crate) redraw_on_focus_gained: maestro_protocol::shared::Flag,
     /// Ordered retained right-side status segments.
-    pub tab_bar_right: Vec<TabBarStatusSegment>,
+    pub(crate) tab_bar_right: Vec<TabBarStatusSegment>,
     /// Printable spacing between status segments.
     pub(crate) tab_bar_right_separator: String,
     /// Sole owner of workspace topology and public identity allocation.
     pub topology: WorkspaceTopology,
     /// Retained terminal metadata keyed by the attached terminal identity.
-    pub terminals: HashMap<TerminalId, TerminalState>,
+    pub(crate) terminals: HashMap<TerminalId, TerminalState>,
     /// Compiled detection snapshot shared with pane runtimes.
     pub manifests: Arc<RwLock<ManifestCache>>,
     /// Active detection sources and versions from the shared snapshot.
-    pub agent_manifest_summaries: Vec<AgentManifestSummary>,
+    pub(crate) agent_manifest_summaries: Vec<AgentManifestSummary>,
     /// Diagnostics from the latest detection catalogue update.
-    pub agent_manifest_update_status: ManifestUpdateStatus,
+    pub(crate) agent_manifest_update_status: ManifestUpdateStatus,
     /// Registered pane provenance removed with its owning pane.
-    pub action_panes: HashMap<PaneId, ActionPaneRecord>,
+    pub(crate) action_panes: HashMap<PaneId, ActionPaneRecord>,
     /// Detached metadata identities awaiting runtime shutdown by the loop.
-    pub terminal_runtime_shutdowns: Vec<TerminalId>,
+    pub(crate) terminal_runtime_shutdowns: Vec<TerminalId>,
     /// Active workspace display position, absent when no workspace is active.
-    pub active: Option<usize>,
+    pub(crate) active: Option<usize>,
     /// Workspace selection position for navigation.
-    pub selected: usize,
+    pub(crate) selected: usize,
     /// Structural changes awaiting snapshot scheduling.
-    pub session_dirty: bool,
+    pub(crate) session_dirty: bool,
     /// Background notification preferences applied independently of sound.
-    pub toast_config: crate::settings::model::ToastConfig,
+    pub(crate) toast_config: crate::settings::model::ToastConfig,
     /// Per-agent sound admission preferences.
-    pub sound: crate::settings::audio::SoundConfig,
+    pub(crate) sound: crate::settings::audio::SoundConfig,
     /// Last known outer terminal focus, absent before the first report.
-    pub outer_terminal_focus: Option<bool>,
+    pub(crate) outer_terminal_focus: Option<bool>,
     /// Clipboard acknowledgement kept separately from agent notification content.
-    pub copy_feedback: Option<CopyFeedback>,
+    pub(crate) copy_feedback: Option<CopyFeedback>,
     /// Most recent workspace notification.
-    pub toast: Option<ToastNotification>,
+    pub(crate) toast: Option<ToastNotification>,
     /// Available application version reported by the update producer.
-    pub update_available: Option<String>,
+    pub(crate) update_available: Option<String>,
     /// Install command supplied by the update producer.
-    pub update_install_command: String,
+    pub(crate) update_install_command: String,
     /// Whether release notes are available for the reported version.
-    pub latest_release_notes_available: bool,
+    pub(crate) latest_release_notes_available: bool,
     /// Whether automatic update prompting has been dismissed.
-    pub update_dismissed: bool,
+    pub(crate) update_dismissed: bool,
     /// Delayed transitions revalidated before delivery.
-    pub pending_agent_notifications: HashMap<PaneId, PendingAgentNotification>,
+    pub(crate) pending_agent_notifications: HashMap<PaneId, PendingAgentNotification>,
     /// Sequence shared by effective agent state changes.
     pub(crate) next_agent_state_change_seq: u64,
     /// Whether implicit parent-group closes require confirmation.
-    pub confirm_close: maestro_protocol::shared::Flag,
+    pub(crate) confirm_close: maestro_protocol::shared::Flag,
     /// Current interaction context.
-    pub mode: Mode,
+    pub(crate) mode: Mode,
     /// Keyboard copy pane retained across focus navigation.
-    pub copy_mode: Option<CopyModeState>,
+    pub(crate) copy_mode: Option<CopyModeState>,
     /// Current terminal text selection.
-    pub selection: Option<crate::selection::Selection>,
+    pub(crate) selection: Option<crate::selection::Selection>,
     /// Pending drag geometry cleared with its selection.
-    pub selection_autoscroll: Option<SelectionAutoscroll>,
+    pub(crate) selection_autoscroll: Option<SelectionAutoscroll>,
     /// Previous logical focus for last-pane navigation.
     pub(crate) previous_pane_focus: Option<PaneFocusTarget>,
     /// Historical numeric spellings mapped to their retained pane identity.
-    pub pane_id_aliases: HashMap<u32, PaneId>,
+    pub(crate) pane_id_aliases: HashMap<u32, PaneId>,
     /// Historical public spellings mapped to their retained pane identity.
-    pub public_pane_id_aliases: HashMap<String, PaneId>,
+    pub(crate) public_pane_id_aliases: HashMap<String, PaneId>,
     /// Virtual terminal dimensions in columns and rows before a view attaches.
-    pub headless_size: (u16, u16),
+    pub(crate) headless_size: (u16, u16),
     /// Most recently supplied pane geometry, in view order.
-    pub pane_infos: Vec<PaneInfo>,
+    pub(crate) pane_infos: Vec<PaneInfo>,
 }
 
 impl DaemonState {

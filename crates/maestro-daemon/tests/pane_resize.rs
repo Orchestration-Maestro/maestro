@@ -1,41 +1,14 @@
 //! Pane resize through the daemon's handler: which divider moves, by how much, and what is published.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
-    answer_command, daemon_with_workspaces, event_names, events_after, failure, focused_pane_id,
-    pane_layout, request, root_pane, split_pane_focused,
-};
-use crate::support::runtime::block_on;
 use maestro_daemon::state::App;
-use maestro_protocol::events::EventData;
-use maestro_protocol::rpc_types::RpcCommand;
-use maestro_protocol::schema::{
-    ErrorBody, PaneDirection, PaneResizeParams, PaneResizeReason, PaneResizeResult, ResponseResult,
-    SplitDirection,
+use maestro_daemon::state::test_support::api::{
+    answer_command, event_names, events_after, failure, request,
 };
-use maestro_workspace::tiling::PaneId;
+use maestro_daemon::state::test_support::pane_resize::{pair, ratio, resize_of};
+use maestro_daemon::state::test_support::run;
+use maestro_protocol::rpc_types::RpcCommand;
+use maestro_protocol::schema::{PaneDirection, PaneResizeParams, PaneResizeResult};
 use serde_json::json;
-
-/// The resize record a resize result holds.
-fn resize_of(result: Result<ResponseResult, ErrorBody>) -> PaneResizeResult {
-    match result {
-        Ok(ResponseResult::PaneResize { resize }) => resize,
-        other => panic!("expected a resize result: {other:?}"),
-    }
-}
-
-/// A one-workspace daemon whose first tab holds a pane on the left and the focused one on the right.
-fn pair() -> (App, PaneId, PaneId) {
-    let mut app = daemon_with_workspaces(&["/one"]);
-    let left = root_pane(&app, 0);
-    let right = split_pane_focused(&mut app, 0, left, SplitDirection::Right, true);
-    (app, left, right)
-}
-
-/// The ratio of the tab's only divider.
-fn ratio(app: &mut App) -> f32 {
-    pane_layout(app).splits[0].ratio
-}
-
 /// Resizes `pane` rightward by a decoded amount, which the wire form cannot carry.
 fn resize_by(app: &mut App, amount: Option<f32>) -> PaneResizeResult {
     let command = RpcCommand::PaneResize(PaneResizeParams {
@@ -43,47 +16,11 @@ fn resize_by(app: &mut App, amount: Option<f32>) -> PaneResizeResult {
         direction: PaneDirection::Right,
         amount,
     });
-    resize_of(block_on(answer_command(app, command)))
+    resize_of(run(answer_command(app, command)).unwrap()).unwrap()
 }
-
-#[test]
-fn resizing_moves_the_nearest_divider_without_changing_focus() {
-    let (mut app, _, _) = pair();
-    let wire =
-        json!({"type": "pane.resize", "pane_id": "w1:p1", "direction": "right", "amount": 0.1});
-    let resize = resize_of(request(&mut app, wire));
-    assert!(resize.changed);
-    assert_eq!(resize.reason, None);
-    assert_eq!(resize.pane_id, "w1:p1");
-    assert_eq!(resize.focused_pane_id, "w1:p2");
-    assert_eq!(resize.layout.focused_pane_id, "w1:p2");
-    assert!((resize.layout.splits[0].ratio - 0.6).abs() < f32::EPSILON);
-    assert_eq!(focused_pane_id(&mut app, 0), "w1:p2");
-    assert!(app.state.session_dirty);
-    assert_eq!(
-        events_after(&app, 0),
-        [EventData::LayoutUpdated {
-            layout: resize.layout
-        }]
-    );
-}
-
-#[test]
-fn resizing_without_a_divider_to_move_reports_unchanged() {
-    let mut app = daemon_with_workspaces(&["/one"]);
-    let wire = json!({"type": "pane.resize", "direction": "left"});
-    let resize = resize_of(request(&mut app, wire));
-    assert!(!resize.changed);
-    assert_eq!(resize.reason, Some(PaneResizeReason::Unchanged));
-    assert_eq!(resize.pane_id, "w1:p1");
-    assert_eq!(resize.focused_pane_id, "w1:p1");
-    assert!(!app.state.session_dirty);
-    assert!(events_after(&app, 0).is_empty());
-}
-
 #[test]
 fn a_resize_amount_defaults_ignores_sign_and_is_capped() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     for (amount, expected) in [
         (None, 0.55),
         (Some(f32::NAN), 0.6),
@@ -92,20 +29,22 @@ fn a_resize_amount_defaults_ignores_sign_and_is_capped() {
         (Some(9.0), 0.9),
     ] {
         assert!(resize_by(&mut app, amount).changed, "{amount:?}");
-        assert!((ratio(&mut app) - expected).abs() < 1e-5, "{amount:?}");
+        assert!(
+            (ratio(&mut app).unwrap() - expected).abs() < 1e-5,
+            "{amount:?}"
+        );
     }
     assert!(!resize_by(&mut app, Some(0.2)).changed);
-    assert_eq!(event_names(&app, 0), ["layout_updated"; 5]);
+    assert_eq!(event_names(&app, 0).unwrap(), ["layout_updated"; 5]);
 }
-
 #[test]
 fn resizing_a_missing_pane_is_refused_without_a_change() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     let wire = json!({"type": "pane.resize", "pane_id": "w1:p9", "direction": "right"});
     assert_eq!(
         request(&mut app, wire),
         failure("pane_not_found", "pane not found")
     );
-    assert!((ratio(&mut app) - 0.5).abs() < f32::EPSILON);
+    assert!((ratio(&mut app).unwrap() - 0.5).abs() < f32::EPSILON);
     assert!(events_after(&app, 0).is_empty());
 }

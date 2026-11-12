@@ -20,7 +20,7 @@ use wasm_bindgen::JsCast as _;
 use web_sys::HtmlElement;
 
 /// An assistant with one reached registered-tool call.
-fn assistant() -> maestro_app::SharedAssistantMessage {
+fn assistant() -> maestro_models::SharedAssistantMessage {
     Arc::new(RwLock::new(serde_json::from_value(serde_json::json!({"role":"assistant","content":[{"type":"toolCall","id":"call","name":"document-owner","arguments":{}}],"api":"openai-completions","provider":"openai","model":"controlled","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":0})).unwrap()))
 }
 /// Open before failing a refresh, then release the containing row without closing its preview.
@@ -126,15 +126,16 @@ pub fn returned_files(import: &js_sys::Function) {
 }
 /// User and tool rows use the same page-owned overlay route, not a containing canvas receiver.
 pub fn user_and_tool(import: &js_sys::Function) {
-    use maestro_app::{
-        AgentMessage, UserContent,
-        browser::components::records::{CustomAgentMessages, UserMessageWithAttachments},
+    use maestro_agent::AgentMessage;
+    use maestro_app::browser::components::records::{
+        CustomAgentMessages, UserMessageWithAttachments,
     };
+    use maestro_models::UserContent;
     let view = view();
     let _elements = host(&view, import);
     let record = crate::attachment_support::attachment();
     record.write().unwrap().file_name = "user.txt".into();
-    let user = UserMessage::<maestro_app::NoCustomMessages> {
+    let user = UserMessage::<maestro_agent::NoCustomMessages> {
         message: Some(AgentMessage::Custom(Arc::new(RwLock::new(
             CustomAgentMessages::UserWithAttachments(UserMessageWithAttachments {
                 content: UserContent::Text(String::new()),

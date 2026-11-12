@@ -3,8 +3,9 @@ use super::presenters::{Harness, settings, theme, view};
 use maestro_app::presentation_data::input_selectors::{
     ExtensionSelectorFactory, ExtensionSelectorRequest,
 };
-use maestro_app::{SessionCwdIssue, SettingsManager};
 use maestro_cli::startup::entrypoint::feedback::MissingSessionCwdPresentation;
+use maestro_session::cwd::SessionCwdIssue;
+use maestro_settings::SettingsManager;
 use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use std::{cell::RefCell, rc::Rc};
@@ -139,7 +140,7 @@ impl Dialog {
         presentation.presenter = Rc::new(move |request| {
             assert_eq!(
                 request.title,
-                maestro_app::format_missing_session_cwd_prompt(&Self::issue())
+                maestro_session::cwd::format_missing_session_cwd_prompt(&Self::issue())
             );
             assert_eq!(request.options, ["Continue", "Cancel"]);
             assert!(maestro_tui::get_keybindings().matches("\u{19}", "tui.select.confirm"));

@@ -1,7 +1,7 @@
 //! One tool invocation mounted as page content through the selected renderer.
 #[cfg(target_arch = "wasm32")]
 use crate::tools::types::{ToolRenderResult, ToolUiError};
-use maestro_app::{ToolCall, ToolResultMessage};
+use maestro_models::{ToolCall, ToolResultMessage};
 use std::rc::Rc;
 
 /// Native tool row retaining the original call and result envelope.

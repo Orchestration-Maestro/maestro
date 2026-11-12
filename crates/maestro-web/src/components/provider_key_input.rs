@@ -12,9 +12,10 @@ use crate::{
     page::{DomContent, DomRoot, DomView, report},
     tools::types::ToolUiError,
 };
-use maestro_app::{
+use maestro_app::{browser::utils::proxy::apply_proxy_if_needed, get_app_storage};
+use maestro_models::{
     Context, Message, ProviderStreamOptions, StopReason, StreamOptions, UserContent, UserMessage,
-    browser::utils::proxy::apply_proxy_if_needed, complete, get_app_storage, get_model,
+    complete, get_model,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -363,7 +364,7 @@ async fn test_api_key(provider: &str, api_key: &str) -> bool {
     }
 }
 /// Send the test request through the proxy the settings select, reporting a normal stop.
-async fn completes(model: maestro_app::Model, api_key: &str) -> Result<bool, String> {
+async fn completes(model: maestro_models::Model, api_key: &str) -> Result<bool, String> {
     let settings = &get_app_storage()
         .map_err(|error| error.to_string())?
         .settings;

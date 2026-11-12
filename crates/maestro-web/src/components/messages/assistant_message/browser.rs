@@ -8,7 +8,7 @@ use crate::{
     page::{self, DomContent, DomRoot, DomView, MountedContent},
     tools::types::ToolUiError,
 };
-use maestro_app::{AssistantContent, StopReason, ToolCall, ToolResultMessage};
+use maestro_models::{AssistantContent, StopReason, ToolCall, ToolResultMessage};
 use std::{cell::RefCell, rc::Rc};
 use web_sys::Element;
 

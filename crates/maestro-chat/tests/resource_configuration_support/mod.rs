@@ -157,7 +157,7 @@ const OWNERS: [&str; 23] = [
 
 /// Qualifies the newly public adapter paths separately from selector persistence.
 fn qualify_adapters(scopes: &records::Scopes) {
-    use maestro_app::{PackageSource, SettingsListEntry};
+    use maestro_settings::{PackageSource, SettingsListEntry};
     for (kind, value) in [&scopes.global, &scopes.project]
         .into_iter()
         .flat_map(|scope| scope.as_object().unwrap())

@@ -3,14 +3,21 @@ use super::{
     FinalMessage, PrintEffects, PrintFuture, PrintMode, PrintModeOptions, PrintRebind,
     PrintRuntime, PrintSession, SignalPort, run_print_mode_with,
 };
+use maestro_agent::{AgentEvent, ThinkingLevel};
 use maestro_app::agent_session::CompactionReason;
 use maestro_app::{
-    AgentEvent, AgentSessionEvent, AgentSessionEventListener, AssistantContent, AssistantMessage,
-    CommandContextOperations, DiagnosticErrorInfo, ExtensionBindings,
-    ExtensionCommandContextActions, FileEntry, ImageContent, PromptOptions, SessionChangeResult,
-    StopReason, TerminationSignal, TextContent, ThinkingLevel, Usage, output_guard,
+    AgentSessionEvent, AgentSessionEventListener, ExtensionBindings, PromptOptions, output_guard,
+};
+use maestro_extensions::{
+    CommandContextOperations, ExtensionCommandContextActions, types::SessionChangeResult,
 };
 use maestro_listeners::Listeners;
+use maestro_models::{
+    AssistantContent, AssistantMessage, DiagnosticErrorInfo, ImageContent, StopReason, TextContent,
+    Usage,
+};
+use maestro_process::TerminationSignal;
+use maestro_session::session_manager::FileEntry;
 use serde_json::json;
 use std::{
     cell::{Cell, RefCell},
@@ -1058,7 +1065,7 @@ fn extension_failures_use_exact_stderr_line() {
             Rc::new(move || -> PrintFuture<()> {
                 let bindings = recorder.bindings.borrow();
                 let on_error = bindings[0].on_error.as_ref().expect("an error listener");
-                on_error(&maestro_app::ExtensionError {
+                on_error(&maestro_extensions::ExtensionError {
                     extension_path: "/ext/one.ts".to_owned(),
                     event: "tool_call".to_owned(),
                     error: "boom".to_owned(),
@@ -1253,7 +1260,7 @@ fn handler_registration_and_removal_match_supported_signals() {
         vec![TerminationSignal::Terminate]
     };
     assert_eq!(
-        maestro_app::signals_for_host(),
+        maestro_process::signals_for_host(),
         expected,
         "termination everywhere and a hangup off Windows"
     );

@@ -12,6 +12,17 @@ pub(crate) struct Rule {
     pub(crate) dependencies: &'static [&'static str],
 }
 
+/// The frontends and the composition root, whose rows of the table bound the lower crates they
+/// name and whose paths below the application the reach check resolves.
+pub(crate) const FRONTENDS: &[&str] = &[
+    "maestro",
+    "maestro-chat",
+    "maestro-cli",
+    "maestro-multiplexer",
+    "maestro-rpc",
+    "maestro-web",
+];
+
 /// Internal development edges permitted beyond the production table on any target.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-credentials"),
@@ -29,6 +40,11 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-extensions", "maestro-credentials"),
     ("maestro-rpc", "maestro-theme"),
     ("maestro-rpc", "maestro-tui-crossterm"),
+    ("maestro-rpc", "maestro-export"),
+    ("maestro-rpc", "maestro-extensions"),
+    ("maestro-rpc", "maestro-models"),
+    ("maestro-rpc", "maestro-session"),
+    ("maestro-rpc", "maestro-tools"),
     ("maestro-extensions-wasm", "maestro-models"),
     ("maestro-extensions-wasm", "maestro-extensions-wasmtime"),
     ("maestro-extensions-wasm", "maestro-listeners"),
@@ -37,6 +53,10 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-chat", "maestro-models"),
     ("maestro-chat", "maestro-tui-crossterm"),
     ("maestro", "maestro-lock"),
+    ("maestro", "maestro-catalog"),
+    ("maestro", "maestro-credentials"),
+    ("maestro", "maestro-json"),
+    ("maestro", "maestro-session"),
     ("maestro-theme", "maestro-realpath"),
 ];
 
@@ -233,29 +253,14 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
     })
 }
 
-/// Identify crates that require direct dependencies.
-pub(crate) fn exact(name: &str) -> bool {
-    matches!(
-        name,
-        "maestro-cli"
-            | "maestro-multiplexer"
-            | "maestro-chat"
-            | "maestro-rpc"
-            | "maestro-web"
-            | "maestro-tui-crossterm"
-    )
-}
-
 /// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
     match name {
-        "maestro" => &["maestro-app"],
-        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer" => {
+        "maestro" | "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" => {
             &["maestro-app"]
         }
         "maestro-daemon" => &["maestro-terminal-emulator"],
         "maestro-tui-crossterm" => &["maestro-tui", "maestro-text"],
-        name if exact(name) => rule(name).map_or(&[], |rule| rule.dependencies),
         _ => &[],
     }
 }

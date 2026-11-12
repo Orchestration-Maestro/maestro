@@ -1,8 +1,9 @@
 //! The chat screen in a real page: tools, restored artifacts, panel actions and the breakpoint.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{computed, container, host, sandbox_url, select, text, view};
+use maestro_agent::{AgentInitialState, AgentMessage, AgentOptions};
 use maestro_app::browser::tools::javascript_repl::RuntimeProvidersFactory;
-use maestro_app::{AgentInitialState, AgentMessage, AgentOptions, JsonObject, get_model};
+use maestro_models::{JsonObject, get_model};
 use maestro_web::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW, ArtifactsPanel, BrowserSandboxHost, BrowserSession,
     ChatPanel, ChatPanelConfig, browser::values::BrowserSandboxValue, create_javascript_repl_tool,
@@ -425,7 +426,7 @@ pub async fn chat_panel_registers_builtins_without_a_contribution_host(import: j
     let registry = web_sys::window().unwrap().custom_elements();
     let original = registry.get("text-artifact");
     let _host = host(&shown, &import);
-    let _second = ChatPanel::<maestro_app::NoCustomMessages>::new(&shown).unwrap();
+    let _second = ChatPanel::<maestro_agent::NoCustomMessages>::new(&shown).unwrap();
     assert!(js_sys::Object::is(
         &original,
         &registry.get("text-artifact")

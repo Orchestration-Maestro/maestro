@@ -1,8 +1,7 @@
 //! Custom messages with an optional retained renderer.
-use maestro_app::{
-    CustomMessage, ExtensionExecution, MessageRenderOptions, MessageRendererCall, UserBlock,
-    UserContent,
-};
+use maestro_extensions::{ExtensionExecution, MessageRenderOptions, MessageRendererCall};
+use maestro_models::{UserBlock, UserContent};
+use maestro_session::message_records::CustomMessage;
 use maestro_theme::{LiveTheme, ThemeBg, ThemeColor};
 use maestro_tui::{
     Box as Panel, Component, ComponentHandle, Container, MarkdownTheme, Spacer, TerminalImage, Text,

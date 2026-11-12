@@ -137,7 +137,8 @@ impl TreeState {
             .and_then(serde_json::Value::as_str)
             .filter(|s| !s.is_empty())
             .map(str::to_owned);
-        let Some(timestamp) = timestamp.and_then(|s| maestro_app::parse_timestamp_millis(&s))
+        let Some(timestamp) =
+            timestamp.and_then(|s| maestro_session::message_records::parse_timestamp_millis(&s))
         else {
             return Ok(String::new());
         };
@@ -152,7 +153,7 @@ impl TreeState {
     /// Three-cell levels place continuing gutters before branch connectors.
     fn prefix(&self, index: usize) -> String {
         let row = &self.structure.rows[index];
-        let mut prefix = maestro_app::export_html::template::build_tree_prefix(
+        let mut prefix = maestro_session::export_html::template::build_tree_prefix(
             row,
             self.structure.multiple_roots,
         );

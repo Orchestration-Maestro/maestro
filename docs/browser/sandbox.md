@@ -11,7 +11,8 @@ runtime bundle, a Rust program built for the browser; your content stays plain
 JavaScript that the frame runs as input.
 
 ```rust
-use maestro_app::{BuiltinRuntime, DiagnosticErrorInfo, Runtime};
+use maestro_app::{BuiltinRuntime, Runtime};
+use maestro_models::DiagnosticErrorInfo;
 
 // Inside a `SandboxRuntimeProvider` implementation:
 fn get_runtime(&self) -> Result<Runtime, DiagnosticErrorInfo> {
@@ -291,7 +292,7 @@ let source = RuntimeMessageBridge::generate_bridge_code(RuntimeMessageBridgeOpti
 })?;
 assert!(source.starts_with("var Module={arguments:[\"frame-bridge\",\"execution\"]};"));
 assert!(source.ends_with(BUNDLE));
-# Ok::<(), maestro_app::DiagnosticErrorInfo>(())
+# Ok::<(), maestro_models::DiagnosticErrorInfo>(())
 ```
 
 The frame script is the runtime bundle preceded by the channel and identifier as program

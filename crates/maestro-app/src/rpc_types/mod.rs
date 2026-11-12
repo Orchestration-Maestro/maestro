@@ -11,11 +11,6 @@ pub use responses::{
     RpcForkResult, RpcLastAssistantText, RpcMessages, RpcResponse, RpcThinkingLevel,
 };
 
-/// The workspace command family, its correlated responses and the shared envelope writer.
-pub use maestro_protocol::rpc_types as workspace;
-/// The workspace payload records: results, failures and events.
-pub use maestro_protocol::schema as workspace_schema;
-
 use maestro_extensions::{WidgetPlacement, types::NotificationType};
 use maestro_models::{Model, ModelThinkingLevel};
 use serde::{Deserialize, Deserializer, Serialize};

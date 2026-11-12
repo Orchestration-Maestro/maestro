@@ -1,12 +1,11 @@
 //! Session binding: request defaults, the event subscription and the editor callbacks.
 use super::{BrowserSession, browser::Session};
 use crate::{ModelSelector, components::composer::MessageEditorProps, page::report};
+use maestro_agent::{AgentEvent, AgentMessage, AgentSpawner, CustomAgentMessages, ThinkingLevel};
 use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 use maestro_app::browser::utils::proxy::create_local_stream_fn;
-use maestro_app::{
-    AgentEvent, AgentMessage, AgentSpawner, CustomAgentMessages, DiagnosticErrorInfo, Local, Model,
-    ThinkingLevel, get_app_storage,
-};
+use maestro_app::get_app_storage;
+use maestro_models::{DiagnosticErrorInfo, Local, Model};
 use std::{
     rc::{Rc, Weak},
     sync::{Arc, PoisonError, RwLock},
@@ -25,7 +24,7 @@ impl<C: CustomAgentMessages + 'static> Session<C> {
             return;
         }
         let weak = Rc::downgrade(self);
-        let listener: maestro_app::AgentListener<BrowserMessages<C>, Local> =
+        let listener: maestro_agent::AgentListener<BrowserMessages<C>, Local> =
             Rc::new(move |event, _| {
                 if let Some(view) = weak.upgrade() {
                     let event = event.read().unwrap_or_else(PoisonError::into_inner);

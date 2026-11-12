@@ -47,6 +47,7 @@ use maestro_session::{
 };
 use maestro_settings::SettingsManager;
 use maestro_theme::LiveTheme;
+use maestro_tools::ToolsManager;
 use state::AgentSessionState;
 use std::{
     cell::RefCell,

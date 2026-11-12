@@ -25,8 +25,10 @@ mod entry {
     use crate::support::entry::{Entry, Provider, cases, user_texts};
     use crate::support::startup::{set_modified, stored_history};
     use maestro_app::output_guard::is_stdout_taken_over;
-    use maestro_app::{ExtensionFactory, Local, ReadonlySessionManager};
     use maestro_cli::startup::entrypoint::MainOptions;
+    use maestro_extensions::ExtensionFactory;
+    use maestro_models::Local;
+    use maestro_session::session_manager::ReadonlySessionManager;
     use serde_json::json;
     use std::cell::RefCell;
     use std::path::Path;
@@ -42,9 +44,9 @@ mod entry {
         let log = Rc::clone(log);
         Rc::new(move |api| {
             log.borrow_mut().push("extension-load".into());
-            let flag = maestro_app::ExtensionFlagOptions {
+            let flag = maestro_extensions::types::ExtensionFlagOptions {
                 description: Some("controlled flag".into()),
-                r#type: maestro_app::FlagType::Boolean,
+                r#type: maestro_extensions::types::FlagType::Boolean,
                 default: None,
             };
             Box::pin(std::future::ready(
@@ -648,7 +650,7 @@ mod entry {
                 .read()
                 .unwrap()
                 .get("entry-flag"),
-            Some(&maestro_app::FlagValue::Boolean(true))
+            Some(&maestro_extensions::types::FlagValue::Boolean(true))
         );
     }
 
@@ -678,7 +680,11 @@ mod entry {
                 assert_eq!(runtime.cwd(), e.commands.cwd);
                 let (foreign, project) = foreign_session(&e, "foreign-session");
                 let switched = runtime
-                    .switch_session(&foreign, None, maestro_app::SwitchSessionOptions::default())
+                    .switch_session(
+                        &foreign,
+                        None,
+                        maestro_extensions::types::SwitchSessionOptions::default(),
+                    )
                     .await
                     .unwrap();
                 assert!(!switched.cancelled);
@@ -1673,7 +1679,7 @@ mod entry {
         Rc::new(move |api| {
             let (out, err) = (Rc::clone(&out), Rc::clone(&err));
             let registration = api.clone();
-            let registered = api.on::<maestro_app::SessionStartEvent, ()>(
+            let registered = api.on::<maestro_extensions::types::events::SessionStartEvent, ()>(
                 "session_start".into(),
                 Rc::new(move |event, _| {
                     let reason = format!("start:{:?}\n", event.reason);
@@ -1682,9 +1688,9 @@ mod entry {
                     registration
                         .register_flag(
                             "during-start".into(),
-                            maestro_app::ExtensionFlagOptions {
+                            maestro_extensions::types::ExtensionFlagOptions {
                                 description: None,
-                                r#type: maestro_app::FlagType::Boolean,
+                                r#type: maestro_extensions::types::FlagType::Boolean,
                                 default: None,
                             },
                         )
@@ -1699,7 +1705,7 @@ mod entry {
     /// Bind the actual extension runner as a frontend does at startup and replacement.
     async fn bind_session(
         session: Rc<maestro_app::AgentSession>,
-    ) -> Result<(), maestro_app::DiagnosticErrorInfo> {
+    ) -> Result<(), maestro_models::DiagnosticErrorInfo> {
         session
             .bind_extensions(maestro_app::agent_session::ExtensionBindings::default())
             .await
@@ -1724,7 +1730,11 @@ mod entry {
                     .set_rebind_session(Some(Rc::new(|session| Box::pin(bind_session(session)))));
                 let (foreign, _) = foreign_session(&e, "foreign-session");
                 runtime
-                    .switch_session(&foreign, None, maestro_app::SwitchSessionOptions::default())
+                    .switch_session(
+                        &foreign,
+                        None,
+                        maestro_extensions::types::SwitchSessionOptions::default(),
+                    )
                     .await
                     .unwrap();
                 let starts: Vec<_> = e.stdout().lines().map(str::to_owned).collect();

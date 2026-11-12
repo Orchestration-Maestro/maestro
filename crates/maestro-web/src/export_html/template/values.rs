@@ -61,7 +61,7 @@ pub(crate) fn find_tool_result<'a>(
         .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidData))?;
     for entry in entries {
         if entry["type"] == "message" {
-            let message = maestro_app::export_html::template::read_message(entry)?;
+            let message = maestro_session::export_html::template::read_message(entry)?;
             if message["role"] == "toolResult"
                 && message["toolCallId"].as_str() == Some(tool_call_id)
             {

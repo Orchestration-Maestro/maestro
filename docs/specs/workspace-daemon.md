@@ -102,7 +102,7 @@ legacy indexed shortcuts. A Maestro user never holds either file, so no user los
 | `maestro-tui` | `stdin_buffer` host replies and mouse tails; structured key decode; `terminal_theme` host colour queries and reply parsing | 25 |
 | `maestro-tui-crossterm` | alternate screen, mouse capture and colour-scheme report modes | 32 |
 | `maestro-multiplexer` | `render`, `palette`, `ui`, `view`, `input`, `keybindings`, `surface`, `client`, `sound`, `launch`, `remote` | 26–29, 32, 34, 35 |
-| `maestro-app` | `daemon` and `terminal` re-exports, `utils::copying` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
+| `maestro-app` | `utils::copying` additions, `workspace_actions`, `daemon_presence`, `self_update::release`, the footer's branch reader, the keybinding document readers | 12, 13, 19, 24, 26, 28, 32, 33 |
 | `maestro` | server, render-surface, attach, monolithic and PTY set-up wiring | 21, 29, 34 |
 
 An inherent `impl` must live in the crate that defines its type. Reference methods on topology types that
@@ -140,7 +140,7 @@ converts topology rectangles to frame rectangles with free functions.
 - **Paths and names.** `maestro_daemon::locations::DaemonPaths` and `maestro_daemon::variables::NAMES`.
 - **Server.** `maestro_rpc::daemon::run_server` starts the API socket and runs the daemon loop. The
   executable's `daemon` arm and the in-process tests call it.
-- **Daemon client.** `maestro_app::daemon_api::client::{DaemonClient, ensure_running}`.
+- **Daemon client.** `maestro_daemon::service::transport::DaemonClient`.
 
 ### Libraries
 
@@ -279,14 +279,25 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
   | Raw client-socket cases | deliveries 29 and 30 |
   | Command cases | deliveries 21–23 |
   | Attached-client cases | delivery 34 |
-- **Tests drive the daemon through its commands and events.** An integration test sends commands to
+- **Tests drive the daemon through its commands and events.** A test sends commands to
   `App::handle_api_request`, feeds background observations to `App::handle_internal_event`, and reads what the
   daemon published through `App::event_hub`. Topology that needs no live process comes from the seed entries
   behind the daemon's `test-support` feature (`seed_workspace`, `seed_tab`, `seed_split`,
   `seed_worktree_membership`). The entries run through the same owner methods as creation. Every structural
   change that must be saved goes through `DaemonState::edit_topology`, which sets the save mark;
-  `take_session_dirty` is the one production reader. The state fields stay public, and tests read and write
-  them directly where no command exposes the state.
+  `take_session_dirty` is the one production reader.
+- **Daemon state stays inside the crate.** The fields of `App` and `DaemonState` are crate-private, apart
+  from `App::state`, `App::config`, `App::launch`, `DaemonState::topology`, `DaemonState::manifests` and
+  `DaemonState::sidebar_collapsed`. The integration program and the standard-stream adapter's tests read or
+  set the first five; `sidebar_collapsed` is start state the sidebar will read once it is wired, so it
+  stays public without an accessor. Each test sorts by what it reads. A test that answers
+  through commands and events, or reads a public field, lives in the crate's one integration program. A test
+  that asserts on state no command exposes (the save mark, terminal metadata, mode, copy mode, deadlines,
+  launch and configuration values) or drives live panes through the private runtime table is a unit test
+  under `state::tests`, beside the module that owns the state. The command driver, the launch inputs and any
+  helper both places call live once in the `test-support` feature and return a result instead of panicking;
+  a helper that needs the development-only crates stays with the side that uses it. Every test keeps its
+  platform gate.
 - **Harness floors.** A test that needs a later harness, such as the server's own test harness, lands with
   that harness.
 - **PTY children in tests.** Tests that spawn PTY children use `maestro-test-process` to run a named test as
@@ -420,7 +431,7 @@ Each edge lands in the first commit of its delivery, with the crate-table row in
 | `maestro-workspace` → `maestro-lock` | snapshot writes | 6 |
 | `maestro-detection` → `maestro-lock` | catalog commits | 7 |
 | `maestro-daemon` → `maestro-terminal-emulator` | first daemon use of the emulator (already allowed; the required edge is added with the code) | 10 |
-| `maestro-app` → `maestro-terminal-emulator` | terminal re-exports for the multiplexer | 26 |
+| `maestro-multiplexer` → `maestro-terminal-emulator` | cell and codepoint width, host cell size and image command, imported from the emulator | 26 |
 | `maestro-multiplexer` → `maestro-protocol` | frame records for the pane render and the frame encoder | 26 |
 | `maestro-daemon` → `maestro-lock` | announcements store | 27 |
 

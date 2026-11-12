@@ -1,6 +1,6 @@
 //! Session query parsing, matching and result ordering.
 
-use maestro_app::is_whitespace_scalar;
+use maestro_text::is_whitespace_scalar;
 
 /// An ordered query term.
 #[derive(Debug, PartialEq)]
@@ -70,7 +70,7 @@ fn push_token(tokens: &mut Vec<SearchToken>, text: &str, quoted: bool) {
 
 /// Whether a session has a nonblank name, using the shared whitespace predicate.
 #[must_use]
-pub fn has_session_name(session: &maestro_app::SessionInfo) -> bool {
+pub fn has_session_name(session: &maestro_session::SessionInfo) -> bool {
     session
         .name
         .as_ref()
@@ -106,11 +106,11 @@ fn offset_score(text: &str, offset: usize) -> f64 {
 /// Match only the session identity, name, message text and working directory.
 #[must_use]
 pub fn match_session(
-    session: &maestro_app::SessionInfo,
+    session: &maestro_session::SessionInfo,
     parsed: &ParsedSearchQuery,
 ) -> MatchResult {
     let id = match &session.id {
-        maestro_app::Presence::Present(value) => value.as_str().unwrap_or_default(),
+        maestro_session::Presence::Present(value) => value.as_str().unwrap_or_default(),
         _ => "",
     };
     let text = format!(
@@ -194,20 +194,20 @@ pub enum NameFilter {
 /// retain input order and duplicate records. Invalid expressions yield no matches.
 #[must_use]
 pub fn filter_and_sort_sessions<'a>(
-    sessions: &'a [maestro_app::SessionInfo],
+    sessions: &'a [maestro_session::SessionInfo],
     query: &str,
     sort_mode: SortMode,
     name_filter: NameFilter,
-) -> Vec<&'a maestro_app::SessionInfo> {
+) -> Vec<&'a maestro_session::SessionInfo> {
     filter_session_records(sessions.iter(), query, sort_mode, name_filter)
 }
 /// Filters borrowed records through the single query and ordering owner.
 pub(crate) fn filter_session_records<'a>(
-    sessions: impl Iterator<Item = &'a maestro_app::SessionInfo>,
+    sessions: impl Iterator<Item = &'a maestro_session::SessionInfo>,
     query: &str,
     sort_mode: SortMode,
     name_filter: NameFilter,
-) -> Vec<&'a maestro_app::SessionInfo> {
+) -> Vec<&'a maestro_session::SessionInfo> {
     let eligible =
         sessions.filter(|session| name_filter == NameFilter::All || has_session_name(session));
     if query.trim_matches(is_whitespace_scalar).is_empty() {

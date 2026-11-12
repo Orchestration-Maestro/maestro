@@ -24,7 +24,7 @@ pub(super) fn get_result_text(result: Option<&Value>) -> io::Result<String> {
             texts.push(match block.get("text") {
                 None | Some(Value::Null) => String::new(),
                 Some(Value::String(text)) => text.to_owned(),
-                Some(value) => maestro_app::compact_json(value).map_err(io::Error::other)?,
+                Some(value) => maestro_json::compact_json(value).map_err(io::Error::other)?,
             });
         }
     }
@@ -36,7 +36,7 @@ pub(super) fn display_value(value: &Value) -> io::Result<std::borrow::Cow<'_, st
     if let Value::String(text) = value {
         return Ok(std::borrow::Cow::Borrowed(text));
     }
-    maestro_app::compact_json(value)
+    maestro_json::compact_json(value)
         .map(std::borrow::Cow::Owned)
         .map_err(io::Error::other)
 }
@@ -53,8 +53,8 @@ pub(super) fn render_result_images(result: Option<&Value>) -> io::Result<String>
         }
         if block["type"] == "image" {
             let mime =
-                maestro_app::display_truthy(block.get("mimeType")).map_err(io::Error::other)?;
-            let data = maestro_app::display_truthy(block.get("data")).map_err(io::Error::other)?;
+                maestro_json::display_truthy(block.get("mimeType")).map_err(io::Error::other)?;
+            let data = maestro_json::display_truthy(block.get("data")).map_err(io::Error::other)?;
             let _ = write!(
                 images,
                 "<img src=\"data:{};base64,{}\" class=\"tool-image\" />",

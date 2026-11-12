@@ -1,7 +1,9 @@
 //! Strict constructor, operation and observation records.
 use crate::bindings::Binding;
-use maestro_app::{ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, OAuthCredential};
 use maestro_chat::{AuthSelectorProvider, AuthType};
+use maestro_credentials::{
+    ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, OAuthCredential,
+};
 
 use serde::Deserialize;
 use std::collections::BTreeMap;

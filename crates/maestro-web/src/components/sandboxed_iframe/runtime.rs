@@ -2,7 +2,9 @@
 use super::document::encode_program;
 use super::lowering;
 use crate::components::sandbox::runtime_bundle::BUNDLE;
-use maestro_app::{BuiltinRuntime, DiagnosticErrorInfo, Runtime, compact_json};
+use maestro_app::{BuiltinRuntime, Runtime};
+use maestro_json::compact_json;
+use maestro_models::DiagnosticErrorInfo;
 use std::fmt::Write as _;
 
 /// Window property the runtime exposes for the whole-source completion signal.

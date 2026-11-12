@@ -1,9 +1,9 @@
 //! Rendering of the complete command-line help document.
 
 use super::super::pad_column;
-use maestro_app::{
-    APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR, ExtensionFlag, FlagType,
-};
+use maestro_app::{APP_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR};
+use maestro_extensions::types::{ExtensionFlag, FlagType};
+use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_theme::Theme;
 use std::io::{self, Write};
 use std::sync::{Arc, RwLock};

@@ -3,7 +3,9 @@
 
 use super::InteractiveMode;
 use indexmap::IndexMap;
-use maestro_app::{ExtensionRunner, ExtensionShortcut, Local, ReadonlySessionManager};
+use maestro_extensions::{ExtensionRunner, ExtensionShortcut};
+use maestro_models::Local;
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tui::{KeyId, matches_key};
 use std::{
     rc::Rc,
@@ -33,7 +35,7 @@ impl InteractiveMode {
     /// or current-editor failure keeps the settings already applied.
     pub(super) fn apply_runtime_settings(&self) -> Result<(), Box<dyn std::error::Error>> {
         let session = self.runtime_host.session();
-        maestro_app::configure_http_dispatcher(
+        maestro_models::configure_http_dispatcher(
             session
                 .settings_manager()
                 .borrow()
@@ -81,7 +83,7 @@ impl InteractiveMode {
     pub(super) async fn bind_current_session_extensions(
         self: &Rc<Self>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let host = maestro_app::ExtensionUIContext::new(self.clone());
+        let host = maestro_extensions::ExtensionUIContext::new(self.clone());
         let (requester, reporter, aborter) = (
             Rc::downgrade(self),
             Rc::downgrade(self),
@@ -90,7 +92,9 @@ impl InteractiveMode {
         self.runtime_host
             .session()
             .bind_extensions(maestro_app::ExtensionBindings {
-                ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&host)),
+                ui_context: Some(maestro_extensions::ExtensionUIContextBinding::borrowed(
+                    &host,
+                )),
                 command_context_actions: Some(self.command_context_actions()),
                 abort_handler: Some(Rc::new(move || {
                     if let Some(mode) = aborter.upgrade() {
@@ -170,7 +174,7 @@ impl InteractiveMode {
                 .split('\n')
                 .skip(1)
                 .map(|line| {
-                    let line = line.trim_matches(maestro_app::is_whitespace_scalar);
+                    let line = line.trim_matches(maestro_text::is_whitespace_scalar);
                     theme.fg(&maestro_theme::ThemeColor::Dim, &format!("  {line}"))
                 })
                 .collect::<Result<Vec<_>, _>>()?
@@ -186,7 +190,7 @@ impl InteractiveMode {
 }
 
 /// The same failure behind the frontend's error type.
-fn erase(error: maestro_app::EventError) -> Box<dyn std::error::Error> {
+fn erase(error: maestro_extensions::EventError) -> Box<dyn std::error::Error> {
     error
 }
 
@@ -216,9 +220,9 @@ fn rebind_callback(mode: std::rc::Weak<InteractiveMode>) -> maestro_app::RebindS
             };
             mode.rebind_current_session().await.map_err(|error| {
                 error
-                    .downcast::<maestro_app::DiagnosticErrorInfo>()
+                    .downcast::<maestro_models::DiagnosticErrorInfo>()
                     .map_or_else(
-                        |error| maestro_app::DiagnosticErrorInfo::error(error.to_string()),
+                        |error| maestro_models::DiagnosticErrorInfo::error(error.to_string()),
                         |error| *error,
                     )
             })

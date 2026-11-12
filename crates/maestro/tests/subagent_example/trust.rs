@@ -1,9 +1,10 @@
 //! Interactive confirmation applies only to requested project definitions.
 #![cfg(unix)]
 use super::*;
-use maestro_app::{
-    EventError, ExtensionBindings, ExtensionUIContext, ExtensionUIContextPort,
-    ExtensionUIDialogOptions, ExtensionUIFuture,
+use maestro_app::ExtensionBindings;
+use maestro_extensions::{
+    EventError, ExtensionUIContext, ExtensionUIDialogOptions,
+    types::{ExtensionUIContextPort, ExtensionUIFuture},
 };
 use std::cell::{Cell, RefCell};
 

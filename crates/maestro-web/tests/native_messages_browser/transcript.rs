@@ -1,6 +1,7 @@
 //! Composed transcript rows painted with brand roles and driven by native keyboard and scrolling.
 use crate::contributions_support::{body, computed, container, driver, rgb, text};
-use maestro_app::{NoCustomMessages, ToolResultMessage};
+use maestro_agent::NoCustomMessages;
+use maestro_models::ToolResultMessage;
 use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{
     AbortedMessage, AssistantMessage, ToolMessageDebugView, UserMessage,

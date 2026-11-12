@@ -1,6 +1,6 @@
 //! Extension presentation cleanup before session invalidation.
 use super::super::InteractiveMode;
-use maestro_app::EventError;
+use maestro_extensions::EventError;
 use maestro_tui::Component;
 
 impl InteractiveMode {

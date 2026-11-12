@@ -3,8 +3,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_app::browser::tools::extraction::{ExtractDocumentParams, ExtractDocumentResult};
-use maestro_app::{EXTRACT_DOCUMENT_TOOL, Fetch, HttpResponse, create_extract_document_tool};
+use maestro_app::{EXTRACT_DOCUMENT_TOOL, create_extract_document_tool};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, FetchError};
+use maestro_models::{Fetch, HttpResponse};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};

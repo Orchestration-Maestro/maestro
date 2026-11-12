@@ -63,7 +63,7 @@ impl BorderedLoader {
             let loader = Rc::new(CancellableLoader::new(loader));
             container.add_child(loader.clone());
             container.add_child(Rc::new(Spacer::new(1)));
-            let hint = maestro_app::key_hint("tui.select.cancel", "cancel", hint_theme)?;
+            let hint = maestro_tools::key_hint("tui.select.cancel", "cancel", hint_theme)?;
             container.add_child(Rc::new(Text::new(hint, 1, 0, None)));
             Inner::Cancellable(loader)
         } else {

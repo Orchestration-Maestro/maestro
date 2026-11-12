@@ -25,10 +25,14 @@ use maestro_app::configuration::conversion::{
 use maestro_app::configuration::{config, releases::VersionCheckOptions, timings::Timings};
 use maestro_app::presentation_data::mode_dispatch::{InteractiveModeOptions, ModeLaunchers};
 use maestro_app::{
-    AgentSessionRuntime, AuthStorage, CreateAgentSessionRuntimeOptions, ExtensionFactory, Local,
-    ModuleLoader, ReadonlySessionManager, SessionManager, create_agent_session_runtime,
-    is_truthy_env_flag, output_guard,
+    AgentSessionRuntime, CreateAgentSessionRuntimeOptions, create_agent_session_runtime,
+    output_guard,
 };
+use maestro_credentials::AuthStorage;
+use maestro_extensions::{ExtensionFactory, ModuleLoader};
+use maestro_models::Local;
+use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
+use maestro_text::is_truthy_env_flag;
 use maestro_theme::{Collator, Theme};
 use std::{cell::RefCell, error::Error, io, ops::ControlFlow, rc::Rc, sync::Arc};
 use tokio::{io::AsyncBufRead, task::LocalSet};
@@ -188,7 +192,7 @@ async fn run_entry(
         (&host, offline, &mut timings),
     )
     .await?;
-    maestro_app::configure_http_dispatcher(
+    maestro_models::configure_http_dispatcher(
         prepared
             .runtime
             .services()
@@ -295,7 +299,7 @@ async fn select_session(
         &startup.parsed,
         environment.as_deref(),
         &settings.borrow(),
-        maestro_app::home_directory,
+        maestro_resources::paths::home_directory,
     )?;
     let dirs = SessionDirs {
         cwd,
@@ -527,7 +531,7 @@ fn report_runtime(
         return Ok(false);
     }
     let docs = config::get_docs_path()?;
-    let message = maestro_app::format_no_models_available_message(&docs);
+    let message = maestro_credentials::format_no_models_available_message(&docs);
     if fallback.as_deref() != Some(message.as_str()) {
         return Ok(false);
     }

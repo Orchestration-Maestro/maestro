@@ -7,17 +7,17 @@ mod notifications;
 use super::transcript::tool_params;
 use super::{Setup, World, dark, isolated, light, roles, started};
 use crate::InteractiveMode;
-use maestro_app::presentation_data::status_line::{
-    FooterFileStats, FooterOperations, FsWatcher, WatchOperations, WatchTimer,
-};
-use maestro_app::{
-    DiagnosticErrorInfo, ExtensionUIContext, SettingsManager, SettingsScope, SettingsStorage,
-    SettingsStorageError, SettingsUpdate, TextContent, ThemeSelection, UserBlock,
+use maestro_app::presentation_data::status_line::{FooterFileStats, FooterOperations};
+use maestro_extensions::{ExtensionUIContext, types::ThemeSelection};
+use maestro_models::{DiagnosticErrorInfo, TextContent, UserBlock};
+use maestro_settings::{
+    SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate,
 };
 use maestro_theme::{
     ColorMode, LiveTheme, Theme, ThemeColor, ThemeDirectories, ThemeInfo, ThemeOptions,
 };
 use maestro_tui::Component;
+use maestro_watch::fs_watch::{FsWatcher, WatchOperations, WatchTimer};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::json;
 use std::{
@@ -833,8 +833,8 @@ fn ui_notice_and_tool_failures_keep_their_original_error_types() {
             let children = world.mode.chat_container.children().borrow().len();
             for kind in [
                 None,
-                Some(maestro_app::NotificationType::Warning),
-                Some(maestro_app::NotificationType::Error),
+                Some(maestro_extensions::types::NotificationType::Warning),
+                Some(maestro_extensions::types::NotificationType::Error),
             ] {
                 let error = host.notify("refused".to_owned(), kind).unwrap_err();
                 assert!(error.downcast_ref::<maestro_theme::ThemeError>().is_some());

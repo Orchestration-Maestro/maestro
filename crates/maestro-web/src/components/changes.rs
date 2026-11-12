@@ -1,6 +1,6 @@
 //! Selectable line differences using the application's borrowed change runs.
 use crate::page::PreparedContent;
-use maestro_app::{Change, diff_lines};
+use maestro_tools::{Change, diff_lines};
 use std::rc::Rc;
 
 /// Literal operands for a line difference view.

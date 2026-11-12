@@ -1,11 +1,14 @@
 //! Command, model, skill and file completion for the interactive mode.
 
 use super::InteractiveMode;
+use maestro_app::AgentSessionRuntime;
 use maestro_app::presentation_data::slash_commands::BUILTIN_SLASH_COMMANDS;
-use maestro_app::{
-    AgentSessionRuntime, Local, ReadonlySessionManager, RegisteredCommand, ResolvedCommand,
-    SourceInfo, SourceScope, is_whitespace_scalar, parse_git_url,
-};
+use maestro_extensions::{RegisteredCommand, ResolvedCommand};
+use maestro_models::Local;
+use maestro_packages::parse_git_url;
+use maestro_resources::{SourceInfo, SourceScope};
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_text::is_whitespace_scalar;
 use maestro_tui::{
     ArgumentCompletions, AutocompleteItem, Command, CompletionError, NativeAutocompleteOperations,
     SlashCommand,
@@ -238,7 +241,7 @@ impl InteractiveMode {
     ///
     /// # Errors
     /// Returns the original wrapper or current-editor failure.
-    pub(super) fn setup_autocomplete_provider(&self) -> Result<(), maestro_app::EventError> {
+    pub(super) fn setup_autocomplete_provider(&self) -> Result<(), maestro_extensions::EventError> {
         let extensions = self
             .runtime_host
             .session()
@@ -279,22 +282,21 @@ impl InteractiveMode {
     pub(super) async fn prepare_search_tools(&self) -> Result<(), Box<dyn std::error::Error>> {
         let directory =
             maestro_app::configuration::config::paths::get_bin_dir(&maestro_app::get_agent_dir()?);
-        let manager =
-            maestro_app::agent_session::ToolsManager::new(directory, self.options.fetch.clone())
-                .with_offline(self.runtime_host.services().offline);
+        let manager = maestro_tools::ToolsManager::new(directory, self.options.fetch.clone())
+            .with_offline(self.runtime_host.services().offline);
         let color = maestro_theme::supports_color();
         let mut fd_output = io::stdout();
         let mut rg_output = io::stdout();
         let fd = manager.ensure_tool(
-            maestro_app::SearchTool::Fd,
-            Some(maestro_app::ToolsManagerOutput {
+            maestro_tools::SearchTool::Fd,
+            Some(maestro_tools::ToolsManagerOutput {
                 stdout: &mut fd_output,
                 color,
             }),
         );
         let rg = manager.ensure_tool(
-            maestro_app::SearchTool::Rg,
-            Some(maestro_app::ToolsManagerOutput {
+            maestro_tools::SearchTool::Rg,
+            Some(maestro_tools::ToolsManagerOutput {
                 stdout: &mut rg_output,
                 color,
             }),

@@ -10,9 +10,11 @@ use crate::{
 use form::Form;
 use maestro_app::browser::utils::model_discovery::DiscoveryError;
 use maestro_app::{
-    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, ManualProviderType, Model,
-    Presence, get_app_storage,
+    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, ManualProviderType,
+    get_app_storage,
 };
+use maestro_models::Model;
+use maestro_session::Presence;
 use std::{
     any::Any,
     cell::{Cell, RefCell},

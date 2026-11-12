@@ -2,10 +2,9 @@
 
 use super::InteractiveMode;
 use crate::AuthType;
-use maestro_app::{
-    DEFAULT_MODEL_PER_PROVIDER, Model,
-    configuration::config::{get_agent_dir, paths::get_auth_path},
-};
+use maestro_app::configuration::config::{get_agent_dir, paths::get_auth_path};
+use maestro_catalog::DEFAULT_MODEL_PER_PROVIDER;
+use maestro_models::Model;
 use maestro_tui::Component;
 use std::{
     error::Error,

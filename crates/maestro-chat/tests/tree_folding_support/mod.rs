@@ -9,8 +9,9 @@ use crate::registry;
 use crate::tree;
 use bindings::Binding;
 use filter_mode::mode;
-use maestro_app::{compact_json, presentation_data::bindings::KEYBINDINGS};
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
 use maestro_chat::TreeList;
+use maestro_json::compact_json;
 use maestro_tui::{KeybindingKeys, KeybindingsManager, get_keybindings, set_keybindings};
 use recorded_registry::{Operation, apply_operation};
 use serde::Deserialize;
@@ -266,10 +267,10 @@ pub fn definitions() {
 pub fn retention_tree<'a>(
     fixture: &'a Surviving,
     metadata: Option<&'a Value>,
-) -> Vec<maestro_app::SessionTreeNode<'a>> {
-    vec![maestro_app::SessionTreeNode {
+) -> Vec<maestro_session::session_manager::SessionTreeNode<'a>> {
+    vec![maestro_session::session_manager::SessionTreeNode {
         entry: &fixture.entry,
-        children: vec![maestro_app::SessionTreeNode {
+        children: vec![maestro_session::session_manager::SessionTreeNode {
             entry: &fixture.children[0],
             children: vec![],
             label: None,

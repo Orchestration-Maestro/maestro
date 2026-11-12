@@ -1,53 +1,36 @@
 //! Private declaration fragments for the application interface.
 
-/// Existing browser storage re-exports.
+/// Browser storage stores, records and the application storage accessor.
 mod browser_storage;
-/// Existing browser tools re-exports.
+/// Browser document extraction, sandbox runtime and JavaScript execution tools.
 mod browser_tools;
-/// Existing clipboard re-exports.
+/// Clipboard copy helpers.
 mod clipboard;
-/// Existing configuration re-exports.
+/// Application name, version, directory names and environment variable names.
 mod configuration;
-/// Existing credentials re-exports.
+/// Credential records and the credential storage backends.
 mod credentials;
-/// Named daemon socket operations, pane rendering and host theme records for frontends.
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "daemon.rs"]
-mod daemon_exports;
-/// Existing extensions re-exports.
+/// Extension runtime, context, event and registration types.
 mod extensions;
-/// Existing json re-exports.
-mod json;
-/// Named Markdown records and parsing operations for frontends.
-#[path = "markdown.rs"]
-mod markdown_exports;
-/// Existing models re-exports.
+/// The model registry and command-line model resolution.
 mod models;
-/// Existing packages re-exports.
+/// The package manager and its resolved resource records.
 mod packages;
-/// Existing presentation data re-exports.
+/// Footer data provider, keybinding manager and slash command records.
 mod presentation_data;
-/// Existing process re-exports.
-mod process;
-/// Existing resources re-exports.
+/// Resource loader, its options, diagnostics and collisions.
 mod resources;
 /// The JSONL protocol records and server.
 #[cfg(not(target_arch = "wasm32"))]
 mod rpc;
-/// Existing session re-exports.
+/// Session manager, session entry records and skill block parsing.
 mod session;
-/// Existing settings re-exports.
+/// The settings manager and its compaction, image and retry records.
 mod settings;
-/// Named terminal emulator records for the pane renderer.
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "terminal.rs"]
-mod terminal_exports;
-/// Existing text re-exports.
-mod text;
-/// Existing theme re-exports.
+/// Theme records, highlighting and markdown theme helpers.
 #[cfg(not(target_arch = "wasm32"))]
 mod theme;
-/// Existing tools re-exports.
+/// Built-in tool constructors, options and execution records.
 mod tools;
 
 pub use browser_storage::*;
@@ -56,25 +39,16 @@ pub use browser_tools::*;
 pub use clipboard::*;
 pub use configuration::*;
 pub use credentials::*;
-#[cfg(not(target_arch = "wasm32"))]
-pub use daemon_exports::daemon_api;
 pub use extensions::*;
-pub use json::*;
-pub use markdown_exports::markdown;
 pub use models::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use packages::*;
 pub use presentation_data::*;
-#[cfg(not(target_arch = "wasm32"))]
-pub use process::*;
 pub use resources::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use rpc::*;
 pub use session::*;
 pub use settings::*;
-#[cfg(not(target_arch = "wasm32"))]
-pub use terminal_exports::terminal;
-pub use text::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use theme::*;
 pub use tools::*;

@@ -1,7 +1,7 @@
 //! Effective keyboard help through the current mode and its containing transcript.
 use super::extensions::{idle, owners, register};
 use super::{Setup, World, cases, isolated};
-use maestro_app::ExtensionShortcutOptions;
+use maestro_extensions::types::ExtensionShortcutOptions;
 use maestro_tui::Component;
 use serde::Deserialize;
 use std::{collections::BTreeMap, path::Path, rc::Rc};
@@ -435,7 +435,7 @@ async fn replacement(directory: &Path) {
     assert!(
         !world
             .host
-            .new_session(maestro_app::NewSessionCommandOptions::default())
+            .new_session(maestro_extensions::types::NewSessionCommandOptions::default())
             .await
             .unwrap()
             .cancelled

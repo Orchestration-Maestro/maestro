@@ -1,6 +1,6 @@
 //! Shared content and search through the application's session-tree boundary.
 #![cfg(test)]
-use maestro_app::{SessionTreeNode as InputNode, export_html::template};
+use maestro_session::{export_html::template, session_manager::SessionTreeNode as InputNode};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{collections::HashSet, fmt::Debug, io};

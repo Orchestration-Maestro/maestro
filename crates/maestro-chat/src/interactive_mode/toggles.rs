@@ -7,7 +7,9 @@ use crate::{
     CustomMessageComponent, SkillInvocationMessageComponent, ToolExecutionComponent,
 };
 use maestro_app::agent_session::CycleDirection;
-use maestro_app::{EventError, Local, SettingsEdit};
+use maestro_extensions::EventError;
+use maestro_models::Local;
+use maestro_settings::SettingsEdit;
 use maestro_theme::ThemeError;
 use maestro_tui::Component;
 use std::{any::Any, error::Error, rc::Rc};

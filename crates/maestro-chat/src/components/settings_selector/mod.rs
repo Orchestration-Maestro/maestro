@@ -4,9 +4,10 @@ mod items;
 pub(crate) use items::http_idle_timeout_label;
 mod submenus;
 use super::dynamic_border::DynamicBorder;
-use maestro_app::{
-    DoubleEscapeAction, MessageDeliveryMode, ThinkingLevel, Transport, TransportSetting,
-    TreeFilterMode, WarningSettings,
+use maestro_agent::ThinkingLevel;
+use maestro_models::Transport;
+use maestro_settings::{
+    DoubleEscapeAction, MessageDeliveryMode, TransportSetting, TreeFilterMode, WarningSettings,
 };
 use maestro_theme::LiveTheme;
 use maestro_tui::components::SettingsListOptions;

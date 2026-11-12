@@ -2,7 +2,7 @@
 #![cfg(test)]
 use crate::{message_renderer_support, renderer_recipes};
 
-use maestro_app::AgentMessage;
+use maestro_agent::AgentMessage;
 use maestro_web::{get_message_renderer, register_message_renderer, render_message};
 use message_renderer_support::{NativeMessage, Renderer, message};
 use std::{
@@ -35,7 +35,7 @@ fn message_registry_keeps_open_roles_replacements_and_retained_handles() {
         render_message(&input).unwrap().unwrap();
     }
     assert_eq!(*seen.borrow(), [1, 9, 2].repeat(4));
-    assert!(get_message_renderer::<maestro_app::NoCustomMessages>("ordinary").is_none());
+    assert!(get_message_renderer::<maestro_agent::NoCustomMessages>("ordinary").is_none());
 }
 
 /// A callback records which retained or replacement registration was invoked.

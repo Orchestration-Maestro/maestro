@@ -2,9 +2,10 @@
 #![cfg(unix)]
 use crate::resource_fixtures::{ExtensionSpec, factory, on_task_set};
 use maestro_app::{
-    DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionFactory, ModuleLoader,
-    ResourceLoader, ResourceLoaderOptions,
+    DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionFactory, ResourceLoader,
+    ResourceLoaderOptions,
 };
+use maestro_extensions::ModuleLoader;
 use maestro_models::Local;
 use maestro_test_directory::Scratch;
 use serde_json::json;
@@ -42,7 +43,7 @@ fn register_collisions(
             } else {
                 maestro_extensions::types::FlagType::String
             },
-            default: Some(maestro_app::FlagValue::String(name.into())),
+            default: Some(maestro_extensions::types::FlagValue::String(name.into())),
         },
     )?;
     api.register_shortcut(
@@ -284,7 +285,7 @@ fn assert_conflict_winners(runner: &maestro_app::ExtensionRunner<Local>) {
     );
     assert_eq!(
         runner.get_flag_values()["same"],
-        maestro_app::FlagValue::String("project".into())
+        maestro_extensions::types::FlagValue::String("project".into())
     );
     assert_eq!(
         runner
@@ -463,7 +464,7 @@ fn reading_flag_modules(observations: Rc<RefCell<Vec<serde_json::Value>>>) -> Mo
                     maestro_extensions::types::ExtensionFlagOptions {
                         description: None,
                         r#type: maestro_extensions::types::FlagType::String,
-                        default: Some(maestro_app::FlagValue::String(default.into())),
+                        default: Some(maestro_extensions::types::FlagValue::String(default.into())),
                     },
                 )
                 .unwrap();
@@ -473,7 +474,9 @@ fn reading_flag_modules(observations: Rc<RefCell<Vec<serde_json::Value>>>) -> Mo
                 maestro_extensions::types::ExtensionFlagOptions {
                     description: None,
                     r#type: maestro_extensions::types::FlagType::String,
-                    default: base.then(|| maestro_app::FlagValue::String("base fallback".into())),
+                    default: base.then(|| {
+                        maestro_extensions::types::FlagValue::String("base fallback".into())
+                    }),
                 },
             )
             .unwrap();
@@ -518,11 +521,11 @@ fn ordinary_factories_read_their_first_registered_flag_defaults() {
         let flags = values.runtime.flag_values.read().unwrap();
         assert_eq!(
             flags["shared"],
-            maestro_app::FlagValue::String("project first".into())
+            maestro_extensions::types::FlagValue::String("project first".into())
         );
         assert_eq!(
             flags["optional"],
-            maestro_app::FlagValue::String("base fallback".into())
+            maestro_extensions::types::FlagValue::String("base fallback".into())
         );
     });
 }
@@ -655,7 +658,7 @@ fn extension_flag_values_use_the_first_registered_kind() {
                 model_registry: None,
                 extension_flag_values: Some(indexmap::IndexMap::from([(
                     "same".into(),
-                    maestro_app::FlagValue::String("chosen".into()),
+                    maestro_extensions::types::FlagValue::String("chosen".into()),
                 )])),
                 resource_loader_options: resources,
                 offline: Some(true),
@@ -672,7 +675,7 @@ fn extension_flag_values_use_the_first_registered_kind() {
                 .flag_values
                 .read()
                 .unwrap()["same"],
-            maestro_app::FlagValue::String("chosen".into())
+            maestro_extensions::types::FlagValue::String("chosen".into())
         );
     });
 }
@@ -822,11 +825,13 @@ fn aliased_base_entrypoints_load_once_at_their_ordinary_position() {
                 .read()
                 .unwrap()
                 .default,
-            Some(maestro_app::FlagValue::String("replacement".into()))
+            Some(maestro_extensions::types::FlagValue::String(
+                "replacement".into()
+            ))
         );
         assert_eq!(
             loader.get_extensions().runtime.flag_values.read().unwrap()["shared"],
-            maestro_app::FlagValue::String("base first".into())
+            maestro_extensions::types::FlagValue::String("base first".into())
         );
     });
 }

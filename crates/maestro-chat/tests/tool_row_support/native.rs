@@ -104,7 +104,7 @@ pub fn run(name: &str) {
 }
 
 /// Visible success content that native diff renderers must suppress.
-fn success_text() -> maestro_app::UserBlock {
+fn success_text() -> maestro_models::UserBlock {
     serde_json::from_value(json!({"type":"text","text":"native success text must stay hidden"}))
         .unwrap()
 }

@@ -10,10 +10,10 @@ use super::{World, cases as recorded_cases, install, record, started};
 use maestro_app::configuration::config::{
     APP_NAME, ENV_AGENT_DIR, SERVICE_ORIGIN, get_share_viewer_url,
 };
-use maestro_app::{
-    DiagnosticErrorInfo, ExtensionFactory, Local, NativeAgentMessage, NativeExportOperations,
-    SessionManager,
-};
+use maestro_export::NativeExportOperations;
+use maestro_extensions::{ExtensionFactory, types::events::NativeAgentMessage};
+use maestro_models::{DiagnosticErrorInfo, Local};
+use maestro_session::SessionManager;
 use maestro_test_process::{IsolatedSetup, TestProcess};
 use maestro_theme::ThemeColor;
 use serde::Deserialize;
@@ -464,7 +464,7 @@ fn share_formats_gist_with_configured_or_empty_viewer() {
                 .mode
                 .show_share_result(&finished(case), origin)
                 .unwrap();
-            let gist = case.stdout.trim_matches(maestro_app::is_whitespace_scalar);
+            let gist = case.stdout.trim_matches(maestro_text::is_whitespace_scalar);
             let id = gist.rsplit('/').next().unwrap();
             // The selected identifier reaches the application's viewer owner unchanged.
             let expected = get_share_viewer_url(id, origin).map_or_else(
@@ -883,7 +883,7 @@ fn share_and_copy_commands_clear_editor_after_completion() {
             let mut waiter = waiting(&world.mode);
             submit(&world.mode, &case.text);
             if !expected.routed {
-                let trimmed = case.text.trim_matches(maestro_app::is_whitespace_scalar);
+                let trimmed = case.text.trim_matches(maestro_text::is_whitespace_scalar);
                 assert_eq!(poll(&mut waiter).as_deref(), Some(trimmed), "{}", case.text);
                 assert_eq!(world.runtime.futures(), 0, "{}", case.text);
                 assert_eq!(recalled(&world.mode.editor), [trimmed]);

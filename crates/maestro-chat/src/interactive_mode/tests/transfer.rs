@@ -7,12 +7,13 @@ use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, cases as recorded_cases, isolated_package, started};
 use maestro_app::configuration::config::{APP_NAME, get_theme_directories};
 use maestro_app::presentation_data::status_line::FooterOperations;
-use maestro_app::{
-    ExtensionFactory, Local, NativeExportOperations, ReadonlySessionManager, SessionManager,
-    ToolRenderEnvironment,
-};
+use maestro_export::NativeExportOperations;
+use maestro_extensions::ExtensionFactory;
+use maestro_models::Local;
+use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_test_process::IsolatedSetup;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
+use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::Component;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -417,7 +418,7 @@ fn transfer_installed_submit_consumes_only_export_commands() {
                     );
                     continue;
                 }
-                let trimmed = text.trim_matches(maestro_app::is_whitespace_scalar);
+                let trimmed = text.trim_matches(maestro_text::is_whitespace_scalar);
                 if trimmed.is_empty() {
                     // Blank input reaches neither the waiting input nor the history.
                     assert!(delivered.is_empty(), "{text}");
@@ -755,7 +756,7 @@ fn import_file(directory: &Path, name: &str, cwd: &Path) -> std::path::PathBuf {
 /// Starts a mode with the supplied extension and a real persistent destination.
 async fn import_world(
     directory: &Path,
-    extension: Option<maestro_app::ExtensionFactory<maestro_app::Local>>,
+    extension: Option<maestro_extensions::ExtensionFactory<maestro_models::Local>>,
 ) -> World {
     let world = Setup {
         extension,
@@ -772,17 +773,17 @@ async fn import_world(
 fn import_veto(
     attempt: usize,
     calls: Rc<std::cell::Cell<usize>>,
-) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+) -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     Rc::new(move |api| {
         let calls = Rc::clone(&calls);
         let registered = api
-            .on::<maestro_app::SessionBeforeSwitchEvent, maestro_app::SessionBeforeSwitchResult>(
+            .on::<maestro_extensions::types::events::SessionBeforeSwitchEvent, maestro_extensions::types::events::SessionBeforeSwitchResult>(
                 "session_before_switch".to_owned(),
                 Rc::new(move |_, _| {
                     calls.set(calls.get() + 1);
                     Box::pin(std::future::ready(Ok(Some(
-                        maestro_app::SessionBeforeSwitchResult {
-                            cancel: maestro_app::Presence::Present(calls.get() == attempt),
+                        maestro_extensions::types::events::SessionBeforeSwitchResult {
+                            cancel: maestro_session::Presence::Present(calls.get() == attempt),
                         },
                     ))))
                 }),
@@ -1080,7 +1081,7 @@ fn transfer_installed_submit_consumes_only_import_commands() {
                 if text == "/import absent.jsonl" {
                     import_answer(&world, "\x1b");
                 }
-                let trimmed = text.trim_matches(maestro_app::is_whitespace_scalar);
+                let trimmed = text.trim_matches(maestro_text::is_whitespace_scalar);
                 if command || trimmed.is_empty() {
                     assert_eq!(poll(&mut waiter), None, "{text}");
                     assert!(recalled(&world.mode.editor).is_empty());
@@ -1110,7 +1111,7 @@ fn transfer_installed_submit_consumes_only_import_commands() {
 fn import_failed_factory() -> maestro_app::CreateAgentSessionRuntimeFactory {
     Rc::new(|_| {
         Box::pin(async {
-            Err(maestro_app::DiagnosticErrorInfo::error(
+            Err(maestro_models::DiagnosticErrorInfo::error(
                 "replacement refused",
             ))
         })
@@ -1165,7 +1166,7 @@ fn transfer_import_runtime_failure_reaches_the_existing_fatal_owner() {
     if let Some(output) = output {
         assert_eq!(output.status.code(), Some(1), "{output:?}");
         let painted = String::from_utf8(output.stderr).unwrap();
-        let text = maestro_app::strip_ansi(&painted).unwrap();
+        let text = maestro_tools::output::render_utils::strip_ansi(&painted).unwrap();
         assert!(
             text.contains("Error: Cannot import the session: replacement refused"),
             "{text}"
@@ -1346,7 +1347,7 @@ fn transfer_import_notice_failures_keep_the_source_catch_boundary() {
         if let Some(output) = output {
             assert_eq!(output.status.code(), Some(1), "{branch}: {output:?}");
             let painted = String::from_utf8(output.stderr).unwrap();
-            let text = maestro_app::strip_ansi(&painted).unwrap();
+            let text = maestro_tools::output::render_utils::strip_ansi(&painted).unwrap();
             assert!(
                 text.contains("Error: Cannot import the session:"),
                 "{branch}: {text}"
@@ -1606,7 +1607,7 @@ type ReplayObserver = Rc<RefCell<Option<Box<dyn Fn() -> Value>>>>;
 fn replay_probe(
     observer: &ReplayObserver,
     seen: &Rc<RefCell<Vec<Value>>>,
-) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+) -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     let (observer, seen) = (Rc::clone(observer), Rc::clone(seen));
     Rc::new(move |api| {
         let (observer, seen) = (Rc::clone(&observer), Rc::clone(&seen));
@@ -1645,9 +1646,9 @@ fn import_probe_file(directory: &Path, name: &str) -> std::path::PathBuf {
     manager
         .append_custom_message_entry(
             "probe",
-            maestro_app::UserContent::Text(format!("history of {name}")),
+            maestro_models::UserContent::Text(format!("history of {name}")),
             true,
-            maestro_app::Presence::Missing,
+            maestro_session::Presence::Missing,
         )
         .unwrap();
     path

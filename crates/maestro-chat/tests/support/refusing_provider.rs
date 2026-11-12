@@ -1,5 +1,5 @@
 //! A catalog provider whose stored sign-in refuses every transformation.
-use maestro_app::{
+use maestro_models::{
     BoxFuture, Fetch, Model, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthProviderInterface,
 };
 use std::borrow::Cow;

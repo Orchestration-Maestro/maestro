@@ -1,8 +1,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 //! The recorded footer rows and the controlled world each one describes.
 use crate::footer_support::{Roles, World};
-use maestro_app::Local;
 use maestro_chat::FooterComponent;
+use maestro_models::Local;
 use maestro_tui::visible_width;
 use serde::Deserialize;
 use serde_json::Value;

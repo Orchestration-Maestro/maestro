@@ -72,9 +72,9 @@ impl InteractiveMode {
         }
         let live = self.themes.theme();
         let theme = live.get()?;
-        let hint = |action, text| maestro_app::key_hint(action, text, &live);
-        let raw = |key: &str, text| maestro_app::raw_key_hint(key, text, &live);
-        let key = maestro_app::key_text;
+        let hint = |action, text| maestro_tools::key_hint(action, text, &live);
+        let raw = |key: &str, text| maestro_tools::raw_key_hint(key, text, &live);
+        let key = maestro_tools::key_text;
         let expanded = expanded_instructions(&live)?;
         let compact = [
             hint("app.interrupt", "interrupt")?,
@@ -121,9 +121,9 @@ impl InteractiveMode {
 fn expanded_instructions(
     live: &maestro_theme::LiveTheme,
 ) -> Result<String, maestro_theme::ThemeError> {
-    let hint = |action, text| maestro_app::key_hint(action, text, live);
-    let raw = |key: &str, text| maestro_app::raw_key_hint(key, text, live);
-    let key = maestro_app::key_text;
+    let hint = |action, text| maestro_tools::key_hint(action, text, live);
+    let raw = |key: &str, text| maestro_tools::raw_key_hint(key, text, live);
+    let key = maestro_tools::key_text;
     Ok([
         hint("app.interrupt", "to interrupt")?,
         hint("app.clear", "to clear")?,

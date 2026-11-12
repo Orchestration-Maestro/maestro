@@ -26,7 +26,8 @@ pub(super) fn collect(nodes: &[SessionTreeNode]) -> HashMap<String, (usize, usiz
         .collect()
 }
 use super::entry_text::{normalize, text};
-use maestro_app::{is_truthy, truncate_utf16};
+use maestro_json::is_truthy;
+use maestro_text::truncate_utf16;
 use std::{borrow::Cow, io};
 impl TreeState {
     /// Resolve a visible result against all retained assistant calls.
@@ -68,7 +69,7 @@ fn format_call(name: &str, args: &Value) -> io::Result<String> {
             };
             let path = shorten_path(&raw);
             let range = if name == "read" {
-                maestro_app::format_read_line_range(args)
+                maestro_tools::output::render_utils::format_read_line_range(args)
             } else {
                 String::new()
             };
@@ -88,7 +89,7 @@ fn format_call(name: &str, args: &Value) -> io::Result<String> {
             Ok(format!("[{name}: {pattern} in {path}]"))
         }
         _ => {
-            let serialized = maestro_app::compact_json(args).map_err(io::Error::other)?;
+            let serialized = maestro_json::compact_json(args).map_err(io::Error::other)?;
             let preview = truncate_utf16(&serialized, 40);
             Ok(format!(
                 "[{name}: {preview}{}]",
@@ -112,7 +113,7 @@ fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<Cow<
             "missing tool arguments receiver",
         ));
     }
-    maestro_app::display_truthy(args.get(key))
+    maestro_json::display_truthy(args.get(key))
         .map(|text| text.unwrap_or(Cow::Borrowed(default)))
         .map_err(io::Error::other)
 }

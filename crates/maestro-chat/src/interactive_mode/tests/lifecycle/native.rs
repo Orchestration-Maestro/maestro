@@ -58,11 +58,11 @@ impl LifecycleEffects for Native {
 fn disposal(
     events: &Rc<RefCell<Vec<String>>>,
     pending: bool,
-) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+) -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     let events = Rc::clone(events);
     Rc::new(move |api| {
         let events = Rc::clone(&events);
-        api.on::<maestro_app::SessionShutdownEvent, ()>(
+        api.on::<maestro_extensions::types::events::SessionShutdownEvent, ()>(
             "session_shutdown".into(),
             Rc::new(move |_, _| {
                 events.borrow_mut().push("dispose".into());

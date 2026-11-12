@@ -1,9 +1,9 @@
 //! Command records of both families on one `type` tag, and the decoder that routes a record
 //! to the family naming its type.
-use super::workspace;
 use maestro_agent::QueueMode;
 use maestro_json::object::names;
 use maestro_models::{ImageContent, ModelThinkingLevel};
+use maestro_protocol::rpc_types as workspace;
 use maestro_session::message_records::UserMessageDelivery;
 use serde::{Deserialize, Deserializer, Serialize, de};
 use serde_json::Value;

@@ -1,7 +1,6 @@
 //! Executable policy with a controlled attachment operation.
 use super::*;
 mod support {
-    use crate as maestro_app;
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/tests/support/document_extraction.rs"

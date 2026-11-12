@@ -1,7 +1,8 @@
 //! Owned user operands retain their original attachment handles.
 #![cfg(test)]
 use super::UserMessage;
-use maestro_app::{AgentMessage, browser::components::records::CustomAgentMessages};
+use maestro_agent::AgentMessage;
+use maestro_app::browser::components::records::CustomAgentMessages;
 use std::sync::{Arc, RwLock};
 
 #[test]
@@ -19,13 +20,13 @@ fn user_owned_operand_keeps_content_and_attachment_handles() {
     let message = AgentMessage::Custom(Arc::new(RwLock::new(
         CustomAgentMessages::UserWithAttachments(
             maestro_app::browser::components::records::UserMessageWithAttachments {
-                content: maestro_app::UserContent::Text("  kept text  ".into()),
+                content: maestro_models::UserContent::Text("  kept text  ".into()),
                 timestamp: 0.,
                 attachments: Some(vec![Arc::clone(&attachment), Arc::clone(&attachment)]),
             },
         ),
     )));
-    let mut row = UserMessage::<maestro_app::NoCustomMessages>::default();
+    let mut row = UserMessage::<maestro_agent::NoCustomMessages>::default();
     assert!(row.operand().is_err());
     row.message = Some(message);
     let operand = row.operand().unwrap();
@@ -48,7 +49,7 @@ fn user_owned_operand_keeps_content_and_attachment_handles() {
 #[test]
 fn assistant_preparation_has_linear_admission_and_no_tool_name_search() {
     use super::AssistantMessage;
-    use maestro_app::{AssistantContent, ToolCall};
+    use maestro_models::{AssistantContent, ToolCall};
     use std::{cell::Cell, collections::HashSet, rc::Rc};
     for count in [8, 16, 32] {
         let chunks: Vec<_> = (0..count)

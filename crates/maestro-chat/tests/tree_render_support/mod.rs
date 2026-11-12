@@ -6,9 +6,10 @@ use crate::published;
 use crate::registry;
 use crate::tree;
 use filter_mode::mode;
-use maestro_app::{
-    compact_json, format_read_line_range, presentation_data::bindings::KEYBINDINGS, truncate_utf16,
-};
+use maestro_app::presentation_data::bindings::KEYBINDINGS;
+use maestro_json::compact_json;
+use maestro_text::truncate_utf16;
+use maestro_tools::output::render_utils::format_read_line_range;
 /// The frontend facade retains the shared JSON signature.
 const _: fn(&serde_json::Value) -> Result<String, serde_json::Error> = compact_json;
 /// The frontend facade retains the shared prefix signature.

@@ -69,7 +69,7 @@ impl Rpc {
     /// Sends a supplied correlated command or extension UI reply without awaiting it.
     pub fn send(&mut self, record: &Value) {
         let input = self.child.stdin.as_mut().unwrap();
-        let line = maestro_app::serialize_json_line(record).unwrap();
+        let line = maestro_json::lines::serialize_json_line(record).unwrap();
         input.write_all(line.as_bytes()).unwrap();
         input.flush().unwrap();
     }

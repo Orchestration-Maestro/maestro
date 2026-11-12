@@ -1,8 +1,9 @@
 //! SDK construction shared by native component composition tests.
 use maestro_app::{
-    AgentSession, CreateAgentSessionOptions, ExtensionBindings, Local, NoTools,
-    ResourceLoaderOptions, SessionResources,
+    AgentSession, CreateAgentSessionOptions, ExtensionBindings, NoTools, ResourceLoaderOptions,
+    SessionResources,
 };
+use maestro_models::Local;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -13,14 +14,14 @@ pub async fn component_session(
     local: Rc<tokio::task::LocalSet>,
     component: String,
     no_tools: Option<NoTools>,
-    widgets: Rc<dyn maestro_app::ExtensionWidgets>,
+    widgets: Rc<dyn maestro_extensions::ExtensionWidgets>,
 ) -> Rc<AgentSession> {
     let io = maestro_app::extension_native_io::extension_native_io(&local);
     let installation = maestro_extensions_wasmtime::Installation {
         version: env!("CARGO_PKG_VERSION").into(),
         agent_dir: root.path("agent").display().to_string(),
     };
-    let loader: maestro_app::ModuleLoader<Local> = Rc::new(move |path| {
+    let loader: maestro_extensions::ModuleLoader<Local> = Rc::new(move |path| {
         let factory = maestro_extensions_wasmtime::artifact_factory_with_io(
             path.to_owned(),
             Rc::clone(&widgets),
@@ -47,7 +48,7 @@ pub async fn resource_session(
     let cwd = root.path("project").display().to_string();
     let created = maestro_app::create_agent_session(CreateAgentSessionOptions {
         cwd: Some(cwd.clone()), agent_dir: Some(root.path("agent").display().to_string()),
-        auth_storage: Some(Arc::new(maestro_app::AuthStorage::in_memory(maestro_app::AuthStorageData::default()))),
+        auth_storage: Some(Arc::new(maestro_credentials::AuthStorage::in_memory(maestro_credentials::AuthStorageData::default()))),
         model_registry: None,
         model: Some(Arc::new(std::sync::RwLock::new(serde_json::from_value(json!({
             "id":"registered-case","name":"registered","api":"guest-owned-stream",
@@ -56,8 +57,8 @@ pub async fn resource_session(
         })).unwrap()))),
         thinking_level: None, scoped_models: Vec::new(), no_tools,
         tools: None, custom_tools: Vec::new(), resources: SessionResources::Default(Box::new(resources)),
-        session_manager: Some(Rc::new(RefCell::new(maestro_app::SessionManager::in_memory(Some(&cwd)).unwrap()))),
-        settings_manager: Some(Rc::new(RefCell::new(maestro_app::SettingsManager::in_memory(maestro_app::Settings::default())))),
+        session_manager: Some(Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(Some(&cwd)).unwrap()))),
+        settings_manager: Some(Rc::new(RefCell::new(maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default())))),
         session_start_event: None, theme: maestro_theme::LiveTheme::default(), offline: Some(true),
     }).await.unwrap();
     assert!(created.extensions_result.errors.is_empty());

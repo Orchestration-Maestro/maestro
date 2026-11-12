@@ -6,11 +6,6 @@ pub mod input_selectors;
 
 pub mod bindings;
 
-pub use maestro_models::{
-    OAuthAuthInfo, OAuthLoginCallbacks, OAuthPrompt, OAuthProviderHandle, get_oauth_provider,
-    get_oauth_providers,
-};
-
 pub mod slash_commands;
 
 /// Supplied native presentations for the final startup handoff.

@@ -2,7 +2,9 @@
 use super::tree::{FlatSessionNode, build_session_tree};
 use crate::components::session_selector_search::filter_session_records;
 use crate::{NameFilter, SortMode};
-use maestro_app::{SessionInfo, canonicalize_path, is_whitespace_scalar};
+use maestro_resources::canonicalize_path;
+use maestro_session::SessionInfo;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::{LiveTheme, Theme, ThemeBg, ThemeColor, paint};
 use maestro_tui::{Component, Input, TruncateOptions, truncate_to_width, visible_width};
 use maestro_tui::{FocusFlag, Focusable, InputHandler};
@@ -304,14 +306,14 @@ impl SessionList {
             (true, false) => "  No named sessions in this folder.",
         };
         let toggle = if named {
-            maestro_app::key_text("app.session.toggleNamedFilter")
+            maestro_tools::key_text("app.session.toggleNamedFilter")
         } else {
             String::new()
         };
         let scope = if cwd {
             String::new()
         } else {
-            maestro_app::key_text("tui.input.tab")
+            maestro_tools::key_text("tui.input.tab")
         };
         let scope = if scope == "tab" { "Tab".into() } else { scope };
         match (toggle.is_empty(), scope.is_empty()) {

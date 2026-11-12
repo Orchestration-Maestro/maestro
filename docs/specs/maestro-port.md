@@ -11,7 +11,7 @@ Approved adaptations are Rust implementation and idioms; the specified UI toolki
 ## Common semantic and boundary contract
 
 1. **Mapped files, idiomatic Rust, preserved observations.** Each named reference file maps to its Rust module, with exported/domain names in Rust casing. Rewrite each file internally using Rust ownership, typed records and enums, pattern matching, `Result`/`?`, iterators, traits, the standard library and the best native crates; do not mirror private helpers or statements. Observable behavior and results match the reference exactly: inputs, defaults, outputs, messages, formats, events, retained-object observations, cancellation points, persistence timing and mode-specific control flow. Choose Rust libraries and standard-library facilities that match; where a library result differs, Rust code produces the reference result without imitating engine internals, foreign engine limits or library internals. Only corrected reference defects, including engine artifacts that are themselves bugs, differ; list each correction once in the owning delivery. Preserve meaningful wire omission/presence rules with typed Rust data. Test application behavior at its owning API.
-2. **One owner per behavior.** Small capability ports hide providers, files, processes, clocks, random sources, terminals, browser operations and component engines. Production and controlled adapters obey the same public conformance cases. No frontend imports another frontend, drives a model directly, owns application policy or selects an implementation behind a caller's back. Every frontend calls `maestro-app`. Allowed internal dependency sets are CLI and chat: app, tui, tui-crossterm, theme; multiplexer: app, protocol, tui, tui-crossterm, theme; RPC and web: app, theme. Each frontend must depend on app; other allowed edges are declared only when used. The toolkit and theme are presentation libraries, not sibling frontends. Configuration/session/session-search selectors remain chat-owned; pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`, re-exported through `maestro-app`; CLI reaches their injected presenter through the app interface wired by the executable. No other internal frontend dependency is allowed. The executable only wires adapters and starts a frontend.
+2. **One owner per behavior.** Small capability ports hide providers, files, processes, clocks, random sources, terminals, browser operations and component engines. Production and controlled adapters obey the same public conformance cases. No frontend imports another frontend, drives a model directly, owns application policy or selects an implementation behind a caller's back. A frontend calls `maestro-app` for what the application owns and depends directly only on the lower crates its row of the dependency table lists, declaring an edge only when it uses it. Chat, CLI, RPC, web and the executable require the application edge; the multiplexer reaches the daemon directly. A frontend imports every other name from the crate that owns it, never through `maestro-app`. The toolkit and theme are presentation libraries, not sibling frontends. Configuration/session/session-search selectors remain chat-owned; pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`, owned by that crate and imported from it; CLI reaches their injected presenter through the app interface wired by the executable. No other internal frontend dependency is allowed. The executable only wires adapters and starts a frontend.
 3. **Preserve operational boundaries.** Dropping a result handle is not a universal abort. Cancellation is cooperative where callbacks are cooperative; it does not force all authentication, retry waits or guest work into a new race. Persistent writes are not upgraded into transactions. Do not add rollback, poisoned-session states, admission batches, restrictions, budgets or timeouts where none exist.
 4. **Keep current data plus the existing conversions only.** Support the established session, settings, startup and keybinding conversions and accepted edit inputs. Add no general migration/refusal/archive/rollback layer. Model/provider names, resource kinds, extension registrations and vocabularies remain extensible data, not closed code enums used as policy.
 5. **Verify before completion.** Each ticket maintains a per-file manifest mapping application behaviors, exports, source test declarations, parameterized cases and fixtures to Rust behaviors/tests, not a one-to-one inventory of private statements or helpers. Many-to-one internal implementation mappings are valid when they cover all required behaviors. Preserve live-only and skipped-test reasons without using them to avoid deterministic tests. Require red-first public-interface tests, strict rustdoc, formatting, Clippy, convention checks, two-axis review and shared CI. Runtime module-resolution probes have an explicit non-applicability row under static Rust linkage; they are inventoried, not claimed as passing runtime tests. Numerical inventory coverage is not evidence that runtime parity passes. Require at least 80% line coverage from tests that each prove real behavior, with names stating that behavior; no fake, tautological, prose-snapshot, duplicate or implementation-detail tests.
@@ -70,7 +70,7 @@ Native sessions use the established JSONL files, project-path encoding, identifi
 
 Support branch traversal, names/labels, custom entries/messages, tool pairing, recorded model/thinking changes, compaction context, abandoned-branch summaries, usage/statistics and selected-branch JSONL export. Compaction preserves cut-point/token-estimate/image/tool-pair rules, exact prompts, retained-budget behavior and event/queue ordering. Import is current-session interchange, not a general migration framework.
 
-Deliver the complete self-contained offline session viewer: escaped data, tree navigation, filtering/search, deep links, collapsed details, syntax/Markdown/image/custom-tool rendering, statistics and JSONL download. Implement its behavior in Rust with a light-DOM browser viewer and embedded assets; opening the exported file requires neither a network service nor consumer compilation. The document serializer accepts data, render capabilities and a prebuilt viewer asset bundle; it does not import a frontend. Shared retained occurrences, stable active-first ordering, physical/visible tree projection, content extraction/search and raw-record ancestry live in `maestro-session::export_html::template`, reached by frontends through `maestro-app::export_html`. Filter, search, fold and selection state remain frontend-owned. The viewer itself belongs to the web frontend and calls the application's read-only session-view interface. Its entry values prepare raw operands before any browser effect: a falsy timestamp keeps the native locale call unperformed, and the prompt's skill block is parsed by the one application owner that native transcripts and the browser viewer share, available to browser builds rather than a second parser. Build packaging injects its bundle into the serializer, avoiding an application-to-frontend dependency. User-triggered online sharing is a separate operation with an owner-chosen destination.
+Deliver the complete self-contained offline session viewer: escaped data, tree navigation, filtering/search, deep links, collapsed details, syntax/Markdown/image/custom-tool rendering, statistics and JSONL download. Implement its behavior in Rust with a light-DOM browser viewer and embedded assets; opening the exported file requires neither a network service nor consumer compilation. The document serializer accepts data, render capabilities and a prebuilt viewer asset bundle; it does not import a frontend. Shared retained occurrences, stable active-first ordering, physical/visible tree projection, content extraction/search and raw-record ancestry live in `maestro-session::export_html::template`, which frontends import from `maestro-session`. Filter, search, fold and selection state remain frontend-owned. The viewer itself belongs to the web frontend and calls the application's read-only session-view interface. Its entry values prepare raw operands before any browser effect: a falsy timestamp keeps the native locale call unperformed, and the prompt's skill block is parsed by the one application owner that native transcripts and the browser viewer share, available to browser builds rather than a second parser. Build packaging injects its bundle into the serializer, avoiding an application-to-frontend dependency. User-triggered online sharing is a separate operation with an owner-chosen destination.
 
 ## R05 — Tools and process operations
 
@@ -120,7 +120,7 @@ Release qualification must exercise the complete Rust native-async SDK with actu
 
 ## R08 — Application, SDK and lifecycle
 
-`maestro-app` is the one application interface and the embedding SDK. It composes model/agent/session/credential/catalog/resource/tool/extension/package services through ports. It owns prompt delivery, steering/follow-up publication, events, model/thinking selection, compaction, visible retries, direct-shell transcript timing, navigation/import/export, source reload and session replacement. Frontends select presentation modes, not alternate business rules. Browser-specific tool/artifact/storage policy also lives here, using browser adapters supplied by the web frontend.
+`maestro-app` is the one application interface and the embedding SDK. Its root exports what the application declares and the embedding interface: the lower-crate names the SDK hands to embedding hosts under the exported names Maestro ports. A frontend imports every other lower-crate name from its owner. It composes model/agent/session/credential/catalog/resource/tool/extension/package services through ports. It owns prompt delivery, steering/follow-up publication, events, model/thinking selection, compaction, visible retries, direct-shell transcript timing, navigation/import/export, source reload and session replacement. Frontends select presentation modes, not alternate business rules. Browser-specific tool/artifact/storage policy also lives here, using browser adapters supplied by the web frontend.
 
 Preserve lifecycle-specific veto/preparation/shutdown/disposal/rebinding order. There is no universal abort-and-idle gate or rollback after teardown. Interactive reload refuses streaming/compaction; direct SDK reload preserves its distinct lifetime. Application retries classify nonempty assistant error text after excluding overflow; do not add unconditional authentication/billing/quota exclusions. Aborted outcomes do not retry. Keep application retries separate from transport setup retries. Preserve queue recovery, active context replacement, event bus semantics and costs added at the defined message boundary.
 
@@ -282,7 +282,7 @@ Home retains full drag/resize and per-card settings with keyboard-accessible ope
 
 ### Browser crate graph
 
-The web frontend remains one library, `maestro-web`, with required `maestro-app` and `maestro-office` and optional-used `maestro-theme` edges. No new workspace UI crate or frontend-to-frontend edge is introduced. The DOM component layer, browser-module loader, three renderer/contribution adapters, shell and offline viewer remain inside that frontend.
+The web frontend remains one library, `maestro-web`, with a required `maestro-app` edge and the lower crates its table row lists, including `maestro-office`, declared when used. No new workspace UI crate or frontend-to-frontend edge is introduced. The DOM component layer, browser-module loader, three renderer/contribution adapters, shell and offline viewer remain inside that frontend.
 
 Package descriptor resolution remains `maestro-packages` work, coordinated by `maestro-app`; domain-neutral browser contribution records cross `maestro-protocol`. Native package code is not linked into the browser merely to expose a descriptor. Graph, workspace, terminal, identity and per-person record operations are reached through the application/protocol interfaces, never by importing a sibling frontend or a native service into a browser view. The daemon must not gain a reverse dependency on the application; its composed operation handlers are injected through the existing interface.
 
@@ -484,13 +484,13 @@ as one portable build dependency and one portable development dependency.
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners`, `maestro-lock` | 3 |
 | `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal-emulator`, `maestro-markdown`, `maestro-office`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts (optional path utility) | `maestro-extensions`, `maestro-lock` | 4 |
-| `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock` | 5 |
-| `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock` | 5 |
-| `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
-| `maestro-web` | present browser interactions | `maestro-app`, `maestro-office`, `maestro-theme` | 5 |
+| `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock`, `maestro-agent`, `maestro-catalog`, `maestro-credentials`, `maestro-export`, `maestro-extensions`, `maestro-json`, `maestro-listeners`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools`, `maestro-watch` | 5 |
+| `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock`, `maestro-agent`, `maestro-catalog`, `maestro-credentials`, `maestro-daemon`, `maestro-extensions`, `maestro-json`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-protocol`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools` | 5 |
+| `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme`, `maestro-agent`, `maestro-daemon`, `maestro-json`, `maestro-process`, `maestro-protocol`, `maestro-settings` | 5 |
+| `maestro-web` | present browser interactions | `maestro-app`, `maestro-office`, `maestro-theme`, `maestro-agent`, `maestro-json`, `maestro-markdown`, `maestro-models`, `maestro-protocol`, `maestro-session`, `maestro-text`, `maestro-tools` | 5 |
 | `maestro-session-reports` | summarize session files for developers | `maestro-app`, `maestro-models`, `maestro-session`, `maestro-resources`, `maestro-process`, `maestro-json`, `maestro-text`, `maestro-theme`, `maestro-listing` | 5 |
-| `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
-| `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
+| `maestro-multiplexer` | present the workspace multiplexer | `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-daemon`, `maestro-terminal-emulator` | 5 |
+| `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer`, `maestro-agent`, `maestro-export`, `maestro-extensions`, `maestro-models`, `maestro-packages`, `maestro-resources`, `maestro-settings`, `maestro-tools` | 6 |
 
 `maestro-cli` is a command-line frontend, not an interactive view. Its `configuration`
 module is only the wrapper that runs a chat-owned configuration view through a
@@ -612,7 +612,7 @@ unless a component-backed editor reports its own failure. The application capabi
 of a replacement editor (`CustomEditorComponent`), the editor factory result
 (`EditorFactoryOutcome`) and the shared action map (`ActionHandlers`) belong to
 `maestro-extensions::types::ui`, because extension editor factories return them. The
-application re-exports them; the chat frontend's `CustomEditor` implements the
+chat frontend imports them from there; its `CustomEditor` implements the
 capability and keeps the action map alias at its existing path. Extension components
 carry their optional disposal, expansion and overlay width in the same owner.
 Native repository discovery belongs to `maestro-workspace::spaces::repository`.
@@ -859,12 +859,14 @@ component-factory width synchronously; it adds no new production layer crossing.
 These edges permit no normal or build dependencies.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
-`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm`, declared as native
+`maestro-rpc` to `maestro-theme`, `maestro-tui-crossterm`, `maestro-export`,
+`maestro-extensions`, `maestro-models`, `maestro-session` and `maestro-tools`, declared as native
 development dependencies, let the standard-stream child tests build the real export
-rendering environment; the adapter's normal dependency stays `maestro-app` alone.
+rendering environment and drive real sessions; the adapter's normal dependencies are
+`maestro-app` and the lower crates its table row lists.
 `maestro-chat` to `maestro-models`, declared as a non-optional native development
 dependency, lets interactive-mode tests drive a real session through the scripted
-provider; it permits no normal or build dependency on models.
+provider and enables the models test-support feature for tests only.
 `maestro-cli` to `maestro-listeners`, declared as a non-optional native development
 dependency, supplies retained registration snapshots for the controlled print adapter.
 It permits no normal or build dependency on the listener leaf.
@@ -884,7 +886,10 @@ callback registrations in the shared listener collection. It permits no normal o
 build edge.
 `maestro` to `maestro-lock`, declared as a native, non-optional development
 dependency, serializes the executable's file-trigger test on the shared host
-fixture. It permits no normal or build edge.
+fixture. `maestro` to `maestro-catalog`, `maestro-credentials`, `maestro-json` and
+`maestro-session`, declared the same way, let the executable's tests build real
+catalogs, credentials, JSON fixtures and sessions. These edges permit no normal or
+build edge.
 `maestro-theme` to `maestro-realpath`, declared as a native, non-optional
 development dependency, resolves the browser author example's watched roots. It
 permits no normal or build edge.
@@ -1075,11 +1080,11 @@ consumers; the utility is delivered before its first consumer.
 ### Workspace daemon
 
 The workspace daemon is core design. The executable requires a direct application
-dependency, with daemon operations reached through `maestro-app`. A direct
-multiplexer dependency is permitted when its launcher is wired, not required for
-command-line startup. There is no Cargo feature, optional dependency or separate install.
+dependency. The multiplexer, the CLI and the RPC frontend reach daemon operations
+through `maestro-daemon` directly. A direct multiplexer dependency is permitted
+when its launcher is wired, not required for command-line startup. There is no Cargo feature, optional dependency or separate install.
 Defaults belong to the daemon. The daemon and multiplexer are native-only; browser
-builds already exclude native process crates. Every frontend calls `maestro-app`.
+builds already exclude native process crates.
 
 The workspace daemon, the multiplexer and their commands share the application's single setup. They
 keep no configuration file, plugin registry, state or log root, keybinding file, installer or update
@@ -1147,8 +1152,8 @@ Manifest mode and its settings locks are specified in [manifest mode](manifest-m
 **Approved scope exclusions.** Hidden joke commands and their views are not part of Maestro. Omit their dedicated assets and model-selection checks. Rust file paths use the current source-keyed name map; source-based ownership does not change.
 
 `maestro-markdown` owns native Markdown structure, owned source extents and mapped
-extended links. The toolkit keeps terminal normalization and formatting. The
-application re-exports the parser as `markdown`; browser consumers use that edge.
+extended links. The toolkit keeps terminal normalization and formatting. Browser
+consumers import the parser from `maestro-markdown`.
 Document, list-item and quote-chunk parsing share one block accumulator.
 Quotes suspend and resume through retained source handles. List items enter
 non-top-level grammar; completed block calls return to top level. Quote chunks save and restore the enclosing grammar while appending

@@ -4,13 +4,21 @@ use super::{Setup, World, isolated};
 use crate::BranchSummaryMessageComponent;
 use crate::CustomMessageComponent;
 use crate::interactive_mode::startup::ExpandableText;
-use maestro_app::{
-    AgentMessage, AgentToolResult, BranchSummaryMessage, CompactionOptions, CustomMessage,
-    ExtensionContext, ExtensionFactory, Local, MessageRenderOptions, NativeAgentMessage, Presence,
-    ToolRenderResult, ToolRenderResultLike, UserContent, is_whitespace_scalar,
+use maestro_agent::AgentMessage;
+use maestro_extensions::{
+    AgentToolResult, ExtensionContext, ExtensionFactory, MessageRenderOptions,
+    types::events::NativeAgentMessage,
 };
 use maestro_models::test_support::zero_usage;
+use maestro_models::{Local, UserContent};
+use maestro_session::{
+    Presence,
+    message_records::{BranchSummaryMessage, CustomMessage},
+    session_manager::CompactionOptions,
+};
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::{ColorMode, ColorValue, LiveTheme, Theme, ThemeBg, ThemeColor, ThemeOptions};
+use maestro_tools::{ToolRenderResult, output::render_utils::ToolRenderResultLike};
 use maestro_tui::ComponentHandle;
 use maestro_tui::{Component, Container, EditorComponent, MarkdownTheme, Spacer, Text};
 use maestro_tui::{ImageProtocol, TerminalCapabilities};
@@ -313,7 +321,7 @@ type Walker = (
 
 /// Registers the renderer of `name`, recording its expansions and applying the edit.
 fn register_walker(
-    api: &maestro_app::ExtensionAPI<Local>,
+    api: &maestro_extensions::ExtensionAPI<Local>,
     name: &'static str,
     (edit, slot, rows, seen): Walker,
 ) {
@@ -793,7 +801,7 @@ pub(super) fn user_record(text: &str) -> Value {
 
 /// Replays `messages` into the transcript of `world` without other effects.
 pub(super) fn replay(world: &World, messages: Vec<Value>) {
-    let context = maestro_app::SessionContext {
+    let context = maestro_session::session_manager::SessionContext {
         messages,
         thinking_level: Presence::Present("off".into()),
         model: None,
@@ -1197,7 +1205,8 @@ fn transcript_replay_options_do_not_repopulate_history_on_rebuild() {
 }
 
 /// A registered tool `name` without renderers, returning nothing.
-pub(super) type Definition = maestro_app::local::ToolDefinition<ExtensionContext, Value, Value, ()>;
+pub(super) type Definition =
+    maestro_tools::types::local::ToolDefinition<ExtensionContext, Value, Value, ()>;
 
 /// A registered tool `name` without renderers whose execution returns nothing.
 pub(super) fn tool(name: &str) -> Definition {

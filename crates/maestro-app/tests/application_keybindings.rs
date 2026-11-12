@@ -3,9 +3,9 @@
 #![cfg(unix)]
 use crate::child;
 use maestro_app::presentation_data::bindings::migrate_keybindings_config;
-use maestro_app::presentation_data::bindings::{KeyId, Keybinding, KeybindingsConfig};
 use maestro_app::{AppKeybinding, KeybindingsManager};
 use maestro_tui::KeybindingKeys;
+use maestro_tui::{KeyId, Keybinding, KeybindingsConfig};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 

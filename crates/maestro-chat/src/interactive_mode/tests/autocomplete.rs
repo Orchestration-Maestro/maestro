@@ -4,11 +4,10 @@ use super::{Setup, World, install, install_output, isolated, isolated_case, star
 use crate::interactive_mode::autocomplete::{
     get_autocomplete_source_tag, prefix_autocomplete_description,
 };
-use maestro_app::{
-    DiagnosticErrorInfo, EventError, ExtensionCommandContext, Local, Model, PromptTemplate,
-    ProviderConfigInput, ProviderModelInput, RegisteredCommand, ResolvedCommand, ScopedModel,
-    SharedHandle, Skill, SourceInfo, SourceOrigin, SourceScope,
-};
+use maestro_catalog::{ProviderConfigInput, ProviderModelInput, ScopedModel};
+use maestro_extensions::{EventError, ExtensionCommandContext, RegisteredCommand, ResolvedCommand};
+use maestro_models::{DiagnosticErrorInfo, Local, Model, SharedHandle};
+use maestro_resources::{PromptTemplate, Skill, SourceInfo, SourceOrigin, SourceScope};
 use maestro_tui::{AutocompleteItem, AutocompleteProvider, Cancellation};
 use maestro_tui::{AutocompleteSuggestions, CompletionOptions, CursorPosition};
 use serde::Deserialize;
@@ -456,7 +455,7 @@ fn register_models(world: &World, descriptors: &[Descriptor]) {
             reasoning: false,
             thinking_level_map: None,
             input: Vec::new(),
-            cost: maestro_app::ModelCost::default(),
+            cost: maestro_models::ModelCost::default(),
             context_window: 0.0,
             max_tokens: 0.0,
             headers: None,
@@ -974,9 +973,9 @@ fn search_download_policy(test: &str, initialize: bool) {
 }
 
 /// Records release requests without contacting a server.
-fn rejected_search_fetch(requests: Arc<std::sync::Mutex<Vec<String>>>) -> maestro_app::Fetch {
+fn rejected_search_fetch(requests: Arc<std::sync::Mutex<Vec<String>>>) -> maestro_models::Fetch {
     Arc::new(move |request| {
         requests.lock().unwrap().push(request.url);
-        Box::pin(async { Err(maestro_app::FetchError::Timeout) })
+        Box::pin(async { Err(maestro_models::FetchError::Timeout) })
     })
 }

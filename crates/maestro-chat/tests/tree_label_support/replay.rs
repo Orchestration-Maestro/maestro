@@ -6,7 +6,7 @@ use std::time::{Duration, SystemTime};
 
 /// Converts authored instant text without sampling the clock.
 fn instant(text: &str) -> SystemTime {
-    let millis = maestro_app::parse_timestamp_millis(text).unwrap();
+    let millis = maestro_session::message_records::parse_timestamp_millis(text).unwrap();
     if millis >= 0 {
         SystemTime::UNIX_EPOCH + Duration::from_millis(millis.unsigned_abs())
     } else {

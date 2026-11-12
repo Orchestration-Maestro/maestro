@@ -1,9 +1,10 @@
 //! Scoped files, live publication and lossless public-output observations.
 use super::records::{Frame, Scopes};
-use maestro_app::{ResolvedPaths, SettingsManager};
 use maestro_chat::components::{
     ComponentOptions, ConfigSelectorCallbacks, ConfigSelectorComponent, ResourceItem,
 };
+use maestro_packages::ResolvedPaths;
+use maestro_settings::SettingsManager;
 use maestro_theme::{Collator, ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
 use maestro_tui::{ChildArray, Component};
 use serde_json::{Value, json};

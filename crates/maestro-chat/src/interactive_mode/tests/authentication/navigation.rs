@@ -9,7 +9,8 @@ use super::{
 };
 use super::{World, isolated, isolated_case, started_with};
 use crate::AuthType;
-use maestro_app::{AuthCredential, OAuthCredentials, OAuthError};
+use maestro_credentials::AuthCredential;
+use maestro_models::{OAuthCredentials, OAuthError};
 use maestro_theme::ThemeColor;
 use maestro_tui::Component;
 use std::ffi::OsStr;
@@ -388,7 +389,7 @@ fn api_key_save_restores_editor_before_catalog_completion() {
             keyed(&world, "custom-key", Some("Custom"), None);
             storage(&world).set(
                 "other",
-                AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
+                AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
                     env: None,
                     key: "kept".to_owned(),
                 }),

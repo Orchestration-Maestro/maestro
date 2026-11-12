@@ -1,6 +1,7 @@
 //! Captured model labels and their single-walk work bound.
 use super::model_list;
-use maestro_app::{Model, ScopedModel};
+use maestro_catalog::ScopedModel;
+use maestro_models::Model;
 use std::{
     cell::Cell,
     sync::{Arc, RwLock},

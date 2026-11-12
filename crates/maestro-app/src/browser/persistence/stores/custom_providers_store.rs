@@ -19,7 +19,8 @@ impl std::ops::Deref for CustomProvidersStore {
     }
 }
 
-use crate::{Model, Presence};
+use maestro_models::Model;
+use maestro_session::Presence;
 use serde::{Deserialize, Serialize};
 /// Provider families supporting model discovery.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

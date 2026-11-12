@@ -10,7 +10,7 @@ without repairing string literals. It returns `serde_json::Error` on failure.
 Use this strict operation for displayed JSON text; use `parse_json_with_repair`
 for completed model arguments and `parse_streaming_json` for incomplete ones.
 The browser application facade exposes the strict operation at
-`maestro_app::browser::utils::parse_json`.
+`maestro_models::parameters::json_parse::parse_json`.
 
 Strict parsing uses the same binary64 number projection and duplicate-member
 resolution as argument parsing. Valid overflow becomes null. Duplicate members

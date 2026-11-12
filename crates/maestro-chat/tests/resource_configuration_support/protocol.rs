@@ -1,6 +1,7 @@
 //! Fallible composition and authored theme failures through both public routes.
 use super::{harness::Harness, records::Scopes};
-use maestro_app::{PathMetadata, ResolvedPaths, ResolvedResource, SourceOrigin, SourceScope};
+use maestro_packages::{PathMetadata, ResolvedPaths, ResolvedResource};
+use maestro_resources::{SourceOrigin, SourceScope};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::Component;
 use serde_json::json;
@@ -130,8 +131,8 @@ fn missing_roles(harness: &Harness) {
 
 /// A refusing publisher for resource preference edits.
 struct RefuseToggle;
-impl maestro_app::SettingsDecider for RefuseToggle {
-    fn decide(&self, _: &maestro_app::DecisionRequest<'_>) -> Result<(), String> {
+impl maestro_settings::SettingsDecider for RefuseToggle {
+    fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
         Err("release refuses resource toggle".into())
     }
 }

@@ -1,7 +1,8 @@
 //! Providers, sources and frame observations shared by the HTML artifact browser witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{text, until};
-use maestro_app::{DiagnosticErrorInfo, Runtime, SandboxRuntimeProvider, SharedHandle};
+use maestro_app::{Runtime, SandboxRuntimeProvider};
+use maestro_models::{DiagnosticErrorInfo, SharedHandle};
 use maestro_web::{
     I18n, browser::values::BrowserSandboxValue, page::DomRoot,
     tools::documents::html_artifact::HtmlArtifact,

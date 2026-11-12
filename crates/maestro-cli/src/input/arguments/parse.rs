@@ -1,7 +1,9 @@
 //! Consumption of the authored prompt-first argument grammar.
 
 use super::{Args, Diagnostic, DiagnosticType, ListModels, Mode};
-use maestro_app::{FlagValue, ThinkingLevel, is_whitespace_scalar};
+use maestro_agent::ThinkingLevel;
+use maestro_extensions::types::FlagValue;
+use maestro_text::is_whitespace_scalar;
 use std::collections::VecDeque;
 
 /// The accepted reasoning levels in their documented order.

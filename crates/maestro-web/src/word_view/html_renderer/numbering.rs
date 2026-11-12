@@ -223,7 +223,7 @@ fn level_text_to_content(
 
 /// Append text as the body of a CSS string already open.
 fn append_literal(output: &mut String, text: &str) {
-    let quoted = maestro_app::css::string(text);
+    let quoted = maestro_text::css::string(text);
     output.push_str(
         quoted
             .strip_prefix('"')

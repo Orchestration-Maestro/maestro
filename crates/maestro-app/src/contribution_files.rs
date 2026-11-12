@@ -1,7 +1,6 @@
 //! Enabled package contributions read for the browser frontend.
-pub use maestro_protocol::contributions::{
-    BrowserContribution, BrowserModule, ContributionDescriptor, ContributionSlot,
-};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_protocol::contributions::BrowserContribution;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_resources::{DiagnosticType, ResourceDiagnostic};
 

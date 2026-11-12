@@ -1,10 +1,9 @@
 //! Application exports use the original native launch interfaces.
 #![cfg(unix)]
-use maestro_app::{
-    ExecOptions, ExecResult, OutputMode, SpawnSyncError, SpawnSyncOptions, exec_command, spawn,
-    spawn_sync,
-};
+use maestro_app::{ExecOptions, ExecResult};
+use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spawn_sync};
 use maestro_test_directory::Scratch;
+use maestro_tools::exec_command;
 use serde_json::json;
 use tokio::process::Command;
 

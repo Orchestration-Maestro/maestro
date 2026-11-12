@@ -2,8 +2,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 #![cfg(test)]
 
-use maestro_app::daemon_api::{Agent, DEFAULTS_TEXT, agent_label};
 use maestro_cli::workspace_commands::spec::command;
+use maestro_daemon::{Agent, agent_label, settings::DEFAULTS_TEXT};
 
 #[test]
 fn workspace_metadata_unifies_daemon_verbs() {
@@ -241,7 +241,7 @@ fn command_metadata_reuses_agent_and_integration_vocabularies() {
         .unwrap()
         .map(|value| value.get_name().to_owned())
         .collect();
-    let expected: Vec<_> = maestro_app::rpc_types::workspace_schema::IntegrationTarget::ALL
+    let expected: Vec<_> = maestro_protocol::schema::IntegrationTarget::ALL
         .into_iter()
         .map(|target| {
             serde_json::to_value(target)

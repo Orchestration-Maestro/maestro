@@ -1,9 +1,7 @@
 //! Offline tool-call card preparation over raw persisted records.
 use super::{SessionDocument, format_expandable_output, values};
-use maestro_app::{
-    is_truthy,
-    markup::{EscapeMode, escape},
-};
+use maestro_json::is_truthy;
+use maestro_text::markup::{EscapeMode, escape};
 use maestro_theme::SyntaxHighlighter;
 use serde_json::Value;
 use std::io;

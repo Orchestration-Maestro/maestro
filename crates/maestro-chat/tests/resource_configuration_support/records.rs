@@ -1,5 +1,5 @@
 //! Strict corpus boundary records.
-use maestro_app::{PathMetadata, ResolvedPaths, ResolvedResource};
+use maestro_packages::{PathMetadata, ResolvedPaths, ResolvedResource};
 use serde::Deserialize;
 use serde_json::Value;
 /// A recorded resource with its provenance.
@@ -18,9 +18,9 @@ pub(super) struct Resource {
 #[serde(deny_unknown_fields)]
 pub(super) struct Metadata {
     /// Native scope representation.
-    pub scope: maestro_app::SourceScope,
+    pub scope: maestro_resources::SourceScope,
     /// Native origin representation.
-    pub origin: maestro_app::SourceOrigin,
+    pub origin: maestro_resources::SourceOrigin,
     /// Authored source.
     pub source: String,
     /// Missing differs from present empty.

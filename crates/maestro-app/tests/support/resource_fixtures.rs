@@ -3,11 +3,12 @@
 #![cfg(unix)]
 use maestro_app::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionAPI, ExtensionFactory,
-    ExtensionRunner, ModuleLoader, ResourceDiagnostic, ResourceExtensionPath,
-    ResourceExtensionPaths, ResourceKind, ResourceLoader, ResourceLoaderOptions,
+    ExtensionRunner, ResourceDiagnostic, ResourceExtensionPath, ResourceExtensionPaths,
+    ResourceKind, ResourceLoader, ResourceLoaderOptions,
 };
 use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_extensions::ModuleLoader;
 use maestro_extensions::{
     EventError,
     execution::ExtensionRunnerSession,

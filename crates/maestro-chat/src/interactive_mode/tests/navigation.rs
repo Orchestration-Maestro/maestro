@@ -13,10 +13,13 @@ use super::actions::shows;
 use super::typed::{poll, recalled, submit, waiting};
 use super::{Setup, World, isolated_case, started};
 use crate::UserMessageSelectorComponent;
-use maestro_app::{
-    ExtensionFactory, Local, Presence, ReadonlySessionManager, SessionBeforeForkEvent,
-    SessionBeforeForkResult,
+use maestro_extensions::{
+    ExtensionFactory,
+    types::events::{ForkPosition, SessionBeforeForkEvent, SessionBeforeForkResult},
 };
+use maestro_models::Local;
+use maestro_session::{Presence, session_manager::ReadonlySessionManager};
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::Component;
 use std::{path::Path, rc::Rc};
 
@@ -182,9 +185,9 @@ async fn select_forks_before_the_chosen_message(directory: &Path) {
     assert_eq!(world.mode.editor.get_text(), "");
     let panel = fork_panel(&world).expect("the fork panel");
     let list = Rc::clone(panel.get_message_list());
-    let panel_rows = maestro_app::strip_ansi(&panel.render(80).concat()).unwrap();
+    let panel_rows = strip_ansi(&panel.render(80).concat()).unwrap();
     assert!(panel_rows.contains("Fork from Message"));
-    let rows = maestro_app::strip_ansi(&list.render(80).concat()).unwrap();
+    let rows = strip_ansi(&list.render(80).concat()).unwrap();
     assert!(rows.contains("first"));
     assert!(rows.contains("second"));
     assert!(rows.find("first").unwrap() < rows.find("second").unwrap());
@@ -319,7 +322,7 @@ async fn ordered_forks(directory: &Path) {
     append_user(&world, "same");
     world.terminal.send_input("\x1bf");
     let list = fork_panel(&world).unwrap().get_message_list().clone();
-    let rows = maestro_app::strip_ansi(&list.render(80).join("\n")).unwrap();
+    let rows = strip_ansi(&list.render(80).join("\n")).unwrap();
     assert!(rows.find("first").unwrap() < rows.find("same").unwrap());
     assert_eq!(rows.matches("same").count(), 2);
     assert!(!rows.contains("not a user"));
@@ -327,10 +330,7 @@ async fn ordered_forks(directory: &Path) {
     world.terminal.send_input("\x1b[A");
     world.terminal.send_input("\r");
     tree::finish(&world).await;
-    assert_eq!(
-        *selected.borrow(),
-        [(middle, maestro_app::ForkPosition::Before)]
-    );
+    assert_eq!(*selected.borrow(), [(middle, ForkPosition::Before)]);
     assert_eq!(user_texts(&world), ["first"]);
     assert_eq!(world.mode.editor.get_text(), "same");
     assert!(shows(&world.mode.chat_container, "Forked to new session"));

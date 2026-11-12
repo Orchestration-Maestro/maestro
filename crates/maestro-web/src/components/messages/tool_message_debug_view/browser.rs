@@ -84,7 +84,7 @@ impl ToolMessageDebugView {
     /// The joined text output and the details, each strictly parsed or kept literal.
     fn result_listings(&self) -> Result<[Listing; 2], ToolUiError> {
         let output = self.result.as_ref().map_or_else(String::new, |result| {
-            maestro_app::UserBlock::text_output(&result.content)
+            maestro_models::UserBlock::text_output(&result.content)
         });
         let details = self
             .result

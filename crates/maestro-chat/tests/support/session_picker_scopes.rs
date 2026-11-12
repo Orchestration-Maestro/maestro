@@ -22,7 +22,7 @@ struct Calls {
     all: usize,
 }
 /// One controlled producer result.
-type DiscoveryResult = Result<Vec<maestro_app::SessionInfo>, Box<dyn std::error::Error>>;
+type DiscoveryResult = Result<Vec<maestro_session::SessionInfo>, Box<dyn std::error::Error>>;
 /// A caller-controlled completion, retaining the supplied progress handle.
 struct Load {
     sender: Option<tokio::sync::oneshot::Sender<DiscoveryResult>>,
@@ -47,7 +47,10 @@ impl Loader {
         })
     }
     /// Settles exactly the most recently admitted call.
-    fn finish(&self, result: Result<Vec<maestro_app::SessionInfo>, Box<dyn std::error::Error>>) {
+    fn finish(
+        &self,
+        result: Result<Vec<maestro_session::SessionInfo>, Box<dyn std::error::Error>>,
+    ) {
         let sender = self
             .loads
             .borrow_mut()
@@ -132,7 +135,7 @@ impl Harness {
         assert!(self.world.runtime.drain_futures().is_empty());
     }
     /// Settles one discovery port and completes its admitted future.
-    fn finish(&self, scope: &str, records: Vec<maestro_app::SessionInfo>) {
+    fn finish(&self, scope: &str, records: Vec<maestro_session::SessionInfo>) {
         self.loader(scope).finish(Ok(records));
         self.drain();
     }
@@ -204,7 +207,7 @@ pub fn initial() {
 }
 
 /// Standard named record, independent of the production selector.
-fn named(id: &str, name: &str) -> maestro_app::SessionInfo {
+fn named(id: &str, name: &str) -> maestro_session::SessionInfo {
     let mut record = session(id);
     record.name = Some(name.into());
     record
