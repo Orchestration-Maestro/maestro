@@ -19,7 +19,7 @@ roxmltree = { version = "=0.21.1", default-features = false, features = ["std", 
 ryu-js.workspace = true
 serde_json.workspace = true
 url = "=2.5.8"
-zip = { version = "=9.0.5", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "=9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [dev-dependencies]
 serde.workspace = true

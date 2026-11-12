@@ -4204,6 +4204,8 @@ dependencies = [
  "zerofrom",
  "zerotrie",
  "zerovec",
+ "zip",
+ "zlib-rs",
 ]
 
 [[package]]
