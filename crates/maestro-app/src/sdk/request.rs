@@ -264,7 +264,7 @@ pub fn transform_context(
     Rc::new(move |messages, _signal| {
         let runner = runner_ref.borrow().clone();
         Box::pin(async move {
-            let Some(runner) = runner.filter(|runner| runner.has_handlers("context")) else {
+            let Some(runner) = runner else {
                 return Ok(messages);
             };
             let copied = read(&messages).clone();

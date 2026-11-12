@@ -240,9 +240,10 @@ fn result_document(
         details: result.details,
         terminate: result.terminate,
     };
-    match result.is_error {
-        Some(is_error) => crate::object_text::with_property(&record, "isError", &is_error),
-        None => serde_json::to_string(&record).map_err(|error| error.to_string()),
+    let mut document = serde_json::to_value(record)
+        .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
+    if let Some(is_error) = result.is_error {
+        document["isError"] = Value::Bool(is_error);
     }
-    .map_err(DiagnosticErrorInfo::error)
+    Ok(document.to_string())
 }

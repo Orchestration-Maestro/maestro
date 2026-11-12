@@ -200,13 +200,6 @@ fn custom_payload_clone_reads_shared_state_and_keeps_independent_snapshot() {
             values: vec![1],
             reads: reads.clone(),
         }));
-        loaded
-            .api
-            .on::<ContextEvent, ContextEventResult>(
-                "context".into(),
-                Rc::new(|_, _| Box::pin(std::future::ready(Ok(None)))),
-            )
-            .unwrap();
         let original = AgentMessage::Custom(payload.clone());
         let result = runner.emit_context(&[original]).await.unwrap();
         assert_eq!(reads.load(std::sync::atomic::Ordering::SeqCst), 1);
@@ -216,30 +209,6 @@ fn custom_payload_clone_reads_shared_state_and_keeps_independent_snapshot() {
         };
         assert_eq!(snapshot.read().unwrap().values, [1]);
         assert_eq!(payload.read().unwrap().values, [1, 2]);
-        bus.settle().await;
-    });
-}
-
-#[test]
-fn context_without_handlers_returns_the_messages_without_copying_payloads() {
-    support::local(async {
-        let bus = support::LocalBus::new();
-        let loaded = support::loaded("snapshot", bus.controller.for_extension());
-        let runner = support::runner(&loaded.owners);
-        let reads = Arc::new(std::sync::atomic::AtomicU32::new(0));
-        let payload = Arc::new(RwLock::new(SnapshotPayload {
-            values: vec![1],
-            reads: reads.clone(),
-        }));
-        let result = runner
-            .emit_context(&[AgentMessage::Custom(payload.clone())])
-            .await
-            .unwrap();
-        assert_eq!(reads.load(std::sync::atomic::Ordering::SeqCst), 0);
-        let AgentMessage::Custom(returned) = &result[0] else {
-            panic!("custom")
-        };
-        assert!(Arc::ptr_eq(returned, &payload));
         bus.settle().await;
     });
 }
