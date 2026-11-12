@@ -276,6 +276,14 @@ held!(
 );
 
 held!(
+    /// The native buffer of generic authored events.
+    EventBuffer,
+    super::stream_reads::Owner,
+    "extension stream resource ended",
+    Capability::Stream(owner) => owner
+);
+
+held!(
     /// The native assistant event buffer of one model invocation.
     AssistantStream,
     maestro_extensions::AssistantMessageEventStream,

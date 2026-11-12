@@ -1,7 +1,10 @@
 //! Typed forwarding to the models-owned event buffer on the existing local pump.
 use crate::{
     guest_calls::Handle,
-    local_resources::{Admission, Capability, Lease, Message, Registry, Work},
+    local_resources::{
+        Admission, Capability, Lease, Message, Registry, Work,
+        held::{EventBuffer, Held},
+    },
     stream_calls::{Operation, Selection},
 };
 use maestro_extensions::{EventStream, Local};
@@ -21,14 +24,8 @@ pub(crate) struct Owner {
     /// First callback failure, read outside callback-table and buffer locks.
     error: Rc<RefCell<Option<String>>>,
 }
-/// Catchable synchronous operation result.
-type Reply = Sender<Result<(), String>>;
 /// Typed requests to the original native buffer.
 pub(crate) enum Request {
-    /// Admit one retained local value.
-    Push(Handle, Reply),
-    /// End without conflating absent results and JSON null.
-    End(Option<Handle>, Reply),
     /// Observe one competing-reader event.
     Next(oneshot::Sender<Result<Option<Handle>, String>>, Admission),
     /// Observe the final result independently.
@@ -40,13 +37,17 @@ pub struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
     /// Admit through the existing synchronous callback continuation.
     pub(crate) fn push(&self, value: Handle) -> crate::import_route::Route {
-        self.0
-            .route(|id, reply| Message::Stream(id, Request::Push(value, reply)))
+        self.0.run_routed::<EventBuffer, _>(move |owner, _| {
+            owner.buffer.push(value);
+            owner.error.borrow().clone().map_or(Ok(()), Err)
+        })
     }
     /// End through the existing first-result owner.
     pub(crate) fn end(&self, value: Option<Handle>) -> crate::import_route::Route {
-        self.0
-            .route(|id, reply| Message::Stream(id, Request::End(value, reply)))
+        self.0.run_routed::<EventBuffer, _>(move |owner, _| {
+            owner.buffer.end(value.map(Ok));
+            Ok(())
+        })
     }
     /// Observe one native event while retaining only this observation's admission.
     pub(crate) async fn next(&self) -> Result<Option<Handle>, String> {
@@ -126,53 +127,35 @@ fn selection_error(result: Result<Selection, String>) -> String {
         .unwrap_or_else(|| "extension stream callback result kind mismatch".into())
 }
 impl Request {
-    /// Select the original buffer outside the capability-table borrow, then start one operation.
-    pub(crate) fn answer(self, registry: &Registry, id: u64) -> Option<Work> {
-        let capability = registry.capability(id);
-        let Some(Capability::Stream(owner)) = capability.as_deref() else {
-            self.reject();
-            return None;
-        };
+    /// Start one observation of the original buffer, outside the capability-table borrow.
+    fn answer(self, owner: &Owner) -> Work {
         match self {
-            Self::Push(value, reply) => {
-                owner.buffer.push(value);
-                let result = owner.error.borrow().clone().map_or(Ok(()), Err);
-                let _ = reply.send(result);
-            }
-            Self::End(value, reply) => {
-                owner.buffer.end(value.map(Ok));
-                let _ = reply.send(Ok(()));
-            }
             Self::Next(mut reply, admission) => {
                 let next = owner.buffer.next();
-                return Some(Box::pin(async move {
+                Box::pin(async move {
                     tokio::select! {
                         value = next => { let _ = reply.send(Ok(value)); }
                         () = reply.closed() => {}
                     }
                     drop(admission);
-                }));
+                })
             }
             Self::Result(mut reply, admission) => {
                 let result = owner.buffer.result();
-                return Some(Box::pin(async move {
+                Box::pin(async move {
                     tokio::select! {
                         value = result => { let _ = reply.send(value); }
                         () = reply.closed() => {}
                     }
                     drop(admission);
-                }));
+                })
             }
         }
-        None
     }
     /// Settle requests whose original resource has ended.
     fn reject(self) {
-        let error = "extension stream resource ended".to_owned();
+        let error = EventBuffer::ENDED.to_owned();
         match self {
-            Self::Push(_, reply) | Self::End(_, reply) => {
-                let _ = reply.send(Err(error));
-            }
             Self::Next(reply, _) => {
                 let _ = reply.send(Err(error));
             }
@@ -186,9 +169,12 @@ impl Request {
 impl super::pump::State {
     /// Start one original stream operation on the existing pending-work owner.
     pub(super) fn stream_request(&self, id: u64, request: Request) {
-        if let Some(work) = request.answer(&self.registry, id) {
-            self.stage(work);
-        }
+        let capability = self.registry.capability(id);
+        let Some(Capability::Stream(owner)) = capability.as_deref() else {
+            request.reject();
+            return;
+        };
+        self.stage(request.answer(owner));
     }
 }
 
