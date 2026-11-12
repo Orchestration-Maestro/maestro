@@ -196,6 +196,7 @@ pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
     crate::history_imports::add_to_linker(&mut host)?;
     crate::tree_imports::add_to_linker(&mut host)?;
     crate::writer_imports::add_to_linker(&mut host)?;
+    crate::replaced_imports::add_replaced(&mut host)?;
     crate::replaced_imports::add_to_linker(&mut host)?;
     crate::effect_imports::add_to_linker(&mut host)?;
     crate::event_imports::add_to_linker(&mut host)?;

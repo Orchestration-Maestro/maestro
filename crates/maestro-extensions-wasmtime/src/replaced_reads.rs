@@ -6,7 +6,8 @@
 )]
 use crate::{
     api_reads::delivery,
-    local_resources::{Lease, Message, Work},
+    context_reads::Owner,
+    local_resources::{Lease, Message, Work, held::ReplacedContext},
 };
 use maestro_extensions::{EventError, ReplacedSessionContext};
 use std::{future::Future, sync::Arc};
@@ -68,7 +69,9 @@ pub struct Endpoint(pub(crate) Arc<Lease>);
 impl Endpoint {
     /// Retains a distinct guarded command view without retargeting the replacement.
     pub(crate) fn command(&self) -> Result<crate::context_reads::Endpoint, String> {
-        self.0.request(Message::ReplacedCommand)
+        self.0.run::<ReplacedContext, _>(|context, registry| {
+            registry.context(Owner::Command((**context).clone()))
+        })
     }
 
     /// Admits the creating session's message operation through the sole receiver.

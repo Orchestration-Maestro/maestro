@@ -153,8 +153,6 @@ pub(crate) enum Message {
     ),
     /// Sends through the original creating session, even after guarded reads retire.
     Replaced(u64, crate::replaced_reads::Request, Admission),
-    /// Retains the replacement's original guarded command view independently.
-    ReplacedCommand(u64, std::sync::mpsc::Sender<Result<Endpoint, String>>),
     /// Uses original native observers and explicit subscription removers.
     Effect(u64, effects::Request),
     /// Runs a request whose native code may call back into this instance through its route.

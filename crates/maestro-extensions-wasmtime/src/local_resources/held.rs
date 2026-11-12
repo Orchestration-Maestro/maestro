@@ -292,6 +292,14 @@ held!(
 );
 
 held!(
+    /// The context of the session an operation created.
+    ReplacedContext,
+    maestro_extensions::ReplacedSessionContext,
+    "extension replaced-session resource ended",
+    Capability::Replaced(context) => context
+);
+
+held!(
     /// The native buffer of generic authored events.
     EventBuffer,
     super::stream_reads::Owner,

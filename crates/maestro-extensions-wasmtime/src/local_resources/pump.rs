@@ -1,6 +1,6 @@
 //! Shared local ownership of the sole request receiver and admitted work.
 use super::{Admission, Capability, Message, Registry, Work};
-use crate::context_reads::{Endpoint, Owner, Request};
+use crate::context_reads::Request;
 use futures_util::{StreamExt, stream::FuturesUnordered};
 use maestro_extensions::{Cancellation, Model};
 use std::{
@@ -216,7 +216,6 @@ impl State {
                 self.start_credential_key(id, request, reply, admission);
             }
             Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
-            Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
@@ -310,18 +309,6 @@ impl State {
         } else {
             request.reject("extension replaced-session resource ended");
         }
-    }
-
-    /// Gives the original guarded command view its own independently retained identity.
-    fn replaced_command(&self, id: u64, reply: &std::sync::mpsc::Sender<Result<Endpoint, String>>) {
-        let capability = self.registry.capability(id);
-        let result = match capability.as_deref() {
-            Some(Capability::Replaced(context)) => {
-                self.registry.context(Owner::Command((**context).clone()))
-            }
-            _ => Err("extension replaced-session resource ended".to_owned()),
-        };
-        let _ = reply.send(result);
     }
 
     /// Selects the original API once for reads and callback-bearing registrations.

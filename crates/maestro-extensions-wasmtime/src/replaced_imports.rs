@@ -5,28 +5,41 @@
     clippy::excessive_nesting
 )]
 use crate::{
+    bindings::maestro::extension::host::HostReplacedSessionContext,
     context_imports::{CommandContext, add_resource},
+    lifecycle::State,
+    read_imports::{endpoint, forwards, release},
     replaced_reads::{Endpoint, Request},
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
-};
+use wasmtime::component::{LinkerInstance, Resource};
 use wasmtime_wasi::WasiView;
+
+impl HostReplacedSessionContext for State {
+    fn command(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<Resource<CommandContext>> {
+        let command = endpoint(self, &this)?
+            .command()
+            .map_err(wasmtime::Error::msg)?;
+        Ok(self.ctx().table.push(CommandContext(command))?)
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Registers the continuation context with its synchronous method forwarded to the trait.
+pub(crate) fn add_replaced(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Endpoint>(host, "replaced-session-context")?;
+    forwards! { host, "replaced-session-context", HostReplacedSessionContext, Endpoint,
+        "command" => command();
+    }
+    Ok(())
+}
 
 /// Defines the independently retained continuation context and its real message routes.
 pub(crate) fn add_to_linker<T: WasiView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    add_resource::<T, Endpoint>(host, "replaced-session-context")?;
-    host.func_wrap(
-        "[method]replaced-session-context.command",
-        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<Endpoint>,)| {
-            let endpoint = store.data_mut().ctx().table.get(&resource)?.clone();
-            let command = endpoint.command().map_err(wasmtime::Error::msg)?;
-            Ok((store.data_mut().ctx().table.push(CommandContext(command))?,))
-        },
-    )?;
     for (method, request) in [
         ("send-message", Request::Message as fn(_, _, _) -> _),
         ("send-user-message", Request::UserMessage),
