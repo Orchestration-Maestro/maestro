@@ -11,7 +11,7 @@ use crate::{
 /// A page-local style identifier.
 pub type Id = u16;
 /// The identifier requiring no style-table lookup.
-pub const DEFAULT_ID: Id = 0;
+pub(crate) const DEFAULT_ID: Id = 0;
 
 /// A colour source retained until palette resolution.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

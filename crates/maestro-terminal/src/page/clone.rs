@@ -242,7 +242,7 @@ impl Page {
     ///
     /// # Panics
     /// Panics for an empty or out-of-bounds row range.
-    pub fn exact_row_capacity(&self, rows: Range<u16>) -> super::layout::Capacity {
+    pub(crate) fn exact_row_capacity(&self, rows: Range<u16>) -> super::layout::Capacity {
         use crate::bitmap_allocator::BitmapAllocator;
         use std::collections::HashSet;
         assert!(rows.start < rows.end && rows.end <= self.size.rows);
