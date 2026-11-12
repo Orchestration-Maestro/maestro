@@ -8,6 +8,7 @@ mod lock;
 mod overlay;
 mod pipes;
 mod provider;
+mod replaced;
 mod response;
 mod signal;
 mod stream;
