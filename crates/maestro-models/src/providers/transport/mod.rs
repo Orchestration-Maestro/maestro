@@ -6,7 +6,6 @@ mod failure;
 #[cfg(not(target_arch = "wasm32"))]
 mod get_uri;
 mod headers;
-mod line_decoder;
 #[cfg(not(target_arch = "wasm32"))]
 mod pac_proxy_agent;
 #[cfg(not(target_arch = "wasm32"))]
@@ -55,7 +54,7 @@ pub(crate) use retry::{request_timeout, send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::spawn_detached;
 pub use runtime::{Raced, race, unit_random};
-pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
+pub(crate) use server_sent_events::{ServerSentEvent, SseMessages, SseOptions};
 
 /// One HTTP attempt: method, final URL, lowercase headers and body bytes.
 #[derive(Clone)]
