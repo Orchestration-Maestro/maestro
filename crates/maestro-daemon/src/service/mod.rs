@@ -15,7 +15,6 @@ pub mod health;
 #[cfg(unix)]
 pub use health::{RuntimeStatus, read_runtime_status_at};
 
-/// The native local-socket operations the API server uses.
 #[cfg(unix)]
 pub mod local_socket;
 

@@ -66,8 +66,8 @@ still match. A missing path succeeds. This metadata comparison followed by unlin
 is not atomic; callers must coordinate pathname replacement with cleanup.
 
 After binding, callers restrict the socket to owner read/write mode (`0600`)
-through `service::local_socket::paths::restrict_socket_permissions`. Private listeners also need
-this post-bind call on Unix. Write shutdown leaves the read direction usable.
+through `service::local_socket::paths::restrict_socket_permissions`. Private
+listeners also need this post-bind call on Unix. Write shutdown leaves the read direction usable.
 Only an actual end-of-input read ends incoming traffic; pending command bytes are
 not consumed by a disconnect probe.
 

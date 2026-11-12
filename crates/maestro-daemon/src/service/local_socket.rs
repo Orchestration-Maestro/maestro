@@ -1,6 +1,5 @@
 //! Filesystem local sockets with caller-owned names and cleanup identity.
 
-/// Client-socket path selection from caller-supplied observations.
 pub mod paths;
 
 use rustix::io::Errno;
