@@ -3,16 +3,17 @@
 #![cfg(target_os = "linux")]
 
 use crate::support::api::{
-    TestApp, add_workspaces, daemon_with, daemon_with_workspaces, root_pane, split_pane,
+    add_workspaces, daemon_with, daemon_with_workspaces, root_pane, split_pane,
 };
 use maestro_daemon::settings::model::Config;
+use maestro_daemon::state::App;
 use maestro_protocol::events::EventData;
 use maestro_protocol::schema::{PaneDirection, PaneLayoutRect, SplitDirection};
 use maestro_protocol::shared::Flag;
 use maestro_workspace::tiling::{PaneId, Rect};
 
 /// The public handle of a pane in the first workspace.
-fn public(app: &TestApp, pane: PaneId) -> String {
+fn public(app: &App, pane: PaneId) -> String {
     app.state.public_pane_id(0, pane).unwrap()
 }
 

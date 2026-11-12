@@ -19,9 +19,6 @@ use std::{
 };
 use tokio::sync::{Notify, mpsc};
 
-/// Daemon owner driven by a deterministic public-identity clock.
-type TestApp = App;
-
 /// Both observations demanded.
 const ALL: GitStatusRefreshDemand = GitStatusRefreshDemand {
     branch: true,
@@ -37,7 +34,7 @@ fn overdue(now: Instant) -> Instant {
 }
 
 /// A daemon that launches no pane process, with the sidebar rows of `config`.
-fn test_app(config: &Config) -> TestApp {
+fn test_app(config: &Config) -> App {
     let (events, receiver) = mpsc::channel(8);
     let launch = PaneLaunchInputs {
         no_session: true,
@@ -61,14 +58,14 @@ fn test_app(config: &Config) -> TestApp {
 }
 
 /// A daemon whose workspace sidebar shows exactly `rows`.
-fn app_with_rows(rows: Vec<Vec<SpaceSidebarToken>>) -> TestApp {
+fn app_with_rows(rows: Vec<Vec<SpaceSidebarToken>>) -> App {
     let mut config = Config::default();
     config.ui.sidebar.spaces.rows = rows;
     test_app(&config)
 }
 
 /// Add a workspace rooted at `cwd` and return its handle.
-fn add_workspace(app: &mut TestApp, cwd: &Path) -> String {
+fn add_workspace(app: &mut App, cwd: &Path) -> String {
     app.state
         .topology
         .new_with_tab(cwd.to_path_buf(), None, |_, _| Ok(()))

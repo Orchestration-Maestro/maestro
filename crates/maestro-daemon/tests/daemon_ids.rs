@@ -22,8 +22,6 @@ use maestro_protocol::schema::AgentStatus;
 use maestro_workspace::{terminal_id::TerminalId, tiling::PaneId};
 #[cfg(unix)]
 use std::sync::{Arc, RwLock};
-#[cfg(unix)]
-type TargetApp = App;
 
 #[test]
 fn public_target_forms_keep_alias_and_number_meaning() {
@@ -126,7 +124,7 @@ fn workspace_and_tab_spellings_keep_positions_distinct_from_public_numbers() {
 
 /// Builds noncontiguous public identities with no native process.
 #[cfg(unix)]
-fn target_app() -> (TargetApp, PaneId, TerminalId) {
+fn target_app() -> (App, PaneId, TerminalId) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));
@@ -185,7 +183,7 @@ fn assert_terminal_target_forms() {
 
 /// Current handles resolve while historical spellings are accepted only as names.
 #[cfg(unix)]
-fn assert_current_target_forms(app: &mut TargetApp, pane: PaneId, id: &TerminalId) {
+fn assert_current_target_forms(app: &mut App, pane: PaneId, id: &TerminalId) {
     for form in [
         "w1:p1", "w1:t2", "p_99", "old-pane", "p_2", "p_w1_2", "w1-2", "w1:p0", "w1:p!", "",
     ] {
@@ -241,11 +239,7 @@ fn assert_current_target_forms(app: &mut TargetApp, pane: PaneId, id: &TerminalI
 
 /// Terminal handles precede names and current pane handles precede names for both routes.
 #[cfg(unix)]
-fn assert_target_collisions(
-    app: &mut TargetApp,
-    pane: PaneId,
-    id: &TerminalId,
-) -> (PaneId, TerminalId) {
+fn assert_target_collisions(app: &mut App, pane: PaneId, id: &TerminalId) -> (PaneId, TerminalId) {
     let (other, ()) = app
         .state
         .topology
@@ -282,12 +276,7 @@ fn assert_target_collisions(
 
 /// Ambiguity retains every ordered viewport with its exact public observations.
 #[cfg(unix)]
-fn assert_target_ambiguity(
-    app: &mut TargetApp,
-    other: PaneId,
-    id: &TerminalId,
-    other_id: &TerminalId,
-) {
+fn assert_target_ambiguity(app: &mut App, other: PaneId, id: &TerminalId, other_id: &TerminalId) {
     for terminal in app.state.terminals.values_mut() {
         terminal.set_agent_name("duplicate".into());
     }

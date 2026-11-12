@@ -2,14 +2,15 @@
 #![cfg(all(test, target_os = "linux"))]
 
 use crate::{config_support, daemon_base_settings::layer};
-use config_support::{TestApp, block_on, fixture};
+use config_support::{block_on, fixture};
 use maestro_daemon::settings::model::{ConfigReloadStatus, StatusIndicatorStyle};
+use maestro_daemon::state::App;
 use maestro_settings::{Settings, SettingsErrorKind, SettingsManager, SettingsScope};
 use maestro_test_directory::Scratch;
 use serde_json::json;
 
 /// A native global preferences file with an independent persisted project layer.
-fn governed_app() -> (TestApp, SettingsManager, Scratch) {
+fn governed_app() -> (App, SettingsManager, Scratch) {
     let root = Scratch::new().unwrap();
     let path = root.path().to_str().unwrap();
     let mut publisher = SettingsManager::create(path, path, ".maestro");

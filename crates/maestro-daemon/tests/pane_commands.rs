@@ -1,9 +1,10 @@
 //! Pane topology commands through the daemon's handler: reads, focus and neighbours.
 #![cfg(target_os = "linux")]
 use crate::support::api::{
-    TestApp, add_tab, add_workspaces, answer, daemon_with_workspaces, failure, pair, request,
-    root_pane, with_live_daemon,
+    add_tab, add_workspaces, answer, daemon_with_workspaces, failure, pair, request, root_pane,
+    with_live_daemon,
 };
+use maestro_daemon::state::App;
 use maestro_daemon::state::model::Mode;
 use maestro_detection::agents::AgentState;
 use maestro_protocol::schema::{
@@ -40,7 +41,7 @@ fn layout_of(result: Result<ResponseResult, ErrorBody>) -> PaneLayoutSnapshot {
 }
 
 /// The public handle of a pane in the workspace at `workspace`.
-fn public(app: &TestApp, workspace: usize, pane: PaneId) -> String {
+fn public(app: &App, workspace: usize, pane: PaneId) -> String {
     app.state.public_pane_id(workspace, pane).unwrap()
 }
 
@@ -194,7 +195,7 @@ fn a_layout_describes_the_tab_of_the_named_or_focused_pane() {
 }
 
 /// The neighbour record a neighbour result holds.
-fn neighbour_of(app: &mut TestApp, pane: &str, direction: &str) -> Option<String> {
+fn neighbour_of(app: &mut App, pane: &str, direction: &str) -> Option<String> {
     let command = json!({"type": "pane.neighbor", "pane_id": pane, "direction": direction});
     let Ok(ResponseResult::PaneNeighbor { neighbor }) = request(app, command) else {
         panic!("expected a neighbour");
@@ -240,7 +241,7 @@ fn edges_tell_which_sides_of_the_view_a_pane_touches() {
 }
 
 /// The result of moving focus from `pane` toward `direction`.
-fn focus_toward(app: &mut TestApp, pane: &str, direction: PaneDirection) -> Value {
+fn focus_toward(app: &mut App, pane: &str, direction: PaneDirection) -> Value {
     let command = json!({"type": "pane.focus_direction", "pane_id": pane, "direction": direction});
     let Ok(ResponseResult::PaneFocusDirection { focus }) = request(app, command) else {
         panic!("expected a focus result");

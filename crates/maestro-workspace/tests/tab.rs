@@ -261,7 +261,7 @@ fn failed_tab_spawn_consumes_only_reserved_tab_number() {
     assert_invariants(&owner.workspaces[0]);
 }
 
-fn assert_missing_core_target(owner: &mut Topology, before: &Workspace) {
+fn assert_missing_core_target(owner: &mut WorkspaceTopology, before: &Workspace) {
     let new_id = owner.alloc_pane_id();
     let terminal = owner.alloc_terminal_id();
     let missing = owner.workspaces[0].tabs[0]
@@ -285,7 +285,7 @@ fn assert_missing_core_target(owner: &mut Topology, before: &Workspace) {
     assert_eq!(&owner.workspaces[0], before);
 }
 
-fn assert_successful_split_controls(owner: &mut Topology, second: PaneId) {
+fn assert_successful_split_controls(owner: &mut WorkspaceTopology, second: PaneId) {
     for focus in [false, true] {
         let request = SplitRequest {
             target: second,
@@ -316,7 +316,11 @@ fn assert_successful_split_controls(owner: &mut Topology, second: PaneId) {
     }
 }
 
-fn assert_same_workspace_transfer(owner: &mut Topology, root: PaneId, pane: PaneId) -> MovedPane {
+fn assert_same_workspace_transfer(
+    owner: &mut WorkspaceTopology,
+    root: PaneId,
+    pane: PaneId,
+) -> MovedPane {
     let number = owner.workspaces[0].public_pane_number(pane);
     let taken = owner.workspaces[0].take_pane_for_move(pane).unwrap();
     assert_eq!(taken.removed_tab_idx, None);
@@ -349,7 +353,7 @@ fn assert_same_workspace_transfer(owner: &mut Topology, root: PaneId, pane: Pane
     expected
 }
 
-fn assert_invalid_tab_edits(owner: &mut Topology, root: PaneId) {
+fn assert_invalid_tab_edits(owner: &mut WorkspaceTopology, root: PaneId) {
     let ws = &mut owner.workspaces[0];
     assert!(ws.close_pane(root));
     assert!(!ws.close_pane(maestro_workspace::tiling::PaneId::from_raw(999)));

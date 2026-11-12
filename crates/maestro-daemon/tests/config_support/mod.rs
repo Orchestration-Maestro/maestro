@@ -4,9 +4,6 @@ use maestro_daemon::{service::event_hub::EventHub, settings::model::Config, stat
 use maestro_settings::{InMemorySettingsStorage, SettingsManager, SettingsScope, SettingsStorage};
 use std::sync::{Arc, RwLock};
 
-/// Daemon owner with a deterministic identity clock.
-pub type TestApp = App;
-
 /// Replace the global document through the settings owner's locked seam.
 pub fn put(storage: &dyn SettingsStorage, text: &str) {
     storage
@@ -15,7 +12,7 @@ pub fn put(storage: &dyn SettingsStorage, text: &str) {
 }
 
 /// Constructs a daemon and independently editable global settings storage.
-pub fn fixture() -> (TestApp, SettingsManager, Arc<InMemorySettingsStorage>) {
+pub fn fixture() -> (App, SettingsManager, Arc<InMemorySettingsStorage>) {
     let manifests = Arc::new(RwLock::new(
         maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
     ));

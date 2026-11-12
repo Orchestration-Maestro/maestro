@@ -72,6 +72,4 @@ pub fn assert_invariants(workspace: &maestro_workspace::spaces::Workspace) {
     assert!(workspace.tabs.is_empty() || workspace.active_tab < workspace.tabs.len());
 }
 
-pub type Topology = WorkspaceTopology;
-
 pub mod snapshot;
