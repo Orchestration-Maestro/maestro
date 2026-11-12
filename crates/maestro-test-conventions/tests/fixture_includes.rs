@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use support::{Workspace, source};
 
 /// The limit the check applies, in bytes.
-const LIMIT: usize = 1_048_576;
+const LIMIT: usize = 1_000_000;
 
 /// A workspace whose one test file includes a fixture of `size` bytes beside it; returns the
 /// workspace and the test file's path.

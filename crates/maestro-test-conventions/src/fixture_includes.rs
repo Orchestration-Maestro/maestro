@@ -8,7 +8,7 @@ use crate::source::{Member, Source};
 use crate::test_input_routes::string_value;
 
 /// The largest fixture, in bytes, that test code may compile into its executable.
-const LIMIT: u64 = 1_048_576;
+const LIMIT: u64 = 1_000_000;
 
 /// The includes that copy a file's contents into the compiled test executable.
 const NAMES: [&str; 2] = ["include_str", "include_bytes"];

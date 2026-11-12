@@ -970,7 +970,7 @@ examples do with the scripted workspace in
 
 ### Large fixtures
 
-A fixture larger than 1 MiB is read when the test runs, not compiled into it. `include_str!`
+A fixture larger than 1 MB (1,000,000 bytes) is read when the test runs, not compiled into it. `include_str!`
 and `include_bytes!` copy the whole file into the test executable, so every link carries it
 and any edit to the data rebuilds the test unit. Join the crate directory with the fixture
 path instead:

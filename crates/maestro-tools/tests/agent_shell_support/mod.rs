@@ -225,23 +225,14 @@ pub fn result_value<D: Serialize>(result: AgentToolResult<D>) -> Value {
 }
 /// Read and validate the fixture once per selected test.
 pub fn fixture() -> Fixture {
-    let fixture: Fixture = serde_json::from_str(
-        &std::fs::read_to_string(format!(
-            "{}/tests/fixtures/agent-shell-cases.json",
-            env!("CARGO_MANIFEST_DIR")
-        ))
-        .expect("recorded fixture"),
-    )
-    .unwrap();
+    let text = std::fs::read_to_string(format!(
+        "{}/tests/fixtures/agent-shell-cases.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .expect("recorded fixture");
+    let fixture: Fixture = serde_json::from_str(&text).unwrap();
     let mut ids = HashSet::new();
-    let raw: Value = serde_json::from_str(
-        &std::fs::read_to_string(format!(
-            "{}/tests/fixtures/agent-shell-cases.json",
-            env!("CARGO_MANIFEST_DIR")
-        ))
-        .expect("recorded fixture"),
-    )
-    .unwrap();
+    let raw: Value = serde_json::from_str(&text).unwrap();
     let mut queries = Vec::new();
     for row in raw["rows"].as_array().unwrap() {
         assert!(!queries.contains(&&row["input"]), "duplicate query");
