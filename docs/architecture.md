@@ -405,9 +405,8 @@ spells it. The diagnostic names `DENIED` and `HASHED` as the lists to edit.
 `EXEMPT` beside them holds the places a user, a provider, a stored file or a detected
 program carries a word, each with its path, word (a hashed word by its hash in `0x` and
 sixteen hex digits) and reason. The deny list's own file holds each readable word, so the
-check adds one row per `DENIED` word for it. A row that matches nothing is reported, and a
-conventions test removes each row in turn to prove it still hides a word in the tree, so an
-exemption cannot outlive its need.
+check adds one row per `DENIED` word for it. A row that matches nothing, including one whose
+path left the tree, is reported, so an exemption cannot outlive its need.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio

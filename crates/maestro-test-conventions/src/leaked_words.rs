@@ -36,6 +36,7 @@ const HASHED: &[u64] = &[
     0x907e_d0a4_e178_860b,
     0x1d45_8ada_694e_23ce,
     0xd5b8_e962_9a22_6645,
+    0xe4e1_6546_1418_32fe,
 ];
 
 /// A place that may keep a denied word because a user, a provider, a stored file or a detected program carries it.
@@ -89,28 +90,84 @@ const EXEMPT: &[Exemption] = &[
         reason: "the package scope in the command lines of the detection fixtures",
     },
     Exemption {
-        path: "crates/maestro-daemon/src/settings/tests/io.rs",
-        word: "plugin",
-        reason: "temporary: a settings key in a daemon test that the daemon lane rewrites",
+        path: "crates/maestro-detection/src/agents.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the `source:` prefix that a workspace peer sends and the reader accepts as an input alias",
+    },
+    Exemption {
+        path: "crates/maestro-detection/src/agents/tests.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the source prefix alias that the reader accepts, asserted",
+    },
+    Exemption {
+        path: "crates/maestro-detection/src/agents/process/tests.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the prompt hook that a detected shell carries in its command line",
+    },
+    Exemption {
+        path: "crates/maestro-daemon/src/terminal/agents/tests/aliases.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the source prefix alias a workspace peer sends, asserted",
+    },
+    Exemption {
+        path: "crates/maestro-daemon/src/terminal/model/tests/boundaries.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the source prefix alias a workspace peer sends, asserted",
+    },
+    Exemption {
+        path: "crates/maestro-daemon/src/resume/tests.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the source prefix alias a workspace peer sends, asserted",
+    },
+    Exemption {
+        path: "crates/maestro-daemon/tests/pane_metadata.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the source prefix alias a workspace peer sends, asserted on the wire",
+    },
+    Exemption {
+        path: "crates/maestro-daemon/tests/pane_reports.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the source prefix alias a workspace peer sends, asserted on the wire",
+    },
+    Exemption {
+        path: "crates/maestro-protocol/src/schema/actions.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the `min_*_version` input alias that a stored keybinding file carries",
+    },
+    Exemption {
+        path: "crates/maestro-protocol/src/schema/panes.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the target input alias that a workspace peer sends",
+    },
+    Exemption {
+        path: "crates/maestro-protocol/tests/schema.rs",
+        word: "0xe4e16546141832fe",
+        reason: "the input aliases of the schema, asserted",
+    },
+    Exemption {
+        path: "docs/daemon-protocol.md",
+        word: "0xe4e16546141832fe",
+        reason: "the input alias that the protocol page documents",
     },
 ];
 
 /// The file that holds the deny list, so it holds each denied word readable.
 const LIST_FILE: &str = "crates/maestro-test-conventions/src/leaked_words.rs";
 
-/// Every exemption whose path exists under the root: the table, and one row per readable denied
-/// word in the list file.
+/// Every exemption, when the root holds the list file; none otherwise.
 ///
-/// A tree without a row's path is not the tree the row describes, so the row stays out of its report.
+/// A tree with the list file is the workspace the rows describe, so a row whose path is gone
+/// from it matches no word and is reported. Any other tree holds none of the places.
 fn exemptions(root: &Path) -> Vec<Exemption> {
+    if !root.join(LIST_FILE).exists() {
+        return Vec::new();
+    }
     let list = DENIED.iter().map(|word| Exemption {
         path: LIST_FILE,
         word,
         reason: "the deny list holds its words readable",
     });
-    list.chain(EXEMPT.iter().copied())
-        .filter(|row| root.join(row.path).exists())
-        .collect()
+    list.chain(EXEMPT.iter().copied()).collect()
 }
 
 /// The word lists and exemptions a run reads.
@@ -127,6 +184,7 @@ struct Lists<'a> {
 const NAME_ROOTS: &[&str] = &["crates/", "docs/"];
 
 /// Where a hit was found.
+#[derive(Clone)]
 struct Where {
     /// An absolute source path, or a workspace-relative tracked path.
     location: String,
@@ -230,11 +288,7 @@ fn describe(hit: &Hit) -> String {
 /// A hit for a found word.
 fn hit(at: &Where, line: Option<usize>, name: Option<&str>, found: Found) -> Hit {
     Hit {
-        at: Where {
-            location: at.location.clone(),
-            relative: at.relative.clone(),
-            kind: at.kind,
-        },
+        at: at.clone(),
         line,
         name: name.map(str::to_owned),
         word: found.word,

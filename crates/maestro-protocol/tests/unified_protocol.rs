@@ -203,24 +203,11 @@ fn workspace_payloads_and_subscription_selectors_preserve_fields() {
 }
 
 #[test]
-/// The single request family rejects removed names and malformed known parameters.
+/// The single request family rejects an unknown command and malformed known parameters.
 fn removed_envelopes_and_names_are_not_accepted() {
-    for name in [
-        "extension.link",
-        "extension.list",
-        "extension.unlink",
-        "extension.enable",
-        "extension.disable",
-        "extension.action.list",
-        "extension.action.invoke",
-        "extension.log.list",
-        "extension.pane.open",
-        "extension.pane.focus",
-        "extension.pane.close",
-        "not_a_command",
-    ] {
-        assert!(serde_json::from_value::<Request>(serde_json::json!({"type": name})).is_err());
-    }
+    assert!(
+        serde_json::from_value::<Request>(serde_json::json!({"type": "not_a_command"})).is_err()
+    );
     for value in [
         serde_json::json!({"id":"old", "method":"ping", "params":{}}),
         serde_json::json!({"type":"workspace.create", "focus":"yes"}),

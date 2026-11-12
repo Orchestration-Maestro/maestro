@@ -1,6 +1,7 @@
 use super::words::{find, fnv1a, spans};
-use super::{Exemption, Lists, check_with, exemptions, hits, report};
+use super::{Exemption, Lists, check_with, exemptions};
 use crate::source::Member;
+use maestro_test_directory::Scratch;
 use std::path::Path;
 
 /// A member holding one source file with the given contents.
@@ -207,31 +208,19 @@ fn an_exemption_covers_its_file_and_word_only() {
 }
 
 #[test]
-fn every_exemption_row_hides_a_word_in_the_tree() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let (metadata, _) = crate::graph::check(&root).unwrap();
-    let members = crate::source::load(&metadata).unwrap();
-    let rows = exemptions(&root);
-    assert_eq!(rows.len(), super::DENIED.len() + super::EXEMPT.len());
-    let lists = Lists {
-        denied: super::DENIED,
-        hashed: super::HASHED,
-        exempt: &rows,
-    };
-    let found = hits(&root, &members, &lists).unwrap();
-    for (index, row) in rows.iter().enumerate() {
-        let without: Vec<Exemption> = rows
-            .iter()
-            .enumerate()
-            .filter(|(other, _)| *other != index)
-            .map(|(_, row)| *row)
-            .collect();
-        let error = report(&found, &without).unwrap_err();
-        assert!(
-            error.contains(row.path) && error.contains("holds the word"),
-            "the row for `{}` ({}) hides nothing: {error}",
-            row.path,
-            row.reason
-        );
-    }
+fn a_row_whose_path_is_gone_from_the_workspace_is_reported() {
+    let root = Scratch::new().unwrap();
+    let list = root.path().join(super::LIST_FILE);
+    std::fs::create_dir_all(list.parent().unwrap()).unwrap();
+    std::fs::write(list, "").unwrap();
+    assert_eq!(
+        exemptions(root.path()).len(),
+        super::DENIED.len() + super::EXEMPT.len()
+    );
+}
+
+#[test]
+fn a_tree_without_the_list_file_has_no_rows() {
+    let root = Scratch::new().unwrap();
+    assert!(exemptions(root.path()).is_empty());
 }
