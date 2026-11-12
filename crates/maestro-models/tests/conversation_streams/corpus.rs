@@ -66,7 +66,14 @@ fn compare(actual: &Value, expected: &Value, name: &str) {
 
 /// Run every fixture owned by the named behavior test.
 pub async fn rows(test: &str) -> TestResult {
-    for row in chat::rows(include_str!("../fixtures/conversation-streams.json"), test)? {
+    for row in chat::rows(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/conversation-streams.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+        test,
+    )? {
         let name = row["name"].as_str().unwrap();
         let chunks: Vec<Vec<u8>> = serde_json::from_value(row["input"]["chunks"].clone())?;
         let stream = invoke(fetch(chunks))?;

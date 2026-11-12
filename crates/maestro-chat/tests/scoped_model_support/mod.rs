@@ -321,10 +321,22 @@ impl Fixture {
 /// Replays all attributed cases under one whole-transaction binding guard.
 pub fn replay(name: &str) {
     let _guard = crate::keybindings::bindings_guard();
-    let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/scoped_model_selection.json")).unwrap();
-    let raw: Vec<Value> =
-        serde_json::from_str(include_str!("../fixtures/scoped_model_selection.json")).unwrap();
+    let cases: Vec<Case> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/scoped_model_selection.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
+    let raw: Vec<Value> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/scoped_model_selection.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     let mut seen = std::collections::HashSet::new();
     assert!(
         raw.iter()

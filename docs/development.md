@@ -968,6 +968,25 @@ behaviour it shows in the crate's integration program, as the `maestro-app` SDK
 examples do with the scripted workspace in
 [`sdk_sample.rs`](../crates/maestro-app/tests/support/sdk_sample.rs).
 
+### Large fixtures
+
+A fixture larger than 1 MiB is read when the test runs, not compiled into it. `include_str!`
+and `include_bytes!` copy the whole file into the test executable, so every link carries it
+and any edit to the data rebuilds the test unit. Join the crate directory with the fixture
+path instead:
+
+```rust
+fn cases() -> Vec<Case> {
+    let path = format!("{}/tests/fixtures/cases.json", env!("CARGO_MANIFEST_DIR"));
+    let text = std::fs::read_to_string(path).expect("recorded cases");
+    serde_json::from_str(&text).expect("decodable recorded cases")
+}
+```
+
+A site that sits in a `const` or `static` becomes a function like this one. The
+`fixture_includes` check rejects a larger compiled-in fixture in test code, naming the
+including file, line, fixture and size.
+
 ### Library test targets
 
 A library with no tests in its `src` still builds an empty test executable on every test

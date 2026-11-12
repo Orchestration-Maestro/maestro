@@ -79,7 +79,14 @@ pub struct Admission {
 }
 /// Reads every row through strict typed records.
 pub fn corpus() -> Corpus {
-    serde_json::from_str(include_str!("../fixtures/clipboard_copy.json")).unwrap()
+    serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/clipboard_copy.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap()
 }
 use crate::clipboard_platform as recorded;
 pub use recorded::platform;

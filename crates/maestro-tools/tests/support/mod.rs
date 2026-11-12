@@ -25,7 +25,13 @@ pub struct Case {
 
 /// Select a nonempty group after rejecting repeated labels and queries.
 pub fn cases(file: &str, name: &str) -> TestResult<Vec<Case>> {
-    let rows: Vec<Case> = serde_json::from_str(include_str!("../fixtures/image_preparation.json"))?;
+    let rows: Vec<Case> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/image_preparation.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )?;
     let mut ids = HashSet::new();
     let mut queries = HashSet::new();
     for row in &rows {

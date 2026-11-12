@@ -193,8 +193,14 @@ fn repeated_quote_list_resumption_keeps_reference_depth() {
 
 #[test]
 fn nesting_keeps_recorded_documents_below_the_previous_limit() {
-    let rows: Vec<Recorded> =
-        serde_json::from_str(include_str!("../../tests/fixtures/container_depth.json")).unwrap();
+    let rows: Vec<Recorded> = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/container_depth.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     assert!(!rows.is_empty());
     for row in rows {
         let options = row.options();

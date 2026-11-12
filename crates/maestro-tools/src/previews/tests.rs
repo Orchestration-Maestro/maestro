@@ -23,8 +23,14 @@ struct Case {
 }
 /// Assert one group's ordered runs and public text.
 fn check(name: &str) {
-    let corpus: Corpus =
-        serde_json::from_str(include_str!("../../tests/fixtures/edit-line-diffs.json")).unwrap();
+    let corpus: Corpus = serde_json::from_str(
+        &std::fs::read_to_string(format!(
+            "{}/tests/fixtures/edit-line-diffs.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .expect("recorded fixture"),
+    )
+    .unwrap();
     assert_eq!(
         corpus.tests.keys().map(String::as_str).collect::<Vec<_>>(),
         vec![
