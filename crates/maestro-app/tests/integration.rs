@@ -110,6 +110,7 @@ mod rpc_peer;
 mod runtime_agent;
 mod sandbox_runtime_providers;
 mod sdk_images;
+mod sdk_login_providers;
 mod sdk_registration;
 mod sdk_root_exports;
 mod sdk_session_options;
