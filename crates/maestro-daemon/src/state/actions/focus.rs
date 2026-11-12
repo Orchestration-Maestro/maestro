@@ -23,9 +23,10 @@ impl DaemonState {
             return false;
         }
         target.switch_tab(tab);
-        self.active = Some(workspace);
-        self.selected = workspace;
-        self.session_dirty = true;
+        self.edit_topology(|state| {
+            state.active = Some(workspace);
+            state.selected = workspace;
+        });
         if previous != self.current_pane_focus_target() {
             self.previous_pane_focus = previous;
         }

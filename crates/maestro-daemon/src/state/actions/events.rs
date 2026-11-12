@@ -154,14 +154,17 @@ impl DaemonState {
 
     /// Retains only an existing absolute directory and marks changed sessions dirty.
     fn update_terminal_cwd(&mut self, pane: PaneId, cwd: std::path::PathBuf) {
-        if cwd.is_absolute()
-            && cwd.is_dir()
-            && let Some(terminal) = self.terminal_for_pane_mut(pane)
-            && terminal.cwd != cwd
-        {
-            terminal.cwd = cwd;
-            self.session_dirty = true;
+        if !cwd.is_absolute() || !cwd.is_dir() {
+            return;
         }
+        let changed = self.terminal_for_pane_mut(pane).is_some_and(|terminal| {
+            let differs = terminal.cwd != cwd;
+            if differs {
+                terminal.cwd = cwd;
+            }
+            differs
+        });
+        self.mark_session_dirty_if(changed);
     }
 
     /// Borrows metadata through the pane's attached terminal identity.
