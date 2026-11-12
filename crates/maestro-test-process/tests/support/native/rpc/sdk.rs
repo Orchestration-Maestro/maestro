@@ -1,4 +1,4 @@
-//! Protocol checks of the client example in `examples/sdk`.
+//! Peer scripts for the protocol checks of an RPC client.
 
 use std::io;
 

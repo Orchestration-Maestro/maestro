@@ -1298,7 +1298,6 @@ fn package_inputs(package: &Path) {
     ] {
         write_input(package, name, bytes);
     }
-    crate::build_recipes::copy_tree(&repository_examples(), &package.join("examples"));
 }
 
 /// Assert that a viewer directory with no entries copies as an empty export directory in a fresh
@@ -1493,7 +1492,6 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
     ] {
         assert_eq!(fs::read(destination.join(name)).unwrap(), bytes.as_bytes());
     }
-    assert_example_tree(&repository_examples(), &destination.join("examples"));
     assert_empty_viewer_copy(&fixture, &source, &package);
     fs::write(
         source.join("Cargo.toml"),
@@ -1555,31 +1553,6 @@ fn split_inputs(fixture: &Fixture) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
     (source, package, metadata, viewer)
 }
 
-/// Locate the repository's authored examples from this crate's manifest directory.
-fn repository_examples() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples")
-}
-
-/// Assert every source file reaches the matching destination path byte for byte.
-fn assert_example_tree(source: &Path, destination: &Path) {
-    for entry in fs::read_dir(source).unwrap() {
-        let entry = entry.unwrap();
-        let destination = destination.join(entry.file_name());
-        if entry.file_type().unwrap().is_dir() {
-            assert_example_tree(&entry.path(), &destination);
-        } else {
-            assert_eq!(
-                fs::read(&destination).unwrap_or_else(|error| {
-                    panic!("cannot read {}: {error}", destination.display())
-                }),
-                fs::read(entry.path()).unwrap(),
-                "{}",
-                destination.display()
-            );
-        }
-    }
-}
-
 #[test]
 fn maestro_package_assets_come_from_the_package_directory() {
     #[cfg(unix)]
@@ -1628,7 +1601,6 @@ fn maestro_package_assets_come_from_the_package_directory() {
     );
     assert!(!destination.join("docs/crate.md").exists());
     assert!(!destination.join("examples/crate.txt").exists());
-    assert_example_tree(&repository_examples(), &destination.join("examples"));
 }
 
 #[test]
@@ -2239,7 +2211,7 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
     assert!(!stdout(&output).contains("compilation failed"));
 }
 
-fn git(root: &Path, args: &[&str]) -> Output {
+pub(crate) fn git(root: &Path, args: &[&str]) -> Output {
     let output = Command::new("git")
         .current_dir(root)
         .args(args)
@@ -4474,79 +4446,6 @@ fn shipped_example_index_matches_documentation() {
     .unwrap();
 }
 
-/// New example test files enter one generated inventory in name order.
-#[test]
-fn example_test_modules_discover_independent_additions() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
-    for name in [
-        "zulu_example.rs",
-        "mike_example.rs",
-        "alpha_example.rs",
-        "helper.rs",
-    ] {
-        fs::write(root.path().join(name), "// test fixture\n").unwrap();
-    }
-    let declarations = crate::example_test_modules::generate(root.path()).unwrap();
-    assert!(!declarations.contains("mod helper;"));
-    let positions = ["alpha_example", "mike_example", "zulu_example"]
-        .map(|name| declarations.find(&format!("mod {name};")).unwrap());
-    assert!(positions.is_sorted(), "{declarations}");
-    assert!(!declarations.contains("#[path"));
-}
-
-/// Discovered modules retain ordinary nested-module lookup when compiled and run.
-#[test]
-fn example_test_modules_resolve_nested_modules() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
-    let tests = root.path().join("tests");
-    fs::create_dir_all(tests.join("nested_example")).unwrap();
-    fs::create_dir(root.path().join("generated")).unwrap();
-    fs::write(
-        tests.join("nested_example.rs"),
-        "mod child; pub(super) fn value() -> u8 { child::value() }",
-    )
-    .unwrap();
-    fs::write(
-        tests.join("nested_example/child.rs"),
-        "pub(super) fn value() -> u8 { 42 }",
-    )
-    .unwrap();
-    let generated = root.path().join("generated/modules.rs");
-    fs::write(
-        &generated,
-        crate::example_test_modules::generate(&tests).unwrap(),
-    )
-    .unwrap();
-    fs::write(
-        root.path().join("tests.rs"),
-        format!(
-            "include!({generated:?}); example_tests!(); pub fn value() -> u8 {{ nested_example::value() }}"
-        ),
-    )
-    .unwrap();
-    let main = root.path().join("main.rs");
-    fs::write(
-        &main,
-        "mod tests; fn main() { assert_eq!(tests::value(), 42); }",
-    )
-    .unwrap();
-    let executable = root
-        .path()
-        .join(format!("nested{}", std::env::consts::EXE_SUFFIX));
-    let output = compiler::command("rustc")
-        .arg(&main)
-        .arg("-o")
-        .arg(&executable)
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert!(Command::new(executable).status().unwrap().success());
-}
-
 /// A source-only addition supplies its build target, environment and setup selection.
 #[test]
 fn example_components_discover_source_only_additions() {
@@ -4587,7 +4486,7 @@ fn example_components_discover_source_only_additions() {
     let filter = config["profile"]["default"]["scripts"][0]["filter"]
         .as_str()
         .unwrap();
-    assert!(filter.contains("test(/_example::/)"), "{filter}");
+    assert!(filter.contains("test(subagent_example::)"), "{filter}");
     assert!(!filter.contains("qna_example::"), "{filter}");
 }
 

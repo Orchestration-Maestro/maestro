@@ -203,9 +203,8 @@ local(async {
 
 ### Maestro's own greeting tests
 
-The [greeting tests](../../crates/maestro-extensions-wasmtime/tests/hello_example.rs)
-use this harness against the shipped [`hello`](../../examples/extensions/hello.rs)
-example. They check its schema, every recorded name, invocation with an aborted
-signal and an update callback, and the refused registration above. Inside the
-Maestro checkout, they pass the run's prepared agent directory so the engine
-reuses the code the run compiled.
+The greeting tests in maestro-packages use this harness against the shipped
+[`hello`](../../examples/extensions/hello.rs) example. They check its schema, every
+recorded name, invocation with an aborted signal and an update callback, and the
+refused registration above. They pass the run's prepared agent directory so the
+engine reuses the code the run compiled.
