@@ -1,5 +1,6 @@
 //! Independent local capability ownership through the single request pump.
 use crate::read_imports::ReadEndpoint;
+mod api;
 mod builtin;
 mod component;
 mod keys;

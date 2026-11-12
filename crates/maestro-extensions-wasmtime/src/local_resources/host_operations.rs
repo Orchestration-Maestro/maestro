@@ -97,21 +97,25 @@ pub(crate) fn add_to_linker<T: crate::api_imports::ApiView + 'static>(
         |accessor, (operation,): (Operation,)| {
             Box::pin(async move {
                 let api = accessor.with(|mut access| access.get().api().clone());
-                let result = api
-                    .0
-                    .request_async(|id, reply, admission| {
-                        Message::HostOperation(Call {
-                            id,
-                            operation: operation.into(),
-                            reply,
-                            admission,
-                        })
-                    })
-                    .await;
-                Ok((result,))
+                Ok((api.host_operation(operation.into()).await,))
             })
         },
     )
+}
+impl crate::api_reads::Endpoint {
+    /// Admits one factory-time operation on the original facade.
+    pub(crate) async fn host_operation(&self, operation: HostOperation) -> Result<String, String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                Message::HostOperation(Call {
+                    id,
+                    operation,
+                    reply,
+                    admission,
+                })
+            })
+            .await
+    }
 }
 impl State {
     /// Selects the original operation before releasing the API capability.
