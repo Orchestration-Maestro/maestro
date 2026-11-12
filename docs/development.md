@@ -2208,7 +2208,7 @@ test observes.
 | `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
 | `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
-| `crates/maestro-rpc/tests/support/served.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
+| `crates/maestro-rpc/tests/support/served.rs:281` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
 
 #### Application RPC peers
