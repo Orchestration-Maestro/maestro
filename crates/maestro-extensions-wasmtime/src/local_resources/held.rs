@@ -235,6 +235,14 @@ held!(
     Capability::Keybindings(keys) => keys
 );
 
+held!(
+    /// A native file watch registration.
+    Watch,
+    std::rc::Rc<dyn maestro_extensions::native_io::FsWatcher>,
+    "native watch resource ended",
+    Capability::NativeWatcher(watch) => watch
+);
+
 /// Builds the inline call kind: the call runs on the local owner and replies on its channel.
 fn run_message<H: Held, T: Send + 'static>(
     id: u64,

@@ -1,5 +1,5 @@
 //! Retained native watch registrations on the existing local resource pump.
-use super::{Capability, Lease, Registry, pump::State};
+use super::{Capability, Lease, Registry, held::Watch, pump::State};
 use crate::guest_calls::{Handle, SynchronousKind};
 use std::{
     rc::Rc,
@@ -12,16 +12,13 @@ pub struct Watcher(pub(crate) Arc<Lease>);
 impl Watcher {
     /// Stops delivery from the registration this lease retains.
     pub(crate) fn close(&self) -> Result<(), String> {
-        self.0
-            .request(|id, reply| super::Message::Watch(id, Request::Close(reply)))
+        self.0.run::<Watch, _>(|watch, _| watch.close())
     }
 }
 /// Operations on the original watch owner.
 pub(crate) enum Request {
     /// Registers the authored callback under its creating facade.
     Open(String, Handle, Sender<Result<Watcher, String>>),
-    /// Stops delivery from that same registration.
-    Close(Sender<Result<(), String>>),
 }
 impl State {
     /// Resolves owners outside capability-table borrows before native calls.
@@ -29,14 +26,6 @@ impl State {
         match request {
             Request::Open(path, listener, reply) => {
                 let result = self.registry.watch(id, path, listener);
-                let _ = reply.send(result);
-            }
-            Request::Close(reply) => {
-                let capability = self.registry.capability(id);
-                let result = match capability.as_deref() {
-                    Some(Capability::NativeWatcher(watch)) => watch.close(),
-                    _ => Err("native watch resource ended".into()),
-                };
                 let _ = reply.send(result);
             }
         }

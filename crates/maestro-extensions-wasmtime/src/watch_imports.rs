@@ -5,23 +5,26 @@
     clippy::excessive_nesting
 )]
 use crate::{
+    bindings::maestro::extension::host::HostFsWatcher,
     callback_imports::{CallbackView, retain},
+    context_imports::add_resource,
     guest_calls::Callback,
+    lifecycle::State,
     local_resources::{
         Message,
         watches::{Request, Watcher},
     },
+    read_imports::{endpoint, forwards, release},
 };
 use wasmtime::{
     StoreContextMut,
     component::{LinkerInstance, Resource},
 };
 
-/// Installs watch registration and close through the existing local request pump.
+/// Installs watch registration through the existing local request pump.
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, Watcher>(host, "fs-watcher")?;
     host.func_wrap(
         "watch",
         |mut store: StoreContextMut<'_, T>, (path, listener): (String, Resource<Callback>)| {
@@ -37,12 +40,24 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             };
             Ok((result,))
         },
-    )?;
-    host.func_wrap(
-        "[method]fs-watcher.close",
-        |mut store: StoreContextMut<'_, T>, (watch,): (Resource<Watcher>,)| {
-            let watch = store.data_mut().ctx().table.get(&watch)?.clone();
-            Ok((watch.close(),))
-        },
     )
+}
+
+impl HostFsWatcher for State {
+    fn close(&mut self, this: Resource<Watcher>) -> wasmtime::Result<Result<(), String>> {
+        Ok(endpoint(self, &this)?.close())
+    }
+
+    fn drop(&mut self, this: Resource<Watcher>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards the close method of a watch registration to its trait implementation.
+pub(crate) fn add_watcher(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Watcher>(host, "fs-watcher")?;
+    forwards! { host, "fs-watcher", HostFsWatcher, Watcher,
+        "close" => close();
+    }
+    Ok(())
 }
