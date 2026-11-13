@@ -1,6 +1,6 @@
 # Standalone account commands
 
-`maestro_cli::model_login::cli` presents the account command a user runs without
+`maestro_cli::model_account::cli` presents the account command a user runs without
 starting an agent session: `help`, `list` and `login` over the OAuth providers in
 the snapshot the caller supplies, which exists before any account file does. It is
 a library, not a process.
@@ -15,7 +15,7 @@ table lists and which identifiers a login accepts. The resolver decides which
 implementation serves a login, and it is asked only after the snapshot accepted
 that identifier, so replacing or withdrawing a provider implementation between
 the question and the login is visible. Implementation:
-`crates/maestro-cli/src/model_login/cli.rs`.
+`crates/maestro-cli/src/model_account/cli.rs`.
 
 An Anthropic login listens for the browser's redirect on local port 53692. When
 another program holds that port, the login uses a free local port and names it in the
