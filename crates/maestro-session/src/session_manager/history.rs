@@ -1,6 +1,6 @@
 //! Projection of caller-supplied entries without session-file reads or writes.
 //! Stored timestamp conversion uses the existing [`crate::message_records`] owner.
-use super::types::{SessionContext, SessionContextModel, SessionEntry};
+use super::views::{SessionContext, SessionContextModel, SessionEntry};
 pub(super) use maestro_json::is_truthy as truthy;
 use maestro_request::presence::Presence;
 use serde::de::Error as _;
@@ -221,7 +221,7 @@ pub(crate) fn generated(entry: &Value, role: &str, fields: &[&str]) -> Value {
 /// Outer ECMAScript whitespace is removed; remaining nonblank lines use native
 /// JSON acceptance and limits. Malformed lines are skipped; empty JSON values are kept.
 #[must_use]
-pub fn parse_session_entries(content: &str) -> Vec<super::types::FileEntry> {
+pub fn parse_session_entries(content: &str) -> Vec<super::views::FileEntry> {
     let mut entries = Vec::new();
     // Reading a byte slice cannot fail, so the result holds no error to report.
     let _ = super::records::for_each_entry(
