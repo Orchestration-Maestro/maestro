@@ -4,6 +4,7 @@ pub(super) use crate::oauth::callback::{AuthorizationCode, parse_authorization_i
 use crate::oauth::callback::{CallbackResponse, first_query, query_fields};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{oauth_error_html, oauth_success_html};
+#[cfg(not(target_arch = "wasm32"))]
 use maestro_models::OAuthError;
 #[cfg(not(target_arch = "wasm32"))]
 use url::Url;
