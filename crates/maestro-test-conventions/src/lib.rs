@@ -197,7 +197,7 @@ mod tracked_sizes;
 /// A module below a member's `src/` may not be named `utils`, `util`, `helpers`, `common`,
 /// `misc`, `shared` or `types`: such a name says where code was put, not what the module holds.
 /// Module declarations, inline ones included, and module files and directories are read, and a
-/// module is reported once with its file and its path below the crate root. `EXEMPT` in
+/// module is reported once with its file and its path below `src/`. `EXEMPT` in
 /// `bucket_modules.rs` holds the modules that keep such a name, by member and module path, each
 /// with its reason. The rows stay sorted, and a row that matches no module is reported.
 ///

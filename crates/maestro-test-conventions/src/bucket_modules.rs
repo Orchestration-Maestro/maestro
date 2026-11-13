@@ -3,7 +3,7 @@
 //! A module named `utils`, `util`, `helpers`, `common`, `misc`, `shared` or `types` names a
 //! place, not what the module holds. The check reads the sources below each member's `src/`:
 //! every module declaration, inline or not, and every module file and directory. A module is
-//! keyed by its member and its path below the crate root, so a declaration, its file and its
+//! keyed by its member and its path below `src/`, so a declaration, its file and its
 //! directory are one module with one diagnostic. `EXEMPT` holds the modules that keep such a
 //! name, each with its reason, and the workspace reports a row that matches no module.
 
@@ -36,7 +36,7 @@ impl Reason {
     }
 }
 
-/// A module that keeps a bucket name: its member, its path below the crate root and the reason.
+/// A module that keeps a bucket name: its member, its path below `src/` and the reason.
 type Row = (&'static str, &'static str, Reason);
 
 /// Modules that keep a bucket name, sorted by member and then by module path, each once.

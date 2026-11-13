@@ -454,7 +454,7 @@ A module is named for what it holds. Conventions reject a module below a member'
 named `utils`, `util`, `helpers`, `common`, `misc`, `shared` or `types`: such a name says
 where code was put. The check reads every module declaration, inline ones and test modules
 included, and every module file and directory. A module is identified by its member and its
-path below the crate root (`records::types`), so a declaration, its file and its directory
+path below `src/` (`records::types`), so a declaration, its file and its directory
 are one module. It is reported once, with the file and line of its declaration, or with
 its path when no parsed source declares it. Sources outside `src/`, such as `tests/` and
 `examples/`, are not checked.

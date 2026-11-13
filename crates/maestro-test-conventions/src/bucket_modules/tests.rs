@@ -81,7 +81,7 @@ fn rows_out_of_order_or_repeated_are_reported() {
 }
 
 #[test]
-fn a_module_is_keyed_by_its_path_below_the_crate_root() {
+fn a_module_is_keyed_by_its_path_below_src() {
     let sources = [
         ("src/lib.rs", "mod parsing {\n    mod helpers {}\n}\n"),
         ("src/records/shared.rs", "mod common;\n"),
