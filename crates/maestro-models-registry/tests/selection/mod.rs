@@ -1,10 +1,10 @@
 //! Recorded model selection through shared public handles.
-use maestro_catalog::{
+use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_models::{Model, SharedHandle};
+use maestro_models_registry::{
     DEFAULT_MODEL_PER_PROVIDER, ModelRegistry, ParseModelPatternOptions, ResolveCliModelOptions,
     find_exact_model_reference_match, model_id_comparator, parse_model_pattern, resolve_cli_model,
 };
-use maestro_credentials::{AuthStorage, AuthStorageData};
-use maestro_models::{Model, SharedHandle};
 use serde::Deserialize;
 use std::sync::{Arc, RwLock};
 /// Shared descriptor identity.

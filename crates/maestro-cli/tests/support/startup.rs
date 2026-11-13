@@ -1,8 +1,8 @@
 //! Controlled settings, catalogs and stored histories shared by the startup tests.
 
-use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput};
 use maestro_credentials::{AuthStorage, AuthStorageData, ConfigValueOperations};
 use maestro_models::{ModelCost, ModelInput};
+use maestro_models_registry::{ModelRegistry, ProviderConfigInput, ProviderModelInput};
 use maestro_settings::{Settings, SettingsManager};
 use std::cmp::Ordering;
 use std::path::Path;
@@ -104,7 +104,7 @@ pub fn configuration(
         headers: None,
         auth_header: None,
         models: Some(definitions),
-        callbacks: maestro_catalog::ProviderCallbacks::default(),
+        callbacks: maestro_models_registry::ProviderCallbacks::default(),
     }
 }
 

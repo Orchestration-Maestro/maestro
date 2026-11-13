@@ -9,7 +9,7 @@ repository.workspace = true
 [dependencies]
 maestro-protocol = { path = "../maestro-protocol" }
 maestro-resources = { path = "../maestro-resources" }
-maestro-catalog = { path = "../maestro-catalog" }
+maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-settings = { path = "../maestro-settings" }
 maestro-credentials = { path = "../maestro-credentials" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }

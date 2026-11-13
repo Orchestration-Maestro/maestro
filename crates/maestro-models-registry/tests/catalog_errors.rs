@@ -1,7 +1,7 @@
 #![cfg(test)]
 //! Public catalog diagnostic ownership.
-use maestro_catalog::CatalogError;
 use maestro_models::{DiagnosticCode, DiagnosticErrorInfo};
+use maestro_models_registry::CatalogError;
 use std::error::Error;
 
 #[test]

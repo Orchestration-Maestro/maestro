@@ -230,7 +230,7 @@ Internal-dependency descriptions below state domain edges, subject to the
 [native feature-unifier exception](docs/specs/maestro-port.md#native-feature-unifier),
 including leaves and exact sets. The unifier itself has no workspace dependencies.
 
-- **Catalog:** The application-facing usable model selection resolved from models and credentials.
+- **Model registry:** The usable models resolved from the model catalog, local model files and credentials; `ModelRegistry` owns it. _Avoid:_ catalog for this concept.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The [tool-record library](docs/tool-records.md), `maestro-tool`, depends only on `maestro-request` and owns the tool interchange records; `maestro-tools` keeps execution.
 - **Export:** Session document serialization shared with application operations.
 - **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf, the native process owner, the shared Markdown parser and the optional foundation utility, without application selectors or framework/highlighting engines. It is not the terminal adapter in `maestro-tui-crossterm`, and not the terminal emulator in `maestro-terminal-emulator`.

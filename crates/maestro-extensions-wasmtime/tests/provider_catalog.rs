@@ -897,7 +897,7 @@ fn file_session(path: &std::path::Path) -> maestro_extensions::execution::Extens
     let (mut session, _) = super::session::runner_session("/provider-file");
     let original = session.model_registry.clone();
     session.model_registry = maestro_extensions::SharedHandle::new(
-        maestro_catalog::ModelRegistry::create(
+        maestro_models_registry::ModelRegistry::create(
             original.auth_storage().clone(),
             path.to_string_lossy().into_owned(),
             original.config_values().clone(),
@@ -1081,7 +1081,10 @@ fn provider_replacement_refresh_and_removal_preserve_owner_policy() {
 }
 
 /// Reads the real catalog's selected identities, retaining its publication order.
-fn selected(catalog: &maestro_catalog::ModelRegistry, providers: &[&str]) -> Vec<(String, String)> {
+fn selected(
+    catalog: &maestro_models_registry::ModelRegistry,
+    providers: &[&str],
+) -> Vec<(String, String)> {
     catalog
         .get_all()
         .read()
@@ -1140,7 +1143,7 @@ async fn provider_restoration() {
 /// Observes incoming full replacement and retained insertion order through a reload.
 async fn provider_replacement_order(
     runner: &ExtensionRunner<Local>,
-    native: &maestro_catalog::ModelRegistry,
+    native: &maestro_models_registry::ModelRegistry,
 ) {
     provider_call(
         runner,
@@ -1303,7 +1306,7 @@ type ProviderCalls = Rc<RefCell<Vec<String>>>;
 async fn registration_action_case(
     runner: &Rc<ExtensionRunner<Local>>,
     events: &maestro_extensions::EventBus<Local>,
-    catalog: &maestro_extensions::SharedHandle<maestro_catalog::ModelRegistry>,
+    catalog: &maestro_extensions::SharedHandle<maestro_models_registry::ModelRegistry>,
     calls: &ProviderCalls,
 ) {
     let (native, seen, reenter, nested) = (
@@ -1352,7 +1355,7 @@ async fn registration_action_case(
 async fn removal_action_case(
     runner: &Rc<ExtensionRunner<Local>>,
     events: &maestro_extensions::EventBus<Local>,
-    catalog: &maestro_extensions::SharedHandle<maestro_catalog::ModelRegistry>,
+    catalog: &maestro_extensions::SharedHandle<maestro_models_registry::ModelRegistry>,
     calls: &ProviderCalls,
 ) {
     let (native, seen, reenter, nested) = (
@@ -1531,7 +1534,7 @@ fn credential_session_fallback_releases_after_runner_and_guest_handles() {
 /// Observes final release through a different context, without retaining the original runner.
 async fn assert_session_release(
     command: &maestro_extensions::types::CommandHandler<Local>,
-    catalog: std::sync::Weak<maestro_catalog::ModelRegistry>,
+    catalog: std::sync::Weak<maestro_models_registry::ModelRegistry>,
     credentials: std::sync::Weak<maestro_extensions::AuthStorage>,
 ) {
     let observer = ExtensionRunner::<Local>::new(
@@ -1637,7 +1640,7 @@ fn provider_request_auth_uses_shared_credential_owner() {
 /// Checks keys at the consuming guest boundary, including a model absent from the catalog.
 async fn request_key_tiers(
     runner: &ExtensionRunner<Local>,
-    native: &maestro_catalog::ModelRegistry,
+    native: &maestro_models_registry::ModelRegistry,
     input: &Value,
 ) {
     let environment = std::env::var("OPENAI_API_KEY").unwrap();
@@ -1681,7 +1684,7 @@ async fn request_key_tiers(
 /// Empty configured keys count as configured but do not supply request keys or status.
 async fn request_empty_and_fallback(
     runner: &ExtensionRunner<Local>,
-    native: &maestro_catalog::ModelRegistry,
+    native: &maestro_models_registry::ModelRegistry,
     mut input: Value,
 ) {
     input["provider"] = json!("auth-no-environment");

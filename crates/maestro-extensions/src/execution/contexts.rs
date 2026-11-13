@@ -8,8 +8,8 @@ use crate::{
         NewSessionCommandOptions, SessionChangeResult, SwitchSessionOptions,
     },
 };
-use maestro_catalog::ModelRegistry;
 use maestro_models::{Cancellation, Model, SharedHandle};
+use maestro_models_registry::ModelRegistry;
 use maestro_session::session_manager::{NavigateTreeOptions, ReadonlySessionManager};
 use std::future::ready;
 use std::{

@@ -7,10 +7,10 @@ use maestro_app::{
     CreateAgentSessionRuntimeFactory, CreateAgentSessionServicesOptions, ResourceKind,
     ResourceLoaderOptions, create_agent_session_services,
 };
-use maestro_catalog::ModelResolverOutput;
 use maestro_credentials::AuthStorage;
 use maestro_extensions::{ExtensionFactory, ModuleLoader};
 use maestro_models::{DiagnosticErrorInfo, Local};
+use maestro_models_registry::ModelResolverOutput;
 use maestro_theme::{Collator, LiveTheme};
 use std::{cell::RefCell, io, io::Write, rc::Rc, sync::Arc};
 use tokio::task::LocalSet;

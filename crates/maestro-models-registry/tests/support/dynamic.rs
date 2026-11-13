@@ -2,8 +2,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 mod native {
     pub use crate::isolation::isolated;
-    use maestro_catalog::{ProviderConfigInput, ProviderModelInput};
     use maestro_models::{ModelCost, ModelInput, SharedHandle};
+    use maestro_models_registry::{ProviderConfigInput, ProviderModelInput};
     use std::sync::{Arc, RwLock};
     /// Complete definition with distinguishable supplied metadata.
     #[must_use]
@@ -134,7 +134,7 @@ mod native {
     /// Panics if a shared descriptor guard is poisoned.
     #[must_use]
     pub fn selected(
-        registry: &maestro_catalog::ModelRegistry,
+        registry: &maestro_models_registry::ModelRegistry,
         providers: &[&str],
     ) -> Vec<(String, String, String)> {
         registry
@@ -165,7 +165,11 @@ mod native {
     /// # Panics
     /// Panics when the configured model or protocol is absent or unexpectedly succeeds.
     #[must_use]
-    pub fn failure(registry: &maestro_catalog::ModelRegistry, provider: &str, id: &str) -> String {
+    pub fn failure(
+        registry: &maestro_models_registry::ModelRegistry,
+        provider: &str,
+        id: &str,
+    ) -> String {
         let model = registry.find(provider, id).unwrap().read().unwrap().clone();
         live_failure(&model).unwrap()
     }
@@ -189,7 +193,7 @@ mod native {
     }
     /// File effects with an observable read boundary.
     pub struct CountFile(pub Arc<std::sync::atomic::AtomicUsize>);
-    impl maestro_catalog::ModelFileOperations for CountFile {
+    impl maestro_models_registry::ModelFileOperations for CountFile {
         fn exists(&self, _: &str) -> bool {
             true
         }
@@ -287,9 +291,12 @@ pub fn account_failure(message: &str) -> maestro_models::OAuthError {
 /// Inspect the account wrapper and each supplied cause through native errors.
 /// # Panics
 /// Panics if any retained field or source differs.
-pub fn assert_account_failure(error: &maestro_catalog::CatalogError, message: &str) {
+pub fn assert_account_failure(error: &maestro_models_registry::CatalogError, message: &str) {
     use std::error::Error;
-    assert!(matches!(error, maestro_catalog::CatalogError::OAuth(_)));
+    assert!(matches!(
+        error,
+        maestro_models_registry::CatalogError::OAuth(_)
+    ));
     assert_eq!(error.to_string(), message);
     assert_eq!(error.diagnostic(), &diagnostic(message));
     let account = error

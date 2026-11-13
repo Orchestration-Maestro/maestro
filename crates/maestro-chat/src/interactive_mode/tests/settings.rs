@@ -970,15 +970,15 @@ async fn use_reasoning_model(world: &World, provider: &str, id: &str) {
         .register_provider(
             provider,
             maestro_models::SharedHandle::new(std::sync::RwLock::new(
-                maestro_catalog::ProviderConfigInput {
+                maestro_models_registry::ProviderConfigInput {
                     base_url: Some("https://example.invalid".into()),
                     api_key: Some("fixture".into()),
                     api: Some("openai-completions".into()),
-                    models: Some(vec![maestro_catalog::ProviderModelInput {
+                    models: Some(vec![maestro_models_registry::ProviderModelInput {
                         reasoning: true,
                         ..model_input(id)
                     }]),
-                    ..maestro_catalog::ProviderConfigInput::default()
+                    ..maestro_models_registry::ProviderConfigInput::default()
                 },
             )),
         )

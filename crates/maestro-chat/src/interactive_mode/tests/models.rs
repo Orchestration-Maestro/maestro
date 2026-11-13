@@ -10,7 +10,6 @@ use crate::ModelSelectorComponent;
 use crate::components::scoped_models_selector::{ModelsCallbacks, ScopedModelsSelectorComponent};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_agent::ThinkingLevel;
-use maestro_catalog::{ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_credentials::AuthCredential;
 use maestro_extensions::{
     ExtensionFactory, footer::ReadonlyFooterDataProvider, types::events::ModelSelectEvent,
@@ -19,6 +18,7 @@ use maestro_models::{
     DiagnosticErrorInfo, Local, Model, ModelCost, ModelInput, OAuthCredentials, OAuthError,
     SharedHandle,
 };
+use maestro_models_registry::{ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_session::SessionManager;
 use maestro_settings::{Settings, SettingsListEntry, SettingsManager, WarningSettings};
 use maestro_test_process::TestProcess;
@@ -1071,7 +1071,7 @@ pub(super) fn refuse_refresh(world: &World) {
             SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: Some("https://example.invalid".into()),
                 api: Some("openai-completions".into()),
-                callbacks: maestro_catalog::ProviderCallbacks {
+                callbacks: maestro_models_registry::ProviderCallbacks {
                     oauth: Some(SharedHandle::new(RefusingProvider::new(
                         "refusing", "Refusing", refused,
                     ))),

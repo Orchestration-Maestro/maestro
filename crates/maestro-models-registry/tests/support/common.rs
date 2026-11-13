@@ -1,7 +1,7 @@
 //! Shared controlled and native catalog files.
-use maestro_catalog::{ConfigValues, ModelFileOperations, ModelRegistry};
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_models::SharedHandle;
+use maestro_models_registry::{ConfigValues, ModelFileOperations, ModelRegistry};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
@@ -88,7 +88,7 @@ impl File {
         use std::io::Write;
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let path = maestro_test_directory::temporary_root().join(format!(
-            "maestro-catalog-{}-{}.json",
+            "maestro-models-registry-{}-{}.json",
             std::process::id(),
             NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
         ));

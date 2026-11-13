@@ -86,7 +86,7 @@ fn pattern_strict_mode_keeps_invalid_suffixes_unmatched() {
 }
 #[test]
 fn selected_models_keep_shared_identity() {
-    use maestro_catalog::{
+    use maestro_models_registry::{
         ResolveCliModelOptions, find_exact_model_reference_match, parse_model_pattern,
         resolve_cli_model,
     };
@@ -100,7 +100,7 @@ fn selected_models_keep_shared_identity() {
     let pattern = parse_model_pattern(
         "share",
         &handles,
-        maestro_catalog::ParseModelPatternOptions::default(),
+        maestro_models_registry::ParseModelPatternOptions::default(),
         &str::cmp,
     )
     .model

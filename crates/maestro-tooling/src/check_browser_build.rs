@@ -11,9 +11,9 @@ use std::process::{Command, ExitCode};
 /// reads it. Every witness the workspace keeps is listed here.
 pub(crate) const WITNESSES: [(&str, &str, &str); 4] = [
     (
-        "maestro-catalog",
+        "maestro-models-registry",
         "browser_catalog_check",
-        "crates/maestro-catalog/tests/support/browser_catalog_check.rs",
+        "crates/maestro-models-registry/tests/support/browser_catalog_check.rs",
     ),
     (
         "maestro-models",

@@ -1,7 +1,7 @@
 #![cfg(test)]
 //! File loading through the public registry.
-use maestro_catalog::{ModelFileOperations, ModelRegistry};
 use maestro_models::{SharedHandle, get_models, get_providers};
+use maestro_models_registry::{ModelFileOperations, ModelRegistry};
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 

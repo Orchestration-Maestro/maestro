@@ -1,7 +1,7 @@
 //! Controlled request effects and inline source-derived observations.
 use indexmap::IndexMap;
-use maestro_catalog::{ModelRegistry, ResolvedRequestAuth};
 use maestro_credentials::ConfigValueOperations;
+use maestro_models_registry::{ModelRegistry, ResolvedRequestAuth};
 use std::sync::Mutex;
 
 /// Completed helper outcomes and the commands asked for.

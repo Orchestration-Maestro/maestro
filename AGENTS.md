@@ -329,7 +329,7 @@ that build a real model catalog, the native-only `maestro-extensions-wasmtime`
 to catalog, credentials, models, session, theme and toolkit for reused native composition
 test support, including a real terminal for synchronous component factories, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
-the native `maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-catalog` and
+the native `maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-models-registry` and
 `maestro-credentials` edges for protocol tests that render exports and drive a real session
 through the scripted provider, the native-only, non-optional `maestro-chat`
 to `maestro-models` edge for interactive-mode tests that drive a real session

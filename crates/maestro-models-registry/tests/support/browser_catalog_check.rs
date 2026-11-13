@@ -2,12 +2,12 @@
 #[cfg(target_arch = "wasm32")]
 mod browser {
     //! Compile-only browser callers with real non-Send effects.
-    use maestro_catalog::{
+    use maestro_credentials::{AuthStorage, ConfigValueOperations};
+    use maestro_models::{OAuthCredentials, SharedHandle};
+    use maestro_models_registry::{
         CatalogError, ConfigValues, ModelFileOperations, ModelRegistry, ProviderCallbacks,
         ProviderConfigInput,
     };
-    use maestro_credentials::{AuthStorage, ConfigValueOperations};
-    use maestro_models::{OAuthCredentials, SharedHandle};
     use std::sync::RwLock;
     use std::{cell::Cell, rc::Rc};
     /// Caller-local observations.
