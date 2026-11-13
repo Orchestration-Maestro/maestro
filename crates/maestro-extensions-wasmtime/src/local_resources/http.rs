@@ -1,6 +1,6 @@
 //! Native HTTP resources live on the existing local capability owner.
 use super::{
-    Admission, Capability, Lease, Registry, SignalEndpoint, held::NativeResponse,
+    Admission, Capability, Lease, Message, Registry, SignalEndpoint, held::NativeResponse,
     native_resources::Reader, pump::State,
 };
 use maestro_extensions::native_io;
@@ -34,6 +34,24 @@ impl Response {
                 .map(|body| registry.reader(body))
                 .transpose()
         })
+    }
+}
+impl Response {
+    /// Collects the original body through its native response owner.
+    pub(crate) async fn text(&self) -> Result<String, String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                Message::Http(id, Request::Text(reply, admission))
+            })
+            .await
+    }
+    /// Parses the original body and uses the lossless JSON wire.
+    pub(crate) async fn json(&self) -> Result<String, String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                Message::Http(id, Request::Json(reply, admission))
+            })
+            .await
     }
 }
 /// Supplied HTTP operands with a retained original signal endpoint.
