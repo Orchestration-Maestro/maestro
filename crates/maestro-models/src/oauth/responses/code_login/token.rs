@@ -1,11 +1,11 @@
 //! Ordered token requests and selected account metadata.
 use crate::providers::json_text::{compact_raw, member, number, object_record, raw_json};
-use crate::providers::transport::decode_utf8;
 use crate::{Fetch, FetchError, HttpRequest, OAuthCredentials, OAuthError};
 use base64::{
     Engine as _, alphabet,
     engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig},
 };
+use maestro_http::decode_utf8;
 use serde::Deserialize;
 
 /// Public application identifier.
@@ -154,7 +154,7 @@ pub(super) fn account_id(token: &str) -> Option<String> {
 
 /// Read all bytes before decoding UTF-8.
 async fn read_text(body: crate::HttpBody) -> Result<String, OAuthError> {
-    let bytes = crate::providers::transport::collect_body(body)
+    let bytes = maestro_http::collect_body(body)
         .await
         .map_err(fetch_error)?;
     Ok(decode_utf8(&bytes).into_owned())

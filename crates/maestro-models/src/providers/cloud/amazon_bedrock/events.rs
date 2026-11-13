@@ -9,12 +9,12 @@ use aws_sdk_bedrockruntime::types::{
     ReasoningContentBlockDelta, StopReason as Stop,
 };
 
-use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Model,
     SharedAssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall, calculate_cost,
     parsed_arguments,
 };
+use maestro_http::RequestFailure;
 use maestro_request::presence::Presence;
 
 /// Failure of a message that opens with a turn other than the assistant's.

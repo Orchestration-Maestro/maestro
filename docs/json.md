@@ -39,6 +39,14 @@ framing to this leaf.
   the family's own decoder. Buffered objects retain every member, including repetitions;
   the decoder decides whether to reject a repeated field, keep its last value or ignore it.
   A repeated tag reaches the decoder rather than selecting an entry to leave out.
+- **Raw values.** The `raw_value` module reads external text without decoding it first.
+  `raw_json` accepts text nested to any depth. `member` returns one object member, the
+  last when a name repeats, and `raw_number` reads a number as the double it rounds to.
+  `object_record` and `try_object_record` decode an object as a record that keeps the last
+  value of a repeated name; `lenient`, `number`, `record` and `required` are the matching
+  field readers. `json_value` decodes a raw value into the data model, at most
+  `MAX_NESTING` (127) containers deep, and `compact_raw` writes that value as compact text.
+  `or_zero` turns an absent or zero count into zero.
 
 The optional-field helper that keeps null apart from absence is `present` in
 `maestro-request`; the JSON leaf does not depend on it. Dependencies are listed in

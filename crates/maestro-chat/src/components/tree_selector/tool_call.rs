@@ -121,7 +121,7 @@ fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<Cow<
 fn shorten_path(path: &str) -> String {
     super::super::shorten_path_with_home(
         path,
-        &crate::environment::variable,
+        &maestro_text::environment_variable,
         maestro_path::shorten_home,
     )
 }
