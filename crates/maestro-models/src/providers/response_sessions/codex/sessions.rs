@@ -20,7 +20,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 /// The authenticated native socket.
-pub(super) use crate::providers::websocket::Socket;
+pub(super) use maestro_http::websocket::Socket;
 
 /// How long a released socket stays cached.
 const IDLE_TTL: Duration = Duration::from_millis(300_000);

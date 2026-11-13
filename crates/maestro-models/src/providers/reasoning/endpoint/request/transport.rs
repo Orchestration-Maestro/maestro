@@ -1,7 +1,7 @@
 //! Provider-specific URL and header construction.
 
-use crate::providers::transport::RequestFailure;
 use indexmap::IndexMap;
+use maestro_http::RequestFailure;
 use url::Url;
 
 /// Resolve the configured origin without imposing final Request restrictions.
@@ -62,11 +62,11 @@ pub(super) fn headers(
         ("content-type".into(), "application/json".into()),
         ("cookie".into(), String::new()),
     ]);
-    crate::providers::transport::normalize_request(&mut defaults).map_err(RequestFailure::new)?;
+    maestro_http::normalize_request(&mut defaults).map_err(RequestFailure::new)?;
     let mut combined: IndexMap<String, String> = IndexMap::new();
     for (name, value) in authored {
         let name = name.to_ascii_lowercase();
-        let value = value.trim_matches(crate::providers::transport::edge_whitespace);
+        let value = value.trim_matches(maestro_http::edge_whitespace);
         if let Some(existing) = combined.get_mut(&name) {
             existing.push_str(if name == "cookie" { "; " } else { ", " });
             existing.push_str(value);
@@ -75,7 +75,7 @@ pub(super) fn headers(
         }
     }
     defaults.extend(combined);
-    crate::providers::transport::normalize_request(&mut defaults).map_err(RequestFailure::new)?;
+    maestro_http::normalize_request(&mut defaults).map_err(RequestFailure::new)?;
     Ok(defaults)
 }
 
@@ -98,7 +98,7 @@ const DEFAULT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
 /// A timer that ends the wait with a timeout after `limit`.
 fn timer(limit: std::time::Duration) -> crate::BoxFuture<crate::FetchError> {
     Box::pin(async move {
-        crate::providers::transport::sleep(limit).await;
+        maestro_http::sleep(limit).await;
         crate::FetchError::Timeout
     })
 }
@@ -235,7 +235,7 @@ pub(in crate::providers::reasoning::endpoint) async fn send(
             }
         }
     }
-    let text = crate::providers::transport::decode_utf8(&bytes);
+    let text = maestro_http::decode_utf8(&bytes);
     if status == 422 && media_type(content_type.map(String::as_str), "application/json") {
         crate::providers::json_text::raw_json(&text)
             .map_err(|error| RequestFailure::new(error.to_string()))?;

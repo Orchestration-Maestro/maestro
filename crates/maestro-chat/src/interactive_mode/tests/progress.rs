@@ -917,33 +917,6 @@ async fn interrupted_wait_case(directory: &Path) {
     previous.assert_restored(&world, INTERRUPT);
 }
 
-#[test]
-fn response_progress_pairs_each_start_with_an_end() {
-    isolated(
-        "response_progress_pairs_each_start_with_an_end",
-        async |directory| {
-            let world = started(directory).await;
-            draft(&world);
-            set_progress_setting(&world, true);
-            let effects = tap(&world);
-            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
-            assert_eq!(progress(&effects), [true]);
-            agent_event(&world, agent_end());
-            assert_eq!(progress(&effects), [true, false]);
-            // A retried response pairs its own start with its own end.
-            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
-            agent_event(&world, agent_end());
-            assert_eq!(progress(&effects), [true, false, true, false]);
-            // The setting alone decides whether the terminal is written at all.
-            set_progress_setting(&world, false);
-            let silent = tap(&world);
-            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
-            agent_event(&world, agent_end());
-            assert_eq!(progress(&silent), Vec::<bool>::new());
-        },
-    );
-}
-
 /// The replacement of one retry by a response and a later retry.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]

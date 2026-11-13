@@ -1,10 +1,6 @@
 //! The workspace daemon's API socket served in this process by `run_server`, and the daemon
 //! request adapter under one connection.
 #![cfg(target_os = "linux")]
-use maestro_app::connection_runner::{
-    DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
-};
-use maestro_app::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_daemon::{
     diagnostics,
     locations::DaemonPaths,
@@ -21,12 +17,16 @@ use maestro_daemon::{
     },
     terminal_theme::TerminalTheme,
 };
-use maestro_protocol::rpc_types::{Request, RpcResponse};
+use maestro_protocol::envelopes::{Request, RpcResponse};
 use maestro_protocol::schema::{
     AgentManifestInfo, AgentStatus, ErrorBody, ResponseResult, ServerCapabilities, TabInfo,
     WorkspaceInfo,
 };
+use maestro_rpc::connection_runner::{
+    DaemonWorkspaceOperations, JsonlLineReader, RpcOutput, WorkspaceOperations,
+};
 use maestro_rpc::daemon::run_server;
+use maestro_rpc::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_settings::SettingsManager;
 use maestro_test_directory::Scratch;
 use maestro_test_process::TestProcess;
@@ -516,7 +516,7 @@ fn ordinary_dispatch_has_no_five_second_deadline() {
         );
         assert!(matches!(
             committed.command,
-            maestro_protocol::rpc_types::RpcCommand::WorkspaceList(_)
+            maestro_protocol::envelopes::RpcCommand::WorkspaceList(_)
         ));
     });
 }

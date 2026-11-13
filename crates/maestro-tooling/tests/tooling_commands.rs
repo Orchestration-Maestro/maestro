@@ -2138,7 +2138,7 @@ fn maestro_tree_copy_keeps_modification_times() {
 /// Write the browser compile witnesses' sources into the fixture checkout.
 fn write_browser_witnesses(root: &Path) {
     for source in [
-        "crates/maestro-catalog/tests/support/browser_catalog_check.rs",
+        "crates/maestro-models-registry/tests/support/browser_catalog_check.rs",
         "crates/maestro-models/tests/support/bedrock_browser.rs",
         "crates/maestro-models/tests/support/browser_import_check.rs",
         "crates/maestro-models/tests/support/cloud_content_browser.rs",
@@ -2152,7 +2152,7 @@ fn write_browser_witnesses(root: &Path) {
 /// The controlled tool's browser witness invocations, in order.
 fn witness_invocations() -> Vec<String> {
     [
-        ("maestro-catalog", "browser_catalog_check"),
+        ("maestro-models-registry", "browser_catalog_check"),
         ("maestro-models", "bedrock_browser_witness"),
         ("maestro-models", "browser_import_check"),
         ("maestro-models", "cloud_content_browser_witness"),
@@ -3160,7 +3160,7 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
     drive();
     for (paths, active, expected) in [
         (vec!["crates/maestro-models/src/lib.rs"], true, 1usize),
-        (vec!["crates/maestro-catalog/src/lib.rs"], true, 1),
+        (vec!["crates/maestro-models-registry/src/lib.rs"], true, 1),
         (vec!["crates/shared/src/lib.rs"], true, 0),
         (vec!["Cargo.toml"], true, 0),
         (vec!["crates/alone/src/lib.rs"], true, 0),

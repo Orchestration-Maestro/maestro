@@ -2,13 +2,13 @@
 use crate::support::no_commands::no_commands;
 use maestro_agent::ThinkingLevel;
 use maestro_app::{AuthStorage, ModelRegistry, ScopedModel, SettingsManager};
-use maestro_catalog::{
+use maestro_models::{
+    Model, OAuthSelectOption, OAuthSelectPrompt, SharedHandle, get_providers, models_are_equal,
+};
+use maestro_models_registry::{
     BUILT_IN_PROVIDER_DISPLAY_NAMES, CatalogError, DEFAULT_MODEL_PER_PROVIDER, ModelFileOperations,
     ModelResolverOutput, ProviderConfigInput, ProviderModelInput, find_exact_model_reference_match,
     model_id_comparator, resolve_model_scope,
-};
-use maestro_models::{
-    Model, OAuthSelectOption, OAuthSelectPrompt, SharedHandle, get_providers, models_are_equal,
 };
 use serde::Deserialize;
 use std::sync::Arc;
@@ -118,7 +118,7 @@ fn authentication_frontend_exports_share_existing_owners() {
     assert_eq!(defaults, expected.defaults);
     assert!(std::ptr::eq(
         &raw const *DEFAULT_MODEL_PER_PROVIDER,
-        &raw const *maestro_catalog::DEFAULT_MODEL_PER_PROVIDER
+        &raw const *maestro_models_registry::DEFAULT_MODEL_PER_PROVIDER
     ));
     assert_display_names_are_shared_with_the_registry();
     assert_supplied_prompt_retains_option_order();

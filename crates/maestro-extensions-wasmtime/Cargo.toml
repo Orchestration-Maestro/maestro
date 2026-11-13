@@ -24,7 +24,7 @@ maestro-dependencies.workspace = true
 maestro-extensions = { path = "../maestro-extensions", features = ["test-support"] }
 maestro-extensions-wasmtime = { path = ".", features = ["test-support"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["test-util"] }
-maestro-catalog = { path = "../maestro-catalog" }
+maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-models = { path = "../maestro-models" }
 maestro-session = { path = "../maestro-session" }

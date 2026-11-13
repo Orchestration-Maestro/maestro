@@ -1418,7 +1418,7 @@ fn extension_error_stacks_keep_every_frame_at_scale() {
 /// What a shortcut's context reads, with the catalog compared to `registry`.
 fn capabilities(
     context: &maestro_extensions::ExtensionContext,
-    registry: &std::sync::Arc<maestro_catalog::ModelRegistry>,
+    registry: &std::sync::Arc<maestro_models_registry::ModelRegistry>,
 ) -> Result<Value, maestro_extensions::EventError> {
     let manager = context.session_manager()?;
     let cwd = manager.borrow().get_cwd().to_owned();
@@ -1440,7 +1440,7 @@ fn capabilities(
 /// reads in `log`, aborts, compacts with its failure recorded in `log`, then shuts down.
 fn capability_shortcut(
     log: &Rc<RefCell<Vec<Value>>>,
-    registry: std::sync::Arc<maestro_catalog::ModelRegistry>,
+    registry: std::sync::Arc<maestro_models_registry::ModelRegistry>,
 ) -> ExtensionShortcut<Local> {
     let log = Rc::clone(log);
     ctrl_q(move |context| {

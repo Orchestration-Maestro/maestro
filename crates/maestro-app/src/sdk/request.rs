@@ -8,13 +8,13 @@ use indexmap::IndexMap;
 use maestro_agent::{
     Agent, AgentExecution, AgentInitialState, AgentOptions, AgentSpawner, QueueMode,
 };
-use maestro_catalog::ResolvedRequestAuth;
 use maestro_extensions::{AfterProviderResponseEvent, ExtensionRunner};
 use maestro_lock::read;
 use maestro_models::{
     DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, PayloadHookInput, ThinkingBudgets,
     Transport,
 };
+use maestro_models_registry::ResolvedRequestAuth;
 use maestro_session::{
     SessionManager, message_records::CustomAgentMessages, session_manager::ReadonlySessionManager,
 };

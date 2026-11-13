@@ -47,10 +47,10 @@ MIT or Apache-2.0 (either alone or as alternatives) are `base16ct =0.2.0`, `base
 `rand_chacha =0.3.1`, `rand_core =0.6.4`, `rfc6979 =0.4.0`, `sec1 =0.7.3`, `signature =2.2.0` and
 `spki =0.7.3`; no direct dependency on them is declared.
 
-The native SOCKS connector adds `tokio-socks =0.5.3` (MIT, defaults off, `tokio`), plus
+The native SOCKS connector in `maestro-http` adds `tokio-socks =0.5.3` (MIT, defaults off, `tokio`), plus
 `thiserror =1.0.69` and `thiserror-impl =1.0.69` (MIT OR Apache-2.0) transitively. It retains
 reqwest `=0.13.5` with defaults and `stream`, without enabling reqwest's `socks` feature.
-Native direct declarations reuse already-locked `hyper =1.11.1` (`client`, `server`, `http1`),
+Its native direct declarations reuse already-locked `hyper =1.11.1` (`client`, `server`, `http1`),
 `hyper-util =0.1.21` (`tokio`), `hyper-rustls =0.27.10` (defaults off, `http1`),
 `rustls =0.23.46` (defaults off, `std`, `tls12`, `aws_lc_rs`),
 `rustls-platform-verifier =0.7.1` (defaults off) and `tower-service =0.3.3` (defaults off).
@@ -67,7 +67,7 @@ proxy URLs or truncate transmitted fields. No library fork is used.
 
 ## Proxy script libraries
 
-Native proxy script routing uses `boa_engine =0.22.0` with defaults off and
+Native proxy script routing in `maestro-http` uses `boa_engine =0.22.0` with defaults off and
 `system-time-zone`, under MIT. A retained interpreter runs on a blocking worker;
 DNS uses the supplied asynchronous runtime while that worker waits. Existing
 `regress =0.12.0` handles shell patterns; existing `chrono =0.4.45` (defaults
@@ -88,7 +88,7 @@ all offering MIT; no existing identity is removed. The interface adapter account
 for one new identity, `if-addrs`; its platform dependencies were already locked.
 All three direct declarations are native-only.
 
-FTP script sources add no FTP dependency: `maestro-models` serves the plain-FTP subset
+FTP script sources add no FTP dependency: `maestro-http` serves the plain-FTP subset
 its source loader uses, over the already-locked Tokio socket, clock and I/O facilities,
 `regex =1.13.1` for DOS and Unix listing recognition and `chrono =0.4.45` for
 machine-listing instants. That subset is connecting and greeting, logging in, selecting

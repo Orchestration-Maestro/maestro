@@ -130,11 +130,7 @@ fn fetch(input: &Value, requests: Arc<Mutex<Vec<Value>>>) -> crate::Fetch {
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Check authored text or a nonempty native boundary failure.
-fn outcome(
-    result: Result<(), crate::providers::transport::RequestFailure>,
-    expected: &Value,
-    input: &Value,
-) {
+fn outcome(result: Result<(), maestro_http::RequestFailure>, expected: &Value, input: &Value) {
     if expected["admitted"].as_bool() == Some(true) {
         assert!(result.is_ok(), "{result:?}");
         return;

@@ -4,7 +4,7 @@ use super::weather_tool;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::bundled;
 use crate::chat::TestResult;
-use maestro_models::{StringEnumOptions, string_enum};
+use maestro_models::{EnumOptions, string_enum};
 use serde_json::json;
 
 #[test]
@@ -15,7 +15,7 @@ fn maestro_guide_builds_portable_tool_schemas() -> TestResult {
     assert_eq!(
         string_enum(
             &values,
-            Some(StringEnumOptions {
+            Some(EnumOptions {
                 description: Some(""),
                 default: Some("")
             })
@@ -25,7 +25,7 @@ fn maestro_guide_builds_portable_tool_schemas() -> TestResult {
     assert_eq!(
         string_enum(
             &values,
-            Some(StringEnumOptions {
+            Some(EnumOptions {
                 description: Some("Temperature units"),
                 default: Some("celsius")
             })

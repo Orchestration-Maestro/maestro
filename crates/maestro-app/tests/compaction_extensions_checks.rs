@@ -1,9 +1,8 @@
 //! Extension compaction decisions preserve preparation, stored results and notification order.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::compaction::{assert_prompts, assert_result, messages, seeded};
-use crate::support::session_harness::{
-    Harness, HarnessOptions, answer, on_task_set, recorded, script_responses,
-};
+use crate::support::session_harness::{Harness, HarnessExt as _, recorded};
+use maestro_app::test_support::{HarnessOptions, answer, on_task_set, script_responses};
 use maestro_extensions::{
     ExtensionFactory, SessionBeforeCompactEvent, SessionBeforeCompactEventData,
     SessionBeforeCompactResult, SessionCompactEvent,
@@ -193,7 +192,8 @@ fn compaction_handlers_keep_registration_order() {
             *order.borrow(),
             ["1-before", "2-before", "1-after", "2-after"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -230,7 +230,8 @@ fn failing_compaction_hook_falls_back_to_the_summarizer() {
         assert_eq!(errors[0].event, "session_before_compact");
         assert_eq!(errors[0].error, "extension intentionally fails");
         assert_eq!(errors[0].extension_path, "failing-extension");
-    });
+    })
+    .unwrap();
 }
 
 /// Checks saved extension values without collapsing absent details into null.
@@ -301,7 +302,8 @@ fn extension_compaction_keeps_returned_values() {
             assert_eq!(observed.borrow().after.len(), 1);
             assert!(observed.borrow().after[0].from_extension);
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -332,7 +334,8 @@ fn compaction_hooks_observe_preparation_then_saved_entry() {
             json!(observed.after[0].compaction_entry.details),
             json!({"readFiles": [], "modifiedFiles": []})
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -357,5 +360,6 @@ fn cancelled_compaction_leaves_history_and_summary_requests_unchanged() {
         assert_eq!(observed.order, ["before"]);
         assert!(observed.after.is_empty());
         assert_eq!(h.session.session_manager().borrow().get_entries().len(), 4);
-    });
+    })
+    .unwrap();
 }

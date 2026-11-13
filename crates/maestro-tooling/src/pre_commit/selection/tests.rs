@@ -145,7 +145,7 @@ fn browser_smoke_follows_staged_consumers() {
             "{path}"
         );
     }
-    for name in ["maestro-catalog", "maestro-models"] {
+    for name in ["maestro-models-registry", "maestro-models"] {
         let selected = select_paths(&metadata, &[&format!("crates/{name}/src/lib.rs")]);
         assert_eq!(names(&selected), [name]);
         assert!(selected.reaches_browser());

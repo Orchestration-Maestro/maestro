@@ -1,4 +1,5 @@
 //! Creation of attributed diagnostics.
+pub use maestro_http::timestamp_now;
 pub use maestro_interchange::diagnostics::*;
 /// Create a diagnostic using current Unix epoch milliseconds and supplied fields.
 #[must_use]
@@ -13,24 +14,6 @@ pub fn create_assistant_message_diagnostic(
         timestamp,
         error: Some(extract_diagnostic_error(error)),
         details,
-    }
-}
-
-/// Return the current timestamp as milliseconds since the Unix epoch.
-#[must_use]
-pub fn timestamp_now() -> f64 {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or_else(
-                |error| -(error.duration().as_secs_f64() * 1000.0).ceil(),
-                |elapsed| (elapsed.as_secs_f64() * 1000.0).floor(),
-            )
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        js_sys::Date::now()
     }
 }
 

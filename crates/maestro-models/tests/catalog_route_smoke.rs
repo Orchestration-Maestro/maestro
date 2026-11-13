@@ -77,7 +77,7 @@ const DEFERRED: [&str; 2] = ["gemini-3-flash", "gemini-3.1-pro"];
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_catalog_routes_use_available_adapters() -> TestResult {
+fn bundled_catalog_routes_use_available_adapters() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     let mut completed = 0;

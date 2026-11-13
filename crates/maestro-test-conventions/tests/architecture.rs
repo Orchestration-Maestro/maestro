@@ -472,7 +472,7 @@ forbidden_edge_tests! {
     models_to_process_edge_is_rejected: "maestro-models" => "maestro-process",
     cli_to_watch_edge_is_rejected: "maestro-cli" => "maestro-watch",
     chat_to_daemon_edge_is_rejected: "maestro-chat" => "maestro-daemon",
-    rpc_to_catalog_edge_is_rejected: "maestro-rpc" => "maestro-catalog",
+    rpc_to_packages_edge_is_rejected: "maestro-rpc" => "maestro-packages",
     web_to_process_edge_is_rejected: "maestro-web" => "maestro-process",
     text_to_tools_edge_is_rejected: "maestro-text" => "maestro-tools",
 }
@@ -546,32 +546,39 @@ fn export_reuses_text_and_json_without_frontend_edge() {
 
 #[test]
 fn catalog_pattern_edge_is_scoped() {
-    for from in ["maestro-catalog", "maestro-resources", "maestro-packages"] {
+    for from in [
+        "maestro-models-registry",
+        "maestro-resources",
+        "maestro-packages",
+    ] {
         let workspace = Workspace::new();
         workspace.foundation(&[from, "maestro-pattern"]);
         check_permitted_declarations(&workspace, from, &["maestro-pattern"]);
     }
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-catalog", "maestro-pattern"]);
+    workspace.foundation(&["maestro-models-registry", "maestro-pattern"]);
     workspace.member(
-        "maestro-catalog",
-        "maestro-catalog",
+        "maestro-models-registry",
+        "maestro-models-registry",
         "[dev-dependencies]\nalias = { package = \"maestro-pattern\", path = \"../maestro-pattern\" }",
     );
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err("internal dev dependency requires declared dependency-free test support: maestro-catalog -> maestro-pattern".into())
+        Err("internal dev dependency requires declared dependency-free test support: maestro-models-registry -> maestro-pattern".into())
     );
-    workspace.member("maestro-catalog", "maestro-catalog", "");
+    workspace.member("maestro-models-registry", "maestro-models-registry", "");
     for (kind, extra) in DECLARATIONS {
         workspace.member(
             "maestro-pattern",
             "maestro-pattern",
-            &format!("[{kind}]\nalias = {{ package = \"maestro-catalog\", path = \"../maestro-catalog\"{extra} }}"),
+            &format!("[{kind}]\nalias = {{ package = \"maestro-models-registry\", path = \"../maestro-models-registry\"{extra} }}"),
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-pattern -> maestro-catalog".into())
+            Err(
+                "forbidden production dependency: maestro-pattern -> maestro-models-registry"
+                    .into()
+            )
         );
     }
 }
@@ -1936,7 +1943,7 @@ fn guest_listing_edges_are_refused_in_every_dependency_kind() {
 #[test]
 fn native_component_fixture_edges_are_development_only() {
     for dependency in [
-        "maestro-catalog",
+        "maestro-models-registry",
         "maestro-credentials",
         "maestro-models",
         "maestro-session",
@@ -2532,14 +2539,11 @@ fn chat_models_test_edge_is_native() {
 fn extension_and_rpc_test_edges_are_native() {
     for (owner, target) in [
         ("maestro-extensions", "maestro-credentials"),
-        ("maestro-rpc", "maestro-theme"),
         ("maestro-rpc", "maestro-tui-crossterm"),
-        ("maestro-rpc", "maestro-export"),
-        ("maestro-rpc", "maestro-extensions"),
-        ("maestro-rpc", "maestro-models"),
-        ("maestro-rpc", "maestro-session"),
-        ("maestro-rpc", "maestro-tools"),
-        ("maestro", "maestro-catalog"),
+        ("maestro-rpc", "maestro-models-registry"),
+        ("maestro-rpc", "maestro-credentials"),
+        ("maestro-rpc", "maestro-tui"),
+        ("maestro", "maestro-models-registry"),
         ("maestro", "maestro-credentials"),
         ("maestro", "maestro-json"),
         ("maestro", "maestro-session"),
@@ -2671,7 +2675,7 @@ const FIXTURES: &str = "maestro-test-fixtures";
 const FIXTURE_CALLERS: &[&str] = &[
     "maestro-models",
     "maestro-interchange",
-    "maestro-catalog",
+    "maestro-models-registry",
     "maestro-chat",
     "maestro-tools",
     "maestro-export",
@@ -2686,7 +2690,7 @@ const TRACING: &str = "maestro-test-tracing";
 /// Independently declared native tracing consumers.
 const TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
-    "maestro-models",
+    "maestro-http",
     "maestro-process",
     "maestro-terminal-emulator",
     "maestro-workspace",
@@ -2696,7 +2700,7 @@ const TRACING_CALLERS: &[&str] = &[
 const DIRECTORY_CALLERS: &[&str] = &[
     "maestro",
     "maestro-app",
-    "maestro-catalog",
+    "maestro-models-registry",
     "maestro-chat",
     "maestro-cli",
     "maestro-credentials",
@@ -2706,6 +2710,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
+    "maestro-http",
     "maestro-listing",
     "maestro-lock",
     "maestro-models",

@@ -90,11 +90,12 @@ Convert every remaining controlled Python or shell child, shared producer and in
 | Other native adapters | Package lifecycle/capture/Git transport, credential-process JSON/count/cache/failures, notifications/repository queries, metadata/compiler selection, live foreground payloads and clean CLI stdout. | C13-C17 |
 | Browser setup | Binding-version/lock agreement, inherited dependencies and feature union, absolute paths/patches, copied lock/toolchain and no new external lock identities. Existing browser driver work owns this setup port. | C18 |
 
-### S06: startup remains unchanged
+### S06: the startup boundary stays
 
 **Confidence: proven requirement. Evidence: C01, C05.**
 
-Do not change `STARTUP_OBSERVATION`, `RpcClient::start` or the 100 ms startup boundary. The early-exit case retains code 7, `boot failed\n`, accumulated stderr, duplicate-start and signal assertions. Qualify it in 200 separate runs while controlled Rust CPU workers keep every assigned test core busy. Start/release and join those workers explicitly. Save each outcome; this qualification is not a permanent long-running test.
+Keep `STARTUP_OBSERVATION` and the 100 ms startup boundary. The early-exit case retains code 7, `boot failed\n`, accumulated stderr, duplicate-start and signal assertions. Qualify it in 200 separate runs while controlled Rust CPU workers keep every assigned test core busy. Start/release and join those workers explicitly. Save each outcome; this qualification is not a permanent long-running test.
+The held clock of the early-exit test replaces wall-clock luck, so the 200 runs became a loaded 200-test-run stress qualification; the lane saved it as a log.
 
 ### S07: retained real boundaries
 
@@ -161,7 +162,7 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | C02 | `crates/maestro-test-process/src/proof.rs:8-35`; `src/test_process.rs:80-110,268-280,419-493`; [existing owner contract](maestro-port.md#test-process-owner). |
 | C03 | `crates/maestro-tooling/src/test_setup.rs:1-16,45-100`; `src/test_setup/plan.rs:1-73`; `src/nextest_setup.rs`; `.config/nextest.toml`. |
 | C04 | The owner's own setup cases in `crates/maestro-test-process/tests/checked_runs.rs`; `crates/maestro-app/tests/session_account_file.rs`; `tests/support/startup.rs`; `crates/maestro-chat/src/interactive_mode/tests.rs`; `crates/maestro-lock/src/replace/tests.rs`; `crates/maestro-settings/tests/settings_reload.rs`; component `tests/compilation_cache.rs`. |
-| C05 | `crates/maestro-app/tests/support/rpc_peer.rs:11-73`; `tests/rpc_client_lifecycle.rs:162-219`; complete lifecycle/events/transport modules and `src/rpc_transport/tests.rs:42-68`. |
+| C05 | `crates/maestro-rpc/tests/support/rpc_peer.rs:11-78`; `tests/rpc_client_lifecycle.rs:162-219`; complete lifecycle/events/transport modules and `src/rpc_client/tests.rs:42-68`. |
 | C06 | `crates/maestro-app/tests/clipboard_copy.rs:218-259`; `tests/support/clipboard_image_effects.rs:219-231`; `tests/footer_metadata.rs:195-225`; `tests/footer_watch.rs:970-1005,1196-1235`; `tests/session_bash.rs:188-208`; `tests/package_command_execution.rs:31-125`; `tests/support/native.rs:29-39`. |
 | C07 | `crates/maestro-chat/tests/login_support/native.rs:11-75`; `tests/extension_editor.rs:289-292,565-567,1137-1145`; `tests/support/session_picker/mutations.rs:1409`; `src/interactive_mode/tests.rs:1398-1404` and its actions/authentication/autocomplete/models/notices/share/lifecycle/suspend modules. |
 | C08 | `crates/maestro-tools/tests/command_execution.rs:83-91,193-198`; `tests/shell_tree_cleanup.rs:28-57`; `tests/find_execution.rs:92,497,559`; `tests/find_support/mod.rs:358-382`; `tests/grep_support/mod.rs:128-142,468-476`; `tests/search_tool_lookup.rs:20-35,289-300`; `crates/maestro-tui/tests/fixtures/native_attachments.rs:164-175` and all four completion consumers. |

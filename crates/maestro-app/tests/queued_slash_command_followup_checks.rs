@@ -4,11 +4,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::agent_session_queue_checks::Held;
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, Transcript, command_extension, expected, input_sources,
-    on_task_set, transcribed, waiting_tool,
+    Harness, Transcript, expected, input_sources, transcribed, waiting_tool,
 };
 use indexmap::IndexMap;
 use maestro_app::AgentSessionEvent;
+use maestro_app::test_support::{HarnessOptions, Scripted, command_extension, on_task_set};
 use maestro_extensions::{ExtensionAPI, ExtensionFactory};
 use maestro_models::{Local, UserContent};
 use maestro_session::message_records::{SendUserMessageOptions, UserMessageDelivery};
@@ -98,5 +98,6 @@ fn extension_slash_follow_up_stays_user_text() {
         observed["runs"] = json!(runs);
         observed["sources"] = json!(input_sources(&transcript));
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }

@@ -9,7 +9,7 @@ repository.workspace = true
 [dependencies]
 maestro-app = { path = "../maestro-app" }
 maestro-agent = { path = "../maestro-agent" }
-maestro-catalog = { path = "../maestro-catalog" }
+maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-export = { path = "../maestro-export" }
 maestro-extensions = { path = "../maestro-extensions" }
@@ -35,7 +35,11 @@ chrono = { version = "=0.4.45", default-features = false, features = ["std", "cl
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 maestro-lock = { path = "../maestro-lock" }
 
+[features]
+test-support = []
+
 [dev-dependencies]
+maestro-chat = { path = ".", features = ["test-support"] }
 maestro-test-fixtures.workspace = true
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 maestro-theme = { path = "../maestro-theme", features = ["test-support"] }

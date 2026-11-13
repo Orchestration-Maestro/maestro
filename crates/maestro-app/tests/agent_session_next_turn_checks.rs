@@ -2,12 +2,13 @@
 //! request already sent keeps its payload.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, callback_tool, harness, on_task_set, start_prompt,
-    system_prompt_extension,
+    Harness, callback_tool, start_prompt, system_prompt_extension,
 };
 use indexmap::IndexMap;
 use maestro_app::AgentSession;
+use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
 use maestro_models::Local;
+use maestro_test_directory::Scratch;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -31,17 +32,21 @@ async fn deactivating(
             .unwrap();
         record.borrow_mut().push(session.system_prompt());
     });
-    let h = harness(HarnessOptions {
-        factories,
-        responses: Some(vec![Scripted::echo_call("x"), Scripted::text("done")]),
-        base_tools_override: Some(IndexMap::from([
-            ("echo".to_owned(), echo),
-            ("other".to_owned(), callback_tool("other", || {})),
-        ])),
-        initial_active_tool_names: Some(vec!["echo".to_owned(), "other".to_owned()]),
-        ..HarnessOptions::default()
-    })
-    .await;
+    let h = harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            factories,
+            responses: Some(vec![Scripted::echo_call("x"), Scripted::text("done")]),
+            base_tools_override: Some(IndexMap::from([
+                ("echo".to_owned(), echo),
+                ("other".to_owned(), callback_tool("other", || {})),
+            ])),
+            initial_active_tool_names: Some(vec!["echo".to_owned(), "other".to_owned()]),
+            ..HarnessOptions::default()
+        },
+    )
+    .await
+    .unwrap();
     *late.borrow_mut() = Rc::downgrade(&h.session);
     (h, seen)
 }
@@ -73,7 +78,8 @@ fn tools_changed_during_a_run_reach_the_next_request_only() {
             ["echo"],
             "the next request sees the new set"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -84,7 +90,8 @@ fn run_system_prompt_survives_a_tool_refresh() {
         assert_eq!(*seen.borrow(), ["RUN"], "the refresh kept the run's prompt");
         assert_eq!(system_prompt(&h, 0).as_deref(), Some("RUN"));
         assert_eq!(system_prompt(&h, 1).as_deref(), Some("RUN"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -95,5 +102,6 @@ fn empty_run_system_prompt_is_an_override() {
         assert_eq!(*seen.borrow(), [""], "the refresh kept the empty prompt");
         assert_eq!(system_prompt(&h, 0).as_deref(), Some(""));
         assert_eq!(system_prompt(&h, 1).as_deref(), Some(""));
-    });
+    })
+    .unwrap();
 }

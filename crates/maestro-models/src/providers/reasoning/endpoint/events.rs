@@ -3,14 +3,12 @@ use super::{
     chunk::{Arguments, Chunk, Tool},
     content::Content,
 };
-use crate::providers::{
-    json_text::{compact_raw, parsed_arguments},
-    transport::RequestFailure,
-};
+use crate::providers::json_text::{compact_raw, parsed_arguments};
 use crate::{
     AssistantContent, AssistantMessageEvent as Event, AssistantMessageEventStream,
     SharedAssistantMessage, TextContent, ThinkingContent, ToolCall,
 };
+use maestro_http::RequestFailure;
 use maestro_interchange::presence::Presence;
 use num_traits::ToPrimitive;
 use std::sync::{Arc, PoisonError};

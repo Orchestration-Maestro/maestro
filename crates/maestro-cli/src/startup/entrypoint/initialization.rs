@@ -9,10 +9,10 @@ use maestro_app::{
     CreateAgentSessionFromServicesOptions, CreateAgentSessionRuntimeResult,
     create_agent_session_from_services,
 };
-use maestro_catalog::{ModelResolverOutput, resolve_model_scope};
 use maestro_credentials::AuthStorage;
 use maestro_extensions::types::events::SessionStartEvent;
 use maestro_models::{DiagnosticErrorInfo, Local};
+use maestro_models_registry::{ModelResolverOutput, resolve_model_scope};
 use maestro_session::SessionManager;
 use maestro_settings::SettingsListEntry;
 use maestro_theme::{Collator, LiveTheme};
@@ -49,7 +49,7 @@ fn scoped_models(
     parsed: &Args,
     creation: &RuntimeCreation,
     output: &mut ModelResolverOutput<'_>,
-) -> Result<Vec<maestro_catalog::ScopedModel>, DiagnosticErrorInfo> {
+) -> Result<Vec<maestro_models_registry::ScopedModel>, DiagnosticErrorInfo> {
     let (patterns, invalid) = if let Some(models) = &parsed.models {
         (Cow::Borrowed(models.as_slice()), false)
     } else {
@@ -110,7 +110,7 @@ fn runtime_diagnostics(creation: &RuntimeCreation) -> Vec<AgentSessionRuntimeDia
 fn session_options(
     parsed: &Args,
     creation: &RuntimeCreation,
-    scoped: &[maestro_catalog::ScopedModel],
+    scoped: &[maestro_models_registry::ScopedModel],
 ) -> Result<BuiltSessionOptions, DiagnosticErrorInfo> {
     let has_existing_session = !creation
         .session_manager

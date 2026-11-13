@@ -1,14 +1,14 @@
 //! Selection of model, thinking level and queue mode, checked against the recorded cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    Harness, HarnessOptions, case, harness, model_view, on_task_set,
-};
+use crate::support::session_harness::{Harness, HarnessExt as _, case, model_view};
 use maestro_agent::QueueMode;
 use maestro_app::ModelCycleResult;
 use maestro_app::agent_session::CycleDirection;
+use maestro_app::test_support::{HarnessOptions, harness, on_task_set};
 use maestro_extensions::{ExtensionFactory, ModelSelectEvent, ThinkingLevelSelectEvent};
 use maestro_models::{DiagnosticErrorInfo, Local, ModelThinkingLevel};
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde::Serialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -90,12 +90,16 @@ fn selection_case(name: &str, steps: impl AsyncFnOnce(&Harness) -> Vec<Value>) {
     let expected = case("model_selection", name);
     let log = Log::default();
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: expected["settings"].clone(),
-            factories: vec![recorder(&log)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: expected["settings"].clone(),
+                factories: vec![recorder(&log)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let results = steps(&h).await;
         let settings = h.session.settings_manager().borrow();
         let observed = json!({
@@ -116,7 +120,8 @@ fn selection_case(name: &str, steps: impl AsyncFnOnce(&Harness) -> Vec<Value>) {
             "extensionEvents": *log.borrow(),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// The model and thinking entries the session recorded, in order.
@@ -150,7 +155,13 @@ fn queue_mode(mode: QueueMode) -> &'static str {
 
 /// The recorded form of setting `id` as the model.
 async fn set_model(h: &Harness, label: &str, id: &str) -> Value {
-    step(label, h.session.set_model(h.model(id)).await.map(UNDEFINED))
+    step(
+        label,
+        h.session
+            .set_model(h.model(id).unwrap())
+            .await
+            .map(UNDEFINED),
+    )
 }
 
 /// The recorded form of setting the thinking level named `level`.
@@ -338,10 +349,10 @@ fn scoped_cycle_skips_unauthenticated_and_wraps() {
         "scoped cycling skips unauthenticated models and wraps",
         async |h| {
             h.session.set_scoped_models(vec![
-                Harness::scoped(h.model("think"), Some("low")),
-                Harness::scoped(h.model("plain"), None),
+                Harness::scoped(h.model("think").unwrap(), Some("low")),
+                Harness::scoped(h.model("plain").unwrap(), None),
                 Harness::scoped(h.elsewhere("think"), None),
-                Harness::scoped(h.model("extra"), Some("high")),
+                Harness::scoped(h.model("extra").unwrap(), Some("high")),
             ]);
             let mut steps = vec![
                 cycle(
@@ -372,7 +383,7 @@ fn scoped_cycle_skips_unauthenticated_and_wraps() {
 fn scoped_cycle_needs_two_authenticated_models() {
     selection_case("scoped cycling needs two authenticated models", async |h| {
         h.session.set_scoped_models(vec![
-            Harness::scoped(h.model("think"), None),
+            Harness::scoped(h.model("think").unwrap(), None),
             Harness::scoped(h.elsewhere("think"), None),
         ]);
         vec![cycle(h, "forward", CycleDirection::default()).await]
@@ -385,8 +396,8 @@ fn unlisted_current_model_cycles_forward_from_first_index() {
         "an unlisted current model starts from the first scoped index",
         async |h| {
             h.session.set_scoped_models(vec![
-                Harness::scoped(h.model("think"), None),
-                Harness::scoped(h.model("extra"), None),
+                Harness::scoped(h.model("think").unwrap(), None),
+                Harness::scoped(h.model("extra").unwrap(), None),
             ]);
             vec![cycle(h, "forward", CycleDirection::default()).await]
         },
@@ -399,9 +410,9 @@ fn unlisted_current_model_cycles_backward_from_first_index() {
         "an unlisted current model cycles backward from the first scoped index",
         async |h| {
             h.session.set_scoped_models(vec![
-                Harness::scoped(h.model("think"), None),
-                Harness::scoped(h.model("extra"), None),
-                Harness::scoped(h.model("plain"), Some("minimal")),
+                Harness::scoped(h.model("think").unwrap(), None),
+                Harness::scoped(h.model("extra").unwrap(), None),
+                Harness::scoped(h.model("plain").unwrap(), Some("minimal")),
             ]);
             let unlisted = h.variant("think", "unlisted", json!({}));
             h.session.set_model(unlisted).await.unwrap();
@@ -426,17 +437,22 @@ fn available_cycle_follows_catalog_order() {
 fn available_cycle_needs_two_models() {
     let expected = case("model_selection", "available cycling needs two models");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("only", false)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("only", false)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let results = vec![cycle(&h, "forward", CycleDirection::default()).await];
         assert_eq!(
             json!({"name": expected["name"], "results": results}),
             expected
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -462,12 +478,16 @@ fn thinking_selection_hook_does_not_delay_the_change() {
         Box::pin(std::future::ready(Ok(())))
     });
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("think", true)],
-            factories: vec![factory],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("think", true)],
+                factories: vec![factory],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.session
             .set_thinking_level(ModelThinkingLevel::High)
             .unwrap();
@@ -482,5 +502,6 @@ fn thinking_selection_hook_does_not_delay_the_change() {
         );
         release.send(()).unwrap();
         assert_eq!(finished.await.unwrap(), ModelThinkingLevel::High);
-    });
+    })
+    .unwrap();
 }

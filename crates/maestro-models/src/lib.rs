@@ -38,6 +38,12 @@ pub use catalog::models::{
     get_supported_thinking_levels, models_are_equal,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_http::configure_http_dispatcher;
+pub use maestro_http::{
+    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
+    unit_random,
+};
 pub use providers::chat::endpoint::{
     OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
 };
@@ -57,12 +63,6 @@ pub use providers::responses_api::azure_transport::{
 };
 pub use providers::responses_api::openai::{
     OpenAIResponsesOptions, stream_openai_responses, stream_openai_responses_for,
-};
-#[cfg(not(target_arch = "wasm32"))]
-pub use providers::transport::configure_http_dispatcher;
-pub use providers::transport::{
-    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
-    unit_random,
 };
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
@@ -85,7 +85,7 @@ pub use records::sessions::{
     SessionResourceCleanup, SessionResourceCleanupError, SessionResourceRemoval,
     cleanup_session_resources, register_session_resource_cleanup,
 };
-pub use records::typebox_helpers::{StringEnumOptions, string_enum};
+pub use records::string_enum::{EnumOptions, string_enum};
 pub use records::types::*;
 
 pub mod providers;
@@ -130,12 +130,12 @@ extern crate self as maestro_models;
 #[cfg(test)]
 pub mod tests;
 
-pub use maestro_interchange::tool_info::ToolInfo;
 #[cfg(not(target_arch = "wasm32"))]
-pub use providers::websocket::default_web_socket;
-pub use providers::websocket::{
+pub use maestro_http::websocket::default_web_socket;
+pub use maestro_http::websocket::{
     ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest,
 };
+pub use maestro_interchange::tool_info::ToolInfo;
 
 pub use providers::content::managed::{
     GoogleVertexOptions, stream_google_vertex, stream_google_vertex_for,

@@ -2,28 +2,33 @@
 //! and every waiter returns only after the run settles.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, custom_note, get_assistant_texts, harness, on_task_set,
-    retry_started, start_prompt, summary_provider,
+    Harness, custom_note, get_assistant_texts, retry_started, start_prompt, summary_provider,
 };
 use maestro_app::AgentSessionEvent;
+use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
 use maestro_session::message_records::SendMessageOptions;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 
 /// A session whose context window is exhausted by a 1100-token answer, with a summary
 /// extension standing in for the provider's summary.
 async fn compacting(responses: Vec<Scripted>, retry_delay_ms: u32) -> Harness {
-    harness(HarnessOptions {
-        responses: Some(responses),
-        factories: vec![summary_provider("compacted")],
-        context_window: Some(1_000.0),
-        settings: json!({
-            "retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": retry_delay_ms},
-            "compaction": {"keepRecentTokens": 1, "reserveTokens": 1},
-        }),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            responses: Some(responses),
+            factories: vec![summary_provider("compacted")],
+            context_window: Some(1_000.0),
+            settings: json!({
+                "retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": retry_delay_ms},
+                "compaction": {"keepRecentTokens": 1, "reserveTokens": 1},
+            }),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 /// A custom message with `text`.
@@ -77,7 +82,8 @@ fn prompt_resolves_after_retry_and_compaction_while_streaming_throughout() {
         );
         assert!(!h.session.is_streaming());
         assert!(h.session.is_idle());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -104,7 +110,8 @@ fn prompt_continues_through_an_overflow_recovery() {
             Some("after recovery")
         );
         assert!(!h.session.is_streaming());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -139,7 +146,8 @@ fn prompt_continues_with_a_message_queued_during_compaction() {
             "the run delivered the queued message"
         );
         assert!(!h.session.is_streaming());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -170,7 +178,8 @@ fn abort_returns_after_the_run_settles_its_shell_results() {
             running.is_finished(),
             "the prompt settled before abort returned"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -211,7 +220,8 @@ fn custom_message_during_a_triggered_run_is_steered() {
         );
         h.session.abort().await;
         drop(first.await);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -225,7 +235,8 @@ fn dispose_stops_a_waiting_retry_so_the_run_settles() {
         assert!(!h.session.is_retrying(), "disposal stopped the retry wait");
         running.await.unwrap().unwrap();
         assert!(!h.session.is_streaming());
-    });
+    })
+    .unwrap();
 }
 
 /// Session refresh preserves the supplied agent hook's messages, but owns prompt and tools.
@@ -262,17 +273,17 @@ fn next_turn_refresh_chains_the_supplied_agent_hook() {
                 ))))
             },
         );
-        let h = harness(HarnessOptions {
+        let h = harness(Scratch::new().unwrap(), HarnessOptions {
             prepare_next_turn: Some(hook),
             system_prompt: Some("session prompt"),
             responses: Some(vec![Scripted::echo_call("hello"), Scripted::text("done")]),
             custom_tools: vec![crate::support::session_harness::sdk_definition(
-                crate::support::session_harness::tool_definition("echo", None, None),
+                maestro_app::test_support::tool_definition("echo", None, None),
             )],
             initial_active_tool_names: Some(vec!["echo".into()]),
             ..HarnessOptions::default()
         })
-        .await;
+        .await.unwrap();
         start_prompt(&h, "one").await.unwrap().unwrap();
         assert_eq!(called.get(), 2);
         let requests = h.requests.0.borrow();
@@ -286,5 +297,5 @@ fn next_turn_refresh_chains_the_supplied_agent_hook() {
         assert_eq!(requests[1].tools.as_ref().unwrap()[0].name, "echo");
         assert!(requests[1].messages.iter().any(|message| matches!(message,
             maestro_models::Message::User(user) if user.content == maestro_models::UserContent::Text("hook message".into()))));
-    });
+    }).unwrap();
 }

@@ -2,11 +2,11 @@
 //! tools replaced before each refresh as the recorded cases did.
 use crate::agent_session::tools::RefreshToolRegistryOptions;
 use crate::resources::instructions::build_system_prompt;
-use crate::tests::session_harness::{
-    Harness, HarnessOptions, case, harness, on_task_set, sdk_definition, sdk_tools, tool_definition,
-};
+use crate::tests::session_harness::{Harness, case, sdk_definition, sdk_tools};
+use maestro_app::test_support::{HarnessOptions, harness, on_task_set, tool_definition};
 use maestro_models::system_prompt::BuildSystemPromptOptions;
 use maestro_session::Presence;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// The prompt the recorded options and this session's directory build.
@@ -96,15 +96,19 @@ fn check_case(h: &Harness, name: &str) {
 
 /// A session with the loader prompt texts, no built-in tools and the recorded SDK tools.
 async fn tool_session(system_prompt: Option<&'static str>, append: &[&str]) -> Harness {
-    harness(HarnessOptions {
-        models: vec![("plain", false)],
-        system_prompt,
-        append_system_prompt: append.iter().map(|text| (*text).to_owned()).collect(),
-        custom_tools: sdk_tools(),
-        base_tools_override: Some(indexmap::IndexMap::new()),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            models: vec![("plain", false)],
+            system_prompt,
+            append_system_prompt: append.iter().map(|text| (*text).to_owned()).collect(),
+            custom_tools: sdk_tools(),
+            base_tools_override: Some(indexmap::IndexMap::new()),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 #[test]
@@ -112,7 +116,8 @@ fn supplied_tool_order_skips_unknown_names() {
     on_task_set(|_| async {
         let h = tool_session(None, &[]).await;
         check_case(&h, "supplied order filters unknown names");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -120,7 +125,8 @@ fn loader_prompt_and_appended_sections_rebuild_prompt() {
     on_task_set(|_| async {
         let h = tool_session(Some("Custom base"), &["one", "two"]).await;
         check_case(&h, "loader prompt and appended sections join");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -131,5 +137,6 @@ fn later_refresh_reactivates_tools_and_rebuilds_prompt() {
             &h,
             "a later refresh reactivates tools and rebuilds the prompt",
         );
-    });
+    })
+    .unwrap();
 }

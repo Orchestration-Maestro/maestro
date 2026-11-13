@@ -6,12 +6,12 @@ use crate::components::scoped_models_selector::{
     ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent,
 };
 use crate::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
-use maestro_catalog::{
+use maestro_credentials::AuthCredential;
+use maestro_models::Model;
+use maestro_models_registry::{
     ModelResolverOutput, ScopedModel, find_exact_model_reference_match, model_id_comparator,
     resolve_model_scope,
 };
-use maestro_credentials::AuthCredential;
-use maestro_models::Model;
 use maestro_settings::SettingsListEntry;
 use maestro_tui::Component;
 use std::{

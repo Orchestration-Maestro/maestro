@@ -1021,7 +1021,7 @@ fn reload_manifests_resets_each_retained_detector() {
     with_manifest_app(name, async |app, runtime, paths| {
         let mut settings =
             maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
-        let status = maestro_protocol::rpc_types::RpcCommand::ServerAgentManifests(
+        let status = maestro_protocol::envelopes::RpcCommand::ServerAgentManifests(
             maestro_protocol::schema::EmptyParams {},
         );
         let reported = app.handle_api_request(status, &mut settings, paths).await;
@@ -1040,7 +1040,7 @@ fn reload_manifests_resets_each_retained_detector() {
             CODEX_OVERRIDE.replace("2026.10.21.1", "2026.10.22.1"),
         )
         .unwrap();
-        let reload = maestro_protocol::rpc_types::RpcCommand::ServerReloadAgentManifests(
+        let reload = maestro_protocol::envelopes::RpcCommand::ServerReloadAgentManifests(
             maestro_protocol::schema::EmptyParams {},
         );
         let reloaded = app.handle_api_request(reload, &mut settings, paths).await;
@@ -1077,7 +1077,7 @@ fn manifest_status_keeps_detector_state() {
             .unwrap();
         let mut settings =
             maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
-        let status = maestro_protocol::rpc_types::RpcCommand::ServerAgentManifests(
+        let status = maestro_protocol::envelopes::RpcCommand::ServerAgentManifests(
             maestro_protocol::schema::EmptyParams {},
         );
         let reported = app.handle_api_request(status, &mut settings, paths).await;

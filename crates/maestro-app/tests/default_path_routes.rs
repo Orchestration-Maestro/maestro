@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use crate::default_configuration as fixture;
-use crate::support::session_harness::no_commands;
+use crate::support::no_commands::no_commands;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
 use maestro_app::{AuthStorage, ModelRegistry, SettingsManager};

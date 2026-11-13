@@ -908,7 +908,7 @@ dependencies; this map points to the implementations and their usage guides.
 | Terminal components, input and frame rendering | [`maestro-tui/src`](../crates/maestro-tui/src/lib.rs) | [Components](terminal/components.md) |
 | Interactive chat presentation | [`maestro-chat/src`](../crates/maestro-chat/src/lib.rs) | [Chat](chat/interactive-mode.md) |
 | Native terminal effects | [`maestro-tui-crossterm/src`](../crates/maestro-tui-crossterm/src/lib.rs) | [Native terminal](terminal/native-terminal.md) |
-| Standard-stream RPC adapter | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs); the connection runner belongs to `maestro-app::connection_runner` | [Daemon protocol](daemon-protocol.md) |
+| RPC mode | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs): the session records, the connection runner, the client and the standard-stream adapter | [Daemon protocol](daemon-protocol.md) |
 | Extension author API and canonical component interfaces | [`maestro-extensions-wasm/src`](../crates/maestro-extensions-wasm/src/lib.rs) and its `wit/` directory; native execution is adapted by `maestro-extensions-wasmtime` | [Guest authoring](extensions/guest.md) |
 
 ## Debugging
@@ -1011,19 +1011,20 @@ is separate and runs either way.
 
 ### FTP peer support
 
-The models tests share the scripted peer in
-`crates/maestro-models/tests/support/ftp_server.rs`. Library tests also load
-`ftp_server_timing.rs` for `Peer::reached` and `Peer::written`; the integration
-program uses only the common peer. Check both programs for unused support:
+The transport and models tests share the scripted peer in
+`crates/maestro-http/src/test_support/ftp_server.rs`, behind the `test-support`
+feature of `maestro-http`. `ftp_server_timing.rs` beside it adds `Peer::reached`
+and `Peer::written`. Check both crates after changing the peer:
 
 ```sh
-cargo clippy -p maestro-models --all-targets --locked -- -D warnings
+cargo clippy -p maestro-http -p maestro-models --all-targets --locked -- -D warnings
 ```
 
 ### TLS fixture certificates
 
 The provider tests trust fixed certificates under
-`crates/maestro-models/tests/fixtures/`. They are committed data, and no script or
+`crates/maestro-models/tests/fixtures/`; the transport tests trust the ones under
+`crates/maestro-http/tests/fixtures/socks-tls/`. They are committed data, and no script or
 certificate library issues them. Each one expires on 2126-10-18, so none of them
 lapses during a test run. The three server-side certificates start on 2019-06-01,
 before 2019-07-01, because Apple's TLS policy refuses a server certificate issued on
@@ -2208,16 +2209,16 @@ test observes.
 | `crates/maestro-daemon/tests/pane_input.rs:198` | A line typed into the live pane shell. | The pane terminal is the subject: its input reaches a real shell. |
 | `crates/maestro-daemon/tests/layout_apply.rs` (`/bin/sleep 60` leaves) | The system `sleep` program as a long-lived pane command. | The system `sleep` is a native program, and the leaf only has to outlive the test body. |
 | `crates/maestro-rpc/tests/daemon_socket.rs:745-750` | The daemon's startup pane running the configured `/bin/sh`. | The pane terminal is the subject: one case writes to the live shell and reads its answer back through the protocol. |
-| `crates/maestro-rpc/tests/support/mod.rs:266` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
+| `crates/maestro-rpc/tests/support/served.rs:281` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
 
-#### Application RPC peers
+#### RPC client peers
 
 Run the client corpus with its prepared native peers:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-app -E 'test(/rpc_transport/)'
+cargo nextest run --locked -p maestro-rpc -E 'test(/rpc_client/)'
 ```
 
 On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer
@@ -3069,7 +3070,9 @@ terminals and input-global admission. The scenario library reexports the runtime
 and terminal helpers. Theme, tool, credential, request (usage, target models and
 authored schemas), agent, extension, Markdown and package helpers live in their
 type owners. The extension engine's `test_support` module owns the callback gate
-and the release receipts its host witnesses await. Native loopback servers, child
+and the release receipts its host witnesses await. The application's `test_support`
+module owns the scripted session harness, the session runtimes over it, the export
+fixtures and the task-set runners. Native loopback servers, child
 probes, toolchain selection and the caller-owned local executor live in
 `maestro-test-process`. Fallible helpers return their errors to the test caller;
 fixed-output callbacks retain immediate assertions.

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use maestro_models::{StringEnumOptions, headers_to_record, short_hash, string_enum};
+    use maestro_models::{EnumOptions, headers_to_record, short_hash, string_enum};
     use serde_json::json;
     #[test]
     fn maestro_headers_and_schema_keep_supplied_values() {
@@ -16,7 +16,7 @@ mod tests {
         assert_eq!(
             string_enum(
                 &["z", "a"],
-                Some(StringEnumOptions {
+                Some(EnumOptions {
                     description: Some(""),
                     default: Some("")
                 })
@@ -27,7 +27,7 @@ mod tests {
             assert_eq!(
                 string_enum(
                     &["inside"],
-                    Some(StringEnumOptions {
+                    Some(EnumOptions {
                         description: Some(value),
                         default: Some(value)
                     })

@@ -1,21 +1,26 @@
 //! Prompt-built navigation, summary placement and cancellation against recorded outcomes.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support::session_harness::{
-    Harness, HarnessOptions, answer, harness, hold_first_answer, on_task_set, prompt_to_end,
-    recorded, script_responses,
-};
+use crate::support::session_harness::{Harness, prompt_to_end, recorded};
 use maestro_app::agent_session::{NavigateTreeResult, PromptOptions};
+use maestro_app::test_support::{
+    HarnessOptions, answer, harness, hold_first_answer, on_task_set, script_responses,
+};
 use maestro_session::session_manager::{NavigateTreeOptions, ReadonlySessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// A session whose message entries were produced by completed prompt turns.
 async fn conversation(turns: &[&str]) -> (Harness, Vec<String>) {
-    let h = harness(HarnessOptions {
-        settings: json!({"compaction": {"keepRecentTokens": 1}}),
-        ..HarnessOptions::default()
-    })
-    .await;
+    let h = harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            settings: json!({"compaction": {"keepRecentTokens": 1}}),
+            ..HarnessOptions::default()
+        },
+    )
+    .await
+    .unwrap();
     for text in turns {
         h.faux
             .set_responses(vec![maestro_models::FauxResponseStep::Message(Box::new(
@@ -90,7 +95,8 @@ fn root_user_navigation_restores_editor_and_empty_leaf() {
                 "root_user_navigation_restores_editor_and_empty_leaf"
             )
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -111,7 +117,7 @@ fn assistant_navigation_selects_the_message_without_editor_text() {
                 "assistant_navigation_selects_the_message_without_editor_text"
             )
         );
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -125,7 +131,8 @@ fn root_summary_becomes_a_new_root_and_leaf() {
                 "root_summary_becomes_a_new_root_and_leaf"
             )
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -146,7 +153,8 @@ fn nested_user_summary_is_a_sibling_of_the_selected_user() {
                 "nested_user_summary_is_a_sibling_of_the_selected_user"
             )
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -160,7 +168,8 @@ fn assistant_summary_is_attached_to_the_selected_message() {
                 "assistant_summary_is_attached_to_the_selected_message"
             )
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -198,7 +207,8 @@ fn aborting_a_started_summary_preserves_tree_and_clears_state() {
                 "aborting_a_started_summary_preserves_tree_and_clears_state"
             )
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -225,7 +235,7 @@ fn plain_navigation_does_not_append_a_summary() {
                 "plain_navigation_does_not_append_a_summary"
             )
         );
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -247,7 +257,8 @@ fn same_leaf_navigation_is_an_observable_noop() {
                 "same_leaf_navigation_is_an_observable_noop"
             )
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -282,7 +293,7 @@ fn custom_summary_focus_reaches_the_summary_request() {
                 "custom_summary_focus_reaches_the_summary_request"
             )
         );
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -320,5 +331,6 @@ fn cross_branch_summary_captures_the_branch_being_left() {
                 "cross_branch_summary_captures_the_branch_being_left"
             )
         );
-    });
+    })
+    .unwrap();
 }

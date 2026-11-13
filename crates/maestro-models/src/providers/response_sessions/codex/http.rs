@@ -114,11 +114,11 @@ pub(super) fn parse_error_response(
 
 use super::{CodexError, OpenAICodexResponsesOptions, events::Source, request::PreparedRequest};
 use crate::providers::json_text::compact_json;
-use crate::providers::transport::{HttpRequest, HttpResponse, Raced, race};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Model, ProviderResponse,
     SharedAssistantMessage,
 };
+use maestro_http::{HttpRequest, HttpResponse, Raced, race};
 use std::sync::Arc;
 
 /// Send one setup attempt and await its response observation before processing the body.
@@ -191,8 +191,8 @@ pub(crate) async fn invoke_sse<E: crate::ProviderExecution>(
 }
 
 use crate::Cancellation;
-use crate::providers::transport::decode_utf8;
 use futures_util::StreamExt;
+use maestro_http::decode_utf8;
 use std::{future::pending, time::Duration};
 
 /// Read a failed setup response before applying friendly parsing or retry policy.

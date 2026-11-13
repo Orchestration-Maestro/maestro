@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    builtin_reads::{Endpoint, Execution, Request},
+    builtin_reads::{Endpoint, Execution},
     callback_imports::CallbackView,
     local_resources::SignalEndpoint,
 };
@@ -19,24 +19,11 @@ use wasmtime::{
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, Endpoint>(host, "builtin-tool")?;
     super::mutation_imports::add_to_linker(host)?;
     super::local_bash_imports::add_to_linker(host)?;
     add_bash_factory(host)?;
     super::builtin_selection_imports::add_to_linker(host)?;
     add_factories(host)?;
-    crate::read_imports::add_read(
-        host,
-        "[method]builtin-tool.metadata",
-        Request::Metadata,
-        crate::read_imports::resource::<T, Endpoint>,
-    )?;
-    crate::read_imports::add_operand(
-        host,
-        "[method]builtin-tool.prepare",
-        Request::Prepare,
-        crate::read_imports::operand::<T, Endpoint, String>,
-    )?;
     host.func_wrap_concurrent(
         "[method]builtin-tool.execute",
         |accessor, (tool, id, args, model, signal, update): ExecutionArgs| {

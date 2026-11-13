@@ -1,18 +1,18 @@
 //! A reload applies the saved preferences that the live agent also holds, and leaves the
 //! providers of the sessions sharing its process registered.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    HarnessOptions, answer, harness, history_view, on_task_set, script_responses,
-};
+use crate::support::session_harness::history_view;
 use maestro_agent::QueueMode;
 use maestro_app::PromptOptions;
-use maestro_catalog::{ProviderCallbacks, ProviderConfigInput};
+use maestro_app::test_support::{HarnessOptions, answer, harness, on_task_set, script_responses};
 use maestro_extensions::{ExtensionFactory, Local};
 use maestro_models::{
     AssistantMessageEventStream, DiagnosticErrorInfo, Invoke, ProviderCall, ProviderExecution,
     SharedHandle,
 };
+use maestro_models_registry::{ProviderCallbacks, ProviderConfigInput};
 use maestro_settings::MessageDeliveryMode;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{rc::Rc, sync::RwLock};
 
@@ -22,7 +22,9 @@ const PROBE_API: &str = "probe-stream";
 #[test]
 fn reload_applies_saved_queue_modes_to_the_live_agent() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         assert_eq!(h.session.steering_mode(), QueueMode::OneAtATime);
         assert_eq!(h.session.follow_up_mode(), QueueMode::OneAtATime);
         {
@@ -33,18 +35,23 @@ fn reload_applies_saved_queue_modes_to_the_live_agent() {
         h.session.reload().await.unwrap();
         assert_eq!(h.session.steering_mode(), QueueMode::All);
         assert_eq!(h.session.follow_up_mode(), QueueMode::All);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn reload_keeps_another_sessions_registered_provider() {
     on_task_set(|_| async {
-        let elsewhere = harness(HarnessOptions::default()).await;
+        let elsewhere = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         drop(script_responses(
             &elsewhere,
             vec![answer("elsewhere", None, None)],
         ));
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         drop(script_responses(&h, vec![answer("mine", None, None)]));
 
         elsewhere.session.reload().await.unwrap();
@@ -55,7 +62,8 @@ fn reload_keeps_another_sessions_registered_provider() {
 
         let answered = history_view(&h).pop().unwrap();
         assert_eq!(answered, json!({"role": "assistant", "text": "mine"}));
-    });
+    })
+    .unwrap();
 }
 
 /// Several sessions live in one process: every session reloads, and each one keeps its own
@@ -66,9 +74,15 @@ fn reload_keeps_another_sessions_registered_provider() {
 #[test]
 fn reloads_across_sessions_keep_each_others_registered_providers() {
     on_task_set(|_| async {
-        let left = harness(HarnessOptions::default()).await;
-        let middle = harness(HarnessOptions::default()).await;
-        let right = harness(HarnessOptions::default()).await;
+        let left = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
+        let middle = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
+        let right = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         drop(script_responses(&left, vec![answer("left", None, None)]));
         drop(script_responses(
             &middle,
@@ -89,7 +103,8 @@ fn reloads_across_sessions_keep_each_others_registered_providers() {
             let answered = history_view(session).pop().unwrap();
             assert_eq!(answered, json!({"role": "assistant", "text": text}));
         }
-    });
+    })
+    .unwrap();
 }
 
 /// A probe callback whose invocation only reports the probe's diagnostic.
@@ -119,15 +134,20 @@ fn reload_keeps_extension_registered_provider() {
                 Ok(())
             })
         });
-        let h = harness(HarnessOptions {
-            factories: vec![register],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![register],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         assert!(maestro_models::get_api_provider(PROBE_API).is_some());
         h.session.reload().await.unwrap();
         assert!(maestro_models::get_api_provider(PROBE_API).is_some());
         h.registry.refresh().unwrap();
         assert!(maestro_models::get_api_provider(PROBE_API).is_some());
-    });
+    })
+    .unwrap();
 }

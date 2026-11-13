@@ -6,7 +6,7 @@ the names of the compaction, history, resource, settings, tool and theme owners
 that hosts hand to a session. Import every other name from the crate that owns
 it, as the example below does for `AgentEvent`, `Local` and `ModuleLoader`. Frontend
 modes and the interactive components stay with their own crates; the RPC client,
-which drives Maestro as a child process, lives here in `rpc_transport`
+which drives Maestro as a child process, lives in `maestro-rpc`
 ([RPC client](../client.md)).
 
 [Session observations](lifecycle.md) describes name publication and finalized
@@ -361,7 +361,7 @@ Use the owning crate for presentation:
 | Interactive terminal | `maestro_chat::InteractiveMode::new` | Session runtime, mode options, terminal/runtime host, themes and footer effects; then initialize and run the mode. |
 | One-shot text or JSON | `maestro_cli::run_print_mode` | Session runtime and `PrintModeOptions`; the runner presents output and handles cleanup. |
 | Standard-stream RPC | `maestro_rpc::run_rpc_mode` | Session runtime and native mode facilities; the adapter owns standard streams and process exit. |
-| Caller-owned connection | `maestro_app::run_rpc_connection` | Typed options, a line reader and writer, and optional session/workspace services; the runner returns instead of exiting. |
+| Caller-owned connection | `maestro_rpc::run_rpc_connection` | Typed options, a line reader and writer, and optional session/workspace services; the runner returns instead of exiting. |
 
 Follow [interactive mode](../chat/interactive-mode.md), [print mode](../print.md)
 and [RPC](../rpc.md) for their full construction and lifecycle contracts. Reuse

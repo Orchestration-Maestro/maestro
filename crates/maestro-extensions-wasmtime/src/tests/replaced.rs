@@ -1,8 +1,6 @@
 //! Replacement messages keep their original session after guarded reads retire.
 use crate::read_imports::ReadEndpoint;
-use crate::{
-    context_reads::Request as Read, local_resources::Pump, replaced_reads::Request, tests::runner,
-};
+use crate::{context_reads::Request as Read, local_resources::Pump, tests::runner};
 use maestro_extensions::ReplacedSessionContext;
 use std::{cell::RefCell, rc::Rc};
 
@@ -33,8 +31,8 @@ fn replacement_messages_keep_original_session_while_command_view_becomes_stale()
         let worker = std::thread::spawn(move || tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(async {
             assert_eq!(command.read(Read::Cwd).unwrap_err(), "retired replacement");
             drop(command);
-            endpoint.send(|reply| Request::Message(r#"{"customType":" original ","content":"","display":false}"#.into(), Some("{}".into()), reply)).await.unwrap();
-            assert_eq!(endpoint.send(|reply| Request::UserMessage(r#"" original ""#.into(), None, reply)).await.unwrap_err(), "replacement user failure");
+            endpoint.send_message(r#"{"customType":" original ","content":"","display":false}"#.into(), Some("{}".into())).await.unwrap();
+            assert_eq!(endpoint.send_user_message(r#"" original ""#.into(), None).await.unwrap_err(), "replacement user failure");
         }));
         drop(admission);
         pump.serve().await;

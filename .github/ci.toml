@@ -1,15 +1,121 @@
 privileged_trigger_workflows = [".github/workflows/ci-guards.yml", ".github/workflows/post-landing.yml"]
 git_sources = ["https://github.com/bytecodealliance/wasmtime"]
 additional_locked_manifests = ["crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml", "crates/maestro-web/runtime/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_a/Cargo.toml", "crates/maestro-web/tests/fixtures/browser_modules/module_b/Cargo.toml"]
-wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-markdown", "maestro-models", "maestro-models-catalog", "maestro-office", "maestro-packages", "maestro-path", "maestro-pattern", "maestro-interchange", "maestro-resources", "maestro-schema-validator", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]
-wasm_examples = { "maestro-catalog" = ["browser_catalog_check"], "maestro-models" = ["bedrock_browser_witness", "browser_import_check", "cloud_content_browser_witness"] }
+wasm_crates = [
+    "maestro-agent",
+    "maestro-app",
+    "maestro-brand",
+    "maestro-cancellation",
+    "maestro-chat",
+    "maestro-credentials",
+    "maestro-export",
+    "maestro-extensions",
+    "maestro-http",
+    "maestro-interchange",
+    "maestro-json",
+    "maestro-lock",
+    "maestro-markdown",
+    "maestro-models",
+    "maestro-models-catalog",
+    "maestro-models-registry",
+    "maestro-office",
+    "maestro-packages",
+    "maestro-path",
+    "maestro-pattern",
+    "maestro-resources",
+    "maestro-schema-validator",
+    "maestro-session",
+    "maestro-settings",
+    "maestro-text",
+    "maestro-theme",
+    "maestro-tools",
+    "maestro-tui",
+    "maestro-watch",
+    "maestro-web",
+]
+wasm_examples = { "maestro-models-registry" = ["browser_catalog_check"], "maestro-models" = ["bedrock_browser_witness", "browser_import_check", "cloud_content_browser_witness"] }
 emscripten_crates = ["maestro-sandbox-runtime"]
 browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]
 test_tools = true
 test_prepare = "cargo run --quiet --locked -p maestro-tooling --bin development -- prepare-test-setup prepare \"$TEST_PREPARE_OUTPUT\" \"${CARGO_TARGET_DIR:-target/test-prepare}\""
 test_prepare_setups = ["author-component", "browser-author", "cargo-checks", "native-fixture", "workspace-sources"]
-test_prepare_inputs = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "mise.toml", "assets/**", "crates/maestro-agent/**", "crates/maestro-app/**", "crates/maestro-brand/**", "crates/maestro-cancellation/**", "crates/maestro-catalog/**", "crates/maestro-credentials/**", "crates/maestro-daemon/**", "crates/maestro-dependencies/**", "crates/maestro-detection/**", "crates/maestro-export/**", "crates/maestro-extensions-wasm/**", "crates/maestro-extensions-wasmtime/**", "crates/maestro-extensions/**", "crates/maestro-json/**", "crates/maestro-listeners/**", "crates/maestro-listing/**", "crates/maestro-lock/**", "crates/maestro-markdown/**", "crates/maestro-models-catalog/**", "crates/maestro-models/**", "crates/maestro-office/**", "crates/maestro-packages/**", "crates/maestro-path/**", "crates/maestro-pattern/**", "crates/maestro-process/**", "crates/maestro-protocol/**", "crates/maestro-realpath/**", "crates/maestro-interchange/**", "crates/maestro-resources/**", "crates/maestro-schema-validator/**", "crates/maestro-session/**", "crates/maestro-settings/**", "crates/maestro-subagents/**", "crates/maestro-terminal-emulator/**", "crates/maestro-test-directory/**", "crates/maestro-test-fixtures/**", "crates/maestro-test-process/**", "crates/maestro-test-tracing/**", "crates/maestro-text/**", "crates/maestro-theme/**", "crates/maestro-tooling/**", "crates/maestro-tools/**", "crates/maestro-tui/**", "crates/maestro-watch/**", "crates/maestro-web/**", "crates/maestro-workspace/**"]
-test_inputs = { "assets/" = ["maestro-test-browser", "maestro-export", "maestro-theme", "maestro-tooling", "maestro-web"], "crates/" = ["maestro-test-conventions"], "docs/" = ["maestro-test-browser", "maestro-app", "maestro-chat", "maestro-cli", "maestro-extensions-wasm", "maestro-extensions-wasmtime", "maestro-tooling"], "fuzz/" = [], "justfile" = ["maestro-tooling"], "workspace-crates.json" = ["maestro-test-conventions"] }
+test_prepare_inputs = [
+    "Cargo.lock",
+    "Cargo.toml",
+    "assets/**",
+    "crates/maestro-agent/**",
+    "crates/maestro-app/**",
+    "crates/maestro-brand/**",
+    "crates/maestro-cancellation/**",
+    "crates/maestro-credentials/**",
+    "crates/maestro-dependencies/**",
+    "crates/maestro-export/**",
+    "crates/maestro-extensions-wasm/**",
+    "crates/maestro-extensions-wasmtime/**",
+    "crates/maestro-extensions/**",
+    "crates/maestro-http/**",
+    "crates/maestro-interchange/**",
+    "crates/maestro-json/**",
+    "crates/maestro-listeners/**",
+    "crates/maestro-listing/**",
+    "crates/maestro-lock/**",
+    "crates/maestro-markdown/**",
+    "crates/maestro-models-catalog/**",
+    "crates/maestro-models-registry/**",
+    "crates/maestro-models/**",
+    "crates/maestro-office/**",
+    "crates/maestro-packages/**",
+    "crates/maestro-path/**",
+    "crates/maestro-pattern/**",
+    "crates/maestro-process/**",
+    "crates/maestro-protocol/**",
+    "crates/maestro-realpath/**",
+    "crates/maestro-resources/**",
+    "crates/maestro-schema-validator/**",
+    "crates/maestro-session/**",
+    "crates/maestro-settings/**",
+    "crates/maestro-subagents/**",
+    "crates/maestro-test-directory/**",
+    "crates/maestro-test-fixtures/**",
+    "crates/maestro-test-process/**",
+    "crates/maestro-test-tracing/**",
+    "crates/maestro-text/**",
+    "crates/maestro-theme/**",
+    "crates/maestro-tooling/**",
+    "crates/maestro-tools/**",
+    "crates/maestro-tui/**",
+    "crates/maestro-watch/**",
+    "crates/maestro-web/**",
+    "crates/maestro-workspace/**",
+    "mise.toml",
+    "rust-toolchain.toml",
+]
+test_inputs."assets/" = [
+    "maestro-export",
+    "maestro-test-browser",
+    "maestro-theme",
+    "maestro-tooling",
+    "maestro-web",
+]
+test_inputs."crates/" = [
+    "maestro-test-conventions",
+]
+test_inputs."docs/" = [
+    "maestro-app",
+    "maestro-chat",
+    "maestro-cli",
+    "maestro-extensions-wasm",
+    "maestro-extensions-wasmtime",
+    "maestro-test-browser",
+    "maestro-tooling",
+]
+test_inputs."fuzz/" = []
+test_inputs."justfile" = [
+    "maestro-tooling",
+]
+test_inputs."workspace-crates.json" = [
+    "maestro-test-conventions",
+]
 reserved_ports = [53692, 1455]
 test_shard_count = 16
 # Unicode scalars, locale identifiers and localized clock labels are data, not prose.

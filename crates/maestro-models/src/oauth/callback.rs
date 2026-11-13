@@ -1,7 +1,7 @@
 //! Shared authorization input recognition and callback response records.
 use crate::oauth::{authorization_whitespace, native::CallbackOutcome};
-use crate::providers::transport::spawn_detached;
 use crate::{BoxFuture, EventStream, OAuthError};
+use maestro_http::spawn_detached;
 use serde::Deserialize;
 use url::Url;
 

@@ -69,9 +69,7 @@ pub struct WindowsKeyRecord {
     pub control_key_state: u32,
 }
 
-/// Popup size.
-mod popup_size;
-pub use popup_size::PopupSize;
+pub use crate::popup_size::PopupSize;
 
 /// An independent boolean flag in a protocol record.
 #[derive(
