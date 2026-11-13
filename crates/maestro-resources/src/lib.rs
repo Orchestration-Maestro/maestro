@@ -15,11 +15,12 @@ pub mod catalog;
 pub mod provenance;
 pub use catalog::{
     LoadSkillsFromDirOptions, LoadSkillsOptions, LoadSkillsResult, ResourceEntry, ResourceFileType,
-    Skill, SkillFrontmatter, current_directory, drive_directories, format_skills_for_prompt,
-    load_skills, load_skills_from_dir, metadata, read_entries, read_text, real_path,
-    symlink_metadata,
+    Skill, SkillFrontmatter, format_skills_for_prompt, load_skills, load_skills_from_dir, metadata,
+    read_entries, read_text, real_path, symlink_metadata,
 };
 pub use maestro_interchange::slash_commands::{SlashCommandInfo, SlashCommandSource};
+#[doc(inline)]
+pub use maestro_path::fs::{current_directory, drive_directories};
 pub use metadata::{
     FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, parse_yaml,
     strip_frontmatter,

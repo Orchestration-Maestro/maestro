@@ -136,10 +136,14 @@ Library/process warnings are not printed or returned as skill diagnostics.
 The loaders read the native file system directly. `read_entries` lists a directory
 in name order without following links, `read_text` decodes a file as UTF-8 with
 replacement characters, `metadata` follows links and `symlink_metadata` does not,
-`real_path` resolves links, `current_directory` reads the process working
-directory, and `drive_directories` reports the current directory of each Windows
-drive from its `=X:` environment variable (none elsewhere). Browser builds have no
-file system: listing fails with `Unsupported` and every read fails.
+and `real_path` resolves links. Browser builds have no file system: listing
+fails with `Unsupported` and every read fails.
+
+The process directories come from `maestro_path::fs`, re-exported here:
+`current_directory` reads the process working directory, and `drive_directories`
+reports the current directory of each Windows drive from its `=X:` environment
+variable (none elsewhere). `paths::resolve` and its group forms are the same
+re-export.
 
 Both loaders take an explicit `cwd`. It is the first operand of each lexical
 resolution against the caller: the project configuration directory, relative

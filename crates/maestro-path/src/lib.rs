@@ -11,8 +11,10 @@
 //! [`normalize_native`] shares segment reduction with these string operations
 //! when a native filesystem path must retain non-UTF-8 components.
 //! [`resolve_final_links`] traverses native link targets supplied by the caller.
-//! The [`fs`] module alone reads the file system: on native targets it lists a
-//! directory in name order and resolves real paths.
+//! The [`fs`] module alone reads the file system and the process directories: it
+//! resolves a path against the working directory and the Windows drive
+//! directories, and on native targets it lists a directory in name order and
+//! resolves real paths.
 //!
 //! The [`posix`] and [`win32`] modules behave the same on every platform. The
 //! crate root re-exports the flavor of the compile target; the POSIX-only

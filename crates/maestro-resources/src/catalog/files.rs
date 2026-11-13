@@ -74,24 +74,6 @@ pub fn symlink_metadata(path: &Path) -> io::Result<ResourceFileType> {
     Ok(file_type(std::fs::symlink_metadata(path)?.file_type()))
 }
 
-/// The current directory of each Windows drive, keyed by uppercase letter: the `=X:`
-/// environment variables of the drives that have one. Other platforms have none.
-#[must_use]
-pub fn drive_directories() -> Vec<(char, String)> {
-    if !cfg!(windows) {
-        return Vec::new();
-    }
-    maestro_path::env_drive_directories(|name| std::env::var_os(name))
-}
-
-/// The process working directory.
-///
-/// # Errors
-/// Returns the I/O cause when the directory cannot be read.
-pub fn current_directory() -> io::Result<String> {
-    Ok(std::env::current_dir()?.to_string_lossy().into_owned())
-}
-
 /// Classify directory-entry or metadata observations.
 fn file_type(value: std::fs::FileType) -> ResourceFileType {
     if value.is_file() {

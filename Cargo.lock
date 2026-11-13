@@ -4750,7 +4750,6 @@ dependencies = [
  "maestro-lock",
  "maestro-models",
  "maestro-path",
- "maestro-resources",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",

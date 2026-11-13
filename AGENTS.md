@@ -152,6 +152,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   the file-system module `maestro_path::fs`. It sits
   below layer 0 and depends on no workspace crate. Native normalization reuses its
   segment reducer without decoding path bytes or accessing the filesystem.
+  `maestro_path::fs::resolve` and its group forms resolve a path against the
+  process working directory and the Windows drive directories, on every target;
+  `maestro-resources` re-exports them at its existing paths.
   On native targets, `maestro_path::fs::read_dir` lists one directory's entries
   sorted by file name on every platform; callers keep kind filtering, name
   decoding and further ordering. `maestro_path::fs::canonicalize` resolves a

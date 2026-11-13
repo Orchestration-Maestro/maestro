@@ -469,7 +469,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-resources` | discover resources | `maestro-interchange`, `maestro-pattern`, `maestro-text`, `maestro-json` | 0 |
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme`, `maestro-agent`, `maestro-daemon`, `maestro-export`, `maestro-extensions`, `maestro-json`, `maestro-listeners`, `maestro-lock`, `maestro-models`, `maestro-process`, `maestro-protocol`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools`, `maestro-watch` | 5 |
 | `maestro-schema-validator` | validate values against a schema | `maestro-interchange`, `maestro-json`, `maestro-text` | below 0 |
-| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-resources`, `maestro-lock` | 2 |
+| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-lock` | 2 |
 | `maestro-session-reports` | summarize session files for developers | `maestro-app`, `maestro-models`, `maestro-session`, `maestro-resources`, `maestro-process`, `maestro-json`, `maestro-text`, `maestro-theme` | 5 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
 | `maestro-terminal-emulator` | emulate terminals | `maestro-text` | 0 |
@@ -775,12 +775,21 @@ This declaration creates no crate and moves no code.
 
 `maestro-path` owns path operations: lexical operations on path strings, and a
 file-system module, `maestro_path::fs`, for the operations that read the file
-system. It sits below layer 0 and has no internal dependencies. The lexical
+system or the process directories. It sits below layer 0 and has no internal
+dependencies. The lexical
 operations are platform-independent. Native path normalization shares its
 segment reducer with the string flavors and preserves native component bytes
 without filesystem observations.
 
-The file-system module lists a directory and resolves real paths, on native
+The file-system module resolves a path against the process directories on every
+target: `resolve`, `resolve_groups` and `resolve_groups_with` read the working
+directory and the Windows drive directories (`current_directory`,
+`drive_directories`) only when the operands leave a part open, so an anchored
+path never fails on an unreadable working directory. `maestro-resources`
+re-exports the five names at its existing paths, and `maestro-session` resolves
+its session paths through the module directly.
+
+The module also lists a directory and resolves real paths, on native
 targets only. `read_dir` returns one directory's entries sorted by file name on
 every platform. File systems return entries in their own order, such as hash
 order on many Unix file systems and case-insensitive name order on NTFS. The
