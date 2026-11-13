@@ -164,7 +164,7 @@ Deliver an embeddable Rust browser application using `web-sys`, `js-sys` and Rus
 
 Preserve chat, the editor, attachments, artifacts, streaming, reader-follow behavior, abort/steer/follow-up, model/thinking controls, localized text, copy/download/links and embedding callbacks. The same component layer supports Home, Chat, Catalog, Graph, Workspaces, Docs, Settings and personal records. The desktop host loads the same web bundle; it does not supply a second renderer.
 
-The model library owns replaceable, library-type-free WebSocket effects beside its HTTP effects. The native adapter owns the shared socket-upgrade primitive; response-session caching, cancellation and lifetime policy remain provider-owned. The browser frontend supplies its browser socket adapter through the application facade, reusing its event-subscription owner. One-shot model discovery owns authentication, RPC admission and connection release, without a retry policy or cache.
+`maestro-http` owns replaceable, library-type-free WebSocket effects beside its HTTP effects, and the model library re-exports them at its existing paths. The native adapter owns the shared socket-upgrade primitive; response-session caching, cancellation and lifetime policy remain provider-owned. The browser frontend supplies its browser socket adapter through the application facade, reusing its event-subscription owner. One-shot model discovery owns authentication, RPC admission and connection release, without a retry policy or cache.
 
 Provide the browser's named stores, metadata/indexes, settings/provider keys/custom providers, session listing/deletion, quota/persistence request behavior and artifact reconstruction through IndexedDB. Preserve all supported local-server discovery, authentication/proxy URL handling, key dialogs/tests and provider settings. Browser server discovery is not the excluded newer core catalog-refresh feature.
 
@@ -453,12 +453,13 @@ as one portable build dependency and one portable development dependency.
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners`, `maestro-lock` | 3 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-package`, `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-extensions-wasmtime` | execute artifacts (optional path utility) | `maestro-extensions`, `maestro-lock` | 4 |
+| `maestro-http` | perform HTTP requests | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json` | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
 | `maestro-listing` | list directory entries | — | below 0 |
 | `maestro-lock` | own mutual exclusion | `maestro-path`, `maestro-realpath` | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
-| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
+| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
 | `maestro-models-catalog` | define the model catalog | `maestro-request` | below 0 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-daemon`, `maestro-terminal-emulator` | 5 |
 | `maestro-office` | read office documents | `maestro-text`, `maestro-json`, `maestro-lock` | 0 |
@@ -506,7 +507,7 @@ bounds. Local operations may retain caller-local state; threaded operations reta
 and `Arc` for threaded operations. Both families borrow their original output
 sink only during execution and share the existing native driver.
 
-`maestro-models` serves FTP proxy script sources with its own native client inside the
+`maestro-http` serves FTP proxy script sources with its own native client inside the
 existing source loader; no crate gains an FTP dependency and
 `workspace-crates.json` gains no edge. That client owns the plain-FTP subset the loader
 uses: connecting and greeting, logging in, binary and file-structure settings, extended
@@ -518,13 +519,13 @@ part of that caller.
 
 `maestro-cancellation` owns cooperative cancellation below layer 0. Its only
 internal dependency is `maestro-listeners`, which keeps the synchronous abort
-observers of each signal. Only models and the terminal toolkit may depend on it.
+observers of each signal. Only `maestro-http`, models and the terminal toolkit may depend on it.
 
 `maestro-text` and `maestro-json` are core leaves below layer 0 with no workspace
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
 lexical comparison, markup escaping, CSS string serialization, locale construction, optional locale-number
 formatting shared by transcript components, author-written number prefixes with half-up rounding, and URI component encoding. JSON owns JSON boundary
-semantics: object acceptance, canonical keys, truth, selected-value display, compact and pretty text, and JSONL line framing.
+semantics: object acceptance, canonical keys, truth, selected-value display, compact and pretty text, raw-value reading and JSONL line framing.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
 only on `maestro-request`: entry defines session interchange records, including the
 `ForkPosition`, `NavigateTreeOptions` and generic `CompactionResult<T>` shared by native generation and guest authoring; tool defines
@@ -944,7 +945,7 @@ the foundation utility permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`,
 `maestro-session-reports`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`,
@@ -982,7 +983,7 @@ Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-catalog`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
-`maestro-extensions-wasm`, `maestro-extensions-wasmtime`,
+`maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`,
 `maestro-listing`, `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-session-reports`, `maestro-settings`,
@@ -1047,7 +1048,7 @@ test action under a scoped tracing subscriber that sees every callsite. It has
 no workspace edges except the native feature unifier and is excluded from the
 foundation utility permission. Its only incoming edges are non-optional
 development dependencies under `cfg(not(target_arch = "wasm32"))` from
-`maestro-daemon`, `maestro-models`, `maestro-process`, `maestro-terminal-emulator` and
+`maestro-daemon`, `maestro-http`, `maestro-process`, `maestro-terminal-emulator` and
 `maestro-workspace`; a caller
 declares it only when it uses it. The directory owner's declaration, alias and
 cycle rules apply.

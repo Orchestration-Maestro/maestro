@@ -210,6 +210,15 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-extensions-wasmtime",
         &["maestro-extensions", "maestro-lock"],
     ),
+    (
+        "maestro-http",
+        &[
+            "maestro-cancellation",
+            "maestro-request",
+            "maestro-text",
+            "maestro-json",
+        ],
+    ),
     ("maestro-json", &[]),
     ("maestro-listeners", &[]),
     ("maestro-listing", &[]),
@@ -219,6 +228,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-models",
         &[
             "maestro-models-catalog",
+            "maestro-http",
             "maestro-schema-validator",
             "maestro-cancellation",
             "maestro-request",

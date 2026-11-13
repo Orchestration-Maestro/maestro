@@ -11,12 +11,12 @@ use super::wire::{
 };
 use crate::parameters::replay::nullish_default;
 use crate::providers::json_text::{json_value, or_zero};
-use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Model,
     SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool, ToolCall,
     calculate_cost, parsed_arguments,
 };
+use maestro_http::RequestFailure;
 use maestro_request::presence::Presence;
 
 /// Text of a redacted reasoning block.

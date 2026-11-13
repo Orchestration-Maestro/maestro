@@ -1366,6 +1366,13 @@ fn office_document_records_have_one_shared_owner() {
 }
 
 #[test]
+fn http_transport_records_have_one_shared_owner() {
+    for name in ["FetchError", "PacProxyAgent"] {
+        assert_single_owner(name, "maestro-http", &["maestro-models"]);
+    }
+}
+
+#[test]
 fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     let workspace = Workspace::new();
     let root = workspace.root.path();

@@ -135,10 +135,10 @@ async fn invoke<E: ProviderExecution>(
     options: &GoogleOptions<E>,
     events: &crate::AssistantMessageEventStream,
     output: &crate::SharedAssistantMessage,
-) -> Result<(), crate::providers::transport::RequestFailure> {
+) -> Result<(), maestro_http::RequestFailure> {
     use super::process_google_stream;
     use crate::providers::assistant_output::conclude;
-    use crate::providers::transport::{Raced, RequestFailure, race};
+    use maestro_http::{Raced, RequestFailure, race};
     let model = invocation.model;
     let client = invocation.client?;
     let selected = selected_payload(
@@ -214,7 +214,7 @@ async fn prepare(
         super::api_client::PreparedContentRequest,
         Option<std::time::Duration>,
     ),
-    crate::providers::transport::RequestFailure,
+    maestro_http::RequestFailure,
 > {
     #[cfg(not(target_arch = "wasm32"))]
     let started = tokio::time::Instant::now();
@@ -228,9 +228,7 @@ async fn prepare(
             timeout
                 .checked_sub(started.elapsed())
                 .filter(|left| !left.is_zero())
-                .ok_or_else(|| {
-                    crate::providers::transport::RequestFailure::new("Request was aborted")
-                })?,
+                .ok_or_else(|| maestro_http::RequestFailure::new("Request was aborted"))?,
         ),
         None => None,
     };
@@ -243,8 +241,8 @@ async fn selected_payload<E: ProviderExecution>(
     context: &Context,
     options: &GoogleOptions<E>,
     cloud: bool,
-) -> Result<crate::PayloadHookInput, crate::providers::transport::RequestFailure> {
-    use crate::providers::transport::RequestFailure;
+) -> Result<crate::PayloadHookInput, maestro_http::RequestFailure> {
+    use maestro_http::RequestFailure;
     let payload = serde_json::to_value(params(model, context, options, cloud)?)
         .map_err(|error| RequestFailure::new(error.to_string()))?;
     let selected = crate::PayloadHookInput {

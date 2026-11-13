@@ -1,9 +1,9 @@
 //! Single-attempt device-account HTTP requests and service-token exchange.
 use crate::providers::json_text::{member, raw_json, raw_number};
-use crate::providers::transport::decode_utf8;
 use crate::{Fetch, HttpRequest, OAuthCredentials, OAuthError};
 use futures_util::StreamExt as _;
 use indexmap::IndexMap;
+use maestro_http::decode_utf8;
 use serde_json::value::RawValue;
 
 /// Device application identifier.

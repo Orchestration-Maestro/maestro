@@ -1,6 +1,8 @@
 //! Transcript witnesses through the interactive mode's retained containers and shortcuts.
 use super::super::replay::aborted_notice;
 use super::{Setup, World, isolated};
+#[path = "../../../tests/interactive_mode_support/transcript_corpus.rs"]
+mod transcript_corpus;
 use crate::BranchSummaryMessageComponent;
 use crate::CustomMessageComponent;
 use crate::interactive_mode::startup::ExpandableText;
@@ -22,49 +24,14 @@ use maestro_tools::{ToolRenderResult, output::render_utils::ToolRenderResultLike
 use maestro_tui::ComponentHandle;
 use maestro_tui::{Component, Container, EditorComponent, MarkdownTheme, Spacer, Text};
 use maestro_tui::{ImageProtocol, TerminalCapabilities};
-use serde::{Deserialize, de::DeserializeOwned};
+use serde::Deserialize;
 use serde_json::Value;
 use serde_json::json;
 use std::cell::Cell;
 use std::rc::Weak;
-use std::{cell::RefCell, collections::BTreeMap, path::Path, rc::Rc};
+use std::{cell::RefCell, path::Path, rc::Rc};
+use transcript_corpus::{cases, corpus, palette};
 
-/// The recorded palette and every recorded transcript case.
-const FIXTURES: &str = include_str!("../../../tests/fixtures/interactive_transcript.json");
-
-/// The recorded corpus.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Corpus {
-    /// Foreground and background palette indexes the recording used.
-    palette: Palette,
-    /// The recorded cases.
-    cases: Vec<Case>,
-}
-
-/// The palette's colour indexes by role name.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Palette {
-    /// Foreground roles.
-    foreground: BTreeMap<String, u8>,
-    /// Background roles.
-    background: BTreeMap<String, u8>,
-}
-
-/// One recorded case, read by its witness.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: Value,
-    /// The recorded observation.
-    expected: Value,
-}
-
-/// The transcript rows and the effects of one operation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Transcript {
@@ -88,50 +55,6 @@ struct Transcript {
     /// The saved hidden-thinking preference.
     #[serde(default)]
     hidden: Option<bool>,
-}
-
-/// The recorded corpus.
-fn corpus() -> Corpus {
-    serde_json::from_str(FIXTURES).unwrap()
-}
-
-/// The recorded cases of `test`, in order, read as its operation and observation records.
-fn cases<I: DeserializeOwned, E: DeserializeOwned>(test: &str) -> Vec<(I, E)> {
-    let cases: Vec<_> = corpus()
-        .cases
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| {
-            (
-                serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(case.expected).unwrap(),
-            )
-        })
-        .collect();
-    assert!(!cases.is_empty(), "missing group {test}");
-    cases
-}
-
-/// The theme painting the recorded palette indexes.
-fn palette() -> Rc<Theme> {
-    let palette = corpus().palette;
-    let foreground = palette
-        .foreground
-        .into_iter()
-        .map(|(role, index)| (ThemeColor::Named(role), ColorValue::Index(index)));
-    let background = palette
-        .background
-        .into_iter()
-        .map(|(role, index)| (ThemeBg::Named(role), ColorValue::Index(index)));
-    Rc::new(
-        Theme::new(
-            foreground,
-            background,
-            ColorMode::Truecolor,
-            ThemeOptions::default(),
-        )
-        .unwrap(),
-    )
 }
 
 /// A mode in `directory` with images hidden, publishing the recorded palette.
@@ -430,53 +353,6 @@ fn transcript_expansion_keeps_the_captured_child_array_live() {
     });
 }
 
-#[test]
-fn transcript_registered_toggle_actions_release_the_mode() {
-    isolated(
-        "transcript_registered_toggle_actions_release_the_mode",
-        async |directory| {
-            let World {
-                mode,
-                terminal,
-                runtime,
-                themes,
-                ..
-            } = recorded(directory, Setup::default());
-            let world_theme = |_: &Rc<crate::InteractiveMode>| Rc::clone(&themes);
-            mode.init().await.unwrap();
-            runtime.settle().unwrap();
-            terminal.send_input("\x0f");
-            assert!(mode.tool_output_expanded.get());
-            assert_eq!(runtime.pending(), 1);
-            terminal.send_input("\x0f");
-            assert!(!mode.tool_output_expanded.get());
-            runtime.settle().unwrap();
-            let empty = Theme::new([], [], ColorMode::Truecolor, ThemeOptions::default()).unwrap();
-            world_theme(&mode)
-                .set_theme_instance(Rc::new(empty))
-                .unwrap();
-            terminal.send_input("\x14");
-            assert!(mode.hide_thinking_block.get());
-            let errors = runtime.drain_futures();
-            let [error] = <[_; 1]>::try_from(errors).ok().unwrap();
-            assert!(
-                error.downcast_ref::<maestro_theme::ThemeError>().is_some(),
-                "{error}"
-            );
-            let editor = Rc::clone(&mode.editor);
-            let weak = Rc::downgrade(&mode);
-            drop(mode);
-            assert!(weak.upgrade().is_none());
-            runtime.settle().ok();
-            for key in ["\x0f", "\x14"] {
-                maestro_tui::InputHandler::handle_input(editor.as_ref(), key);
-            }
-            assert_eq!(runtime.pending(), 0);
-            assert!(runtime.drain_futures().is_empty());
-        },
-    );
-}
-
 /// The frames `world` has requested since the last count, which are then drawn.
 pub(super) fn frames(world: &World) -> usize {
     let requested = world.runtime.pending();
@@ -538,127 +414,6 @@ pub(super) fn message(record: Value) -> NativeAgentMessage {
 /// A user message with the recorded content.
 fn user(content: &Value) -> NativeAgentMessage {
     message(serde_json::json!({"role": "user", "content": content, "timestamp": 0}))
-}
-
-/// A user message with its content and whether it joins the history.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct UserInput {
-    /// The operation name.
-    op: String,
-    /// Text or ordered text and image blocks.
-    content: Value,
-    /// Whether the history is populated.
-    history: bool,
-}
-
-#[test]
-fn transcript_user_text_keeps_order_whitespace_and_history() {
-    let test = "transcript_user_text_keeps_order_whitespace_and_history";
-    isolated(test, async |directory| {
-        for (input, expected) in cases::<UserInput, Transcript>(test) {
-            assert_eq!(input.op, "user");
-            let world = recorded(directory, Setup::default());
-            frames(&world);
-            world
-                .mode
-                .add_message_to_chat(&user(&input.content), input.history)
-                .unwrap();
-            observe(&world, &expected, 0);
-        }
-    });
-}
-
-/// A skill block with an optional trailing user text.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct SkillInput {
-    /// The operation name.
-    op: String,
-    /// Text after the skill block.
-    tail: String,
-    /// Whether rows start expanded.
-    expanded: bool,
-}
-
-#[test]
-fn transcript_skill_block_and_trailing_user_keep_distinct_rows() {
-    let test = "transcript_skill_block_and_trailing_user_keep_distinct_rows";
-    let skill =
-        "<skill name=\"build\" location=\"/skills/build/SKILL.md\">\nDo **work**.\n</skill>";
-    isolated(test, async |directory| {
-        for (input, expected) in cases::<SkillInput, Transcript>(test) {
-            assert_eq!(input.op, "skill");
-            let world = recorded(directory, Setup::default());
-            frames(&world);
-            world.mode.tool_output_expanded.set(input.expanded);
-            let content = Value::String(format!("{skill}{}", input.tail));
-            world
-                .mode
-                .add_message_to_chat(&user(&content), true)
-                .unwrap();
-            observe(&world, &expected, 0);
-        }
-    });
-}
-
-/// One message of an application or model role.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct RoleInput {
-    /// The operation name.
-    op: String,
-    /// The message role.
-    role: String,
-    /// Whether rows start expanded.
-    expanded: bool,
-}
-
-/// The recorded message of `role`.
-fn role(role: &str) -> Value {
-    let usage = serde_json::json!({"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0,
-        "totalTokens": 0, "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0,
-        "total": 0}});
-    match role {
-        "custom" => serde_json::json!({"role": role, "customType": "note",
-            "content": "CUSTOM_BODY", "display": true, "timestamp": 0}),
-        "branchSummary" => serde_json::json!({"role": role, "summary": "BRANCH_BODY",
-            "fromId": "from", "timestamp": 0}),
-        "compactionSummary" => serde_json::json!({"role": role, "summary": "COMPACTION_BODY",
-            "tokensBefore": 1234, "timestamp": 0}),
-        "bashExecution" => serde_json::json!({"role": role, "command": "echo controlled",
-            "output": "OUTPUT", "exitCode": 0, "cancelled": false, "truncated": false,
-            "timestamp": 0}),
-        "assistant" => serde_json::json!({"role": role, "content": [
-            {"type": "thinking", "thinking": "REASON"}, {"type": "text", "text": "ANSWER"}],
-            "api": "controlled", "provider": "controlled", "model": "controlled",
-            "usage": usage, "stopReason": "stop", "timestamp": 0}),
-        "toolResult" => serde_json::json!({"role": role, "toolCallId": "call",
-            "toolName": "unknown_tool", "content": [{"type": "text",
-            "text": "HISTORICAL_RESULT"}], "isError": false, "timestamp": 0}),
-        other => panic!("unrecorded role {other}"),
-    }
-}
-
-#[test]
-fn transcript_message_roles_use_existing_components() {
-    let test = "transcript_message_roles_use_existing_components";
-    isolated(test, async |directory| {
-        for (input, expected) in cases::<RoleInput, Transcript>(test) {
-            assert_eq!(input.op, "role");
-            let world = recorded(directory, Setup::default());
-            frames(&world);
-            world.mode.tool_output_expanded.set(input.expanded);
-            world
-                .mode
-                .add_message_to_chat(&message(role(&input.role)), false)
-                .unwrap();
-            if input.role == "toolResult" {
-                assert!(world.mode.chat_container.children().borrow().is_empty());
-            }
-            observe(&world, &expected, 0);
-        }
-    });
 }
 
 /// A custom message's visibility and its renderer's outcome.
@@ -1596,46 +1351,6 @@ fn transcript_recorded_assistant_keeps_the_existing_paint_owner() {
                 released.upgrade().is_none(),
                 "the recorded source is released"
             );
-        }
-    });
-}
-
-#[test]
-fn transcript_length_stop_shows_the_incomplete_response_error() {
-    let test = "transcript_length_stop_shows_the_incomplete_response_error";
-    isolated(test, async |directory| {
-        let world = recorded(directory, Setup::default());
-        let truncated_call = json!([{"type": "text", "text": "PARTIAL"}, call("1", "read")]);
-        for content in [json!([{"type": "text", "text": "PARTIAL"}]), truncated_call] {
-            let record = Rc::new(assistant(&content, "length", None));
-            let AgentMessage::Assistant(live) = message((*record).clone()) else {
-                panic!("an assistant record");
-            };
-            let rows = [
-                crate::AssistantMessageComponent::from_record(
-                    record,
-                    crate::AssistantMessageOptions::default(),
-                    world.themes.theme(),
-                    world.mode.get_markdown_theme_with_settings(),
-                    world.mode.tool_environment.terminal_image.clone(),
-                ),
-                crate::AssistantMessageComponent::new(
-                    Some(live),
-                    crate::AssistantMessageOptions::default(),
-                    world.themes.theme(),
-                    world.mode.get_markdown_theme_with_settings(),
-                    world.mode.tool_environment.terminal_image.clone(),
-                ),
-            ];
-            for row in &rows {
-                let rendered = row.render(200).join("\n");
-                assert!(
-                    rendered.contains(
-                        "Error: Model stopped because it reached the maximum output token limit. The response may be incomplete."
-                    ),
-                    "{content}: {rendered}"
-                );
-            }
         }
     });
 }
