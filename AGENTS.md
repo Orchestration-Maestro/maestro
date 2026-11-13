@@ -251,10 +251,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   holds their login flows (subscription browser login, device code and response code login)
   with the callback server and pages, and `install_built_in_providers` places the built-in
   login providers as the base layer of the registry `maestro-models` owns. It depends only on
-  models, http, interchange, brand, text and JSON, builds for the browser, and only the
-  application and the composed executable depend on it. The application installs the base
-  layer at each composition entry; a registry reader below the application sees only what
-  was registered.
+  models, http, interchange, brand, text and JSON, builds for the browser, and only
+  credentials, the application and the composed executable depend on it. `AuthStorage`
+  construction installs the base layer, so login, refresh and a catalog built over a store
+  find the built-ins; the application installs it again at each composition entry.
 - `maestro-interchange` defines the records a guest shares with its host below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and

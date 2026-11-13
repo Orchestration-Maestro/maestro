@@ -343,7 +343,9 @@ live authorization check.
 
 ## Account flows and registration
 
-The OAuth registry starts with `anthropic`, `github-copilot` and `openai-codex`.
+The OAuth registry starts empty. Building a credential store, or calling
+`maestro_providers::install_built_in_providers()`, installs `anthropic`, `github-copilot`
+and `openai-codex` as its base layer; see the [provider registry](oauth.md#provider-registry).
 Use the [subscription](oauth.md#subscription-accounts),
 [device](oauth.md#device-accounts) and [response-account](oauth.md#response-accounts)
 login and refresh functions, with the `OAuthLoginCallbacks` interaction contract.

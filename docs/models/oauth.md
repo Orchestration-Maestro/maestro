@@ -7,13 +7,14 @@ subscription login and refresh, response-account `login_openai_codex`,
 `refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`, GitHub Copilot
 device login and refresh, and the callback pages `oauth_success_html` and
 `oauth_error_html`. `maestro_providers::install_built_in_providers` installs the
-built-in providers into the registry.
+built-in providers into the registry, and every credential store calls it when it is built.
 
 ## Quick start
 
 Install the built-in providers, then resolve a request key from stored credentials.
-A program composed through `maestro-app` skips the first line, because the application
-installs them. This example reads a built-in key without contacting an account service:
+A program that builds an `AuthStorage` or composes through `maestro-app` skips the first
+line, because both install them. This example reads a built-in key without contacting an
+account service:
 
 ```rust
 use maestro_models::{get_oauth_api_key, OAuthCredentials};
@@ -82,11 +83,13 @@ its optional fields. A supplied selector returning `None` is still present.
 
 The registry in `maestro-models` starts empty. `maestro_providers::install_built_in_providers()`
 installs `anthropic`, `github-copilot` and `openai-codex`, in that order, as the
-registry's base layer. `maestro-app` calls it at each composition entry
+registry's base layer. Every `AuthStorage` constructor calls it, so login, refresh and a
+model catalog built over a store find the built-ins with no other call, before any session
+exists. `maestro-app` also calls it at each composition entry
 (`create_agent_session_services`, `create_agent_session_runtime` and
 `create_agent_session`), and the model-account executable calls it before it reads the
-registry. A program that reads the registry or builds a model catalog before it composes
-through the application calls the function first. The web frontend makes no call:
+registry. A program that reads the registry before it builds a store or composes through
+the application calls the function first. The web frontend makes no call:
 `maestro-web` sends requests with stored keys and never reads the registry, so a program
 built on `maestro-web` alone calls the function before it reads the login list. On browser
 targets the registry is thread-local, so the call installs on the current thread.

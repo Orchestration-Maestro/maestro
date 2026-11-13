@@ -4088,6 +4088,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-process",
+ "maestro-providers",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
