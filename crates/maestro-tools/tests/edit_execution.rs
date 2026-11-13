@@ -86,8 +86,8 @@ fn edit_execution_restores_bom_and_first_newline_style() {
 }
 
 #[test]
-fn edit_execution_decodes_bytes_lossily() {
-    native_cases("edit_execution_decodes_bytes_lossily");
+fn edit_execution_refuses_bytes_that_are_not_utf8() {
+    native_cases("edit_execution_refuses_bytes_that_are_not_utf8");
 }
 
 #[test]
@@ -110,6 +110,24 @@ fn edited(bytes: &[u8], old: &str, new: &str) -> Vec<u8> {
     ))
     .unwrap();
     ops.bytes.lock().unwrap().clone()
+}
+
+#[test]
+fn edit_refuses_a_file_that_is_not_valid_utf8_and_writes_nothing() {
+    let stored = b"caf\xe9\nname = old\n";
+    let ops = Arc::new(Operations::new(stored));
+    let error = run(start(
+        &tool(&ops, "/work"),
+        input("file.txt", "name = old", "name = new"),
+        None,
+    ))
+    .unwrap_err();
+    assert_eq!(
+        error.message,
+        "Could not edit file: file.txt. The file is not valid UTF-8 text."
+    );
+    assert_eq!(ops.script.names(), vec!["access", "read"]);
+    assert_eq!(*ops.bytes.lock().unwrap(), stored.to_vec());
 }
 
 #[test]

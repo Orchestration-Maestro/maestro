@@ -130,7 +130,10 @@ Empty lists fail before path resolution or queue admission. Other calls resolve
 through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs); successful
 resolution enters the
 [file mutation queue](#file-mutation-queue) before polling.
-Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
+Execution checks read/write access and reads the bytes as UTF-8. A file that is not
+valid UTF-8 is refused before anything is written, with
+`Could not edit file: <path>. The file is not valid UTF-8 text.`, so its bytes stay as
+they were. Execution then uses the
 [matching owner](#original-snapshot-matching) against one original snapshot.
 It restores the retained prefix BOM, gives replacement text the detected line ending
 and keeps every line break no match covers as it was read, CR LF, lone CR or LF. It then writes
@@ -198,7 +201,8 @@ matching failures are returned by the future. Access failures retain the authore
 path and supplied error code, including native numeric codes; read and matching
 failures retain their messages.
 
-Preview decodes bytes lossily, strips one leading BOM and normalizes newlines,
+Preview refuses a file that is not valid UTF-8 with the same failure text as execution.
+Otherwise it strips one leading BOM and normalizes newlines,
 then uses the [matching operation's](#original-snapshot-matching) comparison base.
 
 ## Diff rendering

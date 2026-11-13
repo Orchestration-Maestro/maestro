@@ -2295,7 +2295,7 @@
         }
       }
     ],
-    "edit_execution_decodes_bytes_lossily": [
+    "edit_execution_refuses_bytes_that_are_not_utf8": [
       {
         "input": {
           "path": "file.txt",
@@ -2308,20 +2308,8 @@
           ]
         },
         "expected": {
-          "ok": true,
-          "result": {
-            "content": [
-              {
-                "type": "text",
-                "text": "Successfully replaced 1 block(s) in file.txt."
-              }
-            ],
-            "details": {
-              "diff": "-1 a��(\n+1 b��(",
-              "firstChangedLine": 1
-            }
-          },
-          "bytes": [98, 239, 191, 189, 239, 191, 189, 40, 10]
+          "ok": false,
+          "bytes": [97, 255, 195, 40, 10]
         }
       }
     ],

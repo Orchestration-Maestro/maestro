@@ -2,7 +2,9 @@
 
 use super::{EditOperations, EditToolDetails, EditToolInput};
 use crate::{
-    edit_diff::{access_failure, apply_edits_to_stored_content, generate_diff_string, strip_bom},
+    edit_diff::{
+        access_failure, apply_edits_to_stored_content, generate_diff_string, strip_bom, utf8_text,
+    },
     read::{NativeReadOperations, ReadOperations, access_file},
     utils::diagnostics::{check_aborted, failure},
     write::{NativeWriteOperations, WriteOperations},
@@ -47,8 +49,8 @@ pub(super) async fn edit_file(
     check_aborted(signal)?;
     let bytes = operations.read_file(absolute.clone()).await?;
     check_aborted(signal)?;
-    let text = String::from_utf8_lossy(&bytes);
-    let (bom, content) = strip_bom(&text);
+    let text = utf8_text(&bytes, &input.path)?;
+    let (bom, content) = strip_bom(text);
     let (applied, stored) = apply_edits_to_stored_content(content, &input.edits, &input.path)?;
     let restored = format!("{bom}{stored}");
     check_aborted(signal)?;

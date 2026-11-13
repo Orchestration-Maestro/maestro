@@ -2,7 +2,7 @@
 
 use super::{
     Edit, EditDiffResult, apply_edits_to_normalized_content, generate_diff_string, normalize_to_lf,
-    strip_bom,
+    strip_bom, utf8_text,
 };
 use crate::{
     path_utils::resolve_existing_path,
@@ -90,8 +90,10 @@ async fn resolved_preview(
         .map_err(|failure| EditDiffError {
             error: failure.message,
         })?;
-    let text = String::from_utf8_lossy(&bytes);
-    let (_, content) = strip_bom(&text);
+    let text = utf8_text(&bytes, path).map_err(|failure| EditDiffError {
+        error: failure.message,
+    })?;
+    let (_, content) = strip_bom(text);
     let applied = apply_edits_to_normalized_content(&normalize_to_lf(content), edits, path)
         .map_err(|failure| EditDiffError {
             error: failure.message,

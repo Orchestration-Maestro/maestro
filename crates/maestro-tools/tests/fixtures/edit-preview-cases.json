@@ -100,28 +100,6 @@
         }
       }
     ],
-    "preview_decodes_invalid_utf8_lossily": [
-      {
-        "file": "invalid.txt",
-        "bytes": [
-          97,
-          255,
-          195,
-          40,
-          10
-        ],
-        "edits": [
-          {
-            "oldText": "a",
-            "newText": "b"
-          }
-        ],
-        "expected": {
-          "diff": "-1 a��(\n+1 b��(",
-          "firstChangedLine": 1
-        }
-      }
-    ],
     "preview_path_expansion_preserves_authored_error_path": [
       {
         "file": "with space.txt",
@@ -326,6 +304,27 @@
         ],
         "expected": {
           "error": "No changes made to multi-same.txt. The replacements left the content identical."
+        }
+      }
+    ],
+    "preview_refuses_invalid_utf8": [
+      {
+        "file": "invalid.txt",
+        "bytes": [
+          97,
+          255,
+          195,
+          40,
+          10
+        ],
+        "edits": [
+          {
+            "oldText": "a",
+            "newText": "b"
+          }
+        ],
+        "expected": {
+          "error": "Could not edit file: invalid.txt. The file is not valid UTF-8 text."
         }
       }
     ],

@@ -83,6 +83,20 @@ pub fn strip_bom(content: &str) -> (&str, &str) {
     }
 }
 
+/// Read a file's bytes as the UTF-8 text an edit works on.
+///
+/// # Errors
+/// Returns a diagnostic naming `path` when the bytes are not valid UTF-8. Decoding them
+/// with replacement characters and writing the text back would change bytes on lines no
+/// edit reaches.
+pub(crate) fn utf8_text<'a>(bytes: &'a [u8], path: &str) -> Result<&'a str, DiagnosticErrorInfo> {
+    std::str::from_utf8(bytes).map_err(|_| {
+        failure(&format!(
+            "Could not edit file: {path}. The file is not valid UTF-8 text."
+        ))
+    })
+}
+
 /// One authored replacement.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
