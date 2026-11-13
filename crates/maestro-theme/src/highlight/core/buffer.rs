@@ -1,8 +1,8 @@
 //! Scoring-buffer ownership and named embedded continuations.
 use super::{
     IllegalPolicy, Run,
+    grammar::{Scope, Score, SubLanguage},
     matcher::Hit,
-    types::{Scope, Score, SubLanguage},
 };
 
 impl Run<'_> {

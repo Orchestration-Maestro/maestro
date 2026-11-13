@@ -1,7 +1,7 @@
 //! Credential expiry and acquisition boundaries under controlled clocks and waits.
 #![cfg(not(target_arch = "wasm32"))]
 use super::AuthStorage;
-use super::types::{AuthCredential, AuthStorageData, stored_record};
+use super::records::{AuthCredential, AuthStorageData, stored_record};
 use crate::ConfigValueOperations;
 use maestro_models::{
     BoxFuture, DiagnosticErrorInfo, OAuthCallbacks, OAuthCredentials, OAuthError,
@@ -245,7 +245,7 @@ fn reread_keeps_accepted_records_after_the_last_scheduled_wait() {
     let storage = AuthStorage::from_storage(backend);
     storage.set(
         "p",
-        AuthCredential::ApiKey(super::types::ApiKeyCredential {
+        AuthCredential::ApiKey(super::records::ApiKeyCredential {
             key: "accepted".into(),
             env: None,
         }),
@@ -274,7 +274,7 @@ fn reread_keeps_accepted_records_after_the_last_scheduled_wait() {
 
 /// Stored literal key for one provider.
 fn api_key(key: &str) -> AuthCredential {
-    AuthCredential::ApiKey(super::types::ApiKeyCredential {
+    AuthCredential::ApiKey(super::records::ApiKeyCredential {
         key: key.into(),
         env: None,
     })

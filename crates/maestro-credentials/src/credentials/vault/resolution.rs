@@ -1,7 +1,7 @@
 //! Configured-authentication availability and status, plus request-key selection.
 use super::backend::AuthStorageFuture;
+use super::records::{AuthCredential, AuthSource, AuthStatus, decode};
 use super::state::AuthStorage;
-use super::types::{AuthCredential, AuthSource, AuthStatus, decode};
 use crate::{ConfigValueOperations, resolve_config_value};
 use maestro_models::{
     OAuthError, OAuthProviderHandle, find_env_keys, get_env_api_key, get_oauth_provider,

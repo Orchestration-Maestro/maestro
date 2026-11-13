@@ -1,5 +1,5 @@
 //! Controlled source-defined grammars for mode witnesses.
-use crate::highlight::core::types::{Language, ModeId};
+use crate::highlight::core::grammar::{Language, ModeId};
 /// Ordered source-defined test grammars.
 pub(super) const LANGUAGES: &[Language] = &[
     Language {

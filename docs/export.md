@@ -8,7 +8,7 @@ The document template is in
 ## Entry points
 
 `export_session_to_html` accepts a
-[`ReadonlySessionManager`](../crates/maestro-session/src/session_manager/types.rs)
+[`ReadonlySessionManager`](../crates/maestro-session/src/session_manager/views.rs)
 in a `RefCell`, optional `ExportState`, optional `ExportOptions` and an
 `ExportOperations` adapter. It uses retained entries, including inactive branches,
 and the selected leaf. It borrows the session only to read it, so a renderer may

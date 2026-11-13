@@ -1,5 +1,5 @@
 //! Raw-text storage adapters: read under exclusion, run a callback, optionally write.
-use super::types::AuthStorageError;
+use super::records::AuthStorageError;
 use std::sync::{Mutex, PoisonError};
 
 mod thread_bound {

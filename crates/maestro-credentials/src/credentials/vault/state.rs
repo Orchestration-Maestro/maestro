@@ -1,6 +1,6 @@
 //! Accepted credential state, its reload and per-provider persistence.
 use super::backend::{AuthStorageBackend, InMemoryAuthStorageBackend, ThreadBound};
-use super::types::{
+use super::records::{
     AuthCredential, AuthStorageData, AuthStorageError, decode, parse_storage_data, stored_record,
 };
 use maestro_models::OAuthError;

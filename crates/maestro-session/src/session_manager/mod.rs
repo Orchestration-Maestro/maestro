@@ -25,9 +25,9 @@ pub use storage::rewrite_session_file;
 pub mod history;
 mod tree;
 /// Session record views.
-pub mod types;
+pub mod views;
 pub use history::{build_session_context, get_latest_compaction_entry, parse_session_entries};
-pub use types::*;
+pub use views::*;
 
 use chrono::{SecondsFormat, Utc};
 use maestro_interchange::presence::Presence;

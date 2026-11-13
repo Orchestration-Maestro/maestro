@@ -1,6 +1,6 @@
 //! Login, provider listing and the locked refresh of an expired token.
+use super::records::{AuthCredential, AuthStorageError, decode, parse_storage_data, stored_record};
 use super::state::AuthStorage;
-use super::types::{AuthCredential, AuthStorageError, decode, parse_storage_data, stored_record};
 use indexmap::IndexMap;
 use maestro_models::{
     DiagnosticErrorInfo, OAuthCallbacks, OAuthError, OAuthProviderHandle, get_oauth_api_key,

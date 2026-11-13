@@ -1,5 +1,5 @@
 //! Stable candidate ranking with plain-first and base-language ties.
-use super::{Engine, IllegalPolicy, types::Score};
+use super::{Engine, IllegalPolicy, grammar::Score};
 use std::cmp::Ordering;
 
 impl Engine<'_> {

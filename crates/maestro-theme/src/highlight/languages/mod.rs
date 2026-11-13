@@ -1,6 +1,6 @@
 //! Ordered surface registries over shared immutable grammars.
 use super::HighlightProfile;
-use super::core::types::{Language, ModeId};
+use super::core::grammar::{Language, ModeId};
 mod bash;
 mod c;
 mod cpp;
