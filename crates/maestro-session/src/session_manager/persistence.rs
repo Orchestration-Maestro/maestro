@@ -234,7 +234,7 @@ impl SessionManager {
     /// One append holds every record the file does not hold yet, so a save that follows
     /// a failed one writes the records that one missed. Nothing is written before the
     /// history holds an assistant message. A failed append is cut back to the earlier
-    /// length, so no torn line is left for the next record to join.
+    /// length, so no partial line is left for the next record to join.
     pub(super) fn publish(
         &mut self,
         mut append: impl FnMut(&str, &[u8]) -> io::Result<()>,

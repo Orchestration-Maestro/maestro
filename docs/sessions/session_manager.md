@@ -183,7 +183,7 @@ record so far in one append. A failed first write is cut back to the file's earl
 length and leaves the history unpublished, so the next save writes it once from the
 start. Loaded and recovered histories stay published: each later save appends the
 records the file does not hold yet, normally one. A failed later append is cut back to
-the file's earlier length too, so no torn line is left for the next record to join, and
+the file's earlier length too, so no partial line is left for the next record to join, and
 the accepted record stays in memory: the next save writes it before the new one, and
 every record's parent is in the file. A failed switch keeps the prior manager state. An empty file is initialised immediately at the
 selected path. A nonempty file without a valid session header is refused with
