@@ -25,7 +25,6 @@ maestro-lock = { path = "../maestro-lock" }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 sha2 = { version = "=0.11.0", default-features = false }
-maestro-resources = { path = "../maestro-resources" }
 tokio = { version = "=1.53.3", default-features = false, features = ["fs", "rt"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

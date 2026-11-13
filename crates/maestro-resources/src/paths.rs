@@ -1,6 +1,8 @@
 //! Resource path resolution, classification and real-path fallback.
 
-use crate::{catalog::real_path, current_directory, drive_directories, metadata::text_whitespace};
+use crate::{metadata::text_whitespace, skills::real_path};
+#[doc(inline)]
+pub use maestro_path::fs::{resolve, resolve_groups, resolve_groups_with};
 use std::{
     convert::Infallible,
     io,
@@ -19,42 +21,6 @@ pub fn is_local_path(value: &str) -> bool {
     !["npm:", "git:", "github:", "http:", "https:", "ssh:"]
         .iter()
         .any(|prefix| value.starts_with(prefix))
-}
-
-/// Resolve each operand group from right to left, reading the process working
-/// directory and the drive directories only when an operand leaves a part open.
-///
-/// Every group sees one reading of those directories, and the working directory
-/// reaches its text through [`current_directory`].
-///
-/// # Errors
-/// Returns the working directory's error when it was needed and unreadable.
-pub fn resolve_groups(groups: &[&[&str]]) -> io::Result<Vec<String>> {
-    resolve_groups_with(groups, current_directory)
-}
-
-/// Resolve each operand group, reading the working directory through
-/// `current_directory`, which keeps the caller's own text conversion.
-///
-/// # Errors
-/// Returns the error `current_directory` returned, unchanged, when a group
-/// needs the working directory.
-pub fn resolve_groups_with(
-    groups: &[&[&str]],
-    current_directory: impl FnOnce() -> io::Result<String>,
-) -> io::Result<Vec<String>> {
-    maestro_path::resolve_with(groups, drive_directories, current_directory)
-}
-
-/// Resolve `paths` from right to left, reading the process working directory and the
-/// drive directories only when the operands leave a part open.
-///
-/// Each resolution reads them anew.
-///
-/// # Errors
-/// Returns the working directory's error when it was needed and unreadable.
-pub fn resolve(paths: &[&str]) -> io::Result<String> {
-    resolve_groups(&[paths]).map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Resolve an explicit instruction path: trim it, expand a leading `~` below `home`, keep an

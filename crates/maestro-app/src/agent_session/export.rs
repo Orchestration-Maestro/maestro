@@ -97,8 +97,8 @@ impl<E: ExtensionExecution> AgentSession<E> {
         let default_name = format!("session-{stamp}.jsonl");
         let path = maestro_path::resolve_with(
             &[&[output_path.unwrap_or(&default_name)]],
-            maestro_resources::drive_directories,
-            maestro_resources::current_directory,
+            maestro_resources::drive_dirs,
+            maestro_resources::current_dir,
         )
         .map_err(thrown)?
         .concat();

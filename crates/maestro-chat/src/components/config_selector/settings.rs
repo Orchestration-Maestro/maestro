@@ -111,8 +111,8 @@ impl ResourceList {
         }
         let paths = resolve_with(
             &[&[from], &[to]],
-            maestro_resources::drive_directories,
-            maestro_resources::current_directory,
+            maestro_resources::drive_dirs,
+            maestro_resources::current_dir,
         )?;
         Ok(relative(
             &paths[0],

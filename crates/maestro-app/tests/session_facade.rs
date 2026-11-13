@@ -59,11 +59,11 @@ fn session_facade_reexports_progress_and_resource_owners() {
     progress(2, 3).unwrap();
     assert_eq!(seen, Some((2, 3)));
     assert_eq!(
-        maestro_resources::current_directory().unwrap(),
+        maestro_resources::current_dir().unwrap(),
         std::env::current_dir().unwrap().to_string_lossy()
     );
     assert_eq!(
-        maestro_resources::drive_directories(),
-        maestro_resources::drive_directories()
+        maestro_resources::drive_dirs(),
+        maestro_resources::drive_dirs()
     );
 }

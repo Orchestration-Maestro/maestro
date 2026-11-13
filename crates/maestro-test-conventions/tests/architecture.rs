@@ -3324,7 +3324,7 @@ fn assert_tracked_delegation(sources: &[(String, String)]) {
             "resolve_prompt_path",
         ),
         (
-            "crates/maestro-resources/src/catalog/mod.rs",
+            "crates/maestro-resources/src/skills/mod.rs",
             "normalize_skill_path",
         ),
     ] {

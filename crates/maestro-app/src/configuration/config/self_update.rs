@@ -325,8 +325,8 @@ fn resolve(context: &SelfUpdateContext<'_>, path: &str) -> io::Result<String> {
     maestro_path::resolve_with_flavor(
         &[&[path]],
         context.operations.is_windows(),
-        maestro_resources::drive_directories,
-        maestro_resources::current_directory,
+        maestro_resources::drive_dirs,
+        maestro_resources::current_dir,
     )
     .map(|paths| paths.concat())
 }

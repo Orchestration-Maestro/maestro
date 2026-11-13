@@ -21,13 +21,13 @@ struct PathViews {
 impl PathViews {
     /// Builds matcher views without changing candidate identity.
     fn new(path: &str, root: &str) -> io::Result<Self> {
-        let directories = maestro_resources::drive_directories();
+        let directories = maestro_resources::drive_dirs();
         let drives: Vec<_> = directories.iter().map(|(d, p)| (*d, p.as_str())).collect();
         let current = if [root, path]
             .iter()
             .any(|p| maestro_path::try_resolve(&[p], &drives).is_err())
         {
-            Some(maestro_resources::current_directory()?)
+            Some(maestro_resources::current_dir()?)
         } else {
             None
         };

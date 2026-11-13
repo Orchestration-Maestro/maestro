@@ -14,8 +14,7 @@ use crate::{
     paths::{is_under_path, resolve, resolve_explicit_path},
 };
 pub use files::{
-    ResourceEntry, ResourceFileType, current_directory, drive_directories, metadata, read_entries,
-    read_text, symlink_metadata,
+    ResourceEntry, ResourceFileType, metadata, read_entries, read_text, symlink_metadata,
 };
 use maestro_path::{basename, dirname, join};
 use std::{io, path::Path};

@@ -263,11 +263,15 @@ status. The
 checks permitted table and `maestro-path` edges. Dev-dependencies on `maestro-path`,
 dependencies from it, and cycles are rejected like any other internal edge.
 
-The crate's `fs` module holds the path operations that read the file system, on
-native targets only. `maestro_path::fs::read_dir` lists one directory's entries
-sorted by file name on every platform; callers keep kind filtering, name decoding
-and any further ordering. `maestro_path::fs::canonicalize` resolves
-[real paths](#real-paths).
+The crate's `fs` module holds the path operations that read the file system or
+the process directories. `maestro_path::fs::resolve` resolves a path against the
+process working directory and the Windows drive directories, reading them only
+when the operands leave a part open; it builds for every target, and
+`maestro-resources` re-exports it at `maestro_resources::paths`. The other two
+operations exist on native targets only. `maestro_path::fs::read_dir` lists one
+directory's entries sorted by file name on every platform; callers keep kind
+filtering, name decoding and any further ordering.
+`maestro_path::fs::canonicalize` resolves [real paths](#real-paths).
 
 ## Real paths
 

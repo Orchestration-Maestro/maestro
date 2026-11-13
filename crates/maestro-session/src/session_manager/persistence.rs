@@ -299,7 +299,7 @@ fn has_assistant(entries: &[FileEntry]) -> io::Result<bool> {
 
 /// Resolve a path lazily, preserving the original native cwd error.
 fn absolute(path: &str) -> io::Result<String> {
-    maestro_resources::paths::resolve(&[path])
+    maestro_path::fs::resolve(&[path])
 }
 
 /// Publishes branch records, overwriting any existing bytes under exclusive ownership.

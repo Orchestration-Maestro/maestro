@@ -44,7 +44,7 @@ even when its metadata is invalid. Otherwise the scan loads lowercase `.md` file
 only at its root and descends into directories for entry files. Hidden entries,
 `node_modules`, broken links and nonfiles are skipped; file and directory links
 follow their targets. Resource discovery and package discovery share
-[`catalog::observed_type`](../../crates/maestro-resources/src/catalog/discovery.rs).
+[`observed_type`](../../crates/maestro-resources/src/skills/discovery.rs).
 
 Relative explicit paths normalize with `cwd` as the first operand, so a relative
 `cwd` itself continues from the process working directory. On
@@ -136,10 +136,14 @@ Library/process warnings are not printed or returned as skill diagnostics.
 The loaders read the native file system directly. `read_entries` lists a directory
 in name order without following links, `read_text` decodes a file as UTF-8 with
 replacement characters, `metadata` follows links and `symlink_metadata` does not,
-`real_path` resolves links, `current_directory` reads the process working
-directory, and `drive_directories` reports the current directory of each Windows
-drive from its `=X:` environment variable (none elsewhere). Browser builds have no
-file system: listing fails with `Unsupported` and every read fails.
+and `real_path` resolves links. Browser builds have no file system: listing
+fails with `Unsupported` and every read fails.
+
+The process directories come from `maestro_path::fs`, re-exported here:
+`current_dir` reads the process working directory, and `drive_dirs`
+reports the current directory of each Windows drive from its `=X:` environment
+variable (none elsewhere). `paths::resolve` and its group forms are the same
+re-export.
 
 Both loaders take an explicit `cwd`. It is the first operand of each lexical
 resolution against the caller: the project configuration directory, relative

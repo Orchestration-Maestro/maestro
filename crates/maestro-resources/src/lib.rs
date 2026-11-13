@@ -11,15 +11,11 @@ pub use prompts::{
     LoadPromptTemplatesOptions, PromptTemplate, expand_prompt_template, load_prompt_templates,
     parse_command_args, substitute_args,
 };
-pub mod catalog;
 pub mod provenance;
-pub use catalog::{
-    LoadSkillsFromDirOptions, LoadSkillsOptions, LoadSkillsResult, ResourceEntry, ResourceFileType,
-    Skill, SkillFrontmatter, current_directory, drive_directories, format_skills_for_prompt,
-    load_skills, load_skills_from_dir, metadata, read_entries, read_text, real_path,
-    symlink_metadata,
-};
+mod skills;
 pub use maestro_interchange::slash_commands::{SlashCommandInfo, SlashCommandSource};
+#[doc(inline)]
+pub use maestro_path::fs::{current_dir, drive_dirs};
 pub use metadata::{
     FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, parse_yaml,
     strip_frontmatter,
@@ -28,4 +24,9 @@ pub use paths::{canonicalize_path, is_local_path};
 pub use provenance::{
     PathMetadata, SourceInfo, SourceOrigin, SourceScope, SyntheticSourceOptions,
     create_source_info, create_synthetic_source_info,
+};
+pub use skills::{
+    LoadSkillsFromDirOptions, LoadSkillsOptions, LoadSkillsResult, ResourceEntry, ResourceFileType,
+    Skill, SkillFrontmatter, format_skills_for_prompt, load_skills, load_skills_from_dir, metadata,
+    observed_type, read_entries, read_text, real_path, symlink_metadata,
 };

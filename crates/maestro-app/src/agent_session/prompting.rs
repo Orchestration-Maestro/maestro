@@ -13,7 +13,7 @@ use maestro_models::{
     DiagnosticErrorInfo, ImageContent, StopReason, TextContent, UserBlock, UserContent,
     UserMessage, timestamp_now,
 };
-use maestro_resources::{catalog::read_text, expand_prompt_template, strip_frontmatter};
+use maestro_resources::{expand_prompt_template, read_text, strip_frontmatter};
 use maestro_session::Presence;
 use maestro_session::message_records::{
     CustomAgentMessages, CustomMessage, CustomMessageInput, UserMessageDelivery,
