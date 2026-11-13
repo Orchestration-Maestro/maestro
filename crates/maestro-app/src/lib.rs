@@ -32,6 +32,10 @@ mod skill_block;
 /// Private declarations grouped by their existing domain owners.
 mod exports;
 
+/// Opt-in helpers for controlled tests.
+#[cfg(all(feature = "test-support", not(target_arch = "wasm32")))]
+pub mod test_support;
+
 #[cfg(test)]
 mod tests;
 

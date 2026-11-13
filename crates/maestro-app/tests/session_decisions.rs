@@ -1,11 +1,13 @@
 //! Decisions before session selection effects through the shared application interface.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support::session_harness::{HarnessOptions, harness, model_view, on_task_set};
+use crate::support::session_harness::{HarnessExt as _, model_view};
 use maestro_app::agent_session::CycleDirection;
+use maestro_app::test_support::{HarnessOptions, harness, on_task_set};
 use maestro_models::ModelThinkingLevel;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_settings::{DecisionRequest, SettingsDecider};
+use maestro_test_directory::Scratch;
 use std::sync::{Arc, Mutex};
 
 /// Refuses explicit operations while recording their requested, unclamped values.
@@ -42,11 +44,15 @@ fn assert_refused<T>(result: Result<T, maestro_models::DiagnosticErrorInfo>) {
 fn refusing_decider_preserves_session_selection() {
     on_task_set(|_| async {
         for reasoning in [false, true] {
-            let h = harness(HarnessOptions {
-                models: vec![("plain", reasoning), ("think", true)],
-                ..HarnessOptions::default()
-            })
-            .await;
+            let h = harness(
+                Scratch::new().unwrap(),
+                HarnessOptions {
+                    models: vec![("plain", reasoning), ("think", true)],
+                    ..HarnessOptions::default()
+                },
+            )
+            .await
+            .unwrap();
             let settings = h.session.settings_manager();
             let decider = Arc::new(Refuse::default());
             settings
@@ -58,7 +64,7 @@ fn refusing_decider_preserves_session_selection() {
             let entries = history(&h.session);
             let preferences = settings.borrow().get_global_settings();
             let events = h.events.borrow().clone();
-            assert_refused(h.session.set_model(h.model("think")).await);
+            assert_refused(h.session.set_model(h.model("think").unwrap()).await);
             assert_refused(h.session.cycle_model(CycleDirection::Forward).await);
             assert_refused(h.session.set_thinking_level(ModelThinkingLevel::High));
             if reasoning {
@@ -81,7 +87,8 @@ fn refusing_decider_preserves_session_selection() {
                     .any(|request| request.contains("ThinkingLevel(\"high\")"))
             );
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Extension model refusal returns its unsuccessful result without changing the session.
@@ -91,14 +98,18 @@ fn extension_selection_refusals_return_unsuccessful_without_effects() {
     on_task_set(|_| async {
         let slot = Rc::new(RefCell::new(None));
         let kept = Rc::clone(&slot);
-        let h = harness(HarnessOptions {
-            factories: vec![Rc::new(move |api| {
-                *kept.borrow_mut() = Some(api);
-                Box::pin(std::future::ready(Ok(())))
-            })],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![Rc::new(move |api| {
+                    *kept.borrow_mut() = Some(api);
+                    Box::pin(std::future::ready(Ok(())))
+                })],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let api = slot.borrow_mut().take().unwrap();
         h.session
             .settings_manager()
@@ -107,7 +118,12 @@ fn extension_selection_refusals_return_unsuccessful_without_effects() {
             .unwrap();
         let model = model_view(&h.session.model());
         let entries = history(&h.session);
-        assert!(!api.set_model(h.model("think")).unwrap().await.unwrap());
+        assert!(
+            !api.set_model(h.model("think").unwrap())
+                .unwrap()
+                .await
+                .unwrap()
+        );
         assert!(api.set_thinking_level(ModelThinkingLevel::High).is_err());
         assert_eq!(model_view(&h.session.model()), model);
         assert_eq!(history(&h.session), entries);
@@ -120,7 +136,8 @@ fn extension_selection_refusals_return_unsuccessful_without_effects() {
                 .iter()
                 .any(|error| error.error.to_string() == "configuration release refuses selection")
         );
-    });
+    })
+    .unwrap();
 }
 
 /// An allowing publisher recording the requested thinking level of a model switch.
@@ -140,11 +157,11 @@ fn locked_thinking_default_survives_model_capability_clamp() {
     use serde_json::json;
     on_task_set(|_| async {
         for locked in [true, false] {
-            let h = harness(HarnessOptions {
+            let options = HarnessOptions {
                 settings: json!({"defaultThinkingLevel":"xhigh"}),
                 ..HarnessOptions::default()
-            })
-            .await;
+            };
+            let h = harness(Scratch::new().unwrap(), options).await.unwrap();
             let settings = h.session.settings_manager();
             if locked {
                 settings.borrow_mut().publish_base_layer(
@@ -163,7 +180,10 @@ fn locked_thinking_default_survives_model_capability_clamp() {
                 .borrow_mut()
                 .register_decider(decider.clone())
                 .unwrap();
-            h.session.set_model(h.model("think")).await.unwrap();
+            h.session
+                .set_model(h.model("think").unwrap())
+                .await
+                .unwrap();
             assert_eq!(h.session.thinking_level(), ModelThinkingLevel::High);
             assert_eq!(
                 settings
@@ -188,7 +208,8 @@ fn locked_thinking_default_survives_model_capability_clamp() {
             );
             assert!(decider.0.lock().unwrap()[0].contains("thinking_level: \"xhigh\""));
         }
-    });
+    })
+    .unwrap();
 }
 
 /// A host callback verifies it can acquire the target model exclusively.
@@ -209,15 +230,18 @@ impl SettingsDecider for ModelLockProbe {
 #[test]
 fn model_decider_can_acquire_target_write_lock() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
-        let target = h.model("think");
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
+        let target = h.model("think").unwrap();
         h.session
             .settings_manager()
             .borrow_mut()
             .register_decider(Arc::new(ModelLockProbe(Arc::clone(&target))))
             .unwrap();
         h.session.set_model(target).await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 /// Authored diagnostic names never turn a post-selection failure into a refusal.
@@ -229,21 +253,25 @@ fn extension_selection_propagates_listener_failure_named_configuration_refusal()
     on_task_set(|_| async {
         let slot = Rc::new(RefCell::new(None));
         let kept = Rc::clone(&slot);
-        let h = harness(HarnessOptions {
-            factories: vec![Rc::new(move |api| {
-                api.on::<ModelSelectEvent, ()>(
-                    "model_select".into(),
-                    Rc::new(|_, _| {
-                        Box::pin(std::future::ready(Err("selection handler failed".into())))
-                    }),
-                )
-                .unwrap();
-                *kept.borrow_mut() = Some(api);
-                Box::pin(std::future::ready(Ok(())))
-            })],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![Rc::new(move |api| {
+                    api.on::<ModelSelectEvent, ()>(
+                        "model_select".into(),
+                        Rc::new(|_, _| {
+                            Box::pin(std::future::ready(Err("selection handler failed".into())))
+                        }),
+                    )
+                    .unwrap();
+                    *kept.borrow_mut() = Some(api);
+                    Box::pin(std::future::ready(Ok(())))
+                })],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let _unsubscribe = h.runner().on_error(Rc::new(|_| {
             Err(Box::new(DiagnosticErrorInfo::new(
                 Some("ConfigurationRefusal".into()),
@@ -252,22 +280,25 @@ fn extension_selection_propagates_listener_failure_named_configuration_refusal()
         }));
         let before = history(&h.session);
         let api = slot.borrow_mut().take().unwrap();
-        let result = api.set_model(h.model("think")).unwrap().await;
+        let result = api.set_model(h.model("think").unwrap()).unwrap().await;
         let error = result.unwrap_err();
         assert_eq!(error.to_string(), "listener failed");
         assert_eq!(
             model_view(&h.session.model()),
-            model_view(&h.model("think"))
+            model_view(&h.model("think").unwrap())
         );
         assert_ne!(history(&h.session), before);
-    });
+    })
+    .unwrap();
 }
 
 /// Behaviour admission precedes both live queue mode and preference publication.
 #[test]
 fn refused_queue_modes_preserve_agent_and_preferences() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let settings = h.session.settings_manager();
         settings
             .borrow_mut()
@@ -291,14 +322,17 @@ fn refused_queue_modes_preserve_agent_and_preferences() {
         assert_eq!(settings.borrow().get_global_settings(), preferences);
         assert_eq!(settings.borrow_mut().drain_errors().len(), 2);
         assert!(h.events.borrow().is_empty());
-    });
+    })
+    .unwrap();
 }
 
 /// Explicit tool activation refuses before either the active tools or prompt changes.
 #[test]
 fn refused_tool_activation_preserves_tools_prompt_and_history() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         h.session
             .settings_manager()
             .borrow_mut()
@@ -312,7 +346,8 @@ fn refused_tool_activation_preserves_tools_prompt_and_history() {
         assert_eq!(h.session.system_prompt(), prompt);
         assert_eq!(history(&h.session), entries);
         assert!(h.events.borrow().is_empty());
-    });
+    })
+    .unwrap();
 }
 
 /// A publisher keeping the shell tool outside the active ceiling.
@@ -332,7 +367,9 @@ impl SettingsDecider for NoShell {
 #[test]
 fn tool_refresh_keeps_forbidden_tools_registered_and_inactive() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         h.session
             .settings_manager()
             .borrow_mut()
@@ -354,5 +391,6 @@ fn tool_refresh_keeps_forbidden_tools_registered_and_inactive() {
                 .count(),
             1
         );
-    });
+    })
+    .unwrap();
 }

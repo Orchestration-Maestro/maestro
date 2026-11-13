@@ -2,12 +2,15 @@
 //! recovery cases: the announced events, the rebuilt history and the stored entries.
 #![cfg(not(target_arch = "wasm32"))]
 use super::session_harness::{
-    Auth, Harness, HarnessOptions, answer, as_recorded, assistant, case, harness, load_history,
-    message_text, on_paused_task_set, recorded_number, script_responses, start_and_abandon,
-    summary_provider, summary_result, usage, user,
+    Harness, as_recorded, case, load_history, start_and_abandon, summary_provider, summary_result,
+    user,
 };
 use maestro_agent::AgentMessage;
 use maestro_app::agent_session::CompactionReason;
+use maestro_app::test_support::{
+    Auth, HarnessOptions, answer, assistant, harness, message_text, on_paused_task_set,
+    recorded_number, script_responses, usage,
+};
 use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
     ExtensionAPI, ExtensionFactory, SessionBeforeCompactEvent, SessionBeforeCompactResult,
@@ -22,6 +25,7 @@ use maestro_session::Presence;
 use maestro_session::SessionManager;
 use maestro_session::message_records::CustomAgentMessages;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -51,27 +55,35 @@ async fn seeded_window(
     settings: Value,
     factories: Vec<ExtensionFactory<Local>>,
 ) -> Harness {
-    let h = harness(HarnessOptions {
-        settings: keep_recent(settings),
-        factories,
-        context_window: Some(window),
-        ..HarnessOptions::default()
-    })
-    .await;
+    let h = harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            settings: keep_recent(settings),
+            factories,
+            context_window: Some(window),
+            ..HarnessOptions::default()
+        },
+    )
+    .await
+    .unwrap();
     seed_history(&h);
     h
 }
 
 /// A session over the scripted provider with credentials left unconfigured.
 async fn unauthenticated(factories: Vec<ExtensionFactory<Local>>) -> Harness {
-    harness(HarnessOptions {
-        settings: keep_recent(json!({})),
-        factories,
-        auth: Auth::None,
-        context_window: Some(WINDOW),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            settings: keep_recent(json!({})),
+            factories,
+            auth: Auth::None,
+            context_window: Some(WINDOW),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 /// Appends the recorded starting conversation and gives the agent the same history.
@@ -555,10 +567,12 @@ fn compaction_ended(h: &Harness) -> Rc<Notify> {
 fn retry_classification_follows_the_reference_table() {
     let expected = super::session_harness::corpus("retry_classification");
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         for row in expected.as_array().unwrap() {
             let window = row["contextWindow"].as_f64().unwrap();
-            let model = h.model("plain");
+            let model = h.model("plain").unwrap();
             model.write().unwrap().context_window = window;
             h.session.agent().state().write().unwrap().model = Arc::clone(&model);
             let stop = serde_json::from_value(row["stopReason"].clone()).unwrap();
@@ -576,7 +590,8 @@ fn retry_classification_follows_the_reference_table() {
                 "{row}"
             );
         }
-    });
+    })
+    .unwrap();
 }
 
 // -------------------------------------------------------------- checks
@@ -622,7 +637,8 @@ fn missing_total_compaction_thresholds_use_components() {
         )
         .await;
         assert_eq!(disabled, 0, "disabled compaction");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -637,7 +653,8 @@ fn disabled_compaction_emits_nothing() {
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -661,7 +678,8 @@ fn aborted_messages_are_skipped_unless_included() {
         h.session.check_compaction(&included, false).await.unwrap();
         assert_observation(&h, &expected["included"]);
         assert_kept_starts_the_history(&h, &expected["included"]["messages"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -688,7 +706,8 @@ fn overflow_recovery_is_attempted_once_then_reported() {
         );
         h.session.check_compaction(&second, true).await.unwrap();
         assert_observation(&h, &expected["second"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -712,7 +731,8 @@ fn together_and_litellm_overflow_errors_start_compaction_recovery() {
             h.session.check_compaction(&overflow, true).await.unwrap();
             assert_eq!(calls.get(), 1, "{text}");
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -735,7 +755,8 @@ fn overflow_recovery_asks_the_run_to_continue() {
         let continues = h.session.check_compaction(&overflow, true).await.unwrap();
         assert!(continues, "the run retries the turn after the recovery");
         assert_observation(&h, &expected["before"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -749,7 +770,8 @@ fn usage_before_the_compaction_boundary_is_ignored() {
         h.session.check_compaction(&stale, false).await.unwrap();
         assert_observation(&h, &expected);
         assert_eq!(kept_entry_id(&h), first_kept);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -761,7 +783,8 @@ fn threshold_compaction_ends_without_retry() {
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -776,7 +799,8 @@ fn below_threshold_usage_emits_nothing() {
         let message = response(400, &answer_extra(&StopReason::Stop, None, 198_000));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -803,7 +827,8 @@ fn error_messages_use_the_last_successful_usage() {
         h.session.check_compaction(&error, true).await.unwrap();
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -831,7 +856,8 @@ fn zero_usage_responses_use_the_last_real_usage() {
             h.session.check_compaction(&zero, true).await.unwrap();
             assert_eq!(calls.get(), expected, "prior usage {prior:?}");
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -852,7 +878,8 @@ fn errors_without_usage_emit_nothing() {
         );
         h.session.check_compaction(&error, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -881,7 +908,8 @@ fn kept_pre_compaction_usage_does_not_trigger_compaction() {
         h.session.check_compaction(&error, true).await.unwrap();
         assert_observation(&h, &expected);
         assert_eq!(kept_entry_id(&h), first_kept);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -905,7 +933,8 @@ fn another_models_overflow_is_not_recovered() {
         let foreign: AssistantMessage = serde_json::from_value(record).unwrap();
         h.session.check_compaction(&foreign, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -931,7 +960,8 @@ fn queued_messages_ask_the_run_to_continue_after_the_compaction() {
         let continues = h.session.check_compaction(&message, true).await.unwrap();
         assert!(continues, "the run delivers the queued message");
         assert_observation(&h, &expected["before"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -946,7 +976,8 @@ fn automatic_compaction_without_credentials_ends_silently() {
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -961,7 +992,8 @@ fn extension_cancellation_ends_the_automatic_compaction() {
         push_agent_message(&h, &overflow);
         h.session.check_compaction(&overflow, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -971,17 +1003,22 @@ fn automatic_compaction_over_empty_history_ends_silently() {
         "auto_compaction_over_empty_history_ends_silently",
     );
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: keep_recent(json!({})),
-            factories: vec![summary_provider(AUTO_SUMMARY)],
-            context_window: Some(WINDOW),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: keep_recent(json!({})),
+                factories: vec![summary_provider(AUTO_SUMMARY)],
+                context_window: Some(WINDOW),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -998,7 +1035,8 @@ fn automatic_failures_report_their_reason() {
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1029,7 +1067,8 @@ fn automatic_start_event_precedes_the_abort_controller() {
         assert!(stopped.get(), "the listener saw the start event");
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1073,7 +1112,8 @@ fn branch_summary_reports_a_running_compaction() {
             expected["entryCount"].as_u64().unwrap()
         );
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1119,7 +1159,8 @@ fn abort_branch_summary_reaches_the_navigation_handler() {
             h.session.is_compacting(),
             expected["isCompactingAfter"] == true
         );
-    });
+    })
+    .unwrap();
 }
 
 // -------------------------------------------------------------- manual
@@ -1147,7 +1188,8 @@ fn manual_compaction_uses_the_extension_summary() {
         );
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1176,7 +1218,8 @@ fn manual_compaction_generates_and_stores_a_summary() {
         );
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1192,7 +1235,8 @@ fn compacting_twice_reports_already_compacted() {
         let refused = h.session.compact(None).await;
         assert_refused(&refused, &expected["second"]);
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1202,17 +1246,22 @@ fn compacting_empty_history_reports_nothing_to_compact() {
         "manual_compaction_over_empty_history_reports_nothing",
     );
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: keep_recent(json!({})),
-            factories: vec![summary_provider(AUTO_SUMMARY)],
-            context_window: Some(WINDOW),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: keep_recent(json!({})),
+                factories: vec![summary_provider(AUTO_SUMMARY)],
+                context_window: Some(WINDOW),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let refused = h.session.compact(None).await;
         assert_refused(&refused, &expected["refused"]);
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1239,7 +1288,8 @@ fn manual_compaction_without_credentials_reports_the_key_message() {
         );
         assert_eq!(messages_view(&h), expected["messages"]);
         assert_eq!(entries_view(&h), expected["entries"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1250,7 +1300,8 @@ fn extension_veto_ends_the_manual_compaction() {
         let refused = h.session.compact(None).await;
         assert_refused(&refused, &expected["refused"]);
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1269,7 +1320,8 @@ fn aborting_during_an_extension_handler_cancels_the_compaction() {
         let outcome = task.await.unwrap();
         assert_refused(&outcome, &expected["outcome"]);
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1287,7 +1339,8 @@ fn summarizer_failures_report_the_prefixed_error() {
         let refused = h.session.compact(None).await;
         assert_refused(&refused, &expected["refused"]);
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1317,7 +1370,8 @@ fn manual_start_event_precedes_the_abort_controller() {
         assert!(stopped.get(), "the listener saw the start event");
         assert_refused(&refused, &expected["refused"]);
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 // -------------------------------------------------------------- retry
@@ -1327,11 +1381,15 @@ fn retries_exhaust_their_attempts_with_doubling_delays() {
     let expected = case("retry_behaviour", "retry_exhausts_attempts");
     let settings = json!({"retry": {"enabled": true, "maxRetries": 2, "baseDelayMs": 2000}});
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings,
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings,
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let failing = response(
             400,
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
@@ -1355,18 +1413,19 @@ fn retries_exhaust_their_attempts_with_doubling_delays() {
             u32::try_from(expected["retryAttemptAfter"].as_u64().unwrap()).unwrap()
         );
         assert_eq!(h.session.is_retrying(), expected["isRetryingAfter"] == true);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn disabled_retries_do_nothing() {
     let expected = case("retry_behaviour", "retry_disabled_returns_false");
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
+        let h = harness(Scratch::new().unwrap(), HarnessOptions {
             settings: json!({"retry": {"enabled": false, "maxRetries": 2, "baseDelayMs": 2000}}),
             ..HarnessOptions::default()
         })
-        .await;
+        .await.unwrap();
         let failing = response(
             400,
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
@@ -1376,7 +1435,8 @@ fn disabled_retries_do_nothing() {
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1386,11 +1446,15 @@ fn aborting_during_backoff_ends_the_retry() {
         "abort_during_backoff_cancels_the_attempt",
     );
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let failing = response(
             400,
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
@@ -1408,18 +1472,23 @@ fn aborting_during_backoff_ends_the_retry() {
             u32::try_from(expected["retryAttemptAfter"].as_u64().unwrap()).unwrap()
         );
         assert_eq!(h.session.is_retrying(), expected["isRetryingAfter"] == true);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn a_retry_returns_once_the_backoff_ends() {
     let expected = case("retry_behaviour", "retry_schedules_continuation");
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let failing = response(
             400,
             &answer_extra(&StopReason::Error, Some("connection lost"), 0),
@@ -1432,18 +1501,23 @@ fn a_retry_returns_once_the_backoff_ends() {
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
         assert_eq!(work.await, expected["returned"].as_bool().unwrap());
         assert_eq!(events_view(&h), expected["events"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn fractional_attempt_limits_compare_as_numbers() {
     let expected = case("retry_behaviour", "fractional_limit_compares_as_a_number");
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 2.5, "baseDelayMs": 1}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 2.5, "baseDelayMs": 1}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let failing = response(400, &answer_extra(&StopReason::Error, Some("503"), 0));
         let mut outcomes = Vec::new();
         for _ in 0..5 {
@@ -1451,50 +1525,63 @@ fn fractional_attempt_limits_compare_as_numbers() {
         }
         assert_eq!(json!(outcomes), expected["outcomes"]);
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn zero_base_delay_retries_without_waiting() {
     let expected = case("retry_behaviour", "zero_base_delay_retries_immediately");
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 0}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 0}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let failing = response(400, &answer_extra(&StopReason::Error, Some("502"), 0));
         assert_eq!(
             h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn negative_base_delays_fire_immediately() {
     let expected = case("retry_behaviour", "negative_base_delay_fires_immediately");
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 2, "baseDelayMs": -5}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 2, "baseDelayMs": -5}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let failing = response(400, &answer_extra(&StopReason::Error, Some("503"), 0));
         assert_eq!(
             h.session.handle_retryable_error(&failing).await,
             expected["returned"].as_bool().unwrap()
         );
         assert_observation(&h, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn toggles_persist_to_the_settings() {
     let expected = case("retry_behaviour", "toggles_write_settings");
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         h.session.set_auto_retry_enabled(false).unwrap();
         h.session.set_auto_compaction_enabled(false).unwrap();
         let settings = h.session.settings_manager();
@@ -1516,7 +1603,8 @@ fn toggles_persist_to_the_settings() {
             expected["compactionEnabled"] == true
         );
         assert_eq!(h.session.is_compacting(), expected["isCompacting"] == true);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1526,11 +1614,15 @@ fn aborting_cancels_a_retry_in_flight() {
         "abort_during_backoff_cancels_the_attempt",
     );
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 2000}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let failing = response(
             400,
             &answer_extra(&StopReason::Error, Some("overloaded_error"), 0),
@@ -1544,7 +1636,8 @@ fn aborting_cancels_a_retry_in_flight() {
         assert_eq!(task.await.unwrap(), expected["returned"].as_bool().unwrap());
         assert_observation(&h, &expected);
         assert_eq!(h.session.is_retrying(), expected["isRetryingAfter"] == true);
-    });
+    })
+    .unwrap();
 }
 
 // -------------------------------------------------------------- settlement
@@ -1565,14 +1658,18 @@ fn automatic_storage_failures_end_the_compaction() {
     on_paused_task_set(|_| async {
         let manager =
             SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap();
-        let h = harness(HarnessOptions {
-            settings: keep_recent(json!({})),
-            factories: vec![summary_provider(AUTO_SUMMARY)],
-            context_window: Some(WINDOW),
-            session_manager: Some(manager),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: keep_recent(json!({})),
+                factories: vec![summary_provider(AUTO_SUMMARY)],
+                context_window: Some(WINDOW),
+                session_manager: Some(manager),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         seed_history(&h);
         std::fs::remove_dir_all(&sessions).unwrap();
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
@@ -1591,7 +1688,8 @@ fn automatic_storage_failures_end_the_compaction() {
         assert_eq!(end["willRetry"], false);
         assert_eq!(end["result"], Value::Null);
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1619,7 +1717,8 @@ fn end_listeners_see_the_compaction_running() {
             ]
         );
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1652,7 +1751,8 @@ fn overflow_recovery_keeps_a_successful_stored_tail() {
             messages.as_array().unwrap().last(),
             Some(&json!({"role": "assistant", "text": "kept answer", "stopReason": "stop"}))
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1677,7 +1777,8 @@ fn handler_edits_to_the_preparation_reach_the_summarizer() {
             .await
             .unwrap();
         assert_eq!(events_view(&automatic)[1]["result"]["tokensBefore"], 4242);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1709,7 +1810,8 @@ fn automatic_compaction_uses_the_preferences_from_before_its_start() {
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         h.session.check_compaction(&message, true).await.unwrap();
         assert_eq!(recorded_number(observed.get()), json!(1));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1745,7 +1847,8 @@ fn repeated_summaries_announce_the_newest_entry() {
             .collect();
         assert_eq!(stored.len(), 2);
         assert_eq!(*ids.borrow(), stored);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1767,7 +1870,8 @@ fn a_manual_compaction_left_unobserved_still_completes() {
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1787,7 +1891,8 @@ fn an_automatic_compaction_left_unobserved_still_completes() {
         assert_observation(&h, &expected);
         assert_kept_starts_the_history(&h, &expected["messages"]);
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1811,7 +1916,8 @@ fn navigation_handler_and_abort_precede_observation() {
         assert!(outcome.cancelled);
         assert_eq!(manager.borrow().get_leaf_id(), old_leaf.as_deref());
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1835,7 +1941,8 @@ fn a_tree_navigation_left_unobserved_still_moves() {
         assert_eq!(moves.get(), 1);
         assert_eq!(manager.borrow().get_leaf_id(), Some(target.as_str()));
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1855,7 +1962,8 @@ fn aborting_a_compaction_left_unobserved_cancels_it() {
         ended.notified().await;
         assert_observation(&h, &expected);
         assert!(!h.session.is_compacting());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1864,14 +1972,18 @@ fn an_automatic_compaction_whose_task_is_discarded_reports_it() {
         let tasks = Rc::new(RefCell::new(Vec::new()));
         let queue = Rc::clone(&tasks);
         let gate: Gate = (Rc::new(Notify::new()), Rc::new(Notify::new()));
-        let h = harness(HarnessOptions {
-            settings: keep_recent(json!({})),
-            factories: vec![gated(supplied_summary(), Some(gate))],
-            context_window: Some(WINDOW),
-            spawn: Some(Rc::new(move |task| queue.borrow_mut().push(task))),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: keep_recent(json!({})),
+                factories: vec![gated(supplied_summary(), Some(gate))],
+                context_window: Some(WINDOW),
+                spawn: Some(Rc::new(move |task| queue.borrow_mut().push(task))),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         seed_history(&h);
         let message = response(400, &answer_extra(&StopReason::Stop, None, 199_999));
         let mut check = std::pin::pin!(h.session.check_compaction(&message, true));
@@ -1887,5 +1999,6 @@ fn an_automatic_compaction_whose_task_is_discarded_reports_it() {
             panic!("the discarded compaction is reported at once");
         };
         assert_eq!(outcome.unwrap_err().message, "channel closed");
-    });
+    })
+    .unwrap();
 }

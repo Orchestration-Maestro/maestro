@@ -2,8 +2,8 @@
 //! end settles.
 #![cfg(unix)]
 use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
-use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
+use maestro_app::test_support::{on_paused_task_set, on_task_set};
 use maestro_process::children::process_exists;
 use maestro_rpc::{RpcClient, RpcClientError, RpcEventListener};
 use serde_json::{Value, json};
@@ -60,11 +60,8 @@ fn event_registrations_keep_duplicates_and_stop_on_error() {
         let twice = recording(&log, "twice");
         let remove_first = client.on_event(Rc::clone(&twice));
         let _remove_second = client.on_event(twice);
-        let (weak, added_log, added) = (
-            Rc::downgrade(&client),
-            Rc::clone(&log),
-            Rc::new(RefCell::new(None)),
-        );
+        let (weak, added_log) = (Rc::downgrade(&client), Rc::clone(&log));
+        let added = Rc::new(RefCell::new(None));
         let slot = Rc::clone(&added);
         let _adder = client.on_event(Rc::new(move |event: &Value| {
             if event["type"] == "one" && slot.borrow().is_none() {
@@ -111,7 +108,8 @@ fn event_registrations_keep_duplicates_and_stop_on_error() {
         ];
         assert_eq!(*log.borrow(), expected);
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -144,7 +142,8 @@ fn listener_removal_keeps_the_next_registration() {
         assert_eq!(*log.borrow(), ["first:one", "second:one", "second:two"]);
         second();
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -187,7 +186,7 @@ fn request_deadline_keeps_exact_boundary_and_stderr() {
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -216,7 +215,8 @@ fn request_deadlines_hold_through_a_delayed_first_poll() {
         client.stop().await.unwrap();
         release.send(()).unwrap();
         hold.await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -246,7 +246,8 @@ fn idle_and_collection_deadlines_keep_their_defaults_and_overrides() {
             assert!(matches!(collect, RpcClientError::CollectionTimeout { .. }));
             assert_eq!(collect.to_string(), "Timeout collecting events. Stderr: ");
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -280,7 +281,8 @@ fn waits_hold_their_deadlines_through_a_delayed_first_poll() {
         );
         release.send(()).unwrap();
         hold.await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -318,7 +320,8 @@ fn waits_ignore_events_after_their_deadline() {
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -343,7 +346,8 @@ fn answers_after_their_deadline_reach_listeners() {
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 /// The deadline that every request and wait of the timing cases runs against.
@@ -387,7 +391,8 @@ fn work_expired_before_the_child_ends_keeps_its_timeout() {
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -409,7 +414,8 @@ fn answers_before_the_deadline_count_when_consumed_after_it() {
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -431,7 +437,8 @@ fn stops_before_the_deadline_count_when_consumed_after_it() {
         assert!(stopped(idle.as_mut()), "the wait settled at the stop");
         release.send(()).unwrap();
         hold.await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -456,7 +463,8 @@ fn collections_include_the_future_terminal_event() {
             ]
         );
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -479,7 +487,8 @@ fn prompt_collection_is_subscribed_before_the_prompt() {
             .unwrap_err();
         assert!(matches!(error, RpcClientError::CollectionTimeout { .. }));
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -498,7 +507,8 @@ fn prompt_failure_releases_its_prepared_collector() {
             started,
             "the collection ended with the prompt"
         );
-    });
+    })
+    .unwrap();
     on_task_set(|_| async {
         for (scenario, expected) in [
             (Scenario::RejectPrompt, "Rejected prompt"),
@@ -520,7 +530,8 @@ fn prompt_failure_releases_its_prepared_collector() {
             );
             client.stop().await.unwrap();
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -561,7 +572,8 @@ fn stop_and_exit_settle_only_owned_calls_and_waits() {
             );
             client.stop().await.unwrap();
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Whether `future` has settled with [`RpcClientError::Stopped`] by now.
@@ -601,7 +613,8 @@ fn child_exit_settles_work_while_a_descendant_keeps_the_output_open() {
         std::io::Read::read_to_end(&mut control, &mut ended).unwrap();
         assert!(ended.is_empty(), "the descendant completed its release");
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -633,7 +646,8 @@ fn work_registered_during_termination_settles_when_it_ends() {
         );
         release.send(()).unwrap();
         hold.await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -669,7 +683,8 @@ fn cancelled_and_failed_operations_release_only_their_own_resources() {
             1,
             "a stopped client keeps no callback alive"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -703,5 +718,6 @@ fn dispatch_and_framing_work_stays_linear() {
             remove();
         }
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }

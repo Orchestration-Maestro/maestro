@@ -3936,6 +3936,7 @@ dependencies = [
  "indexmap 2.14.2",
  "js-sys",
  "maestro-agent",
+ "maestro-app",
  "maestro-catalog",
  "maestro-credentials",
  "maestro-dependencies",

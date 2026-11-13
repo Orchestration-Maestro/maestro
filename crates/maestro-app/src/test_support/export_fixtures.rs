@@ -1,11 +1,14 @@
 //! HTML export facilities: recorded export assets and a rendering environment over a
 //! published theme.
-#![cfg(not(target_arch = "wasm32"))]
 use maestro_export::{ExportAsset, ExportOperations};
-use maestro_theme::{ColorMode, LiveTheme, Theme, ThemeError, ThemeExportColors, ThemeOptions};
+use maestro_extensions::EventError;
+use maestro_theme::{
+    ColorMode, LiveTheme, SyntectHighlighter, Theme, ThemeError, ThemeExportColors, ThemeOptions,
+};
 use maestro_tools::ToolRenderEnvironment;
-use maestro_tui::TerminalImage;
-use maestro_tui::{LocalFuture, LogContext, RenderCallback, RenderTimer, TuiRuntime};
+use maestro_tui::{
+    LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalImage, TuiRuntime,
+};
 use std::{cell::RefCell, io, rc::Rc, time::Duration};
 
 /// The host an export renders through: no clock, deferred work, environment or log files.
@@ -70,18 +73,24 @@ impl ExportOperations for Recording {
 }
 
 /// A plain theme published as the host publishes one.
-pub fn published() -> LiveTheme {
-    let theme = Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap();
-    LiveTheme::from_theme(Rc::new(theme))
+///
+/// # Errors
+/// Returns the failure to build the plain theme.
+pub fn published() -> Result<LiveTheme, ThemeError> {
+    let theme = Theme::new([], [], ColorMode::Color256, ThemeOptions::default())?;
+    Ok(LiveTheme::from_theme(Rc::new(theme)))
 }
 
 /// A rendering environment over `live_theme`.
-pub fn environment(live_theme: LiveTheme) -> Rc<ToolRenderEnvironment> {
-    Rc::new(ToolRenderEnvironment {
+///
+/// # Errors
+/// Returns the failure to build the syntax highlighter.
+pub fn environment(live_theme: LiveTheme) -> Result<Rc<ToolRenderEnvironment>, EventError> {
+    Ok(Rc::new(ToolRenderEnvironment {
         runtime: Rc::new(ExportHost),
         readme_path: String::new(),
         live_theme,
-        highlighter: Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
+        highlighter: Rc::new(SyntectHighlighter::new()?),
         terminal_image: TerminalImage::default(),
-    })
+    }))
 }

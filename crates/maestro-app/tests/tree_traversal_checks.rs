@@ -1,14 +1,14 @@
 //! Session-tree appends, branches, projections and forks observed on an application
 //! session, compared with the recorded traversal cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    Harness, HarnessOptions, harness, on_task_set, recorded, recorded_number, user,
-};
+use crate::support::session_harness::{Harness, recorded, user};
+use maestro_app::test_support::{HarnessOptions, harness, on_task_set, recorded_number};
 use maestro_session::Presence;
 use maestro_session::session_manager::{
     CompactionOptions, ReadonlySessionManager, parse_session_entries,
 };
 use maestro_session::{SessionEntry, SessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// The position of `entry`'s parent among the appended identities, or `-1` for a root.
@@ -68,7 +68,7 @@ fn message(error: &std::io::Error) -> Value {
 fn linear_messages() -> Vec<Value> {
     vec![
         user(&json!("1"), 1),
-        crate::support::session_harness::assistant("2", 2, &json!({})),
+        maestro_app::test_support::assistant("2", 2, &json!({})),
         user(&json!("3"), 3),
     ]
 }
@@ -106,7 +106,9 @@ fn parent_matches(ids: &[String], entry: &SessionEntry, index: usize) -> Value {
 fn message_appends_form_the_parent_chain() {
     let expected = recorded("model_navigation", "message_appends_form_the_parent_chain");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &linear_messages());
         let manager = history_view(&h);
         let observed: Vec<Value> = manager
@@ -122,7 +124,8 @@ fn message_appends_form_the_parent_chain() {
             })
             .collect();
         assert_eq!(json!(observed), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -132,7 +135,9 @@ fn thinking_entry_is_part_of_the_message_chain() {
         "thinking_entry_is_part_of_the_message_chain",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut manager = history(&h);
         let first = manager
             .append_message(user(&json!("hello"), 1))
@@ -141,7 +146,7 @@ fn thinking_entry_is_part_of_the_message_chain() {
             .append_thinking_level_change("high")
             .expect("append");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "response",
                 2,
                 &json!({}),
@@ -159,7 +164,8 @@ fn thinking_entry_is_part_of_the_message_chain() {
             "thinking": entry["thinkingLevel"],
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -169,7 +175,9 @@ fn model_entry_is_part_of_the_message_chain() {
         "model_entry_is_part_of_the_message_chain",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut manager = history(&h);
         let first = manager
             .append_message(user(&json!("hello"), 1))
@@ -178,7 +186,7 @@ fn model_entry_is_part_of_the_message_chain() {
             .append_model_change("openai", "gpt-4")
             .expect("append");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "response",
                 2,
                 &json!({}),
@@ -197,7 +205,8 @@ fn model_entry_is_part_of_the_message_chain() {
             "next_parent_matches": json!(manager.get_entries()[2]["parentId"] == json!(ids[1])),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -207,17 +216,15 @@ fn compaction_entry_is_part_of_the_message_chain() {
         "compaction_entry_is_part_of_the_message_chain",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut manager = history(&h);
         let first = manager
             .append_message(user(&json!("1"), 1))
             .expect("append");
         let second = manager
-            .append_message(crate::support::session_harness::assistant(
-                "2",
-                2,
-                &json!({}),
-            ))
+            .append_message(maestro_app::test_support::assistant("2", 2, &json!({})))
             .expect("append");
         let compaction = manager
             .append_compaction("summary", &first, 1000.0, CompactionOptions::default())
@@ -239,7 +246,8 @@ fn compaction_entry_is_part_of_the_message_chain() {
             "next_parent_matches": json!(manager.get_entries()[3]["parentId"] == json!(ids[2])),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -249,7 +257,9 @@ fn custom_entry_is_part_of_the_message_chain() {
         "custom_entry_is_part_of_the_message_chain",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut manager = history(&h);
         let first = manager
             .append_message(user(&json!("hello"), 1))
@@ -259,7 +269,7 @@ fn custom_entry_is_part_of_the_message_chain() {
             .append_custom_entry("my_data", Presence::Present(data))
             .expect("append");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "response",
                 2,
                 &json!({}),
@@ -278,14 +288,17 @@ fn custom_entry_is_part_of_the_message_chain() {
             "next_parent_matches": json!(manager.get_entries()[2]["parentId"] == json!(ids[1])),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn each_append_advances_the_active_leaf() {
     let expected = recorded("model_navigation", "each_append_advances_the_active_leaf");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut manager = history(&h);
         let mut advanced = vec![json!(manager.get_leaf_id().is_none())];
         let id = manager
@@ -293,11 +306,7 @@ fn each_append_advances_the_active_leaf() {
             .expect("append");
         advanced.push(json!(manager.get_leaf_id() == Some(id.as_str())));
         let id = manager
-            .append_message(crate::support::session_harness::assistant(
-                "2",
-                2,
-                &json!({}),
-            ))
+            .append_message(maestro_app::test_support::assistant("2", 2, &json!({})))
             .expect("append");
         advanced.push(json!(manager.get_leaf_id() == Some(id.as_str())));
         let id = manager
@@ -305,14 +314,17 @@ fn each_append_advances_the_active_leaf() {
             .expect("append");
         advanced.push(json!(manager.get_leaf_id() == Some(id.as_str())));
         assert_eq!(json!(advanced), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn one_message_has_a_single_entry_branch() {
     let expected = recorded("model_navigation", "one_message_has_a_single_entry_branch");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &[user(&json!("hello"), 1)]);
         let manager = history_view(&h);
         let branch = manager.get_branch(None).expect("branch");
@@ -321,7 +333,8 @@ fn one_message_has_a_single_entry_branch() {
             "identity": json!(branch[0]["id"] == json!(ids[0])),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -331,7 +344,9 @@ fn active_branch_lists_root_to_leaf_in_order() {
         "active_branch_lists_root_to_leaf_in_order",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut ids = append(&h, &linear_messages()[..2]);
         let thinking = history(&h)
             .append_thinking_level_change("high")
@@ -346,7 +361,8 @@ fn active_branch_lists_root_to_leaf_in_order() {
             .map(|entry| entry["id"].as_str().expect("identity").to_owned())
             .collect();
         assert_eq!(json!(positions(&ids, branch)), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -356,12 +372,14 @@ fn specified_branch_stops_at_the_requested_entry() {
         "specified_branch_stops_at_the_requested_entry",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let messages = vec![
             user(&json!("1"), 1),
-            crate::support::session_harness::assistant("2", 2, &json!({})),
+            maestro_app::test_support::assistant("2", 2, &json!({})),
             user(&json!("3"), 3),
-            crate::support::session_harness::assistant("4", 4, &json!({})),
+            maestro_app::test_support::assistant("4", 4, &json!({})),
         ];
         let ids = append(&h, &messages);
         let manager = history_view(&h);
@@ -372,7 +390,8 @@ fn specified_branch_stops_at_the_requested_entry() {
             .map(|entry| entry["id"].as_str().expect("identity").to_owned())
             .collect();
         assert_eq!(json!(positions(&ids, branch)), expected);
-    });
+    })
+    .unwrap();
 }
 
 /// The recorded shape of one tree node: its identity position and its children.
@@ -390,7 +409,9 @@ fn linear_tree_retains_one_root_and_nested_children() {
         "linear_tree_retains_one_root_and_nested_children",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &linear_messages());
         let manager = history_view(&h);
         let tree = manager.get_tree();
@@ -407,7 +428,8 @@ fn linear_tree_retains_one_root_and_nested_children() {
             "end": grandchild["children"],
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// The recorded position of `entry`'s identity among `ids`.
@@ -423,7 +445,9 @@ fn position_of(ids: &[String], entry: &SessionEntry) -> Value {
 fn branching_retains_both_sibling_paths() {
     let expected = recorded("model_navigation", "branching_retains_both_sibling_paths");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &linear_messages());
         let mut manager = history(&h);
         manager.branch(&ids[1]).expect("branch");
@@ -450,19 +474,22 @@ fn branching_retains_both_sibling_paths() {
             "siblings": siblings,
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn several_branches_share_the_same_parent() {
     let expected = recorded("model_navigation", "several_branches_share_the_same_parent");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut ids = append(
             &h,
             &[
                 user(&json!("root"), 1),
-                crate::support::session_harness::assistant("response", 2, &json!({})),
+                maestro_app::test_support::assistant("response", 2, &json!({})),
             ],
         );
         let mut manager = history(&h);
@@ -486,7 +513,8 @@ fn several_branches_share_the_same_parent() {
             .collect();
         shared.sort_by_key(Value::as_i64);
         assert_eq!(json!(shared), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -496,12 +524,14 @@ fn nested_branches_keep_descendants_on_their_own_paths() {
         "nested_branches_keep_descendants_on_their_own_paths",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let messages = vec![
             user(&json!("1"), 1),
-            crate::support::session_harness::assistant("2", 2, &json!({})),
+            maestro_app::test_support::assistant("2", 2, &json!({})),
             user(&json!("3"), 3),
-            crate::support::session_harness::assistant("4", 4, &json!({})),
+            maestro_app::test_support::assistant("4", 4, &json!({})),
         ];
         let mut ids = append(&h, &messages);
         let mut manager = history(&h);
@@ -510,11 +540,7 @@ fn nested_branches_keep_descendants_on_their_own_paths() {
             .append_message(user(&json!("5"), 5))
             .expect("append");
         let six = manager
-            .append_message(crate::support::session_harness::assistant(
-                "6",
-                6,
-                &json!({}),
-            ))
+            .append_message(maestro_app::test_support::assistant("6", 6, &json!({})))
             .expect("append");
         manager.branch(&five).expect("branch");
         let seven = manager
@@ -545,14 +571,17 @@ fn nested_branches_keep_descendants_on_their_own_paths() {
             "alternate_children": sorted(&node5.children),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn branch_selection_moves_only_the_leaf() {
     let expected = recorded("model_navigation", "branch_selection_moves_only_the_leaf");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &linear_messages());
         let mut manager = history(&h);
         let before = manager
@@ -568,7 +597,8 @@ fn branch_selection_moves_only_the_leaf() {
             "count": manager.get_entries().len(),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -578,7 +608,9 @@ fn unknown_branch_target_reports_its_identity() {
         "unknown_branch_target_reports_its_identity",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &[user(&json!("hello"), 1)]);
         let mut manager = history(&h);
         let leaf = manager.get_leaf_id().map(str::to_owned);
@@ -589,7 +621,8 @@ fn unknown_branch_target_reports_its_identity() {
             "same_entries": retains(&*manager, &ids),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -599,12 +632,14 @@ fn append_after_branch_uses_the_selected_parent() {
         "append_after_branch_uses_the_selected_parent",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(
             &h,
             &[
                 user(&json!("1"), 1),
-                crate::support::session_harness::assistant("2", 2, &json!({})),
+                maestro_app::test_support::assistant("2", 2, &json!({})),
             ],
         );
         let mut manager = history(&h);
@@ -614,7 +649,8 @@ fn append_after_branch_uses_the_selected_parent() {
             .expect("append");
         let entry = manager.get_entry(&branched).expect("branched entry");
         assert_eq!(json!({"parent": parent_position(&ids, entry)}), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -624,7 +660,9 @@ fn branch_summary_is_stored_at_target_and_becomes_leaf() {
         "branch_summary_is_stored_at_target_and_becomes_leaf",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &linear_messages());
         let mut manager = history(&h);
         let summary = manager
@@ -642,7 +680,8 @@ fn branch_summary_is_stored_at_target_and_becomes_leaf() {
             "summary": entry["summary"],
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -652,7 +691,9 @@ fn unknown_summary_target_reports_its_identity() {
         "unknown_summary_target_reports_its_identity",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &[user(&json!("hello"), 1)]);
         let mut manager = history(&h);
         let leaf = manager.get_leaf_id().map(str::to_owned);
@@ -670,25 +711,29 @@ fn unknown_summary_target_reports_its_identity() {
             "same_entries": retains(&*manager, &ids),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn leaf_read_returns_the_latest_entry() {
     let expected = recorded("model_navigation", "leaf_read_returns_the_latest_entry");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(
             &h,
             &[
                 user(&json!("1"), 1),
-                crate::support::session_harness::assistant("2", 2, &json!({})),
+                maestro_app::test_support::assistant("2", 2, &json!({})),
             ],
         );
         let manager = history_view(&h);
         let leaf = position_of(&ids, manager.get_leaf_entry().expect("leaf"));
         assert_eq!(json!({"leaf": leaf}), expected);
-    });
+    })
+    .unwrap();
 }
 
 /// The recorded content text of a stored message entry: its text blocks, or its plain text.
@@ -706,12 +751,14 @@ fn identity_lookup_keeps_message_role_and_content() {
         "identity_lookup_keeps_message_role_and_content",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(
             &h,
             &[
                 user(&json!("first"), 1),
-                crate::support::session_harness::assistant("second", 2, &json!({})),
+                maestro_app::test_support::assistant("second", 2, &json!({})),
             ],
         );
         let manager = history_view(&h);
@@ -727,7 +774,8 @@ fn identity_lookup_keeps_message_role_and_content() {
             })
             .collect();
         assert_eq!(json!(observed), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -737,21 +785,19 @@ fn context_projection_excludes_the_abandoned_sibling() {
         "context_projection_excludes_the_abandoned_sibling",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         append(&h, &[user(&json!("msg1"), 1)]);
         let second = append(
             &h,
-            &[crate::support::session_harness::assistant(
-                "msg2",
-                2,
-                &json!({}),
-            )],
+            &[maestro_app::test_support::assistant("msg2", 2, &json!({}))],
         );
         append(&h, &[user(&json!("msg3"), 3)]);
         let mut manager = history(&h);
         manager.branch(&second[0]).expect("branch");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "msg4-branch",
                 4,
                 &json!({}),
@@ -761,10 +807,11 @@ fn context_projection_excludes_the_abandoned_sibling() {
         let texts: Vec<Value> = context
             .messages
             .iter()
-            .map(crate::support::session_harness::message_text)
+            .map(maestro_app::test_support::message_text)
             .collect();
         assert_eq!(json!(texts), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -774,7 +821,9 @@ fn unknown_fork_target_is_rejected_without_replacing_history() {
         "unknown_fork_target_is_rejected_without_replacing_history",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(&h, &[user(&json!("hello"), 1)]);
         let mut manager = history(&h);
         let leaf = manager.get_leaf_id().map(str::to_owned);
@@ -787,7 +836,8 @@ fn unknown_fork_target_is_rejected_without_replacing_history() {
             "same_entries": retains(&*manager, &ids),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -797,14 +847,16 @@ fn memory_fork_keeps_only_the_selected_prefix() {
         "memory_fork_keeps_only_the_selected_prefix",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let ids = append(
             &h,
             &[
                 user(&json!("1"), 1),
-                crate::support::session_harness::assistant("2", 2, &json!({})),
+                maestro_app::test_support::assistant("2", 2, &json!({})),
                 user(&json!("3"), 3),
-                crate::support::session_harness::assistant("4", 4, &json!({})),
+                maestro_app::test_support::assistant("4", 4, &json!({})),
             ],
         );
         let mut manager = history(&h);
@@ -820,7 +872,8 @@ fn memory_fork_keeps_only_the_selected_prefix() {
             "entries": positions(&ids, retained(&*manager)),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -830,12 +883,14 @@ fn fork_extracts_the_selected_alternate_path() {
         "fork_extracts_the_selected_alternate_path",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut ids = append(
             &h,
             &[
                 user(&json!("1"), 1),
-                crate::support::session_harness::assistant("2", 2, &json!({})),
+                maestro_app::test_support::assistant("2", 2, &json!({})),
             ],
         );
         let mut manager = history(&h);
@@ -848,18 +903,15 @@ fn fork_extracts_the_selected_alternate_path() {
             .append_message(user(&json!("4"), 4))
             .expect("append");
         let five = manager
-            .append_message(crate::support::session_harness::assistant(
-                "5",
-                5,
-                &json!({}),
-            ))
+            .append_message(maestro_app::test_support::assistant("5", 5, &json!({})))
             .expect("append");
         ids.extend([four, five.clone()]);
         manager
             .create_branched_session(&five)
             .expect("branched session");
         assert_eq!(json!(positions(&ids, retained(&*manager))), expected);
-    });
+    })
+    .unwrap();
 }
 
 /// A file-backed session below `root`.
@@ -907,17 +959,17 @@ fn first_user_fork_delays_file_and_writes_each_entry_once() {
     on_task_set(|_| async {
         let root = maestro_test_directory::Scratch::new().expect("scratch");
         let root = root.path().display().to_string();
-        let h = harness(HarnessOptions {
+        let options = HarnessOptions {
             session_manager: Some(file_session(&root)),
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let h = harness(Scratch::new().unwrap(), options).await.unwrap();
         let mut manager = history(&h);
         let first = manager
             .append_message(user(&json!("first question"), 1))
             .expect("append");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "first answer",
                 2,
                 &json!({}),
@@ -927,7 +979,7 @@ fn first_user_fork_delays_file_and_writes_each_entry_once() {
             .append_message(user(&json!("second question"), 3))
             .expect("append");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "second answer",
                 4,
                 &json!({}),
@@ -942,7 +994,7 @@ fn first_user_fork_delays_file_and_writes_each_entry_once() {
             .append_custom_entry("preset-state", Presence::Present(json!({"name": "plan"})))
             .expect("append");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "new answer",
                 5,
                 &json!({}),
@@ -956,7 +1008,8 @@ fn first_user_fork_delays_file_and_writes_each_entry_once() {
             "unique_ids": after["unique_ids"],
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -968,17 +1021,21 @@ fn fork_with_an_assistant_writes_the_file_immediately() {
     on_task_set(|_| async {
         let root = maestro_test_directory::Scratch::new().expect("scratch");
         let root = root.path().display().to_string();
-        let h = harness(HarnessOptions {
-            session_manager: Some(file_session(&root)),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                session_manager: Some(file_session(&root)),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let mut manager = history(&h);
         manager
             .append_message(user(&json!("first question"), 1))
             .expect("append");
         let second = manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "first answer",
                 2,
                 &json!({}),
@@ -988,7 +1045,7 @@ fn fork_with_an_assistant_writes_the_file_immediately() {
             .append_message(user(&json!("second question"), 3))
             .expect("append");
         manager
-            .append_message(crate::support::session_harness::assistant(
+            .append_message(maestro_app::test_support::assistant(
                 "second answer",
                 4,
                 &json!({}),
@@ -1006,5 +1063,6 @@ fn fork_with_an_assistant_writes_the_file_immediately() {
             "unique_ids": after["unique_ids"],
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }

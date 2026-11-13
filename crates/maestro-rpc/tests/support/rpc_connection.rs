@@ -1,9 +1,8 @@
 //! A protocol connection over memory: the client writes lines and reads every record the
 //! server writes, with recorded signal delivery and replaceable workspace operations.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::export_fixtures::{Recording, environment, published};
-use crate::support::session_harness::answer;
 use maestro_app::AgentSessionRuntime;
+use maestro_app::test_support::{Recording, answer, environment, published};
 use maestro_extensions::{
     ExtensionFactory, SessionBeforeForkEvent, SessionBeforeForkResult, SessionBeforeSwitchEvent,
     SessionBeforeSwitchResult, SessionStartEvent,
@@ -193,7 +192,7 @@ impl Peer {
 
 /// Serves `runtime` over memory with `workspace` answering workspace commands.
 pub fn connect_with(runtime: Rc<AgentSessionRuntime>, workspace: WorkspaceAnswer) -> Client {
-    serve(runtime, workspace, published())
+    serve(runtime, workspace, published().unwrap())
 }
 
 /// Serves `runtime` over memory with `workspace` answering workspace commands and `theme`
@@ -228,7 +227,7 @@ pub fn unspawned(
             process: Rc::clone(&signals) as Rc<dyn RpcProcessPort>,
             theme,
             export_operations: Rc::new(Recording::default()),
-            render_environment: environment(published()),
+            render_environment: environment(published().unwrap()).unwrap(),
         }),
     };
     let failing_writes = Rc::new(std::cell::Cell::new(false));

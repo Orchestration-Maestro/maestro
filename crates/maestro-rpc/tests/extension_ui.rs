@@ -1,14 +1,13 @@
 //! The extension interface over the protocol: dialogs answered by the client, notices
 //! nobody answers and the headless defaults of terminal-only operations.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::export_fixtures::published;
+use crate::support::Harness;
 use crate::support::rpc_connection::{
     Client, Outcomes, connect, no_workspace, serve, startup_select,
 };
-use crate::support::runtime_fixtures::runtime_for;
-use crate::support::session_harness::{Harness, on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
 use maestro_app::AgentSessionRuntime;
+use maestro_app::test_support::{on_paused_task_set, on_task_set, published, runtime_for};
 use maestro_extensions::types::{
     AutocompleteProviderFactory, ComponentFactory, CustomComponentFactory, EditorFactory,
     ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions, FooterFactory,
@@ -17,6 +16,7 @@ use maestro_extensions::types::{
 use maestro_extensions::{Extension, ExtensionAPI};
 use maestro_models::{Cancellation, Local};
 use maestro_resources::{SourceInfo, SourceOrigin, SourceScope};
+use maestro_test_directory::Scratch;
 use maestro_theme::{Theme, ThemeState};
 use serde_json::{Value, json};
 use std::{
@@ -29,7 +29,9 @@ use std::{
 
 /// A runtime bound to its connection, the client and the protocol's extension interface.
 async fn bound(label: &str) -> (Harness, Rc<AgentSessionRuntime>, Client, ExtensionUIContext) {
-    let (h, runtime, _) = runtime_for(label, Vec::new()).await;
+    let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), label, Vec::new())
+        .await
+        .unwrap();
     let runtime = Rc::new(runtime);
     let mut client = connect(Rc::clone(&runtime));
     // The first answer follows the initial binding.
@@ -152,7 +154,8 @@ fn dialogs_register_before_emission() {
             assert_eq!(request["method"], method);
         }
         assert_eq!(seen.len(), 9);
-    });
+    })
+    .unwrap();
 }
 
 /// Values and confirmations settle their dialog, a dismissal wins over supplied members,
@@ -162,14 +165,12 @@ fn dialog_cancellation_wins_and_cleans_routes() {
     on_task_set(|_| async {
         let (_h, _runtime, mut client, ui) = bound("answered").await;
         let options = || vec!["a".to_owned(), "b".to_owned()];
+        let undismissed = json!({"value": "a", "confirmed": true, "cancelled": false});
         for (answer, expected) in [
             (json!({"value": "answer"}), Some("answer")),
             (json!({"cancelled": true, "value": "answer"}), None),
             (json!({}), None),
-            (
-                json!({"value": "a", "confirmed": true, "cancelled": false}),
-                Some("a"),
-            ),
+            (undismissed, Some("a")),
             (json!({"value": ""}), Some("")),
         ] {
             let select = ui.select("title".into(), options(), None);
@@ -218,7 +219,8 @@ fn dialog_cancellation_wins_and_cleans_routes() {
         nothing_written(&mut client).await;
         respond(&client, &request, &json!({"value": "a"}));
         assert_eq!(select.await.unwrap().as_deref(), Some("a"));
-    });
+    })
+    .unwrap();
 }
 
 /// A dialog whose signal already aborted settles with its default and writes nothing.
@@ -256,7 +258,8 @@ fn preaborted_dialogs_emit_nothing() {
             None,
             "a later abort settles the default"
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Without a timeout or with zero a dialog waits; a positive timeout settles the default
@@ -285,7 +288,8 @@ fn dialog_deadline_keeps_zero_and_exact_boundary() {
         tokio::time::advance(Duration::from_secs(3600)).await;
         assert!(waiting.as_mut().now_or_never().is_none());
         assert!(zero.as_mut().now_or_never().is_none());
-    });
+    })
+    .unwrap();
 }
 
 /// A response that arrives before an abort settles the dialog, however late the dialog is
@@ -308,7 +312,8 @@ fn dialog_response_before_abort_wins_when_awaited_late() {
             signal.abort();
             assert_eq!(select.await.unwrap().as_deref(), Some("a"));
         }
-    });
+    })
+    .unwrap();
 }
 
 /// A response that arrives after the deadline does not count, however late the dialog is
@@ -329,7 +334,8 @@ fn dialog_deadline_before_response_wins_when_awaited_late() {
             nothing_written(&mut client).await;
             assert_eq!(input.await.unwrap(), None);
         }
-    });
+    })
+    .unwrap();
 }
 
 /// An editor has no timeout or signal: it waits until the client answers.
@@ -344,7 +350,8 @@ fn editor_has_no_deadline_or_signal() {
         assert!(editor.as_mut().now_or_never().is_none());
         respond(&client, &request, &json!({"value": "done"}));
         assert_eq!(editor.await.unwrap().as_deref(), Some("done"));
-    });
+    })
+    .unwrap();
 }
 
 /// Notices keep their members and leave out absent ones, empty strings included; a paste
@@ -378,7 +385,8 @@ fn notifications_and_editor_commands_keep_omissions() {
             expected["type"] = json!("extension_ui_request");
             assert_eq!(without_fresh_id(client.next().await, &mut seen), expected);
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Widget lines keep their placement or its absence and clearing writes only the key; a
@@ -425,7 +433,8 @@ fn widgets_keep_lines_and_ignore_factories() {
             assert_eq!(without_fresh_id(client.next().await, &mut seen), expected);
         }
         nothing_written(&mut client).await;
-    });
+    })
+    .unwrap();
 }
 
 /// Each terminal-only operation keeps its headless default and writes nothing.
@@ -462,7 +471,8 @@ fn unsupported_ui_methods_keep_each_default() {
         ui.set_tools_expanded(true).unwrap();
         assert!(!ui.get_tools_expanded().unwrap());
         nothing_written(&mut client).await;
-    });
+    })
+    .unwrap();
 }
 
 /// The interface reads the live theme as it is replaced, and selecting a theme is refused
@@ -470,7 +480,9 @@ fn unsupported_ui_methods_keep_each_default() {
 #[test]
 fn ui_theme_follows_live_replacement() {
     on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_for("theme", Vec::new()).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "theme", Vec::new())
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let state =
             ThemeState::new(maestro_app::configuration::config::get_theme_directories().unwrap());
@@ -497,7 +509,7 @@ fn ui_theme_follows_live_replacement() {
         assert!(Rc::ptr_eq(&ui.theme().get().unwrap(), &second));
         for selection in [
             ThemeSelection::Name("light".into()),
-            ThemeSelection::Theme(published()),
+            ThemeSelection::Theme(published().unwrap()),
         ] {
             let result = ui.set_theme(selection).unwrap();
             assert!(!result.success);
@@ -507,7 +519,8 @@ fn ui_theme_follows_live_replacement() {
             );
         }
         assert!(Rc::ptr_eq(&ui.theme().get().unwrap(), &second));
-    });
+    })
+    .unwrap();
 }
 
 /// A present member of the wrong kind, `null` included, fails the dialog it answers and
@@ -517,7 +530,10 @@ fn malformed_dialog_values_fail_without_wire_reply() {
     on_task_set(|_| async {
         let outcomes: Outcomes = Rc::default();
         let factory = startup_select(Rc::clone(&outcomes));
-        let (_h, runtime, _) = runtime_for("malformed", vec![(None, factory)]).await;
+        let (_h, runtime, _) =
+            runtime_for(Scratch::new().unwrap(), "malformed", vec![(None, factory)])
+                .await
+                .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         let request = client.next().await;
@@ -565,5 +581,6 @@ fn malformed_dialog_values_fail_without_wire_reply() {
             None,
             "a dismissal wins over a malformed value"
         );
-    });
+    })
+    .unwrap();
 }

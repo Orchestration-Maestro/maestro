@@ -3,8 +3,8 @@
 //! Live child reports can follow the single-thread harness's test label on the same line.
 #![cfg(unix)]
 use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
-use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
+use maestro_app::test_support::{on_paused_task_set, on_task_set};
 use maestro_process::children::process_exists;
 use maestro_rpc::{RpcClient, RpcClientError, RpcClientOptions};
 use serde_json::{Value, json};
@@ -83,7 +83,8 @@ fn client_arguments_keep_literal_order_and_child_context() {
             assert_eq!(ready["path"], json!(std::env::var("PATH").unwrap()));
         }
         child_context(&peer, &marker).await;
-    });
+    })
+    .unwrap();
 }
 
 /// A selected directory and an environment overlay reach the child, beside the inherited
@@ -148,7 +149,8 @@ fn relative_entry_uses_the_selected_child_directory() {
             };
             assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -202,7 +204,8 @@ fn startup_reports_duplicate_and_early_exit() {
             "The agent process exited at once with code null. Stderr: "
         );
         killed.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -226,7 +229,8 @@ fn startup_observes_the_hundred_millisecond_boundary() {
         release.send(()).unwrap();
         hold.await.unwrap();
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 /// More diagnostic text than a pipe holds, so an unread standard error blocks its writer.
@@ -245,7 +249,8 @@ fn forwarding_child() {
         client.stop().await.unwrap();
         let retained = client.get_stderr().replace(&"x".repeat(FILL), "<fill>");
         println!("PROBE {}", json!(retained));
-    });
+    })
+    .unwrap();
     // The parent lets this process end once it has read the forwarded text.
     let _ = std::io::stdin().read_line(&mut String::new());
 }
@@ -331,7 +336,8 @@ fn delivering_child() {
             println!("VERDICT waiting");
             stop.await.unwrap();
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -403,7 +409,8 @@ fn stderr_keeps_a_character_split_across_reads() {
         }
         assert_eq!(client.get_stderr(), "a\u{e9}\n");
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -426,7 +433,8 @@ fn stop_detaches_stdout_and_keeps_the_grace_boundary() {
             "an ordinary child is not killed"
         );
         assert!(events.try_recv().is_err(), "stdout is detached at stop");
-    });
+    })
+    .unwrap();
     on_paused_task_set(|_| async {
         let client = RpcClient::new(peer.options(Scenario::Resist));
         let mut events = events(&client);
@@ -455,7 +463,8 @@ fn stop_detaches_stdout_and_keeps_the_grace_boundary() {
         );
         release.send(()).unwrap();
         hold.await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -486,5 +495,6 @@ fn restart_keeps_ids_stderr_and_registered_listeners() {
         );
         client.stop().await.unwrap();
         assert_eq!(client.get_stderr(), "child\nchild\n");
-    });
+    })
+    .unwrap();
 }

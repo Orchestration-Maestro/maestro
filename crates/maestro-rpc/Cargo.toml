@@ -45,6 +45,7 @@ maestro-dependencies.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
+maestro-app = { path = "../maestro-app", features = ["test-support"] }
 maestro-catalog = { path = "../maestro-catalog" }
 maestro-credentials = { path = "../maestro-credentials", features = ["test-support"] }
 maestro-extensions = { path = "../maestro-extensions", features = ["test-support"] }

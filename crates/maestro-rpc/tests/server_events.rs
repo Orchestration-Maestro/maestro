@@ -1,13 +1,13 @@
 //! Session events and extension failures as the protocol streams them.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::rpc_connection::{Client, connect, response_to};
-use crate::support::runtime_fixtures::runtime_for;
-use crate::support::session_harness::{
-    answer, on_paused_task_set, on_task_set, script_responses, tool_definition,
-};
 use maestro_agent::AgentToolResult;
+use maestro_app::test_support::{
+    answer, on_paused_task_set, on_task_set, runtime_for, script_responses, tool_definition,
+};
 use maestro_extensions::{ExtensionFactory, SessionStartEvent};
 use maestro_models::{AssistantMessage, Local, StopReason, TextContent, UserBlock};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::BTreeSet, rc::Rc};
 
@@ -137,7 +137,13 @@ async fn stream_every_kind(client: &mut Client) -> Vec<Value> {
 /// Runs every exchange of `stream_every_kind` against one session and returns the records the
 /// client received, without responses, and those a subscription on the session saw.
 async fn exchange() -> (Vec<Value>, Vec<Value>) {
-    let (h, runtime, _) = runtime_for("events", vec![(None, progress_tool())]).await;
+    let (h, runtime, _) = runtime_for(
+        Scratch::new().unwrap(),
+        "events",
+        vec![(None, progress_tool())],
+    )
+    .await
+    .unwrap();
     let runtime = Rc::new(runtime);
     let mut client = connect(Rc::clone(&runtime));
     client.ask(r#"{"type":"get_state"}"#).await;
@@ -197,7 +203,8 @@ fn session_events_keep_every_payload() {
             );
         }
         assert!(streamed.iter().all(|record| record.get("id").is_none()));
-    });
+    })
+    .unwrap();
 }
 
 /// Types of the shared payload table: the event type, a JSON pointer into its first record
@@ -369,7 +376,8 @@ fn streamed_events_carry_their_payload() {
                 .unwrap_or_else(|| panic!("no {kind} record"));
             assert_eq!(record.pointer(pointer), Some(&expected), "{kind} {pointer}");
         }
-    });
+    })
+    .unwrap();
 }
 
 /// An extension's failure is an uncorrelated record with its path, event and message, and
@@ -384,8 +392,13 @@ fn extension_errors_stay_uncorrelated() {
             );
             Box::pin(std::future::ready(started))
         });
-        let (_h, runtime, _) =
-            runtime_for("failing", vec![(Some("/extensions/failing.ts"), failing)]).await;
+        let (_h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
+            "failing",
+            vec![(Some("/extensions/failing.ts"), failing)],
+        )
+        .await
+        .unwrap();
         let mut client = connect(Rc::new(runtime));
         assert_eq!(
             client.next().await,
@@ -397,5 +410,6 @@ fn extension_errors_stay_uncorrelated() {
             (&state["id"], &state["success"]),
             (&json!("after"), &json!(true))
         );
-    });
+    })
+    .unwrap();
 }

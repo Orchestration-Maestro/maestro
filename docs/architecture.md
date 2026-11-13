@@ -351,7 +351,8 @@ connection runner in `connection_runner`, the client of a child process
 naming its file and line. One declaration is exempt: `RpcModeRunner` in the
 application's `presentation_data/mode_dispatch.rs`, the callback its mode dispatch
 runs. The protocol tests drive sessions through the application's scripted session
-harness, which `crates/maestro-rpc/tests/support/mod.rs` includes by path.
+harness, `maestro_app::test_support`. They enable it with the application's
+`test-support` feature on a native development dependency.
 
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in

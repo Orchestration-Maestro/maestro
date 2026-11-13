@@ -2,8 +2,8 @@
 //! reach its event callbacks.
 #![cfg(unix)]
 use crate::rpc_peer::{Peer, Scenario, events, next_of, release as release_peer};
-use crate::support::session_harness::on_task_set;
 use futures_util::FutureExt;
+use maestro_app::test_support::on_task_set;
 use maestro_rpc::{RpcClient, RpcClientError};
 use maestro_session::Presence;
 use serde::Serialize;
@@ -201,7 +201,8 @@ fn client_methods_match_the_command_corpus() {
         }
         assert_eq!(cases.len(), 59);
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -228,7 +229,8 @@ fn no_data_commands_reject_correlated_failure() {
             );
         }
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 /// What the reference client returns for a successful `answer` to `command`.
@@ -285,7 +287,8 @@ fn returned_records_keep_their_complete_fields() {
         }
         assert_eq!(cases.len(), 46);
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -317,7 +320,8 @@ fn cycles_keep_null_and_selected_values() {
         .await;
         assert!(client.cycle_thinking_level().await.unwrap().is_none());
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -359,7 +363,8 @@ fn available_models_keep_complete_descriptors() {
         assert!(!models[1].reasoning);
         assert_eq!(value(model), first);
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -384,7 +389,8 @@ fn last_assistant_text_keeps_missing_null_and_text() {
             assert_eq!(client.get_last_assistant_text().await.unwrap(), expected);
             client.stop().await.unwrap();
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -413,7 +419,8 @@ fn clone_round_trip_uses_the_active_branch_command() {
             .collect();
         assert_eq!(captures, [json!("{\"type\":\"clone\",\"id\":\"req_1\"}\n")]);
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -432,7 +439,7 @@ fn responses_correlate_out_of_order() {
         );
         assert_eq!(events.recv().await.unwrap()["type"], "done");
         client.stop().await.unwrap();
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -450,7 +457,8 @@ fn pending_calls_ignore_null_and_malformed_lines_before_a_matching_reply() {
         abort.unwrap();
         assert!(events.try_recv().is_err());
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -479,7 +487,8 @@ fn unmatched_and_nonresponse_values_reach_listeners() {
             assert_eq!(&events.recv().await.unwrap(), record);
         }
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -509,5 +518,6 @@ fn fragmented_utf8_and_jsonl_tails_keep_records() {
         }
         writing.join().unwrap();
         client.stop().await.unwrap();
-    });
+    })
+    .unwrap();
 }

@@ -2,7 +2,7 @@
 //! commands, the input's end and the runner's cancellation.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::rpc_connection::until_idle;
-use crate::support::session_harness::on_paused_task_set;
+use maestro_app::test_support::on_paused_task_set;
 use maestro_protocol::{envelopes as workspace, schema as workspace_schema};
 use maestro_rpc::connection_runner::{
     JsonlLineReader, RpcFuture, RpcLine, RpcModeOptions, RpcOutput, RpcRecord, WorkspaceEventSink,
@@ -260,7 +260,8 @@ fn physical_ack_and_order() {
         assert_eq!(valve.written(), [a.as_slice(), &b[..5]].concat());
         let last: Vec<_> = completions[1..].iter_mut().map(settled).collect();
         assert_eq!(last, [Some(true), Some(false)]);
-    });
+    })
+    .unwrap();
 }
 
 /// A command waiting on the daemon does not hold up the next line: a later command split
@@ -301,7 +302,8 @@ fn pending_duplex_and_eof() {
         assert_eq!(reply["command"], "ping");
         assert_eq!(reply["success"], true);
         assert_eq!(rest, "");
-    });
+    })
+    .unwrap();
 }
 
 /// Dropping the runner while a command waits on the daemon drops that command's operation
@@ -330,7 +332,8 @@ fn runner_cancel_releases_pending_operation() {
             "the output was released"
         );
         assert!(read.filled().is_empty());
-    });
+    })
+    .unwrap();
 }
 
 /// Dropping the runner during EOF draining releases the blocked writer and drops its
@@ -358,7 +361,8 @@ fn runner_cancel_during_eof_drain_releases_output() {
         until_idle().await;
         assert!(output.upgrade().is_none(), "the output was released");
         assert_eq!(settled(&mut completions[0]), Some(false));
-    });
+    })
+    .unwrap();
 }
 
 /// A response whose write makes no progress is not acknowledged when admitted; at the stall
@@ -382,7 +386,8 @@ fn stall_is_not_an_enqueue_ack() {
         assert_eq!(start.elapsed(), Duration::from_secs(5));
         let failure = server.await.unwrap().unwrap_err();
         assert_eq!(failure.kind(), io::ErrorKind::TimedOut);
-    });
+    })
+    .unwrap();
 }
 
 /// A response that keeps making progress may take longer than the stall timeout in total:
@@ -416,7 +421,8 @@ fn slow_progress_is_not_a_total_deadline() {
         assert_eq!(valve.written(), frame);
         drop(input);
         assert_eq!(server.await.unwrap().unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// The input's end drops waiting operations but still writes the responses already
@@ -450,7 +456,8 @@ fn eof_drain_keeps_late_failure() {
         assert_eq!(valve.written(), pong_frame("a")[..5]);
         let settled: Vec<_> = completions.iter_mut().map(settled).collect();
         assert_eq!(settled, [Some(true), Some(false), Some(false)]);
-    });
+    })
+    .unwrap();
 }
 
 /// Workspace operations answering every command with a plain success, counting them.
@@ -499,6 +506,7 @@ fn answers(lines: &[String]) -> (Vec<String>, usize) {
         let written = written.lines().map(str::to_owned).collect();
         (written, accepting.0.get())
     })
+    .unwrap()
 }
 
 /// The rejection of a known workspace record whose members do not decode.

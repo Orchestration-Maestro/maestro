@@ -1,17 +1,16 @@
 //! Each command over the protocol, answered by a real session runtime.
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::Harness;
 use crate::support::rpc_connection::{
     Client, connect, of_type, replacement_watch, response_to, user_entry,
 };
-use crate::support::runtime_fixtures::{
-    Recorded, Resources, RuntimeOptions, factory, runtime_for, runtime_with, stored_in,
-};
-use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, ScriptedShell, answer, assistant, command_extension,
-    create_test_extensions_result, harness, hold_first_answer, input_extension, on_task_set,
-    script_responses, template, usage,
-};
 use maestro_app::agent_session::BashRunOptions;
+use maestro_app::test_support::{
+    Auth, HarnessOptions, Recorded, Resources, RuntimeOptions, ScriptedShell, answer, assistant,
+    command_extension, create_test_extensions_result, factory, harness, hold_first_answer,
+    input_extension, on_task_set, runtime_for, runtime_with, script_responses, stored_in, template,
+    usage,
+};
 use maestro_app::{
     AgentSessionRuntime, CreateAgentSessionRuntimeOptions, create_agent_session_runtime,
 };
@@ -22,6 +21,7 @@ use maestro_models::Local;
 use maestro_rpc::RpcConnectionOutcome;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -38,7 +38,9 @@ fn wire(value: &Value) -> Value {
 #[test]
 fn state_preserves_omissions_and_live_counts() {
     on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_for("state", Vec::new()).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "state", Vec::new())
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let session = runtime.session();
         session.follow_up("queued", &[]).unwrap();
@@ -78,14 +80,17 @@ fn state_preserves_omissions_and_live_counts() {
         assert_eq!(state["data"]["sessionName"], "named");
         client.end(None);
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// A null record settles one uncorrelated failure, and the next command is still served.
 #[test]
 fn invalid_commands_settle_and_keep_serving() {
     on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_for("invalid", Vec::new()).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "invalid", Vec::new())
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         for (line, error) in [
             (
@@ -118,7 +123,8 @@ fn invalid_commands_settle_and_keep_serving() {
         }
         client.end(None);
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// A runtime whose extensions record each session start and veto switches and forks while
@@ -126,7 +132,9 @@ fn invalid_commands_settle_and_keep_serving() {
 async fn watched(label: &str) -> (Harness, Rc<AgentSessionRuntime>, Client, Watch) {
     let watch = Watch::default();
     let factory = replacement_watch(Rc::clone(&watch.starts), Rc::clone(&watch.veto));
-    let (h, runtime, _) = runtime_for(label, vec![(None, factory)]).await;
+    let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), label, vec![(None, factory)])
+        .await
+        .unwrap();
     let runtime = Rc::new(runtime);
     let mut client = connect(Rc::clone(&runtime));
     // The initial binding starts the session before any command is answered.
@@ -197,7 +205,8 @@ fn new_session_respects_parent_veto_and_rebind() {
             .cloned();
         assert_eq!(header.unwrap().get("parentSession"), None);
         one_turn_reaches_client_once(&h, &mut client).await;
-    });
+    })
+    .unwrap();
 }
 
 /// A switch resumes the selected file, binds it once and keeps one event stream; a vetoed
@@ -207,7 +216,8 @@ fn session_switch_respects_veto_and_rebind() {
     on_task_set(|_| async {
         let (h, runtime, mut client, watch) = watched("switch").await;
         let root = h.scratch.path().display().to_string();
-        let stored = stored_in(&format!("{root}/switch"), &format!("{root}/stored"), &root);
+        let stored =
+            stored_in(&format!("{root}/switch"), &format!("{root}/stored"), &root).unwrap();
         let path = stored.get_session_file().unwrap().to_owned();
         let line = json!({"id": "s", "type": "switch_session", "sessionPath": path}).to_string();
         watch.veto.set(true);
@@ -222,7 +232,8 @@ fn session_switch_respects_veto_and_rebind() {
         );
         assert_eq!(*watch.starts.borrow(), [json!("startup"), json!("resume")]);
         one_turn_reaches_client_once(&h, &mut client).await;
-    });
+    })
+    .unwrap();
 }
 
 /// A fork before a user message answers its text; a vetoed fork omits the text and binds
@@ -243,7 +254,8 @@ fn fork_keeps_selected_text_and_veto() {
         );
         assert_eq!(*watch.starts.borrow(), [json!("startup"), json!("fork")]);
         one_turn_reaches_client_once(&h, &mut client).await;
-    });
+    })
+    .unwrap();
 }
 
 /// A clone without a current entry is refused; otherwise it forks at the current leaf,
@@ -282,7 +294,8 @@ fn clone_uses_current_leaf_at_position() {
         );
         assert_eq!(*watch.starts.borrow(), [json!("startup"), json!("fork")]);
         one_turn_reaches_client_once(&h, &mut client).await;
-    });
+    })
+    .unwrap();
 }
 
 /// A prompt is answered once, when its preflight succeeds, also when an input handler
@@ -290,7 +303,9 @@ fn clone_uses_current_leaf_at_position() {
 #[test]
 fn prompt_preflight_acceptance_replies_once() {
     on_task_set(|_| async {
-        let (h, runtime, _) = runtime_for("accepted", Vec::new()).await;
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "accepted", Vec::new())
+            .await
+            .unwrap();
         script_responses(&h, vec![answer("done", None, None)]);
         let mut client = connect(Rc::new(runtime));
         client.send(r#"{"id":"b2","type":"prompt","message":"Hello"}"#);
@@ -304,7 +319,10 @@ fn prompt_preflight_acceptance_replies_once() {
             [&json!({"id": "b2", "type": "response", "command": "prompt", "success": true})]
         );
         let handles = input_extension(|_| Ok(Some(InputEventResult::Handled)));
-        let (_h, runtime, _) = runtime_for("handled", vec![(None, handles)]).await;
+        let (_h, runtime, _) =
+            runtime_for(Scratch::new().unwrap(), "handled", vec![(None, handles)])
+                .await
+                .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.send(r#"{"id":"h","type":"prompt","message":"handled"}"#);
         assert_eq!(client.next().await["success"], true);
@@ -313,7 +331,8 @@ fn prompt_preflight_acceptance_replies_once() {
             state["id"], "after",
             "no turn and no second reply came first"
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Without credentials the prompt fails once, before acceptance.
@@ -324,7 +343,9 @@ fn prompt_preflight_rejection_replies_once() {
             auth: Auth::None,
             ..RuntimeOptions::default()
         };
-        let (_h, runtime, _) = runtime_with("refused", options).await;
+        let (_h, runtime, _) = runtime_with(Scratch::new().unwrap(), "refused", options)
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.send(r#"{"id":"b1","type":"prompt","message":"Hello"}"#);
         let reply = client.next().await;
@@ -339,7 +360,8 @@ fn prompt_preflight_rejection_replies_once() {
         );
         let state = client.ask(r#"{"id":"after","type":"get_state"}"#).await;
         assert_eq!(state["id"], "after", "no second prompt reply came first");
-    });
+    })
+    .unwrap();
 }
 
 /// A prompt queued as a follow-up while a turn streams is answered once, before the
@@ -347,7 +369,9 @@ fn prompt_preflight_rejection_replies_once() {
 #[test]
 fn prompt_streaming_follow_up_replies_once() {
     on_task_set(|_| async {
-        let (h, runtime, _) = runtime_for("queued", Vec::new()).await;
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "queued", Vec::new())
+            .await
+            .unwrap();
         let (requested, release) = hold_first_answer(&h, "first", &["second"]);
         let mut client = connect(Rc::new(runtime));
         client.send(r#"{"id":"start","type":"prompt","message":"Start"}"#);
@@ -362,7 +386,8 @@ fn prompt_streaming_follow_up_replies_once() {
         release.notify_one();
         let after = client.until(|record| record["type"] == "agent_end").await;
         assert!(after.iter().all(|record| record["id"] != "next"));
-    });
+    })
+    .unwrap();
 }
 
 /// A failure after the prompt was accepted is not reported.
@@ -370,7 +395,13 @@ fn prompt_streaming_follow_up_replies_once() {
 fn prompt_post_acceptance_error_stays_silent() {
     on_task_set(|_| async {
         let gates: Rc<Gates> = Rc::default();
-        let (h, runtime, _) = runtime_for("late", vec![(None, gated_start(&gates))]).await;
+        let (h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
+            "late",
+            vec![(None, gated_start(&gates))],
+        )
+        .await
+        .unwrap();
         let (requested, release) = hold_first_answer(&h, "first", &[]);
         let mut client = connect(Rc::new(runtime));
         client.send(r#"{"id":"one","type":"prompt","message":"one"}"#);
@@ -387,7 +418,8 @@ fn prompt_post_acceptance_error_stays_silent() {
         assert!(rest.iter().all(|record| record["id"] != "two"), "{rest:?}");
         let state = client.ask(r#"{"id":"after","type":"get_state"}"#).await;
         assert_eq!(state["id"], "after");
-    });
+    })
+    .unwrap();
 }
 
 /// Before-agent-start handlers waiting one at a time for the test to open them.
@@ -446,7 +478,9 @@ fn prompt_keeps_source_images_and_queue_choice() {
                 .push(serde_json::to_value(event).unwrap());
             Ok(None)
         });
-        let (h, runtime, _) = runtime_for("sourced", vec![(None, watch)]).await;
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "sourced", vec![(None, watch)])
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let (requested, release) = hold_first_answer(&h, "first", &["second", "third"]);
         let mut client = connect(Rc::clone(&runtime));
@@ -470,12 +504,15 @@ fn prompt_keeps_source_images_and_queue_choice() {
         assert_eq!(session.get_follow_up_messages(), ["f"]);
         release.notify_one();
         client.until(|record| record["type"] == "agent_end").await;
-    });
+    })
+    .unwrap();
 }
 
 /// A runtime with its connection, after the initial binding.
 async fn served(label: &str) -> (Harness, Rc<AgentSessionRuntime>, Client) {
-    let (h, runtime, _) = runtime_for(label, Vec::new()).await;
+    let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), label, Vec::new())
+        .await
+        .unwrap();
     let runtime = Rc::new(runtime);
     let client = connect(Rc::clone(&runtime));
     (h, runtime, client)
@@ -516,7 +553,8 @@ fn steering_keeps_supplied_images() {
     on_task_set(|_| async {
         let content = queued_message_delivered("steer").await;
         assert_eq!(content, json!([{"type": "text", "text": "look"}, image()]));
-    });
+    })
+    .unwrap();
 }
 
 /// A follow-up message keeps its text and images until the agent delivers it.
@@ -525,7 +563,8 @@ fn follow_up_keeps_supplied_images() {
     on_task_set(|_| async {
         let content = queued_message_delivered("follow_up").await;
         assert_eq!(content, json!([{"type": "text", "text": "look"}, image()]));
-    });
+    })
+    .unwrap();
 }
 
 /// Abort answers only once the agent is idle.
@@ -548,7 +587,8 @@ fn abort_reply_follows_idle() {
             reply,
             json!({"id": "a", "type": "response", "command": "abort", "success": true})
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Options with three scripted models.
@@ -564,7 +604,9 @@ fn three_models() -> RuntimeOptions {
 #[test]
 fn set_model_uses_exact_available_pair() {
     on_task_set(|_| async {
-        let (h, runtime, _) = runtime_with("model", three_models()).await;
+        let (h, runtime, _) = runtime_with(Scratch::new().unwrap(), "model", three_models())
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         let reply = client
@@ -588,7 +630,8 @@ fn set_model_uses_exact_available_pair() {
         }
         assert_eq!(runtime.session().model().read().unwrap().id, "think");
         drop(h);
-    });
+    })
+    .unwrap();
 }
 
 /// Cycling with one model answers `null`; with several, the selected model, its thinking
@@ -601,7 +644,9 @@ fn model_cycle_keeps_scope_and_thinking() {
             client.ask(r#"{"type":"cycle_model"}"#).await["data"],
             Value::Null
         );
-        let (_h, runtime, _) = runtime_with("cycled", three_models()).await;
+        let (_h, runtime, _) = runtime_with(Scratch::new().unwrap(), "cycled", three_models())
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         let reply = client.ask(r#"{"type":"cycle_model"}"#).await;
@@ -611,7 +656,8 @@ fn model_cycle_keeps_scope_and_thinking() {
             reply["data"],
             json!({"model": model, "thinkingLevel": session.thinking_level(), "isScoped": false})
         );
-    });
+    })
+    .unwrap();
 }
 
 /// The available models are answered in full and in catalog order, also when there are
@@ -619,7 +665,9 @@ fn model_cycle_keeps_scope_and_thinking() {
 #[test]
 fn available_models_keep_full_descriptors() {
     on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_with("available", three_models()).await;
+        let (_h, runtime, _) = runtime_with(Scratch::new().unwrap(), "available", three_models())
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         let available = runtime.session().model_registry().get_available().unwrap();
@@ -634,11 +682,14 @@ fn available_models_keep_full_descriptors() {
             auth: Auth::None,
             ..RuntimeOptions::default()
         };
-        let (_h, runtime, _) = runtime_with("unavailable", options).await;
+        let (_h, runtime, _) = runtime_with(Scratch::new().unwrap(), "unavailable", options)
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         let reply = client.ask(r#"{"type":"get_available_models"}"#).await;
         assert_eq!(reply["data"], json!({"models": []}));
-    });
+    })
+    .unwrap();
 }
 
 /// A thinking level goes through the session's clamping and announcement.
@@ -664,7 +715,9 @@ fn thinking_set_uses_session_policy() {
             models: vec![("faux-1", false)],
             ..RuntimeOptions::default()
         };
-        let (_h, runtime, _) = runtime_with("plain", options).await;
+        let (_h, runtime, _) = runtime_with(Scratch::new().unwrap(), "plain", options)
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         let reply = client
@@ -676,7 +729,8 @@ fn thinking_set_uses_session_policy() {
             maestro_models::ModelThinkingLevel::Off,
             "a model without reasoning clamps to off"
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Cycling the thinking level answers the next level, or `null` without reasoning.
@@ -691,7 +745,9 @@ fn thinking_cycle_distinguishes_null_and_level() {
             models: vec![("faux-1", false)],
             ..RuntimeOptions::default()
         };
-        let (_h, runtime, _) = runtime_with("flat", options).await;
+        let (_h, runtime, _) = runtime_with(Scratch::new().unwrap(), "flat", options)
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         let reply = client.ask(r#"{"type":"cycle_thinking_level"}"#).await;
         assert_eq!(
@@ -699,7 +755,8 @@ fn thinking_cycle_distinguishes_null_and_level() {
             json!({"type": "response", "command": "cycle_thinking_level", "success": true,
                 "data": null})
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Each queue mode command sets its own mode, both directions, and leaves the other one.
@@ -730,13 +787,13 @@ async fn queue_modes_stay_independent(set: &str, other: &str) {
 /// The steering mode is set without changing the follow-up mode.
 #[test]
 fn steering_mode_is_independent_of_follow_up() {
-    on_task_set(|_| queue_modes_stay_independent("steering", "follow_up"));
+    on_task_set(|_| queue_modes_stay_independent("steering", "follow_up")).unwrap();
 }
 
 /// The follow-up mode is set without changing the steering mode.
 #[test]
 fn follow_up_mode_is_independent_of_steering() {
-    on_task_set(|_| queue_modes_stay_independent("follow_up", "steering"));
+    on_task_set(|_| queue_modes_stay_independent("follow_up", "steering")).unwrap();
 }
 
 /// Automatic compaction is switched off and on through the session.
@@ -753,7 +810,8 @@ fn auto_compaction_forwards_enabled() {
             );
             assert_eq!(runtime.session().auto_compaction_enabled(), enabled);
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Automatic retry is switched off and on through the session.
@@ -770,7 +828,8 @@ fn auto_retry_forwards_enabled() {
             );
             assert_eq!(runtime.session().auto_retry_enabled(), enabled);
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Stopping a retry answers without data and leaves no retry running.
@@ -783,7 +842,8 @@ fn abort_retry_keeps_session_ownership() {
             json!({"id": "r", "type": "response", "command": "abort_retry", "success": true})
         );
         assert!(!runtime.session().is_retrying());
-    });
+    })
+    .unwrap();
 }
 
 /// A shell command's nonzero status is still a successful reply carrying its output.
@@ -800,7 +860,8 @@ fn bash_nonzero_status_is_success_data() {
                 "data": {"output": "output", "exitCode": 7, "cancelled": false,
                     "truncated": false}})
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Stopping the shell cancels the running command and answers without data.
@@ -816,7 +877,8 @@ fn abort_bash_reaches_running_command() {
         ));
         let bash = records.last().unwrap();
         assert_eq!(bash["data"]["cancelled"], true);
-    });
+    })
+    .unwrap();
 }
 
 /// Statistics carry every counter, the session file and the context usage.
@@ -833,7 +895,8 @@ fn stats_keep_optional_usage() {
         assert_eq!(reply["data"]["sessionFile"], json!(stats.session_file));
         assert_eq!(reply["data"]["userMessages"], 1);
         assert!(reply["data"]["contextUsage"]["contextWindow"].is_number());
-    });
+    })
+    .unwrap();
 }
 
 /// An export writes to the supplied path, or under a default name, and a failing write is
@@ -874,7 +937,8 @@ fn html_export_keeps_supplied_path() {
                 .as_str()
                 .is_some_and(|error| !error.is_empty())
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Every user message the session can fork from is listed in order, also when there is
@@ -894,7 +958,8 @@ fn fork_messages_keep_all_user_entries() {
             json!({"messages": [{"entryId": first, "text": "first"},
                 {"entryId": second, "text": "second"}]})
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Without an assistant message the text is omitted; otherwise it is the trimmed text.
@@ -916,7 +981,8 @@ fn last_assistant_text_omits_absent_text() {
             client.ask(r#"{"type":"get_last_assistant_text"}"#).await["data"],
             json!({"text": "answer"})
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Session names are trimmed of the shared whitespace set, U+FEFF included and U+0085 and
@@ -943,7 +1009,8 @@ fn session_name_uses_exact_whitespace_set() {
                 Some(stored)
             );
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Messages are answered with every role and member in session order.
@@ -969,7 +1036,8 @@ fn messages_keep_roles_details_and_order() {
             .map(|message| &message["role"])
             .collect();
         assert_eq!(roles, [&json!("user"), &json!("assistant")]);
-    });
+    })
+    .unwrap();
 }
 
 /// A runtime over a stored history holding one answer without a reported total.
@@ -997,10 +1065,14 @@ async fn runtime_over_saved_history(h: &Harness) -> Rc<AgentSessionRuntime> {
     };
     let manager = SessionManager::open(&file, None, None).unwrap();
     let recorded = Recorded::default();
-    let extensions = Rc::new(create_test_extensions_result(Vec::new(), &cwd).await);
+    let extensions = Rc::new(
+        create_test_extensions_result(Vec::new(), &cwd)
+            .await
+            .unwrap(),
+    );
     Rc::new(
         create_agent_session_runtime(
-            factory(h, &Resources::of(&extensions), &recorded),
+            factory(h, &Resources::of(&extensions), &recorded).unwrap(),
             CreateAgentSessionRuntimeOptions {
                 cwd,
                 agent_dir: root,
@@ -1017,11 +1089,15 @@ async fn runtime_over_saved_history(h: &Harness) -> Rc<AgentSessionRuntime> {
 #[test]
 fn rpc_history_keeps_missing_total_omitted() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", true)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("faux-1", true)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let mut client = connect(runtime_over_saved_history(&h).await);
         let reply = client.ask(r#"{"id":"m","type":"get_messages"}"#).await;
         assert_eq!(reply["success"], true, "{reply}");
@@ -1041,7 +1117,8 @@ fn rpc_history_keeps_missing_total_omitted() {
         }
         client.end(None);
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// Invocable commands list extension commands, then prompt templates, then skills, each
@@ -1055,7 +1132,9 @@ fn commands_keep_order_and_provenance() {
             prompts: vec![template("plan", "Plan it")],
             ..RuntimeOptions::default()
         };
-        let (h, runtime, _) = runtime_with("commands", options).await;
+        let (h, runtime, _) = runtime_with(Scratch::new().unwrap(), "commands", options)
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         let reply = client.ask(r#"{"id":"c","type":"get_commands"}"#).await;
@@ -1071,7 +1150,8 @@ fn commands_keep_order_and_provenance() {
             assert!(!command.as_object().unwrap().contains_key("location"));
         }
         drop(h);
-    });
+    })
+    .unwrap();
 }
 
 /// A long operation does not hold back later commands, and each reply keeps its id.
@@ -1086,7 +1166,8 @@ fn responses_can_finish_out_of_order() {
         let records = client.until(response_to("bash")).await;
         let ids: Vec<&Value> = records.iter().map(|record| &record["id"]).collect();
         assert_eq!(ids, [&json!("stop"), &json!("slow")]);
-    });
+    })
+    .unwrap();
 }
 
 /// A recognized session command with members of the wrong kind keeps its id and type and
@@ -1134,7 +1215,8 @@ fn recognized_invalid_fields_keep_correlation() {
         }
         let state = client.ask(r#"{"id":null,"type":"get_state"}"#).await;
         assert_eq!((state.get("id"), &state["success"]), (None, &json!(true)));
-    });
+    })
+    .unwrap();
 }
 
 /// A record that is not JSON answers the parse failure with the decoder's message and no
@@ -1170,7 +1252,8 @@ fn malformed_json_has_native_uncorrelated_failure() {
         }
         let state = client.ask(r#"{"id":"next","type":"get_state"}"#).await;
         assert_eq!(state["success"], true);
-    });
+    })
+    .unwrap();
 }
 
 /// An unknown type answers `Unknown command` without the supplied id.
@@ -1186,14 +1269,17 @@ fn unknown_commands_drop_supplied_ids() {
                     "error": format!("Unknown command: {kind}")})
             );
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Supplied shell operations produce the result and the stored shell message.
 #[test]
 fn custom_shell_output_reaches_saved_transcript() {
     on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_for("custom-shell", Vec::new()).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "custom-shell", Vec::new())
+            .await
+            .unwrap();
         let session = runtime.session();
         let options = BashRunOptions {
             operations: Some(Rc::new(ScriptedShell::output(
@@ -1211,7 +1297,8 @@ fn custom_shell_output_reaches_saved_transcript() {
         let messages = session.messages();
         let last = serde_json::to_value(messages.read().unwrap().last().unwrap()).unwrap();
         assert_eq!(last["role"], "bashExecution");
-    });
+    })
+    .unwrap();
 }
 
 /// Compaction forwards its instructions to the summary request and answers the stored
@@ -1249,5 +1336,6 @@ fn compaction_keeps_instructions_and_optional_details() {
         assert_eq!(reply["data"], wire(&expected));
         let asked = prompts.lock().unwrap().join("\n");
         assert!(asked.contains("keep the names"), "{asked}");
-    });
+    })
+    .unwrap();
 }

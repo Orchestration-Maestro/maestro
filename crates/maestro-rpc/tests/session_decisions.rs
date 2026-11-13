@@ -2,9 +2,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::support::rpc_connection::connect;
-use crate::support::runtime_fixtures::{RuntimeOptions, runtime_with};
-use crate::support::session_harness::{assistant, on_task_set};
+use maestro_app::test_support::{RuntimeOptions, assistant, on_task_set, runtime_with};
 use maestro_settings::{DecisionRequest, SettingsDecider};
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{rc::Rc, sync::Arc};
 
@@ -21,13 +21,15 @@ impl SettingsDecider for Refuse {
 fn rpc_selection_refusals_preserve_history_and_return_the_message() {
     on_task_set(|_| async {
         let (_h, runtime, _) = runtime_with(
+            Scratch::new().unwrap(),
             "decisions",
             RuntimeOptions {
                 models: vec![("faux-1", true), ("faux-2", true)],
                 ..RuntimeOptions::default()
             },
         )
-        .await;
+        .await
+        .unwrap();
         let runtime = Rc::new(runtime);
         let session = runtime.session();
         session
@@ -60,5 +62,6 @@ fn rpc_selection_refusals_preserve_history_and_return_the_message() {
         }
         client.end(None);
         client.outcome().await.unwrap();
-    });
+    })
+    .unwrap();
 }

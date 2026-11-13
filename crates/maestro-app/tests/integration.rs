@@ -158,8 +158,6 @@ mod support {
     #[cfg(not(target_arch = "wasm32"))]
     pub mod document_extraction;
     #[cfg(not(target_arch = "wasm32"))]
-    pub mod export_fixtures;
-    #[cfg(not(target_arch = "wasm32"))]
     pub mod javascript_execution;
     pub mod no_commands;
     #[cfg(not(target_arch = "wasm32"))]
@@ -170,8 +168,6 @@ mod support {
     pub use plain_runtimes::paused_io_runtime;
     #[cfg(not(target_arch = "wasm32"))]
     pub use plain_runtimes::run;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod runtime_fixtures;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod sdk_sample;
     pub mod session_harness;

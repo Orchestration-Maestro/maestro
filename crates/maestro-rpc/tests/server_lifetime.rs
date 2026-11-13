@@ -1,13 +1,13 @@
 //! A connection's lifetime: binding each session, extension operations, shutdown on the
 //! input's end, an extension's request or a signal, and the initial binding's dialogs.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::export_fixtures::published;
 use crate::support::rpc_connection::{
     Client, Outcomes, connect, no_workspace, replacement_watch, response_to, select_on,
     startup_select, unspawned, until_idle, user_entry,
 };
-use crate::support::runtime_fixtures::{runtime_for, stored_in};
-use crate::support::session_harness::{hold_first_answer, on_paused_task_set, on_task_set};
+use maestro_app::test_support::{
+    hold_first_answer, on_paused_task_set, on_task_set, published, runtime_for, stored_in,
+};
 use maestro_extensions::{
     ExtensionCommandContext, ExtensionContext, ExtensionFactory, SessionShutdownEvent,
     SessionStartEvent,
@@ -16,6 +16,7 @@ use maestro_models::Local;
 use maestro_process::TerminationSignal;
 use maestro_rpc::RpcConnectionOutcome;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -37,7 +38,9 @@ fn choose(client: &Client, request: &Value, value: &str) {
 #[test]
 fn binding_order_releases_old_subscription() {
     on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_for("rebound", Vec::new()).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "rebound", Vec::new())
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         client.send(r#"{"id":"first","type":"get_state"}"#);
@@ -57,7 +60,8 @@ fn binding_order_releases_old_subscription() {
             state["id"], "probe",
             "the old session's change was not streamed"
         );
-    });
+    })
+    .unwrap();
 }
 
 /// What each command-context operation answered, by operation.
@@ -118,14 +122,11 @@ fn extension_actions_keep_retained_runtime_calls() {
         let (answers, mut answered) = mpsc::unbounded_channel();
         let starts = Rc::default();
         let veto = Rc::new(std::cell::Cell::new(false));
-        let factories = vec![
-            (None, actions_extension(answers)),
-            (
-                None,
-                replacement_watch(Rc::clone(&starts), Rc::clone(&veto)),
-            ),
-        ];
-        let (h, runtime, _) = runtime_for("actions", factories).await;
+        let watch = replacement_watch(Rc::clone(&starts), Rc::clone(&veto));
+        let factories = vec![(None, actions_extension(answers)), (None, watch)];
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "actions", factories)
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let client = connect(Rc::clone(&runtime));
         let mut run = async |line: String| {
@@ -150,7 +151,8 @@ fn extension_actions_keep_retained_runtime_calls() {
         let answer = run(format!("/act fork {entry}")).await;
         assert_eq!(answer, ("fork".into(), Ok(json!({"cancelled": false}))));
         let root = h.scratch.path().display().to_string();
-        let stored = stored_in(&format!("{root}/actions"), &format!("{root}/stored"), &root);
+        let stored =
+            stored_in(&format!("{root}/actions"), &format!("{root}/stored"), &root).unwrap();
         let path = stored.get_session_file().unwrap().to_owned();
         let answer = run(format!("/act switch {path}")).await;
         assert_eq!(answer, ("switch".into(), Ok(json!({"cancelled": false}))));
@@ -172,7 +174,8 @@ fn extension_actions_keep_retained_runtime_calls() {
                 json!("reload")
             ]
         );
-    });
+    })
+    .unwrap();
 }
 
 /// An extension that keeps the context of its `session_start`.
@@ -196,8 +199,13 @@ fn context_keeper(kept: Rc<RefCell<Option<ExtensionContext>>>) -> ExtensionFacto
 fn extension_shutdown_waits_for_command_reply() {
     on_task_set(|_| async {
         let kept = Rc::default();
-        let (_h, runtime, _) =
-            runtime_for("requested", vec![(None, context_keeper(Rc::clone(&kept)))]).await;
+        let (_h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
+            "requested",
+            vec![(None, context_keeper(Rc::clone(&kept)))],
+        )
+        .await
+        .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
         kept.borrow().as_ref().unwrap().shutdown().unwrap();
@@ -213,7 +221,8 @@ fn extension_shutdown_waits_for_command_reply() {
             client.outcome().await.unwrap(),
             RpcConnectionOutcome::Requested
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Requests shutdown twice during compaction, then waits at the supplied gate.
@@ -251,7 +260,9 @@ fn extension_shutdown_during_compaction_waits_for_settle() {
             (None, factory),
             (None, shutdown_watch(Rc::clone(&seen), None)),
         ];
-        let (h, runtime, _) = runtime_for("settle-shutdown", factories).await;
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "settle-shutdown", factories)
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
@@ -281,7 +292,8 @@ fn extension_shutdown_during_compaction_waits_for_settle() {
             RpcConnectionOutcome::Requested
         );
         assert_eq!(seen.borrow().len(), 1);
-    });
+    })
+    .unwrap();
 }
 
 /// Notified when a handler starts waiting, and released by the test.
@@ -347,10 +359,12 @@ fn eof_tail_keeps_effects_and_correlated_reply() {
     on_task_set(|_| async {
         let seen = Rc::default();
         let (_h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
             "tail-state",
             vec![(None, shutdown_watch(Rc::clone(&seen), None))],
         )
-        .await;
+        .await
+        .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
         // A command read just before the end is answered too.
@@ -365,7 +379,9 @@ fn eof_tail_keeps_effects_and_correlated_reply() {
         }
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
         assert_eq!(seen.borrow().len(), 1, "the session was disposed");
-        let (_h, runtime, _) = runtime_for("tail-name", Vec::new()).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "tail-name", Vec::new())
+            .await
+            .unwrap();
         let file = runtime.session().session_file().unwrap();
         user_entry(&runtime, "saved");
         let mut client = connect(Rc::new(runtime));
@@ -384,7 +400,8 @@ fn eof_tail_keeps_effects_and_correlated_reply() {
         );
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
         assert_eq!(stored_name(&file), Some(json!("tail")));
-    });
+    })
+    .unwrap();
 }
 
 /// With a shutdown handler, the handler sees the name before the final line renames the
@@ -394,10 +411,12 @@ fn eof_shutdown_hook_sees_pre_tail_name() {
     on_task_set(|_| async {
         let seen = Rc::default();
         let (_h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
             "hooked",
             vec![(None, shutdown_watch(Rc::clone(&seen), None))],
         )
-        .await;
+        .await
+        .unwrap();
         let file = runtime.session().session_file().unwrap();
         user_entry(&runtime, "saved");
         runtime.session().set_session_name("old").unwrap();
@@ -408,14 +427,17 @@ fn eof_shutdown_hook_sees_pre_tail_name() {
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
         assert_eq!(*seen.borrow(), [json!("old")]);
         assert_eq!(stored_name(&file), Some(json!("new")));
-    });
+    })
+    .unwrap();
 }
 
 /// A prompt still running when the input ends gets no reply beyond its acceptance.
 #[test]
 fn eof_does_not_invent_pending_replies() {
     on_task_set(|_| async {
-        let (h, runtime, _) = runtime_for("pending", Vec::new()).await;
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "pending", Vec::new())
+            .await
+            .unwrap();
         let (requested, _release) = hold_first_answer(&h, "held", &[]);
         let mut client = connect(Rc::new(runtime));
         client.send(r#"{"id":"p","type":"prompt","message":"hold"}"#);
@@ -432,7 +454,8 @@ fn eof_does_not_invent_pending_replies() {
             replies,
             [json!({"id": "p", "type": "response", "command": "prompt", "success": true})]
         );
-    });
+    })
+    .unwrap();
 }
 
 /// The input ending while a signal's shutdown is still disposing the session returns at
@@ -442,14 +465,18 @@ fn eof_during_disposal_exits_without_wait() {
     on_task_set(|_| async {
         let gate = Rc::new(Gate::default());
         let watch = shutdown_watch(Rc::default(), Some(Rc::clone(&gate)));
-        let (_h, runtime, _) = runtime_for("repeated", vec![(None, watch)]).await;
+        let (_h, runtime, _) =
+            runtime_for(Scratch::new().unwrap(), "repeated", vec![(None, watch)])
+                .await
+                .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
         client.signal(TerminationSignal::Hangup);
         gate.entered.notified().await;
         client.end(None);
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// A failed read or write ends the connection with that failure through the same shutdown
@@ -460,7 +487,9 @@ fn failed_reads_and_writes_still_shut_down() {
         for (label, expected) in [("read", "read failed"), ("write", "write failed")] {
             let seen = Rc::default();
             let watch = shutdown_watch(Rc::clone(&seen), None);
-            let (_h, runtime, _) = runtime_for(label, vec![(None, watch)]).await;
+            let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), label, vec![(None, watch)])
+                .await
+                .unwrap();
             let mut client = connect(Rc::new(runtime));
             client.ask(r#"{"type":"get_state"}"#).await;
             if label == "read" {
@@ -478,7 +507,8 @@ fn failed_reads_and_writes_still_shut_down() {
                 "{label}: signal delivery stopped"
             );
         }
-    });
+    })
+    .unwrap();
 }
 
 /// A read failure or the input's end while a startup dialog waits settles the dialog as
@@ -493,7 +523,9 @@ fn lost_input_during_startup_dialog_still_shuts_down() {
                 (None, startup_select(Rc::clone(&outcomes))),
                 (None, shutdown_watch(Rc::clone(&seen), None)),
             ];
-            let (_h, runtime, _) = runtime_for(label, factories).await;
+            let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), label, factories)
+                .await
+                .unwrap();
             let mut client = connect(Rc::new(runtime));
             assert_eq!(client.next().await["method"], "select");
             if label == "read" {
@@ -513,7 +545,8 @@ fn lost_input_during_startup_dialog_still_shuts_down() {
             };
             assert_eq!(outcome, expected);
         }
-    });
+    })
+    .unwrap();
 }
 
 /// The input ending before the initial binding opens its first dialog settles that dialog
@@ -527,7 +560,9 @@ fn immediate_eof_before_first_startup_dialog() {
             (None, startup_select(Rc::clone(&outcomes))),
             (None, shutdown_watch(Rc::clone(&seen), None)),
         ];
-        let (_h, runtime, _) = runtime_for("immediate", factories).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "immediate", factories)
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.end(None);
         until_idle().await;
@@ -536,7 +571,8 @@ fn immediate_eof_before_first_startup_dialog() {
         assert_eq!(seen.borrow().len(), 1, "the session was disposed");
         assert_eq!(client.written(), Vec::<Value>::new(), "nothing was asked");
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// After the input ends during one startup dialog, a later startup handler's dialog settles
@@ -550,7 +586,9 @@ fn consecutive_startup_dialogs_after_input_end() {
             (None, startup_select(Rc::clone(&outcomes))),
             (None, shutdown_watch(Rc::clone(&seen), None)),
         ];
-        let (_h, runtime, _) = runtime_for("consecutive", factories).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "consecutive", factories)
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         assert_eq!(client.next().await["method"], "select");
         client.end(None);
@@ -568,7 +606,8 @@ fn consecutive_startup_dialogs_after_input_end() {
             "the second was not asked"
         );
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// A failed write followed by the input's end, both ready in one poll, does not report the
@@ -579,8 +618,11 @@ fn failed_write_then_ready_eof_cannot_finish_before_close_starts() {
     on_paused_task_set(|_| async {
         let seen = Rc::default();
         let watch = shutdown_watch(Rc::clone(&seen), None);
-        let (_h, runtime, _) = runtime_for("queued-close", vec![(None, watch)]).await;
-        let (peer, mut server) = unspawned(Rc::new(runtime), no_workspace(), published());
+        let (_h, runtime, _) =
+            runtime_for(Scratch::new().unwrap(), "queued-close", vec![(None, watch)])
+                .await
+                .unwrap();
+        let (peer, mut server) = unspawned(Rc::new(runtime), no_workspace(), published().unwrap());
         let context = &mut Context::from_waker(Waker::noop());
         assert!(server.as_mut().poll(context).is_pending());
         // The initial binding runs on its own task.
@@ -601,7 +643,8 @@ fn failed_write_then_ready_eof_cannot_finish_before_close_starts() {
         );
         assert_eq!(seen.borrow().len(), 1, "the session was disposed");
         assert_eq!(peer.signals_stopped(), 1, "signal delivery stopped");
-    });
+    })
+    .unwrap();
 }
 
 /// A dialog a shutdown handler asks after the input's end, once the session is bound, is
@@ -612,7 +655,9 @@ fn shutdown_dialog_after_input_end_stays_pending() {
         let outcomes: Outcomes = Rc::default();
         let factory =
             select_on::<SessionShutdownEvent>("session_shutdown", "bye", Rc::clone(&outcomes));
-        let (_h, runtime, _) = runtime_for("bye", vec![(None, factory)]).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "bye", vec![(None, factory)])
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
         client.end(None);
@@ -621,7 +666,8 @@ fn shutdown_dialog_after_input_end_stays_pending() {
         assert_eq!(*outcomes.borrow(), [], "the dialog is unanswered");
         assert!(!client.server.is_finished(), "disposal still waits");
         client.server.abort();
-    });
+    })
+    .unwrap();
 }
 
 /// The input ending while a failure's shutdown disposes the session returns at once and
@@ -631,7 +677,10 @@ fn failure_then_input_end_keeps_the_failure() {
     on_task_set(|_| async {
         let (gate, seen) = (Rc::new(Gate::default()), Rc::default());
         let watch = shutdown_watch(Rc::clone(&seen), Some(Rc::clone(&gate)));
-        let (_h, runtime, _) = runtime_for("failed-end", vec![(None, watch)]).await;
+        let (_h, runtime, _) =
+            runtime_for(Scratch::new().unwrap(), "failed-end", vec![(None, watch)])
+                .await
+                .unwrap();
         let mut client = connect(Rc::new(runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
         client.fail_writes();
@@ -641,7 +690,8 @@ fn failure_then_input_end_keeps_the_failure() {
         let outcome = client.outcome().await.map_err(|error| error.to_string());
         assert_eq!(outcome, Err("write failed".to_owned()));
         assert_eq!(seen.borrow().len(), 1);
-    });
+    })
+    .unwrap();
 }
 
 /// A failed write of a notice an extension sends through a retained interface after the
@@ -651,7 +701,9 @@ fn failed_notice_write_ends_the_connection() {
     on_paused_task_set(|_| async {
         let seen = Rc::default();
         let watch = shutdown_watch(Rc::clone(&seen), None);
-        let (_h, runtime, _) = runtime_for("notice", vec![(None, watch)]).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "notice", vec![(None, watch)])
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
@@ -666,7 +718,8 @@ fn failed_notice_write_ends_the_connection() {
         assert_eq!(seen.borrow().len(), 1, "the session was disposed");
         let outcome = client.outcome().await.map_err(|error| error.to_string());
         assert_eq!(outcome, Err("write failed".to_owned()));
-    });
+    })
+    .unwrap();
 }
 
 /// Disposal does not settle a dialog nobody answered, and once the connection ends nothing
@@ -674,7 +727,9 @@ fn failed_notice_write_ends_the_connection() {
 #[test]
 fn shutdown_keeps_unanswered_dialogs_pending() {
     on_task_set(|_| async {
-        let (_h, runtime, _) = runtime_for("unanswered", Vec::new()).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "unanswered", Vec::new())
+            .await
+            .unwrap();
         let runtime = Rc::new(runtime);
         let mut client = connect(Rc::clone(&runtime));
         client.ask(r#"{"type":"get_state"}"#).await;
@@ -693,7 +748,8 @@ fn shutdown_keeps_unanswered_dialogs_pending() {
             "no ownership cycle keeps the runtime"
         );
         assert!(matches!(select.as_mut().poll(context), Poll::Pending));
-    });
+    })
+    .unwrap();
 }
 
 /// A `session_start` handler waiting on a dialog during the initial binding is answered
@@ -703,7 +759,10 @@ fn startup_dialog_response_finishes_initial_binding() {
     on_task_set(|_| async {
         let outcomes: Outcomes = Rc::default();
         let factory = startup_select(Rc::clone(&outcomes));
-        let (_h, runtime, _) = runtime_for("startup", vec![(None, factory)]).await;
+        let (_h, runtime, _) =
+            runtime_for(Scratch::new().unwrap(), "startup", vec![(None, factory)])
+                .await
+                .unwrap();
         let mut client = connect(Rc::new(runtime));
         let request = client.next().await;
         assert_eq!(request["method"], "select");
@@ -711,7 +770,8 @@ fn startup_dialog_response_finishes_initial_binding() {
         let state = client.ask(r#"{"id":"bound","type":"get_state"}"#).await;
         assert_eq!(state["id"], "bound");
         assert_eq!(*outcomes.borrow(), [Ok(Some("a".to_owned()))]);
-    });
+    })
+    .unwrap();
 }
 
 /// The answer to a startup dialog can be the input's unterminated final line: it settles
@@ -721,7 +781,13 @@ fn startup_dialog_answered_by_final_line() {
     on_paused_task_set(|_| async {
         let outcomes: Outcomes = Rc::default();
         let factory = startup_select(Rc::clone(&outcomes));
-        let (_h, runtime, _) = runtime_for("startup-tail", vec![(None, factory)]).await;
+        let (_h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
+            "startup-tail",
+            vec![(None, factory)],
+        )
+        .await
+        .unwrap();
         let mut client = connect(Rc::new(runtime));
         let request = client.next().await;
         let response = json!({"type": "extension_ui_response", "id": request["id"], "value": "a"});
@@ -729,7 +795,8 @@ fn startup_dialog_answered_by_final_line() {
         until_idle().await;
         assert_eq!(*outcomes.borrow(), [Ok(Some("a".to_owned()))]);
         assert_eq!(client.outcome().await.unwrap(), RpcConnectionOutcome::Eof);
-    });
+    })
+    .unwrap();
 }
 
 /// An extension command `ask` that asks a selection and reports the answer.
@@ -766,7 +833,9 @@ fn command_dialog_still_resolves_after_binding() {
             (None, startup_select(Rc::clone(&outcomes))),
             (None, asking_command(answers)),
         ];
-        let (_h, runtime, _) = runtime_for("command-dialog", factories).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "command-dialog", factories)
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         let request = client.next().await;
         choose(&client, &request, "a");
@@ -778,7 +847,8 @@ fn command_dialog_still_resolves_after_binding() {
         assert_eq!(request["title"], "asked");
         choose(&client, request, "b");
         assert_eq!(answered.recv().await.unwrap().as_deref(), Some("b"));
-    });
+    })
+    .unwrap();
 }
 
 /// An extension whose `session_start` handler waits on a selection, then records the
@@ -815,7 +885,9 @@ fn early_commands_wait_and_keep_arrival_order() {
     on_task_set(|_| async {
         let names = Rc::default();
         let factory = startup_name_reader(Rc::clone(&names));
-        let (_h, runtime, _) = runtime_for("early", vec![(None, factory)]).await;
+        let (_h, runtime, _) = runtime_for(Scratch::new().unwrap(), "early", vec![(None, factory)])
+            .await
+            .unwrap();
         let mut client = connect(Rc::new(runtime));
         let request = client.next().await;
         client.send(r#"{"id":"one","type":"set_session_name","name":"early"}"#);
@@ -839,7 +911,8 @@ fn early_commands_wait_and_keep_arrival_order() {
         client.send(r#"{"id":"stop","type":"abort_bash"}"#);
         let records = client.until(response_to("bash")).await;
         assert_eq!(records.last().unwrap()["id"], "slow");
-    });
+    })
+    .unwrap();
 }
 
 /// A connection without a session refuses session operations without constructing session
@@ -886,7 +959,7 @@ fn workspace_only_connections_refuse_session_commands() {
         assert_eq!(lines[1]["success"], false);
         assert_eq!(lines[1]["error"], "no workspace");
         assert_eq!(lines[1]["code"], "unsupported");
-    });
+    }).unwrap();
 }
 
 /// A session-only connection uses the ordinary unknown-command response for workspace input.
@@ -926,5 +999,5 @@ fn workspace_commands_without_provider_are_unknown() {
                 json!({"type":"response", "command":"not_known", "success":false, "error":"Unknown command: not_known"}),
             ]
         );
-    });
+    }).unwrap();
 }
