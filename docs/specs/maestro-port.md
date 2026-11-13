@@ -128,7 +128,7 @@ The browser build uses the same application crate with capability-selected nativ
 
 ## R09 — Terminal toolkit and interactive frontend
 
-Provide a reusable terminal library with no UI framework and internal dependencies limited to shared cancellation, shared text operations and the optional path utility, as defined in the [crate graph](#crates-and-delivery-order). Port the owned retained-line frame writer and all twelve components: box, cancellable loader, editor, image, input, loader, markdown, select list, settings list, spacer, text and truncated text. Preserve normal scrollback, differential redraw/resize/clear/purge, synchronized updates, raw OSC8/image escapes and hardware cursor/IME location. Use the terminal adapter crate through the terminal port, which on Unix drives the standard descriptors directly; inject a clock for the 16 ms render throttle. Preserve async raw input, Kitty keyboard, bracketed paste and COLUMNS/LINES fallback. The standalone virtual-terminal harness depends only on the toolkit, and the command-line frontend is its only development consumer, for the selector presentation effects. Require the complete source scenarios plus a real Linux tmux cross-check.
+Provide a reusable terminal library with no UI framework and internal dependencies limited to shared cancellation, shared text operations and the optional `maestro-path` edge, as defined in the [crate graph](#crates-and-delivery-order). Port the owned retained-line frame writer and all twelve components: box, cancellable loader, editor, image, input, loader, markdown, select list, settings list, spacer, text and truncated text. Preserve normal scrollback, differential redraw/resize/clear/purge, synchronized updates, raw OSC8/image escapes and hardware cursor/IME location. Use the terminal adapter crate through the terminal port, which on Unix drives the standard descriptors directly; inject a clock for the 16 ms render throttle. Preserve async raw input, Kitty keyboard, bracketed paste and COLUMNS/LINES fallback. The standalone virtual-terminal harness depends only on the toolkit, and the command-line frontend is its only development consumer, for the selector presentation effects. Require the complete source scenarios plus a real Linux tmux cross-check.
 
 Preserve synchronous component render/input/invalidate, retained component state, focus routing, live input listeners, overlay positioning/z-order/capture/disposal, background/style boundaries and custom editors. Port raw/Kitty/legacy key decoding, release filtering, fragmented escapes and bracketed paste. The editor preserves actions, grapheme movement, sticky visual-column movement, history, atomic paste markers, kill/yank, undo, completion cancellation, fuzzy ranking and file/slash completions using native segmentation and width libraries with Rust-valid string boundaries under the common contract. Do not introduce a UTF-16 string/event substrate. Port every widget, Markdown block/inline behavior, image protocol, theme/palette, watcher and image fallback. Highlighting belongs to the shared theme library and uses syntect 5.3.0 with two-face 0.5.2+bat-0.26.1, defaults disabled and syntect-fancy enabled, never the onig C library. Keep the theme format and its nine syntax color keys, mapped from scopes. Every terminal/browser/viewer consumer uses that interface, with an injected callback keeping the terminal toolkit independent of highlighting libraries. In the terminal, resolve only explicit language names/extensions and data-defined aliases in the selected syntax set; disambiguate collisions and never auto-detect. Absent/fancy-excluded languages using the terminal plain fallback are recorded accepted differences. The terminal highlight path admits only the labels its own language table names, aliases included: an unnamed or empty label colors every row with mdCodeBlock through the published theme and fails without one, while a named label whose grammar is absent keeps that color through the published theme, returns its rows unstyled without one and does not fail. Preserve the distinct direct-helper raw-line error fallback and the Markdown callback's mdCodeBlock-colored error fallback. Token colors may differ; no old-engine token-parity requirement remains.
 
@@ -312,7 +312,7 @@ Server rendering/hydration; another application framework; a new package manager
 
 Development commands (offline test launcher, source launchers, commit hook, asset copying, browser smoke check) live in `maestro-tooling`, which is never shipped, has wiring-only binaries and exposes its library to integration tests.
 
-`maestro-test-browser` owns pinned-browser export and report qualification. This dedicated, unpublished native test crate depends on `maestro-tooling` for preparation, asset copying and locked metadata, and on `maestro-realpath` for its served root, with the optional `maestro-path` utility edge. Its test-only browser stack never enters `maestro-tooling` or the development binary. Hakari excludes this member from traversal so browser-only features never enter the native unifier. `just browser-test` runs its single integration target as one nextest run: its build script generates one test per inventory export, and its wiring-only binary is the nextest setup that prepares the export package. Its native development dependency on `maestro-test-directory` owns disposable test roots; no product crate depends on this browser qualification owner.
+`maestro-test-browser` owns pinned-browser export and report qualification. This dedicated, unpublished native test crate depends on `maestro-tooling` for preparation, asset copying and locked metadata, and on `maestro-path` for its served root's real path. Its test-only browser stack never enters `maestro-tooling` or the development binary. Hakari excludes this member from traversal so browser-only features never enter the native unifier. `just browser-test` runs its single integration target as one nextest run: its build script generates one test per inventory export, and its wiring-only binary is the nextest setup that prepares the export package. Its native development dependency on `maestro-test-directory` owns disposable test roots; no product crate depends on this browser qualification owner.
 
 Browser-author preparation and check/build/watch dispatch share that library's command operation. The editable fixture is an independent workspace with its own reviewed adjacent lock and no native path dependencies or build script. A locked native `maestro-theme` example exports presentation files and authored/canonical pack/mark directory observations; the fixture includes those files through `MAESTRO_BROWSER_INPUTS`. Tooling prepares route-specific inputs and absolute-path Trunk JSON configuration under `target/maestro-browser/.author/{library,example,debug}/`, outside replaceable distributions. Trunk alone watches and serves; its pre-build hook repeats the same locked native export. Authored hooks keep their authored working directory, arguments, platform overrides, inherited environment and failure status through the existing development command. Authored watch and ignore paths resolve against that directory. Startup watch roots retain authored roots and include the fixture, default identity and observed pack/mark directories; the generated preparation tree is ignored, and selecting dependencies outside the watched roots requires restarting.
 
@@ -422,7 +422,7 @@ Tests are black-box. They use Maestro's public crates and programs and the same 
 
 **Pin moves.** One maestro-packages change moves every Maestro `rev`, the lock and any shared exact version Maestro moved, and fixes what the move breaks. An example broken by a Maestro change fails at the pin move. Maestro keeps its own host-feature tests on its fixture components, so host regressions still fail in Maestro's CI.
 
-**Crate graph.** The removal deletes the development edge from `maestro-extensions-wasm` to `maestro-listing`, which only an example used. In maestro-packages, `maestro-extension-examples` depends on `maestro-listing` directly.
+**Crate graph.** The removal deletes the development edge from `maestro-extensions-wasm` to the directory-listing owner, which only an example used. In maestro-packages, `maestro-extension-examples` lists directories through `maestro-path` directly.
 
 ## Crates and delivery order
 
@@ -430,7 +430,7 @@ The table declares the enforced domain graph. Its rows are in crate-name order,
 so a new crate goes where its name sorts. Its rows and the dependency
 descriptions below also permit the [native feature-unifier exception](#native-feature-unifier),
 including leaves and exact sets. An em dash means no domain dependencies apart
-from the optional foundation utility described below.
+from the optional `maestro-path` edge described below.
 
 The table lists production edges. `maestro-extensions-wasm` also declares the leaf
 as one portable build dependency and one portable development dependency.
@@ -439,57 +439,55 @@ as one portable build dependency and one portable development dependency.
 |---|---|---|---|
 | `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer`, `maestro-agent`, `maestro-export`, `maestro-extensions`, `maestro-models`, `maestro-packages`, `maestro-resources`, `maestro-settings`, `maestro-tools` | 6 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-interchange`, `maestro-listeners`, `maestro-json`, `maestro-lock` | 1 |
-| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal-emulator`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-models-registry`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-workspace`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal-emulator`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-models-registry`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-workspace`, `maestro-listeners`, `maestro-lock` | 4 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | `maestro-listeners` | below 0 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock`, `maestro-agent`, `maestro-models-registry`, `maestro-credentials`, `maestro-export`, `maestro-extensions`, `maestro-json`, `maestro-listeners`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools`, `maestro-watch` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock`, `maestro-agent`, `maestro-models-registry`, `maestro-credentials`, `maestro-daemon`, `maestro-extensions`, `maestro-json`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-protocol`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools` | 5 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-interchange`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
-| `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-process`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text`, `maestro-lock`, `maestro-realpath` | 1 |
-| `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock`, `maestro-realpath` | 0 |
+| `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-process`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text`, `maestro-lock` | 1 |
+| `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-models-registry`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners`, `maestro-lock` | 3 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-interchange`, `maestro-json`, `maestro-text` | 0 |
-| `maestro-extensions-wasmtime` | execute artifacts (optional path utility) | `maestro-extensions`, `maestro-lock` | 4 |
+| `maestro-extensions-wasmtime` | execute artifacts (optional `maestro-path` edge) | `maestro-extensions`, `maestro-lock` | 4 |
 | `maestro-http` | perform HTTP requests | `maestro-cancellation`, `maestro-interchange`, `maestro-text`, `maestro-json` | below 0 |
 | `maestro-interchange` | define the records a guest shares with its host | `maestro-json` | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-listeners` | retain callback identities in live registration order | — | below 0 |
-| `maestro-listing` | list directory entries | — | below 0 |
-| `maestro-lock` | own mutual exclusion | `maestro-path`, `maestro-realpath` | below 0 |
+| `maestro-lock` | own mutual exclusion | `maestro-path` | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
-| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
+| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock` | 0 |
 | `maestro-models-catalog` | define the model catalog | `maestro-interchange` | below 0 |
 | `maestro-models-registry` | resolve the usable models | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-interchange`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-daemon`, `maestro-terminal-emulator` | 5 |
 | `maestro-office` | read office documents | `maestro-text`, `maestro-json`, `maestro-lock` | 0 |
-| `maestro-packages` | manage package sources | `maestro-interchange`, `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-realpath` | 1 |
+| `maestro-packages` | manage package sources | `maestro-interchange`, `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-process` | own native child-process lifecycles | `maestro-text` | below 0 |
 | `maestro-protocol` | define the shared RPC protocol | — | below 0 |
-| `maestro-realpath` | resolve native real paths | `maestro-path` | below 0 |
-| `maestro-resources` | discover resources | `maestro-interchange`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-listing` | 0 |
+| `maestro-resources` | discover resources | `maestro-interchange`, `maestro-pattern`, `maestro-text`, `maestro-json` | 0 |
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme`, `maestro-agent`, `maestro-daemon`, `maestro-export`, `maestro-extensions`, `maestro-json`, `maestro-listeners`, `maestro-lock`, `maestro-models`, `maestro-process`, `maestro-protocol`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools`, `maestro-watch` | 5 |
 | `maestro-schema-validator` | validate values against a schema | `maestro-interchange`, `maestro-json`, `maestro-text` | below 0 |
-| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-listing`, `maestro-resources`, `maestro-lock` | 2 |
-| `maestro-session-reports` | summarize session files for developers | `maestro-app`, `maestro-models`, `maestro-session`, `maestro-resources`, `maestro-process`, `maestro-json`, `maestro-text`, `maestro-theme`, `maestro-listing` | 5 |
+| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-resources`, `maestro-lock` | 2 |
+| `maestro-session-reports` | summarize session files for developers | `maestro-app`, `maestro-models`, `maestro-session`, `maestro-resources`, `maestro-process`, `maestro-json`, `maestro-text`, `maestro-theme` | 5 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
-| `maestro-terminal-emulator` | emulate terminals | `maestro-text`, `maestro-realpath` | 0 |
-| `maestro-test-browser` | qualify browser exports | `maestro-tooling`, `maestro-realpath` | 0 |
-| `maestro-test-conventions` | verify workspace structure | `maestro-markdown`, `maestro-realpath` | 0 |
-| `maestro-test-directory` | own disposable native test directories | `maestro-realpath` | 0 |
+| `maestro-terminal-emulator` | emulate terminals | `maestro-text` | 0 |
+| `maestro-test-browser` | qualify browser exports | `maestro-tooling` | 0 |
+| `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
+| `maestro-test-directory` | own disposable native test directories | `maestro-path` | 0 |
 | `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
 | `maestro-test-process` | run controlled native test children | — | 0 |
 | `maestro-test-tracing` | run a test action under a subscriber that sees every callsite | — | 0 |
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, POSIX shell operands, author-written number prefixes, URI component encoding, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
-| `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-interchange`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listing` | 1 |
-| `maestro-tooling` | automate repository development | `maestro-listing`, `maestro-realpath` | 0 |
-| `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-resources`, `maestro-lock`, `maestro-realpath` | 2 |
-| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listing`, `maestro-listeners` | 0 |
+| `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-interchange`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand` | 1 |
+| `maestro-tooling` | automate repository development | — | 0 |
+| `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-resources`, `maestro-lock` | 2 |
+| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown`, `maestro-listeners` | 0 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process`, `maestro-listeners`, `maestro-lock` | 1 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
 | `maestro-web` | present browser interactions | `maestro-office`, `maestro-lock`, `maestro-theme`, `maestro-agent`, `maestro-json`, `maestro-markdown`, `maestro-models`, `maestro-protocol`, `maestro-session`, `maestro-text`, `maestro-tools` | 5 |
-| `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock`, `maestro-realpath` | 0 |
+| `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
 
 `maestro-cli` is a command-line frontend, not an interactive view. Its `configuration`
 module is only the wrapper that runs a chat-owned configuration view through a
@@ -634,7 +632,7 @@ rather than a new injected discovery port whose only other adapter is a test fak
 Only the table entries that list it (agent, credentials, http, models, the model catalog,
 the model registry, packages, resources, the schema validator, session, theme, tools and the guest)
 may depend on it. The guest still cannot
-depend on models or resources, the runtime adapter still targets extensions with the optional native path utility, and no internal dev edge is added. Existing delivery
+depend on models or resources, the runtime adapter still targets extensions with the optional native `maestro-path` edge, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its consumers.
 
 `maestro-pattern` is a core crate below layer 0 whose one job is matching file
@@ -645,8 +643,8 @@ Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
 `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
-`maestro-lock` is below layer 0 and depends only on `maestro-path`, `maestro-realpath`
-for canonical targets and the existing external `sha2 =0.11.0`, which shortens lock
+`maestro-lock` is below layer 0 and depends only on `maestro-path`, for final-link
+resolution and canonical targets, and the existing external `sha2 =0.11.0`, which shortens lock
 and record names for long file names.
 Only theme and application may depend on watch. Every crate that holds shared state
 behind a `Mutex` or an `RwLock` may depend on lock: settings, credentials, workspace,
@@ -713,34 +711,6 @@ Neither leaf introduces a common background runtime, scheduler, retry policy or
 listener framework. Feature-specific timing, process, subscription and teardown
 semantics and current public capabilities are retained.
 
-`maestro-listing` is a core leaf below layer 0 with no workspace dependencies,
-including the path utility. Its one job is listing directory entries: it returns
-one directory's entries sorted by file name on every platform. File systems return
-entries in their own order, such as hash order on many Unix file systems and
-case-insensitive name order on NTFS. The JavaScript runtime sorts its listing on
-Unix only; that platform difference is a runtime mechanic, so the leaf does not
-copy it. Only resources, theme, the terminal toolkit, tools, session, repository
-tooling and the application may depend on it, and only on native targets. Callers
-keep their own kind filtering, name decoding and any further ordering.
-
-`maestro-realpath` is a core leaf below layer 0 whose only workspace dependency is
-`maestro-path`. Its one job is resolving a native path to its real path: links
-followed, `.` and `..` resolved, through the file system. On Windows the
-operating system reports a real path in the verbatim form, `\\?\D:\x` or
-`\\?\UNC\server\share\x`, while users, settings, test directories and external
-programs hold the ordinary form, so the leaf returns that form: `D:\x` and
-`\\server\share\x`. That conversion is lexical and belongs to
-`maestro_path::win32`; every other platform returns the native real path as it
-is.
-Comparisons, stored identities and paths handed to another program then see one
-spelling. Only the application, the daemon, detection, lock, models, packages,
-terminal, tools, workspace, repository tooling, browser qualification, the
-conventions checker and the disposable directory owner may depend on it, and only
-on native targets; theme's browser author example uses it through one native
-development dependency. Callers keep their own fallback and error policy. The
-conventions check rejects `std::fs::canonicalize`, `tokio::fs::canonicalize` and
-the `canonicalize` method in production code of every other crate.
-
 `maestro-listeners` is a core leaf below layer 0 with no workspace dependencies.
 It owns one job: retaining callbacks in live registration order. A callback is
 admitted once per identity, so registering a live one again keeps its first
@@ -803,36 +773,60 @@ qualified when the crate is extracted through
 [native process ownership](https://github.com/Orchestration-Maestro/maestro/issues/695).
 This declaration creates no crate and moves no code.
 
-`maestro-path` is the foundation utility for lexical path strings. It sits below
-layer 0, has no internal dependencies, and exposes platform-independent path
-operations. Native path normalization shares its segment reducer with the string
-flavors and preserves native component bytes without filesystem observations.
-Native crates may depend on it without changing their delivery layer.
-This optional utility edge is ignored when evaluating leaf status and exact
+`maestro-path` owns path operations: lexical operations on path strings, and a
+file-system module, `maestro_path::fs`, for the operations that read the file
+system. It sits below layer 0 and has no internal dependencies. The lexical
+operations are platform-independent. Native path normalization shares its
+segment reducer with the string flavors and preserves native component bytes
+without filesystem observations.
+
+The file-system module lists a directory and resolves real paths, on native
+targets only. `read_dir` returns one directory's entries sorted by file name on
+every platform. File systems return entries in their own order, such as hash
+order on many Unix file systems and case-insensitive name order on NTFS. The
+JavaScript runtime sorts its listing on Unix only; that platform difference is a
+runtime mechanic, so the module does not copy it. Callers keep their own kind
+filtering, name decoding and any further ordering. `canonicalize` resolves a
+native path to its real path: links followed, `.` and `..` resolved, through the
+file system. On Windows the operating system reports a real path in the verbatim
+form, `\\?\D:\x` or `\\?\UNC\server\share\x`, while users, settings, test
+directories and external programs hold the ordinary form, so the module returns
+that form: `D:\x` and `\\server\share\x`. That conversion is lexical and belongs
+to `maestro_path::win32`; every other platform returns the native real path as it
+is. Comparisons, stored identities and paths handed to another program then see
+one spelling. Callers keep their own fallback and error policy. The conventions
+check rejects `std::fs::canonicalize`, `tokio::fs::canonicalize` and the
+`canonicalize` method in production code outside this module, and accepts the
+name only as `maestro_path::fs::canonicalize`.
+
+Native crates may depend on `maestro-path` without changing their delivery layer.
+This optional edge is ignored when evaluating leaf status and exact
 direct-dependency sets; every other dependency rule, including cycle and internal
 dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), checked test-process owner (`maestro-test-process`),
 disposable directory owner
 (`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
-record owner (`maestro-interchange`), watch leaf (`maestro-watch`), process owner (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
+record owner (`maestro-interchange`), watch leaf (`maestro-watch`), process owner (`maestro-process`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), office document reader (`maestro-office`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`) and brand projection
 (`maestro-brand`) are excluded from this
-permission, so being a text consumer does not authorize the utility. Shared path helpers
-take supplied directory observations, except `native_homedir` reads the native
+permission, so being a text consumer does not authorize the edge; the disposable
+directory owner alone lists `maestro-path` in its table row, for the real path of
+the roots it creates. Lexical path helpers
+take supplied directory observations, except `native_home_dir` reads the native
 home environment and account entry. They add no filesystem service,
 directory cache, scheduler or workspace dependency.
 Final-component link traversal uses a caller-supplied observation callback:
-the utility owns relative-target joining and the forty-link bound, while lock
+`maestro-path` owns relative-target joining and the forty-link bound, while lock
 and the native component adapter keep native link I/O and its error interpretation.
-Both may declare the native utility edge; it adds no cycle because the utility
-has no internal dependencies.
+Both may declare the native `maestro-path` edge; it adds no cycle because
+`maestro-path` has no internal dependencies.
 
 ### Native feature unifier
 
 `maestro-dependencies` is the build-only feature unifier, generated and verified
 by `cargo hakari`. It is a dedicated, unpublished crate with an empty library, no
-public API and no workspace dependencies, including the path utility. Every other
+public API and no workspace dependencies, including `maestro-path`. Every other
 workspace member may declare it only as a non-optional normal dependency under
 `cfg(not(target_arch = "wasm32"))`, so browser and component builds never reach it.
 It never satisfies a required or exact direct dependency and never changes a
@@ -890,9 +884,6 @@ fixture. `maestro` to `maestro-models-registry`, `maestro-credentials`, `maestro
 `maestro-session`, declared the same way, let the executable's tests build real
 catalogs, credentials, JSON fixtures and sessions. These edges permit no normal or
 build edge.
-`maestro-theme` to `maestro-realpath`, declared as a native, non-optional
-development dependency, resolves the browser author example's watched roots. It
-permits no normal or build edge.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -939,7 +930,7 @@ registration for the file-size handler. It has no workspace dependencies except 
 native, non-optional normal dependency on the disposable directory owner: its
 own child fixtures and its launcher reach the owner through that edge to read
 the platform directory it hands to its cleared children. It is excluded from
-the foundation utility permission. Its only
+the `maestro-path` permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-models-registry`, `maestro-chat`,
@@ -975,14 +966,15 @@ Windows reads its system zone, so such a test reports the premise and returns th
 
 `maestro-test-directory` is a dedicated, unpublished, native, std-only owner for
 exclusive disposable-directory allocation and cleanup. Its only workspace
-edges are the native feature unifier and `maestro-realpath`, which resolves
-the roots it creates; it is excluded from the foundation utility permission.
+edges are the native feature unifier and `maestro-path`, which resolves the
+roots it creates and which its table row names, because the general
+`maestro-path` permission excludes it.
 Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-models-registry`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
 `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`,
-`maestro-listing`, `maestro-lock`, `maestro-models`,
+`maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-session-reports`, `maestro-settings`,
 `maestro-terminal-emulator`, `maestro-test-browser`,
@@ -999,7 +991,7 @@ optional, unqualified, browser and foreign-target declarations are rejected.
 Both dependency graphs remain acyclic; no crate-name pattern grants access.
 
 `Scratch::new()` chooses the native temporary parent and retains the created
-root's real path from `maestro-realpath`; on Windows that is the ordinary
+root's real path from `maestro_path::fs`; on Windows that is the ordinary
 form without the verbatim `\\?\` prefix, so `/` keeps separating components.
 `temporary_root()` reports that parent for tests that observe it without owning it.
 `Scratch::new_in(parent)` preserves native path-join spelling, including relative
@@ -1030,7 +1022,7 @@ timer, retry limit or ownership-transfer API.
 
 `maestro-test-fixtures` is a dedicated, unpublished, portable leaf for shared
 fixture records, wire-literal round trips and single-color theme construction.
-It has no product dependencies or foundation utility edge; its only internal
+It has no product dependencies or `maestro-path` edge; its only internal
 normal dependency is the native feature unifier.
 Fixture development callers are `maestro-models`, `maestro-interchange`, `maestro-models-registry`,
 `maestro-chat`, `maestro-tools` and `maestro-export`; declarations may be portable or
@@ -1044,7 +1036,7 @@ checks apply.
 `maestro-test-tracing` is a dedicated, unpublished, native leaf that runs a
 test action under a scoped tracing subscriber that sees every callsite. It has
 no workspace edges except the native feature unifier and is excluded from the
-foundation utility permission. Its only incoming edges are non-optional
+`maestro-path` permission. Its only incoming edges are non-optional
 development dependencies under `cfg(not(target_arch = "wasm32"))` from
 `maestro-daemon`, `maestro-http`, `maestro-process`, `maestro-terminal-emulator` and
 `maestro-workspace`; a caller
@@ -1070,12 +1062,12 @@ method in test-owned sources outside this leaf.
 `Output` is the byte sink a formatting subscriber writes to. Every clone
 appends to the same capture; `text` reads it and `clear` empties it.
 
-The graph consists of the table entries, the foundation utility, the native
+The graph consists of the table entries, `maestro-path`, the native
 feature unifier and these development-only exceptions. The
 [architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)
 checks the table against the enforced dependency policy, including permitted
-utility edges and leaves. The below-layer-0 owners are delivered before their
-consumers; the utility is delivered before its first consumer.
+`maestro-path` edges and leaves. The below-layer-0 owners are delivered before their
+consumers; `maestro-path` is delivered before its first consumer.
 
 ### Workspace daemon
 

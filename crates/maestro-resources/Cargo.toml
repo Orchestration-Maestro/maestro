@@ -23,7 +23,6 @@ serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
-maestro-listing = { path = "../maestro-listing" }
 
 [[test]]
 name = "integration"

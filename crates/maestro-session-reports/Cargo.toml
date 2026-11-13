@@ -34,7 +34,6 @@ path = "tests/integration.rs"
 maestro-dependencies.workspace = true
 maestro-app = { path = "../maestro-app" }
 maestro-json = { path = "../maestro-json" }
-maestro-listing = { path = "../maestro-listing" }
 maestro-models = { path = "../maestro-models" }
 maestro-path = { path = "../maestro-path" }
 maestro-process = { path = "../maestro-process" }

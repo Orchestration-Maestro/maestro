@@ -35,7 +35,7 @@ pub(super) async fn resolve() -> Result<Credentials, DiagnosticErrorInfo> {
     let Some(path) = path else {
         return super::metadata::credentials(Effects::default()).await;
     };
-    let path = maestro_realpath::canonicalize(path).map_err(|_| file_error())?;
+    let path = maestro_path::fs::canonicalize(path).map_err(|_| file_error())?;
     if !path.is_file() {
         return Err(file_error());
     }

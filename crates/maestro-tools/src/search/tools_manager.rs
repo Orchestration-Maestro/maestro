@@ -502,7 +502,7 @@ fn locate(dir: &str, stem: &str, binary: &str) -> io::Result<PathBuf> {
 fn find_binary_recursively(root: &Path, file_name: &str) -> io::Result<Option<PathBuf>> {
     let mut stack = vec![root.to_owned()];
     while let Some(dir) = stack.pop() {
-        for entry in maestro_listing::read_dir(&dir)? {
+        for entry in maestro_path::fs::read_dir(&dir)? {
             let kind = entry.file_type()?;
             if kind.is_file() && entry.file_name() == file_name {
                 return Ok(Some(entry.path()));

@@ -181,7 +181,7 @@ impl<'a> Walker<'a> {
             bodies: duplicates::Bodies::default(),
             references: temp_directories::checked(member)
                 .then(temp_directories::References::default),
-            resolutions: real_paths::checked(member).then(real_paths::Resolutions::default),
+            resolutions: real_paths::checked(member, source).then(real_paths::Resolutions::default),
             prints: standard_error::checked(member).then(standard_error::Prints::default),
             tokio: tokio_macros::Spellings::default(),
             reads: test_input_routes::Reads::default(),

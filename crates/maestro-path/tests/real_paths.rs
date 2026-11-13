@@ -10,9 +10,9 @@ fn crate_directory() -> &'static Path {
 
 #[test]
 fn two_spellings_of_one_file_resolve_to_one_real_path() {
-    let direct = maestro_realpath::canonicalize(crate_directory().join("Cargo.toml")).unwrap();
+    let direct = maestro_path::fs::canonicalize(crate_directory().join("Cargo.toml")).unwrap();
 
-    let indirect = maestro_realpath::canonicalize(crate_directory().join("src/../Cargo.toml"));
+    let indirect = maestro_path::fs::canonicalize(crate_directory().join("src/../Cargo.toml"));
 
     assert_eq!(indirect.unwrap(), direct);
     assert!(direct.is_absolute() && direct.ends_with("Cargo.toml"));
@@ -20,7 +20,7 @@ fn two_spellings_of_one_file_resolve_to_one_real_path() {
 
 #[test]
 fn real_paths_carry_no_verbatim_prefix() {
-    let real = maestro_realpath::canonicalize(crate_directory()).unwrap();
+    let real = maestro_path::fs::canonicalize(crate_directory()).unwrap();
 
     assert!(
         !real.to_string_lossy().starts_with(r"\\?\"),
@@ -31,7 +31,7 @@ fn real_paths_carry_no_verbatim_prefix() {
 
 #[test]
 fn a_missing_path_reports_not_found() {
-    let missing = maestro_realpath::canonicalize(crate_directory().join("no-such-entry"));
+    let missing = maestro_path::fs::canonicalize(crate_directory().join("no-such-entry"));
 
     assert_eq!(missing.unwrap_err().kind(), io::ErrorKind::NotFound);
 }

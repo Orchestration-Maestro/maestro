@@ -405,7 +405,7 @@ fn links_to_repository(repo_root: &Path, path: &Path) -> bool {
 fn resolve_through_links(path: &Path) -> Option<PathBuf> {
     let (prefix, resolved) = path
         .ancestors()
-        .find_map(|prefix| Some((prefix, maestro_realpath::canonicalize(prefix).ok()?)))?;
+        .find_map(|prefix| Some((prefix, maestro_path::fs::canonicalize(prefix).ok()?)))?;
     let rest = path.strip_prefix(prefix).ok()?;
     rest.components()
         .all(|part| matches!(part, Component::Normal(_)))

@@ -72,7 +72,7 @@ The checker rejects unlisted members, dependency cycles, core-to-dedicated
 normal/build edges and all internal domain dependencies of leaf crates.
 Normal, build, dev,
 optional and target-specific dependencies all count, subject to the declared
-foundation utility, native feature-unifier and internal development exceptions
+`maestro-path`, native feature-unifier and internal development exceptions
 in the [foundation contract](docs/specs/maestro-port.md#crates-and-delivery-order).
 External dependencies are not workspace edges. A dependency with a workspace member's
 package name must use a path to that member, not a registry/git source or a

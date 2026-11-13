@@ -373,7 +373,7 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         &[5],
     ),
     (
-        "maestro-listing",
+        "maestro-path",
         "tests/entry_order.rs",
         "//! Listing order.\n\n#[test]\nfn entries_come_sorted_by_name() {\n    std::fs::create_dir_all(std::env::temp_dir().join(\"maestro-entries\")).unwrap();\n}\n",
         &[5],

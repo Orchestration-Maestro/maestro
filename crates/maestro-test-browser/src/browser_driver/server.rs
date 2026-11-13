@@ -35,7 +35,7 @@ impl Server {
     pub async fn start(root: &Path) -> io::Result<Self> {
         let root = root.to_path_buf();
         let root = Arc::new(
-            tokio::task::spawn_blocking(move || maestro_realpath::canonicalize(root))
+            tokio::task::spawn_blocking(move || maestro_path::fs::canonicalize(root))
                 .await
                 .map_err(io::Error::other)??,
         );
