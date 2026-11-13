@@ -1,7 +1,7 @@
 # Browser utility library
 
 `maestro-web` provides caller-owned localization, numeric display text and SVG
-icons, plus re-exports of application-owned attachment records and conversion. It is a library, not an application entry point.
+icons, plus its own attachment records and conversion. It is a library, not an application entry point.
 
 ## Localization
 
