@@ -250,7 +250,7 @@ leaf and exact-set rules, alongside the native feature unifier. Any crate in the
 specification table may declare it as a normal or build dependency (optional and target-specific forms included)
 without changing its layer, subject to the exclusions in the specification's
 [crate graph](specs/maestro-port.md#crates-and-delivery-order).
-Shared path helpers take supplied directory observations; `native_home_dir` alone
+Lexical path helpers take supplied directory observations; `native_home_dir` alone
 reads the native home environment and account entry. They add no filesystem
 service, directory cache, scheduler or workspace dependency. The edge is ignored when checking a crate's complete
 direct set or leaf
@@ -260,9 +260,10 @@ checks permitted table and `maestro-path` edges. Dev-dependencies on `maestro-pa
 dependencies from it, and cycles are rejected like any other internal edge.
 
 The crate's `fs` module holds the path operations that read the file system, on
-native targets only. `maestro_path::fs::read_dir` lists one directory's entries sorted by
-file name on every platform; callers keep kind filtering, name decoding and any
-further ordering. `maestro_path::fs::canonicalize` resolves [real paths](#real-paths).
+native targets only. `maestro_path::fs::read_dir` lists one directory's entries
+sorted by file name on every platform; callers keep kind filtering, name decoding
+and any further ordering. `maestro_path::fs::canonicalize` resolves
+[real paths](#real-paths).
 
 ## Real paths
 

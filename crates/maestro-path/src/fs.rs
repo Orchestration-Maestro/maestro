@@ -1,8 +1,8 @@
-//! Path work that asks the file system.
+//! Path work that reads the file system.
 //!
 //! The rest of this crate works on path text; this module reads the file system
 //! the path names. Directory listing and real-path resolution exist on native
-//! targets only, because a browser build has no file system to ask.
+//! targets only, because a browser build has no file system to read.
 //!
 //! File systems return a directory's entries in their own order: hash order on
 //! many Unix file systems, case-insensitive name order on NTFS. [`read_dir`]

@@ -5,6 +5,9 @@ use std::{fs, path::Path};
 
 #[test]
 fn entries_come_sorted_by_name_whatever_the_file_system_order() {
+    // The disposable-directory owner lists this crate, so its harness would close
+    // a dependency cycle; a committed fixture would arrive in git's name order
+    // and hide a missing sort.
     let root = &Path::new(env!("CARGO_TARGET_TMPDIR")).join("listing-order");
     // An interrupted run leaves its directory behind.
     let _ = fs::remove_dir_all(root);

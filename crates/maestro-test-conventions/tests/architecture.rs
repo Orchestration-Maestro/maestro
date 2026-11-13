@@ -825,9 +825,6 @@ const DECLARATIONS: &[(&str, &str)] = &[
 /// Crates the specification excludes from the path crate permission.
 fn utility_excluded() -> Vec<&'static str> {
     specification_names("The guest authoring crate", "are excluded from this")
-        .into_iter()
-        .filter(|name| *name != "maestro-lock")
-        .collect()
 }
 
 /// Direct dependencies a crate must declare.
@@ -1920,7 +1917,7 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
-fn guest_listing_edges_are_refused_in_every_dependency_kind() {
+fn guest_path_edges_are_refused_in_every_dependency_kind() {
     const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-wasm -> maestro-path";
     const PRODUCTION: &str =
         "forbidden production dependency: maestro-extensions-wasm -> maestro-path";
@@ -1947,7 +1944,7 @@ fn guest_listing_edges_are_refused_in_every_dependency_kind() {
             PRODUCTION,
         ),
     ] {
-        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-path\", path = \"../maestro-path\"{extra} }}"));
+        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nutility = {{ package = \"maestro-path\", path = \"../maestro-path\"{extra} }}"));
         assert_eq!(
             check_workspace(workspace.root.path()),
             Err(message.into()),
