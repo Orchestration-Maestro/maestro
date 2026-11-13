@@ -468,7 +468,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-process` | own native child-process lifecycles | `maestro-text` | below 0 |
 | `maestro-protocol` | define the shared RPC protocol | — | below 0 |
-| `maestro-providers` | adapt the built-in model providers | `maestro-models`, `maestro-http`, `maestro-interchange`, `maestro-brand`, `maestro-text`, `maestro-json` | 1 |
+| `maestro-providers` | adapt the built-in model providers | `maestro-models`, `maestro-http`, `maestro-brand`, `maestro-text`, `maestro-json` | 1 |
 | `maestro-resources` | discover resources | `maestro-interchange`, `maestro-pattern`, `maestro-text`, `maestro-json` | 0 |
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme`, `maestro-agent`, `maestro-daemon`, `maestro-export`, `maestro-extensions`, `maestro-json`, `maestro-listeners`, `maestro-lock`, `maestro-models`, `maestro-process`, `maestro-protocol`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools`, `maestro-watch` | 6 |
 | `maestro-schema-validator` | validate values against a schema | `maestro-interchange`, `maestro-json`, `maestro-text` | below 0 |
@@ -851,7 +851,7 @@ The native component adapter (`maestro-extensions-wasmtime`) may depend on
 `maestro-models-registry`, `maestro-credentials`, `maestro-models`, `maestro-providers`, `maestro-session`,
 `maestro-theme` and `maestro-tui` as native-only development dependencies. Its composition tests
 reuse the extension test support to build real catalogs, credentials, messages,
-sessions and themes, and install the built-in login providers the registry no longer seeds. The toolkit edge supplies the real terminal and UI to observe
+sessions and themes, and install the built-in login providers the registry starts without. The toolkit edge supplies the real terminal and UI to observe
 component-factory width synchronously; it adds no new production layer crossing.
 These edges permit no normal or build dependencies.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development

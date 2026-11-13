@@ -98,6 +98,13 @@ use std::{
     rc::Rc,
     task::{Context, Poll, Waker},
 };
+/// Removes the provider registration of the test that made it, however the test ends.
+struct Registration(&'static str);
+impl Drop for Registration {
+    fn drop(&mut self) {
+        maestro_models::unregister_oauth_provider(self.0);
+    }
+}
 #[test]
 fn application_provider_lookup_reaches_default_title() {
     let provider: maestro_models::OAuthProviderHandle = std::sync::Arc::new(
@@ -106,6 +113,7 @@ fn application_provider_lookup_reaches_default_title() {
         }),
     );
     maestro_models::register_oauth_provider(provider.clone());
+    let _registration = Registration("lookup-login");
     let (_, theme) = published::published(&login_support::colors(0)).unwrap();
     let dialog = LoginDialogComponent::new(
         Rc::new(|| {}),
@@ -122,7 +130,6 @@ fn application_provider_lookup_reaches_default_title() {
     )
     .unwrap();
     assert!(dialog.render(80)[1].contains("Login to Lookup Login"));
-    maestro_models::unregister_oauth_provider("lookup-login");
 }
 #[cfg(unix)]
 #[test]
