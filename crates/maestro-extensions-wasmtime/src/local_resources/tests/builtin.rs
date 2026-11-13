@@ -47,3 +47,32 @@ fn released_builtin_tool_rejects_every_kind_of_operation_with_its_ended_text() {
     });
     assert_eq!(errors, ["extension built-in tool resource ended"; 3]);
 }
+
+#[test]
+fn released_builtin_tool_rejects_execution_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let registry = pump.registry();
+    let (_owner, api) = crate::tests::api::api(maestro_extensions::create_extension_runtime::<
+        maestro_extensions::Local,
+    >());
+    let api = registry.api(api).unwrap();
+    let tool = registry
+        .create_builtin(Factory::Read("/".into(), None, None))
+        .unwrap();
+    let lease = tool.0.clone();
+    let errors = ended_errors(lease, pump, admission, move || {
+        let execution = crate::builtin_reads::Execution {
+            id: "call".into(),
+            args: "{}".into(),
+            model: None,
+            signal: None,
+            update: None,
+            api,
+        };
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(async { [tool.execute(execution).await.unwrap_err()] })
+    });
+    assert_eq!(errors, ["extension built-in tool resource ended"]);
+}
