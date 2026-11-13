@@ -6,8 +6,8 @@ use super::base_external_client::{
 use super::oauth_client_auth_handler::{decode, request as send};
 use super::{CLOUD_SCOPE, metadata::Metadata};
 use crate::HttpRequest;
-use crate::providers::transport::{RequestPolicy, RetryStatuses};
 use google_cloud_auth::errors::CredentialsError;
+use maestro_http::{RequestPolicy, RetryStatuses};
 
 /// Compute token source; discovery admission never changes its primary endpoint.
 pub(super) struct Compute {

@@ -22,10 +22,6 @@ use crate::providers::chat::github_copilot_headers::{
 use crate::providers::json_text::compact_json;
 use crate::providers::model_compat::compat_flag;
 use crate::providers::openai_prompt_cache::prompt_cache_key;
-use crate::providers::transport::{
-    HttpRequest, RequestFailure, SseMessages, copied, endpoint_url, layer, sdk_status_failure,
-    send_with_status_error,
-};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Context,
     DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, ProviderExecution, ProviderInvocation,
@@ -34,6 +30,10 @@ use crate::{
 };
 use futures_util::stream;
 use indexmap::IndexMap;
+use maestro_http::{
+    HttpRequest, RequestFailure, SseMessages, copied, endpoint_url, layer, sdk_status_failure,
+    send_with_status_error,
+};
 use serde::Serialize;
 use serde_json::Value;
 use std::borrow::Cow;

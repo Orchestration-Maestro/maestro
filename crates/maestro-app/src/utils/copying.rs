@@ -45,14 +45,9 @@ pub trait ClipboardOperations {
     fn write_stdout(&self, bytes: &[u8]) -> io::Result<()>;
 }
 
-/// Reads a process variable, substituting U+FFFD for undecodable bytes.
-pub(super) fn environment(name: &str) -> Option<String> {
-    std::env::var_os(name).map(|value| value.to_string_lossy().into_owned())
-}
-
 /// Nonempty environment strings select the corresponding route.
 fn present(name: &str) -> bool {
-    environment(name).is_some_and(|value| !value.is_empty())
+    maestro_text::environment_variable(name).is_some_and(|value| !value.is_empty())
 }
 
 /// Runs a fixed program; writers use a pipe and five-second limit, probes neither.
@@ -90,7 +85,7 @@ fn copy_to_x11_clipboard(operations: &impl ClipboardOperations, text: &str) -> b
 fn copy_to_display(operations: &impl ClipboardOperations, text: &str) -> bool {
     let wayland_display = present("WAYLAND_DISPLAY");
     let x11_display = present("DISPLAY");
-    if super::image_clipboard::is_wayland_session(environment)
+    if super::image_clipboard::is_wayland_session(maestro_text::environment_variable)
         && wayland_display
         && run_tool(operations, "which", &["wl-copy"], None)
         && operations

@@ -165,7 +165,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, raw CR/LF byte-line framing, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
-  pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
+  pretty text, raw-value reading, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
@@ -240,11 +240,18 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   Its storage reclaims retired registrations while no traversal runs.
 - `maestro-cancellation` owns cooperative cancellation below layer 0. Its only
   internal dependency is `maestro-listeners`, for synchronous abort observers.
-  Only models and the toolkit may depend directly on it.
+  Only `maestro-http`, models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.3`, defaults off, with `sync` on all targets.
 - `maestro-office` is a core crate that reads office documents: spreadsheet number
   formatting and workbook reading, and Word package reading, from supplied bytes. It depends
   only on text, JSON and lock, builds for the browser, and only the web frontend depends on it.
+- `maestro-http` is a core crate below layer 0 that performs HTTP requests: the replaceable
+  client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and
+  complete-message sockets. It depends only on cancellation, request, text and JSON, plus
+  `maestro-path` on native targets, builds for the browser, and only models depends on it.
+  Models re-exports the client records at its existing paths. Its non-default `test-support`
+  feature holds the scripted FTP, SOCKS and TLS peers and the test runtimes that its own
+  tests and the models tests share.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
@@ -267,7 +274,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and the provider registration records `provider_config::{ProviderConfig<C>,
   ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
-  (models, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
+  (models, http, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
@@ -373,7 +380,7 @@ apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
 The dedicated `maestro-test-tracing` native leaf runs a test action under a
-scoped tracing subscriber that sees every callsite. Only daemon, models, process,
+scoped tracing subscriber that sees every callsite. Only daemon, http, process,
 terminal and workspace may declare it, under the directory owner's rules. Tests
 capture through its `with_default` or, for a future, its `with_subscriber`. A
 conventions check rejects `tracing`'s scoped subscriber functions and the
@@ -416,22 +423,22 @@ The base owner-approved libraries are: tokio, reqwest, serde, serde_json,
 toml, clap, rmcp, tracing, and globset. Use Git through the `git` command.
 Ask before adding any unapproved crate; never add one silently.
 
-`maestro-models` pins `reqwest =0.13.5` (default features plus `stream`),
+`maestro-http` and `maestro-models` pin `reqwest =0.13.5` (default features plus `stream`),
 `url =2.5.8`, `futures-core =0.3.34` (`std`) and `futures-util =0.3.34`
-(`std` and `sink`),
-`httpdate =1.0.3` and `ryu-js =1.0.3`. Native targets add `tokio =1.53.3`
+(`std` and `sink`); `maestro-http` also pins `httpdate =1.0.3` (models pins it for its tests), and
+`maestro-models` pins `ryu-js =1.0.3`. Native targets add `tokio =1.53.3`
 (`rt`, `time`; `test-util` for tests); browser targets add `wasm-bindgen =0.2.129`,
 `wasm-bindgen-futures =0.4.79` and `js-sys =0.3.106`. All are MIT OR Apache-2.0
 except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).
-The models crate reads server-sent events with its own reader, so no event-stream
+`maestro-http` reads server-sent events with its own reader, so no event-stream
 library is a dependency.
-Native proxy scripts use `boa_engine =0.22.0` (defaults off, `system-time-zone`,
+Its native proxy scripts use `boa_engine =0.22.0` (defaults off, `system-time-zone`,
 MIT), `tracing =0.1.44` (defaults off, `std`, MIT) for authored alerts, and
 `if-addrs =0.15.0` (defaults off, `link-local`, MIT OR BSD-3-Clause) for the
 local IPv4 fallback. FTP script sources use Maestro's own native client over the
 locked Tokio, regex and chrono facilities instead of an FTP dependency. These
 dependencies do not enter browser targets.
-Native SOCKS connections use `tokio-socks =0.5.3` (MIT, defaults off, `tokio`) and its
+Its native SOCKS connections use `tokio-socks =0.5.3` (MIT, defaults off, `tokio`) and its
 `thiserror =1.0.69` closure, beside reqwest. Native connector support directly reuses locked
 `hyper =1.11.1`, `hyper-util =0.1.21`, `hyper-rustls =0.27.10`, `rustls =0.23.45`,
 `rustls-platform-verifier =0.7.1` and `tower-service =0.3.3` with the features listed in

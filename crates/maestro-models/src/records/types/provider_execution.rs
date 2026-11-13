@@ -3,7 +3,7 @@ use super::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, Execution, Local, Model, PayloadHookInput,
     ProviderInvocation, ProviderResponse, StreamOptionSlots, StreamOptionsFamily, Threaded,
 };
-use crate::providers::transport::Fetch;
+use maestro_http::Fetch;
 use std::sync::Arc;
 
 /// Request-hook futures and submission associated with an execution family.

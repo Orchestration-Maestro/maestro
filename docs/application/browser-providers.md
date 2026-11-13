@@ -31,8 +31,8 @@ used by this simple-stream adapter.
 Call `discover_models` or a specialized discovery function with
 `DiscoveryOptions`: the shared HTTP operation, complete-message socket factory
 and synchronous diagnostic callback. Native callers can supply
-[`default_fetch`](../../crates/maestro-models/src/providers/transport/mod.rs) and
-[`default_web_socket`](../../crates/maestro-models/src/providers/websocket/native.rs).
+[`default_fetch`](../../crates/maestro-http/src/lib.rs) and
+[`default_web_socket`](../../crates/maestro-http/src/websocket/native.rs).
 Browser callers supply
 [`browser_web_socket`](../../crates/maestro-web/src/browser/websocket/browser.rs).
 These operations add no retries, timers or caches.
