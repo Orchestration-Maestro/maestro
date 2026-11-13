@@ -118,9 +118,9 @@ pub struct Held {
 }
 
 impl Held {
-    /// How many times the turn was stopped.
-    pub fn aborts(&self) -> usize {
-        usize::from(self.signal.is_aborted())
+    /// Whether the turn was stopped.
+    pub fn is_aborted(&self) -> bool {
+        self.signal.is_aborted()
     }
 }
 

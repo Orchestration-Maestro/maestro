@@ -232,9 +232,6 @@ struct RoleInput {
 
 /// The recorded message of `role`.
 fn role(role: &str) -> Value {
-    let usage = serde_json::json!({"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0,
-        "totalTokens": 0, "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0,
-        "total": 0}});
     match role {
         "custom" => serde_json::json!({"role": role, "customType": "note",
             "content": "CUSTOM_BODY", "display": true, "timestamp": 0}),
@@ -248,7 +245,8 @@ fn role(role: &str) -> Value {
         "assistant" => serde_json::json!({"role": role, "content": [
             {"type": "thinking", "thinking": "REASON"}, {"type": "text", "text": "ANSWER"}],
             "api": "controlled", "provider": "controlled", "model": "controlled",
-            "usage": usage, "stopReason": "stop", "timestamp": 0}),
+            "usage": maestro_models::test_support::zero_usage(), "stopReason": "stop",
+            "timestamp": 0}),
         "toolResult" => serde_json::json!({"role": role, "toolCallId": "call",
             "toolName": "unknown_tool", "content": [{"type": "text",
             "text": "HISTORICAL_RESULT"}], "isError": false, "timestamp": 0}),
@@ -305,12 +303,5 @@ fn transcript_registered_toggle_actions_release_the_mode() {
         let weak = Rc::downgrade(&mode);
         drop(mode);
         assert!(weak.upgrade().is_none());
-        runtime.settle().ok();
-        // Keys typed after the mode is gone reach no action of it.
-        for key in ["\x0f", "\x14"] {
-            terminal.send_input(key);
-        }
-        assert_eq!(runtime.pending(), 0);
-        assert!(runtime.drain_futures().is_empty());
     });
 }

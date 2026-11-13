@@ -24,7 +24,7 @@ fn extension_abort_restores_queued_input_exactly_as_typed() {
                 session.extension_runner().create_context().abort().unwrap();
                 assert_eq!(world.mode.view().editor_text(), "  queued  steer ");
                 assert_eq!(session.pending_message_count(), 0);
-                assert_eq!(held.aborts(), 1);
+                assert!(held.is_aborted());
             })
             .await;
     });
@@ -50,7 +50,7 @@ fn extension_abort_during_a_confirmation_restores_queued_input() {
                 );
                 context.abort().unwrap();
                 assert_eq!(world.mode.view().editor_text(), "queued steer");
-                assert_eq!(held.aborts(), 1);
+                assert!(held.is_aborted());
             })
             .await;
     });
@@ -94,13 +94,15 @@ fn hinted_key(world: &World) -> String {
 #[test]
 fn key_display_capitalizes_each_live_binding_without_reordering() {
     const TEST: &str = "key_display_capitalizes_each_live_binding_without_reordering";
-    for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(FIXTURES, TEST) {
-        assert_eq!(
-            maestro_tools::format_key_text(&key, true),
-            platform_keys::on_this_platform(&expected.result)
-        );
-    }
     isolated(TEST, async |directory| {
+        for (KeyName::CapitalizeKey { key }, expected) in
+            cases::<KeyName, Displayed>(FIXTURES, TEST)
+        {
+            assert_eq!(
+                maestro_tools::format_key_text(&key, true),
+                platform_keys::on_this_platform(&expected.result)
+            );
+        }
         // The mode publishes the application's key registry, which the hint reads live.
         let world = started(directory).await;
         let keys = maestro_tui::get_keybindings();
