@@ -4029,6 +4029,7 @@ dependencies = [
  "maestro-agent",
  "maestro-app",
  "maestro-catalog",
+ "maestro-chat",
  "maestro-credentials",
  "maestro-dependencies",
  "maestro-export",
