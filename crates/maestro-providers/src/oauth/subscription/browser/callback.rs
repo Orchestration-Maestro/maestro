@@ -72,7 +72,7 @@ pub(super) const PREFERRED_PORT: u16 = 53692;
 
 /// Bind the subscription callback listener on the preferred port, or on any free loopback
 /// port when that one cannot be bound; the server reports the port it holds. When no port
-/// can be bound the server is already cancelled and holds none, so sign-in continues with
+/// can be bound the server is already cancelled and holds none, so login continues with
 /// pasted input.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) async fn bind(

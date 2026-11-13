@@ -179,7 +179,7 @@ async fn callback_browser(
 /// Interaction that records the announced authorization address, then declines to continue.
 #[derive(Default)]
 struct Announcing {
-    /// Address announced by the sign-in.
+    /// Address announced by the login.
     url: std::sync::Mutex<Option<String>>,
 }
 #[cfg(not(target_arch = "wasm32"))]

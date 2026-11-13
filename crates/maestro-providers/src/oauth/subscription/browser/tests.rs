@@ -921,7 +921,7 @@ fn login_callbacks_run_in_source_order_and_fail_cleanly() {
 }
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn sign_in_continues_with_pasted_input_when_no_port_binds() {
+fn login_continues_with_pasted_input_when_no_port_binds() {
     run(async {
         let callbacks = Interaction::new(None, "pasted", "");
         let redirects = Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -1485,12 +1485,12 @@ mod oauth_callback {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn sign_in_falls_back_when_the_preferred_port_is_taken() {
-        run(sign_in_falls_back_when_the_preferred_port_is_taken_flow());
+    fn login_falls_back_when_the_preferred_port_is_taken() {
+        run(login_falls_back_when_the_preferred_port_is_taken_flow());
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    async fn sign_in_falls_back_when_the_preferred_port_is_taken_flow() {
+    async fn login_falls_back_when_the_preferred_port_is_taken_flow() {
         let _permit = NATIVE_PORT.acquire().await.unwrap();
         let _occupant = native_probe("127.0.0.1");
         let (sender, announced) = tokio::sync::oneshot::channel();
