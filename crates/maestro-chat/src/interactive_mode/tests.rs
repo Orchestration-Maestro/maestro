@@ -5,6 +5,8 @@ mod autocomplete;
 mod bash;
 mod bindings;
 mod commands;
+#[path = "../../tests/interactive_mode_support/corpus.rs"]
+mod corpus;
 mod debug;
 mod events;
 mod extension_custom;
@@ -18,6 +20,8 @@ mod extensions;
 mod harness;
 mod hotkeys;
 mod info;
+#[path = "../../tests/interactive_mode_support/isolation.rs"]
+mod isolation;
 mod lifecycle;
 mod models;
 mod navigation;
@@ -42,6 +46,9 @@ use crate::{BashExecutionComponent, InteractiveMode, InteractiveModeOptions};
 use crate::components::session_selector::list::tests::session_picker::{
     manual_runtime::ManualRuntime, published, recording_terminal::RecordingTerminal,
 };
+pub(super) use corpus::cases;
+use isolation::{controlled_search_programs, guarded_output, isolated, search_guard};
+pub(super) use isolation::{isolated_case, isolated_output};
 use maestro_app::agent_session::PromptOptions;
 use maestro_app::configuration::config::{APP_NAME, ENV_AGENT_DIR, VERSION};
 use maestro_app::contribution_files::LoadContributionsResult;
@@ -65,7 +72,7 @@ use maestro_resources::{
     SourceScope,
 };
 use maestro_settings::SettingsManager;
-use maestro_test_process::{IsolatedSetup, SearchGuard, TestProcess};
+use maestro_test_process::{IsolatedSetup, TestProcess};
 use maestro_theme::{
     Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
@@ -75,7 +82,7 @@ use maestro_tui::{
     CompletionOptions, CompletionResult, Component, CursorPosition, EditorComponent, InputHandler,
     Text,
 };
-use serde::{Deserialize, de::DeserializeOwned};
+use serde::Deserialize;
 use serde_json::json;
 use std::{
     cell::{Cell, RefCell},
@@ -134,136 +141,6 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
     assert!(output.status.success(), "{output:?}");
     guard.assert_unreached();
     output.stderr
-}
-
-/// Runs `body` in a fresh offline single-test child whose agent directory is a disposable
-/// root, so the constructor reads its key bindings from there rather than the developer's.
-fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
-    isolated_case(
-        test,
-        "child",
-        &[(OsStr::new("MAESTRO_OFFLINE"), OsStr::new("1"))],
-        body,
-    );
-}
-
-/// Installs stub `fd` and `rg`, which answer at once with nothing, in the binary directory,
-/// which is searched before the command path.
-fn controlled_search_programs(directory: &Path) {
-    maestro_test_process::install_stub_search_programs(&directory.join("bin"))
-        .expect("the stub search programs install");
-}
-
-/// Guards `path`, the command path of a child over `root`, with the shared search guard.
-fn search_guard(root: &Path, path: &OsStr) -> SearchGuard {
-    SearchGuard::new(root, path).expect("the search guard installs")
-}
-
-/// Runs `body` as `case` of `test` in a fresh single-test child over a disposable agent
-/// directory, with no inherited environment apart from the command path and `envs`, so
-/// no developer credential reaches it. The child's temporary directory is that root's
-/// `tmp`, its commands are looked up in the root's `bin` first, and its clipboard is a
-/// Wayland one. Unless `envs` supplies the command path, the root's `bin` holds both
-/// search programs; a [`SearchGuard`] fails the run if the child ran a host copy. The
-/// file-size signal keeps the child alive, so a write over a lowered limit fails instead
-/// of ending the child. A prepared native fixture stays available to it.
-pub(super) fn isolated_case(
-    test: &str,
-    case: &str,
-    envs: &[(&OsStr, &OsStr)],
-    body: impl AsyncFnOnce(&Path),
-) {
-    if let Some(output) = isolated_output(
-        test,
-        case,
-        envs,
-        IsolatedSetup::new().file_size_continues(),
-        body,
-    ) {
-        assert!(
-            output.status.success(),
-            "child probe failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
-}
-
-/// Runs `body` as `case` of `test` in the child [`isolated_case`] describes, after `setup`
-/// is applied at the child's entry, and returns that child's output to the parent; the
-/// child itself returns nothing.
-pub(super) fn isolated_output(
-    test: &str,
-    case: &str,
-    envs: &[(&OsStr, &OsStr)],
-    setup: IsolatedSetup,
-    body: impl AsyncFnOnce(&Path),
-) -> Option<std::process::Output> {
-    let (output, guard) = guarded_output(test, case, envs, setup, body)?;
-    guard.assert_unreached();
-    Some(output)
-}
-
-/// Runs the child [`isolated_output`] describes and returns its output beside the guard on
-/// its command path.
-fn guarded_output(
-    test: &str,
-    case: &str,
-    envs: &[(&OsStr, &OsStr)],
-    setup: IsolatedSetup,
-    body: impl AsyncFnOnce(&Path),
-) -> Option<(std::process::Output, SearchGuard)> {
-    let selection = maestro_test_process::selection();
-    if selection.is_child() {
-        let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
-        if selection.runs_case(case) {
-            let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
-            maestro_test_process::executor::run(body(Path::new(&directory)));
-        }
-        return None;
-    }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
-    let root = scratch.path();
-    for name in ["bin", "tmp"] {
-        std::fs::create_dir(root.join(name)).unwrap();
-    }
-    let supplied = envs.iter().rev().find(|(key, _)| *key == "PATH");
-    let guard = if let Some((_, path)) = supplied {
-        search_guard(root, path)
-    } else {
-        controlled_search_programs(root);
-        let path = format!(
-            "{}:{}",
-            root.join("bin").display(),
-            std::env::var("PATH").unwrap_or_default()
-        );
-        search_guard(root, OsStr::new(&path))
-    };
-    let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE");
-    let mut all: Vec<(&OsStr, &OsStr)> = vec![
-        (OsStr::new(ENV_AGENT_DIR.as_str()), root.as_os_str()),
-        (OsStr::new("WAYLAND_DISPLAY"), OsStr::new("maestro-test")),
-    ];
-    // The cleared child installs the controlled programs from the prepared artifact.
-    all.extend(
-        artifact
-            .iter()
-            .map(|artifact| (OsStr::new("MAESTRO_NATIVE_FIXTURE"), artifact.as_os_str())),
-    );
-    all.extend(envs.iter().copied());
-    all.push((OsStr::new("PATH"), guard.path()));
-    let output = TestProcess::current(test)
-        .unwrap()
-        .env_clear()
-        .case(case)
-        .setup(setup)
-        .temp_dir(root.join("tmp"))
-        .nocapture()
-        .single_threaded()
-        .current_dir(root)
-        .envs(all)
-        .output()
-        .expect("child starts");
-    Some((output, guard))
 }
 
 #[test]
@@ -871,20 +748,6 @@ pub(super) fn painted(theme: &Theme, rows: &[String]) -> Vec<String> {
     rows.iter().map(|row| roles(theme, row)).collect()
 }
 
-/// One recorded case, read before its witness gives the input and observation their types.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct Case {
-    /// The witness the case belongs to.
-    test: String,
-    /// The recorded operation.
-    input: serde_json::Value,
-    /// The recorded observation.
-    expected: serde_json::Value,
-    /// Complete macOS layout when its key names differ.
-    expected_macos: Option<serde_json::Value>,
-}
-
 /// The recorded operations.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
@@ -969,30 +832,6 @@ pub(super) enum Expected {
         /// Frames requested.
         renders: usize,
     },
-}
-
-/// The recorded cases of `test` in `fixtures`, typed by that witness.
-pub(super) fn cases<I: DeserializeOwned, E: DeserializeOwned>(
-    fixtures: &str,
-    test: &str,
-) -> Vec<(I, E)> {
-    let all: Vec<Case> = serde_json::from_str(fixtures).unwrap();
-    let cases: Vec<_> = all
-        .into_iter()
-        .filter(|case| case.test == test)
-        .map(|case| {
-            (
-                serde_json::from_value(case.input).unwrap(),
-                serde_json::from_value(platform_keys::for_this_platform(
-                    case.expected,
-                    case.expected_macos,
-                ))
-                .unwrap(),
-            )
-        })
-        .collect();
-    assert!(!cases.is_empty());
-    cases
 }
 
 #[test]

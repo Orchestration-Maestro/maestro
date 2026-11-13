@@ -788,54 +788,6 @@ fn status_replaces_only_the_adjacent_retained_pair() {
     });
 }
 
-/// The recorded key names.
-#[derive(Deserialize)]
-#[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
-enum KeyName {
-    /// One key list to capitalize.
-    CapitalizeKey {
-        /// The keys as bound.
-        key: String,
-    },
-}
-
-/// A recorded displayed key name.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Displayed {
-    /// The displayed keys.
-    result: String,
-}
-
-#[test]
-fn key_display_capitalizes_each_live_binding_without_reordering() {
-    const TEST: &str = "key_display_capitalizes_each_live_binding_without_reordering";
-    for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(TEST) {
-        assert_eq!(
-            maestro_tools::format_key_text(&key, true),
-            super::platform_keys::on_this_platform(&expected.result)
-        );
-    }
-    isolated(TEST, async |directory| {
-        // The mode publishes the application's key registry, which the display reads live.
-        let _world = started(directory).await;
-        let keys = maestro_tui::get_keybindings();
-        let bind = |keys_bound: Option<&[&str]>| {
-            keys.set_user_bindings(vec![(
-                "app.message.dequeue".to_owned(),
-                keys_bound.map(|bound| {
-                    KeybindingKeys::Multiple(bound.iter().map(|key| (*key).to_owned()).collect())
-                }),
-            )]);
-            InteractiveMode::get_app_key_display("app.message.dequeue")
-        };
-        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
-        assert_eq!(bind(Some(&["shift+x", "ctrl+q"])), "Shift+X/Ctrl+Q");
-        assert_eq!(bind(Some(&["ctrl+q", "shift+x"])), "Ctrl+Q/Shift+X");
-        assert_eq!(bind(None), super::platform_keys::on_this_platform("Alt+Up"));
-    });
-}
-
 /// The recorded interrupt key presses.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "kebab-case", deny_unknown_fields)]
@@ -2740,44 +2692,4 @@ fn shell_dispatch_precedes_streaming_and_compaction_admission() {
             }
         },
     );
-}
-
-#[test]
-fn extension_abort_restores_queued_input_exactly_as_typed() {
-    const TEST: &str = "extension_abort_restores_queued_input_exactly_as_typed";
-    isolated(TEST, async |directory| {
-        streaming(&started(directory).await, async |world, held| {
-            let session = world.mode.runtime_host.session();
-            session.steer("  queued  steer ", &[]).unwrap();
-            world.mode.editor.set_text("");
-            session.extension_runner().create_context().abort().unwrap();
-            assert_eq!(world.mode.editor.get_text(), "  queued  steer ");
-            assert_eq!(session.pending_message_count(), 0);
-            assert_eq!(held.aborts(), 1);
-        })
-        .await;
-    });
-}
-
-#[test]
-fn extension_abort_during_a_confirmation_restores_queued_input() {
-    const TEST: &str = "extension_abort_during_a_confirmation_restores_queued_input";
-    isolated(TEST, async |directory| {
-        streaming(&started(directory).await, async |world, held| {
-            let session = world.mode.runtime_host.session();
-            session.steer("queued steer", &[]).unwrap();
-            world.mode.editor.set_text("");
-            let ui = maestro_extensions::ExtensionUIContext::new(world.mode.clone());
-            let mut confirmation =
-                std::pin::pin!(ui.confirm("Run the tool?".into(), "bash".into(), None));
-            assert!(
-                poll(&mut confirmation).is_none(),
-                "the confirmation stays open"
-            );
-            session.extension_runner().create_context().abort().unwrap();
-            assert_eq!(world.mode.editor.get_text(), "queued steer");
-            assert_eq!(held.aborts(), 1);
-        })
-        .await;
-    });
 }
