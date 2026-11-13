@@ -90,6 +90,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
+    "maestro-http",
     "maestro-lock",
     "maestro-models",
     "maestro-packages",
@@ -124,6 +125,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
+    "maestro-http",
     "maestro-listing",
     "maestro-lock",
     "maestro-models",
@@ -153,7 +155,7 @@ pub(crate) const TEST_TRACING: &str = "maestro-test-tracing";
 /// Declared consumers of scoped test tracing.
 pub(crate) const TEST_TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
-    "maestro-models",
+    "maestro-http",
     "maestro-process",
     "maestro-terminal-emulator",
     "maestro-workspace",

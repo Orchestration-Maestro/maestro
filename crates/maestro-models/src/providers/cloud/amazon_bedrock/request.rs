@@ -13,8 +13,8 @@ use super::wire::{
 };
 use crate::options::resolve_cache_retention;
 use crate::providers::json_text::compact_json;
-use crate::providers::transport::RequestFailure;
 use crate::{Context, Model};
+use maestro_http::RequestFailure;
 
 /// One conversation turn.
 #[derive(Default, Serialize, Deserialize)]

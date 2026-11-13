@@ -69,24 +69,15 @@ pub trait TuiRuntime {
     }
 }
 
-/// The value of the environment variable `key`, substituting replacement characters for
-/// bytes that are not UTF-8.
-pub(super) fn environment(key: &str) -> Option<String> {
-    std::env::var_os(key).map(|value| value.to_string_lossy().into_owned())
-}
-
 /// Whether the environment variable `key` is exactly `1`.
 pub(super) fn is_enabled(key: &str) -> bool {
-    environment(key).as_deref() == Some("1")
+    maestro_text::environment_variable(key).as_deref() == Some("1")
 }
 
 #[cfg(test)]
 mod tests {
     #[cfg(unix)]
     use std::os::unix::ffi::OsStrExt as _;
-
-    #[cfg(unix)]
-    use super::environment;
 
     /// Variable the probe sets to a value that is not UTF-8.
     #[cfg(unix)]
@@ -99,7 +90,10 @@ mod tests {
     fn environment_decodes_non_utf8_values_with_replacement_characters() {
         const TEST: &str = "environment_decodes_non_utf8_values_with_replacement_characters";
         if maestro_test_process::selection().is_child() {
-            assert_eq!(environment(PROBE).as_deref(), Some("A\u{fffd}B"));
+            assert_eq!(
+                maestro_text::environment_variable(PROBE).as_deref(),
+                Some("A\u{fffd}B")
+            );
             return;
         }
         let output = maestro_test_process::TestProcess::current(TEST)

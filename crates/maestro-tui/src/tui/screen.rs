@@ -5,7 +5,6 @@ use std::ops::Range;
 
 use super::diagnostics::RedrawReason;
 use super::drawing::{self, CursorPosition, Update};
-use super::runtime::environment;
 use super::{Component, TUI};
 
 /// A terminal extent the retained frame was drawn for.
@@ -290,7 +289,8 @@ impl TUI {
         let policy = Policy {
             clear_on_shrink: self.shared.clear_on_shrink.get()
                 && self.shared.overlays.borrow().is_empty(),
-            mobile: environment("TERMUX_VERSION").is_some_and(|version| !version.is_empty()),
+            mobile: maestro_text::environment_variable("TERMUX_VERSION")
+                .is_some_and(|version| !version.is_empty()),
         };
         let plan = self.shared.screen.borrow().plan(&frame, &policy);
         self.reject_overflow(&frame, &plan)?;

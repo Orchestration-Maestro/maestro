@@ -16,12 +16,12 @@ use super::wire::{
 };
 use crate::parameters::json_parse::is_blank;
 use crate::projection::normalize_tool_call_id;
-use crate::providers::base64_text::FORGIVING;
-use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantContent, AssistantMessage, Message as Turn, Model, Tool as ContextTool, ToolChoice,
     ToolResultMessage, UserBlock, UserContent, transform_messages,
 };
+use maestro_http::FORGIVING;
+use maestro_http::RequestFailure;
 
 /// Project the history for the model and convert it into turns; `cache` is placed after the
 /// last block of the final turn when that turn is the user's.

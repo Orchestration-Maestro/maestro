@@ -8,9 +8,9 @@ use super::google_auth::configuration_error;
 use super::oauth_client_auth_handler;
 use crate::DiagnosticErrorInfo;
 use crate::builtins::env_value;
-use crate::providers::transport::{RequestPolicy, RetryStatuses};
 use crate::{Fetch, HttpRequest};
 use google_cloud_auth::credentials::Credentials;
+use maestro_http::{RequestPolicy, RetryStatuses};
 use std::time::Duration;
 
 /// Resolve endpoint precedence once, retaining schemes and replacing the base path.

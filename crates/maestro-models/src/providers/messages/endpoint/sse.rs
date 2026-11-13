@@ -14,7 +14,7 @@ use super::events::{Progress, Reducer};
 use super::wire::{self, Event};
 use crate::Cancellation;
 use crate::parameters::repair_json;
-use crate::providers::transport::{
+use maestro_http::{
     FetchError, HttpBody, Raced, RequestFailure, ServerSentEvent, SseMessages, SseOptions, race,
 };
 
