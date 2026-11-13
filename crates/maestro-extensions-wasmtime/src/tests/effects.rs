@@ -212,3 +212,50 @@ fn released_theme_rejects_every_kind_of_operation_with_its_ended_text() {
     });
     assert_eq!(errors, ["extension theme resource ended"; 5]);
 }
+
+#[test]
+fn released_tool_update_rejects_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let update = pump.registry().tool_update(Rc::new(|_| {})).unwrap();
+    let lease = update.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [update
+            .update(r#"{"content":[]}"#.into())
+            .result()
+            .unwrap_err()]
+    });
+    assert_eq!(errors, ["extension tool-update resource ended"]);
+}
+
+#[test]
+fn released_invalidator_rejects_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let invalidator = pump.registry().invalidator(Rc::new(|| {})).unwrap();
+    let lease = invalidator.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [invalidator.invalidate().unwrap_err()]
+    });
+    assert_eq!(errors, ["extension tool-invalidator resource ended"]);
+}
+
+#[test]
+fn released_subscription_rejects_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let subscription = pump.registry().ui_subscription(Rc::new(|| Ok(()))).unwrap();
+    let lease = subscription.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [subscription.unsubscribe().unwrap_err()]
+    });
+    assert_eq!(errors, ["extension subscription resource ended"]);
+}
+
+#[test]
+fn released_custom_close_rejects_with_its_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let close = pump.registry().custom_close(Rc::new(|| Ok(true))).unwrap();
+    let lease = close.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        [close.close().result().unwrap_err()]
+    });
+    assert_eq!(errors, ["extension custom close resource ended"]);
+}

@@ -5,9 +5,9 @@ mod reset;
 pub use reset::{KeybindingsReset, reset_multiplexer_keybindings};
 
 use maestro_tui::KeybindingsManager as TuiKeybindingsManager;
-/// Toolkit key identifiers and ordered configuration records.
-pub use maestro_tui::{KeyId, Keybinding, KeybindingsConfig};
-use maestro_tui::{KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, TUI_KEYBINDINGS};
+use maestro_tui::{
+    KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, KeybindingsConfig, TUI_KEYBINDINGS,
+};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, ops::Deref, sync::LazyLock};
 

@@ -6,7 +6,7 @@ branch, extension status texts and a supplied available-provider count.
 `ReadonlyFooterDataProvider` trait, which is re-exported at the crate root.
 The trait, the live `ExtensionStatuses` view and its iterator are declared in
 `maestro_extensions::footer`, because extension footer factories
-receive them; the application re-exports them at its existing paths.
+receive them; frontends import them from there.
 Available repository watches refresh Git metadata asynchronously. Frontends
 subscribe to working-directory changes and changed cached branches.
 

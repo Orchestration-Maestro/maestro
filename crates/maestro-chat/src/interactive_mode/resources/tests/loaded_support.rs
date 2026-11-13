@@ -4,9 +4,10 @@ use super::super::{HomeLookup, ResourceItem, ShowLoadedResourcesOptions};
 use super::{Recorded, RecordedSource, Startup, expand_all, in_home, skills, templates};
 use crate::InteractiveModeOptions;
 use crate::interactive_mode::tests::{LoadedDiagnostics, Setup, World, painted};
-use maestro_app::{
-    DiagnosticType, ExtensionLoadError, ResourceCollision, ResourceDiagnostic, SourceInfo,
-    SourceScope, home_directory,
+use maestro_extensions::ExtensionLoadError;
+use maestro_resources::{
+    DiagnosticType, ResourceCollision, ResourceDiagnostic, SourceInfo, SourceScope,
+    paths::home_directory,
 };
 use maestro_theme::{ColorMode, Theme, ThemeOptions};
 use maestro_tui::Component;

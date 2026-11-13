@@ -59,11 +59,11 @@ impl ExtensionSelectorComponent {
             on_toggle_tools_expanded,
         } = opts;
         let list = Rc::new(Container::new());
-        let hint = maestro_app::raw_key_hint("↑↓", "navigate", &theme)?
+        let hint = maestro_tools::raw_key_hint("↑↓", "navigate", &theme)?
             + "  "
-            + &maestro_app::key_hint("tui.select.confirm", "select", &theme)?
+            + &maestro_tools::key_hint("tui.select.confirm", "select", &theme)?
             + "  "
-            + &maestro_app::key_hint("tui.select.cancel", "cancel", &theme)?;
+            + &maestro_tools::key_hint("tui.select.cancel", "cancel", &theme)?;
         let (container, update) = dialog_chrome(title, list.clone(), theme.clone(), hint, true);
         let countdown = dialog_countdown(timeout, tui.as_ref(), runtime, update, on_cancel.clone());
         let result = Self {

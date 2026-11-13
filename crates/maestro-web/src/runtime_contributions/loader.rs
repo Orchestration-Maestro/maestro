@@ -6,7 +6,8 @@ use super::{
 };
 use crate::page::DomView;
 use js_sys::{Function, Object, Promise, Reflect};
-use maestro_app::{CustomAgentMessages, NoCustomMessages, SandboxUrlProvider};
+use maestro_agent::{CustomAgentMessages, NoCustomMessages};
+use maestro_app::SandboxUrlProvider;
 use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use wasm_bindgen_futures::JsFuture;

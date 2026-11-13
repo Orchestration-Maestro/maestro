@@ -473,13 +473,13 @@ struct ListFrame {
     selected: Option<String>,
 }
 /// Default record shared by recorded widget constructors.
-fn session(id: &str) -> maestro_app::SessionInfo {
-    maestro_app::SessionInfo {
+fn session(id: &str) -> maestro_session::SessionInfo {
+    maestro_session::SessionInfo {
         path: format!("/missing/{id}.jsonl"),
-        id: maestro_app::Presence::Present(serde_json::json!(id)),
+        id: maestro_session::Presence::Present(serde_json::json!(id)),
         cwd: String::new(),
         name: None,
-        parent_session_path: maestro_app::Presence::Missing,
+        parent_session_path: maestro_session::Presence::Missing,
         created: 0.0,
         modified: 1_767_225_600_000.0,
         message_count: 1,
@@ -536,10 +536,10 @@ fn present<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Value>, D::E
 }
 impl Record {
     /// Projects directly into the original owner, without narrowing parent metadata.
-    fn owned(self) -> maestro_app::SessionInfo {
-        maestro_app::SessionInfo {
+    fn owned(self) -> maestro_session::SessionInfo {
+        maestro_session::SessionInfo {
             path: self.path,
-            id: maestro_app::Presence::Present(self.id),
+            id: maestro_session::Presence::Present(self.id),
             cwd: self.cwd,
             modified: self.modified,
             message_count: self.message_count,
@@ -547,9 +547,9 @@ impl Record {
             all_messages_text: self.all_messages_text,
             name: self.name,
             parent_session_path: match self.parent_session_path {
-                None => maestro_app::Presence::Missing,
-                Some(Value::Null) => maestro_app::Presence::Null,
-                Some(v) => maestro_app::Presence::Present(v),
+                None => maestro_session::Presence::Missing,
+                Some(Value::Null) => maestro_session::Presence::Null,
+                Some(v) => maestro_session::Presence::Present(v),
             },
             created: self.created.unwrap_or(0.0),
         }
@@ -674,7 +674,7 @@ impl World {
     /// Builds a list with independent policy operands and live effects.
     fn list(
         &self,
-        records: Vec<maestro_app::SessionInfo>,
+        records: Vec<maestro_session::SessionInfo>,
         policies: (bool, SortMode, NameFilter),
         current: Option<String>,
     ) -> Rc<maestro_chat::SessionList> {
@@ -723,7 +723,7 @@ pub fn list(name: &str, configure: Option<Configure>) {
     }
 }
 /// Constructs records for generated-input corpus groups.
-fn generated(name: &str, i: &ListInput) -> Vec<maestro_app::SessionInfo> {
+fn generated(name: &str, i: &ListInput) -> Vec<maestro_session::SessionInfo> {
     let record = |id: &str| session(id);
     match name {
         "session_list_setters_reapply_query_and_clamp_selection"
@@ -841,7 +841,7 @@ fn records(
     name: &str,
     i: &mut ListInput,
     filesystem: Option<&Filesystem>,
-) -> Vec<maestro_app::SessionInfo> {
+) -> Vec<maestro_session::SessionInfo> {
     match i.sessions.take() {
         None => generated(name, i),
         Some(records) => records
@@ -1228,7 +1228,7 @@ struct Filesystem {
     root: String,
     /// The disposable root that removes the padded tree.
     scratch: maestro_test_directory::Scratch,
-    saved_records: std::cell::RefCell<Option<Vec<maestro_app::SessionInfo>>>,
+    saved_records: std::cell::RefCell<Option<Vec<maestro_session::SessionInfo>>>,
 }
 impl Filesystem {
     /// Creates the fixture below the disposable root; the fixed width retains oracle padding.
@@ -1280,9 +1280,9 @@ impl Filesystem {
         value.replace("$FS", &self.root)
     }
     /// Projects authored fixture paths into the native scratch root.
-    fn record(&self, record: &mut maestro_app::SessionInfo) {
+    fn record(&self, record: &mut maestro_session::SessionInfo) {
         record.path = self.expand(&record.path);
-        if let maestro_app::Presence::Present(Value::String(parent)) =
+        if let maestro_session::Presence::Present(Value::String(parent)) =
             &mut record.parent_session_path
         {
             *parent = self.expand(parent);
@@ -1300,7 +1300,7 @@ impl Filesystem {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .push(maestro_app::SessionInfo {
+            .push(maestro_session::SessionInfo {
                 path: record.path.clone(),
                 id: record.id.clone(),
                 cwd: record.cwd.clone(),

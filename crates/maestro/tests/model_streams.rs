@@ -1,9 +1,8 @@
 //! The native agent consumes a compiled provider's retained stream through the SDK route.
-use maestro_app::{
-    AgentEvent, AgentMessage, AgentSession, AssistantMessageEventStream, PromptOptions,
-    SharedAssistantMessage,
-};
+use maestro_agent::{AgentEvent, AgentMessage};
+use maestro_app::{AgentSession, PromptOptions};
 use maestro_extensions_wasmtime::test_support::gate;
+use maestro_models::{AssistantMessageEventStream, SharedAssistantMessage};
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -173,7 +172,7 @@ fn check(events: &[Value], finals: &[SharedAssistantMessage], result: &SharedAss
     }
     assert_eq!(
         result.read().unwrap().stop_reason,
-        maestro_app::StopReason::Stop
+        maestro_models::StopReason::Stop
     );
 }
 

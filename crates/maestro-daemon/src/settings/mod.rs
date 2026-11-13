@@ -24,5 +24,9 @@ pub mod navigation;
 /// Global workspace preference projection and reload.
 pub mod io;
 
+/// Settings fixtures for the daemon's tests, on every platform.
+#[cfg(feature = "test-support")]
+pub mod test_support;
+
 /// Annotated global workspace defaults; optional values remain commented out.
 pub const DEFAULTS_TEXT: &str = include_str!("defaults.jsonc");

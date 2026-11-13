@@ -1,7 +1,7 @@
 //! Work a sendable producer hands to the local owners it updates.
 
-use maestro_app::DiagnosticErrorInfo;
 use maestro_lock::lock;
+use maestro_models::DiagnosticErrorInfo;
 use maestro_tui::TuiRuntime;
 use std::{
     any::Any,
@@ -271,7 +271,7 @@ impl<T: Send + 'static> LocalDispatch<T> {
 mod tests {
     use super::{DispatchToken, local_dispatch};
     use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
-    use maestro_app::DiagnosticErrorInfo;
+    use maestro_models::DiagnosticErrorInfo;
     use maestro_test_process::executor::block_on;
     use std::{
         cell::{Cell, RefCell},

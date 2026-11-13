@@ -1,14 +1,15 @@
 //! Recorded browser messages through public conversion boundaries.
 #![cfg(test)]
 use crate::support;
+use maestro_agent::AgentMessage;
 use maestro_app::browser::components::records::{
     ArtifactAction, ArtifactMessage, CustomAgentMessages, UserMessageWithAttachments,
     convert_attachments, default_convert_to_llm, is_artifact_message,
     is_user_message_with_attachments,
 };
 use maestro_app::browser::utils::attachments::SharedAttachment;
-use maestro_app::{AgentMessage, UserContent};
 use maestro_models::Message;
+use maestro_models::UserContent;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::{Arc, RwLock};
@@ -17,7 +18,7 @@ use support::browser_records::{AttachmentRecord, attachments};
 
 /// Caller-defined role accessor.
 struct Foreign(String);
-impl maestro_app::CustomAgentMessages for Foreign {
+impl maestro_agent::CustomAgentMessages for Foreign {
     fn role(&self) -> &str {
         &self.0
     }

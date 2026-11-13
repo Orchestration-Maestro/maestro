@@ -2,7 +2,8 @@
 use super::super::extension_widgets::with_factories;
 use super::super::isolated;
 use super::port;
-use maestro_app::{ExtensionAPI, Local, ReadonlyFooterDataProvider, TerminalInputHandler};
+use maestro_extensions::{ExtensionAPI, TerminalInputHandler, footer::ReadonlyFooterDataProvider};
+use maestro_models::Local;
 use maestro_tui::{InputListener, InputListenerResult};
 use std::{
     cell::{Cell, RefCell},
@@ -90,7 +91,7 @@ fn terminal_input_failure_reports_once_without_forwarding_the_chunk() {
             let (world, mut handlers) = with_factories(directory, move |api| {
                 let captured = captured.clone();
                 vec![api.ui_callback(move |_, _| {
-                    let error: maestro_app::EventError =
+                    let error: maestro_extensions::EventError =
                         Box::new(std::io::Error::from_raw_os_error(13));
                     captured.set(std::ptr::from_ref(&*error).cast::<()>().addr());
                     Err(error)

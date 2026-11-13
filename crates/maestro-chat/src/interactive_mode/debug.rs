@@ -1,7 +1,8 @@
 //! The debug capture command and its global key.
 use super::InteractiveMode;
+use maestro_app::AgentSession;
 use maestro_app::configuration::config::{get_agent_dir, paths::get_debug_log_path};
-use maestro_app::{AgentSession, serialize_json_line};
+use maestro_json::lines::serialize_json_line;
 use maestro_theme::ThemeColor;
 use maestro_tui::{Component, visible_width};
 use std::{error::Error, fmt::Write as _, path::Path, rc::Rc, sync::PoisonError};

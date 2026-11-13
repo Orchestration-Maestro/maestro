@@ -66,7 +66,7 @@ The `maestro-package` leaf owns portable package interchange records; native
 packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
-application re-exports them as `markdown`. The dedicated conventions checker may
+the web frontend imports them directly. The dedicated conventions checker may
 consume the same parser's code-block source ranges for documentation checks.
 Tools may also depend directly on text for shared newline
 normalization. The guest authoring crate may depend on request,
@@ -74,7 +74,7 @@ entry, tool, JSON and text, never on native session, tool or catalog runtimes. T
 repeated here.
 
 Pure retained [session-tree projection](sessions/tree-projection.md) belongs to
-`maestro-session`, with frontend access through `maestro-app::export_html`.
+`maestro-session`; frontends import it from `maestro_session::export_html`.
 Its allowed dependency set is unchanged; it has no frontend or toolkit edge.
 
 The `maestro-export` owner may depend directly on `maestro-json` and
@@ -102,8 +102,11 @@ actual members are rejected.
 The specification table identifies leaves with no internal dependencies; the
 foundation utility `maestro-path` is also a leaf. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
-checks the table against the enforced graph policy. Frontend dependency requirements
-follow the [specification's dependency boundary](specs/maestro-port.md#common-semantic-and-boundary-contract).
+checks the table against the enforced graph policy. The frontend rows of that table
+are the frontend edge table: chat, CLI, RPC, web, the multiplexer and the executable
+depend only on the lower crates their row lists, declared when used, and a
+frontend calls `maestro-app` only for what the application owns. Frontend dependency
+requirements follow the [specification's dependency boundary](specs/maestro-port.md#common-semantic-and-boundary-contract).
 Other crates may use a subset of their specification row, except the terminal
 adapter, which requires the toolkit and `maestro-text`; an absent required toolkit
 or text owner fails.
@@ -384,16 +387,30 @@ itself still passes,
 as do agent directory paths such as `~/.maestro/agent`, and a local page that never
 ships stays out of the check.
 
-Names say what the code does, so another project's library and product words stay out
-of them. The check reads each Rust identifier and each file and directory name that version
-control tracks under `crates/` and `docs/`; string literals and comments are not read. It
-splits a name at non-alphanumerics and case changes, and a denied word matches when its
-segments appear in order, ignoring case: `ssf_load`, `SsfLoad` and `ssf-notes.md` hold
-`ssf`, while `successful` and `plugins` hold nothing. A hit names the file, the line and
-the word. `DENIED` in `crates/maestro-test-conventions/src/leaked_words.rs` is the one list
-to edit when a word joins it. `EXEMPT` beside it holds the names a user, a provider or a
-stored file carries, each with its reason; a row that matches no name is reported, so an
-exemption cannot outlive its need.
+Public text is Maestro's own, so another project's names and words stay out of it. The
+check reads each Rust identifier, string literal, doc comment and other comment in the
+members' sources, each Markdown page that version control tracks under `docs/`, and each
+tracked file and directory name under `crates/` and `docs/`. It splits the text at
+non-alphanumerics and case changes into words and checks two lists in
+`crates/maestro-test-conventions/src/leaked_words.rs`:
+
+- `DENIED` holds generic library and product words, readable. A word of one or more
+  segments joined by `_` matches when its segments sit next to each other, joined by `_`,
+  `-` or a case change alone and ignoring case. A longer word never matches: a denied word
+  `quartz` is found in `quartz_load`, `QuartzLoad` and `quartz-notes.md`, not in `quartzite`.
+- `HASHED` holds the 64-bit FNV-1a hash of the lowercase form of other projects' own names,
+  so the repository never spells them. A word matches when its hash does. A short name that
+  is also an ordinary word stays off the list, and this scan does not check it.
+
+A hit names the file, the line, what holds the word (identifier, string literal, doc
+comment, comment, documentation page, or file or directory name) and the word as the text
+spells it. The diagnostic names `DENIED` and `HASHED` as the lists to edit.
+
+`EXEMPT` beside them holds the places a user, a provider, a stored file or a detected
+program carries a word, each with its path, word (a hashed word by its hash in `0x` and
+sixteen hex digits) and reason. The deny list's own file holds each readable word, so the
+check adds one row per `DENIED` word for it. A row that matches nothing, including one whose
+path left the tree, is reported, so an exemption cannot outlive its need.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
@@ -576,6 +593,18 @@ Removing the dependency passes. An otherwise empty CLI fixture instead reports
 application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
+
+The row bounds every crate a frontend can name; the reach check closes the one route
+around it, a lower-crate item that the application re-exports. It resolves each path a
+frontend writes below `maestro_app` through the application's own bindings and rejects
+one that lands in another crate:
+
+```text
+crates/maestro-chat/src/lib.rs:1: Tool belongs to maestro-tools; import it from its owner, not through maestro-app
+```
+
+The application's own exports obey the same boundary: they name each item of a
+lower crate, never a module, wildcard or crate alias.
 
 `check_workspace` reads each Rust source once. A file is parsed, lexed and walked a
 single time; the checks read what the walk recorded, and no parsed syntax outlives

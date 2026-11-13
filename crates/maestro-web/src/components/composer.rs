@@ -1,6 +1,7 @@
 //! Native message composer: text, attachments, reasoning level, model choice and send or abort.
 use crate::SharedAttachment;
-use maestro_app::{Model, ThinkingLevel};
+use maestro_agent::ThinkingLevel;
+use maestro_models::Model;
 use std::rc::Rc;
 
 /// File chooser hint; dropped and pasted files are not filtered by it.
@@ -102,7 +103,7 @@ impl Default for MessageEditorProps {
 /// Whether a draft can be sent: some non-whitespace text or an attachment, and no file loading.
 #[must_use]
 pub fn can_send(value: &str, attachments: usize, processing: bool) -> bool {
-    !processing && (attachments > 0 || !value.chars().all(maestro_app::is_whitespace_scalar))
+    !processing && (attachments > 0 || !value.chars().all(maestro_text::is_whitespace_scalar))
 }
 /// The size limit in whole mebibytes, rounded half up as the alert reports it.
 #[must_use]

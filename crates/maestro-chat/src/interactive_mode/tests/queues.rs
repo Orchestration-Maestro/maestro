@@ -11,13 +11,19 @@ use super::{
 use crate::BashExecutionComponent;
 use crate::InteractiveMode;
 use crate::interactive_mode::bash::component_address;
-use maestro_app::messages::UserMessageDelivery;
-use maestro_app::{
-    AgentSessionEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
-    Extension, ExtensionFactory, InputEvent, InputEventResult, Local, Message, PromptTemplate,
-    RegisteredCommand, SourceInfo, SourceOrigin, SourceScope, ThinkingLevel, UserBlock,
-    UserContent, is_whitespace_scalar,
+use maestro_agent::ThinkingLevel;
+use maestro_app::AgentSessionEvent;
+use maestro_extensions::{
+    Extension, ExtensionFactory, RegisteredCommand,
+    types::events::{InputEvent, InputEventResult},
 };
+use maestro_models::{
+    AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo, Local, Message,
+    UserBlock, UserContent,
+};
+use maestro_resources::{PromptTemplate, SourceInfo, SourceOrigin, SourceScope};
+use maestro_session::message_records::UserMessageDelivery;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::ThemeColor;
 use maestro_tui::editor_component::TextCallback;
 use maestro_tui::{Component, EditorComponent, KeybindingKeys, Spacer, Text};
@@ -806,7 +812,7 @@ fn key_display_capitalizes_each_live_binding_without_reordering() {
     const TEST: &str = "key_display_capitalizes_each_live_binding_without_reordering";
     for (KeyName::CapitalizeKey { key }, expected) in cases::<KeyName, Displayed>(TEST) {
         assert_eq!(
-            maestro_app::format_key_text(&key, true),
+            maestro_tools::format_key_text(&key, true),
             super::platform_keys::on_this_platform(&expected.result)
         );
     }
@@ -913,30 +919,32 @@ fn controlled_factory(heard: &Heard, refuse: bool) -> ExtensionFactory<Local> {
             }),
         );
         let shells = Rc::clone(&executed);
-        let answered = api.on::<maestro_app::UserBashEvent, _>(
+        let answered = api.on::<maestro_extensions::types::events::UserBashEvent, _>(
             "user_bash".to_owned(),
-            Rc::new(move |event: &mut maestro_app::UserBashEvent, _| {
-                shells.borrow_mut().push(json!([
-                    "execute",
-                    event.command,
-                    event.exclude_from_context
-                ]));
-                let result = maestro_app::BashResult {
-                    output: String::new(),
-                    exit_code: Some(0.0),
-                    cancelled: false,
-                    truncated: false,
-                    full_output_path: None,
-                };
-                let answer: maestro_app::UserBashEventResult<
-                    super::ShellOperations,
-                    maestro_app::BashResult,
-                > = maestro_app::UserBashEventResult {
-                    operations: None,
-                    result: maestro_app::Presence::Present(result),
-                };
-                Box::pin(std::future::ready(Ok(Some(answer))))
-            }),
+            Rc::new(
+                move |event: &mut maestro_extensions::types::events::UserBashEvent, _| {
+                    shells.borrow_mut().push(json!([
+                        "execute",
+                        event.command,
+                        event.exclude_from_context
+                    ]));
+                    let result = maestro_tools::BashResult {
+                        output: String::new(),
+                        exit_code: Some(0.0),
+                        cancelled: false,
+                        truncated: false,
+                        full_output_path: None,
+                    };
+                    let answer: maestro_extensions::types::events::UserBashEventResult<
+                        super::ShellOperations,
+                        maestro_tools::BashResult,
+                    > = maestro_extensions::types::events::UserBashEventResult {
+                        operations: None,
+                        result: maestro_session::Presence::Present(result),
+                    };
+                    Box::pin(std::future::ready(Ok(Some(answer))))
+                },
+            ),
         );
         Box::pin(std::future::ready(registered.and(answered).map(drop)))
     })
@@ -1442,7 +1450,7 @@ fn conversation_texts(session: &maestro_app::AgentSession<Local>) -> Vec<String>
     messages
         .iter()
         .filter_map(|message| match message {
-            maestro_app::AgentMessage::User(user) => Some(text_of(&user.read().unwrap().content)),
+            maestro_agent::AgentMessage::User(user) => Some(text_of(&user.read().unwrap().content)),
             _ => None,
         })
         .collect()
@@ -2759,7 +2767,7 @@ fn extension_abort_during_a_confirmation_restores_queued_input() {
             let session = world.mode.runtime_host.session();
             session.steer("queued steer", &[]).unwrap();
             world.mode.editor.set_text("");
-            let ui = maestro_app::ExtensionUIContext::new(world.mode.clone());
+            let ui = maestro_extensions::ExtensionUIContext::new(world.mode.clone());
             let mut confirmation =
                 std::pin::pin!(ui.confirm("Run the tool?".into(), "bash".into(), None));
             assert!(

@@ -5,9 +5,12 @@ use crate::{
     AssistantMessageComponent, BehaviorSettings, SessionSettings, SettingsCallbacks,
     SettingsConfig, SettingsSelectorComponent, TerminalDisplaySettings, ToolExecutionComponent,
 };
-use maestro_app::{
-    DoubleEscapeAction, PreparedSettingsEdit, SettingsEdit, SettingsManager, ThinkingLevel,
-    Transport, TreeFilterMode, WarningSettings, delivery_mode, queue_mode,
+use maestro_agent::ThinkingLevel;
+use maestro_app::{delivery_mode, queue_mode};
+use maestro_models::Transport;
+use maestro_settings::{
+    DoubleEscapeAction, PreparedSettingsEdit, SettingsEdit, SettingsManager, TreeFilterMode,
+    WarningSettings,
 };
 use maestro_theme::ThemeChangeResult;
 use maestro_tui::{Component, EditorComponent};
@@ -274,7 +277,7 @@ impl InteractiveMode {
     /// Applies one image option to each retained tool in the captured child walk.
     fn settings_tools(
         &self,
-        update: impl Fn(&ToolExecutionComponent) -> Result<(), maestro_app::DiagnosticErrorInfo>,
+        update: impl Fn(&ToolExecutionComponent) -> Result<(), maestro_models::DiagnosticErrorInfo>,
     ) -> Result<(), Box<dyn Error>> {
         for child in self.chat_container.walk() {
             if let Some(tool) = (&*child as &dyn Any).downcast_ref::<ToolExecutionComponent>() {
@@ -310,7 +313,7 @@ impl InteractiveMode {
             .settings_manager()
             .borrow_mut()
             .apply_prepared_edit(edit);
-        maestro_app::configure_http_dispatcher(milliseconds)?;
+        maestro_models::configure_http_dispatcher(milliseconds)?;
         self.show_status(&format!(
             "HTTP idle timeout: {}",
             http_idle_timeout_label(milliseconds)
@@ -437,7 +440,7 @@ impl std::fmt::Display for SettingsRefusal {
 impl Error for SettingsRefusal {}
 
 /// Keeps session admission failures distinguishable from later effect failures.
-fn session_setting_error(error: maestro_app::DiagnosticErrorInfo) -> Box<dyn Error> {
+fn session_setting_error(error: maestro_models::DiagnosticErrorInfo) -> Box<dyn Error> {
     if error.name.as_deref() == Some("ConfigurationRefusal") {
         Box::new(SettingsRefusal(error.message))
     } else {

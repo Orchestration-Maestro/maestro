@@ -92,8 +92,7 @@ pub(super) fn terminal() -> Command {
 
 /// Describe notification presentation and supported integration targets.
 pub(super) fn notifications_and_integrations() -> [Command; 2] {
-    let values =
-        serde_json::json!(maestro_app::rpc_types::workspace_schema::IntegrationTarget::ALL);
+    let values = serde_json::json!(maestro_protocol::schema::IntegrationTarget::ALL);
     let targets: Vec<_> = values
         .as_array()
         .into_iter()

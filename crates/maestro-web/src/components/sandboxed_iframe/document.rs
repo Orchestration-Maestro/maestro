@@ -1,7 +1,8 @@
 //! Document envelopes carrying parser-created inline programs.
 use super::lowering;
 use super::runtime::{self, Insertion, Program};
-use maestro_app::{DiagnosticErrorInfo, Runtime};
+use maestro_app::Runtime;
+use maestro_models::DiagnosticErrorInfo;
 
 /// Encode ampersands, less-than signs and CR for SVG foreign-content program text.
 pub(super) fn encode_program(code: &str) -> String {

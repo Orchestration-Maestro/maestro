@@ -1,6 +1,6 @@
 //! Block walk over one prepared document, including nested containers.
 use super::{Atoms, Flow, Policy, Writer, block_formula, escape, escape_authored};
-use maestro_app::markdown::{Kind, Node};
+use maestro_markdown::{Kind, Node};
 use std::fmt::Write as _;
 
 /// One pending step of a block walk, innermost last.

@@ -1,5 +1,6 @@
 //! A configured-value fixture for both native and browser test targets.
-use maestro_app::{ConfigValues, SharedHandle};
+use maestro_catalog::ConfigValues;
+use maestro_models::SharedHandle;
 
 /// Configured-value commands that return command failure without spawning a process.
 #[must_use]

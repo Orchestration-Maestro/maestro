@@ -1,9 +1,10 @@
 //! Interactive presentation for extension command-context session operations.
 use super::InteractiveMode;
-use maestro_app::{
-    CommandContextOperations, EventError, ExtensionCommandContextActions, ForkOptions,
-    NavigateTreeOptions, NewSessionCommandOptions, SessionChangeResult,
+use maestro_extensions::{
+    CommandContextOperations, EventError, ExtensionCommandContextActions,
+    types::{ForkOptions, NewSessionCommandOptions, SessionChangeResult},
 };
+use maestro_session::session_manager::NavigateTreeOptions;
 use std::rc::{Rc, Weak};
 
 impl InteractiveMode {

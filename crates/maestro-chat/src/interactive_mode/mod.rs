@@ -4,12 +4,15 @@
 
 use crate::{AssistantMessageComponent, BashExecutionComponent, CustomEditor, FooterComponent};
 use maestro_app::presentation_data::status_line::{FooterDataProvider, FooterOperations};
-use maestro_app::{
-    AgentSession, AgentSessionRuntime, AutocompleteProviderFactory, EventError, KeybindingsManager,
-    ReadonlyFooterDataProvider, ReadonlySessionManager, SettingsManager, SharedAssistantMessage,
-    ToolRenderEnvironment,
+use maestro_app::{AgentSession, AgentSessionRuntime, KeybindingsManager};
+use maestro_extensions::{
+    AutocompleteProviderFactory, EventError, footer::ReadonlyFooterDataProvider,
 };
+use maestro_models::SharedAssistantMessage;
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_settings::SettingsManager;
 use maestro_theme::{Collator, LiveTheme, SyntectHighlighter, ThemeState, get_editor_theme};
+use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::{Component, Container, EditorOptions, TUI, TerminalImage, Text};
 use maestro_tui::{TerminalHandle, TuiRuntime};
 use std::{
@@ -77,9 +80,15 @@ pub struct InteractiveMode {
     /// Bound extension input registrations and their cleanup operations.
     extension_input: extension_ui::input::ExtensionInput,
     /// Live keyed widgets above the editor.
-    extension_widgets_above: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    extension_widgets_above: maestro_extensions::footer::iteration::Live<
+        String,
+        Rc<maestro_extensions::types::ExtensionComponent>,
+    >,
     /// Live keyed widgets below the editor.
-    extension_widgets_below: maestro_app::Live<String, Rc<maestro_app::ExtensionComponent>>,
+    extension_widgets_below: maestro_extensions::footer::iteration::Live<
+        String,
+        Rc<maestro_extensions::types::ExtensionComponent>,
+    >,
     /// This mode, for callbacks that must not keep it alive.
     this: Weak<InteractiveMode>,
     /// The runtime the current session is read from.
@@ -133,9 +142,9 @@ pub struct InteractiveMode {
     /// The built-in header, absent until the header is built.
     built_in_header: RefCell<Option<maestro_tui::ComponentHandle>>,
     /// The extension header shown in place of the built-in one.
-    custom_header: RefCell<Option<Rc<maestro_app::ExtensionComponent>>>,
+    custom_header: RefCell<Option<Rc<maestro_extensions::types::ExtensionComponent>>>,
     /// The extension footer shown in place of the built-in one.
-    custom_footer: RefCell<Option<Rc<maestro_app::ExtensionComponent>>>,
+    custom_footer: RefCell<Option<Rc<maestro_extensions::types::ExtensionComponent>>>,
     /// The runtime, theme, highlighter and image support shared by transcript rows.
     tool_environment: Rc<ToolRenderEnvironment>,
     /// Whether tool output and summaries, and with them the startup text, are expanded.
@@ -198,8 +207,8 @@ impl InteractiveMode {
             this: this.clone(),
             lifecycle: lifecycle::LifecycleState::default(),
             extension_input: extension_ui::input::ExtensionInput::default(),
-            extension_widgets_above: maestro_app::Live::new(),
-            extension_widgets_below: maestro_app::Live::new(),
+            extension_widgets_above: maestro_extensions::footer::iteration::Live::new(),
+            extension_widgets_below: maestro_extensions::footer::iteration::Live::new(),
             runtime_host,
             options,
             ui,

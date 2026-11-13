@@ -1,9 +1,9 @@
 //! First-message assembly observed through the public operation.
 
 use crate::support;
-use maestro_app::ImageContent;
 use maestro_cli::input::arguments::parse_args;
 use maestro_cli::input::messages::{InitialMessageInput, build_initial_message};
+use maestro_models::ImageContent;
 
 /// One recorded attachment used by the image cases.
 fn image() -> ImageContent {

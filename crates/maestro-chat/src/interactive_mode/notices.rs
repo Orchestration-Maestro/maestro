@@ -3,9 +3,8 @@
 use super::InteractiveMode;
 use crate::components::dynamic_border::DynamicBorder;
 use maestro_app::configuration::config::get_package_dir;
-use maestro_app::{
-    ChangelogEntry, ReadonlySessionManager, get_changelog_path, get_new_entries, parse_changelog,
-};
+use maestro_app::{ChangelogEntry, get_changelog_path, get_new_entries, parse_changelog};
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tui::{Markdown, MarkdownOptions, Spacer, Text, hyperlink};
 use std::{error::Error, rc::Rc};
@@ -109,7 +108,7 @@ impl InteractiveMode {
             self.chat_container.add_child(Rc::new(Spacer::new(1)));
             self.chat_container.add_child(Rc::new(Markdown::new(
                 markdown
-                    .trim_matches(maestro_app::is_whitespace_scalar)
+                    .trim_matches(maestro_text::is_whitespace_scalar)
                     .to_owned(),
                 MarkdownOptions {
                     clean_content: false,
@@ -287,9 +286,9 @@ fn start_notice_work(
 
 impl InteractiveMode {
     /// Creates fresh native metadata effects with weak runtime admission.
-    pub(super) fn native_package_operations(&self) -> maestro_app::NativePackageOperations {
+    pub(super) fn native_package_operations(&self) -> maestro_packages::NativePackageOperations {
         let runtime = Rc::downgrade(&self.tool_environment.runtime);
-        maestro_app::NativePackageOperations::with_spawn(Rc::new(|| false), move |work| {
+        maestro_packages::NativePackageOperations::with_spawn(Rc::new(|| false), move |work| {
             let runtime = runtime
                 .upgrade()
                 .ok_or_else(|| std::io::Error::other("package runtime is no longer available"))?;
@@ -303,7 +302,7 @@ impl InteractiveMode {
         let offline = self.runtime_host.services().offline;
         if offline.unwrap_or_else(|| {
             maestro_app::configuration::flag_is_set(
-                crate::environment::variable("MAESTRO_OFFLINE").as_deref(),
+                maestro_text::environment_variable("MAESTRO_OFFLINE").as_deref(),
             )
         }) {
             return Vec::new();
@@ -312,8 +311,8 @@ impl InteractiveMode {
             let session = self.runtime_host.session();
             let cwd = session.session_manager().borrow().get_cwd().to_owned();
             let manager = Rc::new(
-                maestro_app::DefaultPackageManager::new(
-                    maestro_app::PackageManagerOptions {
+                maestro_packages::DefaultPackageManager::new(
+                    maestro_packages::PackageManagerOptions {
                         cwd,
                         agent_dir: maestro_app::configuration::config::get_agent_dir()?,
                         settings_manager: Rc::clone(session.settings_manager()),
@@ -336,8 +335,9 @@ impl InteractiveMode {
 impl InteractiveMode {
     /// Queries both options before choosing the first applicable keyboard warning.
     pub(super) async fn check_tmux_keyboard_setup(&self) -> Option<String> {
-        if !maestro_app::configuration::flag_is_set(crate::environment::variable("TMUX").as_deref())
-        {
+        if !maestro_app::configuration::flag_is_set(
+            maestro_text::environment_variable("TMUX").as_deref(),
+        ) {
             return None;
         }
         let keys = self.run_tmux_show("extended-keys");
@@ -355,7 +355,7 @@ impl InteractiveMode {
         &self,
         option: &'static str,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<String>>>> {
-        use maestro_app::PackageOperations;
+        use maestro_packages::PackageOperations;
         let (send, receive) = tokio::sync::oneshot::channel();
         let send = Rc::new(std::cell::RefCell::new(Some(send)));
         let expire = send.clone();
@@ -367,7 +367,7 @@ impl InteractiveMode {
                     .run_command_capture(
                         "tmux",
                         &["show".into(), "-gv".into(), option.into()],
-                        maestro_app::CommandCaptureOptions {
+                        maestro_packages::CommandCaptureOptions {
                             cwd: None,
                             timeout: Some(std::time::Duration::from_millis(2_000)),
                             env: &[],

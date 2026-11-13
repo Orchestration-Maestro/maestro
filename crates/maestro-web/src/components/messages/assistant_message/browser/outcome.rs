@@ -25,7 +25,7 @@ impl<D> AssistantMessage<D> {
         outcome: Outcome,
         view: &DomView,
     ) -> Result<(), ToolUiError> {
-        if outcome.stop == maestro_app::StopReason::Aborted {
+        if outcome.stop == maestro_models::StopReason::Aborted {
             placed.abort.show(&AbortedMessage, &root.node, view)?;
         } else {
             placed.abort.clear();

@@ -90,10 +90,10 @@ Each row exists in Maestro; none falls below the reference.
 `maestro-terminal-emulator` sits at layer 0. Its only internal dependency is
 `maestro-text`, whose `Utf8Stream` is the PTY byte decoder, reused unchanged. It
 inherits the workspace lints, including `unsafe_code = "forbid"`, and has no build
-script. The workspace daemon depends on it directly. Frontends reach the items they need
-(the codepoint width, the host cell size and the regular-file image command) through
-re-exports in `maestro-app`, added by the first frontend delivery that uses one; no
-frontend depends on the emulator directly.
+script. The workspace daemon depends on it directly. A frontend that needs an item (the
+codepoint width, the host cell size or the regular-file image command) lists the emulator in
+its row of the frontend edge table and imports the item from it; `maestro-app` does not
+re-export the emulator.
 
 ### Module map
 

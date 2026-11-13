@@ -5,8 +5,10 @@ use crate::footer_support::corpus::{
     self, Input, Lines, Render, Row, assert_frame, plain, rows_of,
 };
 use crate::footer_support::{Metadata, Roles, World};
-use maestro_app::{ReadonlyFooterDataProvider, ReadonlySessionManager, ThinkingLevel};
+use maestro_agent::ThinkingLevel;
 use maestro_chat::FooterComponent;
+use maestro_extensions::footer::ReadonlyFooterDataProvider;
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_tui::Component;
 use serde_json::{Value, json};
 use std::path::MAIN_SEPARATOR;
@@ -338,7 +340,7 @@ fn assert_failure(expected: &Value, error: &(dyn std::error::Error + 'static)) {
         .as_str()
         .expect("a recorded failure");
     let reached = error
-        .downcast_ref::<maestro_app::DiagnosticErrorInfo>()
+        .downcast_ref::<maestro_models::DiagnosticErrorInfo>()
         .expect("a recorded-field failure");
     assert_eq!(reached.name.as_deref(), Some(recorded));
 }
@@ -386,7 +388,7 @@ fn footer_provider_callbacks_read_live_model_at_each_phase() {
         world.set_model("before", "old", false, 1_000.0);
         let session = Rc::clone(&world.session);
         let replace = Rc::new(move || {
-            let model: maestro_app::Model = serde_json::from_value(json!({
+            let model: maestro_models::Model = serde_json::from_value(json!({
                 "id": "after",
                 "name": "after",
                 "api": "openai-completions",
@@ -586,7 +588,7 @@ impl ReadonlyFooterDataProvider for CountingMetadata {
         self.inner.get_git_branch()
     }
 
-    fn get_extension_statuses(&self) -> maestro_app::ExtensionStatuses {
+    fn get_extension_statuses(&self) -> maestro_extensions::footer::ExtensionStatuses {
         self.calls.set(self.calls.get() + 1);
         self.inner.get_extension_statuses()
     }

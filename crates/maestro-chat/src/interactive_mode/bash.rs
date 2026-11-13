@@ -3,18 +3,19 @@
 use super::InteractiveMode;
 use crate::BashExecutionComponent;
 use crate::local_dispatch::local_dispatch;
-use maestro_app::ReadonlySessionManager;
+use maestro_app::AgentSession;
 use maestro_app::agent_session::{BashChunkCallback, BashRunOptions};
-use maestro_app::is_whitespace_scalar;
-use maestro_app::{
-    AgentSession, BashOperations, BashResult, DiagnosticErrorInfo, Presence, TruncationResult,
-    UserBashEvent, UserBashEventResult,
-};
+use maestro_extensions::types::events::{UserBashEvent, UserBashEventResult};
+use maestro_models::DiagnosticErrorInfo;
+use maestro_session::Presence;
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_text::is_whitespace_scalar;
+use maestro_tools::{BashOperations, BashResult, TruncationResult};
 use maestro_tui::TUI;
 use std::{cell::RefCell, collections::HashSet, error::Error, rc::Rc};
 
 /// The callable operations an extension supplies for one shell command.
-pub(super) type ShellOperations = Rc<dyn BashOperations<maestro_app::Local>>;
+pub(super) type ShellOperations = Rc<dyn BashOperations<maestro_models::Local>>;
 
 /// The shell command a submission selected, which an extension cannot rewrite.
 #[derive(Clone, Copy)]

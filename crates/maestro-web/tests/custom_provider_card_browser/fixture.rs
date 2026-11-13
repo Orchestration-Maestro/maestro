@@ -1,5 +1,6 @@
 //! Typed semantic cases recorded from the provider card's public output.
-use maestro_app::{Model, Presence};
+use maestro_models::Model;
+use maestro_session::Presence;
 use maestro_web::{
     CustomProvider, CustomProviderCard, CustomProviderType,
     components::custom_provider_card::ProviderStatus, page::DomView,

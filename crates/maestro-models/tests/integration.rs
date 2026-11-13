@@ -95,7 +95,6 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
-mod executable_schemas;
 mod handoff_tool_ids;
 #[path = "history_handoffs.rs"]
 mod history_handoffs;
@@ -193,8 +192,6 @@ mod response_tool_images;
 #[path = "support/root_routes.rs"]
 mod root_routes;
 mod routed_cache_write;
-mod schema_checker_qualification;
-mod schema_diagnostics;
 mod scripted_model_invocation;
 mod simple_model_options;
 mod stream_options;

@@ -7,7 +7,8 @@ license = "Apache-2.0"
 repository.workspace = true
 
 [dependencies]
-maestro-app = { path = "../maestro-app" }
+maestro-daemon = { path = "../maestro-daemon" }
+maestro-terminal-emulator = { path = "../maestro-terminal-emulator" }
 maestro-protocol = { path = "../maestro-protocol" }
 ratatui = { version = "=0.30.0", default-features = false, features = ["underline-color"] }
 unicode-width = { version = "=0.2.2", default-features = false }

@@ -2,10 +2,16 @@
 use super::super::{Setup, World, actions::shows, isolated, isolated_output, start};
 use super::{append_user, resume::saved, tree::panel, tree_choices::choose};
 use crate::ExtensionSelectorComponent;
-use maestro_app::{
-    AgentSessionRuntime, ExtensionFactory, Local, Presence, ReadonlySessionManager,
-    SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionChangeResult, SwitchSessionOptions,
+use maestro_app::AgentSessionRuntime;
+use maestro_extensions::{
+    ExtensionFactory,
+    types::{
+        SessionChangeResult, SwitchSessionOptions,
+        events::{SessionBeforeSwitchEvent, SessionBeforeSwitchResult},
+    },
 };
+use maestro_models::Local;
+use maestro_session::{Presence, session_manager::ReadonlySessionManager};
 use maestro_test_process::IsolatedSetup;
 use maestro_tui::Component;
 use serde_json::json;
@@ -68,7 +74,7 @@ fn options(
 fn failing_factory() -> maestro_app::CreateAgentSessionRuntimeFactory {
     Rc::new(|_| {
         Box::pin(std::future::ready(Err(
-            maestro_app::DiagnosticErrorInfo::new(None, "factory failed"),
+            maestro_models::DiagnosticErrorInfo::new(None, "factory failed"),
         )))
     })
 }
@@ -85,7 +91,8 @@ async fn resumed(
         let mut context = Context::from_waker(Waker::noop());
         assert!(resuming.as_mut().poll(&mut context).is_pending());
         let prompt = panel::<ExtensionSelectorComponent>(world).expect("the directory prompt");
-        let shown = maestro_app::strip_ansi(&prompt.render(120).join("\n")).unwrap();
+        let shown = maestro_tools::output::render_utils::strip_ansi(&prompt.render(120).join("\n"))
+            .unwrap();
         assert!(shown.contains("Session cwd not found"), "{shown}");
         choose(world, answer);
     }

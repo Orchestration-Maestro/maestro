@@ -1,10 +1,15 @@
 //! Ordered preparation of the authored file arguments.
 
-use maestro_app::{
-    ImageContent, ImageResizeOptions, ResizedImage, detect_supported_image_mime_type_from_file,
-    format_dimension_note, lossy_string, resize_image, resolve_read_path,
-};
+use maestro_models::ImageContent;
+use maestro_text::lossy_string;
 use maestro_theme::Theme;
+use maestro_tools::{
+    path_utils::resolve_read_path,
+    utils::{
+        ImageResizeOptions, ResizedImage, format_dimension_note,
+        mime::detect_supported_image_mime_type_from_file, resize_image,
+    },
+};
 use std::error::Error;
 use std::fmt;
 use std::io;
@@ -224,7 +229,7 @@ impl NativeFileArgumentOperations {
     /// Report one fatal file input on the standard error stream and exit.
     fn report(&self, error: &FileArgumentError) -> ! {
         let message = Theme::red(&error.to_string(), self.styles_enabled);
-        maestro_app::diagnostics::write_stderr_line(&message);
+        maestro_agent::diagnostics::write_stderr_line(&message);
         std::process::exit(1);
     }
 }

@@ -5,11 +5,11 @@ use crate::{
     AssistantMessageComponent, ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams,
     ToolExecutionResult,
 };
-use maestro_app::agent_session::ToolsManager;
-use maestro_app::{
-    EventError, ReadonlySessionManager, SessionContext, TextContent, ToolName, ToolRendererBinding,
-    ToolResultMessage, ToolsOptions, UserBlock, create_tool_definition,
-};
+use maestro_extensions::EventError;
+use maestro_models::{TextContent, ToolResultMessage, UserBlock};
+use maestro_session::session_manager::{ReadonlySessionManager, SessionContext};
+use maestro_tools::ToolsManager;
+use maestro_tools::{ToolName, ToolRendererBinding, ToolsOptions, create_tool_definition};
 use maestro_tui::Component;
 use serde_json::Value;
 use std::{collections::HashMap, io, rc::Rc, sync::Arc};
@@ -256,7 +256,7 @@ impl InteractiveMode {
     fn get_registered_tool_definition(
         &self,
         name: &str,
-    ) -> Result<Option<ToolRendererBinding>, maestro_app::DiagnosticErrorInfo> {
+    ) -> Result<Option<ToolRendererBinding>, maestro_models::DiagnosticErrorInfo> {
         self.runtime_host
             .session()
             .get_tool_definition(name)
@@ -329,7 +329,7 @@ pub(super) fn aborted_notice(attempts: u32) -> String {
 fn built_in_tool_definition(
     name: &str,
     cwd: &str,
-) -> Result<Option<ToolRendererBinding>, maestro_app::DiagnosticErrorInfo> {
+) -> Result<Option<ToolRendererBinding>, maestro_models::DiagnosticErrorInfo> {
     if name.parse::<ToolName>().is_err() {
         return Ok(None);
     }

@@ -32,9 +32,9 @@ impl Component for ConfigSelectorHeader {
     fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn Error>> {
         let title = Theme::bold("Resource Configuration", (self.0.styles_enabled)());
         let sep = paint(&self.0, &ThemeColor::Muted, " · ")?;
-        let hint = maestro_app::raw_key_hint("space", "toggle", &self.0.theme)?
+        let hint = maestro_tools::raw_key_hint("space", "toggle", &self.0.theme)?
             + &sep
-            + &maestro_app::raw_key_hint("esc", "close", &self.0.theme)?;
+            + &maestro_tools::raw_key_hint("esc", "close", &self.0.theme)?;
         let spacing = width
             .saturating_sub(visible_width(&title) + visible_width(&hint))
             .max(1);

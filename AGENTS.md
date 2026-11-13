@@ -170,7 +170,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
   parsing, owned source records and cursor-time extended links, depending only on text.
-  The toolkit consumes it; application re-exports it as `markdown`. The dedicated
+  The toolkit and the web frontend consume it. The dedicated
   conventions checker may consume its code-block source ranges for documentation
   checks. Terminal normalization and formatting remain in the toolkit.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
@@ -300,7 +300,7 @@ package manager resolves as its fifth resource kind. `custom-element =0.1.5` is 
 browser-only element bridge; see [browser libraries](docs/libraries/browser-frontend.md).
 
 Pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`,
-re-exported through `maestro-app`; frontend filter, fold and selection state stay
+and frontends import them from it; frontend filter, fold and selection state stay
 with their frontend.
 
 The guest authoring crate may depend on the request, entry, tool, JSON and text
@@ -318,8 +318,8 @@ repository tooling and the feature unifier (`maestro-dependencies`) are dedicate
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
 optional utility and the unifier. Sparse workspaces need
-no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
-only the other edges in their allowed sets, when used. The terminal adapter
+no placeholder crates. Chat, CLI, RPC and web require the application edge, and every frontend declares only the
+edges in its row of the dependency table, when used. The terminal adapter
 requires toolkit and text. The
 utility edge never supplies a required edge. The daemon requires the terminal
 engine. Other non-leaves permit subsets.
@@ -637,7 +637,7 @@ which keeps the supplied JSON Schema value beside the kinds its author declared 
 individual nodes and an optional executable payload. Shared Base/refinement records
 keep native callbacks local; the guest specializes the same records with borrowed
 JSON views and its existing callback resources. Ordinary serialization omits code. `Tool`, `Context` and `ToolInfo` default to that owner, the guest
-re-exports it, and the model argument-validation owner is its only converter.
+re-exports it, and `maestro-schema-validator` is its only converter.
 Serialization writes the supplied JSON alone; provider payloads and saved JSON never
 carry the declared kinds.
 

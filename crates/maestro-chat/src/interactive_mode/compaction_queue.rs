@@ -3,9 +3,9 @@
 
 use super::InteractiveMode;
 use super::queues::CompactionQueuedMessage;
-use maestro_app::DiagnosticErrorInfo;
 use maestro_app::agent_session::PromptOptions;
-use maestro_app::messages::UserMessageDelivery;
+use maestro_models::DiagnosticErrorInfo;
+use maestro_session::message_records::UserMessageDelivery;
 use std::{
     cell::Cell,
     error::Error,

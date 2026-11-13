@@ -1,6 +1,6 @@
 //! Reader-follow boundaries, usage totals and the history draw key.
 use super::*;
-use maestro_app::{AgentMessage, NoCustomMessages};
+use maestro_agent::{AgentMessage, NoCustomMessages};
 use std::rc::Rc;
 
 /// Apply observations of `(top, scroll height, viewport height)` in order.

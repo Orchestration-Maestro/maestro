@@ -124,7 +124,7 @@ fn maestro_shared_nonfinite_guest_edits_are_errors_across_adapters() -> Result<(
 /// Keeps the open role and its opaque data; known roles cannot enter that fallback.
 async fn open_role(driver: &mut impl Driver) -> Result<(), String> {
     let event = json!({"type":"message_end", "message":{
-        "role":"plugin", "data":" {\"a\":1,\"a\":2,\"float\":\"f64:7ff0000000000000\"} "
+        "role":"memo", "data":" {\"a\":1,\"a\":2,\"float\":\"f64:7ff0000000000000\"} "
     }});
     assert_eq!(
         ask(driver, &event, &json!({})).await?,

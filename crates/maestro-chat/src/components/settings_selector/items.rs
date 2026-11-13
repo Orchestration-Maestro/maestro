@@ -1,7 +1,8 @@
 //! Ordered settings rows and notifications to their typed owners.
 use super::{SettingsCallbacks, SettingsConfig, submenus};
 use crate::components::thinking_selector::{thinking_item, thinking_text};
-use maestro_app::{DoubleEscapeAction, MessageDeliveryMode, Transport, TreeFilterMode};
+use maestro_models::Transport;
+use maestro_settings::{DoubleEscapeAction, MessageDeliveryMode, TreeFilterMode};
 use maestro_theme::LiveTheme;
 use maestro_tui::{SelectItem, SettingItem};
 use std::{cell::RefCell, rc::Rc};
@@ -195,7 +196,7 @@ fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
             (
                 "follow-up-mode",
                 "Follow-up mode",
-                &follow_up_description(&maestro_app::key_display_text("app.message.followUp")),
+                &follow_up_description(&maestro_tools::key_display_text("app.message.followUp")),
             ),
             config.follow_up_mode.as_str().into(),
             &["one-at-a-time", "all"],
@@ -304,7 +305,7 @@ fn behavior_rows(config: &SettingsConfig) -> Vec<SettingItem> {
 }
 /// Retains warning changes across submenu openings.
 fn warnings(
-    initial: maestro_app::WarningSettings,
+    initial: maestro_settings::WarningSettings,
     callbacks: Rc<SettingsCallbacks>,
     theme: LiveTheme,
 ) -> SettingItem {
@@ -340,8 +341,8 @@ fn warnings(
 }
 /// Offers reasoning choices without preview notification.
 fn thinking(
-    current: &maestro_app::ThinkingLevel,
-    levels: Vec<maestro_app::ThinkingLevel>,
+    current: &maestro_agent::ThinkingLevel,
+    levels: Vec<maestro_agent::ThinkingLevel>,
     callbacks: Rc<SettingsCallbacks>,
     theme: LiveTheme,
 ) -> SettingItem {

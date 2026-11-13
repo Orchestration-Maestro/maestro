@@ -13,7 +13,7 @@ permissions:
 jobs:
   report:
     if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion != 'success'
-    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/post-landing.yml@d8480b400e16df2a42390efde240306594a6b054 # v0.19.34
+    uses: Orchestration-Maestro/maestro-rust-workflows/.github/workflows/post-landing.yml@407c008d1d1540c5062236ce18a36782f124daa4 # v0.19.35
     with:
       run-id: ${{ format('{0}', github.event.workflow_run.id) }}
     secrets:

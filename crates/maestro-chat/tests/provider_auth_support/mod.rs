@@ -2,8 +2,8 @@
 pub mod failures;
 mod records;
 use crate::bindings;
-use maestro_app::{AuthSource, AuthStatus, AuthStorage};
 use maestro_chat::{OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions};
+use maestro_credentials::{AuthSource, AuthStatus, AuthStorage};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
 use maestro_tui::{Component, Focusable, Input, InputHandler};
 use records::*;
@@ -430,7 +430,7 @@ fn brand_panel(live: maestro_theme::LiveTheme) -> OAuthSelectorComponent {
     let storage = Arc::new(AuthStorage::in_memory(indexmap::IndexMap::new()));
     storage.set(
         "key",
-        maestro_app::AuthCredential::ApiKey(maestro_app::ApiKeyCredential {
+        maestro_credentials::AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
             env: None,
             key: "controlled-key".into(),
         }),

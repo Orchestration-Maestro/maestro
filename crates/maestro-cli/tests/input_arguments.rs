@@ -1,7 +1,7 @@
 //! Authored argument consumption observed through the public parser.
 
 use crate::support;
-use maestro_app::ThinkingLevel;
+use maestro_agent::ThinkingLevel;
 use maestro_cli::input::arguments::{
     Diagnostic, DiagnosticType, ListModels, Mode, is_valid_thinking_level, parse_args,
 };
@@ -370,7 +370,7 @@ fn unknown_flag_replacements_keep_insertion_order() {
     assert_eq!(names, ["z", "a", "m"]);
     assert_eq!(
         args.unknown_flags.get("m"),
-        Some(&maestro_app::FlagValue::Boolean(true))
+        Some(&maestro_extensions::types::FlagValue::Boolean(true))
     );
 }
 
@@ -411,7 +411,9 @@ fn dash_and_equals_forms_do_not_create_a_new_grammar() {
     assert_eq!(args.mode, None);
     assert_eq!(
         args.unknown_flags.get("mode"),
-        Some(&maestro_app::FlagValue::String("json".to_owned()))
+        Some(&maestro_extensions::types::FlagValue::String(
+            "json".to_owned()
+        ))
     );
 }
 
@@ -474,7 +476,7 @@ fn a_value_is_taken_from_the_next_token_only() {
     ]);
     assert_eq!(
         args.unknown_flags.get("unknown"),
-        Some(&maestro_app::FlagValue::Boolean(true)),
+        Some(&maestro_extensions::types::FlagValue::Boolean(true)),
         "an unknown flag keeps its boolean form instead of a later value"
     );
     assert_eq!(args.messages.back().map(String::as_str), Some("value"));

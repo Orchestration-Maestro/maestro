@@ -1,6 +1,6 @@
 //! Editing text in the user's external editor on the inherited terminal.
-use crate::environment::variable;
 use crate::temporary_file::write_temporary_file;
+use maestro_text::environment_variable;
 use maestro_tui::TUI;
 use std::{fs, io, path::Path};
 
@@ -19,7 +19,7 @@ pub(crate) struct ExternalEditorFile<'a> {
 pub(crate) fn external_command() -> Option<String> {
     ["VISUAL", "EDITOR"]
         .into_iter()
-        .find_map(|key| variable(key).filter(|value| !value.is_empty()))
+        .find_map(|key| environment_variable(key).filter(|value| !value.is_empty()))
 }
 
 /// Writes the file, stops the terminal and runs the editor on it; a zero exit hands the
@@ -41,18 +41,18 @@ pub(crate) fn edit_external_file<E: From<io::Error>>(
         owned = true;
         ui.stop()?;
         let command = native_command(file.command, file.path);
-        match command.spawn_sync(maestro_app::SpawnSyncOptions::Inherit) {
+        match command.spawn_sync(maestro_process::SpawnSyncOptions::Inherit) {
             Ok(output) if output.status.success() => {
                 let bytes = fs::read(file.path)?;
                 let text = String::from_utf8_lossy(&bytes);
                 set_text(text.strip_suffix('\n').unwrap_or(&text))?;
             }
-            Ok(_) | Err(maestro_app::SpawnSyncError::Spawn(_)) => {}
+            Ok(_) | Err(maestro_process::SpawnSyncError::Spawn(_)) => {}
             Err(
-                maestro_app::SpawnSyncError::Infrastructure(error)
-                | maestro_app::SpawnSyncError::Wait(error),
+                maestro_process::SpawnSyncError::Infrastructure(error)
+                | maestro_process::SpawnSyncError::Wait(error),
             ) => return Err(error.into()),
-            Err(maestro_app::SpawnSyncError::Timeout) => {
+            Err(maestro_process::SpawnSyncError::Timeout) => {
                 return Err(
                     io::Error::new(io::ErrorKind::TimedOut, "external editor timed out").into(),
                 );
@@ -73,11 +73,11 @@ pub(crate) fn edit_external_file<E: From<io::Error>>(
 fn native_command(
     command: &str,
     path: &Path,
-) -> maestro_app::LaunchContext<'static, Vec<(&'static str, String)>> {
+) -> maestro_process::LaunchContext<'static, Vec<(&'static str, String)>> {
     #[cfg(not(windows))]
     {
         let mut tokens = command.split(' ');
-        maestro_app::Launch {
+        maestro_process::Launch {
             executable: tokens.next().unwrap_or_default().into(),
             args: tokens.map(str::to_owned).collect(),
             verbatim: false,
@@ -90,7 +90,7 @@ fn native_command(
         let (launch, env) = windows_command(
             command,
             &path.to_string_lossy(),
-            variable("comspec").as_deref(),
+            environment_variable("comspec").as_deref(),
         );
         launch.with_context(vec![env], None)
     }
@@ -102,10 +102,10 @@ fn windows_command(
     command: &str,
     path: &str,
     shell: Option<&str>,
-) -> (maestro_app::Launch, (&'static str, String)) {
+) -> (maestro_process::Launch, (&'static str, String)) {
     /// Environment operand keeps the filename out of interpreted command text.
     const EDITOR_FILE_ENV: &str = "MAESTRO_EDITOR_FILE";
-    let mut launch = maestro_app::windows_shell_launch(command, shell);
+    let mut launch = maestro_process::windows_shell_launch(command, shell);
     let operand = if launch.verbatim {
         format!(" \"%{EDITOR_FILE_ENV}%\"")
     } else {

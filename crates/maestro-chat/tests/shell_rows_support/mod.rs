@@ -313,7 +313,7 @@ fn complete(component: &BashExecutionComponent, completion: Complete) {
         completion.cancelled.unwrap_or(false),
         completion.truncated.map(|flag| {
             let mut result =
-                maestro_app::truncate_tail("", maestro_app::TruncationOptions::default());
+                maestro_tools::truncate_tail("", maestro_tools::TruncationOptions::default());
             result.truncated = flag;
             result
         }),

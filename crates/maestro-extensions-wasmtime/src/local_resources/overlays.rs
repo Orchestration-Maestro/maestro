@@ -5,9 +5,7 @@ use crate::guest_calls::{
     widget_calls::{Answered, Event},
 };
 use crate::import_route::Value;
-use crate::overlay_reads::{
-    HandleEndpoint, HandleRequest, OptionsEndpoint, OptionsRequest, OverlayMessage, Visibility,
-};
+use crate::overlay_reads::{HandleEndpoint, HandleRequest, OptionsEndpoint, OverlayMessage};
 use maestro_extensions::{
     EventBus, Local,
     presentation::{OverlayHandle, OverlayOptions},
@@ -31,16 +29,6 @@ impl State {
     /// Serves placement without borrowing the capability table across native effects.
     pub(super) fn overlays(&self, message: OverlayMessage) {
         match message {
-            OverlayMessage::Close(id, reply) => {
-                let capability = self.registry.capability(id);
-                let result = match capability.as_deref() {
-                    Some(Capability::CustomClose(close)) => {
-                        close().map_err(|error| error.to_string())
-                    }
-                    _ => Err("extension custom close resource ended".to_owned()),
-                };
-                let _ = reply.send(result);
-            }
             OverlayMessage::NewOptions(encoded, reply) => {
                 let result = crate::overlay_layout::decode(&encoded).and_then(|options| {
                     self.registry.lend_placement(Placement {
@@ -49,17 +37,6 @@ impl State {
                     })
                 });
                 let _ = reply.send(result);
-            }
-            OverlayMessage::Options(id, request) => {
-                let capability = self.registry.capability(id);
-                match capability.as_deref() {
-                    Some(Capability::OverlayOptions(placement)) => self.answer(placement, request),
-                    _ => request.reject("extension overlay options resource ended"),
-                }
-            }
-            OverlayMessage::Visible(visibility) => {
-                let reply = visibility.reply.clone();
-                let _ = reply.send(self.visible(visibility));
             }
             OverlayMessage::Handle(id, request, reply) => {
                 let capability = self.registry.capability(id);
@@ -70,48 +47,6 @@ impl State {
                 let _ = reply.send(result);
             }
         }
-    }
-
-    /// Reads, replaces or shares placement on the same native record an overlay retains.
-    fn answer(&self, placement: &Placement, request: OptionsRequest) {
-        let options = &placement.options;
-        match request {
-            OptionsRequest::Get(reply) => {
-                let _ = reply.send(crate::overlay_layout::encode(&options.borrow()));
-            }
-            OptionsRequest::Set(encoded, reply) => {
-                let result = crate::overlay_layout::decode(&encoded).map(|mut replacement| {
-                    replacement.visible.clone_from(&options.borrow().visible);
-                    let previous = options.replace(replacement);
-                    drop(previous);
-                });
-                let _ = reply.send(result);
-            }
-            OptionsRequest::Share(reply) => {
-                let _ = reply.send(self.registry.lend_placement(placement.clone()));
-            }
-        }
-    }
-
-    /// Replaces the record's visibility check with one calling the authored check on the
-    /// extension's bus.
-    fn visible(&self, visibility: Visibility) -> Result<(), String> {
-        let registry = &self.registry;
-        let events = registry.events_of(visibility.api)?;
-        let placement = match registry.capability(visibility.options.0.id).as_deref() {
-            Some(Capability::OverlayOptions(placement)) => placement.clone(),
-            _ => return Err("extension overlay options resource ended".to_owned()),
-        };
-        let check = visibility.visible.map(|handle| {
-            let registry = registry.clone();
-            let reporter = Rc::clone(&placement.reporter);
-            Rc::new(move |columns: usize, rows: usize| {
-                visible(&handle, (&registry, &events), (columns, rows), &reporter)
-            }) as Rc<dyn Fn(usize, usize) -> bool>
-        });
-        let previous = std::mem::replace(&mut placement.options.borrow_mut().visible, check);
-        drop(previous);
-        Ok(())
     }
 }
 
@@ -162,6 +97,27 @@ fn handled(handle: &OverlayHandle, request: HandleRequest) -> Result<Value, Stri
 }
 
 impl super::Registry {
+    /// Replaces the record's visibility check with one calling the authored check on the
+    /// extension's bus.
+    pub(crate) fn set_visible(
+        &self,
+        placement: &Placement,
+        api: &crate::api_reads::Endpoint,
+        authored: Option<Handle>,
+    ) -> Result<(), String> {
+        let events = self.events(api)?;
+        let check = authored.map(|handle| {
+            let registry = self.clone();
+            let reporter = Rc::clone(&placement.reporter);
+            Rc::new(move |columns: usize, rows: usize| {
+                visible(&handle, (&registry, &events), (columns, rows), &reporter)
+            }) as Rc<dyn Fn(usize, usize) -> bool>
+        });
+        let previous = std::mem::replace(&mut placement.options.borrow_mut().visible, check);
+        drop(previous);
+        Ok(())
+    }
+
     /// Retains the original native close operation.
     pub(crate) fn custom_close(
         &self,
@@ -178,7 +134,7 @@ impl super::Registry {
         }
     }
     /// Lends one owner of a placement record.
-    fn lend_placement(&self, placement: Placement) -> Result<OptionsEndpoint, String> {
+    pub(crate) fn lend_placement(&self, placement: Placement) -> Result<OptionsEndpoint, String> {
         self.insert(Capability::OverlayOptions(placement))
             .map(OptionsEndpoint)
     }

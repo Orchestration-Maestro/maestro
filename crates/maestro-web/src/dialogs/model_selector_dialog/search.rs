@@ -1,5 +1,5 @@
 //! Model list assembly, ordered-character search and capability filters.
-use maestro_app::{Model, ModelInput, get_models, get_providers, models_are_equal};
+use maestro_models::{Model, ModelInput, get_models, get_providers, models_are_equal};
 use num_traits::ToPrimitive as _;
 use std::{cmp::Ordering, collections::HashSet};
 
@@ -91,7 +91,7 @@ pub(crate) fn filter_models(
         .search_query
         .to_lowercase()
         .chars()
-        .filter(|character| !maestro_app::is_whitespace_scalar(*character))
+        .filter(|character| !maestro_text::is_whitespace_scalar(*character))
         .collect();
     if !query.is_empty() {
         let mut scored: Vec<(ModelEntry, f64)> = entries

@@ -114,9 +114,10 @@ fn assert_root_result<D>(result: (Vec<maestro_models::UserBlock>, Option<D>)) {
 #[test]
 fn bash_rendering_exports_share_the_domain_owners() {
     use maestro_app::{
-        BashRenderState, BashToolDetails, BashToolInput, BashToolOptions, VisualTruncateResult,
+        BashToolDetails, BashToolInput, BashToolOptions, VisualTruncateResult,
         create_bash_tool_definition, truncate_to_visual_lines,
     };
+    use maestro_tools::BashRenderState;
     let definition: maestro_tools::ToolDefinition<
         (),
         BashToolInput,
@@ -135,11 +136,12 @@ fn bash_rendering_exports_share_the_domain_owners() {
 
 #[test]
 fn renderer_bindings_are_available_from_application_root() {
-    use maestro_app::{
-        EditRenderState, ToolDef, ToolDefinition, ToolRenderCall, ToolRenderContext,
-        ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult, ToolRenderResultCallback,
-        ToolRenderResultLike, ToolRenderResultOptions, ToolRenderShell, ToolRendererBinding,
-        ToolRendererState, get_text_output,
+    use maestro_app::{ToolDefinition, ToolRenderResultOptions};
+    use maestro_tools::{
+        EditRenderState, ToolDef, ToolRenderCall, ToolRenderContext, ToolRenderEnvironment,
+        ToolRenderPhase, ToolRenderResult, ToolRenderResultCallback, ToolRenderShell,
+        ToolRendererBinding, ToolRendererState,
+        output::render_utils::{ToolRenderResultLike, get_text_output},
     };
     let state = ToolRendererState::default();
     assert_eq!(
@@ -159,7 +161,7 @@ fn renderer_bindings_are_available_from_application_root() {
     let _: Option<ToolDefinition> = None;
     let _: Option<ToolRenderCall<ToolRendererState>> = binding.render_call;
     let _: Option<ToolRenderResult<serde_json::Value, ToolRendererState>> = None;
-    let _: Option<maestro_app::ToolRenderResultBinding> = binding.render_result;
+    let _: Option<maestro_tools::ToolRenderResultBinding> = binding.render_result;
     let _: Option<ToolRenderResultCallback<serde_json::Value, ToolRendererState>> = None;
     let _: Option<ToolRenderContext<'_, ToolRendererState>> = None;
     let _: Option<ToolRenderEnvironment> = None;
@@ -178,9 +180,11 @@ fn renderer_bindings_are_available_from_application_root() {
     );
 }
 
-use maestro_app::{
-    TruncationOptions, TruncationResult, normalize_to_lf, num, plain_key_hint, strip_ansi,
-    truncate_tail, truncate_to_visual_lines,
+use maestro_app::{TruncationOptions, TruncationResult, truncate_tail, truncate_to_visual_lines};
+use maestro_text::normalize_to_lf;
+use maestro_tools::{
+    keybinding_hints::plain_key_hint,
+    output::render_utils::{num, strip_ansi},
 };
 #[test]
 fn shell_display_exports_share_existing_owners() {

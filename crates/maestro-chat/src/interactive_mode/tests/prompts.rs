@@ -5,10 +5,12 @@ use crate::{
     AssistantMessageComponent, InteractiveMode, InteractiveModeOptions, ToolExecutionComponent,
     UserMessageComponent,
 };
-use maestro_app::{
-    AgentMessage, AgentSession, AgentSessionEvent, ExtensionFactory, ExtensionHandler,
-    ImageContent, InputEvent, InputEventResult, Local, Presence, PromptOptions,
-    ProviderConfigInput, StopReason, UserBlock, UserContent,
+use maestro_agent::AgentMessage;
+use maestro_app::{AgentSession, AgentSessionEvent, PromptOptions};
+use maestro_catalog::ProviderConfigInput;
+use maestro_extensions::{
+    ExtensionFactory, ExtensionHandler,
+    types::events::{InputEvent, InputEventResult},
 };
 use maestro_models::{
     ApiProvider, AssistantMessageEventStream, DiagnosticErrorInfo, FauxAssistantMessageOptions,
@@ -16,7 +18,10 @@ use maestro_models::{
     ProviderExecution, RegisterFauxProviderOptions, StreamOptionsInput, faux_assistant_message,
     get_api_provider, register_faux_provider,
 };
+use maestro_models::{ImageContent, Local, StopReason, UserBlock, UserContent};
+use maestro_session::Presence;
 use maestro_theme::{Theme, ThemeColor};
+use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::{Component, Container, Spacer, Text};
 use serde::Deserialize;
 use std::{
@@ -138,7 +143,7 @@ impl Scripted {
                 &provider.models[0].provider,
                 Arc::new(RwLock::new(ProviderConfigInput {
                     api: Some(provider.api.clone()),
-                    callbacks: maestro_app::ProviderCallbacks {
+                    callbacks: maestro_catalog::ProviderCallbacks {
                         stream_simple: Some(Arc::new(RetainedProvider(callback))),
                         ..Default::default()
                     },
@@ -917,7 +922,10 @@ async fn startup_subscription_check(directory: &Path) {
     let runtime = world.runtime.clone();
     let unsubscribe = world.host.session().subscribe(Rc::new(move |event| {
         if let AgentSessionEvent::Agent(event) = event
-            && matches!(*event.read().unwrap(), maestro_app::AgentEvent::AgentStart)
+            && matches!(
+                *event.read().unwrap(),
+                maestro_agent::AgentEvent::AgentStart
+            )
         {
             let mode = mode.upgrade().unwrap();
             seen.set(Some((
@@ -937,7 +945,7 @@ async fn startup_subscription_check(directory: &Path) {
     assert_eq!(scripted.provider.state.call_count(), 1);
     assert!(world.runtime.drain_futures().is_empty());
     assert!(world.mode.anthropic_subscription_warning_shown.get());
-    let rows = maestro_app::strip_ansi(&world.mode.chat_container.render(1000).join("\n")).unwrap();
+    let rows = strip_ansi(&world.mode.chat_container.render(1000).join("\n")).unwrap();
     assert_eq!(
         rows.matches("Anthropic subscription auth is active.")
             .count(),

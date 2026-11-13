@@ -1,7 +1,7 @@
 //! Owned browser tool content and call-scoped native operands.
 mod ui_error;
 use crate::page::PreparedContent;
-use maestro_app::JsonObject;
+use maestro_models::JsonObject;
 use serde_json::Value;
 pub use ui_error::ToolUiError;
 mod binding;
@@ -47,7 +47,7 @@ impl<'a> ToolParams<'a, JsonObject> {
     #[must_use]
     pub fn object(value: &'a JsonObject) -> Self {
         Self::typed(value, |object| {
-            maestro_app::pretty_object(object)
+            maestro_json::pretty_object(object)
                 .map(Some)
                 .map_err(|error| ToolUiError::Presentation(error.to_string()))
         })
@@ -78,6 +78,6 @@ pub(crate) fn json_params<'a>(
     value.and_then(|value| {
         value
             .as_object()
-            .or_else(|| maestro_app::is_truthy(value).then_some(empty))
+            .or_else(|| maestro_json::is_truthy(value).then_some(empty))
     })
 }

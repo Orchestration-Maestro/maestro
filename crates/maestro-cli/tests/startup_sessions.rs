@@ -1,11 +1,11 @@
 //! Session lookups, stored-history choices and their opened results.
 
 use crate::support::startup;
-use maestro_app::{Presence, ReadonlySessionManager, SessionManager};
 use maestro_cli::startup::entrypoint::sessions::{
     ResolvedSession, SessionOperation, SessionSelection, open_selected_session,
     resolve_session_path, select_session_operation,
 };
+use maestro_session::{Presence, SessionManager, session_manager::ReadonlySessionManager};
 use maestro_test_directory::Scratch;
 use serde_json::Value;
 

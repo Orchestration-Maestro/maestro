@@ -1,13 +1,16 @@
 //! Saved-session discovery and resuming another session.
 use super::InteractiveMode;
 use crate::components::session_selector::{SessionSelectorComponent, SessionSelectorOptions};
+use maestro_app::AgentSessionRuntimeError;
 use maestro_app::presentation_data::input_selectors::{
     SessionListProgress, SessionSelectorCallbacks, SessionsLoader,
 };
-use maestro_app::{
-    AgentSessionRuntimeError, EventError, ReadonlySessionManager, SessionChangeResult,
-    SessionManager, SwitchSessionOptions, is_whitespace_scalar,
+use maestro_extensions::{
+    EventError,
+    types::{SessionChangeResult, SwitchSessionOptions},
 };
+use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
+use maestro_text::is_whitespace_scalar;
 use maestro_tui::LocalFuture;
 use std::{
     error::Error,
@@ -43,7 +46,9 @@ impl InteractiveMode {
                         let millis = clock.log_context().unix_ms;
                         millis.to_string().parse().unwrap_or(f64::NAN)
                     }),
-                    home: Rc::new(|| maestro_app::home_directory().unwrap_or_default()),
+                    home: Rc::new(|| {
+                        maestro_resources::paths::home_directory().unwrap_or_default()
+                    }),
                     styles_enabled: Rc::new(|| true),
                 },
             )?;

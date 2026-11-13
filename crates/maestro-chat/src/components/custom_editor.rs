@@ -9,8 +9,10 @@ use maestro_tui::{
 use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 /// Shared insertion-ordered handlers, independent of the editor's replaceable map slot.
-pub use maestro_app::ActionHandlers;
-use maestro_app::{CustomEditorComponent, ExtensionShortcutCallback as ExtensionShortcut};
+pub use maestro_extensions::types::ActionHandlers;
+use maestro_extensions::types::{
+    CustomEditorComponent, ExtensionShortcutCallback as ExtensionShortcut,
+};
 /// Toolkit editing with ordered application action interception.
 pub struct CustomEditor {
     /// Inherited editor owner.
@@ -229,7 +231,7 @@ impl EditorComponent for CustomEditor {
         EditorComponent::set_autocomplete_max_visible(&self.editor, max_visible)
     }
 }
-impl maestro_app::ExtensionEditor for CustomEditor {
+impl maestro_extensions::presentation::ExtensionEditor for CustomEditor {
     fn editor(&self) -> &Editor {
         &self.editor
     }

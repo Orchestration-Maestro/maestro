@@ -28,7 +28,10 @@ stable sorting and comparator lifetime.
 - **Owned UTF-8 decoding.** `lossy_string` takes owned bytes and keeps their buffer
   when they are valid; otherwise it decodes them lossily. It keeps a byte-order mark.
   Process output and Office package entries share it.
-- **Environment flags.** `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
+- **Environment reads and flags.** `environment_variable` reads one variable as
+  text and replaces bytes that are not UTF-8 with U+FFFD; absent names read as no
+  value. Terminal, application, chat and theme code share it.
+  `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
   `true` or `yes` without trimming; absent values are false. Tools and packages share it.
   `is_offline_selected` returns a caller's offline selection, or reads `MAESTRO_OFFLINE`
   through that rule when the selection is absent.
@@ -40,8 +43,8 @@ stable sorting and comparator lifetime.
   nothing else. Frontmatter parsing, the editor's stored text, Markdown parsing and
   edit matching all call it; each keeps its own tab policy.
 - **UTF-16 prefixes.** `truncate_utf16(text, limit)` returns the longest whole-scalar
-  prefix within the unit budget. Models and tree previews share this helper, also
-  re-exported from `maestro_app`.
+  prefix within the unit budget. Models and tree previews share this helper, which
+  frontends import from `maestro_text`.
 - **Lexical order.** `utf16_order` compares UTF-16 code units, so supplementary
   scalars sort before U+E000.
 - **Markup.** `markup::escape` and `markup::escape_into` replace `&`, `<`, `>` and `"`
@@ -77,7 +80,7 @@ Its constructor uses the same locale selection as the collator above, retaining
 neither the reader nor later environment changes. `format(f64)` returns locale
 grouping and digits, zero to three fractional digits, half-expand rounding and
 signed zero. It accepts finite values and returns an I/O error for conversion
-failures. The application re-exports this formatter for transcript summaries.
+failures. Transcript summaries import this formatter from `maestro_text`.
 
 ```rust
 use maestro_text::{markup::{EscapeMode, escape}, is_whitespace_scalar, utf16_order};

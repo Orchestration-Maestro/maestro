@@ -3,7 +3,8 @@ use super::{BrowserSandboxValue, DiagnosticErrorInfo, SandboxIframe, diagnostic}
 use maestro_app::browser::components::sandboxed_iframe::{
     SandboxExecution, SandboxHost, SandboxIframe as ApplicationSandboxIframe,
 };
-use maestro_app::{BoxFuture, SandboxResult, SandboxUrlProvider};
+use maestro_app::{SandboxResult, SandboxUrlProvider};
+use maestro_models::BoxFuture;
 use wasm_bindgen::JsCast as _;
 
 /// Stateless platform adapter; construction performs no native document effects.

@@ -24,7 +24,7 @@ pub(super) async fn session(
     let io = Rc::new(Io(maestro_app::extension_native_io::extension_native_io(
         &local,
     )));
-    let mut resources = maestro_app::ResourceLoaderOptions::<maestro_app::Local>::new(
+    let mut resources = maestro_app::ResourceLoaderOptions::<maestro_models::Local>::new(
         local,
         Rc::new(|_| Box::pin(async { Ok(None) })),
     );

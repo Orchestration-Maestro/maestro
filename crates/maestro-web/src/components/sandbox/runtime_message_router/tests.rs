@@ -1,9 +1,9 @@
 //! Native observations of the shared routing core.
 use super::*;
-use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::providers::{
     Runtime, SandboxRespond, SandboxRuntimeProvider,
 };
+use maestro_models::SharedHandle;
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 

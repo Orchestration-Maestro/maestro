@@ -1,6 +1,7 @@
 //! Expandable compaction summary with a constructor-formatted token count.
 use super::branch_summary_message::{SummaryDisplay, SummaryText};
-use maestro_app::{CompactionSummaryMessage, LocaleNumberFormat};
+use maestro_session::message_records::CompactionSummaryMessage;
+use maestro_text::numbers::LocaleNumberFormat;
 use maestro_theme::LiveTheme;
 use maestro_tui::{Box, Component, MarkdownTheme, TerminalImage};
 use std::{io, rc::Rc};

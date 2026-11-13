@@ -1,8 +1,10 @@
 # Embedding a session
 
-A program embeds Maestro through `maestro_app`. The crate root re-exports the
-session, its creation and replacement operations, and the records of the
-compaction, history, resource, settings, tool and theme owners they use. Frontend
+A program embeds Maestro through `maestro_app`. The crate root exports the
+session, its creation and replacement operations, and the embedding interface:
+the names of the compaction, history, resource, settings, tool and theme owners
+that hosts hand to a session. Import every other name from the crate that owns
+it, as the example below does for `AgentEvent`, `Local` and `ModuleLoader`. Frontend
 modes and the interactive components stay with their own crates; the RPC client,
 which drives Maestro as a child process, lives here in `rpc_transport`
 ([RPC client](../client.md)).
@@ -53,15 +55,17 @@ subscription and disposes the session. It makes no paid or live provider request
 The directory guard removes the disposable files on return.
 
 ```rust
+use maestro_agent::AgentEvent;
 use maestro_app::{
-    AgentEvent, AgentSessionEvent, AssistantMessageEvent, AuthStorage, ConfigValueOperations,
-    CreateAgentSessionOptions, Local, ModelRegistry, ModuleLoader, NoTools, PromptOptions,
-    ResourceKind, ResourceLoaderOptions, SessionManager, SessionResources, SettingsManager,
-    create_agent_session,
+    AgentSessionEvent, AuthStorage, CreateAgentSessionOptions, ModelRegistry, NoTools,
+    PromptOptions, ResourceKind, ResourceLoaderOptions, SessionManager, SessionResources,
+    SettingsManager, create_agent_session,
 };
+use maestro_credentials::ConfigValueOperations;
+use maestro_extensions::ModuleLoader;
 use maestro_models::{
-    FauxAssistantMessageOptions, FauxResponseStep, RegisterFauxProviderOptions,
-    faux_assistant_message, register_faux_provider,
+    AssistantMessageEvent, FauxAssistantMessageOptions, FauxResponseStep, Local,
+    RegisterFauxProviderOptions, faux_assistant_message, register_faux_provider,
 };
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 
@@ -434,7 +438,7 @@ body chunks. Embedders apply their setting to this client explicitly:
 ```rust
 # #[cfg(not(target_arch = "wasm32"))]
 # fn apply_http_limit(settings: &maestro_app::SettingsManager) -> Result<(), Box<dyn std::error::Error>> {
-maestro_app::configure_http_dispatcher(settings.get_http_idle_timeout_ms()?)?;
+maestro_models::configure_http_dispatcher(settings.get_http_idle_timeout_ms()?)?;
 # Ok(())
 # }
 ```

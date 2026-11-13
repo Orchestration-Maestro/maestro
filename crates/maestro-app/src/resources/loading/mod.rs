@@ -12,7 +12,6 @@ mod themes;
 pub use context::load_project_context_files;
 pub use extensions::DefaultEventBus;
 pub(crate) use extensions::report;
-pub use maestro_models::system_prompt::ContextFile;
 pub use maestro_resources::{ResourceCollision, ResourceDiagnostic};
 
 use crate::contribution_files::LoadContributionsResult;
@@ -21,6 +20,7 @@ use maestro_extensions::{
     EventBusController, ExtensionExecution, ExtensionFactory, LoadExtensionsResult, ModuleLoader,
     create_extension_runtime,
 };
+use maestro_models::system_prompt::ContextFile;
 use maestro_models::{Execution, Local, Threaded};
 use maestro_packages::{DefaultPackageManager, NativePackageOperations, PackageManagerOptions};
 use maestro_resources::{

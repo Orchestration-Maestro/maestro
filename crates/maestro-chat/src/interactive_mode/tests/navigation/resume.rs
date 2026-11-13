@@ -5,7 +5,7 @@ use super::super::{
 };
 use super::{append_user, fork_panel, tree::finish, tree::panel};
 use crate::components::session_selector::{SessionList, SessionSelectorComponent};
-use maestro_app::{ReadonlySessionManager, SessionManager};
+use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, InputHandler};
 use serde_json::json;
@@ -68,7 +68,7 @@ async fn opened(world: &World) -> (Rc<SessionSelectorComponent>, Rc<SessionList>
 
 /// The selector's plain rendered rows.
 fn rows(selector: &SessionSelectorComponent) -> String {
-    maestro_app::strip_ansi(&selector.render(120).join("\n")).unwrap()
+    maestro_tools::output::render_utils::strip_ansi(&selector.render(120).join("\n")).unwrap()
 }
 
 #[test]
@@ -248,7 +248,7 @@ fn navigation_replacement_discards_old_compaction_input() {
                 world.mode.compaction_queued_messages.borrow_mut().push(
                     super::super::super::queues::CompactionQueuedMessage {
                         text: "stale compaction input".to_owned(),
-                        mode: maestro_app::messages::UserMessageDelivery::Steer,
+                        mode: maestro_session::message_records::UserMessageDelivery::Steer,
                     },
                 );
                 replace(world, command, &last, &other).await;

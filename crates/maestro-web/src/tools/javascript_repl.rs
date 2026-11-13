@@ -9,13 +9,11 @@ use super::{
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
 };
 use crate::{Attachment, components::console_block::ConsoleVariant};
-use maestro_app::{
-    JsonObject,
-    browser::{
-        tools::javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
-        utils::attachments::AttachmentType,
-    },
+use maestro_app::browser::{
+    tools::javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
+    utils::attachments::AttachmentType,
 };
+use maestro_models::JsonObject;
 use serde_json::Value;
 
 #[cfg(target_arch = "wasm32")]
@@ -184,7 +182,7 @@ fn attachment(index: usize, name: &str, mime: &str, size: usize, content: &str) 
 fn returned_files(details: Option<&Value>) -> Result<Vec<Download>, ToolUiError> {
     let Some(files) = details
         .and_then(|d| d.get("files"))
-        .filter(|v| maestro_app::is_truthy(v))
+        .filter(|v| maestro_json::is_truthy(v))
     else {
         return Ok(Vec::new());
     };

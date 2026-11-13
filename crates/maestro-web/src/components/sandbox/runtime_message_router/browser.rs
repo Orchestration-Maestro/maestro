@@ -3,9 +3,9 @@ use super::{MessageConsumer, Providers, Registry, SandboxContext};
 use crate::browser::event_subscription::EventSubscription;
 use crate::browser::values::{BrowserSandboxValue, diagnostic};
 use js_sys::{Function, Object, Promise, Reflect};
-use maestro_app::DiagnosticErrorInfo;
-use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::providers::SandboxRespond;
+use maestro_models::DiagnosticErrorInfo;
+use maestro_models::SharedHandle;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},

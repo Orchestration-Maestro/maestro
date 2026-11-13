@@ -1,7 +1,7 @@
 //! Extension notifications through the installed host and retained transcript.
 use super::super::{isolated, painted, started};
 use super::{cases, port};
-use maestro_app::NotificationType;
+use maestro_extensions::types::NotificationType;
 use maestro_tui::Component;
 use serde::Deserialize;
 use std::rc::Rc;

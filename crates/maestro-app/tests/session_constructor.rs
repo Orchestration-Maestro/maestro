@@ -518,7 +518,9 @@ fn session_ui_bindings_keep_owned_hosts_and_reapply_borrowed_hosts() {
         let borrowed = Rc::new(Editor::default());
         let installed = maestro_app::ExtensionUIContext::new(borrowed.clone());
         let native = ExtensionBindings {
-            ui_context: Some(maestro_app::ExtensionUIContextBinding::borrowed(&installed)),
+            ui_context: Some(maestro_extensions::ExtensionUIContextBinding::borrowed(
+                &installed,
+            )),
             ..ExtensionBindings::default()
         };
         drop(installed);

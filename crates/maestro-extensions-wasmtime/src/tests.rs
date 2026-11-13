@@ -27,6 +27,7 @@ mod effects;
 mod event_handlers;
 mod events;
 mod fault_replies;
+mod footer;
 mod history;
 mod registrations;
 mod replaced;

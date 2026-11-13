@@ -29,7 +29,7 @@ impl LifecycleEffects for NativeLifecycle {
     }
     #[cfg(not(target_arch = "wasm32"))]
     fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
-        maestro_app::register_signals(Rc::new(move |_| shutdown()))
+        maestro_process::register_signals(Rc::new(move |_| shutdown()))
     }
     #[cfg(target_arch = "wasm32")]
     fn register_signals(&self, shutdown: Rc<dyn Fn()>) -> io::Result<Box<dyn Fn()>> {
@@ -38,7 +38,7 @@ impl LifecycleEffects for NativeLifecycle {
     }
     fn kill_tracked_detached_children(&self) {
         #[cfg(not(target_arch = "wasm32"))]
-        maestro_app::kill_tracked_detached_children();
+        maestro_tools::utils::kill_tracked_detached_children();
     }
     fn exit(&self, status: i32) {
         std::process::exit(status);

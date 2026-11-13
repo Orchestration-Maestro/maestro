@@ -1,7 +1,7 @@
 //! Native browser socket bindings using retained event subscriptions.
 use super::{Event, Queue, next, push};
 use crate::browser::event_subscription::EventSubscription;
-use maestro_app::{ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture};
+use maestro_models::{ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture};
 use std::{cell::RefCell, io, rc::Rc, sync::Arc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use web_sys::{Event as NativeEvent, MessageEvent};

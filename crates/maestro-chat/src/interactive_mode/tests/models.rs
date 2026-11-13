@@ -9,12 +9,18 @@ use super::{Setup, World, install, isolated, started};
 use crate::ModelSelectorComponent;
 use crate::components::scoped_models_selector::{ModelsCallbacks, ScopedModelsSelectorComponent};
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
-use maestro_app::{
-    AuthCredential, DiagnosticErrorInfo, ExtensionFactory, Local, Model, ModelCost, ModelInput,
-    ModelSelectEvent, OAuthCredentials, OAuthError, ProviderConfigInput, ProviderModelInput,
-    ReadonlyFooterDataProvider, ScopedModel, SessionManager, Settings, SettingsListEntry,
-    SettingsManager, SharedHandle, ThinkingLevel, WarningSettings,
+use maestro_agent::ThinkingLevel;
+use maestro_catalog::{ProviderConfigInput, ProviderModelInput, ScopedModel};
+use maestro_credentials::AuthCredential;
+use maestro_extensions::{
+    ExtensionFactory, footer::ReadonlyFooterDataProvider, types::events::ModelSelectEvent,
 };
+use maestro_models::{
+    DiagnosticErrorInfo, Local, Model, ModelCost, ModelInput, OAuthCredentials, OAuthError,
+    SharedHandle,
+};
+use maestro_session::SessionManager;
+use maestro_settings::{Settings, SettingsListEntry, SettingsManager, WarningSettings};
 use maestro_test_process::TestProcess;
 use maestro_tui::{Component, Input, InputHandler, Text};
 use refusing_provider::RefusingProvider;
@@ -1065,7 +1071,7 @@ pub(super) fn refuse_refresh(world: &World) {
             SharedHandle::new(RwLock::new(ProviderConfigInput {
                 base_url: Some("https://example.invalid".into()),
                 api: Some("openai-completions".into()),
-                callbacks: maestro_app::ProviderCallbacks {
+                callbacks: maestro_catalog::ProviderCallbacks {
                     oauth: Some(SharedHandle::new(RefusingProvider::new(
                         "refusing", "Refusing", refused,
                     ))),
@@ -1505,7 +1511,7 @@ fn submission(world: &World, text: &str, outcome: &Outcome) {
     submit_held(world, text);
     if let Some([unhandled]) = named(&outcome.events, "unhandled").next() {
         let unhandled = unhandled.as_str().unwrap();
-        let trimmed = unhandled.trim_matches(maestro_app::is_whitespace_scalar);
+        let trimmed = unhandled.trim_matches(maestro_text::is_whitespace_scalar);
         assert_eq!(poll(&mut waiting), Some(trimmed.to_owned()));
         assert_eq!(recalled(&world.mode.editor), [trimmed]);
         return;

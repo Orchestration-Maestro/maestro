@@ -8,7 +8,7 @@ use crate::read_imports::ReadEndpoint;
 use crate::read_imports::{add_read, add_routed};
 use crate::{
     context_reads::{Endpoint, Request},
-    local_resources::{SignalEndpoint, UiEndpoint},
+    local_resources::UiEndpoint,
 };
 use wasmtime::StoreContextMut;
 use wasmtime::component::{ComponentType, Lift, LinkerInstance, Lower, Resource, ResourceType};
@@ -66,35 +66,7 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     add_resource::<T, UiEndpoint>(host, "extension-ui-context")?;
-    add_resource::<T, SignalEndpoint>(host, "abort-signal")?;
     add_resource::<T, crate::local_resources::effects::TuiEndpoint>(host, "tui")?;
-    add_resource::<T, crate::local_resources::effects::InvalidatorEndpoint>(
-        host,
-        "tool-invalidator",
-    )?;
-    host.func_wrap(
-        "[method]tool-invalidator.invalidate",
-        |mut store: wasmtime::StoreContextMut<'_, T>,
-         (resource,): (Resource<crate::local_resources::effects::InvalidatorEndpoint>,)| {
-            let invalidator = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((invalidator.invalidate(),))
-        },
-    )?;
-    host.func_wrap(
-        "[method]abort-signal.aborted",
-        |mut store: StoreContextMut<'_, T>, (resource,): (Resource<SignalEndpoint>,)| {
-            let signal = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((signal.aborted().map_err(wasmtime::Error::msg)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]abort-signal.retain",
-        |mut store: StoreContextMut<'_, T>, (signal,): (Resource<SignalEndpoint>,)| {
-            let table = store.data_mut().ctx().table;
-            let signal = table.get(&signal)?.clone();
-            Ok((table.push(signal)?,))
-        },
-    )?;
     add_context::<T, Context>(host, "context")?;
     add_context::<T, CommandContext>(host, "command-context")?;
     Ok(())

@@ -317,7 +317,7 @@ also draws the range from the optional `offset` and `limit` (`:start-end` with e
 `...` for an empty, absent or null one.
 
 [`format_read_line_range`](../crates/maestro-tools/src/output/render_utils.rs) owns
-the plain suffix shared with tree summaries, also re-exported from `maestro_app`.
+the plain suffix shared with tree summaries, which frontends import from `maestro_tools`.
 Both arguments absent yields empty text; a missing or nonnumeric offset defaults
 to 1, and a nonnumeric limit contributes zero. Read rendering applies warning color
 only when the suffix is nonempty.

@@ -1,12 +1,10 @@
 //! Weak native presentation operations consumed by the existing application owner.
 use super::{Entry, State};
 use crate::tools::{documents::native::NativeArtifact, types::ToolUiError};
-use maestro_app::{
-    BoxFuture,
-    browser::tools::documents::{
-        ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanelState,
-    },
+use maestro_app::browser::tools::documents::{
+    ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanelState,
 };
+use maestro_models::BoxFuture;
 use num_traits::ToPrimitive as _;
 use std::{
     cell::RefCell,

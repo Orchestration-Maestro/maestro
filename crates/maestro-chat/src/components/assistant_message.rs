@@ -1,5 +1,6 @@
 //! Ordered assistant content with retained-message thinking controls.
-use maestro_app::{AssistantContent, SharedAssistantMessage, StopReason, is_whitespace_scalar};
+use maestro_models::{AssistantContent, SharedAssistantMessage, StopReason};
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
 use maestro_tui::{Component, Container, MarkdownTheme, Spacer, TerminalImage, Text};
 use serde_json::Value;

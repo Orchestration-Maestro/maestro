@@ -1,6 +1,6 @@
 //! Recorded selector cases and their strict corpus validation.
 #![cfg(test)]
-use maestro_app::ThinkingLevel;
+use maestro_agent::ThinkingLevel;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{Component, SelectList};
 use serde::{Deserialize, de::DeserializeOwned};

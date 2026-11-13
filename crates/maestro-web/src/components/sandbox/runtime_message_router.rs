@@ -1,8 +1,8 @@
 //! Live sandbox message dispatch and registered-window admission.
-#[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
-use maestro_app::{BoxFuture, DiagnosticErrorInfo};
+#[cfg(any(target_arch = "wasm32", test))]
+use maestro_models::SharedHandle;
+use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 
 /// Receives each sandbox message after its runtime providers.
 pub trait MessageConsumer<V: SandboxValue> {

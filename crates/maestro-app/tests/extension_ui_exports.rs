@@ -1,15 +1,19 @@
 //! Extension UI and renderer records through the application root.
-use maestro_app::presentation_data::status_line::{ExtensionStatusIter, ExtensionStatuses};
 use maestro_app::{
-    AutocompleteProviderFactory, Cancellation, ExtensionUIContext, ExtensionUIDialogOptions,
+    AutocompleteProviderFactory, ExtensionUIContext, ExtensionUIDialogOptions,
     ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, ReadonlyFooterDataProvider,
-    SharedHandle, WidgetPlacement, WorkingIndicatorOptions,
+    WidgetPlacement, WorkingIndicatorOptions,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_app::{
-    Extension, ExtensionAPI, Local, SourceInfo, SourceOrigin, SourceScope, TerminalInputHandler,
-    Threaded, UIHostCall,
-};
+use maestro_app::{Extension, ExtensionAPI, SourceInfo, TerminalInputHandler};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_extensions::UIHostCall;
+use maestro_extensions::footer::{ExtensionStatusIter, ExtensionStatuses};
+use maestro_models::{Cancellation, SharedHandle};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models::{Local, Threaded};
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_resources::{SourceOrigin, SourceScope};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_tui::InputListenerResult;
 use std::rc::Rc;
@@ -56,9 +60,9 @@ fn source() -> Arc<RwLock<SourceInfo>> {
 
 #[test]
 fn native_ui_exports_share_the_existing_records() {
-    let remove: maestro_app::UIUnsubscribe = Rc::new(|| Ok(()));
+    let remove: maestro_extensions::types::UIUnsubscribe = Rc::new(|| Ok(()));
     let owner: maestro_extensions::types::UIUnsubscribe = remove;
-    let mut listeners = maestro_app::Listeners::default();
+    let mut listeners = maestro_listeners::Listeners::default();
     listeners.add(owner);
     listeners.snapshot()[0]().unwrap();
     let options = MessageRenderOptions { expanded: true };
@@ -109,8 +113,9 @@ fn bound_ui_calls_cross_application_exports_in_both_families() {
         threaded_events,
         ".".into(),
     );
-    let local_events = maestro_app::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}))
-        .for_extension();
+    let local_events =
+        maestro_extensions::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}))
+            .for_extension();
     let local_owner = Rc::new(RwLock::new(Extension::<Local>::new(
         "app".into(),
         "app".into(),

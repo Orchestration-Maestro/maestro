@@ -1,6 +1,7 @@
 //! Validated semantic operands shared by cache equality and browser presentation.
 use super::super::document::invalid;
-use maestro_app::{is_truthy, normalize_to_lf};
+use maestro_json::is_truthy;
+use maestro_text::normalize_to_lf;
 use serde_json::Value;
 use std::{borrow::Cow, io};
 
@@ -126,7 +127,7 @@ pub(super) struct Parameter {
 /// Enumerate only supported schema collections through the existing key owner.
 fn properties(value: &Value) -> Vec<(Cow<'_, str>, &Value)> {
     match value {
-        Value::Object(fields) => maestro_app::canonical_entries(
+        Value::Object(fields) => maestro_json::canonical_entries(
             fields.iter().map(|(k, v)| (Cow::Borrowed(k.as_str()), v)),
         ),
         Value::Array(values) => values

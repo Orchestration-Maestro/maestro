@@ -1,10 +1,11 @@
 //! Shared public execution witnesses and native effect observations.
 use crate::browser_fixture_support::{Patch, dom_exception, error, get, global, invoke, object};
+use maestro_app::Runtime;
 use maestro_app::browser::components::{
     sandbox::providers::{SandboxRespond, SandboxRuntimeProvider},
     sandboxed_iframe::{SandboxEnvironment, SandboxExecution},
 };
-use maestro_app::{BoxFuture, Cancellation, DiagnosticErrorInfo, Runtime, SharedHandle};
+use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
 use maestro_web::{SandboxIframe, browser::values::BrowserSandboxValue};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use wasm_bindgen::{JsCast, prelude::*};
@@ -238,7 +239,7 @@ pub(crate) async fn tool_output(code: &str) -> Result<String, DiagnosticErrorInf
         None,
     )
     .await?;
-    let maestro_app::UserBlock::Text(text) = &result.content[0] else {
+    let maestro_models::UserBlock::Text(text) = &result.content[0] else {
         panic!("text result")
     };
     Ok(text.text.clone())
@@ -336,7 +337,7 @@ pub(crate) async fn root_records() {
     )
     .await
     .unwrap();
-    let maestro_app::UserBlock::Text(text) = &result.content[0] else {
+    let maestro_models::UserBlock::Text(text) = &result.content[0] else {
         panic!("text result")
     };
     assert_eq!(text.text, "=> 4");

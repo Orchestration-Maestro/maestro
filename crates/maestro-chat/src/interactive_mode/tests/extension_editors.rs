@@ -3,12 +3,17 @@ use super::extension_ui::{Original, is_original, port};
 use super::extension_widgets::with_factories;
 use super::{Setup, World, isolated};
 use crate::CustomEditor;
-use maestro_app::messages::UserMessageDelivery;
 use maestro_app::utils::image_clipboard::ClipboardImage;
-use maestro_app::{
-    ActionHandlers, CustomEditorComponent, EditorFactory, EditorFactoryOutcome, ExtensionAPI,
-    ExtensionFactory, ExtensionKeybindings, ExtensionShortcutCallback, Local,
+use maestro_extensions::{
+    ExtensionAPI, ExtensionFactory,
+    presentation::ExtensionKeybindings,
+    types::{
+        ActionHandlers, CustomEditorComponent, EditorFactory, EditorFactoryOutcome,
+        ExtensionShortcutCallback,
+    },
 };
+use maestro_models::Local;
+use maestro_session::message_records::UserMessageDelivery;
 use maestro_tui::editor_component::{BorderColor, EditorError, TextCallback};
 use maestro_tui::{
     AutocompleteProvider, Cancellation, Component, EditorComponent, EditorOptions, FocusFlag,

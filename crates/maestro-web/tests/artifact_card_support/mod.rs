@@ -50,7 +50,7 @@ pub fn prepare(input: &crate::support::tool_input::Input) -> Result<ToolRenderRe
 /// # Panics
 /// Panics if the supplied phase is unknown.
 #[must_use]
-pub fn phase(phase: &str) -> Option<maestro_app::ToolResultMessage> {
+pub fn phase(phase: &str) -> Option<maestro_models::ToolResultMessage> {
     match phase {
         "pending" => None,
         "success" | "error" => {

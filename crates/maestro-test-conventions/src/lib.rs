@@ -180,13 +180,15 @@ mod tracked_sizes;
 /// `maestro_lock::write` pass, discarded results included, and test code keeps its
 /// own helpers.
 ///
-/// Identifiers and the tracked file and directory names under `crates/` and `docs/` may not
-/// hold the library and product words of other projects. A name splits into segments at
-/// non-alphanumerics and case changes, and a denied word matches whole segments in order,
-/// ignoring case; string literals and comments are not names. Each hit is reported with its
-/// file, line and word. Diagnostics name `DENIED` in `leaked_words.rs`, the one list to edit
-/// when a word joins it; `EXEMPT` there holds the names a user, a provider or a stored file
-/// carries, each with its reason, and a row that matches no name is reported.
+/// Identifiers, string literals, doc comments and other comments in the members' sources, the
+/// Markdown pages tracked under `docs/`, and the tracked file and directory names under
+/// `crates/` and `docs/` may not hold the words of other projects. Text splits into words at
+/// non-alphanumerics and case changes; `DENIED` in `leaked_words.rs` holds generic library and
+/// product words, readable, and `HASHED` holds the FNV-1a hashes of words that are another
+/// project's own name. Each hit is reported with its file, line, kind and word, and the
+/// diagnostic names both lists as the ones to edit. `EXEMPT` there holds the places a user, a
+/// provider, a stored file or a detected program carries a word, each with its reason, and a
+/// row that matches nothing is reported.
 ///
 /// # Errors
 ///

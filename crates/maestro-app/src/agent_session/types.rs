@@ -15,7 +15,7 @@ use maestro_session::{
 };
 use maestro_settings::SettingsManager;
 use maestro_theme::LiveTheme;
-pub use maestro_tools::ToolsManager;
+use maestro_tools::ToolsManager;
 use std::{
     cell::RefCell,
     rc::Rc,

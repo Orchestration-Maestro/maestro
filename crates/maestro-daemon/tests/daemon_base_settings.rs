@@ -1,37 +1,17 @@
 //! Persisted global preferences through the daemon configuration boundary.
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
-use std::{path::Path, sync::Arc};
-
+use maestro_daemon::settings::test_support::layer as try_layer;
 use maestro_daemon::settings::{
     io::{load_config, project_global_settings},
     model::UpdateChannelConfig,
     tabs::TabBarRightEntryConfig,
 };
 use maestro_settings::{
-    BaseSettingsLayer, InMemorySettingsStorage, SettingsErrorKind, SettingsManager, SettingsScope,
-    SettingsStorage,
+    InMemorySettingsStorage, SettingsErrorKind, SettingsManager, SettingsScope, SettingsStorage,
 };
 use serde_json::{Value, json};
-
-/// A synthetic accepted release with caller-selected locks.
-pub(crate) fn layer(value: Value, locked: &[&str]) -> BaseSettingsLayer {
-    BaseSettingsLayer {
-        settings: serde_json::from_value(value).unwrap(),
-        locked: locked.iter().map(|path| (*path).to_owned()).collect(),
-        source: "git:example/config#v1".into(),
-        recorded_at: "2026-10-27T12:00:00Z".into(),
-    }
-}
-
-/// Waits for the existing settings persistence queue.
-fn block_on<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
-
+use std::{path::Path, sync::Arc};
 /// Persist independent global and project layers over conflicting user preferences.
 fn persisted_layers() -> (Arc<InMemorySettingsStorage>, Value) {
     let storage = Arc::new(InMemorySettingsStorage::new());
@@ -75,7 +55,6 @@ fn persisted_layers() -> (Arc<InMemorySettingsStorage>, Value) {
     block_on(publisher.flush());
     (storage, user)
 }
-
 #[test]
 fn daemon_global_locks_win_for_every_governed_key_without_project_settings() {
     let (storage, user) = persisted_layers();
@@ -113,7 +92,6 @@ fn daemon_global_locks_win_for_every_governed_key_without_project_settings() {
         user.as_object().unwrap().clone()
     );
 }
-
 #[test]
 fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() {
     use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
@@ -172,7 +150,6 @@ fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() 
     assert_eq!(current.config.terminal.default_shell, "");
     assert!(!current.config.experimental.allow_nested.0);
 }
-
 /// Reload malformed user input while retaining an unrelated invalid area's old value.
 fn assert_malformed_reload(
     user: &Value,
@@ -222,7 +199,6 @@ fn assert_malformed_reload(
         .unwrap();
     report
 }
-
 /// Require one provenance-bearing diagnostic for a restored locked path.
 fn assert_lock_diagnostic(
     report: &maestro_daemon::settings::model::ConfigReloadReport,
@@ -237,7 +213,6 @@ fn assert_lock_diagnostic(
     assert!(locks[0].contains(path));
     assert!(locks[0].contains("git:example/config#v1"));
 }
-
 #[test]
 fn daemon_locks_restore_absent_and_present_values_under_malformed_ancestors() {
     use maestro_daemon::settings::model::Config;
@@ -287,7 +262,6 @@ fn daemon_locks_restore_absent_and_present_values_under_malformed_ancestors() {
         assert_lock_diagnostic(&report, "multiplexer.remote.manageSshConfig");
     }
 }
-
 /// Valid user values still override unlocked members of a constrained area.
 fn assert_valid_locked_area_unchanged(
     manager: &mut SettingsManager,
@@ -313,7 +287,6 @@ fn assert_valid_locked_area_unchanged(
         user.as_object().unwrap().clone()
     );
 }
-
 #[test]
 fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current() {
     use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
@@ -374,7 +347,6 @@ fn daemon_locked_area_uses_global_base_while_unlocked_invalid_area_keeps_current
     );
     assert_valid_locked_area_unchanged(&mut manager, &storage);
 }
-
 #[test]
 fn daemon_locked_area_fallback_covers_ui_and_flattened_source_namespaces() {
     use maestro_daemon::settings::model::Config;
@@ -421,7 +393,6 @@ fn daemon_locked_area_fallback_covers_ui_and_flattened_source_namespaces() {
         );
     }
 }
-
 #[test]
 fn daemon_startup_keeps_base_locks_when_user_document_is_unavailable() {
     use maestro_test_directory::Scratch;
@@ -456,141 +427,8 @@ fn daemon_startup_keeps_base_locks_when_user_document_is_unavailable() {
         );
     }
 }
-
-#[cfg(target_os = "linux")]
-#[test]
-fn daemon_invalid_area_retains_unlocked_values_through_lock_changes() {
-    use crate::config_support::{block_on, fixture, put};
-    let (mut app, mut manager, storage) = fixture();
-    put(
-        &*storage,
-        r#"{"multiplexer":{"mouseCapture":false,"tabBarRight":[]}}"#,
-    );
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    for entries in [json!([{"type":"hostname"}]), json!([])] {
-        storage
-            .write_base_layer(
-                SettingsScope::Global,
-                Some(&layer(
-                    json!({"multiplexer":{"tabBarRight":entries}}),
-                    &["multiplexer.tabBarRight"],
-                )),
-            )
-            .unwrap();
-        put(
-            &*storage,
-            r#"{"multiplexer":{"sidebarWidth":"bad","mouseCapture":true}}"#,
-        );
-        let (report, errors) = block_on(app.reload_config(&mut manager, Path::new(".")));
-        assert!(errors.is_empty());
-        assert!(!app.config.ui.mouse_capture.0);
-        assert_eq!(
-            serde_json::to_value(&app.config.ui.tab_bar_right).unwrap(),
-            entries
-        );
-        assert!(
-            report
-                .diagnostics
-                .iter()
-                .any(|message| message.starts_with("invalid ui config:"))
-        );
-    }
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn daemon_first_reload_retains_startup_area_document() {
-    use crate::config_support::put;
-    use maestro_daemon::{service::event_hub::EventHub, state::App};
-    let storage = Arc::new(InMemorySettingsStorage::new());
-    put(&*storage, r#"{"multiplexer":{"mouseCapture":false}}"#);
-    let mut manager = SettingsManager::from_storage(storage.clone());
-    let loaded = load_config(&mut manager, Path::new(".")).0;
-    let manifests = Arc::new(std::sync::RwLock::new(
-        maestro_detection::definitions::ManifestCache::new(None, None).unwrap(),
-    ));
-    let (launch, receiver) = crate::support::spawning::launch_inputs(&[], manifests);
-    let mut app = App::from_loaded(&loaded, || 0, launch, receiver, EventHub::default());
-    storage
-        .write_base_layer(
-            SettingsScope::Global,
-            Some(&layer(
-                json!({"multiplexer":{"tabBarRight":[{"type":"hostname"}]}}),
-                &["multiplexer.tabBarRight"],
-            )),
-        )
-        .unwrap();
-    put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    assert!(!app.config.ui.mouse_capture.0);
-    assert_eq!(
-        app.config.ui.tab_bar_right,
-        vec![TabBarRightEntryConfig::Hostname {}]
-    );
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn daemon_runtime_rejected_documents_do_not_replace_accepted_areas() {
-    use crate::config_support::{fixture, put};
-    let (mut app, mut manager, storage) = fixture();
-    put(
-        &*storage,
-        r#"{"multiplexer":{"mouseCapture":false},"daemon":{"headlessCols":100}}"#,
-    );
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    put(
-        &*storage,
-        r#"{"multiplexer":{"sidebarMinWidth":50,"sidebarMaxWidth":30},"daemon":{"headlessCols":0}}"#,
-    );
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    storage.write_base_layer(SettingsScope::Global, Some(&layer(
-        json!({"multiplexer":{"tabBarRight":[{"type":"hostname"}]},"daemon":{"headlessRows":47}}),
-        &["multiplexer.tabBarRight", "daemon.headlessRows"],
-    ))).unwrap();
-    put(
-        &*storage,
-        r#"{"multiplexer":{"sidebarWidth":"bad"},"daemon":{"headlessCols":"bad"}}"#,
-    );
-    let (report, errors) = block_on(app.reload_config(&mut manager, Path::new(".")));
-    assert!(errors.is_empty());
-    assert!(!report.diagnostics.is_empty());
-    assert!(!app.config.ui.mouse_capture.0);
-    assert_eq!(
-        app.config.ui.tab_bar_right,
-        vec![TabBarRightEntryConfig::Hostname {}]
-    );
-    assert_eq!(app.config.server.headless_cols, 100);
-    assert_eq!(app.config.server.headless_rows, 47);
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn daemon_no_layer_rejected_ui_does_not_reset_scroll() {
-    use crate::config_support::{fixture, put};
-    let (mut app, mut manager, storage) = fixture();
-    put(&*storage, "{}");
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    app.state.agent_panel_scroll = 7;
-    put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    assert_eq!(app.state.agent_panel_scroll, 7);
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn daemon_typed_constructor_retains_ui_on_first_invalid_no_layer_reload() {
-    use crate::config_support::{fixture, put};
-    let (mut app, mut manager, storage) = fixture();
-    app.config.ui.mouse_capture.0 = false;
-    put(&*storage, r#"{"multiplexer":{"sidebarWidth":"bad"}}"#);
-    block_on(app.reload_config(&mut manager, Path::new(".")));
-    assert!(!app.config.ui.mouse_capture.0);
-}
-
 /// Attempts to replace a locked channel while resolving an unlocked daemon setting.
 struct ResolveDaemonGlobal;
-
 impl maestro_settings::SettingsDecider for ResolveDaemonGlobal {
     fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
         Ok(())
@@ -602,7 +440,6 @@ impl maestro_settings::SettingsDecider for ResolveDaemonGlobal {
         Vec::new()
     }
 }
-
 #[test]
 fn daemon_global_view_resolves_stored_values_and_restores_locks_after_decider() {
     let (storage, user) = persisted_layers();
@@ -629,7 +466,6 @@ fn daemon_global_view_resolves_stored_values_and_restores_locks_after_decider() 
     assert_eq!(loaded.config.terminal.default_shell, "resolved-global");
     assert_eq!(loaded.config.update.channel, UpdateChannelConfig::Preview);
 }
-
 #[test]
 fn daemon_startup_fallback_resolves_stored_values_and_restores_locks_after_decider() {
     use maestro_test_directory::Scratch;
@@ -654,10 +490,8 @@ fn daemon_startup_fallback_resolves_stored_values_and_restores_locks_after_decid
     assert_eq!(loaded.config.terminal.default_shell, "resolved-global");
     assert_eq!(loaded.config.update.channel, UpdateChannelConfig::Preview);
 }
-
 /// Resolves an unlocked catalog check without touching the area a reload rejects.
 struct ResolveCatalogCheck;
-
 impl maestro_settings::SettingsDecider for ResolveCatalogCheck {
     fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
         Ok(())
@@ -669,7 +503,6 @@ impl maestro_settings::SettingsDecider for ResolveCatalogCheck {
         Vec::new()
     }
 }
-
 #[test]
 fn daemon_area_recovery_resolves_stored_values_and_restores_locks_after_decider() {
     use maestro_daemon::settings::io::{AcceptedAreas, reload_config};
@@ -701,10 +534,8 @@ fn daemon_area_recovery_resolves_stored_values_and_restores_locks_after_decider(
     assert!(!current.config.update.manifest_check);
     assert_eq!(current.config.update.channel, UpdateChannelConfig::Stable);
 }
-
 /// Reports a successful resolution without rejecting the supplied preferences.
 struct ResolutionDiagnostic;
-
 impl maestro_settings::SettingsDecider for ResolutionDiagnostic {
     fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
         Ok(())
@@ -714,7 +545,6 @@ impl maestro_settings::SettingsDecider for ResolutionDiagnostic {
         vec!["stored preferences resolved".into()]
     }
 }
-
 /// A successful resolution keeps valid startup preferences and reports its message.
 #[test]
 fn daemon_startup_resolution_diagnostic_preserves_user_preferences() {
@@ -733,7 +563,6 @@ fn daemon_startup_resolution_diagnostic_preserves_user_preferences() {
     assert_eq!(loaded.config.terminal.default_shell, "user-shell");
     assert_eq!(loaded.diagnostics, vec!["stored preferences resolved"]);
 }
-
 /// A successful resolution is a diagnostic rather than a failed live reload.
 #[test]
 fn daemon_reload_resolution_diagnostic_applies_user_preferences() {
@@ -756,10 +585,8 @@ fn daemon_reload_resolution_diagnostic_applies_user_preferences() {
     assert_eq!(current.config.terminal.default_shell, "user-shell");
     assert_eq!(report.diagnostics, vec!["stored preferences resolved"]);
 }
-
 /// Emits a diagnostic only when recovery resolves the empty-user base view.
 struct FallbackDiagnostic;
-
 impl maestro_settings::SettingsDecider for FallbackDiagnostic {
     fn decide(&self, _: &maestro_settings::DecisionRequest<'_>) -> Result<(), String> {
         Ok(())
@@ -773,7 +600,6 @@ impl maestro_settings::SettingsDecider for FallbackDiagnostic {
         }
     }
 }
-
 /// Supplies a malformed UI area so its recovery alone emits a resolution message.
 fn fallback_diagnostic_manager() -> SettingsManager {
     let storage = Arc::new(InMemorySettingsStorage::new());
@@ -791,7 +617,6 @@ fn fallback_diagnostic_manager() -> SettingsManager {
         .unwrap();
     manager
 }
-
 /// Startup returns each fallback diagnostic once and leaves none queued.
 #[test]
 fn daemon_startup_collects_fallback_only_resolution_diagnostics() {
@@ -808,7 +633,6 @@ fn daemon_startup_collects_fallback_only_resolution_diagnostics() {
     );
     assert!(manager.drain_errors().is_empty());
 }
-
 /// Live recovery returns each fallback diagnostic once and leaves none queued.
 #[test]
 fn daemon_live_load_collects_fallback_only_resolution_diagnostics() {
@@ -830,4 +654,16 @@ fn daemon_live_load_collects_fallback_only_resolution_diagnostics() {
         1
     );
     assert!(manager.drain_errors().is_empty());
+}
+/// Waits for the existing settings persistence queue.
+fn block_on<F: std::future::Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+
+/// A synthetic accepted release with caller-selected locks.
+fn layer(value: Value, locked: &[&str]) -> maestro_settings::BaseSettingsLayer {
+    try_layer(value, locked).unwrap()
 }

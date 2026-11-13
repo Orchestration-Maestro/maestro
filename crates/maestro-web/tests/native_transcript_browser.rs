@@ -1,8 +1,9 @@
 //! Stable transcript history and the streaming message mounted as page content.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, text, view};
+use maestro_agent::{AgentMessage, CustomAgentMessages};
 use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
-use maestro_app::{AgentMessage, CustomAgentMessages, JsonObject, ToolResultMessage};
+use maestro_models::{JsonObject, ToolResultMessage};
 use maestro_web::{
     MessageList, MessageRenderer, StreamingMessageContainer,
     page::{DomContent, DomRoot, DomView},
@@ -630,7 +631,7 @@ fn edit(entry: &Entry, text: &str) {
     let AgentMessage::Assistant(message) = entry else {
         unreachable!()
     };
-    if let Some(maestro_app::AssistantContent::Text(content)) =
+    if let Some(maestro_models::AssistantContent::Text(content)) =
         message.write().unwrap().content.first_mut()
     {
         content.text = text.into();

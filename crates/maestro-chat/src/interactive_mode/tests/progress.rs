@@ -10,13 +10,15 @@ use super::{
     started, tap,
 };
 use maestro_app::agent_session::{CompactionReason, PromptOptions};
-use maestro_app::messages::{CustomAgentMessages, UserMessageDelivery};
-use maestro_app::{
-    AgentSession, AgentSessionEvent, AssistantMessageEventStream, CompactionResult,
-    DiagnosticErrorInfo, Extension, ExtensionBindings, ExtensionCommandContext, ExtensionFactory,
-    InputEvent, InputEventResult, Local, RegisteredCommand, ResourceLoader, Skill, SourceInfo,
-    SourceOrigin, SourceScope, StopReason,
+use maestro_app::{AgentSession, AgentSessionEvent, ExtensionBindings, ResourceLoader};
+use maestro_extensions::{
+    Extension, ExtensionCommandContext, ExtensionFactory, RegisteredCommand,
+    types::events::{InputEvent, InputEventResult},
 };
+use maestro_models::{AssistantMessageEventStream, DiagnosticErrorInfo, Local, StopReason};
+use maestro_resources::{Skill, SourceInfo, SourceOrigin, SourceScope};
+use maestro_session::message_records::{CustomAgentMessages, UserMessageDelivery};
+use maestro_session::summarization::CompactionResult;
 use maestro_tui::Component;
 use maestro_tui::InputHandler;
 use serde::Deserialize;
@@ -595,7 +597,7 @@ fn start_retry(world: &World, attempt: u32, max_attempts: f64, delay_ms: f64) {
 }
 
 /// Delivers one agent event as the session publishes it.
-fn agent_event(world: &World, event: maestro_app::AgentEvent<CustomAgentMessages>) {
+fn agent_event(world: &World, event: maestro_agent::AgentEvent<CustomAgentMessages>) {
     world
         .mode
         .handle_event(&AgentSessionEvent::Agent(Arc::new(RwLock::new(event))))
@@ -603,8 +605,8 @@ fn agent_event(world: &World, event: maestro_app::AgentEvent<CustomAgentMessages
 }
 
 /// A completed response that admitted no message.
-fn agent_end() -> maestro_app::AgentEvent<CustomAgentMessages> {
-    maestro_app::AgentEvent::AgentEnd {
+fn agent_end() -> maestro_agent::AgentEvent<CustomAgentMessages> {
+    maestro_agent::AgentEvent::AgentEnd {
         messages: Vec::new(),
     }
 }
@@ -924,18 +926,18 @@ fn response_progress_pairs_each_start_with_an_end() {
             draft(&world);
             set_progress_setting(&world, true);
             let effects = tap(&world);
-            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
             assert_eq!(progress(&effects), [true]);
             agent_event(&world, agent_end());
             assert_eq!(progress(&effects), [true, false]);
             // A retried response pairs its own start with its own end.
-            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
             agent_event(&world, agent_end());
             assert_eq!(progress(&effects), [true, false, true, false]);
             // The setting alone decides whether the terminal is written at all.
             set_progress_setting(&world, false);
             let silent = tap(&world);
-            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
             agent_event(&world, agent_end());
             assert_eq!(progress(&silent), Vec::<bool>::new());
         },
@@ -985,7 +987,7 @@ fn retry_replacement_preserves_working_row_and_previous_action() {
         previous.assert_replaced(&world, CTRL_Q);
         // A response starts: the retry's countdown, row and callback go before the working
         // row starts.
-        agent_event(&world, maestro_app::AgentEvent::AgentStart);
+        agent_event(&world, maestro_agent::AgentEvent::AgentStart);
         let restored = world.mode.editor.on_escape().unwrap();
         assert!(Rc::ptr_eq(&restored, &previous.action));
         expected.working.assert(&world, &effects);
@@ -2043,7 +2045,7 @@ fn idle_status_keeps_its_height_after_each_indicator_ends() {
             let status = |world: &World| world.mode.status_container.render(100);
             let idle = vec![" ".repeat(100), " ".repeat(100)];
             assert!(status(&world).is_empty(), "no indicator has run");
-            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
             assert_eq!(status(&world).len(), 2);
             agent_event(&world, agent_end());
             assert_eq!(status(&world), idle, "after the working indicator");
@@ -2055,7 +2057,7 @@ fn idle_status_keeps_its_height_after_each_indicator_ends() {
             end_compaction(&world, CompactionReason::Threshold, None, false);
             assert_eq!(status(&world), idle, "after the compaction indicator");
             world.mode.set_working_visible(false);
-            agent_event(&world, maestro_app::AgentEvent::AgentStart);
+            agent_event(&world, maestro_agent::AgentEvent::AgentStart);
             assert_eq!(
                 status(&world),
                 idle,

@@ -10,12 +10,11 @@ use std::{
     },
 };
 
-use maestro_app::{
-    BoxFuture, DiagnosticErrorInfo, Fetch, OAuthCallbacks, OAuthCredentials, OAuthError,
-    OAuthProviderInterface,
-    presentation_data::{OAuthAuthInfo, OAuthPrompt, OAuthProviderHandle, get_oauth_providers},
-};
 use maestro_cli::model_login::cli::{self, AccountConsole, AccountInput};
+use maestro_models::{
+    BoxFuture, DiagnosticErrorInfo, Fetch, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials,
+    OAuthError, OAuthPrompt, OAuthProviderHandle, OAuthProviderInterface, get_oauth_providers,
+};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 

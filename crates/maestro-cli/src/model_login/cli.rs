@@ -1,10 +1,10 @@
 //! Help, provider tables and OAuth login for the standalone model-account command.
 use std::{error::Error, sync::Arc};
 
-use maestro_app::{
-    BoxFuture, OAuthCallbacks, OAuthCredentials, OAuthError,
-    model_account::cli::{load_auth, save_auth},
-    presentation_data::{OAuthAuthInfo, OAuthLoginCallbacks, OAuthPrompt, OAuthProviderHandle},
+use maestro_app::model_account::cli::{load_auth, save_auth};
+use maestro_models::{
+    BoxFuture, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthLoginCallbacks,
+    OAuthPrompt, OAuthProviderHandle,
 };
 use serde::Serialize;
 
@@ -147,7 +147,7 @@ fn selected_provider<'a>(
     answer: &str,
     providers: &'a [OAuthProviderHandle],
 ) -> Option<&'a OAuthProviderHandle> {
-    let trimmed = answer.trim_matches(maestro_app::is_whitespace_scalar);
+    let trimmed = answer.trim_matches(maestro_text::is_whitespace_scalar);
     let digits = trimmed.strip_prefix('+').unwrap_or(trimmed);
     if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;

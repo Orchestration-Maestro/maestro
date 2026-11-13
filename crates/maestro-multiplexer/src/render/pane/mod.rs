@@ -8,8 +8,8 @@ mod tests;
 
 pub use dirty::{TerminalDirtyPatch, TerminalDirtyPatchOutcome, collect_dirty_patch};
 
-use maestro_app::daemon_api::{PaneRenderView, PaneTerminal};
-use maestro_app::terminal::{Dirty, RenderRow, RenderState};
+use maestro_daemon::panes::display::{PaneRenderView, PaneTerminal};
+use maestro_terminal_emulator::painting::{Dirty, RenderRow, RenderState};
 use ratatui::{Frame, layout::Rect};
 use std::time::Instant;
 use style::{CellStyler, paint};

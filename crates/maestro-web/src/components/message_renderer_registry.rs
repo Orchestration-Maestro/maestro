@@ -1,6 +1,7 @@
 //! Role-keyed custom content with typed retained callback ownership.
 use crate::{page::PreparedContent, tools::types::ToolUiError};
-use maestro_app::{AgentMessage, CustomAgentMessages, NoCustomMessages, ToolRendererState};
+use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages};
+use maestro_tools::ToolRendererState;
 use std::{collections::HashMap, rc::Rc};
 
 /// Caller-defined message-role vocabulary.

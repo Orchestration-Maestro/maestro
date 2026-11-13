@@ -1,6 +1,6 @@
 //! SVG primitives shared by DOM and native glyph rendering.
 use indexmap::IndexMap;
-use maestro_app::markup::{EscapeMode, escape_into};
+use maestro_text::markup::{EscapeMode, escape_into};
 use num_traits::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, fmt};

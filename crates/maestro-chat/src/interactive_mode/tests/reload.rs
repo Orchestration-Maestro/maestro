@@ -5,14 +5,25 @@ use super::extension_ui::port;
 use super::extension_widgets::{with_configured_factories, with_factories};
 use super::navigation::{append_user, resume::saved};
 use super::{Setup, World, admitted, isolated, isolated_output, start, started, submit};
-use maestro_app::{
-    AgentSessionEvent, ComponentFactory, ContextFile, DiagnosticErrorInfo, ExtensionAPI,
-    ExtensionCommandContext, ExtensionComponent, ExtensionFactory, ExtensionUIFuture, ForkOptions,
-    ForkPosition, Local, NavigateTreeOptions, NewSessionCommandOptions, Presence, PromptOptions,
-    ReadonlySessionManager, SessionBeforeForkEvent, SessionBeforeForkResult,
-    SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionBeforeTreeEvent,
-    SessionBeforeTreeResult, SettingsManager, StopReason, SwitchSessionOptions, WidgetContent,
+use maestro_app::{AgentSessionEvent, PromptOptions};
+use maestro_extensions::{
+    ExtensionAPI, ExtensionCommandContext, ExtensionFactory,
+    types::{
+        ComponentFactory, ExtensionComponent, ExtensionUIFuture, ForkOptions,
+        NewSessionCommandOptions, SwitchSessionOptions, WidgetContent,
+        events::{
+            ForkPosition, SessionBeforeForkEvent, SessionBeforeForkResult,
+            SessionBeforeSwitchEvent, SessionBeforeSwitchResult, SessionBeforeTreeEvent,
+            SessionBeforeTreeResult,
+        },
+    },
 };
+use maestro_models::{DiagnosticErrorInfo, Local, StopReason, system_prompt::ContextFile};
+use maestro_session::{
+    Presence,
+    session_manager::{NavigateTreeOptions, ReadonlySessionManager},
+};
+use maestro_settings::SettingsManager;
 use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Cancellation, Component, EditorComponent, Focusable, Text};
 use serde_json::json;
@@ -383,7 +394,8 @@ async fn painted_reload(directory: &Path, pending: usize) {
         world.mode.editor_container.render(80),
         super::painted(&theme, &rows)
     );
-    let output = maestro_app::strip_ansi(&world.terminal.writes().join("")).unwrap();
+    let output =
+        maestro_tools::output::render_utils::strip_ansi(&world.terminal.writes().join("")).unwrap();
     assert!(
         output.contains(
             "Reloading every resource: keybindings, extensions, skills, prompts, themes..."
@@ -1129,7 +1141,11 @@ async fn new_and_fork_outcomes(directory: &std::path::Path, cancel: bool) {
 }
 
 /// Invokes either replacement through the bound command context.
-async fn replace(world: &World, first: String, fork: bool) -> maestro_app::SessionChangeResult {
+async fn replace(
+    world: &World,
+    first: String,
+    fork: bool,
+) -> maestro_extensions::types::SessionChangeResult {
     if fork {
         context(world).fork(first, None).await
     } else {
@@ -1268,7 +1284,7 @@ async fn navigation_case(directory: &std::path::Path, cancel: bool, draft: &str,
     world.mode.compaction_queued_messages.borrow_mut().push(
         super::super::queues::CompactionQueuedMessage {
             text: "captured".into(),
-            mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+            mode: maestro_session::message_records::UserMessageDelivery::FollowUp,
         },
     );
     let mut navigating = context(&world).navigate_tree(
@@ -1328,7 +1344,7 @@ async fn completed_command_flush(directory: &std::path::Path) {
     world.mode.compaction_queued_messages.borrow_mut().push(
         super::super::queues::CompactionQueuedMessage {
             text: "delivered captured input".into(),
-            mode: maestro_app::messages::UserMessageDelivery::FollowUp,
+            mode: maestro_session::message_records::UserMessageDelivery::FollowUp,
         },
     );
     assert!(

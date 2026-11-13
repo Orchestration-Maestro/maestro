@@ -1,6 +1,6 @@
 //! Standard streams for the standalone account command's supplied console interface.
-use maestro_app::{BoxFuture, OAuthError};
 use maestro_cli::model_login::cli::{AccountConsole, AccountInput};
+use maestro_models::{BoxFuture, OAuthError};
 use std::{
     io::{self, Write},
     sync::{
@@ -45,16 +45,18 @@ impl AccountInput for NativeInput {
         let (reader, closed) = (Arc::clone(&self.reader), Arc::clone(&self.closed));
         Box::pin(async move {
             if closed.load(Ordering::Relaxed) {
-                return Err(OAuthError::from(maestro_app::DiagnosticErrorInfo::error(
-                    "input interface is closed",
-                )));
+                return Err(OAuthError::from(
+                    maestro_models::DiagnosticErrorInfo::error("input interface is closed"),
+                ));
             }
             let mut output = io::stdout();
             output
                 .write_all(question.as_bytes())
                 .and_then(|()| output.flush())
                 .map_err(|error| {
-                    OAuthError::from(maestro_app::DiagnosticErrorInfo::error(error.to_string()))
+                    OAuthError::from(maestro_models::DiagnosticErrorInfo::error(
+                        error.to_string(),
+                    ))
                 })?;
             let mut answer = String::new();
             reader
@@ -63,7 +65,9 @@ impl AccountInput for NativeInput {
                 .read_line(&mut answer)
                 .await
                 .map_err(|error| {
-                    OAuthError::from(maestro_app::DiagnosticErrorInfo::error(error.to_string()))
+                    OAuthError::from(maestro_models::DiagnosticErrorInfo::error(
+                        error.to_string(),
+                    ))
                 })?;
             Ok(answer.trim_end_matches(['\r', '\n']).to_owned())
         })

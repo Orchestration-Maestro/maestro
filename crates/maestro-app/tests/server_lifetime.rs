@@ -10,12 +10,13 @@ use crate::support::runtime_fixtures::{runtime_for, stored_in};
 use crate::support::session_harness::{
     hold_first_answer, on_paused_task_set, on_task_set, until_idle,
 };
-use maestro_app::{RpcConnectionOutcome, TerminationSignal};
+use maestro_app::RpcConnectionOutcome;
 use maestro_extensions::{
     ExtensionCommandContext, ExtensionContext, ExtensionFactory, SessionShutdownEvent,
     SessionStartEvent,
 };
 use maestro_models::Local;
+use maestro_process::TerminationSignal;
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
 use std::{
@@ -231,8 +232,8 @@ fn compaction_shutdown(gate: Rc<Gate>) -> ExtensionFactory<Local> {
                         context.shutdown()?;
                         pass(Some(gate)).await;
                         Ok(Some(maestro_app::SessionBeforeCompactResult {
-                            cancel: maestro_app::Presence::Present(true),
-                            compaction: maestro_app::Presence::Missing,
+                            cancel: maestro_session::Presence::Present(true),
+                            compaction: maestro_session::Presence::Missing,
                         }))
                     })
                 }),

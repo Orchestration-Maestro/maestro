@@ -1,6 +1,7 @@
 //! Identity-preserving adaptation of bound extension input to toolkit listeners.
 use super::super::InteractiveMode;
-use maestro_app::{Listeners, TerminalInputHandler, UIUnsubscribe};
+use maestro_extensions::{TerminalInputHandler, types::UIUnsubscribe};
+use maestro_listeners::Listeners;
 use maestro_tui::InputListenerResult;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 

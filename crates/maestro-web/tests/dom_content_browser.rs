@@ -4,7 +4,8 @@ use crate::contributions_support::{
     Clipboard, Recorded, Text, body, computed, container, host, result, rgb, text, until, view,
 };
 use crate::message_renderer_support::{NativeMessage, message};
-use maestro_app::{AgentMessage, JsonObject, NoCustomMessages, ToolResultMessage};
+use maestro_agent::{AgentMessage, NoCustomMessages};
+use maestro_models::{JsonObject, ToolResultMessage};
 use maestro_web::DefaultRenderer;
 use maestro_web::{
     MessageRenderer,

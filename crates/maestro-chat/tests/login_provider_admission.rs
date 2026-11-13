@@ -1,7 +1,7 @@
 //! Which providers `/login` offers for API-key sign-in.
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_app::BUILT_IN_PROVIDER_DISPLAY_NAMES;
+use maestro_catalog::BUILT_IN_PROVIDER_DISPLAY_NAMES;
 use maestro_chat::is_api_key_login_provider;
 use std::collections::HashSet;
 

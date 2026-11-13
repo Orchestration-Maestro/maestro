@@ -16,7 +16,7 @@ use crate::{
         types::ToolUiError,
     },
 };
-use maestro_app::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
+use maestro_models::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},

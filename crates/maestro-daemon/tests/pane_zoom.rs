@@ -1,117 +1,17 @@
 //! Pane zoom through the daemon's handler: modes, focus changes and no-ops.
 #![cfg(target_os = "linux")]
-use crate::support::api::{
-    daemon_with_workspaces, event_names, events_after, failure, pair, request, root_pane,
-    split_pane,
+use maestro_daemon::state::test_support::api::{
+    daemon_with_workspaces, event_names, events_after, pair, request, root_pane,
 };
-use maestro_daemon::state::App;
-use maestro_daemon::state::model::{CopyModeState, Mode};
-use maestro_protocol::events::EventData;
-use maestro_protocol::schema::{
-    ErrorBody, PaneZoomReason, PaneZoomResult, ResponseResult, SplitDirection,
-};
+use maestro_daemon::state::test_support::pane_zoom::{last_layout, zoom_of};
+use maestro_protocol::schema::PaneZoomReason;
 use serde_json::json;
-
-/// The zoom record a zoom result holds.
-fn zoom_of(result: Result<ResponseResult, ErrorBody>) -> PaneZoomResult {
-    match result {
-        Ok(ResponseResult::PaneZoom { zoom }) => zoom,
-        other => panic!("expected a zoom result: {other:?}"),
-    }
-}
-
-/// The layout carried by the last published event.
-fn last_layout(app: &App) -> maestro_protocol::schema::PaneLayoutSnapshot {
-    match events_after(app, 0).pop() {
-        Some(EventData::LayoutUpdated { layout }) => layout,
-        other => panic!("expected a layout event last: {other:?}"),
-    }
-}
-
-#[test]
-fn zooming_toggles_the_focused_pane_and_publishes_the_layout() {
-    let (mut app, left, _) = pair();
-    let zoom = zoom_of(request(&mut app, json!({"type": "pane.zoom"})));
-    assert!(zoom.changed && zoom.zoom_changed && !zoom.focus_changed);
-    assert_eq!(zoom.reason, None);
-    assert_eq!(zoom.pane_id, "w1:p1");
-    assert_eq!(zoom.focused_pane_id, zoom.pane_id);
-    assert!(zoom.zoomed.0 && zoom.layout.zoomed);
-    assert!(app.state.topology.workspaces[0].tabs[0].zoomed);
-    assert_eq!(event_names(&app, 0), ["layout_updated"]);
-    assert_eq!(last_layout(&app), zoom.layout);
-    assert!(app.state.session_dirty);
-    let zoom = zoom_of(request(&mut app, json!({"type": "pane.zoom"})));
-    assert!(zoom.changed && zoom.zoom_changed && !zoom.focus_changed);
-    assert!(!zoom.zoomed.0 && !zoom.layout.zoomed);
-    assert!(!last_layout(&app).zoomed);
-    assert_eq!(
-        app.state.topology.workspaces[0].focused_pane_id(),
-        Some(left)
-    );
-}
-
-#[test]
-fn zooming_a_background_pane_focuses_it_and_keeps_the_last_pane_history() {
-    let mut app = daemon_with_workspaces(&["/one", "/two"]);
-    let first = root_pane(&app, 0);
-    let target = root_pane(&app, 1);
-    split_pane(&mut app, 1, target, SplitDirection::Right);
-    assert_eq!(app.state.active, Some(0));
-    let wire = json!({"type": "pane.zoom", "pane_id": "w2:p1", "mode": "on"});
-    let zoom = zoom_of(request(&mut app, wire));
-    assert!(zoom.changed && zoom.zoom_changed && zoom.focus_changed);
-    assert_eq!(zoom.pane_id, "w2:p1");
-    assert_eq!(app.state.active, Some(1));
-    assert_eq!(
-        app.state.topology.workspaces[1].focused_pane_id(),
-        Some(target)
-    );
-    assert!(app.state.topology.workspaces[1].tabs[0].zoomed);
-    app.state.last_pane();
-    assert_eq!(app.state.active, Some(0));
-    assert_eq!(
-        app.state.topology.workspaces[0].focused_pane_id(),
-        Some(first)
-    );
-}
-
-#[test]
-fn zooming_a_pane_returns_copy_mode_to_that_pane() {
-    let mut app = daemon_with_workspaces(&["/one", "/two"]);
-    let source = root_pane(&app, 0);
-    let other = split_pane(&mut app, 0, source, SplitDirection::Right);
-    app.state.topology.workspaces[0].tabs[0]
-        .layout
-        .focus_pane(other);
-    let target = root_pane(&app, 1);
-    split_pane(&mut app, 1, target, SplitDirection::Right);
-    app.state.active = Some(1);
-    app.state.selected = 1;
-    app.state.mode = Mode::Terminal;
-    app.state.copy_mode = Some(CopyModeState {
-        pane_id: source,
-        selection: None,
-    });
-    let wire = json!({"type": "pane.zoom", "pane_id": "w1:p1", "mode": "on"});
-    assert!(zoom_of(request(&mut app, wire)).focus_changed);
-    assert_eq!(app.state.active, Some(0));
-    assert_eq!(app.state.mode, Mode::Copy);
-    assert_eq!(
-        app.state.topology.workspaces[0].focused_pane_id(),
-        Some(source)
-    );
-    assert_eq!(
-        app.state.topology.workspaces[1].focused_pane_id(),
-        Some(target)
-    );
-}
 
 #[test]
 fn zooming_a_single_pane_changes_nothing() {
-    let mut app = daemon_with_workspaces(&["/one"]);
+    let mut app = daemon_with_workspaces(&["/one"]).unwrap();
     let wire = json!({"type": "pane.zoom", "pane_id": "w1:p1", "mode": "toggle"});
-    let zoom = zoom_of(request(&mut app, wire));
+    let zoom = zoom_of(request(&mut app, wire)).unwrap();
     assert!(!zoom.changed && !zoom.zoom_changed && !zoom.focus_changed);
     assert_eq!(zoom.reason, Some(PaneZoomReason::SinglePane));
     assert_eq!(zoom.pane_id, "w1:p1");
@@ -119,10 +19,9 @@ fn zooming_a_single_pane_changes_nothing() {
     assert!(!app.state.topology.workspaces[0].tabs[0].zoomed);
     assert!(events_after(&app, 0).is_empty());
 }
-
 #[test]
 fn zoom_on_and_off_are_idempotent() {
-    let (mut app, _, _) = pair();
+    let (mut app, _, _) = pair().unwrap();
     for (mode, changed, reason, zoomed) in [
         ("on", true, None, true),
         ("on", false, Some(PaneZoomReason::AlreadyZoomed), true),
@@ -130,22 +29,24 @@ fn zoom_on_and_off_are_idempotent() {
         ("off", false, Some(PaneZoomReason::AlreadyUnzoomed), false),
     ] {
         let wire = json!({"type": "pane.zoom", "pane_id": "w1:p1", "mode": mode});
-        let zoom = zoom_of(request(&mut app, wire));
+        let zoom = zoom_of(request(&mut app, wire)).unwrap();
         assert_eq!(zoom.changed, changed, "{mode}");
         assert_eq!(zoom.zoom_changed, changed, "{mode}");
         assert!(!zoom.focus_changed, "{mode}");
         assert_eq!(zoom.reason, reason, "{mode}");
         assert_eq!(zoom.zoomed.0, zoomed, "{mode}");
     }
-    assert_eq!(event_names(&app, 0), ["layout_updated", "layout_updated"]);
+    assert_eq!(
+        event_names(&app, 0).unwrap(),
+        ["layout_updated", "layout_updated"]
+    );
 }
-
 #[test]
 fn an_idempotent_zoom_still_reports_the_focus_change() {
-    let (mut app, _, right) = pair();
+    let (mut app, _, right) = pair().unwrap();
     app.state.topology.workspaces[0].tabs[0].zoomed = true;
     let wire = json!({"type": "pane.zoom", "pane_id": "w1:p2", "mode": "on"});
-    let zoom = zoom_of(request(&mut app, wire));
+    let zoom = zoom_of(request(&mut app, wire)).unwrap();
     assert!(zoom.changed && !zoom.zoom_changed && zoom.focus_changed);
     assert_eq!(zoom.reason, Some(PaneZoomReason::AlreadyZoomed));
     assert!(zoom.zoomed.0);
@@ -153,34 +54,16 @@ fn an_idempotent_zoom_still_reports_the_focus_change() {
         app.state.topology.workspaces[0].focused_pane_id(),
         Some(right)
     );
-    assert_eq!(last_layout(&app).focused_pane_id, "w1:p2");
+    assert_eq!(last_layout(&app).unwrap().focused_pane_id, "w1:p2");
 }
-
-#[test]
-fn zooming_a_missing_pane_is_refused() {
-    let (mut app, _, _) = pair();
-    for wire in [
-        json!({"type": "pane.zoom", "pane_id": "w1:p9"}),
-        json!({"type": "pane.zoom", "pane_id": "missing", "mode": "on"}),
-    ] {
-        assert_eq!(
-            request(&mut app, wire),
-            failure("pane_not_found", "pane not found")
-        );
-    }
-    app.state.active = None;
-    assert_eq!(
-        request(&mut app, json!({"type": "pane.zoom"})),
-        failure("pane_not_found", "pane not found")
-    );
-}
-
 #[test]
 fn each_seeded_workspace_names_its_first_tab_root() {
-    let mut app = daemon_with_workspaces(&[]);
+    let mut app = daemon_with_workspaces(&[]).unwrap();
     let seeded: Vec<_> = (0..20)
         .map(|index| app.seed_workspace(&format!("/w{index}")).unwrap())
         .collect();
-    let found: Vec<_> = (0..20).map(|index| root_pane(&app, index)).collect();
+    let found: Vec<_> = (0..20)
+        .map(|index| root_pane(&app, index).unwrap())
+        .collect();
     assert_eq!(found, seeded);
 }

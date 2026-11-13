@@ -1,8 +1,8 @@
 //! The full changelog command and the exact submission that runs it.
 use super::typed::{poll, recalled, waiting};
 use super::{Setup, VERSION, World, cases, isolated_package, painted, started};
-use maestro_app::is_whitespace_scalar;
 use maestro_test_process::IsolatedSetup;
+use maestro_text::is_whitespace_scalar;
 use maestro_theme::ThemeColor;
 use maestro_tui::{Component, TerminalCapabilities};
 use serde::Deserialize;
@@ -312,7 +312,7 @@ fn changelog_startup_selects_new_entries_and_records_seen_version() {
 fn selection_world(
     directory: &std::path::Path,
     input: &SelectionInput,
-    fetch: maestro_app::Fetch,
+    fetch: maestro_models::Fetch,
 ) -> World {
     let last = input.last.clone();
     let origin = if input.no_origin {
@@ -399,12 +399,12 @@ async fn selection_case(
 fn seed_current_messages(world: &World, count: usize) {
     if count > 0 {
         world.host.session().messages().write().unwrap().push(
-            maestro_app::NativeAgentMessage::User(std::sync::Arc::new(std::sync::RwLock::new(
-                maestro_app::UserMessage {
-                    content: maestro_app::UserContent::Text("resumed".into()),
+            maestro_extensions::types::events::NativeAgentMessage::User(std::sync::Arc::new(
+                std::sync::RwLock::new(maestro_models::UserMessage {
+                    content: maestro_models::UserContent::Text("resumed".into()),
                     timestamp: 0.0,
-                },
-            ))),
+                }),
+            )),
         );
     }
 }
@@ -595,7 +595,7 @@ fn changelog_startup_is_shown_once_after_resources() {
         std::fs::write(package.join("CHANGELOG.md"), "## [3.2.1]\nSELECTED_HISTORY").unwrap();
         let world = Setup {
             configure: Box::new(|settings| settings.set_last_changelog_version("1.0.0".into())),
-            context: vec![maestro_app::ContextFile {
+            context: vec![maestro_models::system_prompt::ContextFile {
                 path: "/workspace/AGENTS.md".into(),
                 content: "context".into(),
             }],
@@ -678,14 +678,14 @@ type Requests = std::sync::Arc<std::sync::Mutex<Vec<String>>>;
 
 std::thread_local! {
     /// The single isolated reporting transaction's callback-editable settings.
-    static REPORT_SETTINGS: std::cell::RefCell<Option<std::rc::Rc<std::cell::RefCell<maestro_app::SettingsManager>>>> = const { std::cell::RefCell::new(None) };
+    static REPORT_SETTINGS: std::cell::RefCell<Option<std::rc::Rc<std::cell::RefCell<maestro_settings::SettingsManager>>>> = const { std::cell::RefCell::new(None) };
 }
 
 /// A transport that records the actual request and fails without network access.
-fn reporting_transport() -> (maestro_app::Fetch, Requests) {
+fn reporting_transport() -> (maestro_models::Fetch, Requests) {
     let requests = Requests::default();
     let seen = requests.clone();
-    let fetch: maestro_app::Fetch = std::sync::Arc::new(move |request| {
+    let fetch: maestro_models::Fetch = std::sync::Arc::new(move |request| {
         REPORT_SETTINGS.with(|slot| {
             let settings = slot.borrow().clone();
             if let Some(settings) = settings {
@@ -697,7 +697,7 @@ fn reporting_transport() -> (maestro_app::Fetch, Requests) {
             }
         });
         seen.lock().unwrap().push(request.url);
-        Box::pin(async { Err(maestro_app::FetchError::Timeout) })
+        Box::pin(async { Err(maestro_models::FetchError::Timeout) })
     });
     (fetch, requests)
 }
@@ -1072,7 +1072,7 @@ fn native_package_world(root: &std::path::Path) -> World {
 /// Builds a native manager witness with an optional real input handler.
 fn native_package_world_with(
     root: &std::path::Path,
-    extension: Option<maestro_app::ExtensionFactory<maestro_app::Local>>,
+    extension: Option<maestro_extensions::ExtensionFactory<maestro_models::Local>>,
     options: crate::InteractiveModeOptions,
     offline: Option<bool>,
 ) -> World {
@@ -1104,10 +1104,10 @@ fn native_package_world_with(
         offline,
         cwd: Some(root.join("service").to_str().unwrap().to_owned()),
         configure: Box::new(move |settings| {
-            settings.set_project_packages(vec![maestro_app::PackageSource::Source(
+            settings.set_project_packages(vec![maestro_settings::PackageSource::Source(
                 "npm:before".into(),
             )]);
-            settings.set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
+            settings.set_npm_command(Some(vec![maestro_settings::SettingsListEntry::String(
                 version.to_str().unwrap().into(),
             )]));
         }),
@@ -1115,7 +1115,7 @@ fn native_package_world_with(
     }
     .build(root);
     *world.host.session().session_manager().borrow_mut() =
-        maestro_app::SessionManager::in_memory(Some(root.join("session").to_str().unwrap()))
+        maestro_session::SessionManager::in_memory(Some(root.join("session").to_str().unwrap()))
             .unwrap();
     world
 }
@@ -1300,7 +1300,9 @@ fn startup_package_check_uses_current_directories_settings_and_recovers() {
         session
             .settings_manager()
             .borrow_mut()
-            .set_project_packages(vec![maestro_app::PackageSource::Source("npm:after".into())]);
+            .set_project_packages(vec![maestro_settings::PackageSource::Source(
+                "npm:after".into(),
+            )]);
         let (second, errors) = super::driving(&world, world.mode.check_for_package_updates()).await;
         assert!(errors.is_empty());
         assert_eq!(second, ["after"]);
@@ -1319,7 +1321,7 @@ fn startup_package_check_uses_current_directories_settings_and_recovers() {
         session
             .settings_manager()
             .borrow_mut()
-            .set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
+            .set_npm_command(Some(vec![maestro_settings::SettingsListEntry::String(
                 "/missing/maestro-command".into(),
             )]));
         let (failed, errors) = super::driving(&world, world.mode.check_for_package_updates()).await;
@@ -1342,7 +1344,11 @@ async fn assert_service_project_unread(world: &World, root: &std::path::Path) {
     )
     .unwrap();
     let settings = world.host.session().settings_manager().clone();
-    let configured = |name: &str| vec![maestro_app::PackageSource::Source(format!("npm:{name}"))];
+    let configured = |name: &str| {
+        vec![maestro_settings::PackageSource::Source(format!(
+            "npm:{name}"
+        ))]
+    };
     settings
         .borrow_mut()
         .set_project_packages(configured("service-only"));
@@ -1360,26 +1366,32 @@ async fn assert_service_project_unread(world: &World, root: &std::path::Path) {
 
 /// Settings handed to the real input hook after the mode has been constructed.
 type InputSettings = std::rc::Rc<
-    std::cell::RefCell<Option<std::rc::Rc<std::cell::RefCell<maestro_app::SettingsManager>>>>,
+    std::cell::RefCell<Option<std::rc::Rc<std::cell::RefCell<maestro_settings::SettingsManager>>>>,
 >;
 
 /// An actual input hook that replaces the manager's configured source.
-fn changing_packages(slot: &InputSettings) -> maestro_app::ExtensionFactory<maestro_app::Local> {
+fn changing_packages(
+    slot: &InputSettings,
+) -> maestro_extensions::ExtensionFactory<maestro_models::Local> {
     let slot = slot.clone();
     std::rc::Rc::new(move |api| {
         let slot = slot.clone();
-        let handler: maestro_app::ExtensionHandler<
-            maestro_app::InputEvent,
-            maestro_app::InputEventResult,
-            maestro_app::Local,
+        let handler: maestro_extensions::ExtensionHandler<
+            maestro_extensions::types::events::InputEvent,
+            maestro_extensions::types::events::InputEventResult,
+            maestro_models::Local,
         > = std::rc::Rc::new(move |_, _| {
             let settings = slot.borrow().as_ref().unwrap().clone();
-            settings
-                .borrow_mut()
-                .set_project_packages(vec![maestro_app::PackageSource::Source("npm:after".into())]);
-            Box::pin(async { Ok(Some(maestro_app::InputEventResult::Handled)) })
+            settings.borrow_mut().set_project_packages(vec![
+                maestro_settings::PackageSource::Source("npm:after".into()),
+            ]);
+            Box::pin(async {
+                Ok(Some(
+                    maestro_extensions::types::events::InputEventResult::Handled,
+                ))
+            })
         });
-        api.on::<maestro_app::InputEvent, maestro_app::InputEventResult>("input".into(), handler)
+        api.on::<maestro_extensions::types::events::InputEvent, maestro_extensions::types::events::InputEventResult>("input".into(), handler)
             .unwrap();
         Box::pin(async { Ok(()) })
     })
@@ -1417,7 +1429,7 @@ fn startup_checks_snapshot_packages_before_input_hooks() {
         drop(run);
         settings
             .borrow_mut()
-            .set_project_packages(vec![maestro_app::PackageSource::Source(
+            .set_project_packages(vec![maestro_settings::PackageSource::Source(
                 "npm:before".into(),
             )]);
         let lazy = world.mode.check_for_package_updates();
@@ -1654,11 +1666,11 @@ fn tmux_capture_uses_raw_status_and_two_second_settlement() {
         let tasks = super::start_host_work(&world);
         assert_eq!(query.await, None);
         finish_captures(tasks).await;
-        let wrong = maestro_app::exec_command(
+        let wrong = maestro_tools::exec_command(
             "tmux",
             &["show".into(), "-gv".into(), "extended-keys".into()],
             root.to_str().unwrap(),
-            maestro_app::ExecOptions::default(),
+            maestro_tools::ExecOptions::default(),
         )
         .await
         .unwrap();
@@ -1696,7 +1708,7 @@ fn notice_background_work_releases_mode_after_completion() {
         finish_captures(tasks).await;
         assert!(weak.upgrade().is_none());
         assert_eq!(
-            maestro_app::PackageOperations::spawn(&operations, Box::pin(async {}))
+            maestro_packages::PackageOperations::spawn(&operations, Box::pin(async {}))
                 .unwrap_err()
                 .to_string(),
             "package runtime is no longer available"
@@ -1738,7 +1750,12 @@ fn notice_traversals_consume_each_input_once() {
                 .chat_container
                 .render(120)
                 .into_iter()
-                .map(|row| maestro_app::strip_ansi(&row).unwrap().trim().to_owned())
+                .map(|row| {
+                    maestro_tools::output::render_utils::strip_ansi(&row)
+                        .unwrap()
+                        .trim()
+                        .to_owned()
+                })
                 .filter(|row| row.starts_with("- "))
                 .collect();
             assert_eq!(
@@ -1821,12 +1838,12 @@ async fn offline_consumers(root: &std::path::Path, offline: Option<bool>, skip: 
 }
 
 /// Holds the real release request at response headers until the caller releases it.
-fn held_release_fetch(release: std::sync::Arc<tokio::sync::Notify>) -> maestro_app::Fetch {
+fn held_release_fetch(release: std::sync::Arc<tokio::sync::Notify>) -> maestro_models::Fetch {
     std::sync::Arc::new(move |_| {
         let release = release.clone();
         Box::pin(async move {
             release.notified().await;
-            Err(maestro_app::FetchError::Timeout)
+            Err(maestro_models::FetchError::Timeout)
         })
     })
 }
@@ -1845,15 +1862,15 @@ fn rescanning_visits(entries: &[maestro_app::ChangelogEntry]) -> usize {
 /// A controlled successful release over the existing finite-stream fixture pattern.
 fn successful_release(
     release: std::sync::Arc<tokio::sync::Notify>,
-) -> (maestro_app::Fetch, Requests) {
+) -> (maestro_models::Fetch, Requests) {
     let requests = Requests::default();
     let seen = requests.clone();
-    let fetch: maestro_app::Fetch = std::sync::Arc::new(move |request| {
+    let fetch: maestro_models::Fetch = std::sync::Arc::new(move |request| {
         seen.lock().unwrap().push(request.url);
         let release = release.clone();
         Box::pin(async move {
             release.notified().await;
-            Ok(maestro_app::HttpResponse {
+            Ok(maestro_models::HttpResponse {
                 status: 200,
                 status_text: "OK".into(),
                 headers: std::collections::BTreeMap::default(),
@@ -1930,7 +1947,7 @@ async fn until_shown(world: &World, text: &str, tasks: &mut Tasks) {
 }
 
 /// Builds the actual configured sources and modes used by completion permutations.
-fn completion_world(root: &std::path::Path, fetch: maestro_app::Fetch) -> World {
+fn completion_world(root: &std::path::Path, fetch: maestro_models::Fetch) -> World {
     let world = native_package_world_with(
         root,
         None,
@@ -1952,7 +1969,7 @@ fn completion_world(root: &std::path::Path, fetch: maestro_app::Fetch) -> World 
         .session()
         .settings_manager()
         .borrow_mut()
-        .set_npm_command(Some(vec![maestro_app::SettingsListEntry::String(
+        .set_npm_command(Some(vec![maestro_settings::SettingsListEntry::String(
             "npm".into(),
         )]));
     world
@@ -1968,24 +1985,18 @@ async fn assert_current_agent_root(world: &World, root: &std::path::Path) {
     let session = world.host.session();
     let services_root = std::path::PathBuf::from(&world.host.services().agent_dir);
     std::fs::create_dir_all(services_root.join("git/example.test/team/other")).unwrap();
-    session
-        .settings_manager()
-        .borrow_mut()
-        .set_packages(vec![maestro_app::PackageSource::Source(
-            "https://example.test/team/other".into(),
-        )]);
+    session.settings_manager().borrow_mut().set_packages(vec![
+        maestro_settings::PackageSource::Source("https://example.test/team/other".into()),
+    ]);
     let (result, errors) = super::driving(world, world.mode.check_for_package_updates()).await;
     assert!(errors.is_empty());
     assert_eq!(result, ["after"], "the services' agent root is not read");
     assert!(!root.join("git-observed").exists());
     let checkout = root.join("git/example.test/team/repo");
     std::fs::create_dir_all(&checkout).unwrap();
-    session
-        .settings_manager()
-        .borrow_mut()
-        .set_packages(vec![maestro_app::PackageSource::Source(
-            "https://example.test/team/repo".into(),
-        )]);
+    session.settings_manager().borrow_mut().set_packages(vec![
+        maestro_settings::PackageSource::Source("https://example.test/team/repo".into()),
+    ]);
     assert_ne!(world.host.services().agent_dir, root.to_str().unwrap());
     let (result, errors) = super::driving(world, world.mode.check_for_package_updates()).await;
     assert!(errors.is_empty());
@@ -2112,7 +2123,7 @@ fn initialization_case(test: &str, body: impl AsyncFnOnce(&std::path::Path)) {
 fn initialization_event(world: &World, text: &str) {
     super::events::dispatch(
         world,
-        maestro_app::AgentEvent::MessageStart {
+        maestro_agent::AgentEvent::MessageStart {
             message: super::transcript::message(serde_json::json!({
                 "role": "user", "content": text, "timestamp": 0
             })),
@@ -2195,7 +2206,7 @@ fn run_awaits_initialization_before_startup_checks() {
                         if request.url.ends_with("/api/latest-version") {
                             seen.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                         }
-                        Box::pin(async { Err(maestro_app::FetchError::Timeout) })
+                        Box::pin(async { Err(maestro_models::FetchError::Timeout) })
                     })),
                     ..Default::default()
                 },
@@ -2240,7 +2251,7 @@ fn queued_event_failure_does_not_drop_later_events() {
             world
                 .terminal
                 .set_progress_error(Some(std::io::ErrorKind::PermissionDenied));
-            super::events::dispatch(&world, maestro_app::AgentEvent::AgentStart);
+            super::events::dispatch(&world, maestro_agent::AgentEvent::AgentStart);
             initialization_event(&world, "AFTER_ERROR");
             let mut work = world.runtime.take_futures();
             assert_eq!(work.len(), 1);

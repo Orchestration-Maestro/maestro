@@ -55,7 +55,7 @@ A custom message can carry a native handle without JSON conversion:
 
 ```rust,ignore
 use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
-use maestro_app::{AgentMessage, CustomAgentMessages};
+use maestro_agent::{AgentMessage, CustomAgentMessages};
 use maestro_web::{MessageRenderer, register_message_renderer};
 use maestro_web::page::{DomContent, DomRoot, DomView};
 use maestro_web::tools::types::ToolUiError;
@@ -185,7 +185,7 @@ Portable Markdown controls retain code listings; the browser owns the document
 HTML and generated listing-slot attribute.
 
 Markdown parsing and scoped inline interpretation use the shared
-[Markdown owner](../markdown.md), reached through `maestro_app::markdown`.
+[Markdown owner](../markdown.md), imported from `maestro_markdown`.
 The browser grammar receives the component's escaping policy and parses authored
 source once per document. Display formulas enter the
 block phase through the component's tokenizer, before reference resolution.
