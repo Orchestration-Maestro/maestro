@@ -138,7 +138,7 @@ adapter, the native-only `maestro-extensions-wasm` to `maestro-listeners`
 development edge for the controlled guest bus, the native-only `maestro` to
 `maestro-lock` development edge that serializes the executable's file-trigger
 test on the shared host fixture, and the native development edges from the
-twenty-three declared callers to the
+twenty-nine declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
