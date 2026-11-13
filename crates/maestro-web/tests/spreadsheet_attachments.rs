@@ -446,6 +446,7 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
 }
 
 /// Load an in-memory spreadsheet without network access or another executor.
+#[cfg(not(target_arch = "wasm32"))]
 fn extract_workbook(
     bytes: &[u8],
     name: &str,
@@ -473,6 +474,7 @@ fn extract_workbook(
     };
     result
 }
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
     use base64::Engine as _;
