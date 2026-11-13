@@ -33,7 +33,7 @@ fn unlabeled_python_integer_list_keeps_search_work_linear() {
 
 #[test]
 fn only_ignore_capable_begins_prepare_resumption_suffixes() {
-    use crate::highlight::core::types::{Callback, RuleKind};
+    use crate::highlight::core::grammar::{Callback, RuleKind};
     core::tables(HighlightProfile::CodeBlock).unwrap();
     let tables = core::tables(HighlightProfile::ExportViewer).unwrap();
     assert_eq!(tables.modes.len(), 532);

@@ -97,7 +97,7 @@ pub(super) fn assert_result(profile: HighlightProfile, input: &Input) {
     assert_eq!(
         matches!(
             best.outcome,
-            crate::highlight::core::types::Relevance::Illegal
+            crate::highlight::core::grammar::Relevance::Illegal
         ),
         expected.illegal,
         "{} {profile:?}",
@@ -118,7 +118,7 @@ pub(super) fn assert_result(profile: HighlightProfile, input: &Input) {
     assert!(
         !matches!(
             second.outcome,
-            crate::highlight::core::types::Relevance::Illegal
+            crate::highlight::core::grammar::Relevance::Illegal
         ),
         "{} {profile:?}",
         input.id
@@ -238,7 +238,7 @@ pub(super) fn witnesses(names: &[&str]) {
         assert_eq!(
             matches!(
                 result.outcome,
-                crate::highlight::core::types::Relevance::Illegal
+                crate::highlight::core::grammar::Relevance::Illegal
             ),
             row.illegal,
             "{} {}",

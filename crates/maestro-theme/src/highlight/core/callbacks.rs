@@ -1,5 +1,5 @@
 //! Boundary admission with callback data owned by entered frames.
-use super::{matcher::Hit, types::Callback};
+use super::{grammar::Callback, matcher::Hit};
 use maestro_text::is_whitespace_scalar;
 
 /// Whether this callback can reject a boundary match.

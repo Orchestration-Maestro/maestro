@@ -1,7 +1,8 @@
 //! Ordered matching and scalar-safe cursor progress.
 use super::{
-    Expression, Failure, Tables, published,
-    types::{Mode, ModeId, Rule, RuleKind},
+    Expression, Failure, Tables,
+    grammar::{Mode, ModeId, Rule, RuleKind},
+    published,
 };
 use regress::Regex;
 use std::{fmt::Write, sync::Arc};

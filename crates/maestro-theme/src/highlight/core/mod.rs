@@ -1,18 +1,18 @@
 //! One interpreter over immutable native grammars.
 mod buffer;
 mod callbacks;
+pub(super) mod grammar;
 mod keywords;
 mod matcher;
 mod selection;
 mod transitions;
-pub(super) mod types;
 use super::{HighlightProfile, languages};
+use grammar::{Evaluation, KeywordHits, Language, Mode, ModeId, Stack};
 use regress::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, LazyLock, OnceLock};
-use types::{Evaluation, KeywordHits, Language, Mode, ModeId, Stack};
 
 /// Owned preparation failures, retaining their native cause.
 pub(in crate::highlight) type Failure = Box<dyn Error + Send + Sync>;
@@ -156,9 +156,9 @@ impl Engine<'_> {
     ) -> Evaluation {
         let Some(root) = language.root else {
             return Evaluation {
-                score: types::Score {
+                score: grammar::Score {
                     language: Some(language.name),
-                    outcome: types::Relevance::Legal(0.),
+                    outcome: grammar::Relevance::Legal(0.),
                 },
                 stack: None,
             };
@@ -174,12 +174,12 @@ impl Engine<'_> {
         };
         let illegal = run.scan(text, illegals);
         Evaluation {
-            score: types::Score {
+            score: grammar::Score {
                 language: Some(language.name),
                 outcome: if illegal {
-                    types::Relevance::Illegal
+                    grammar::Relevance::Illegal
                 } else {
-                    types::Relevance::Legal(run.relevance)
+                    grammar::Relevance::Legal(run.relevance)
                 },
             },
             stack: Some(run.stack),
@@ -222,7 +222,10 @@ impl Run<'_> {
 }
 
 /// Detect using the exact surface registry, returning stable ranked candidates.
-pub(super) fn detect(profile: HighlightProfile, code: &str) -> Result<Vec<types::Score>, Failure> {
+pub(super) fn detect(
+    profile: HighlightProfile,
+    code: &str,
+) -> Result<Vec<grammar::Score>, Failure> {
     Ok(Engine {
         tables: tables(profile)?,
         languages: languages::registered(profile),

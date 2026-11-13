@@ -2,8 +2,8 @@
 use super::{
     IllegalPolicy, Run,
     callbacks::{admit, may_ignore},
+    grammar::{Boundary, Frame, ModeId, ParentPolicy, Processing, RuleKind, Scope, SubLanguage},
     matcher::{Cursor, Hit},
-    types::{Boundary, Frame, ModeId, ParentPolicy, Processing, RuleKind, Scope, SubLanguage},
 };
 
 impl<'a> Run<'a> {

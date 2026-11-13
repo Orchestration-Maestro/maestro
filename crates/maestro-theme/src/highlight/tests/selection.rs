@@ -124,7 +124,7 @@ fn candidate_scores_match_profile_corpus() {
             assert_eq!(
                 matches!(
                     result.outcome,
-                    crate::highlight::core::types::Relevance::Illegal
+                    crate::highlight::core::grammar::Relevance::Illegal
                 ),
                 trial.illegal,
                 "{} {}",
@@ -165,14 +165,14 @@ fn plain_candidate_and_equal_scores_keep_source_order() {
         reversed.reverse();
         // Move only these immutable descriptors into reversed registration order.
         let languages = [
-            crate::highlight::core::types::Language {
+            crate::highlight::core::grammar::Language {
                 name: reversed[0].name,
                 root: reversed[0].root,
                 aliases: &[],
                 superset: reversed[0].superset,
                 fold: false,
             },
-            crate::highlight::core::types::Language {
+            crate::highlight::core::grammar::Language {
                 name: reversed[1].name,
                 root: reversed[1].root,
                 aliases: &[],
