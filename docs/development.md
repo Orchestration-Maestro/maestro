@@ -2212,7 +2212,7 @@ test observes.
 | `crates/maestro-rpc/tests/support/served.rs:281` | The native `kill` program signalling a live protocol child. | Real signal delivery to the observed child is what the case qualifies. |
 | `crates/maestro-rpc/tests/transports.rs:330` | The native `kill` program signalling the test process itself. | Real handler registration and ordering are the subject. |
 
-#### Application RPC peers
+#### RPC client peers
 
 Run the client corpus with its prepared native peers:
 
