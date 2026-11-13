@@ -1,7 +1,7 @@
 //! Typed native resources serviced by the existing local request pump.
 use super::{
     Admission, Capability, Lease, Registry, Work,
-    held::{NativeChild, NativeReader},
+    held::{NativeChild, NativeReader, NativeWriter, Pending},
     pump::State,
 };
 use maestro_extensions::native_io::{self, IoFuture};
@@ -55,11 +55,12 @@ impl Child {
     }
 }
 impl Child {
-    /// Waits for the sole native collector's completion.
+    /// Waits for the sole native collector's completion; a dropped wait leaves the child alone.
     pub(crate) async fn wait(&self) -> Result<native_io::ExitStatus, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                super::Message::Native(id, Request::Wait(reply, admission))
+            .observe::<NativeChild, _, _>(|child, _| {
+                let child = child.clone();
+                Ok(Box::pin(async move { child.wait().await }) as Pending<_>)
             })
             .await
     }
@@ -68,16 +69,18 @@ impl Writer {
     /// Writes every admitted byte in order.
     pub(crate) async fn write(&self, bytes: Vec<u8>) -> Result<(), String> {
         self.0
-            .request_async(|id, reply, admission| {
-                super::Message::Native(id, Request::Write(bytes, reply, admission))
+            .admit::<NativeWriter, _, _>(move |writer, _| {
+                let writer = writer.clone();
+                Ok(Box::pin(async move { writer.write(&bytes).await }) as Pending<_>)
             })
             .await
     }
     /// Closes input after admitted writes.
     pub(crate) async fn end(&self) -> Result<(), String> {
         self.0
-            .request_async(|id, reply, admission| {
-                super::Message::Native(id, Request::End(reply, admission))
+            .admit::<NativeWriter, _, _>(|writer, _| {
+                let writer = writer.clone();
+                Ok(Box::pin(async move { writer.end().await }) as Pending<_>)
             })
             .await
     }
@@ -86,8 +89,9 @@ impl Reader {
     /// Consumes the next raw output chunk.
     pub(crate) async fn read(&self) -> Result<Option<Vec<u8>>, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                super::Message::Native(id, Request::Read(reply, admission))
+            .observe::<NativeReader, _, _>(|reader, _| {
+                let reader = reader.clone();
+                Ok(Box::pin(async move { reader.read().await }) as Pending<_>)
             })
             .await
     }
@@ -120,44 +124,6 @@ pub(crate) enum Request {
     Spawn(Spawn, Async<Child>, Admission),
     /// Signals a native PID or supported process group.
     Kill(i32, Option<String>, Reply<()>),
-    /// Waits for the sole native collector's completion.
-    Wait(Async<native_io::ExitStatus>, Admission),
-    /// Consumes the next raw output chunk.
-    Read(Async<Option<Vec<u8>>>, Admission),
-    /// Writes every admitted byte in order.
-    Write(Vec<u8>, Async<()>, Admission),
-    /// Closes input after admitted writes.
-    End(Async<()>, Admission),
-}
-impl Request {
-    /// Settles a rejected capability without stranding a native caller.
-    fn reject(self, error: String) {
-        match self {
-            Self::Spawn(_, reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::SaveFile(_, _, _, reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::FileMode(_, reply) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::SetFileMode(_, _, reply)
-            | Self::CreateDir(_, _, reply)
-            | Self::Kill(_, _, reply) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Wait(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Read(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Write(_, reply, _) | Self::End(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-        }
-    }
 }
 impl Registry {
     /// Retains the original native child, not a reconstructed identity or snapshot.
@@ -175,7 +141,7 @@ impl Registry {
 }
 impl State {
     /// Selects the original capability outside every registry borrow.
-    pub(super) fn native(&self, id: u64, request: Request) {
+    pub(super) fn native(&self, request: Request) {
         let operations = self
             .registry
             .resources
@@ -208,8 +174,6 @@ impl State {
                 let result = operations.and_then(|io| io.kill(pid, signal));
                 let _ = reply.send(result);
             }
-            request @ Request::Wait(..) => self.native_child(id, request),
-            request => self.native_pipe(id, request),
         }
     }
     /// Admits native startup on the same pending-work set as every other operation.
@@ -230,56 +194,6 @@ impl State {
             }),
             admission,
         );
-    }
-    /// Retains the exact child while controls and independently owned waits run.
-    fn native_child(&self, id: u64, request: Request) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::NativeChild(child)) = capability.as_deref() else {
-            request.reject("native child resource ended".into());
-            return;
-        };
-        match request {
-            Request::Wait(reply, admission) => {
-                let child = child.clone();
-                self.admit(
-                    consuming(Box::pin(async move { child.wait().await }), reply),
-                    admission,
-                );
-            }
-            request => request.reject("operation requires a byte resource".into()),
-        }
-    }
-    /// Admits byte operations without blocking sibling descriptors or controls.
-    fn native_pipe(&self, id: u64, request: Request) {
-        let capability = self.registry.capability(id);
-        match (capability.as_deref(), request) {
-            (Some(Capability::NativeReader(reader)), Request::Read(reply, admission)) => {
-                let reader = reader.clone();
-                self.admit(
-                    consuming(Box::pin(async move { reader.read().await }), reply),
-                    admission,
-                );
-            }
-            (Some(Capability::NativeWriter(writer)), Request::Write(bytes, reply, admission)) => {
-                let writer = writer.clone();
-                self.admit(
-                    Box::pin(async move {
-                        let _ = reply.send(writer.write(&bytes).await);
-                    }),
-                    admission,
-                );
-            }
-            (Some(Capability::NativeWriter(writer)), Request::End(reply, admission)) => {
-                let writer = writer.clone();
-                self.admit(
-                    Box::pin(async move {
-                        let _ = reply.send(writer.end().await);
-                    }),
-                    admission,
-                );
-            }
-            (_, request) => request.reject("native byte resource ended".into()),
-        }
     }
 }
 

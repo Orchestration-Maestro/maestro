@@ -109,19 +109,16 @@ fn launch<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
                 let api = accessor.with(|mut access| access.get().api().clone());
                 let result = api
                     .0
-                    .request_async(|id, reply, admission| {
-                        Message::Native(
-                            id,
-                            Request::Spawn(
-                                Spawn {
-                                    command,
-                                    args,
-                                    options: options.into(),
-                                },
-                                reply,
-                                admission,
-                            ),
-                        )
+                    .request_async(|_, reply, admission| {
+                        Message::Native(Request::Spawn(
+                            Spawn {
+                                command,
+                                args,
+                                options: options.into(),
+                            },
+                            reply,
+                            admission,
+                        ))
                     })
                     .await;
                 let result = match result {
@@ -139,7 +136,7 @@ fn launch<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
                 .data()
                 .api()
                 .0
-                .request(|id, reply| Message::Native(id, Request::Kill(pid, signal, reply)));
+                .request(|_, reply| Message::Native(Request::Kill(pid, signal, reply)));
             Ok((result,))
         },
     )

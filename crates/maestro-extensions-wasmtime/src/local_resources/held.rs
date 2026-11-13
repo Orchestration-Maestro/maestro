@@ -276,6 +276,14 @@ held!(
 );
 
 held!(
+    /// A native byte writer.
+    NativeWriter,
+    std::rc::Rc<dyn maestro_extensions::native_io::Writable>,
+    "native byte resource ended",
+    Capability::NativeWriter(writer) => writer
+);
+
+held!(
     /// A native HTTP response.
     NativeResponse,
     std::rc::Rc<dyn maestro_extensions::native_io::Response>,

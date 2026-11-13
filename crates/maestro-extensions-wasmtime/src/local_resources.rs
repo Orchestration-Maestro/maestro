@@ -114,9 +114,9 @@ pub(crate) enum Message {
     /// Builds, uses or lends host widgets and styles.
     Widgets(crate::widget_reads::WidgetMessage),
     /// Typed operations on original application-supplied native resources.
-    Native(u64, native_resources::Request),
+    Native(native_resources::Request),
     /// HTTP operations retain their native response and signal.
-    Http(u64, http::Request),
+    Http(http::Request),
     /// Native watch registration and explicit close on the same owner.
     Watch(u64, watches::Request),
     /// Runs a call on the local owner against one capability and answers inline.

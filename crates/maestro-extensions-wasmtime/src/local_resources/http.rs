@@ -81,7 +81,7 @@ pub(crate) enum Request {
 }
 impl State {
     /// Serves HTTP operations after releasing the capability-table borrow.
-    pub(super) fn http(&self, _id: u64, request: Request) {
+    pub(super) fn http(&self, request: Request) {
         let Request::Fetch(fetch, reply, admission) = request;
         let registry = self.registry.clone();
         self.admit(

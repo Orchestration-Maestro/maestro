@@ -56,8 +56,8 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
                 };
                 let response = api
                     .0
-                    .request_async(|id, reply, admission| {
-                        Message::Http(id, Request::Fetch(fetch, reply, admission))
+                    .request_async(|_, reply, admission| {
+                        Message::Http(Request::Fetch(fetch, reply, admission))
                     })
                     .await;
                 let result = match response {
