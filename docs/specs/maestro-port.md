@@ -786,8 +786,8 @@ target: `resolve`, `resolve_groups` and `resolve_groups_with` read the working
 directory and the Windows drive directories (`current_dir`,
 `drive_dirs`) only when the operands leave a part open, so an anchored
 path never fails on an unreadable working directory. `maestro-resources`
-re-exports the five names at its existing paths, and `maestro-session` resolves
-its session paths through the module directly.
+re-exports the five names at its existing module paths, and `maestro-session`
+resolves its session paths through the module directly.
 
 The module also lists a directory and resolves real paths, on native
 targets only. `read_dir` returns one directory's entries sorted by file name on

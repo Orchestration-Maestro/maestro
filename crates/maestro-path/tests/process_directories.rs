@@ -25,7 +25,7 @@ fn an_open_path_resolves_below_the_process_working_directory() {
 }
 
 #[test]
-fn a_supplied_working_directory_is_read_only_when_a_group_is_open() {
+fn a_supplied_working_directory_is_called_only_when_a_group_is_open() {
     let anchored = working_directory();
     let unreadable = || Err(io::Error::from(io::ErrorKind::PermissionDenied));
 
