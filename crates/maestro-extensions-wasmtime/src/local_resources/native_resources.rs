@@ -54,7 +54,43 @@ impl Child {
             .run::<NativeChild, _>(move |child, _| child.kill(signal))
     }
 }
+impl Child {
+    /// Waits for the sole native collector's completion.
+    pub(crate) async fn wait(&self) -> Result<native_io::ExitStatus, String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                super::Message::Native(id, Request::Wait(reply, admission))
+            })
+            .await
+    }
+}
+impl Writer {
+    /// Writes every admitted byte in order.
+    pub(crate) async fn write(&self, bytes: Vec<u8>) -> Result<(), String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                super::Message::Native(id, Request::Write(bytes, reply, admission))
+            })
+            .await
+    }
+    /// Closes input after admitted writes.
+    pub(crate) async fn end(&self) -> Result<(), String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                super::Message::Native(id, Request::End(reply, admission))
+            })
+            .await
+    }
+}
 impl Reader {
+    /// Consumes the next raw output chunk.
+    pub(crate) async fn read(&self) -> Result<Option<Vec<u8>>, String> {
+        self.0
+            .request_async(|id, reply, admission| {
+                super::Message::Native(id, Request::Read(reply, admission))
+            })
+            .await
+    }
     /// Closes only this byte consumer.
     pub(crate) fn close(&self) -> Result<(), String> {
         self.0.run::<NativeReader, _>(|reader, _| reader.close())
