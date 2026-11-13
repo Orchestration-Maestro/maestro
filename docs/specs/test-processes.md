@@ -90,11 +90,11 @@ Convert every remaining controlled Python or shell child, shared producer and in
 | Other native adapters | Package lifecycle/capture/Git transport, credential-process JSON/count/cache/failures, notifications/repository queries, metadata/compiler selection, live foreground payloads and clean CLI stdout. | C13-C17 |
 | Browser setup | Binding-version/lock agreement, inherited dependencies and feature union, absolute paths/patches, copied lock/toolchain and no new external lock identities. Existing browser driver work owns this setup port. | C18 |
 
-### S06: startup remains unchanged
+### S06: the startup boundary stays
 
 **Confidence: proven requirement. Evidence: C01, C05.**
 
-Do not change `STARTUP_OBSERVATION`, `RpcClient::start` or the 100 ms startup boundary. The early-exit case retains code 7, `boot failed\n`, accumulated stderr, duplicate-start and signal assertions. Qualify it in 200 separate runs while controlled Rust CPU workers keep every assigned test core busy. Start/release and join those workers explicitly. Save each outcome; this qualification is not a permanent long-running test.
+Keep `STARTUP_OBSERVATION` and the 100 ms startup boundary. The early-exit case retains code 7, `boot failed\n`, accumulated stderr, duplicate-start and signal assertions. Qualify it in 200 separate runs while controlled Rust CPU workers keep every assigned test core busy. Start/release and join those workers explicitly. Save each outcome; this qualification is not a permanent long-running test.
 
 ### S07: retained real boundaries
 
