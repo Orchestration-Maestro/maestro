@@ -474,6 +474,8 @@ fn extract_workbook(
     };
     result
 }
+
+/// A sheet that fails to decode keeps its empty wrapper so sheet order survives.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
