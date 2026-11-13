@@ -154,7 +154,7 @@ fn relative_entry_uses_the_selected_child_directory() {
 #[test]
 fn startup_reports_duplicate_and_early_exit() {
     let peer = Peer::new();
-    on_task_set(|_| async {
+    on_paused_task_set(|_| async {
         let client = RpcClient::new(peer.options(Scenario::Serve));
         let error = client.abort().await.unwrap_err();
         assert!(matches!(error, RpcClientError::NotStarted));
@@ -168,6 +168,8 @@ fn startup_reports_duplicate_and_early_exit() {
         client.stop().await.unwrap();
         client.stop().await.unwrap();
 
+        // The window cannot end while the clock is held: only each child's exit ends its start.
+        let (release, hold) = hold_clock();
         let failing = RpcClient::new(peer.options(Scenario::BootFailure));
         for runs in 1..=2 {
             let error = failing.start().await.unwrap_err();
@@ -202,6 +204,8 @@ fn startup_reports_duplicate_and_early_exit() {
             "The agent process exited at once with code null. Stderr: "
         );
         killed.stop().await.unwrap();
+        release.send(()).unwrap();
+        hold.await.unwrap();
     });
 }
 
@@ -212,6 +216,7 @@ fn startup_observes_the_hundred_millisecond_boundary() {
         let client = RpcClient::new(peer.options(Scenario::Booting));
         let (release, hold) = hold_clock();
         let mut events = events(&client);
+        let launched = tokio::time::Instant::now();
         let mut start = pin!(client.start());
         assert!(start.as_mut().now_or_never().is_none());
         next_of(&mut events, "peer_ready").await;
@@ -219,12 +224,55 @@ fn startup_observes_the_hundred_millisecond_boundary() {
             tokio::task::yield_now().await;
         }
         assert_eq!(client.get_stderr(), "booting\n");
-        tokio::time::advance(Duration::from_millis(99)).await;
-        assert!(start.as_mut().now_or_never().is_none());
-        tokio::time::advance(Duration::from_millis(1)).await;
-        assert!(matches!(start.as_mut().now_or_never(), Some(Ok(()))));
+        // Released, the paused clock moves straight to the next deadline once every task waits.
         release.send(()).unwrap();
         hold.await.unwrap();
+        start.await.unwrap();
+        assert_eq!(
+            launched.elapsed(),
+            Duration::from_millis(100),
+            "a running child is started when the window ends"
+        );
+        client.stop().await.unwrap();
+    });
+}
+
+#[test]
+fn early_exit_waits_for_held_diagnostics_only_until_the_window_ends() {
+    let peer = Peer::new();
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Descendant));
+        let (release, hold) = hold_clock();
+        let mut events = events(&client);
+        let mut start = pin!(client.start());
+        assert!(start.as_mut().now_or_never().is_none());
+        let ready = next_of(&mut events, "peer_ready").await;
+        let pid = u32::try_from(ready["pid"].as_u64().unwrap()).unwrap();
+        let mut state = pin!(client.get_state());
+        assert!(state.as_mut().now_or_never().is_none());
+        next_of(&mut events, "descendant_ready").await;
+        let mut control = std::io::BufReader::new(peer.control());
+        control.read_line(&mut String::new()).unwrap();
+        while process_exists(pid) {
+            tokio::task::yield_now().await;
+        }
+        assert!(
+            start.as_mut().now_or_never().is_none(),
+            "a descendant still holds the diagnostics open"
+        );
+        tokio::time::advance(Duration::from_millis(100)).await;
+        let error = start.await.unwrap_err();
+        assert!(matches!(
+            &error,
+            RpcClientError::ProcessExit { code: Some(0), .. }
+        ));
+        assert!(matches!(state.await, Err(RpcClientError::Stopped)));
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        release_peer(control.get_mut());
+        let mut ended = Vec::new();
+        control.read_to_end(&mut ended).unwrap();
+        assert!(ended.is_empty(), "the descendant completed its release");
         client.stop().await.unwrap();
     });
 }

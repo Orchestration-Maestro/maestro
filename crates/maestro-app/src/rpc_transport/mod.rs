@@ -23,15 +23,11 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     rc::{Rc, Weak},
-    time::Duration,
 };
 use tokio::{
     sync::{mpsc, oneshot, watch},
     time::Instant,
 };
-
-/// How long [`RpcClient::start`] lets the child run before checking that it is still alive.
-const STARTUP_OBSERVATION: Duration = Duration::from_millis(100);
 
 /// Controls one child at a time; it can be stopped and started again.
 pub struct RpcClient {
@@ -75,8 +71,6 @@ struct Running {
     done: watch::Receiver<()>,
     /// Queues the child's diagnostic bytes for this process's stderr.
     forward: std::sync::mpsc::Sender<process::Forward>,
-    /// The exit status once the child has exited.
-    exit: Option<std::process::ExitStatus>,
 }
 
 /// A deadline: it runs `expire` on `target` at `deadline`, on the local executor, while
@@ -107,7 +101,10 @@ impl RpcClient {
     }
 
     /// Launches the child in RPC mode, starts reading its output and diagnostics, then
-    /// reports a child that exits within its first 100 ms.
+    /// reports a child that exits within its first 100 ms: once its diagnostics end, or
+    /// when the 100 ms end while a descendant still holds them open. When the 100 ms end,
+    /// it asks the system once more for the child's exit before it reports the child
+    /// started.
     ///
     /// # Errors
     /// Returns [`RpcClientError::AlreadyStarted`] while a child runs, the native launch
@@ -117,20 +114,14 @@ impl RpcClient {
             return Err(RpcClientError::AlreadyStarted);
         }
         let mut command = process::command_for(&self.options)?;
-        let done = process::launch(&self.inner, &mut command, process::forward_stderr).await?;
-        tokio::time::sleep(STARTUP_OBSERVATION).await;
-        let state = self.inner.state.borrow();
-        let exit = state
-            .running
-            .as_ref()
-            .filter(|running| running.done.same_channel(&done))
-            .and_then(|running| running.exit);
-        match exit {
-            Some(status) => Err(RpcClientError::ProcessExit {
+        let startup = process::launch(&self.inner, &mut command, process::forward_stderr).await?;
+        match startup.await {
+            Ok(Some(status)) => Err(RpcClientError::ProcessExit {
                 code: status.code(),
-                stderr: state.stderr.clone(),
+                stderr: self.get_stderr(),
             }),
-            None => Ok(()),
+            // A stop during the first 100 ms ends the driver before it reports.
+            Ok(None) | Err(_) => Ok(()),
         }
     }
 
