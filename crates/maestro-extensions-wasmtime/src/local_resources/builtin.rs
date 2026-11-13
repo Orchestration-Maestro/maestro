@@ -1,9 +1,5 @@
 //! Native tool resource ownership on the original local request pump.
-use super::{
-    Admission, Capability, Message, Registry,
-    held::{BuiltinTool, Held},
-    pump::State,
-};
+use super::{Capability, Message, Registry, held::Pending, pump::State};
 use crate::builtin_reads::{Endpoint, Execution};
 use maestro_extensions::ReadToolOptions;
 use std::{
@@ -222,66 +218,43 @@ impl crate::api_reads::Endpoint {
         })
     }
 }
-impl State {
+impl Registry {
     /// Starts native execution with the caller's model and independent cancellation.
-    pub(super) fn builtin_execute(
+    pub(crate) fn execute_builtin(
         &self,
-        id: u64,
+        definition: &Rc<dyn crate::builtin_tools::Definition>,
         execution: Execution,
-        reply: tokio::sync::oneshot::Sender<Result<String, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let result = (|| {
-            let Some(Capability::Builtin(definition)) = capability.as_deref() else {
-                return Err(BuiltinTool::ENDED.to_owned());
-            };
-            let model = execution
-                .model
-                .as_deref()
-                .map(crate::writer_reads::decode)
-                .transpose()?
-                .map(Arc::new);
-            let initial_error = Rc::new(std::cell::RefCell::new(None));
-            let update = execution
-                .update
-                .map(|handler| self.builtin_update(handler, &execution.api, initial_error.clone()))
-                .transpose()?;
-            let invocation = crate::builtin_tools::Invocation {
-                id: execution.id,
-                args: crate::writer_reads::decode(&execution.args)?,
-                signal: execution
-                    .signal
-                    .as_ref()
-                    .map(|signal| self.registry.cancellation(signal))
-                    .transpose()?,
-                update,
-            };
-            let work = definition.clone().execute(invocation, model);
-            // Native initial progress runs synchronously, before the backend future is polled.
-            initial_error.borrow_mut().take().map_or(Ok(work), Err)
-        })();
-        match result {
-            Ok(work) => self.admit(
-                Box::pin(async move {
-                    let result = work
-                        .await
-                        .map_err(|error| error.to_string())
-                        .and_then(|result| {
-                            serde_json::to_string(&result).map_err(|error| error.to_string())
-                        });
-                    let _ = reply.send(result);
-                }),
-                admission,
-            ),
-            Err(error) => {
-                let _ = reply.send(Err(error));
-            }
-        }
+    ) -> Result<Pending<String>, String> {
+        let model = execution
+            .model
+            .as_deref()
+            .map(crate::writer_reads::decode)
+            .transpose()?
+            .map(Arc::new);
+        let initial_error = Rc::new(std::cell::RefCell::new(None));
+        let update = execution
+            .update
+            .map(|handler| self.builtin_update(handler, &execution.api, initial_error.clone()))
+            .transpose()?;
+        let invocation = crate::builtin_tools::Invocation {
+            id: execution.id,
+            args: crate::writer_reads::decode(&execution.args)?,
+            signal: execution
+                .signal
+                .as_ref()
+                .map(|signal| self.cancellation(signal))
+                .transpose()?,
+            update,
+        };
+        let work = definition.clone().execute(invocation, model);
+        // Native initial progress runs synchronously, before the backend future is polled.
+        initial_error.borrow_mut().take().map_or(Ok(()), Err)?;
+        Ok(Box::pin(async move {
+            let result = work.await.map_err(|error| error.to_string())?;
+            serde_json::to_string(&result).map_err(|error| error.to_string())
+        }))
     }
-}
 
-impl State {
     /// Delivers native progress through the existing synchronous frame and diagnostic owner.
     fn builtin_update(
         &self,
@@ -292,8 +265,8 @@ impl State {
         maestro_extensions::AgentToolUpdateCallback<serde_json::Value, maestro_extensions::Local>,
         String,
     > {
-        let events = self.registry.events(api)?;
-        let registry = self.registry.clone();
+        let events = self.events(api)?;
+        let registry = self.clone();
         Ok(Rc::new(move |partial| {
             let result = serde_json::to_string(&partial)
                 .map_err(|error| error.to_string())
@@ -335,13 +308,6 @@ pub(crate) enum Operation {
         Factory,
         std::sync::mpsc::Sender<Result<crate::builtin_reads::Endpoint, String>>,
     ),
-    /// Executes a retained native tool without blocking request consumption.
-    Execute(
-        u64,
-        crate::builtin_reads::Execution,
-        tokio::sync::oneshot::Sender<Result<String, String>>,
-        Admission,
-    ),
 }
 impl State {
     /// Dispatches one native built-in operation without adding another request receiver.
@@ -355,9 +321,6 @@ impl State {
             }
             Operation::Create(factory, reply) => {
                 let _ = reply.send(self.registry.create_builtin(factory));
-            }
-            Operation::Execute(id, execution, reply, admission) => {
-                self.builtin_execute(id, execution, reply, admission);
             }
         }
     }

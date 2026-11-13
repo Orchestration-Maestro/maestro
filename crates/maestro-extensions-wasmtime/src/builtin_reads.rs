@@ -6,7 +6,7 @@
 )]
 use crate::{
     builtin_tools,
-    local_resources::{Lease, Message, SignalEndpoint, held::BuiltinTool},
+    local_resources::{Lease, SignalEndpoint, held::BuiltinTool},
 };
 use std::sync::Arc;
 
@@ -67,10 +67,8 @@ impl Endpoint {
     /// Admits asynchronous native execution on the original local pump.
     pub(crate) async fn execute(&self, execution: Execution) -> Result<String, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::BuiltinOperation(crate::local_resources::builtin::Operation::Execute(
-                    id, execution, reply, admission,
-                ))
+            .admit::<BuiltinTool, _, _>(move |definition, registry| {
+                registry.execute_builtin(definition, execution)
             })
             .await
     }
