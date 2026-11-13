@@ -58,12 +58,14 @@ impl std::error::Error for OAuthError {
 
 impl OAuthError {
     /// Construct an authored message without inventing diagnostic details.
-    pub(crate) fn message(message: impl Into<String>) -> Self {
+    #[must_use]
+    pub fn message(message: impl Into<String>) -> Self {
         crate::DiagnosticErrorInfo::new(None, message).into()
     }
 
     /// Format supplied fields, with nested cause before supplied stack text.
-    pub(crate) fn details(&self) -> String {
+    #[must_use]
+    pub fn details(&self) -> String {
         let mut parts = vec![self.diagnostic.name.as_ref().map_or_else(
             || self.diagnostic.message.clone(),
             |name| format!("{name}: {}", self.diagnostic.message),

@@ -13,6 +13,7 @@ maestro-agent = { path = "../maestro-agent" }
 maestro-export = { path = "../maestro-export" }
 maestro-extensions = { path = "../maestro-extensions" }
 maestro-models = { path = "../maestro-models" }
+maestro-providers = { path = "../maestro-providers" }
 maestro-packages = { path = "../maestro-packages" }
 maestro-resources = { path = "../maestro-resources" }
 maestro-settings = { path = "../maestro-settings" }

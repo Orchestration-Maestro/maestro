@@ -1,28 +1,13 @@
-#![doc = include_str!("../../../../docs/models/oauth.md")]
-pub mod device;
-pub mod pages;
+//! The login provider registry, its records and the proof-key helper.
+//!
+//! The registry starts empty. A composition installs the built-in providers as its base
+//! layer with [`install_built_in_oauth_providers`]; `maestro-providers` owns those providers
+//! and their login flows.
 pub mod proof_key;
-pub mod responses;
-pub mod subscription;
 pub mod types;
-
-mod callback;
-mod native;
-pub use device::browser::{
-    GITHUB_COPILOT_OAUTH_PROVIDER, get_github_copilot_base_url, login_github_copilot,
-    normalize_domain, refresh_github_copilot_token,
-};
-
-pub(crate) use maestro_text::is_whitespace_scalar as authorization_whitespace;
 
 use crate::SharedHandle;
 use indexmap::IndexMap;
-pub use responses::code_login::{
-    OPENAI_CODEX_OAUTH_PROVIDER, login_openai_codex, refresh_openai_codex_token,
-};
-pub use subscription::browser::{
-    ANTHROPIC_OAUTH_PROVIDER, login_anthropic, refresh_anthropic_token,
-};
 pub use types::{
     OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthLoginCallbacks, OAuthPrompt,
     OAuthProvider, OAuthProviderId, OAuthProviderInterface, OAuthSelectOption, OAuthSelectPrompt,
@@ -35,69 +20,95 @@ pub type OAuthProviderHandle = SharedHandle<dyn OAuthProviderInterface + Send + 
 #[cfg(target_arch = "wasm32")]
 pub type OAuthProviderHandle = SharedHandle<dyn OAuthProviderInterface>;
 
-/// Original account implementations in their registration order.
-fn builtin_providers() -> IndexMap<OAuthProviderId, OAuthProviderHandle> {
-    let providers: [OAuthProviderHandle; 3] = [
-        SharedHandle::new(subscription::browser::AnthropicOAuthProvider),
-        SharedHandle::new(device::browser::GitHubCopilotOAuthProvider),
-        SharedHandle::new(responses::code_login::OpenAICodexOAuthProvider),
-    ];
-    providers
-        .into_iter()
-        .map(|provider| (provider.id().to_owned(), provider))
-        .collect()
+/// Provider membership: the installed built-ins under the live registrations.
+#[derive(Default)]
+struct Registry {
+    /// Built-in implementations in their installed order; they hold the first positions.
+    built_ins: IndexMap<OAuthProviderId, OAuthProviderHandle>,
+    /// Registrations in their order; one carrying a built-in's identifier shadows that built-in.
+    registered: IndexMap<OAuthProviderId, OAuthProviderHandle>,
+}
+
+impl Registry {
+    /// The registration for `id`, or else its built-in.
+    fn get(&self, id: &str) -> Option<&OAuthProviderHandle> {
+        self.registered.get(id).or_else(|| self.built_ins.get(id))
+    }
+
+    /// Built-ins in their positions, each replaced by its registration, then the other
+    /// registrations in their order.
+    fn ordered(&self) -> impl Iterator<Item = &OAuthProviderHandle> {
+        let built_ins = self
+            .built_ins
+            .iter()
+            .map(move |(id, built_in)| self.registered.get(id).unwrap_or(built_in));
+        let others = self
+            .registered
+            .iter()
+            .filter(move |(id, _)| !self.built_ins.contains_key(id.as_str()))
+            .map(|(_, provider)| provider);
+        built_ins.chain(others)
+    }
 }
 
 /// Process-wide provider membership on native targets.
 #[cfg(not(target_arch = "wasm32"))]
-static PROVIDERS: std::sync::LazyLock<
-    std::sync::Mutex<IndexMap<OAuthProviderId, OAuthProviderHandle>>,
-> = std::sync::LazyLock::new(|| std::sync::Mutex::new(builtin_providers()));
+static PROVIDERS: std::sync::LazyLock<std::sync::Mutex<Registry>> =
+    std::sync::LazyLock::new(std::sync::Mutex::default);
 #[cfg(target_arch = "wasm32")]
 thread_local! {
     /// Browser-local provider membership.
-    static PROVIDERS: std::cell::RefCell<IndexMap<OAuthProviderId, OAuthProviderHandle>> =
-        std::cell::RefCell::new(builtin_providers());
+    static PROVIDERS: std::cell::RefCell<Registry> = std::cell::RefCell::default();
 }
 
 crate::records::platform_store_accessor!(
     /// Perform map operations without invoking provider methods or retiring values.
-    with_providers, PROVIDERS, IndexMap<OAuthProviderId, OAuthProviderHandle>
+    with_providers, PROVIDERS, Registry
 );
 
 /// Look up an exact literal provider identifier.
 #[must_use]
 pub fn get_oauth_provider(id: &str) -> Option<OAuthProviderHandle> {
-    with_providers(|providers| providers.get(id).cloned())
+    with_providers(|registry| registry.get(id).cloned())
 }
 
 /// Snapshot ordered membership while sharing provider implementations.
 #[must_use]
 pub fn get_oauth_providers() -> Vec<OAuthProviderHandle> {
-    with_providers(|providers| providers.values().cloned().collect())
+    with_providers(|registry| registry.ordered().cloned().collect())
 }
 
 /// Append a provider or replace its implementation without moving its slot.
 pub fn register_oauth_provider(provider: OAuthProviderHandle) {
     let id = provider.id().to_owned();
-    let retired = with_providers(|providers| providers.insert(id, provider));
+    let retired = with_providers(|registry| registry.registered.insert(id, provider));
     drop(retired);
 }
 
 /// Restore a built-in implementation or remove a custom provider.
 pub fn unregister_oauth_provider(id: &str) {
-    let replacement = builtin_providers().shift_remove(id);
-    let retired = with_providers(|providers| match replacement {
-        Some(provider) => providers.insert(id.to_owned(), provider),
-        None => providers.shift_remove(id),
-    });
+    let retired = with_providers(|registry| registry.registered.shift_remove(id));
     drop(retired);
 }
 
-/// Restore original provider membership and order.
+/// Drop every registration, leaving the built-ins in their positions.
 pub fn reset_oauth_providers() {
-    let replacement = builtin_providers();
-    let retired = with_providers(|providers| std::mem::replace(providers, replacement));
+    let retired = with_providers(|registry| std::mem::take(&mut registry.registered));
+    drop(retired);
+}
+
+/// Places `providers` as the registry's base layer, in the order given.
+///
+/// Built-ins hold the first positions wherever registrations already stand. A registration
+/// carrying a built-in's identifier shadows that built-in in its position, and removing the
+/// registration restores the built-in there. Each call replaces the earlier base layer, so
+/// installing the same providers again changes neither membership nor order.
+pub fn install_built_in_oauth_providers(providers: impl IntoIterator<Item = OAuthProviderHandle>) {
+    let built_ins = providers
+        .into_iter()
+        .map(|provider| (provider.id().to_owned(), provider))
+        .collect();
+    let retired = with_providers(|registry| std::mem::replace(&mut registry.built_ins, built_ins));
     drop(retired);
 }
 

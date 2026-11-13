@@ -192,6 +192,9 @@ mod tests {
             stream_bedrock: cloud.stream,
             stream_simple_bedrock: cloud.stream_simple,
         });
+        let built_in: maestro_models::OAuthProviderHandle =
+            Arc::new(crate::named_account::Named("anthropic", "Anthropic"));
+        maestro_models::install_built_in_oauth_providers([built_in]);
         reset_oauth_providers();
         let account = get_oauth_provider("anthropic").unwrap();
         assert_retained_timestamp(&retained.stream, 71.0)?;

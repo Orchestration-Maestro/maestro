@@ -72,12 +72,12 @@ const EXEMPT: &[Exemption] = &[
         reason: "GitHub Copilot's request header `Editor-Plugin-Version`",
     },
     Exemption {
-        path: "crates/maestro-models/src/oauth/device/browser/token.rs",
+        path: "crates/maestro-providers/src/oauth/device/browser/token.rs",
         word: "plugin",
         reason: "GitHub Copilot's request header `Editor-Plugin-Version`",
     },
     Exemption {
-        path: "crates/maestro-models/tests/device_account_authorization.rs",
+        path: "crates/maestro-providers/tests/device_account_authorization.rs",
         word: "plugin",
         reason: "GitHub Copilot's request header `Editor-Plugin-Version`, asserted on the wire",
     },

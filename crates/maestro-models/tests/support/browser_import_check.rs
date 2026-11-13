@@ -6,8 +6,7 @@ use maestro_models::providers::response_sessions::codex::{
     stream_simple_openai_codex_responses,
 };
 use maestro_models::{
-    OPENAI_CODEX_OAUTH_PROVIDER, ProviderObjects, complete, get_model, login_openai_codex,
-    refresh_openai_codex_token, register_built_in_api_providers, reset_api_providers,
+    ProviderObjects, complete, get_model, register_built_in_api_providers, reset_api_providers,
     stream_anthropic, stream_azure_openai_responses, stream_mistral, stream_openai_completions,
     stream_openai_responses, stream_simple_anthropic, stream_simple_azure_openai_responses,
     stream_simple_mistral, stream_simple_openai_completions, stream_simple_openai_responses,
@@ -62,13 +61,7 @@ fn main() {
         register_built_in_api_providers,
         reset_api_providers,
         maestro_models::OpenAIResponsesOptions::<maestro_models::Threaded>::default(),
-        login_openai_codex,
-        OPENAI_CODEX_OAUTH_PROVIDER,
     ));
-    drop(std::hint::black_box(refresh_openai_codex_token(
-        "compile-only".into(),
-        None,
-    )));
     #[cfg(target_arch = "wasm32")]
     {
         response_session_callbacks();

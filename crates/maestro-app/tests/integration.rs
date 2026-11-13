@@ -82,6 +82,7 @@ mod resource_fixtures;
 mod resource_loading;
 mod runtime_agent;
 mod sdk_images;
+mod sdk_login_providers;
 mod sdk_registration;
 mod sdk_root_exports;
 mod sdk_session_options;

@@ -166,6 +166,9 @@ asynchronous operation `with_lock_async` runs callbacks one at a time: each read
 the text the previous one stored, so two providers changed at once both stay. An
 awaited callback must not reenter `with_lock_async`.
 `AuthStorage::from_storage` accepts either, or any `AuthStorageBackend`.
+Every constructor installs the built-in login providers into the
+[provider registry](models/oauth.md#provider-registry), so `login` and token refresh find
+`anthropic`, `github-copilot` and `openai-codex` on a fresh store.
 
 ## Configured values
 

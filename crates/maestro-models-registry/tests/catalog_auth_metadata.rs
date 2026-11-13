@@ -160,6 +160,7 @@ fn metadata_fallback() {
 }
 #[test]
 fn display_names_cover_table_oauth_and_identifier_precedence() {
+    maestro_providers::install_built_in_providers();
     let registry = maestro_models_registry::ModelRegistry::in_memory(
         support::auth(),
         crate::support::values(),

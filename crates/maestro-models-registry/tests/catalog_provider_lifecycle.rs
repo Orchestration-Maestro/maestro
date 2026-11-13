@@ -68,6 +68,7 @@ fn display_name_precedence_keeps_present_empty_names() {
     if dynamic::isolated("display_name_precedence_keeps_present_empty_names") {
         return;
     }
+    maestro_providers::install_built_in_providers();
     let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     assert_eq!(registry.get_provider_display_name("unlisted"), "unlisted");
     assert_eq!(
@@ -602,6 +603,7 @@ fn removal_restores_builtin_oauth_and_deletes_custom_provider() {
     if dynamic::isolated("removal_restores_builtin_oauth_and_deletes_custom_provider") {
         return;
     }
+    maestro_providers::install_built_in_providers();
     let registry = ModelRegistry::in_memory(support::auth(), crate::support::values()).unwrap();
     for id in ["anthropic", "custom", "surviving"] {
         registry
