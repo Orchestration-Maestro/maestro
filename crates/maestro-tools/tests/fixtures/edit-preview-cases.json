@@ -27,7 +27,7 @@
           }
         ],
         "expected": {
-          "diff": "-1 \"hello\"\n+1 world\n 2 other",
+          "diff": "-1 “hello”  \n+1 world\n 2 other  ",
           "firstChangedLine": 1
         }
       }

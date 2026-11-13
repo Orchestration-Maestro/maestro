@@ -3,6 +3,7 @@
 //!
 //! Matching positions and lengths are UTF-8 byte offsets into the text they describe.
 
+mod lines;
 mod numbered;
 mod preview;
 
@@ -12,6 +13,7 @@ pub use preview::{EditDiffError, compute_edit_diff, compute_edits_diff};
 
 use crate::utils::diagnostics::failure;
 use icu_normalizer::ComposingNormalizer;
+use lines::{lf_lines, splice};
 use maestro_models::DiagnosticErrorInfo;
 use maestro_text::is_whitespace_scalar;
 pub use maestro_text::normalize_to_lf;
@@ -94,7 +96,7 @@ pub struct Edit {
 /// The comparison base and the completed replacement text.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AppliedEditsResult {
-    /// The text every edit was matched against.
+    /// The text the edits were applied to, as supplied.
     pub base_content: String,
     /// The text after all replacements.
     pub new_content: String,
@@ -338,9 +340,11 @@ fn locate<'a>(
 
 /// Apply edits to LF-normalized content, all matched against the same original snapshot.
 ///
-/// `normalized_content` must already use LF endings; it is not converted here. When
-/// one edit relies on fuzzy matching, every edit is matched against the fuzzy-normalized content,
-/// which is returned as the base. Each `new_text` is converted to LF, then inserted as is.
+/// `normalized_content` must already use LF endings; it is not converted here. When one
+/// edit relies on fuzzy matching, every edit is matched against the fuzzy-normalized
+/// content. Only the lines a match reaches are rewritten from it; every other line keeps
+/// its own text. The returned base is `normalized_content`. Each `new_text` is converted
+/// to LF, then inserted as is.
 ///
 /// # Errors
 /// Returns a diagnostic for an empty needle, a missing or repeated needle, overlapping
@@ -370,25 +374,18 @@ pub fn apply_edits_to_normalized_content(
             .find(&edit.old, &edit.folded_old)
             .is_some_and(|hit| hit.fuzzy)
     });
-    let base_content = if fuzzy {
-        original.folded().to_owned()
+    let matching = if fuzzy {
+        original.folded()
     } else {
-        normalized_content.to_owned()
+        normalized_content
     };
-    let matched = locate(&Space::new(&base_content), &prepared, path)?;
-    let mut new_content = String::with_capacity(base_content.len());
-    let mut cursor = 0;
-    for entry in &matched {
-        new_content.push_str(&base_content[cursor..entry.index]);
-        new_content.push_str(entry.new);
-        cursor = entry.index + entry.length;
-    }
-    new_content.push_str(&base_content[cursor..]);
-    if new_content == base_content {
+    let matched = locate(&Space::new(matching), &prepared, path)?;
+    let new_content = splice(&lf_lines(normalized_content), matching, &matched, path)?;
+    if new_content == normalized_content {
         return Err(no_change(path, prepared.len()));
     }
     Ok(AppliedEditsResult {
-        base_content,
+        base_content: normalized_content.to_owned(),
         new_content,
     })
 }

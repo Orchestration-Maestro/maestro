@@ -161,9 +161,11 @@ diagnostic.
 - Snapshot: every edit is matched against the same text, never against another
   edit's output. Matches are sorted by position, must not overlap (touching is fine)
   and are then spliced in one pass.
-- Fuzzy base: matching tries the exact text first. If any edit matches only after
+- Fuzzy matching: matching tries the exact text first. If any edit matches only after
   NFKC, per-line trailing-whitespace removal and quote, dash and space folding,
-  every edit is matched against that normalized text, which is returned as the base.
+  every edit is matched against that normalized text. Only the lines a match reaches
+  are rewritten from it; every other line keeps its own text. The returned base is the
+  supplied content, so the diff shows each rewritten line as it stood in the file.
 - Uniqueness: occurrences are counted in normalized space, overlaps included, even
   when the chosen match is exact. A nonempty `old_text` that normalization erases
   matches and counts literally only; it is never an empty insertion point.

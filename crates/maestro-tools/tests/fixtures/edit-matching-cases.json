@@ -1505,7 +1505,7 @@
           ]
         },
         "expected": {
-          "baseContent": "A\n",
+          "baseContent": "Ａ\n",
           "newContent": "“Ｒ”\t \n"
         }
       },
@@ -1587,8 +1587,8 @@
           ]
         },
         "expected": {
-          "baseContent": "left\n\"foo\"\nA\n",
-          "newContent": "LEFT\nbar\nA\n"
+          "baseContent": "left  \n“foo”\nＡ\n",
+          "newContent": "LEFT\nbar\nＡ\n"
         }
       },
       {
@@ -1610,7 +1610,7 @@
           ]
         },
         "expected": {
-          "baseContent": "Aleft\nBright\n",
+          "baseContent": "Ａleft\nＢright\n",
           "newContent": "one\ntwo\n"
         }
       },
@@ -1629,8 +1629,8 @@
           ]
         },
         "expected": {
-          "baseContent": "x\n\"y\"\n",
-          "newContent": "x\nz\n"
+          "baseContent": "x  \n“y”  \n",
+          "newContent": "x  \nz\n"
         }
       },
       {
@@ -1652,7 +1652,7 @@
           ]
         },
         "expected": {
-          "baseContent": "console.log('hello');\nhello world\n",
+          "baseContent": "console.log(‘hello’);\nhello world\n",
           "newContent": "console.log('world');\nhello universe\n"
         }
       }
@@ -2237,7 +2237,8 @@
           ]
         },
         "expected": {
-          "error": "No changes made to note.txt. The replacement left the content identical. Check for special characters, or for text that is not present as expected."
+          "baseContent": "“abc”\n",
+          "newContent": "\"abc\"\n"
         }
       },
       {
@@ -2284,7 +2285,7 @@
           ]
         },
         "expected": {
-          "baseContent": "a b\n\"c\"\n",
+          "baseContent": "a b\n“c”\n",
           "newContent": "a_b\nC\n"
         }
       },
@@ -2349,7 +2350,7 @@
           ]
         },
         "expected": {
-          "baseContent": "line one\nline two\nline three\n",
+          "baseContent": "line one   \nline two  \nline three\n",
           "newContent": "replaced\nline three\n"
         }
       },
@@ -2368,7 +2369,7 @@
           ]
         },
         "expected": {
-          "baseContent": "你好,世界\n你好(世界)\n",
+          "baseContent": "你好，世界\n你好（世界）\n",
           "newContent": "你好，maestro\n你好(maestro)\n"
         }
       },
@@ -2387,7 +2388,7 @@
           ]
         },
         "expected": {
-          "baseContent": "ABC123\ncafé\n",
+          "baseContent": "ＡＢＣ１２３\ncafé\n",
           "newContent": "XYZ789\ncoffee\n"
         }
       },
@@ -2406,7 +2407,7 @@
           ]
         },
         "expected": {
-          "baseContent": "console.log('hello');\n",
+          "baseContent": "console.log(‘hello’);\n",
           "newContent": "console.log('world');\n"
         }
       },
@@ -2425,7 +2426,7 @@
           ]
         },
         "expected": {
-          "baseContent": "const msg = \"Hello World\";\n",
+          "baseContent": "const msg = “Hello World”;\n",
           "newContent": "const msg = \"Goodbye\";\n"
         }
       },
@@ -2444,7 +2445,7 @@
           ]
         },
         "expected": {
-          "baseContent": "range: 1-5\nbreak-here\n",
+          "baseContent": "range: 1–5\nbreak—here\n",
           "newContent": "range: 10-50\nbreak--here\n"
         }
       },
@@ -2463,7 +2464,7 @@
           ]
         },
         "expected": {
-          "baseContent": "hello world\n",
+          "baseContent": "hello world\n",
           "newContent": "hello universe\n"
         }
       },
