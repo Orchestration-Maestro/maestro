@@ -204,6 +204,22 @@ fn first_save_failure_part_way_leaves_nothing_for_the_retry() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn first_save_keeps_the_bytes_already_at_its_path() {
+    let scratch = Scratch::new().unwrap();
+    let directory = scratch.path().join("sessions");
+    let mut manager =
+        super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
+    let path = manager.get_session_file().unwrap().to_owned();
+    std::fs::write(&path, "another writer\n").unwrap();
+    manager
+        .append_message(serde_json::json!({"role":"assistant","content":"saved"}))
+        .unwrap();
+    let bytes = std::fs::read_to_string(&path).unwrap();
+    assert!(bytes.starts_with("another writer\n{\"type\":\"session\""));
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn later_save_failure_part_way_leaves_no_torn_line_and_the_retry_writes_the_missed_record() {
     use std::io::Write;
     let scratch = Scratch::new().unwrap();

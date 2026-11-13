@@ -485,7 +485,7 @@ fn failed_switch_keeps_previous_history_consistent() {
 }
 
 #[test]
-fn append_failure_keeps_memory_and_partial_bytes() {
+fn append_failure_keeps_memory_and_the_next_save_writes_the_record() {
     let directory = Directory::new();
     let mut manager = SessionManager::create("cwd", Some(directory.text()), "").unwrap();
     let path = manager.get_session_file().unwrap().to_owned();

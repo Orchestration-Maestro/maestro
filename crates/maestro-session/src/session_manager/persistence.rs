@@ -207,8 +207,8 @@ impl SessionManager {
 
     /// Write the extracted history now only when it holds an assistant message.
     ///
-    /// After the scan the history counts as unsaved until the write succeeds, so a
-    /// failed write leaves the whole history for the next save.
+    /// The history counts as unsaved until the write succeeds. A failed write is cut
+    /// back to an empty file, so the next save writes the whole history once.
     pub(super) fn publish_branched(
         &mut self,
         write: impl FnOnce(&str, &[FileEntry]) -> io::Result<()>,
@@ -216,10 +216,9 @@ impl SessionManager {
         let Some(path) = self.session_file.as_deref().filter(|_| self.persist) else {
             return Ok(());
         };
-        let assistant = has_assistant(&self.file_entries)?;
         self.saved = 0;
-        if assistant {
-            write(path, &self.file_entries)?;
+        if has_assistant(&self.file_entries)? {
+            write(path, &self.file_entries).map_err(|error| restore_length(path, 0, error))?;
             self.saved = self.file_entries.len();
         }
         Ok(())
@@ -234,9 +233,8 @@ impl SessionManager {
     ///
     /// One append holds every record the file does not hold yet, so a save that follows
     /// a failed one writes the records that one missed. Nothing is written before the
-    /// history holds an assistant message, and the first save starts from an empty file.
-    /// A failed append is cut back to the earlier length, so no torn line is left for the
-    /// next record to join.
+    /// history holds an assistant message. A failed append is cut back to the earlier
+    /// length, so no torn line is left for the next record to join.
     pub(super) fn publish(
         &mut self,
         mut append: impl FnMut(&str, &[u8]) -> io::Result<()>,
@@ -244,18 +242,12 @@ impl SessionManager {
         let Some(path) = self.session_file.as_deref().filter(|_| self.persist) else {
             return Ok(());
         };
-        let first = self.saved == 0;
-        if first && !has_assistant(&self.file_entries)? {
+        if self.saved == 0 && !has_assistant(&self.file_entries)? {
             return Ok(());
         }
         let unsaved = self.file_entries.get(self.saved..).unwrap_or_default();
         let bytes = encode_entries(unsaved)?;
-        let before = if first {
-            cut(path, 0)?;
-            0
-        } else {
-            fs::metadata(path).map_or(0, |metadata| metadata.len())
-        };
+        let before = fs::metadata(path).map_or(0, |metadata| metadata.len());
         append(path, &bytes).map_err(|error| restore_length(path, before, error))?;
         self.saved = self.file_entries.len();
         Ok(())
@@ -274,8 +266,10 @@ pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
     })
 }
 
-/// Cut the session file to `length` under exclusion; an absent file stays absent.
-fn cut(path: &str, length: u64) -> io::Result<()> {
+/// Cut a failed save back to its earlier length so the retry writes it once.
+///
+/// Returns the save error, extended with the restore error when the cut also fails.
+fn restore_length(path: &str, length: u64, error: io::Error) -> io::Error {
     let cut = super::storage::with_write_lock(path, |_holder| {
         fs::OpenOptions::new()
             .write(true)
@@ -283,21 +277,11 @@ fn cut(path: &str, length: u64) -> io::Result<()> {
             .set_len(length)
     });
     match cut {
-        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
-        cut => cut,
-    }
-}
-
-/// Cut a failed save back to its earlier length so the retry writes it once.
-///
-/// Returns the save error, extended with the restore error when the cut also fails.
-fn restore_length(path: &str, length: u64, error: io::Error) -> io::Error {
-    match cut(path, length) {
-        Err(restore) => io::Error::new(
+        Err(restore) if restore.kind() != io::ErrorKind::NotFound => io::Error::new(
             error.kind(),
             format!("{error}; restoring the session file failed: {restore}"),
         ),
-        Ok(()) => error,
+        _ => error,
     }
 }
 

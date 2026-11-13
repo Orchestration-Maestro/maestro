@@ -244,8 +244,8 @@ returns the new lexical filename and records the previous file as `parentSession
 It writes the file at once only when a retained message is from the assistant;
 otherwise it waits for [first publication](#native-history). Publication overwrites
 any bytes already at the new filename, under the shared write lock. A publication
-error leaves the new history installed and unsaved: the next save empties the file and
-writes the header and every record.
+error leaves the new history installed and unsaved, and cuts the file back to empty: the
+next save writes the header and every record.
 
 `SessionManager::fork_from(source, target_cwd, session_dir, agent_dir)` copies the
 nonheader records of a source file into a new published native history. It reads
