@@ -3,19 +3,6 @@
 //! The rest of this crate works on path text; this module reads the file system
 //! the path names. Directory listing and real-path resolution exist on native
 //! targets only, because a browser build has no file system to read.
-//!
-//! File systems return a directory's entries in their own order: hash order on
-//! many Unix file systems, case-insensitive name order on NTFS. [`read_dir`]
-//! gives its callers the same name order on every platform.
-//!
-//! [`canonicalize`] resolves a native path through the file system: links are
-//! followed and `.` and `..` resolved, so every spelling of one existing file
-//! gives one path. On Windows the system reports that path in the verbatim form
-//! (`\\?\D:\x`, `\\?\UNC\server\share\x`), which users, settings and external
-//! programs do not write; this module returns the ordinary form (`D:\x`,
-//! `\\server\share\x`) instead. Comparisons, stored identities and paths handed
-//! to another program then all see the spelling those programs use. Other
-//! platforms return the native real path as it is.
 
 #[cfg(not(target_arch = "wasm32"))]
 use std::{
@@ -25,6 +12,10 @@ use std::{
 };
 
 /// The entries of the directory at `path`, sorted by file name.
+///
+/// File systems return a directory's entries in their own order: hash order on
+/// many Unix file systems, case-insensitive name order on NTFS. Callers get the
+/// same name order on every platform.
 ///
 /// Names compare by their platform encoding: bytes on Unix, code points on
 /// Windows. Entries of every kind are kept; `.` and `..` are never listed.
@@ -39,6 +30,14 @@ pub fn read_dir(path: impl AsRef<Path>) -> io::Result<Vec<DirEntry>> {
 }
 
 /// Resolve `path` to its real path, in the ordinary form on Windows.
+///
+/// Links are followed and `.` and `..` resolved, so every spelling of one
+/// existing file gives one path. On Windows the system reports that path in the
+/// verbatim form (`\\?\D:\x`, `\\?\UNC\server\share\x`), which users, settings
+/// and external programs do not write; the result is the ordinary form (`D:\x`,
+/// `\\server\share\x`) instead. Comparisons, stored identities and paths handed
+/// to another program then all see the spelling those programs use. Other
+/// platforms return the native real path as it is.
 ///
 /// A Windows real path that is not Unicode text keeps the form the system
 /// reports, because the ordinary spelling is computed on text.
