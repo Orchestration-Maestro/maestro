@@ -1,5 +1,6 @@
 //! Page-content filename pills and the artifact caption that holds one.
 use super::Pill;
+use crate::tools::browser::documents::LocalArtifactsPanel;
 use crate::{
     browser::{
         attachment_content::browser::{element, host_error},
@@ -11,7 +12,6 @@ use crate::{
         types::ToolUiError,
     },
 };
-use maestro_app::browser::tools::documents::LocalArtifactsPanel;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::closure::Closure;
 use web_sys::{Element, Event};

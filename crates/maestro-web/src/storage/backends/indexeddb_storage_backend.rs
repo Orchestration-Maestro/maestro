@@ -1,6 +1,6 @@
 //! `IndexedDB` opening and native-value record operations.
 #[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::StoreConfig;
+use crate::persistence::StoreConfig;
 
 /// Observe names lazily so successful creations affect subsequent selections.
 #[cfg(any(target_arch = "wasm32", test))]
@@ -71,14 +71,10 @@ fn prefix_bounds(prefix: Option<&str>) -> Option<(&str, String)> {
 
 /// Select non-unique native cursor traversal.
 #[cfg(any(target_arch = "wasm32", test))]
-fn cursor_direction(
-    direction: maestro_app::browser::persistence::IndexDirection,
-) -> web_sys::IdbCursorDirection {
+fn cursor_direction(direction: crate::persistence::IndexDirection) -> web_sys::IdbCursorDirection {
     match direction {
-        maestro_app::browser::persistence::IndexDirection::Asc => web_sys::IdbCursorDirection::Next,
-        maestro_app::browser::persistence::IndexDirection::Desc => {
-            web_sys::IdbCursorDirection::Prev
-        }
+        crate::persistence::IndexDirection::Asc => web_sys::IdbCursorDirection::Next,
+        crate::persistence::IndexDirection::Desc => web_sys::IdbCursorDirection::Prev,
     }
 }
 
@@ -102,13 +98,10 @@ fn json_number(value: f64) -> std::io::Result<serde_json::Value> {
 
 /// Preserve independent estimate fallbacks and division-before-scaling order.
 #[cfg(any(target_arch = "wasm32", test))]
-fn quota_info(
-    usage: Option<f64>,
-    quota: Option<f64>,
-) -> maestro_app::browser::persistence::QuotaInfo {
+fn quota_info(usage: Option<f64>, quota: Option<f64>) -> crate::persistence::QuotaInfo {
     let usage = usage.unwrap_or(0.0);
     let quota = quota.unwrap_or(0.0);
-    maestro_app::browser::persistence::QuotaInfo {
+    crate::persistence::QuotaInfo {
         usage,
         quota,
         percent: if quota == 0.0 {

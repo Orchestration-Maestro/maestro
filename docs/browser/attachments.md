@@ -1,6 +1,6 @@
 # Attachment tiles and overlays
 
-Tiles and overlays take the application-owned `SharedAttachment`
+Tiles and overlays take the `utils::attachments` `SharedAttachment`
 (`Arc<RwLock<Attachment>>`). Messages, tiles, overlays and downloads retain the
 same member even after its parent list is removed, so editing the shared record is
 observed on the next update. Model input and runtime globals receive independent

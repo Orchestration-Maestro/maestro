@@ -373,7 +373,7 @@ fn languages(view: &Rc<DomView>) {
 }
 /// Validated native arguments mount the same card as their raw object.
 fn typed(view: &Rc<DomView>) {
-    use maestro_app::browser::tools::documents::{ArtifactCommand, ArtifactsParams};
+    use maestro_web::tools::browser::documents::{ArtifactCommand, ArtifactsParams};
     let params = ArtifactsParams {
         command: ArtifactCommand::Update,
         filename: "page.html".into(),
@@ -574,7 +574,7 @@ pub(super) fn diffs(view: &Rc<DomView>) {
 /// A real panel, with its presentation counting open notifications.
 pub(super) struct Panel {
     /// Application panel the pills capture.
-    pub(super) panel: Rc<maestro_app::browser::tools::documents::LocalArtifactsPanel>,
+    pub(super) panel: Rc<maestro_web::tools::browser::documents::LocalArtifactsPanel>,
     /// Test presentation behind the panel.
     pub(super) presentation: Rc<crate::presentation::Presentation>,
 }
@@ -584,7 +584,7 @@ impl Panel {
         let host = Rc::new(crate::attachment_support::Host::default());
         let presentation = Rc::new(crate::presentation::Presentation::new(host));
         let panel = Rc::new(
-            maestro_app::browser::tools::documents::LocalArtifactsPanel::new_local(
+            maestro_web::tools::browser::documents::LocalArtifactsPanel::new_local(
                 presentation.clone(),
             ),
         );

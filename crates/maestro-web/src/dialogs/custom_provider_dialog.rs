@@ -1,6 +1,11 @@
 //! Add or edit one custom provider, testing discovery servers before saving.
 mod form;
 
+use crate::persistence::{
+    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, ManualProviderType,
+    get_app_storage,
+};
+use crate::utils::model_discovery::DiscoveryError;
 use crate::{
     browser::{attachment_content::browser::host_error, discovery::discover},
     dialogs::dialog_base::DialogBase,
@@ -8,11 +13,6 @@ use crate::{
     tools::types::ToolUiError,
 };
 use form::Form;
-use maestro_app::browser::utils::model_discovery::DiscoveryError;
-use maestro_app::{
-    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, ManualProviderType,
-    get_app_storage,
-};
 use maestro_models::Model;
 use maestro_session::Presence;
 use std::{

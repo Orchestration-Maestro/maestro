@@ -1,6 +1,8 @@
 //! Browser tool views.
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 use crate::tools::types::ToolUiError;
+/// Executable tools: artifact commands, document extraction, JavaScript execution and prompts.
+pub mod browser;
 pub mod documents;
 /// Document-extraction cards.
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]

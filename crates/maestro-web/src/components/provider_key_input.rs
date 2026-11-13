@@ -1,4 +1,6 @@
 //! Masked credential entry that tests a key with one short completion before saving it.
+use crate::persistence::get_app_storage;
+use crate::utils::proxy::apply_proxy_if_needed;
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error, set_text_if_changed},
@@ -12,7 +14,6 @@ use crate::{
     page::{DomContent, DomRoot, DomView, report},
     tools::types::ToolUiError,
 };
-use maestro_app::{browser::utils::proxy::apply_proxy_if_needed, get_app_storage};
 use maestro_models::{
     Context, Message, ProviderStreamOptions, StopReason, StreamOptions, UserContent, UserMessage,
     complete, get_model,

@@ -328,7 +328,7 @@ fn artifact_panel_open_and_close_notifications_stay_distinct() {
 /// Pair actual body identity with the reached original-file header, not mere presence.
 fn assert_visible(
     harness: &Harness,
-    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+    caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
     expected: &[String],
 ) {
     let visible = harness.visible();
@@ -450,7 +450,7 @@ fn artifact_panel_reconnect_retains_views_and_first_key() {
             harness.caller.show_artifact(active);
         } else {
             // A fresh caller can own the same records with absent selection.
-            let empty = maestro_app::browser::tools::documents::LocalArtifactsPanel::new_local(
+            let empty = maestro_web::tools::browser::documents::LocalArtifactsPanel::new_local(
                 harness.presentation.clone(),
             );
             *empty.artifacts().write().unwrap() =
@@ -465,7 +465,7 @@ fn artifact_panel_reconnect_retains_views_and_first_key() {
 /// Disconnect and reconnect with actual surviving factory handles.
 fn reconnect(
     harness: &Harness,
-    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+    caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
     expected: &artifact_support::panel::Output,
 ) {
     let before: Vec<_> = harness

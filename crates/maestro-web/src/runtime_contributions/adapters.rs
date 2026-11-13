@@ -168,7 +168,7 @@ pub(super) struct FrameView {
     /// Fetched document text.
     pub(super) document: String,
     /// Isolated-frame document URL selection.
-    pub(super) url: Option<maestro_app::SandboxUrlProvider>,
+    pub(super) url: Option<crate::SandboxUrlProvider>,
 }
 impl ContributionView for FrameView {
     fn content(&self, input: &Value) -> Box<dyn DomContent> {
@@ -189,7 +189,7 @@ struct FrameContent {
     /// Serializable input exposed inside the frame.
     input: Value,
     /// Isolated-frame document URL selection.
-    url: Option<maestro_app::SandboxUrlProvider>,
+    url: Option<crate::SandboxUrlProvider>,
 }
 /// The mounted frame and the input it was loaded with; dropping it removes the frame.
 struct MountedFrame {
@@ -202,7 +202,7 @@ impl FrameContent {
     /// Load the document into `frame` with this content's input.
     fn load(&self, frame: &crate::SandboxIframe) -> Result<(), ToolUiError> {
         let provider: maestro_models::SharedHandle<
-            dyn maestro_app::SandboxRuntimeProvider<BrowserSandboxValue>,
+            dyn crate::SandboxRuntimeProvider<BrowserSandboxValue>,
         > = maestro_models::SharedHandle::new(InputProvider(self.input.clone()));
         frame
             .load_content(&self.id, &self.document, vec![provider], Vec::new())
@@ -251,7 +251,7 @@ impl DomContent for FrameContent {
 }
 /// Injects the contribution input as a frame global.
 struct InputProvider(Value);
-impl maestro_app::SandboxRuntimeProvider<BrowserSandboxValue> for InputProvider {
+impl crate::SandboxRuntimeProvider<BrowserSandboxValue> for InputProvider {
     fn get_data(
         &self,
     ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, maestro_models::DiagnosticErrorInfo>
@@ -263,8 +263,8 @@ impl maestro_app::SandboxRuntimeProvider<BrowserSandboxValue> for InputProvider 
             BrowserSandboxValue(value),
         )]))
     }
-    fn get_runtime(&self) -> Result<maestro_app::Runtime, maestro_models::DiagnosticErrorInfo> {
-        Ok(maestro_app::Runtime::Empty)
+    fn get_runtime(&self) -> Result<crate::Runtime, maestro_models::DiagnosticErrorInfo> {
+        Ok(crate::Runtime::Empty)
     }
     fn get_description(&self) -> Result<String, maestro_models::DiagnosticErrorInfo> {
         Ok(String::new())

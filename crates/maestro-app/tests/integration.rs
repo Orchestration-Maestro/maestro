@@ -24,18 +24,8 @@ mod agent_session_runtime_events_checks;
 mod agent_session_stats_checks;
 mod agent_session_tree_navigation_checks;
 mod application_keybindings;
-mod artifact_runtime_access;
-mod attachment_loading;
 mod base_package_loading;
 mod browser_contributions;
-mod browser_discovery;
-mod browser_messages;
-mod browser_proxy;
-mod browser_schema_origins;
-mod browser_sessions;
-mod browser_storage;
-#[path = "support/browser_storage.rs"]
-mod browser_storage_support;
 mod changelog;
 #[cfg(unix)]
 #[path = "support/child.rs"]
@@ -57,8 +47,6 @@ mod context_usage_estimates;
 mod default_configuration;
 mod default_path_routes;
 mod diff_root_exports;
-mod document_extraction;
-mod docx_attachments;
 mod extension_context_exports;
 mod extension_native_io;
 mod extension_ui_exports;
@@ -71,10 +59,6 @@ mod helper_launches;
 mod hold_unchecked_text_checks;
 mod install_reporting;
 mod installation_kind;
-mod javascript_execution;
-mod lm_studio_discovery;
-#[cfg(not(target_arch = "wasm32"))]
-mod lm_studio_support;
 mod message_end_cost_override_checks;
 mod model_selector_exports;
 #[cfg(unix)]
@@ -87,9 +71,6 @@ mod package_command_execution;
 #[path = "support/package_fixtures.rs"]
 mod package_fixtures;
 mod package_manager_checks;
-mod pdf_attachments;
-mod pdf_pages;
-mod pptx_attachments;
 mod prompt_templates_checks;
 mod queued_slash_command_followup_checks;
 mod reload_stale_resource_settings_checks;
@@ -100,7 +81,6 @@ mod resource_extension_loading;
 mod resource_fixtures;
 mod resource_loading;
 mod runtime_agent;
-mod sandbox_runtime_providers;
 mod sdk_images;
 mod sdk_login_providers;
 mod sdk_registration;
@@ -138,7 +118,6 @@ mod settings_manager_checks;
 mod share_links;
 mod shell_root_exports;
 mod skill_precedence;
-mod spreadsheet_attachments;
 mod startup_completion;
 mod startup_conversions;
 mod startup_environment;
@@ -149,34 +128,18 @@ mod support {
     mod runtime;
     #[cfg(not(target_arch = "wasm32"))]
     pub use runtime::*;
-    pub mod attachment_observation;
-    pub mod attachments;
-    pub mod browser_records;
-    pub mod browser_storage_records;
     pub mod compaction;
     #[cfg(not(target_arch = "wasm32"))]
-    pub mod document_attachments;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod document_extraction;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod javascript_execution;
     pub mod no_commands;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod pdf;
     #[cfg(not(target_arch = "wasm32"))]
     mod plain_runtimes;
     #[cfg(unix)]
     pub use plain_runtimes::paused_io_runtime;
     #[cfg(not(target_arch = "wasm32"))]
-    pub use plain_runtimes::run;
+    pub use plain_runtimes::{run, run_io};
     #[cfg(not(target_arch = "wasm32"))]
     pub mod sdk_sample;
     pub mod session_harness;
-    #[cfg(not(target_arch = "wasm32"))]
-    mod shared_operands;
-    pub mod spreadsheet;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod spreadsheet_native;
 }
 mod theme_selection;
 mod tools_bash_checks;
@@ -190,10 +153,6 @@ mod tree_traversal_checks;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/watching.rs"]
 mod watching;
-
-#[cfg(not(target_arch = "wasm32"))]
-#[path = "support/artifact_presentation.rs"]
-mod artifact_presentation_support;
 
 mod executable_schemas;
 

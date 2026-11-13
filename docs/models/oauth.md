@@ -83,12 +83,13 @@ its optional fields. A supplied selector returning `None` is still present.
 The registry in `maestro-models` starts empty. `maestro_providers::install_built_in_providers()`
 installs `anthropic`, `github-copilot` and `openai-codex`, in that order, as the
 registry's base layer. `maestro-app` calls it at each composition entry
-(`create_agent_session_services`, `create_agent_session_runtime`, `create_agent_session`
-and the browser stream functions `create_stream_fn` and `create_local_stream_fn`), and
-the model-account executable calls it before it reads the registry. A program that reads
-the registry or builds a model catalog before it composes through the application calls
-the function first. On browser targets the registry is thread-local, so the call installs
-on the current thread.
+(`create_agent_session_services`, `create_agent_session_runtime` and
+`create_agent_session`), and the model-account executable calls it before it reads the
+registry. A program that reads the registry or builds a model catalog before it composes
+through the application calls the function first. The web frontend makes no call:
+`maestro-web` sends requests with stored keys and never reads the registry, so a program
+built on `maestro-web` alone calls the function before it reads the login list. On browser
+targets the registry is thread-local, so the call installs on the current thread.
 
 Built-ins hold the first positions wherever registrations already stand. A registration
 made earlier with a built-in's ID keeps shadowing that built-in in its position, exactly

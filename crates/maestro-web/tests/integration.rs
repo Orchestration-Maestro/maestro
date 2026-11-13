@@ -7,15 +7,23 @@ mod artifact_elements;
 mod artifact_elements_browser;
 mod artifact_panel;
 mod artifact_panel_browser;
+mod artifact_runtime_access;
 mod artifact_tool_cards;
 mod attachment_exports;
+mod attachment_loading;
 mod attachment_overlay;
 mod attachment_surfaces;
 mod attachment_tiles;
+mod browser_discovery;
 mod browser_effects;
 mod browser_errors;
 mod browser_fixture_support;
 mod browser_formatting;
+mod browser_messages;
+mod browser_proxy;
+mod browser_schema_origins;
+mod browser_sessions;
+mod browser_storage;
 mod chat_panel_browser;
 mod code_blocks;
 mod contributions;
@@ -25,14 +33,18 @@ mod custom_provider_card_browser;
 mod dialogs_browser;
 mod diff_factory;
 mod document_card_support;
+mod document_extraction;
 mod document_tool_cards;
 mod document_tool_cards_browser;
+mod docx_attachments;
 mod dom_content_browser;
 mod excel_views;
 mod excel_views_browser;
 mod expandable_output_browser;
 mod export_markdown;
 mod icon_rendering;
+mod javascript_execution;
+mod lm_studio_discovery;
 mod localization;
 mod markdown_blocks;
 mod markdown_blocks_browser;
@@ -55,8 +67,11 @@ mod native_markdown_browser;
 mod native_messages_browser;
 mod native_simple_artifacts_browser;
 mod native_thinking_browser;
+mod pdf_attachments;
+mod pdf_pages;
 mod pdf_views;
 mod pdf_views_browser;
+mod pptx_attachments;
 mod prompt_exports;
 mod provider_dialogs_browser;
 mod provider_exports;
@@ -67,6 +82,7 @@ mod sandbox_exports;
 mod sandbox_loading_browser;
 mod sandbox_lowering;
 mod sandbox_program_inputs;
+mod sandbox_runtime_providers;
 mod session_documents;
 mod session_download_browser;
 mod session_downloads;
@@ -77,6 +93,7 @@ mod session_link_transitions;
 mod session_links;
 mod session_links_browser;
 mod settings_dialogs_browser;
+mod spreadsheet_attachments;
 mod storage_exports;
 mod text_image_artifacts;
 mod text_image_artifacts_browser;
@@ -141,9 +158,12 @@ mod offline_tool_cards;
 
 mod offline_tool_cards_browser;
 
-#[cfg(target_arch = "wasm32")]
-#[path = "../../maestro-app/tests/support/artifact_presentation.rs"]
+#[path = "support/artifact_presentation.rs"]
 mod artifact_presentation_support;
+#[path = "support/browser_storage.rs"]
+mod browser_storage_support;
+#[cfg(not(target_arch = "wasm32"))]
+mod lm_studio_support;
 mod sample_sessions_browser;
 
 mod native_tool_browser;

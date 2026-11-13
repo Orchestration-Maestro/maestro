@@ -127,10 +127,10 @@ pub fn returned_files(import: &js_sys::Function) {
 /// User and tool rows use the same page-owned overlay route, not a containing canvas receiver.
 pub fn user_and_tool(import: &js_sys::Function) {
     use maestro_agent::AgentMessage;
-    use maestro_app::browser::components::records::{
+    use maestro_models::UserContent;
+    use maestro_web::components::browser::records::{
         CustomAgentMessages, UserMessageWithAttachments,
     };
-    use maestro_models::UserContent;
     let view = view();
     let _elements = host(&view, import);
     let record = crate::attachment_support::attachment();

@@ -2,14 +2,14 @@
 
 ## Document extraction
 
-`maestro_app::create_extract_document_tool` creates an independently configurable
+`maestro_web::create_extract_document_tool` creates an independently configurable
 `extract_document` declaration using a supplied `Fetch`, or the
 [`default_fetch`](https://docs.rs/maestro-models/latest/maestro_models/fn.default_fetch.html) when passed `None`.
 The returned `tool` is a shared mutable executable declaration that can be
 registered directly. Clone its execution callback under the read guard, then
 release the guard before invoking it.
 
-`maestro_app::EXTRACT_DOCUMENT_TOOL` is the shared default instance: a native
+`maestro_web::EXTRACT_DOCUMENT_TOOL` is the shared default instance: a native
 `LazyLock`, or a browser-local `thread_local` entry. Factory instances have
 separate proxy settings. Set the returned `cors_proxy_url` slot to an optional
 prefix; it starts unset and is read when the direct download fails with a CORS
@@ -45,7 +45,7 @@ come from the loaded attachment. There is no progress or termination request.
 
 ## JavaScript execution
 
-[`create_javascript_repl_tool`](../../crates/maestro-app/src/browser/tools/javascript_repl.rs)
+[`create_javascript_repl_tool`](../../crates/maestro-web/src/tools/browser/javascript_repl.rs)
 retains a supplied `SandboxHost`. Register its shared `tool` handle; the factory
 wrapper need not remain alive. The host owns hidden creation, execution and
 removal. Removal follows settlement and precedes return-value formatting, including
@@ -75,17 +75,18 @@ Tool cards remain tracked in
 
 ## Sandbox runtime providers
 
-The application supplies console capture, read-only attachment helpers and
-returned-file collection. The browser SDK re-exports `ConsoleRuntimeProvider`,
+The web frontend supplies console capture, read-only attachment helpers and
+returned-file collection in `maestro_web::components::browser::sandbox`. The crate
+root exports `ConsoleRuntimeProvider`,
 `ConsoleLog`, `AttachmentsRuntimeProvider`, `FileDownloadRuntimeProvider` and
 `DownloadableFile`. Use `BrowserSandboxValue` as their value parameter for the
 browser router; the default JSON parameter supports native controlled hosts.
-The projection trait stays with the application contracts.
+The projection trait stays with the provider contracts.
 
 This example is also checked in the console provider's public rustdoc:
 
 ```rust
-use maestro_app::browser::components::sandbox::{
+use maestro_web::components::browser::sandbox::{
     console_runtime_provider::ConsoleRuntimeProvider,
     providers::SandboxRuntimeProvider,
 };
@@ -129,7 +130,7 @@ and attachment runtime descriptions, followed by the JavaScript REPL and artifac
 tool descriptions with empty runtime-provider lists:
 
 ```sh
-cargo run -p maestro-app --locked --example count_prompt_tokens
+cargo run -p maestro-web --locked --example count_prompt_tokens
 ```
 
 Set `ANTHROPIC_API_KEY` in the environment through your usual secret-management

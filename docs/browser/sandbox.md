@@ -11,7 +11,7 @@ runtime bundle, a Rust program built for the browser; your content stays plain
 JavaScript that the frame runs as input.
 
 ```rust
-use maestro_app::{BuiltinRuntime, Runtime};
+use maestro_web::{BuiltinRuntime, Runtime};
 use maestro_models::DiagnosticErrorInfo;
 
 // Inside a `SandboxRuntimeProvider` implementation:
@@ -235,8 +235,8 @@ additional consumers and JavaScript-wrapper mode. The browser-local
 `JAVASCRIPT_REPL_TOOL` is a thread-local lazy application registration: access it
 with `.with(...)` to read or replace its existing provider-factory and URL slots.
 Initialization mounts nothing; each tool execution obtains its own adapter.
-[Application output and download formatting](../application/browser-tools.md#javascript-execution)
-stay with the application factory, also re-exported at the browser crate root.
+[Output and download formatting](../application/browser-tools.md#javascript-execution)
+stay with the `tools::browser::javascript_repl` factory, exported at the crate root.
 
 Direct SDK execution takes an owned `SandboxExecution<BrowserSandboxValue>`,
 additional message consumers and an independent `is_html_artifact` flag.
@@ -339,7 +339,7 @@ string conversion otherwise, preserving serializer failures.
 
 ## Concrete providers
 
-The browser SDK exports the application-owned
+The crate root exports the
 [console, attachment and returned-file providers](../application/browser-tools.md#sandbox-runtime-providers).
 Instantiate them with `BrowserSandboxValue` for native handle retention, then
 register them in the router's provider collection. Each returns a built-in selection;

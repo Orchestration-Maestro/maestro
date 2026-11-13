@@ -220,7 +220,7 @@ mod tests {
     fn assert_recorded_zero_usage(usage: &Usage) {
         let value = serde_json::to_value(usage).unwrap();
         let fixture: serde_json::Value = serde_json::from_str(include_str!(
-            "../../maestro-app/tests/fixtures/browser_sessions.json"
+            "../../maestro-web/tests/fixtures/browser_sessions.json"
         ))
         .unwrap();
         let row = fixture["rows"]

@@ -1,9 +1,9 @@
 //! Hidden native placement and application trait forwarding.
 use super::{BrowserSandboxValue, DiagnosticErrorInfo, SandboxIframe, diagnostic};
-use maestro_app::browser::components::sandboxed_iframe::{
+use crate::components::browser::sandboxed_iframe::{
     SandboxExecution, SandboxHost, SandboxIframe as ApplicationSandboxIframe,
 };
-use maestro_app::{SandboxResult, SandboxUrlProvider};
+use crate::components::browser::sandboxed_iframe::{SandboxResult, SandboxUrlProvider};
 use maestro_models::BoxFuture;
 use wasm_bindgen::JsCast as _;
 

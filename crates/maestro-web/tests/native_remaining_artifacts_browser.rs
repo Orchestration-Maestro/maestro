@@ -343,7 +343,7 @@ pub async fn pdf_artifact_dom_renders_all_scaled_pages(import: js_sys::Function)
     use maestro_web::tools::documents::pdf_artifact::PdfArtifact;
     let view = view();
     let _host = host(&view, &import);
-    let bytes = include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf");
+    let bytes = include_bytes!("fixtures/pdf/synthetic-multipage.pdf");
     let mut artifact = PdfArtifact::default();
     artifact.set_filename("pages.pdf".into());
     artifact.set_content(base64::engine::general_purpose::STANDARD.encode(bytes));
@@ -399,9 +399,8 @@ pub async fn artifact_tags_mount_their_owned_bodies(import: js_sys::Function) {
     use base64::Engine as _;
     let view = view();
     let _host = host(&view, &import);
-    let encoded = base64::engine::general_purpose::STANDARD.encode(include_bytes!(
-        "../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf"
-    ));
+    let encoded = base64::engine::general_purpose::STANDARD
+        .encode(include_bytes!("fixtures/pdf/synthetic-multipage.pdf"));
     for (tag, content, selector) in [
         ("text-artifact", "<literal>", "code"),
         ("generic-artifact", "AAH/", "p"),
@@ -572,7 +571,7 @@ pub async fn artifacts_panel_dom_retains_views_through_application_commands(
 async fn assert_panel_removal_and_root_release(
     panel: &maestro_web::ArtifactsPanel,
     root: DomRoot,
-    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+    caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
     view: &DomView,
 ) {
     (caller.tool().execute)(
@@ -819,7 +818,7 @@ pub async fn artifacts_panel_dom_source_properties_follow_their_controller(
 /// Native property edits survive panel refreshes and reach SDK lookup and new headers.
 fn assert_panel_property_edit(
     panel: &maestro_web::ArtifactsPanel,
-    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+    caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
     root: &DomRoot,
     (name, tag): (&str, &str),
     view: &DomView,
@@ -857,7 +856,7 @@ fn assert_panel_property_edit(
 
 /// Native element properties and application records retain the same source bytes.
 fn assert_panel_source_record(
-    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+    caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
     root: &DomRoot,
     tag: &str,
     name: &str,
@@ -931,7 +930,7 @@ pub async fn artifacts_panel_dom_errors_clear_after_a_successful_rewrite(import:
 /// Failed source execution still invalidates cached copy and download operands.
 async fn assert_html_rewrite_recovery(
     panel: &maestro_web::ArtifactsPanel,
-    caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+    caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
     root: &DomRoot,
 ) {
     use maestro_models::{DiagnosticErrorInfo, SharedHandle};

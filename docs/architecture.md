@@ -68,7 +68,7 @@ No reverse dependency is permitted.
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
 owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
 only on `maestro-request`, and `maestro-brand` depends on text and JSON.
-The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; application and the web frontend consume it.
+The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; the web frontend consumes it.
 The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, request, text and JSON; models consumes it and re-exports the client records at its existing paths.
 The `maestro-providers` crate adapts the built-in model providers: it holds their login flows, the callback server and the callback pages, and installs the built-in login providers into the registry that `maestro-models` owns. It depends on models, http, request, brand, text and JSON; the application and the composed executable consume it.
 The `maestro-package` leaf owns portable package interchange records; native

@@ -1,10 +1,10 @@
 //! Session binding: request defaults, the event subscription and the editor callbacks.
 use super::{BrowserSession, browser::Session};
+use crate::components::browser::records::CustomAgentMessages as BrowserMessages;
+use crate::persistence::get_app_storage;
+use crate::utils::proxy::create_local_stream_fn;
 use crate::{ModelSelector, components::composer::MessageEditorProps, page::report};
 use maestro_agent::{AgentEvent, AgentMessage, AgentSpawner, CustomAgentMessages, ThinkingLevel};
-use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
-use maestro_app::browser::utils::proxy::create_local_stream_fn;
-use maestro_app::get_app_storage;
 use maestro_models::{DiagnosticErrorInfo, Local, Model};
 use std::{
     rc::{Rc, Weak},

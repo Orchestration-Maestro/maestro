@@ -1,7 +1,7 @@
 //! Browser root reaches application-owned attachment policy.
 #![cfg(test)]
-use maestro_app::browser::components::records::{ArtifactAction, CustomAgentMessages};
-use maestro_app::browser::utils::attachments::{AttachmentSource, AttachmentType};
+use maestro_web::components::browser::records::{ArtifactAction, CustomAgentMessages};
+use maestro_web::utils::attachments::{AttachmentSource, AttachmentType};
 use maestro_web::{
     ArtifactMessage, Attachment, UserMessageWithAttachments, convert_attachments,
     default_convert_to_llm, is_artifact_message, is_user_message_with_attachments, load_attachment,
@@ -10,7 +10,7 @@ use std::sync::{Arc, RwLock};
 
 #[test]
 fn web_attachment_exports_use_application_records() {
-    let attachment: Attachment = maestro_app::browser::utils::attachments::Attachment {
+    let attachment: Attachment = maestro_web::utils::attachments::Attachment {
         id: "id".into(),
         r#type: AttachmentType::Image,
         file_name: "name".into(),
@@ -100,7 +100,7 @@ fn web_local_attachment_loading_does_not_fetch() {
 
 #[test]
 fn web_pdf_loading_uses_application_owner() {
-    let bytes = include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-wide.pdf");
+    let bytes = include_bytes!("fixtures/pdf/synthetic-wide.pdf");
     let fetch: maestro_models::Fetch = Arc::new(|_| panic!("local input fetched"));
     let mut future = std::pin::pin!(load_attachment(
         AttachmentSource::Buffer(bytes),

@@ -1,10 +1,10 @@
 //! Real browser storage, a recording fetch and platform prompts for the dialog exports.
 #![cfg(all(test, target_arch = "wasm32"))]
-use maestro_app::{
+use maestro_web::IndexedDBStorageBackend;
+use maestro_web::{
     AppStorage, CustomProvidersStore, IndexedDBConfig, ProviderKeysStore, SessionsStore,
     SettingsStore, StorageBackend,
 };
-use maestro_web::IndexedDBStorageBackend;
 use std::{cell::RefCell, collections::VecDeque, fmt::Write as _, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use wasm_bindgen_futures::{JsFuture, future_to_promise};
@@ -32,7 +32,7 @@ pub(crate) fn storage(name: &str) -> Rc<AppStorage> {
     let storage = Rc::new(AppStorage::new(
         settings, keys, sessions, providers, backend,
     ));
-    maestro_app::set_app_storage(Rc::clone(&storage));
+    maestro_web::set_app_storage(Rc::clone(&storage));
     storage
 }
 /// One request seen by the recording fetch.

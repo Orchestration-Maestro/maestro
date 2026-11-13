@@ -60,6 +60,7 @@ package(=maestro)
 | package(=maestro-tools)
 | package(=maestro-tui)
 | package(=maestro-tui-crossterm)
+| package(=maestro-web)
 """
 setup = "native-fixture"
 

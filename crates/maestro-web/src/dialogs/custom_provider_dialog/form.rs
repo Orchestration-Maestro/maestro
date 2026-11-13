@@ -1,5 +1,6 @@
 //! Retained fields, type choice, connection test and actions of the provider dialog.
 use super::{Editor, type_name};
+use crate::persistence::CustomProviderType;
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error, set_text_if_changed},
@@ -12,7 +13,6 @@ use crate::{
     page::report,
     tools::types::ToolUiError,
 };
-use maestro_app::CustomProviderType;
 use std::rc::{Rc, Weak};
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::{Element, Event, HtmlButtonElement};

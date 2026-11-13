@@ -27,7 +27,7 @@ table scrolling. Neither format adds a parser, worker or overlay layer.
 
 `ArtifactsPanel::default()` implements `DomContent` as an `artifacts-panel`
 element. `panel.application(&view)` returns its retained
-`maestro_app::browser::tools::documents::LocalArtifactsPanel`. Execute tools,
+`maestro_web::tools::browser::documents::LocalArtifactsPanel`. Execute tools,
 reconstruct history, replace runtime providers and read logs through that existing
 application interface. The native adapter owns no second copy of command,
 selection or replay policy.
@@ -50,9 +50,9 @@ a second modal shell. Close notifies the caller without deleting its files.
 
 The artifact module and crate root re-export `Artifact`, `ArtifactsParams`,
 `ArtifactsPanel` and `NativeArtifact`. Concrete formats keep their documented
-public paths. The application remains the owner of the artifact records and tool
+public paths. `tools::browser::documents` owns the artifact records and tool
 parameters. Browser log readers use `Rc`;
-native application log readers keep their `Arc` and thread-safety bounds.
+native log readers keep their `Arc` and thread-safety bounds.
 
 ## Retained interfaces
 
@@ -104,7 +104,7 @@ page stylesheet for mounted page content.
 Its initial filename and content are empty. Caller-supplied packs and localization
 apply on each draw; there is no global theme or new runtime.
 
-The [local application caller](../application/artifacts.md) also accepts a supplied
+The [local command owner](../application/artifacts.md) also accepts a supplied
 presentation adapter for retained placement.
 
 ## Retained panel
