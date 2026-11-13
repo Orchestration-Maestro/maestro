@@ -5,7 +5,10 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 `check_workspace(root)`; it does not execute product capabilities.
 Its crate dependency table lives in `src/graph/policy/table.rs` within the
 conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
-`POLICY` for its existing callers.
+`POLICY` for its existing callers. Table rows stay in crate-name order, as do
+the rows of the specification's crate table and the entries of `wasm_crates`,
+`test_prepare_inputs` and `test_inputs` in `.github/ci.toml`, so a crate step
+writes its line where it sorts instead of at a position every other step shares.
 
 ## Application export layout
 
