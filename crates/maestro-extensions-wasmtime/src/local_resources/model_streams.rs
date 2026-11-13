@@ -1,17 +1,16 @@
 //! Immediate native model invocation on the existing local producer owner.
 use super::{
-    Admission, Capability, Lease, Message, Registry, Work, held::AssistantStream, pump::State,
+    Capability, Lease, Message, Registry,
+    held::{AssistantStream, Pending},
 };
 use crate::model_calls::Controls;
 use maestro_extensions::{
-    AssistantMessageEventStream, Context, Local, Model, ProviderSpawner, ProviderStreamOptions,
-    SimpleStreamOptions,
+    Context, Local, Model, ProviderSpawner, ProviderStreamOptions, SimpleStreamOptions,
 };
 use std::{
     rc::Rc,
     sync::{Arc, mpsc::Sender},
 };
-use tokio::sync::oneshot;
 /// Owned setup operands, selected before returning to the guest.
 pub(crate) struct Creation {
     /// Original entry point.
@@ -22,13 +21,6 @@ pub(crate) struct Creation {
     pub(crate) controls: Controls,
     /// Synchronous setup boundary.
     pub(crate) reply: Sender<Result<Endpoint, String>>,
-}
-/// Requests against the original assistant FIFO and result owner.
-pub(crate) enum Request {
-    /// Observe a competing reader.
-    Next(oneshot::Sender<Result<Option<String>, String>>, Admission),
-    /// Observe the independent shared final message.
-    Result(oneshot::Sender<Result<String, String>>, Admission),
 }
 /// Store-safe lease of one native assistant stream.
 #[derive(Clone)]
@@ -49,19 +41,27 @@ impl Endpoint {
                 .map(|value| stream.end(value))
         })
     }
-    /// Await one native competing reader.
+    /// Await one native competing reader; canceled observers do not cancel its producer.
     pub(crate) async fn next(&self) -> Result<Option<String>, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::ModelStream(id, Request::Next(reply, admission))
+            .observe::<AssistantStream, _, _>(|stream, _| {
+                let next = stream.next();
+                Ok(Box::pin(async move {
+                    next.await
+                        .map(|value| serde_json::to_string(&value).map_err(|e| e.to_string()))
+                        .transpose()
+                }) as Pending<_>)
             })
             .await
     }
     /// Await the independent native final result.
     pub(crate) async fn result(&self) -> Result<String, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::ModelStream(id, Request::Result(reply, admission))
+            .observe::<AssistantStream, _, _>(|stream, _| {
+                let result = stream.result();
+                Ok(Box::pin(async move {
+                    serde_json::to_string(&result.await).map_err(|error| error.to_string())
+                }) as Pending<_>)
             })
             .await
     }
@@ -172,56 +172,6 @@ impl Registry {
         match capability.as_deref() {
             Some(Capability::Signal(signal)) => Ok(signal.clone()),
             _ => Err("extension signal resource ended".into()),
-        }
-    }
-}
-impl State {
-    /// Admit an observation through the sole local pending set.
-    pub(super) fn model_stream_request(&self, id: u64, request: Request) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::AssistantStream(stream)) = capability.as_deref() else {
-            request.reject();
-            return;
-        };
-        self.stage(request.answer(stream));
-    }
-}
-impl Request {
-    /// Operate on the supplied native buffer; canceled observers do not cancel its producer.
-    fn answer(self, stream: &AssistantMessageEventStream) -> Work {
-        match self {
-            Self::Next(mut reply, admission) => {
-                let next = stream.next();
-                Box::pin(async move {
-                    tokio::select! {
-                        value = next => {let _ = reply.send(value.map(|value|serde_json::to_string(&value).map_err(|e|e.to_string())).transpose());}
-                        () = reply.closed() => {}
-                    }
-                    drop(admission);
-                })
-            }
-            Self::Result(mut reply, admission) => {
-                let result = stream.result();
-                Box::pin(async move {
-                    tokio::select! {
-                        value = result => {let _ = reply.send(serde_json::to_string(&value).map_err(|e|e.to_string()));}
-                        () = reply.closed() => {}
-                    }
-                    drop(admission);
-                })
-            }
-        }
-    }
-    /// Settle an observation after its containing resource ended.
-    fn reject(self) {
-        let error = "extension assistant stream resource ended".to_owned();
-        match self {
-            Self::Next(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Result(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
         }
     }
 }

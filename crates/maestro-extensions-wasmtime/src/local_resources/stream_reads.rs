@@ -2,8 +2,8 @@
 use crate::{
     guest_calls::Handle,
     local_resources::{
-        Admission, Capability, Lease, Message, Registry, Work,
-        held::{EventBuffer, Held},
+        Capability, Lease, Message, Registry,
+        held::{EventBuffer, Pending},
     },
     stream_calls::{Operation, Selection},
 };
@@ -13,7 +13,6 @@ use std::{
     rc::Rc,
     sync::{Arc, mpsc::Sender},
 };
-use tokio::sync::oneshot;
 
 /// Native stream with local callback captures and independently retained result errors.
 type Buffer = EventStream<Handle, Result<Handle, String>, Local>;
@@ -23,13 +22,6 @@ pub(crate) struct Owner {
     buffer: Buffer,
     /// First callback failure, read outside callback-table and buffer locks.
     error: Rc<RefCell<Option<String>>>,
-}
-/// Typed requests to the original native buffer.
-pub(crate) enum Request {
-    /// Observe one competing-reader event.
-    Next(oneshot::Sender<Result<Option<Handle>, String>>, Admission),
-    /// Observe the final result independently.
-    Result(oneshot::Sender<Result<Handle, String>>, Admission),
 }
 /// Store-safe ownership of one native stream.
 #[derive(Clone)]
@@ -52,16 +44,17 @@ impl Endpoint {
     /// Observe one native event while retaining only this observation's admission.
     pub(crate) async fn next(&self) -> Result<Option<Handle>, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::Stream(id, Request::Next(reply, admission))
+            .observe::<EventBuffer, _, _>(|owner, _| {
+                let next = owner.buffer.next();
+                Ok(Box::pin(async move { Ok(next.await) }) as Pending<_>)
             })
             .await
     }
     /// Observe the native result without consuming queued events.
     pub(crate) async fn result(&self) -> Result<Handle, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::Stream(id, Request::Result(reply, admission))
+            .observe::<EventBuffer, _, _>(|owner, _| {
+                Ok(Box::pin(owner.buffer.result()) as Pending<_>)
             })
             .await
     }
@@ -126,58 +119,6 @@ fn selection_error(result: Result<Selection, String>) -> String {
         .err()
         .unwrap_or_else(|| "extension stream callback result kind mismatch".into())
 }
-impl Request {
-    /// Start one observation of the original buffer, outside the capability-table borrow.
-    fn answer(self, owner: &Owner) -> Work {
-        match self {
-            Self::Next(mut reply, admission) => {
-                let next = owner.buffer.next();
-                Box::pin(async move {
-                    tokio::select! {
-                        value = next => { let _ = reply.send(Ok(value)); }
-                        () = reply.closed() => {}
-                    }
-                    drop(admission);
-                })
-            }
-            Self::Result(mut reply, admission) => {
-                let result = owner.buffer.result();
-                Box::pin(async move {
-                    tokio::select! {
-                        value = result => { let _ = reply.send(value); }
-                        () = reply.closed() => {}
-                    }
-                    drop(admission);
-                })
-            }
-        }
-    }
-    /// Settle requests whose original resource has ended.
-    fn reject(self) {
-        let error = EventBuffer::ENDED.to_owned();
-        match self {
-            Self::Next(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-            Self::Result(reply, _) => {
-                let _ = reply.send(Err(error));
-            }
-        }
-    }
-}
-
-impl super::pump::State {
-    /// Start one original stream operation on the existing pending-work owner.
-    pub(super) fn stream_request(&self, id: u64, request: Request) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Stream(owner)) = capability.as_deref() else {
-            request.reject();
-            return;
-        };
-        self.stage(request.answer(owner));
-    }
-}
-
 /// Retained callbacks and the original stream-creation reply.
 pub(crate) struct Creation {
     /// Synchronous classifier admission.

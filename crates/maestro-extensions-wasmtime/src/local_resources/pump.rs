@@ -184,9 +184,7 @@ impl State {
         match message {
             Message::ModelStart(request) => request.answer(&self.registry),
             Message::Provider(request) => self.provider_request(request),
-            Message::ModelStream(id, request) => self.model_stream_request(id, request),
             Message::NewStream(request) => request.answer(&self.registry),
-            Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
             Message::LockUpdate(_, _, reply) => Self::reject_lock_update(&reply),

@@ -75,12 +75,8 @@ pub(crate) enum Message {
     ModelStart(model_streams::Creation),
     /// Routes registered-provider setup and native hook calls.
     Provider(provider_controls::Command),
-    /// Operate on its original assistant FIFO and independent result.
-    ModelStream(u64, model_streams::Request),
     /// Construct the models-owned buffer with retained local callbacks.
     NewStream(stream_reads::Creation),
-    /// Operate on the original native event buffer.
-    Stream(u64, crate::local_resources::stream_reads::Request),
     /// An operation on its original guarded context.
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.

@@ -380,6 +380,33 @@ fn settle<T: 'static, F: Future<Output = Result<T, String>> + 'static>(
     })
 }
 
+/// Settles like [`settle`], and ends the work as soon as the caller stops waiting, so a
+/// reader that was dropped leaves nothing pending.
+fn settle_observed<T: 'static, F: Future<Output = Result<T, String>> + 'static>(
+    started: Result<F, String>,
+    mut reply: tokio::sync::oneshot::Sender<Result<T, String>>,
+) -> Work {
+    Box::pin(async move {
+        match started {
+            Ok(work) => {
+                tokio::select! {
+                    result = work => { let _ = reply.send(result); }
+                    () = reply.closed() => {}
+                }
+            }
+            Err(error) => {
+                let _ = reply.send(Err(error));
+            }
+        }
+    })
+}
+
+/// Work an admitted call started, with its borrows of the held capability boxed away.
+pub(crate) type Pending<T> = std::pin::Pin<Box<dyn Future<Output = Result<T, String>>>>;
+
+/// How an admitted call settles its caller's reply.
+type Settle<T, F> = fn(Result<F, String>, tokio::sync::oneshot::Sender<Result<T, String>>) -> Work;
+
 impl Lease {
     /// Runs `call` on the local owner against the held capability while the Store thread
     /// waits for the result.
@@ -404,6 +431,36 @@ impl Lease {
     pub(crate) async fn admit<H, T, F>(
         &self,
         call: impl FnOnce(&H::Target, &Registry) -> Result<F, String> + Send + 'static,
+    ) -> Result<T, String>
+    where
+        H: Held,
+        T: Send + 'static,
+        F: Future<Output = Result<T, String>> + 'static,
+    {
+        self.admit_settling::<H, T, F>(call, settle::<T, F>).await
+    }
+
+    /// Starts the work `call` selects like [`Lease::admit`], for a wait that nothing else
+    /// depends on: the work ends, and releases the admission, once the caller drops its
+    /// wait.
+    pub(crate) async fn observe<H, T, F>(
+        &self,
+        call: impl FnOnce(&H::Target, &Registry) -> Result<F, String> + Send + 'static,
+    ) -> Result<T, String>
+    where
+        H: Held,
+        T: Send + 'static,
+        F: Future<Output = Result<T, String>> + 'static,
+    {
+        self.admit_settling::<H, T, F>(call, settle_observed::<T, F>)
+            .await
+    }
+
+    /// Admits `call` and settles the caller's reply the way `settle` does.
+    async fn admit_settling<H, T, F>(
+        &self,
+        call: impl FnOnce(&H::Target, &Registry) -> Result<F, String> + Send + 'static,
+        settle: Settle<T, F>,
     ) -> Result<T, String>
     where
         H: Held,
