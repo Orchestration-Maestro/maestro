@@ -1,6 +1,6 @@
 //! Resource path resolution, classification and real-path fallback.
 
-use crate::{catalog::real_path, metadata::text_whitespace};
+use crate::{metadata::text_whitespace, skills::real_path};
 #[doc(inline)]
 pub use maestro_path::fs::{resolve, resolve_groups, resolve_groups_with};
 use std::{

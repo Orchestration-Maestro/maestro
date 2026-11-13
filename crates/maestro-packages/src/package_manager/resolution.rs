@@ -36,7 +36,7 @@ use super::{
     sources::{self, Source},
 };
 use maestro_path::{dirname, join};
-use maestro_resources::{SourceOrigin, SourceScope, canonicalize_path, catalog::ResourceFileType};
+use maestro_resources::{ResourceFileType, SourceOrigin, SourceScope, canonicalize_path};
 use std::{
     collections::{HashMap, HashSet},
     io,
