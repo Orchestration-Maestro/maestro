@@ -357,6 +357,20 @@ directory, except the setup itself. Paths compare by component, so a native
 separator changes nothing, and the shared token walk includes macro arguments,
 closures and impl bodies.
 
+Tests of the interactive mode drive it the way a user does.
+`crates/maestro-chat/tests/interactive_mode_support/` builds the mode through
+`InteractiveMode::new` over the recording terminal and the manual frame host, with a
+session whose provider the test scripts. A test types keys into that terminal, prompts
+the session or stores its history, and reads the terminal's effects and the mode's
+read-only view. `InteractiveMode::view` returns a `ModeView`: `region` renders one of
+the eight laid-out regions (`Region`) at the terminal's width, and `editor_text`
+returns the current editor's text. The view exists only under the crate's non-default
+`test-support` feature, which the crate's own development dependency enables. A test
+that needs state the view does not show stays beside the code in
+`src/interactive_mode/tests/`. The child-process isolation and the recorded-case
+readers live once, in the support directory, and the tests inside the library include
+the same files.
+
 ## Quality checks
 
 Native platform viewers belong to the application's `utils::platform_opener`.

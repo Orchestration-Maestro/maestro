@@ -2,6 +2,7 @@
 #![cfg(test)]
 
 mod custom_and_skill_messages;
+mod events;
 mod extension_dialogs;
 mod extension_editor;
 #[path = "support/recorded_keys/filter_mode.rs"]
@@ -9,6 +10,8 @@ mod filter_mode;
 mod footer_rendering;
 #[path = "footer_support/mod.rs"]
 mod footer_support;
+mod interactive_mode_support;
+mod interactive_mode_view;
 #[path = "support/keybindings.rs"]
 mod keybindings;
 mod login_dialog;
@@ -21,7 +24,9 @@ mod occurrences;
 use maestro_theme::test_support::palette;
 #[path = "support/platform_keys.rs"]
 mod platform_keys;
+mod progress;
 mod provider_auth_selection;
+mod queues;
 #[path = "support/recorded_keys/registry.rs"]
 mod recorded_registry;
 #[path = "support/refusing_provider.rs"]
@@ -57,6 +62,7 @@ mod simple_selectors;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_test_process::subprocess;
 mod tool_rows;
+mod transcript;
 #[path = "support/tree.rs"]
 mod tree;
 mod tree_folding_and_labels;
