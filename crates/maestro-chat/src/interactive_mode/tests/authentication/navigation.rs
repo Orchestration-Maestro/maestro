@@ -10,11 +10,15 @@ use super::{
 use super::{World, isolated, isolated_case, started_with};
 use crate::AuthType;
 use maestro_credentials::AuthCredential;
-use maestro_models::{OAuthCredentials, OAuthError};
+use maestro_models::{OAuthCredentials, OAuthError, OAuthProviderHandle};
 use maestro_theme::ThemeColor;
 use maestro_tui::Component;
+use named_account::Named;
 use std::ffi::OsStr;
 use std::{path::Path, sync::Arc};
+
+#[path = "../../../../../maestro-models/tests/support/named_account.rs"]
+mod named_account;
 
 /// Registers the catalog provider `id` with two models, named `name` when given and keyed
 /// by `key`, or by a configured literal key when absent.
@@ -140,6 +144,11 @@ fn login_provider_rows_keep_method_identity_and_name_order() {
         "child",
         &[(OsStr::new("LC_ALL"), OsStr::new("en_US.UTF-8"))],
         async |directory| {
+            // The application installs the built-ins when it composes; this mode is built without it.
+            maestro_models::install_built_in_oauth_providers(
+                ["anthropic", "github-copilot", "openai-codex"]
+                    .map(|id| Arc::new(Named(id, id)) as OAuthProviderHandle),
+            );
             let world = started_with(directory, None).await;
             named_catalog(&world);
             let keys = key_rows(&world);
