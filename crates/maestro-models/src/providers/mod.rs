@@ -1,7 +1,6 @@
-//! Model protocol adapters, the opt-in simulator and the transport they share.
+//! Model protocol adapters, the opt-in simulator and the names they import from the transport.
 
 pub mod assistant_output;
-pub(crate) mod base64_text;
 pub mod chat;
 pub mod cloud;
 pub mod content;
@@ -17,5 +16,3 @@ pub(crate) mod selected_fields;
 pub mod transport;
 
 pub mod response_sessions;
-
-pub mod websocket;

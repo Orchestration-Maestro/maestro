@@ -10,6 +10,8 @@ autotests = false
 test = false
 
 [dependencies]
+indexmap = { version = "=2.14.2", features = ["serde"] }
+num-traits.workspace = true
 ryu-js.workspace = true
 serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value"] }

@@ -223,7 +223,7 @@ mod guardrails;
 mod messages;
 mod tools;
 
-use crate::providers::transport::RequestFailure;
+use maestro_http::RequestFailure;
 use maestro_request::types::present;
 use serde::Deserializer;
 use serde::de::Error as _;
