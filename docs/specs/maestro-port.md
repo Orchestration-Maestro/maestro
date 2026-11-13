@@ -776,7 +776,7 @@ qualified when the crate is extracted through
 This declaration creates no crate and moves no code.
 
 `maestro-path` owns path operations: lexical operations on path strings, and a
-file-system module, `maestro_path::fs`, for the path work that asks the file
+file-system module, `maestro_path::fs`, for the operations that read the file
 system. It sits below layer 0 and has no internal dependencies. The lexical
 operations are platform-independent. Native path normalization shares its
 segment reducer with the string flavors and preserves native component bytes
