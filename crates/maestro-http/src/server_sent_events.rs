@@ -96,12 +96,15 @@ impl SseDecoder {
 ///   value names the event, and comments and other fields are ignored.
 /// - A blank line dispatches the collected event, its data values joined by LF, when it has
 ///   a nonempty name or a data field.
+/// - With [`SseOptions::raw_lines`], every nonblank line since the last dispatch, comments
+///   included, is kept in [`ServerSentEvent::raw`].
 /// - The end of the body reads a last line that has no ending. The event still being
 ///   collected is dispatched only with [`SseOptions::flush_pending`].
 ///
 /// Data-segment mode ([`Self::data_segments`]) frames whole segments instead: LF-LF, CR-CR
 /// and CRLF-CRLF end a segment, which is delivered trimmed, as data when it opens with
-/// `data:`. The end of the body delivers nothing; [`Self::segment_tail`] returns what is left.
+/// `data:`; the trim drops a byte-order mark with the white space. The end of the body
+/// delivers nothing; [`Self::segment_tail`] returns what is left.
 #[derive(Default)]
 pub struct SseMessages {
     /// Splits body chunks into lines.

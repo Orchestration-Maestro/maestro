@@ -304,26 +304,22 @@ fn every_framing_gives_its_recorded_events_for_each_body() {
         for chunks in [&delivered, &bytewise] {
             let cut = chunks.len();
 
-            let fields = read(SseMessages::default(), chunks);
-            let message = read(SseMessages::with_options(MESSAGE_STREAM), chunks);
-            let segments = read(SseMessages::data_segments(), chunks);
+            let (fields, _) = read(SseMessages::default(), chunks);
+            let (message, _) = read(SseMessages::with_options(MESSAGE_STREAM), chunks);
+            let (segments, tail) = read(SseMessages::data_segments(), chunks);
 
+            assert_eq!(fields, case.fields, "{}: fields in {cut} chunks", case.name);
             assert_eq!(
-                fields.0, case.fields,
-                "{}: fields in {cut} chunks",
-                case.name
-            );
-            assert_eq!(
-                message.0, case.message,
+                message, case.message,
                 "{}: message in {cut} chunks",
                 case.name
             );
             assert_eq!(
-                segments.0, case.segments,
+                segments, case.segments,
                 "{}: segments in {cut} chunks",
                 case.name
             );
-            assert_eq!(segments.1, case.tail, "{}: tail in {cut} chunks", case.name);
+            assert_eq!(tail, case.tail, "{}: tail in {cut} chunks", case.name);
         }
     }
 }
