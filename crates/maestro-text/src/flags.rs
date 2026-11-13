@@ -1,4 +1,10 @@
-//! Environment flag truth.
+//! Environment reads and flag truth.
+
+/// Read one environment variable, replacing bytes that are not UTF-8 with U+FFFD.
+#[must_use]
+pub fn environment_variable(name: &str) -> Option<String> {
+    std::env::var_os(name).map(|value| value.to_string_lossy().into_owned())
+}
 
 /// Accept `1`, ASCII-case-insensitive `true` or `yes`, without trimming.
 #[must_use]

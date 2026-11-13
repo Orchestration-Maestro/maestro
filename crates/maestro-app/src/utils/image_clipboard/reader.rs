@@ -1,8 +1,7 @@
 //! Owned image reading through replaceable clipboard effects.
 use super::{base_mime_type, is_wayland_session};
-use crate::utils::copying::{
-    ClipboardOperations, ClipboardPlatform, NativeClipboardOperations, environment,
-};
+use crate::utils::copying::{ClipboardOperations, ClipboardPlatform, NativeClipboardOperations};
+use maestro_text::environment_variable;
 use std::{
     collections::BTreeMap,
     io,
@@ -70,7 +69,7 @@ pub async fn read_clipboard_image_with(
 ) -> io::Result<Option<ClipboardImage>> {
     let env = |name: &str| match options.and_then(|options| options.env.as_ref()) {
         Some(env) => env.get(name).cloned(),
-        None => environment(name),
+        None => environment_variable(name),
     };
     if env("TERMUX_VERSION").is_some_and(|value| !value.is_empty()) {
         return Ok(None);

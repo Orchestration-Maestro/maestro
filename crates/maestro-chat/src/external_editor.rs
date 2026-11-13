@@ -1,6 +1,6 @@
 //! Editing text in the user's external editor on the inherited terminal.
-use crate::environment::variable;
 use crate::temporary_file::write_temporary_file;
+use maestro_text::environment_variable;
 use maestro_tui::TUI;
 use std::{fs, io, path::Path};
 
@@ -19,7 +19,7 @@ pub(crate) struct ExternalEditorFile<'a> {
 pub(crate) fn external_command() -> Option<String> {
     ["VISUAL", "EDITOR"]
         .into_iter()
-        .find_map(|key| variable(key).filter(|value| !value.is_empty()))
+        .find_map(|key| environment_variable(key).filter(|value| !value.is_empty()))
 }
 
 /// Writes the file, stops the terminal and runs the editor on it; a zero exit hands the
@@ -90,7 +90,7 @@ fn native_command(
         let (launch, env) = windows_command(
             command,
             &path.to_string_lossy(),
-            variable("comspec").as_deref(),
+            environment_variable("comspec").as_deref(),
         );
         launch.with_context(vec![env], None)
     }
