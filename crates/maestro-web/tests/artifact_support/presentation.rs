@@ -1,5 +1,5 @@
 //! Native local application-to-view adapter used only by composition tests.
-use maestro_app::browser::tools::documents::{
+use maestro_web::tools::browser::documents::{
     ArtifactLogError, ArtifactLogReader, ArtifactPresentation, ArtifactsPanelState,
 };
 use maestro_web::{ArtifactElement, tools::documents::create_artifact_element};
@@ -92,14 +92,14 @@ impl ArtifactPresentation for Presentation {
 /// Store a literal fixture record without creating its specialized view.
 #[cfg(target_arch = "wasm32")]
 pub(crate) fn store(
-    panel: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+    panel: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
     filename: &str,
 ) {
     let now = chrono::DateTime::from_timestamp_millis(0).unwrap();
     panel.artifacts().write().unwrap().insert(
         filename.into(),
         std::sync::Arc::new(std::sync::RwLock::new(
-            maestro_app::browser::tools::documents::Artifact {
+            maestro_web::tools::browser::documents::Artifact {
                 filename: filename.into(),
                 content: "stored".into(),
                 created_at: now,

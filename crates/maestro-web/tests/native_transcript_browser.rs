@@ -2,8 +2,8 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{body, text, view};
 use maestro_agent::{AgentMessage, CustomAgentMessages};
-use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 use maestro_models::{JsonObject, ToolResultMessage};
+use maestro_web::components::browser::records::CustomAgentMessages as BrowserMessages;
 use maestro_web::{
     MessageList, MessageRenderer, StreamingMessageContainer,
     page::{DomContent, DomRoot, DomView},

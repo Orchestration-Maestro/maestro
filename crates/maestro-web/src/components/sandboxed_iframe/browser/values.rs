@@ -2,15 +2,15 @@
 use super::super::execution::ExecutionMessage;
 use super::{BrowserSandboxValue, DiagnosticErrorInfo, diagnostic};
 use crate::browser::values::native_string;
-use js_sys::{Reflect, Uint8Array};
-use maestro_app::browser::components::{
+use crate::components::browser::sandboxed_iframe::{SandboxFile, SandboxResult};
+use crate::components::browser::{
     sandbox::{
         console_runtime_provider::{ConsoleLogType, ConsoleRuntimeProvider},
         providers::RuntimeProviderValue,
     },
     sandboxed_iframe::{SandboxConsoleEntry, SandboxFileContent},
 };
-use maestro_app::{SandboxFile, SandboxResult};
+use js_sys::{Reflect, Uint8Array};
 use wasm_bindgen::JsCast as _;
 
 /// Retain only the fields the execution collector consumes.

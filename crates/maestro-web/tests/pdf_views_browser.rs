@@ -7,9 +7,9 @@ use wasm_bindgen::prelude::*;
 /// Original complete fixture bytes.
 fn bytes(multi: bool) -> &'static [u8] {
     if multi {
-        include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf")
+        include_bytes!("fixtures/pdf/synthetic-multipage.pdf")
     } else {
-        include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-tall.pdf")
+        include_bytes!("fixtures/pdf/synthetic-tall.pdf")
     }
 }
 /// Original encoded bytes for either public consumer.
@@ -219,11 +219,10 @@ pub fn pdf_native_clear_while_rendering_keeps_completed_pages() {
 /// Check literal diagnostics, caller styling and selection in the current mode.
 fn assert_artifact_error_chrome(view: &mut View) {
     view.element.set_content("Zg==".into());
-    let diagnostic =
-        maestro_app::browser::utils::attachments::portable::PdfDocument::new(vec![102])
-            .err()
-            .unwrap()
-            .to_string();
+    let diagnostic = maestro_web::utils::attachments::portable::PdfDocument::new(vec![102])
+        .err()
+        .unwrap()
+        .to_string();
     view.draw(false, vec![]);
     assert_eq!(
         js("document.querySelector('.maestro-file-error h3').textContent")

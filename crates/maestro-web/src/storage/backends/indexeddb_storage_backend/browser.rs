@@ -3,8 +3,8 @@ use super::{
     RequestTeardown, cursor_direction, error_kind, explicit_key, missing_stores, prefix_bounds,
     quota_info,
 };
+use crate::persistence::{IndexDirection, QuotaInfo, TransactionMode};
 use cursor::Progress;
-use maestro_app::browser::persistence::{IndexDirection, QuotaInfo, TransactionMode};
 use std::future::Future;
 
 /// JSON application faces on the same native owners.
@@ -13,8 +13,8 @@ mod application;
 mod cursor;
 /// Retained native transaction operations.
 mod transaction;
+use crate::persistence::IndexedDBConfig;
 use js_sys::{Promise, Reflect};
-use maestro_app::IndexedDBConfig;
 use std::{cell::RefCell, fmt, io, rc::Rc};
 pub use transaction::IndexedDBStorageTransaction;
 use wasm_bindgen::{JsCast, JsValue, closure::Closure};
@@ -179,7 +179,7 @@ fn upgrade(request: &IdbRequest, config: &IndexedDBConfig) -> Result<(), JsValue
     Ok(())
 }
 /// Forward optional store and index settings without changing existing stores.
-fn create_store(db: &IdbDatabase, schema: &maestro_app::StoreConfig) -> Result<(), JsValue> {
+fn create_store(db: &IdbDatabase, schema: &crate::persistence::StoreConfig) -> Result<(), JsValue> {
     let options = IdbObjectStoreParameters::new();
     if let Some(path) = &schema.key_path {
         options.set_key_path_opt_str(Some(path));

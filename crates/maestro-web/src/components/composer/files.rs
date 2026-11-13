@@ -1,7 +1,7 @@
 //! Chosen, dropped and pasted files: limits, loading in order and per-file failures.
 use super::{browser::Editor, browser::Listener, limit_megabytes};
+use crate::utils::attachments::{AttachmentSource, load_attachment};
 use crate::{SharedAttachment, browser::attachment_content::browser::host_error, page::report};
-use maestro_app::browser::utils::attachments::{AttachmentSource, load_attachment};
 use std::{
     rc::Rc,
     sync::{Arc, RwLock},
@@ -166,7 +166,7 @@ async fn loaded(editor: std::rc::Weak<Editor>, files: Vec<File>, origin: Origin)
     report(editor.render());
 }
 /// The original bytes of `file` as an attachment.
-async fn read(file: &File) -> Result<maestro_app::browser::utils::attachments::Attachment, String> {
+async fn read(file: &File) -> Result<crate::utils::attachments::Attachment, String> {
     let buffer = JsFuture::from(file.array_buffer())
         .await
         .map_err(|error| format!("{:?}", host_error(&error)))?;

@@ -62,10 +62,10 @@ struct SchemaInput {
     existing: Vec<String>,
 }
 /// Construct the existing application-owned schema.
-fn stores(names: Vec<String>) -> Vec<maestro_app::StoreConfig> {
+fn stores(names: Vec<String>) -> Vec<crate::persistence::StoreConfig> {
     names
         .into_iter()
-        .map(|name| maestro_app::StoreConfig {
+        .map(|name| crate::persistence::StoreConfig {
             name,
             key_path: None,
             auto_increment: None,
@@ -224,7 +224,7 @@ struct DirectionInput {
 }
 #[test]
 fn index_direction_selects_native_cursor_order() {
-    use maestro_app::browser::persistence::IndexDirection;
+    use crate::persistence::IndexDirection;
     assert_eq!(IndexDirection::default(), IndexDirection::Asc);
     for (id, input, expected) in
         adapter_cases::<DirectionInput, String>("index_direction_selects_native_cursor_order")

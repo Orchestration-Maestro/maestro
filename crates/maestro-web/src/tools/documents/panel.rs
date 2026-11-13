@@ -1,10 +1,11 @@
 //! Native artifact panel backed by the existing application command and replay owner.
 use super::{ArtifactsPanel, Callback, native::NativeArtifact};
+use crate::components::browser::sandboxed_iframe::SandboxUrlProvider;
+use crate::tools::browser::documents::LocalArtifactsPanel;
 use crate::{
     page::{self, DomContent, DomRoot, DomView, Link},
     tools::types::ToolUiError,
 };
-use maestro_app::{SandboxUrlProvider, browser::tools::documents::LocalArtifactsPanel};
 use std::{
     cell::{Cell, RefCell},
     rc::{Rc, Weak},

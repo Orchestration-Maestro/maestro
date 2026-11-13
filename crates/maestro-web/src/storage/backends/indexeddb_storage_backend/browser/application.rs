@@ -5,9 +5,7 @@
 //! and never enter this conversion.
 use super::{IndexedDBStorageBackend, IndexedDBStorageTransaction, browser_error};
 use crate::browser::json::encode_json;
-use maestro_app::browser::persistence::{
-    IndexDirection, QuotaInfo, StorageOperation, TransactionMode,
-};
+use crate::persistence::{IndexDirection, QuotaInfo, StorageOperation, TransactionMode};
 use serde_json::Value;
 use std::{future::Future, io, pin::Pin};
 use wasm_bindgen::{JsCast, JsValue};
@@ -70,7 +68,7 @@ fn decode_container(value: &JsValue, ancestors: &mut Vec<JsValue>) -> io::Result
         .collect::<io::Result<serde_json::Map<_, _>>>()
         .map(Value::Object)
 }
-impl maestro_app::StorageBackend for IndexedDBStorageBackend {
+impl crate::persistence::StorageBackend for IndexedDBStorageBackend {
     fn get<'a>(&'a self, store_name: &'a str, key: &'a str) -> StorageFuture<'a, Option<Value>> {
         Box::pin(async move {
             IndexedDBStorageBackend::get(self, store_name, key)
@@ -136,7 +134,7 @@ impl maestro_app::StorageBackend for IndexedDBStorageBackend {
         Box::pin(IndexedDBStorageBackend::request_persistence(self))
     }
 }
-impl maestro_app::StorageTransaction for IndexedDBStorageTransaction {
+impl crate::persistence::StorageTransaction for IndexedDBStorageTransaction {
     fn get<'a>(&'a self, store_name: &'a str, key: &'a str) -> StorageFuture<'a, Option<Value>> {
         Box::pin(async move {
             IndexedDBStorageTransaction::get(self, store_name, key)

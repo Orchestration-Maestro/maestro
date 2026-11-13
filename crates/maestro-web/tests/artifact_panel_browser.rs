@@ -21,9 +21,8 @@ fn check(code: &str) {
 pub fn artifact_panel_browser_pdf_overlay_return_keeps_root_and_scroll() {
     use base64::Engine as _;
     let view = Panel::new();
-    let content = base64::engine::general_purpose::STANDARD.encode(include_bytes!(
-        "../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf"
-    ));
+    let content = base64::engine::general_purpose::STANDARD
+        .encode(include_bytes!("fixtures/pdf/synthetic-multipage.pdf"));
     presentation::ready((view.caller.tool().execute)(
         "call".into(),
         serde_json::json!({"command":"create","filename":"a.pdf","content":content}),

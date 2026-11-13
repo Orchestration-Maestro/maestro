@@ -21,7 +21,7 @@ impl CustomAgentMessages for Custom {
 #[test]
 fn agent_message_wire_roundtrip_keeps_default_and_custom_roles() {
     let corpus: Value = serde_json::from_str(include_str!(
-        "../../maestro-app/tests/fixtures/browser_sessions.json"
+        "../../maestro-web/tests/fixtures/browser_sessions.json"
     ))
     .unwrap();
     let rows = corpus["rows"].as_array().unwrap();

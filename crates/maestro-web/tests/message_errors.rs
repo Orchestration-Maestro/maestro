@@ -68,10 +68,10 @@ pub fn message_failures_keep_localization_attachment_and_reading_sources(
 /// A reached tile reads its original attachment rather than a detached copy.
 fn attachment_failure(view: &DomView) {
     use maestro_agent::{AgentMessage, NoCustomMessages};
-    use maestro_app::browser::components::records::CustomAgentMessages;
+    use maestro_web::components::browser::records::CustomAgentMessages;
     let record = Arc::new(RwLock::new(maestro_web::Attachment {
         id: "original".into(),
-        r#type: maestro_app::browser::utils::attachments::AttachmentType::Document,
+        r#type: maestro_web::utils::attachments::AttachmentType::Document,
         file_name: "note.txt".into(),
         mime_type: "text/plain".into(),
         size: 3,

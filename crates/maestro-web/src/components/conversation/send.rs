@@ -3,11 +3,11 @@ use super::{
     browser::{AgentInterface, Session},
     session::stored_key,
 };
-use crate::{SharedAttachment, components::composer::can_send, tools::types::ToolUiError};
-use maestro_agent::{AgentMessage, CustomAgentMessages, PromptInput};
-use maestro_app::browser::components::records::{
+use crate::components::browser::records::{
     CustomAgentMessages as BrowserMessages, UserMessageWithAttachments,
 };
+use crate::{SharedAttachment, components::composer::can_send, tools::types::ToolUiError};
+use maestro_agent::{AgentMessage, CustomAgentMessages, PromptInput};
 use maestro_models::UserContent;
 use std::{
     rc::Rc,

@@ -1,4 +1,7 @@
 //! Completed transcript history with one result index and rows placed by emitted position.
+use crate::components::browser::records::CustomAgentMessages as BrowserMessages;
+#[cfg(any(target_arch = "wasm32", test))]
+use crate::components::browser::records::{is_artifact_message, is_user_message_with_attachments};
 #[cfg(any(target_arch = "wasm32", test))]
 use crate::{
     components::{
@@ -9,11 +12,6 @@ use crate::{
     tools::types::ToolUiError,
 };
 use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages};
-use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
-#[cfg(any(target_arch = "wasm32", test))]
-use maestro_app::browser::components::records::{
-    is_artifact_message, is_user_message_with_attachments,
-};
 #[cfg(any(target_arch = "wasm32", test))]
 use maestro_models::ToolResultMessage;
 #[cfg(any(target_arch = "wasm32", test))]

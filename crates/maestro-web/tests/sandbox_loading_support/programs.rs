@@ -29,7 +29,7 @@ pub(crate) async fn program_witness() {
         failure: None,
     })
         as SharedHandle<
-            dyn maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider<
+            dyn maestro_web::components::browser::sandbox::providers::SandboxRuntimeProvider<
                     super::BrowserSandboxValue,
                 >,
         >];
@@ -132,7 +132,7 @@ pub(crate) async fn marker_witness() {
         failure: None,
     })
         as SharedHandle<
-            dyn maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider<
+            dyn maestro_web::components::browser::sandbox::providers::SandboxRuntimeProvider<
                     super::BrowserSandboxValue,
                 >,
         >];

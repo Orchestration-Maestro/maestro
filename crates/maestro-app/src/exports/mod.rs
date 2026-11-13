@@ -1,9 +1,5 @@
 //! Private declaration fragments for the application interface.
 
-/// Browser storage stores, records and the application storage accessor.
-mod browser_storage;
-/// Browser document extraction, sandbox runtime and JavaScript execution tools.
-mod browser_tools;
 /// Clipboard copy helpers.
 mod clipboard;
 /// Application name, version, directory names and environment variable names.
@@ -30,8 +26,6 @@ mod theme;
 /// Built-in tool constructors, options and execution records.
 mod tools;
 
-pub use browser_storage::*;
-pub use browser_tools::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use clipboard::*;
 pub use configuration::*;

@@ -11,7 +11,7 @@ use super::{
     types::{ToolRenderer, ToolUiError},
 };
 use crate::components::console_block::ConsoleVariant;
-use maestro_app::browser::tools::{
+use crate::tools::browser::{
     extraction::{ExtractDocumentParams, ExtractDocumentResult},
     javascript_repl::{JavaScriptReplFile, JavaScriptReplParams, JavaScriptReplToolResult},
 };
@@ -389,8 +389,8 @@ fn extraction_metadata() {
 /// Update replacements are read only when reached, and the filename pill keeps its captured panel
 /// and authored name, for raw and validated arguments alike.
 fn artifact_replacements_and_pill() {
+    use crate::tools::browser::documents::{ArtifactCommand, ArtifactsParams};
     use crate::tools::documents::rendering::ArtifactsToolRenderer;
-    use maestro_app::browser::tools::documents::{ArtifactCommand, ArtifactsParams};
     let replacements = |recorded: Recorded| {
         let card = disclosure::<ArtifactsToolRenderer>(recorded);
         let Caption::Artifact(_, Some(pill)) = &card.caption else {

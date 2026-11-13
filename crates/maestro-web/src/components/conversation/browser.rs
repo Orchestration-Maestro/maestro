@@ -1,5 +1,6 @@
 //! Native session view nodes, rendering and reader-follow.
 use super::{AgentInterfaceProps, BrowserSession, Follow, HistoryKey, usage_totals};
+use crate::components::browser::records::CustomAgentMessages as BrowserMessages;
 use crate::{
     MessageList, SharedAttachment, StreamingMessageContainer,
     browser::{
@@ -15,7 +16,6 @@ use crate::{
     utils::formatting::format_usage,
 };
 use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages, Subscription};
-use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 use maestro_models::Local;
 use std::{
     cell::{Cell, RefCell},
