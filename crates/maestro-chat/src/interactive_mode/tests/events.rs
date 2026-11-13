@@ -17,7 +17,7 @@ use maestro_models::{
     ToolCall, UserBlock,
 };
 use maestro_session::message_records::CustomAgentMessages;
-use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_theme::ThemeColor;
 use maestro_tools::ToolRenderResult;
 use maestro_tui::{Component, KeybindingKeys};
@@ -25,7 +25,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
-    fs,
     path::Path,
     rc::Rc,
     sync::{Arc, RwLock},
@@ -49,20 +48,6 @@ enum Input {
     },
     /// The subscription through a real producer and its removal operation.
     Subscribe,
-    /// A stored name over a working directory.
-    Title {
-        /// The stored working directory.
-        cwd: String,
-        /// The stored name; absent clears it.
-        name: Option<String>,
-    },
-    /// One stored name field of every admitted kind.
-    TitleDomain {
-        /// Which name record the session file holds.
-        kind: String,
-        /// The stored name record.
-        name: Value,
-    },
     /// A thinking-level change while the editor holds ordinary or shell input.
     Level {
         /// Whether the editor holds a shell command.
@@ -94,25 +79,6 @@ struct Presentation {
     received: Option<Vec<Value>>,
 }
 
-/// The recorded observation of one case.
-#[derive(Deserialize)]
-#[serde(untagged, deny_unknown_fields)]
-enum Expected {
-    /// The title written to the terminal.
-    Title {
-        /// The title text.
-        title: String,
-    },
-    /// The failure a stored name outside the field domain causes.
-    Failed {
-        /// The failure category.
-        #[serde(rename = "errorKind")]
-        error_kind: String,
-    },
-    /// The rows and registrations shown.
-    Shown(Presentation),
-}
-
 /// The titles `effects` holds, with their terminal framing removed.
 fn titles(effects: &Effects) -> Vec<String> {
     effects
@@ -130,23 +96,6 @@ fn titles(effects: &Effects) -> Vec<String> {
 /// A session-metadata event whose own payload names no session.
 fn session_info() -> AgentSessionEvent {
     AgentSessionEvent::SessionInfoChanged { name: None }
-}
-
-/// Replaces the session's manager with one whose newest name record holds `name`, absent when
-/// the session file has no name record, over `cwd`.
-fn install_name(world: &World, directory: &Path, cwd: &str, name: Option<&Value>) {
-    let record = match name {
-        Some(name) => format!("{{\"type\":\"session_info\",\"id\":\"info\",\"name\":{name}}}\n"),
-        None => String::new(),
-    };
-    let path = directory.join("stored-name.jsonl");
-    fs::write(
-        &path,
-        format!("{{\"type\":\"session\",\"id\":\"session\"}}\n{record}"),
-    )
-    .unwrap();
-    let manager = Rc::clone(world.host.session().session_manager());
-    *manager.borrow_mut() = SessionManager::open(path.to_str().unwrap(), None, Some(cwd)).unwrap();
 }
 
 /// Asserts the recorded transcript, status and pending rows, unresolved calls, editor history
@@ -255,10 +204,8 @@ async fn removal_while_alive(world: World) {
 fn events_subscription_initializes_once_and_releases() {
     let test = "events_subscription_initializes_once_and_releases";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let Expected::Shown(unchanged_rows) = expected else {
-                panic!("a metadata case");
-            };
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let unchanged_rows = expected;
             let world = Setup::default().build(directory);
             match input {
                 Input::Init { initialized } => {
@@ -269,62 +216,7 @@ fn events_subscription_initializes_once_and_releases() {
                     subscription(world, &unchanged_rows).await;
                     removal_while_alive(Setup::default().build(directory)).await;
                 }
-                _ => panic!("a subscription case"),
-            }
-        }
-    });
-}
-
-#[test]
-fn events_title_uses_native_lexical_basename_and_optional_name() {
-    let test = "events_title_uses_native_lexical_basename_and_optional_name";
-    isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let Input::Title { cwd, name } = input else {
-                panic!("a title case");
-            };
-            let Expected::Title { title } = expected else {
-                panic!("a written title");
-            };
-            let world = started(directory).await;
-            let stored = name.map(Value::String);
-            install_name(&world, directory, &cwd, stored.as_ref());
-            let effects = tap(&world);
-            world.mode.handle_event(&session_info()).unwrap();
-            world.runtime.settle().unwrap();
-            assert_eq!(titles(&effects), vec![title]);
-        }
-    });
-}
-
-#[test]
-fn events_title_keeps_the_session_name_producers_field_domain() {
-    let test = "events_title_keeps_the_session_name_producers_field_domain";
-    isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let Input::TitleDomain { kind, name } = input else {
-                panic!("a stored-name case");
-            };
-            let world = started(directory).await;
-            let stored = (kind != "missing").then_some(&name);
-            install_name(&world, directory, "/work/project", stored);
-            let effects = tap(&world);
-            let outcome = world.mode.handle_event(&session_info());
-            world.runtime.settle().unwrap();
-            match expected {
-                Expected::Title { title } => {
-                    outcome.unwrap();
-                    assert_eq!(titles(&effects), vec![title]);
-                }
-                Expected::Failed { error_kind } => {
-                    let error = outcome.unwrap_err();
-                    assert_eq!(error_kind, "invalid-session-name");
-                    // The invalid stored name keeps its invalid-data category.
-                    let invalid = error.downcast_ref::<std::io::Error>().unwrap();
-                    assert_eq!(invalid.kind(), std::io::ErrorKind::InvalidData);
-                    assert!(titles(&effects).is_empty());
-                }
-                Expected::Shown(_) => panic!("a stored-name observation"),
+                Input::Level { .. } => panic!("a subscription case"),
             }
         }
     });
@@ -334,13 +226,11 @@ fn events_title_keeps_the_session_name_producers_field_domain() {
 fn events_thinking_level_refreshes_footer_and_border() {
     let test = "events_thinking_level_refreshes_footer_and_border";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
             let Input::Level { bash } = input else {
                 panic!("a thinking-level case");
             };
-            let Expected::Shown(unchanged_rows) = expected else {
-                panic!("a metadata case");
-            };
+            let unchanged_rows = expected;
             let world = started(directory).await;
             let session = world.host.session();
             session.model().write().unwrap().reasoning = true;
@@ -624,7 +514,7 @@ fn role_record(role: &str, text: &str) -> Value {
 fn events_agent_start_selects_working_visibility_and_message() {
     let test = "events_agent_start_selects_working_visibility_and_message";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
             let StreamOp::Start {
                 visible,
                 progress: shown_progress,
@@ -632,9 +522,6 @@ fn events_agent_start_selects_working_visibility_and_message() {
             } = input
             else {
                 panic!("an agent start");
-            };
-            let Expected::Shown(expected) = expected else {
-                panic!("a presentation");
             };
             let world = streamed(directory, shown_progress, Setup::default()).await;
             if !visible || message.is_some() {
@@ -673,9 +560,8 @@ fn events_agent_start_selects_working_visibility_and_message() {
 fn events_message_roles_use_one_retained_stream() {
     let test = "events_message_roles_use_one_retained_stream";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::MessageStart { role }, Expected::Shown(expected)) = (input, expected)
-            else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::MessageStart { role }, expected) = (input, expected) else {
                 panic!("a message start");
             };
             let world = streamed(directory, false, Setup::default()).await;
@@ -716,8 +602,8 @@ fn events_message_roles_use_one_retained_stream() {
 fn events_updates_reuse_assistant_and_tool_rows() {
     let test = "events_updates_reuse_assistant_and_tool_rows";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::Update { active }, Expected::Shown(expected)) = (input, expected) else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::Update { active }, expected) = (input, expected) else {
                 panic!("an update case");
             };
             let world = streamed(directory, false, Setup::default()).await;
@@ -780,10 +666,8 @@ fn end_streamed(world: &World, stop: &str, error: Option<&str>) -> SharedAssista
 fn events_message_end_preserves_failure_and_completion_branches() {
     let test = "events_message_end_preserves_failure_and_completion_branches";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::End { stop, retry, error }, Expected::Shown(expected)) =
-                (input, expected)
-            else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::End { stop, retry, error }, expected) = (input, expected) else {
                 panic!("a message end");
             };
             let world = streamed(directory, false, Setup::default()).await;
@@ -813,9 +697,8 @@ fn events_message_end_preserves_failure_and_completion_branches() {
 fn events_message_end_ignores_user_and_unstarted_assistant() {
     let test = "events_message_end_ignores_user_and_unstarted_assistant";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::UnstartedEnd { role }, Expected::Shown(expected)) = (input, expected)
-            else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::UnstartedEnd { role }, expected) = (input, expected) else {
                 panic!("an unstarted end");
             };
             let world = streamed(directory, false, Setup::default()).await;
@@ -842,10 +725,8 @@ fn events_message_end_ignores_user_and_unstarted_assistant() {
 fn events_tool_lifecycle_reuses_replayed_pending_rows() {
     let test = "events_tool_lifecycle_reuses_replayed_pending_rows";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::Tool { seeded, is_error }, Expected::Shown(expected)) =
-                (input, expected)
-            else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::Tool { seeded, is_error }, expected) = (input, expected) else {
                 panic!("a tool lifecycle");
             };
             let world = streamed(directory, false, Setup::default()).await;
@@ -887,8 +768,8 @@ fn events_tool_lifecycle_reuses_replayed_pending_rows() {
 fn events_unknown_tools_do_not_add_or_render_rows() {
     let test = "events_unknown_tools_do_not_add_or_render_rows";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::Unknown { phase }, Expected::Shown(expected)) = (input, expected) else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::Unknown { phase }, expected) = (input, expected) else {
                 panic!("an unknown call");
             };
             let world = streamed(directory, false, Setup::default()).await;
@@ -944,9 +825,8 @@ fn recording(received: Rc<RefCell<Vec<Value>>>) -> Definition {
 fn events_renderer_fields_survive_progress_and_completion() {
     let test = "events_renderer_fields_survive_progress_and_completion";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::Details { kind, failed }, Expected::Shown(expected)) = (input, expected)
-            else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::Details { kind, failed }, expected) = (input, expected) else {
                 panic!("a details case");
             };
             let received = Rc::new(RefCell::new(Vec::new()));
@@ -1070,7 +950,7 @@ async fn retried(world: &World, retries: u32) -> SharedAssistantMessage {
 fn events_agent_end_clears_transient_rows_before_shutdown() {
     let test = "events_agent_end_clears_transient_rows_before_shutdown";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
             let (loading, streaming, shown_progress) = match input {
                 StreamOp::AgentEnd {
                     loading,
@@ -1082,9 +962,6 @@ fn events_agent_end_clears_transient_rows_before_shutdown() {
                 }
                 StreamOp::AgentEndProgressDisabled { loading } => (loading, false, false),
                 _ => panic!("an agent end"),
-            };
-            let Expected::Shown(expected) = expected else {
-                panic!("a presentation");
             };
             let world = streamed(directory, shown_progress, Setup::default()).await;
             if loading {
@@ -1143,8 +1020,8 @@ async fn completed_rows_stay(directory: &Path) {
 fn events_queue_update_reads_current_session_display() {
     let test = "events_queue_update_reads_current_session_display";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::Queue { q }, Expected::Shown(expected)) = (input, expected) else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::Queue { q }, expected) = (input, expected) else {
                 panic!("a queue update");
             };
             let world = streamed(directory, false, Setup::default()).await;
@@ -1176,9 +1053,8 @@ fn events_queue_update_reads_current_session_display() {
 fn events_thinking_toggle_keeps_the_default_streaming_tail() {
     let test = "events_thinking_toggle_keeps_the_default_streaming_tail";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::ThinkingDefault { hide }, Expected::Shown(expected)) = (input, expected)
-            else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::ThinkingDefault { hide }, expected) = (input, expected) else {
                 panic!("a thinking toggle");
             };
             let setup = Setup {
@@ -1615,10 +1491,7 @@ async fn visible_while_streaming(world: &World, visible: bool) -> (Vec<String>, 
 fn events_working_controls_update_retained_loader() {
     let test = "events_working_controls_update_retained_loader";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let Expected::Shown(expected) = expected else {
-                panic!("a presentation");
-            };
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
             let world = streamed(directory, false, Setup::default()).await;
             let ui = port(&world.mode);
             match input {
@@ -1682,9 +1555,8 @@ async fn hidden_row_releases_its_timer(directory: &Path) {
 fn events_thinking_toggle_and_label_keep_streaming_tail() {
     let test = "events_thinking_toggle_and_label_keep_streaming_tail";
     isolated(test, async |directory| {
-        for (input, expected) in cases(FIXTURES, test) {
-            let (StreamOp::Thinking { hide, label }, Expected::Shown(expected)) = (input, expected)
-            else {
+        for (input, expected) in cases::<_, Presentation>(FIXTURES, test) {
+            let (StreamOp::Thinking { hide, label }, expected) = (input, expected) else {
                 panic!("a thinking label");
             };
             let setup = Setup {

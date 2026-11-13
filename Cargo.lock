@@ -4007,6 +4007,7 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-agent",
  "maestro-app",
+ "maestro-chat",
  "maestro-credentials",
  "maestro-dependencies",
  "maestro-export",
