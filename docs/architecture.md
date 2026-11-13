@@ -411,6 +411,24 @@ sixteen hex digits) and reason. The deny list's own file holds each readable wor
 check adds one row per `DENIED` word for it. A row that matches nothing, including one whose
 path left the tree, is reported, so an exemption cannot outlive its need.
 
+A module is named for what it holds. Conventions reject a module below a member's `src/`
+named `utils`, `util`, `helpers`, `common`, `misc`, `shared` or `types`: such a name says
+where code was put. The check reads every module declaration, inline ones and test modules
+included, and every module file and directory. A module is identified by its member and its
+path below the crate root (`records::types`), so a declaration, its file and its directory
+are one module. It is reported once, with the file and line of its declaration, or with
+its path when no parsed source declares it. Sources outside `src/`, such as `tests/` and
+`examples/`, are not checked.
+
+`EXEMPT` in `crates/maestro-test-conventions/src/bucket_modules.rs` holds the modules that
+keep such a name, one row each: the member, the module path and the reason. There are two
+reasons. A module that mirrors a file or directory of the ported interface keeps the layout
+it mirrors. A module of Maestro's own that has no better name yet stays listed until it is
+renamed. The rows are sorted by member, then by module path, and a row out of order or
+repeated is reported. In the workspace a row that matches no module is reported too, so a
+renamed, moved or deleted module takes its row with it in the same change. A new module
+gets a name for what it holds, not a row.
+
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
 `timeout`/`timeout_at`, standard `recv_timeout`, `recv_deadline`, `wait_timeout`,

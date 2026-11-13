@@ -680,9 +680,9 @@ fn widened_sources() -> Vec<(&'static str, String, &'static str)> {
             "#![allow(clippy::same_length_and_capacity, clippy::too_many_lines)]\n".into(),
             "may only allow",
         ),
-        ("src/types.rs", String::new(), "must forbid"),
+        ("src/records.rs", String::new(), "must forbid"),
         (
-            "src/types.rs",
+            "src/records.rs",
             "#![forbid(clippy::pedantic)]\n".into(),
             "must forbid",
         ),
@@ -694,7 +694,7 @@ fn widened_sources() -> Vec<(&'static str, String, &'static str)> {
         ),
         (
             "src/lib.rs",
-            "#![forbid(clippy::pedantic)]\nmod types;\n".into(),
+            "#![forbid(clippy::pedantic)]\nmod records;\n".into(),
             only_modules,
         ),
     ]
@@ -708,12 +708,12 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path, name: &
         "src/bindings.rs",
         &format!("{ALLOW}pub struct Generated;\n"),
     );
-    write("src/types.rs", FORBID);
-    std::fs::create_dir(root.join("src/types")).unwrap();
-    write("src/types/inner.rs", "");
+    write("src/records.rs", FORBID);
+    std::fs::create_dir(root.join("src/records")).unwrap();
+    write("src/records/inner.rs", "");
     write(
         "src/lib.rs",
-        "#[doc(hidden)]\npub mod bindings;\nmod types;\npub use types::*;\n",
+        "#[doc(hidden)]\npub mod bindings;\nmod records;\npub use records::*;\n",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     for (relative, contents, expected) in widened_sources() {

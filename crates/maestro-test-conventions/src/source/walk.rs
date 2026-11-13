@@ -17,9 +17,9 @@ use super::{
 use crate::boundaries::{application_exports, message_renderers};
 use crate::graph::packages::{self, Exports};
 use crate::{
-    child_tests, duplicates, fixture_includes, generated, integration_tests, poison, quality,
-    real_paths, repetition, standard_error, temp_directories, test_input_routes, time_limits,
-    tokio_macros,
+    bucket_modules, child_tests, duplicates, fixture_includes, generated, integration_tests,
+    poison, quality, real_paths, repetition, standard_error, temp_directories, test_input_routes,
+    time_limits, tokio_macros,
 };
 
 /// Every check's findings for one parsed source.
@@ -70,6 +70,8 @@ pub(crate) struct Walk {
     pub(crate) exports: usize,
     /// Located independent recovery helpers in production code.
     pub(crate) poison: Vec<usize>,
+    /// Bucket-named module declarations, each with its line and its path below the file's module.
+    pub(crate) bucket_modules: Vec<(usize, String)>,
 }
 
 /// Walk a member's parsed source once and gather every check's findings.
@@ -158,6 +160,8 @@ struct Walker<'a> {
     exports: Option<Exports<'a>>,
     /// Independent recovery helpers.
     poison: poison::Definitions,
+    /// Bucket-named module declarations.
+    buckets: bucket_modules::Declarations,
 }
 
 impl<'a> Walker<'a> {
@@ -194,6 +198,7 @@ impl<'a> Walker<'a> {
                 .then(|| generated::Attributes::new(file)),
             exports: Exports::new(source, scope),
             poison: poison::Definitions::default(),
+            buckets: bucket_modules::Declarations::default(),
         }
     }
 
@@ -287,6 +292,7 @@ impl<'a> Walker<'a> {
             guest: self.attributes,
             exports: self.exports.map_or(0, Exports::finish),
             poison: self.poison.finish(),
+            bucket_modules: self.buckets.found,
         }
     }
 }
@@ -548,6 +554,7 @@ impl<'a> Visit<'a> for Walker<'a> {
 
     fn visit_item_mod(&mut self, item: &'a syn::ItemMod) {
         self.layout.item_mod(item);
+        self.buckets.enter(&item.ident);
         if let Some(uses) = &mut self.uses {
             uses.enter(item);
         }
@@ -555,6 +562,7 @@ impl<'a> Visit<'a> for Walker<'a> {
         if let Some(uses) = &mut self.uses {
             uses.leave();
         }
+        self.buckets.leave();
     }
 
     fn visit_item_extern_crate(&mut self, item: &'a syn::ItemExternCrate) {

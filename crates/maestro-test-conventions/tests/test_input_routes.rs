@@ -81,7 +81,7 @@ fn routed_reads_are_accepted() {
 #[test]
 fn reads_that_are_not_run_time_repository_reads_are_accepted() {
     let contents = r#"#[path = "../../examples/shared.rs"]
-mod shared;
+mod example;
 const COMPILED: &str = include_str!("../../../../docs/guide.md");
 fn scratch(directory: &std::path::Path) -> std::path::PathBuf {
     directory.join("docs/guide.md")

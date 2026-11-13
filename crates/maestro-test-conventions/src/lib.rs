@@ -8,6 +8,8 @@ use serde_json::Value;
 
 /// Declaration ownership and extension interface checks.
 mod boundaries;
+/// Module names that say where code was put.
+mod bucket_modules;
 /// Exact test-selection ownership.
 mod child_tests;
 /// Rust comment content checks.
@@ -190,6 +192,13 @@ mod tracked_sizes;
 /// provider, a stored file or a detected program carries a word, each with its reason, and a
 /// row that matches nothing is reported.
 ///
+/// A module below a member's `src/` may not be named `utils`, `util`, `helpers`, `common`,
+/// `misc`, `shared` or `types`: such a name says where code was put, not what the module holds.
+/// Module declarations, inline ones included, and module files and directories are read, and a
+/// module is reported once with its file and its path below the crate root. `EXEMPT` in
+/// `bucket_modules.rs` holds the modules that keep such a name, by member and module path, each
+/// with its reason. The rows stay sorted, and a row that matches no module is reported.
+///
 /// # Errors
 ///
 /// Returns a human-readable diagnostic on malformed input or a violated boundary.
@@ -223,6 +232,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| test_input_routes::check(root, &members),
         &|| fixture_includes::check(&members),
         &|| leaked_words::check(root, &members),
+        &|| bucket_modules::check(root, &members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.
     pool::map(checks, |check| check())?.into_iter().collect()
