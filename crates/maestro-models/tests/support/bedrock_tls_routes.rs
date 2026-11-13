@@ -376,11 +376,7 @@ fn environment(row: &Row, endpoint: &str, proxy: &str, decoy: &str) -> BTreeMap<
         ("AWS_EC2_METADATA_DISABLED".into(), "true".into()),
         (
             "SSL_CERT_FILE".into(),
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/tests/fixtures/socks-tls/cert.pem"
-            )
-            .into(),
+            maestro_http::test_support::tls::CERT_PEM_PATH.into(),
         ),
     ]);
     variables

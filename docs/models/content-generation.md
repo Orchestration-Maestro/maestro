@@ -395,7 +395,7 @@ while an empty streamed 200 completes normally. Failure statuses consume their c
 body before `start`: a case-sensitive `application/json` substring selects whole JSON,
 otherwise text is wrapped with status and reason phrase. Body/JSON failures win at admission.
 
-The [shared HTTP framing owner](../../crates/maestro-models/src/providers/transport/server_sent_events.rs)
+The [shared HTTP framing owner](../../crates/maestro-http/src/server_sent_events.rs)
 selects whole data segments for this protocol; other callers retain field framing. Ordered
 items feed the existing [response reducer](#response-reduction); a JSON null root becomes
 an empty response before reduction. A non-whitespace EOF tail
