@@ -1,15 +1,15 @@
 //! Session selection, ordered custom output and document publication.
 mod colors;
+mod contract;
 mod document;
 #[cfg(not(target_arch = "wasm32"))]
 mod native;
-mod types;
+pub use contract::*;
 use maestro_session::session_manager::ReadonlySessionManager;
 #[cfg(not(target_arch = "wasm32"))]
 pub use native::NativeExportOperations;
 use serde_json::{Map, Value, json};
 use std::{cell::RefCell, io};
-pub use types::*;
 
 /// Export retained session entries and optional metadata to a supplied bundle.
 ///
