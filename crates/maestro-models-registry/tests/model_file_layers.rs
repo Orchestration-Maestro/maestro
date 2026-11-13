@@ -1,7 +1,7 @@
 //! Ordered model files share one parser and retain their underlying layers on refresh.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
-use maestro_catalog::{ModelRegistry, NativeModelFileOperations, ProviderConfigInput};
+use maestro_models_registry::{ModelRegistry, NativeModelFileOperations, ProviderConfigInput};
 use maestro_test_directory::Scratch;
 use std::sync::{Arc, RwLock};
 

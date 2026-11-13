@@ -45,8 +45,8 @@ pub fn retained_diagnostic<'a>(
     error: &'a (dyn std::error::Error + 'static),
 ) -> Option<&'a maestro_models::DiagnosticErrorInfo> {
     error
-        .downcast_ref::<maestro_catalog::CatalogError>()
-        .map(maestro_catalog::CatalogError::diagnostic)
+        .downcast_ref::<maestro_models_registry::CatalogError>()
+        .map(maestro_models_registry::CatalogError::diagnostic)
         .or_else(|| error.downcast_ref::<maestro_models::DiagnosticErrorInfo>())
         .or_else(|| {
             error

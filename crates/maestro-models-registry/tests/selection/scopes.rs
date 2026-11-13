@@ -1,13 +1,13 @@
 //! Recorded scope, initial-choice and restoration operations through the public catalog.
 use crate::descriptors::descriptors;
 use indexmap::IndexMap;
-use maestro_catalog::{
+use maestro_credentials::{AuthStorage, AuthStorageData};
+use maestro_models::{Model, ModelThinkingLevel, SharedHandle};
+use maestro_models_registry::{
     DEFAULT_MODEL_PER_PROVIDER, FindInitialModelOptions, ModelFileOperations, ModelRegistry,
     ModelResolverOutput, RestoreModelFromSessionOptions, ScopedModel, find_initial_model,
     model_id_comparator, resolve_model_scope, restore_model_from_session,
 };
-use maestro_credentials::{AuthStorage, AuthStorageData};
-use maestro_models::{Model, ModelThinkingLevel, SharedHandle};
 use serde::Deserialize;
 use std::{
     cell::RefCell,
@@ -275,7 +275,7 @@ fn run(
 ) -> Vec<(Handle, Option<ModelThinkingLevel>)> {
     let input = &case.input;
     let marker = maestro_test_directory::temporary_root().join(format!(
-        "maestro-catalog-marker-{}-{}",
+        "maestro-models-registry-marker-{}-{}",
         std::process::id(),
         case.id
     ));

@@ -1,12 +1,12 @@
 //! Provider configuration and binding records.
 use super::ExtensionExecution;
-/// Native callable operations supplied with a provider registration.
-pub use maestro_catalog::ProviderCallbacks;
-/// Configuration for registering a provider.
-pub use maestro_catalog::ProviderConfigInput as ProviderConfig;
-/// Settings for one model inside a provider.
-pub use maestro_catalog::ProviderModelInput as ProviderModelConfig;
 use maestro_models::{Execution, SharedHandle, Threaded};
+/// Native callable operations supplied with a provider registration.
+pub use maestro_models_registry::ProviderCallbacks;
+/// Configuration for registering a provider.
+pub use maestro_models_registry::ProviderConfigInput as ProviderConfig;
+/// Settings for one model inside a provider.
+pub use maestro_models_registry::ProviderModelInput as ProviderModelConfig;
 use std::sync::RwLock;
 
 /// Registers a provider in place of the catalog.

@@ -1,7 +1,7 @@
 #![cfg(test)]
 //! Controlled files and source-derived expected catalog changes.
-use maestro_catalog::ModelRegistry;
 use maestro_models::{Model, get_models, get_providers};
+use maestro_models_registry::ModelRegistry;
 mod common;
 pub use common::*;
 use serde::Deserialize;

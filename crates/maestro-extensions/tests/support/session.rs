@@ -1,9 +1,9 @@
 //! The session operands a test runner serves, built from real in-memory owners.
 #![cfg(test)]
-use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::execution::ExtensionRunnerSession;
 use maestro_models::SharedHandle;
+use maestro_models_registry::ModelRegistry;
 use maestro_session::SessionManager;
 use std::{cell::RefCell, rc::Rc};
 
@@ -16,7 +16,7 @@ pub fn runner_session(cwd: &str) -> (ExtensionRunnerSession, Rc<RefCell<SessionM
 /// Builds a runner session with the caller's configured credential commands.
 pub fn runner_session_with_config(
     cwd: &str,
-    config: maestro_catalog::ConfigValues,
+    config: maestro_models_registry::ConfigValues,
 ) -> (ExtensionRunnerSession, Rc<RefCell<SessionManager>>) {
     let history = Rc::new(RefCell::new(SessionManager::in_memory(Some(cwd)).unwrap()));
     let auth = SharedHandle::new(AuthStorage::in_memory(AuthStorageData::default()));

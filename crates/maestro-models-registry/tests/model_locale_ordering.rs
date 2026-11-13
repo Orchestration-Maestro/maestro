@@ -3,7 +3,7 @@
 use crate::selection;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::subprocess;
-use maestro_catalog::{model_id_comparator, parse_model_pattern};
+use maestro_models_registry::{model_id_comparator, parse_model_pattern};
 #[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
 #[cfg(not(target_arch = "wasm32"))]
@@ -49,7 +49,7 @@ fn check_order(case: &LocaleCase, reader: &dyn Fn(&str) -> Option<String>) {
         let result = parse_model_pattern(
             "",
             &handles,
-            maestro_catalog::ParseModelPatternOptions::default(),
+            maestro_models_registry::ParseModelPatternOptions::default(),
             &compare,
         )
         .model
@@ -78,7 +78,7 @@ fn controlled_collation_drives_public_selection() {
     let result = parse_model_pattern(
         "shared-name",
         &[std::sync::Arc::clone(&upper), lower],
-        maestro_catalog::ParseModelPatternOptions::default(),
+        maestro_models_registry::ParseModelPatternOptions::default(),
         &native,
     );
     assert!(std::sync::Arc::ptr_eq(&result.model.unwrap(), &upper));

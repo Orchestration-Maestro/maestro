@@ -3,11 +3,11 @@ use super::{ExtensionBindings, ToolDefinitionHandle};
 use indexmap::IndexMap;
 use maestro_agent::SharedAgentTool;
 use maestro_agent::{AgentEvent, AgentMessage};
-use maestro_catalog::ScopedModel;
 use maestro_extensions::{
     BuildSystemPromptOptions, ExtensionExecution, NativeAgentMessage, RegisteredTool,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, SharedAssistantMessage};
+use maestro_models_registry::ScopedModel;
 use maestro_session::message_records::CustomAgentMessages;
 use serde_json::Value;
 use std::collections::VecDeque;

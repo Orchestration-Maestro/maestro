@@ -3,7 +3,7 @@
 use crate::fallback;
 use crate::isolation;
 use crate::scopes;
-use maestro_catalog::{
+use maestro_models_registry::{
     DEFAULT_MODEL_PER_PROVIDER, FindInitialModelOptions, ModelResolverOutput,
     RestoreModelFromSessionOptions, ScopedModel, find_initial_model, model_id_comparator,
     resolve_model_scope, restore_model_from_session,
@@ -16,7 +16,7 @@ use std::sync::{
 
 /// Unconfigured initial-choice operands: no saved default, with any scope the caller supplies.
 fn initial<'a>(
-    registry: &'a maestro_catalog::ModelRegistry,
+    registry: &'a maestro_models_registry::ModelRegistry,
     scoped_models: &'a [ScopedModel],
 ) -> FindInitialModelOptions<'a> {
     FindInitialModelOptions {

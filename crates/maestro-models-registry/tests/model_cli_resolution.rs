@@ -74,7 +74,7 @@ fn provider_defaults_preserve_order_values_and_live_edits() {
 }
 #[test]
 fn custom_models_are_detached_without_registry_mutation() {
-    use maestro_catalog::{ResolveCliModelOptions, resolve_cli_model};
+    use maestro_models_registry::{ResolveCliModelOptions, resolve_cli_model};
     use std::sync::Arc;
     let source = selection::descriptor("source", "unconfigured-provider");
     let registry = selection::registry(&[Arc::clone(&source)]);
@@ -102,7 +102,7 @@ fn custom_models_are_detached_without_registry_mutation() {
 }
 #[test]
 fn cli_selection_includes_unconfigured_models() {
-    use maestro_catalog::{ResolveCliModelOptions, resolve_cli_model};
+    use maestro_models_registry::{ResolveCliModelOptions, resolve_cli_model};
     use std::sync::Arc;
     let handle = selection::descriptor("unconfigured", "unconfigured-provider");
     let registry = selection::registry(&[Arc::clone(&handle)]);
@@ -124,7 +124,7 @@ fn cli_selection_includes_unconfigured_models() {
 }
 #[test]
 fn cli_prefix_stripping_uses_authored_unicode_boundary() {
-    use maestro_catalog::{ResolveCliModelOptions, resolve_cli_model};
+    use maestro_models_registry::{ResolveCliModelOptions, resolve_cli_model};
     use std::sync::Arc;
     let model = selection::descriptor("model", "i\u{307}");
     let decoy = selection::descriptor("z-odel", "i\u{307}");
@@ -144,7 +144,7 @@ fn cli_prefix_stripping_uses_authored_unicode_boundary() {
 }
 #[test]
 fn cli_explicit_slash_provider_strips_prefix_before_partial_selection() {
-    use maestro_catalog::{ResolveCliModelOptions, resolve_cli_model};
+    use maestro_models_registry::{ResolveCliModelOptions, resolve_cli_model};
     use std::sync::Arc;
     let model = selection::descriptor("friendly-model", "team/proxy");
     let registry = selection::registry(&[Arc::clone(&model)]);
@@ -162,7 +162,7 @@ fn cli_explicit_slash_provider_strips_prefix_before_partial_selection() {
 }
 #[test]
 fn cli_explicit_slash_provider_strips_once_before_custom_fallback() {
-    use maestro_catalog::{ResolveCliModelOptions, resolve_cli_model};
+    use maestro_models_registry::{ResolveCliModelOptions, resolve_cli_model};
     use std::sync::Arc;
     let model = selection::descriptor("friendly-model", "team/proxy");
     let registry = selection::registry(&[Arc::clone(&model)]);
