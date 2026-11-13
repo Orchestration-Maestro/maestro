@@ -427,8 +427,8 @@ Tests are black-box. They use Maestro's public crates and programs and the same 
 ## Crates and delivery order
 
 The table declares the enforced domain graph. Its rows are in crate-name order,
-so a new crate goes where its name sorts. Its rows and the dependency
-descriptions below also permit the [native feature-unifier exception](#native-feature-unifier),
+so a new crate goes where its name sorts, and the dependency descriptions below
+permit the [native feature-unifier exception](#native-feature-unifier),
 including leaves and exact sets. An em dash means no domain dependencies apart
 from the optional foundation utility described below.
 

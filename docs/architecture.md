@@ -6,11 +6,14 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 Its crate dependency table lives in `src/graph/policy/table.rs` within the
 conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
 `POLICY` for its existing callers. Table rows stay in crate-name order, as do
-the rows of the specification's crate table and the entries of `wasm_crates`,
-`test_prepare_inputs` and `test_inputs` in `.github/ci.toml`, so a crate step
-writes its line where it sorts instead of at a position every other step shares.
-`check_workspace` reports a row or entry that is out of that order, and a CI
-entry written on its key's line.
+the rows of the specification's crate table and the crate names of `wasm_crates`
+and each route of `test_inputs` in `.github/ci.toml`. The path patterns of
+`test_prepare_inputs` sort as text instead, so
+`crates/maestro-extensions-wasm/**` comes before
+`crates/maestro-extensions/**`. A crate step then writes its line where it
+sorts instead of at a position every other step shares. `check_workspace`
+reports a row or entry that is out of that order, and a CI entry written on its
+key's line.
 
 ## Application export layout
 
