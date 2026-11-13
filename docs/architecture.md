@@ -9,6 +9,8 @@ conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
 the rows of the specification's crate table and the entries of `wasm_crates`,
 `test_prepare_inputs` and `test_inputs` in `.github/ci.toml`, so a crate step
 writes its line where it sorts instead of at a position every other step shares.
+`check_workspace` reports a row or entry that is out of that order, and a CI
+entry written on its key's line.
 
 ## Application export layout
 
