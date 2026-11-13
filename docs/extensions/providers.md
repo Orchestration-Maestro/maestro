@@ -154,7 +154,7 @@ lists the nine protocol identifiers and their owners. Use `openai-completions`
 for a Chat Completions peer, not for every service with an HTTP endpoint.
 If your wire format differs, register a custom stream callback under your own API.
 
-Each [model definition](../../crates/maestro-request/src/provider_config.rs)
+Each [model definition](../../crates/maestro-interchange/src/provider_config.rs)
 requires `id`, `name`, `reasoning`, `input`, `cost`, `contextWindow` and `maxTokens`.
 Use `text` and, only if supported, `image` in `input`. Prices are USD per million
 tokens in four non-overlapping categories: `input`, `output`, `cacheRead` and

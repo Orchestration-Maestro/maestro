@@ -166,7 +166,7 @@ pub(crate) const TEST_FIXTURES: &str = "maestro-test-fixtures";
 /// Declared consumers of portable fixture support.
 pub(crate) const TEST_FIXTURE_CALLERS: &[&str] = &[
     "maestro-models",
-    "maestro-request",
+    "maestro-interchange",
     "maestro-models-registry",
     "maestro-chat",
     "maestro-tools",
@@ -209,13 +209,10 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-markdown"
                 | "maestro-office"
                 | "maestro-cancellation"
-                | "maestro-request"
+                | "maestro-interchange"
                 | "maestro-extensions-wasm"
                 | "maestro-text"
                 | "maestro-json"
-                | "maestro-entry"
-                | "maestro-tool"
-                | "maestro-package"
                 | "maestro-brand"
         )
 }

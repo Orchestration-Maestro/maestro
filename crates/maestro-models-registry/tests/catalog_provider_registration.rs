@@ -60,7 +60,7 @@ fn registration_checks_incoming_fields_before_any_effect() {
 }
 #[test]
 fn provider_config_json_decodes_into_native_registration() {
-    let shared: maestro_request::provider_config::ProviderModelConfig = dynamic::model("m");
+    let shared: maestro_interchange::provider_config::ProviderModelConfig = dynamic::model("m");
     let _: maestro_models_registry::ProviderModelInput = shared;
     let config: ProviderConfigInput = serde_json::from_str(
         r#"{"name":"","baseUrl":"https://json.invalid/v1","apiKey":"json-key",

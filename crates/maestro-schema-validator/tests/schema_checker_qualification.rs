@@ -1,4 +1,4 @@
-use maestro_request::types::{JsonObject, Tool, ToolCall};
+use maestro_interchange::types::{JsonObject, Tool, ToolCall};
 use maestro_schema_validator::validate_tool_arguments;
 use serde_json::{Value, json};
 

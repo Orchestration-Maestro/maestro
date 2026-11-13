@@ -5,7 +5,7 @@ use maestro_session::session_manager::load_entries_from_file;
 use serde_json::json;
 
 use crate::support;
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::session_manager::{find_most_recent_session, get_default_session_dir};
 use maestro_session::{NewSessionOptions, SessionManager};

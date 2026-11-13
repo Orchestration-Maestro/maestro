@@ -175,10 +175,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, raw CR/LF byte-line framing, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
-  pretty text, raw-value reading, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
-  interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
-  projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
-  `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
+  pretty text, raw-value reading, JSONL line framing). `maestro-interchange` owns the records a guest shares with its host: the session
+  module (with generic compaction results, `ForkPosition` and `NavigateTreeOptions`), the tool module and the
+  packages module; `maestro-brand` projects a brand pack and depends on text and JSON. Text, JSON, interchange and
+  brand exist; add no `common`, `utils` or `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
   parsing, owned source records and cursor-time extended links, depending only on text.
   The toolkit and the web frontend consume it. The dedicated
   conventions checker may consume its code-block source ranges for documentation
@@ -241,16 +241,17 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   only on text, JSON and lock, builds for the browser, and only the web frontend depends on it.
 - `maestro-http` is a core crate below layer 0 that performs HTTP requests: the replaceable
   client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and
-  complete-message sockets. It depends only on cancellation, request, text and JSON, plus
+  complete-message sockets. It depends only on cancellation, interchange, text and JSON, plus
   `maestro-path` on native targets, builds for the browser, and only models depends on it.
   Models re-exports the client records at its existing paths. Its non-default `test-support`
   feature holds the scripted FTP, SOCKS and TLS peers and the test runtimes that its own
   tests and the models tests share.
-- `maestro-request` defines shared message and model-request records below layer 0:
+- `maestro-interchange` defines the records a guest shares with its host below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
   `SlashCommandSource`, re-exported by resources, application presentation data and
-  guest authoring rather than redeclared.
+  guest authoring rather than redeclared. Its `entry`, `tool` and `packages` modules
+  own the session, tool and package interchange records.
   Shared invocation options (`ThinkingBudgets`, `CacheRetention`, `Transport`,
   `ProviderResponse`, `StreamOptions`, `ProviderStreamOptions`, `SimpleStreamOptions`
   and `StreamOptionsInput`) and the data-only `StreamOptionSlots` family belong here;
@@ -268,7 +269,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and the provider registration records `provider_config::{ProviderConfig<C>,
   ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
-  (models, http, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
+  (agent, credentials, http, models, the model catalog, the model registry, packages, resources,
+  the schema validator, session, theme, tools and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
@@ -296,7 +298,7 @@ Pure retained session-tree ordering, geometry, content extraction/search and raw
 and frontends import them from it; frontend filter, fold and selection state stay
 with their frontend.
 
-The guest authoring crate may depend on the request, entry, tool, JSON and text
+The guest authoring crate may depend on the interchange, JSON and text
 owners and never imports native session, tool or catalog runtimes. The terminal
 adapter requires the toolkit and `maestro-text` as direct dependencies; `maestro-text` is
 created, and so is `maestro-json`; the other declared leaf owners stay policy rows until their
@@ -626,7 +628,7 @@ one test target, the runnable `integration` target at `tests/integration.rs`.
 A library target that holds in-source tests keeps `[lib] test` on; one with none sets
 `test = false`, and the conventions check rejects either mismatch.
 
-Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
+Tool parameter schemas have one owner, `maestro-interchange::parameter_schema::ParameterSchema<C = ()>`,
 which keeps the supplied JSON Schema value beside the kinds its author declared for
 individual nodes and an optional executable payload. Shared Base/refinement records
 keep native callbacks local; the guest specializes the same records with borrowed
@@ -635,7 +637,7 @@ re-exports it, and `maestro-schema-validator` is its only converter.
 Serialization writes the supplied JSON alone; provider payloads and saved JSON never
 carry the declared kinds.
 
-Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Tool metadata has one generic record owner, `maestro-interchange::tool_info::ToolInfo<P>`.
 Native callers use the default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Live callback storage
 belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
@@ -650,10 +652,10 @@ traversal runs, so one removal and a complete clear both stay cheap.
 
 
 Shared extension event/result schemas and assembled prompt records belong to
-`maestro-request`, re-exported through models and specialized by native/guest
+`maestro-interchange`, re-exported through models and specialized by native/guest
 aliases. One event inventory feeds author unions and the guest data adapter.
-Request depends only on the JSON leaf; object reading stays JSON-owned and
-Presence adaptation stays beside shared schemas. Fork position stays entry-owned.
+The record owner depends only on the JSON leaf; object reading stays JSON-owned and
+Presence adaptation stays beside shared schemas. Fork position stays in the session module.
 Tool callback ownership and invocation are independent: SDK defaults remain
 Threaded/Threaded, registered invocation is Local. Registration stores no runner
 or context factory; the single tools wrapper creates a fresh context per call.
@@ -664,15 +666,14 @@ standalone default alias. The declaration checker permits only this native alias
 at `maestro-extensions/src/types/registration.rs`, never a second struct or enum.
 
 The parameter-schema owner also owns the component metadata transport in
-`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+`maestro-interchange::parameter_schema::transport`, re-exported through models and native extensions
 as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
-crate dependency: both extension adapters already reach the request owner through
+crate dependency: both extension adapters already reach the record owner through
 their declared edges.
 
-`maestro-package` is the dependency-free portable core owner of package interchange
-records below layer 0. Only packages and guest authoring may depend on it, plus
-the native feature-unifier exception. Native package effects stay in `maestro-packages`.
+`maestro-interchange::packages` owns the portable package interchange records below
+layer 0. Native package effects stay in `maestro-packages`.
 
 Typed test helpers may use their type owner's non-default `test-support` feature.
 Enable it through development dependencies, including a feature-only self

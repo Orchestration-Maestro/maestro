@@ -59,7 +59,7 @@ pub(crate) fn properties<'n, 'a>(node: &'n Node<'a>) -> Option<Cow<'n, [Member<'
     match node {
         Node::Object(object) => Some(Cow::Borrowed(&object.properties)),
         Node::Leaf(view)
-            if view.kind == Some(&maestro_request::parameter_schema::SchemaKind::Object) =>
+            if view.kind == Some(&maestro_interchange::parameter_schema::SchemaKind::Object) =>
         {
             declared(*view, |view| Rc::new(Node::Leaf(view))).map(Cow::Owned)
         }
@@ -78,8 +78,8 @@ mod tests {
     use crate::authored::schema_view::Document;
     use crate::authored::types::engine::instantiate::instantiate;
     use crate::validate_tool_arguments;
-    use maestro_request::parameter_schema::SchemaKind;
-    use maestro_request::types::{Tool, ToolCall};
+    use maestro_interchange::parameter_schema::SchemaKind;
+    use maestro_interchange::types::{Tool, ToolCall};
 
     /// An object requiring every one of the supplied number of text members, and its kinds.
     fn wide(width: usize) -> (Value, HashMap<String, SchemaKind>) {
@@ -148,7 +148,7 @@ mod tests {
             let tool: Tool = Tool {
                 name: "echo".to_owned(),
                 description: String::new(),
-                parameters: maestro_request::parameter_schema::ParameterSchema::authored(
+                parameters: maestro_interchange::parameter_schema::ParameterSchema::authored(
                     schema, kinds,
                 ),
             };

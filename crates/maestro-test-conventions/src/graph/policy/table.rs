@@ -29,7 +29,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         &[
             "maestro-models",
             "maestro-text",
-            "maestro-tool",
+            "maestro-interchange",
             "maestro-listeners",
             "maestro-json",
             "maestro-lock",
@@ -120,7 +120,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-credentials",
         &[
             "maestro-models",
-            "maestro-request",
+            "maestro-interchange",
             "maestro-lock",
             "maestro-text",
             "maestro-process",
@@ -150,7 +150,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-lock",
         ],
     ),
-    ("maestro-entry", &["maestro-request"]),
     (
         "maestro-export",
         &[
@@ -180,14 +179,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     (
         "maestro-extensions-wasm",
-        &[
-            "maestro-package",
-            "maestro-request",
-            "maestro-entry",
-            "maestro-tool",
-            "maestro-json",
-            "maestro-text",
-        ],
+        &["maestro-interchange", "maestro-json", "maestro-text"],
     ),
     (
         "maestro-extensions-wasmtime",
@@ -197,11 +189,12 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-http",
         &[
             "maestro-cancellation",
-            "maestro-request",
+            "maestro-interchange",
             "maestro-text",
             "maestro-json",
         ],
     ),
+    ("maestro-interchange", &["maestro-json"]),
     ("maestro-json", &[]),
     ("maestro-listeners", &[]),
     ("maestro-lock", &["maestro-path"]),
@@ -213,7 +206,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-http",
             "maestro-schema-validator",
             "maestro-cancellation",
-            "maestro-request",
+            "maestro-interchange",
             "maestro-text",
             "maestro-json",
             "maestro-brand",
@@ -221,14 +214,14 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-lock",
         ],
     ),
-    ("maestro-models-catalog", &["maestro-request"]),
+    ("maestro-models-catalog", &["maestro-interchange"]),
     (
         "maestro-models-registry",
         &[
             "maestro-models",
             "maestro-credentials",
             "maestro-pattern",
-            "maestro-request",
+            "maestro-interchange",
             "maestro-text",
             "maestro-json",
         ],
@@ -248,11 +241,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-office",
         &["maestro-text", "maestro-json", "maestro-lock"],
     ),
-    ("maestro-package", &[]),
     (
         "maestro-packages",
         &[
-            "maestro-package",
+            "maestro-interchange",
             "maestro-settings",
             "maestro-resources",
             "maestro-pattern",
@@ -265,11 +257,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-pattern", &["maestro-text"]),
     ("maestro-process", &["maestro-text"]),
     ("maestro-protocol", &[]),
-    ("maestro-request", &["maestro-json"]),
     (
         "maestro-resources",
         &[
-            "maestro-request",
+            "maestro-interchange",
             "maestro-pattern",
             "maestro-text",
             "maestro-json",
@@ -300,15 +291,14 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     (
         "maestro-schema-validator",
-        &["maestro-request", "maestro-json", "maestro-text"],
+        &["maestro-interchange", "maestro-json", "maestro-text"],
     ),
     (
         "maestro-session",
         &[
             "maestro-models",
             "maestro-agent",
-            "maestro-request",
-            "maestro-entry",
+            "maestro-interchange",
             "maestro-text",
             "maestro-json",
             "maestro-resources",
@@ -342,14 +332,13 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-theme",
         &[
             "maestro-tui",
-            "maestro-request",
+            "maestro-interchange",
             "maestro-watch",
             "maestro-text",
             "maestro-json",
             "maestro-brand",
         ],
     ),
-    ("maestro-tool", &["maestro-request"]),
     ("maestro-tooling", &[]),
     (
         "maestro-tools",
@@ -358,7 +347,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-agent",
             "maestro-tui",
             "maestro-theme",
-            "maestro-tool",
+            "maestro-interchange",
             "maestro-text",
             "maestro-json",
             "maestro-process",

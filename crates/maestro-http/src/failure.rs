@@ -3,9 +3,9 @@
 use serde_json::value::RawValue;
 use url::Url;
 
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use maestro_json::is_raw_truthy as is_truthy;
 use maestro_json::raw_value::{compact_raw, member, raw_json};
-use maestro_request::diagnostics::DiagnosticErrorInfo;
 
 use super::FetchError;
 

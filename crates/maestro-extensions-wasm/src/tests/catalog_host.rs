@@ -160,7 +160,7 @@ pub fn auth(reader: &Reader, model: &str) -> Result<Value, String> {
     Ok(reply.value)
 }
 /// Ordered authentication headers and optional key.
-pub fn resolved(value: &Value) -> maestro_request::model_registry::ResolvedRequestAuth {
+pub fn resolved(value: &Value) -> maestro_interchange::model_registry::ResolvedRequestAuth {
     if let Some(error) = value.get("error") {
         return crate::ResolvedRequestAuth::Error {
             error: error.as_str().unwrap().into(),

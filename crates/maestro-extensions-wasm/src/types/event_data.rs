@@ -70,7 +70,7 @@ macro_rules! event_data_types {
     };
 }
 
-maestro_request::extension_event_table!(event_data_types);
+maestro_interchange::extension_event_table!(event_data_types);
 
 /// The only property read before the record of the event is.
 #[derive(Deserialize)]

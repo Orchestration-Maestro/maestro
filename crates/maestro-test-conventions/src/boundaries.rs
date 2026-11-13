@@ -290,8 +290,7 @@ fn check_declarations(
         if matches!(
             owner,
             "maestro-tools"
-                | "maestro-request"
-                | "maestro-entry"
+                | "maestro-interchange"
                 | "maestro-app"
                 | "maestro-listeners"
                 | "maestro-office"
@@ -357,11 +356,11 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
             | "SendUserMessageOptions"
     ) || (shared_event_record(name) && kind != "type")
     {
-        "maestro-request"
+        "maestro-interchange"
     } else if name == "ModelConstructor" {
         "maestro-models-catalog"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
-        "maestro-entry"
+        "maestro-interchange"
     } else if input_presenter_record(name) {
         "maestro-app"
     } else {

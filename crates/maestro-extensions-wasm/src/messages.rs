@@ -4,11 +4,11 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-pub use maestro_request::messages::{
+pub use maestro_interchange::messages::{
     BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage,
 };
 /// An extension-injected conversation message with opaque details text.
-pub type CustomMessage = maestro_request::messages::CustomMessage<crate::JsonText>;
+pub type CustomMessage = maestro_interchange::messages::CustomMessage<crate::JsonText>;
 
 /// Projects supplied application messages through the native conversation owner.
 ///

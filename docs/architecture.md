@@ -52,33 +52,34 @@ Dependency descriptions here state domain edges, subject to the
 including leaves and exact sets. The unifier itself has no workspace dependencies.
 
 The extension domain may depend directly on resources. The crates that list
-`maestro-request` in the specification table may depend on it; its job is to define shared
-message and model-request records, including command provenance records
+`maestro-interchange` in the specification table may depend on it; its job is to define the
+records a guest shares with its host, including command provenance records
 `SlashCommandInfo` and the open `SlashCommandSource` label, and the renderer option
 record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`. Resources and
 application presentation data re-export the two command provenance records; session
 re-exports the six others; guest authoring re-exports every record except
 `CustomMessageInput`, which it defines as its own alias. The declaration scanner rejects
-a declaration of any of these records except `CustomMessageInput` outside the request
+a declaration of any of these records except `CustomMessageInput` outside the record
 owner, and duplicates within it.
-The request owner depends only on the dependency-free JSON leaf.
+The record owner depends only on the dependency-free JSON leaf.
 No reverse dependency is permitted.
 
-The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
-owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
-only on `maestro-request`, and `maestro-brand` depends on text and JSON.
+The [specification](specs/maestro-port.md#crates-and-delivery-order) declares these
+owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-interchange`
+depends only on the JSON leaf and holds the session, tool and package record modules,
+and `maestro-brand` depends on text and JSON.
 The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; the web frontend consumes it.
-The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, request, text and JSON; models consumes it and re-exports the client records at its existing paths.
-The `maestro-package` leaf owns portable package interchange records; native
-packages and guest authoring specialize its resolved-package scope. Pattern depends
+The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, interchange, text and JSON; models consumes it and re-exports the client records at its existing paths.
+The `packages` module of `maestro-interchange` owns the portable package interchange
+records; native packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
 the web frontend imports them directly. The dedicated conventions checker may
 consume the same parser's code-block source ranges for documentation checks.
 Tools may also depend directly on text for shared newline
-normalization. The guest authoring crate may depend on request,
-entry, tool, JSON and text, never on native session, tool or catalog runtimes. The table is not
+normalization. The guest authoring crate may depend on interchange,
+JSON and text, never on native session, tool or catalog runtimes. The table is not
 repeated here.
 
 Pure retained [session-tree projection](sessions/tree-projection.md) belongs to
@@ -318,8 +319,8 @@ Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/re
 belong to tools, except the guest author definition in
 `maestro-extensions-wasm/src/types/tools.rs`; application selector types and selector
 modules belong to chat.
-The four message delivery records belong to `maestro-request`; `ForkPosition` and
-`NavigateTreeOptions` belong to `maestro-entry`. Duplicate declarations in these
+The four message delivery records belong to `maestro-interchange`, and so do
+`ForkPosition` and `NavigateTreeOptions`. Duplicate declarations in these
 owners are rejected. Qualified uses and re-exports are not declarations. Duplicate tool declarations
 within either owner are rejected. Planning references in comments retain their separate policy and
 line-accurate diagnostics from native compiler-lexer comment spans.
@@ -680,7 +681,7 @@ one test target, the runnable `integration` target at `tests/integration.rs`.
 A library target that holds in-source tests keeps `[lib] test` on; one with none sets
 `test = false`, and the conventions check rejects either mismatch.
 
-Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Tool metadata has one generic record owner, `maestro-interchange::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Live callback storage
 belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
@@ -701,7 +702,7 @@ command-context binding remains independent.
 
 
 Shared extension event/result schemas and assembled prompt records belong to
-`maestro-request`, specialized with existing native/guest operands. The declaration
+`maestro-interchange`, specialized with existing native/guest operands. The declaration
 scanner rejects duplicate schemas while allowing specialization aliases and
 re-exports. One event inventory feeds author unions and guest adapter data.
 

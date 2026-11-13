@@ -9,7 +9,7 @@ use super::headers::normalize_request;
 use super::runtime::{Raced, race, sleep, timestamp_now, unit_random};
 use super::{Fetch, FetchError, HttpRequest, HttpResponse, RequestFailure, decode_utf8};
 use maestro_cancellation::Cancellation;
-use maestro_request::types::{StreamOptionSlots, StreamOptions};
+use maestro_interchange::types::{StreamOptionSlots, StreamOptions};
 
 /// Milliseconds a response may take to start before the attempt times out.
 const DEFAULT_TIMEOUT_MS: f64 = 600_000.0;

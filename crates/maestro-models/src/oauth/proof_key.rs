@@ -5,7 +5,7 @@ use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use sha2::{Digest as _, Sha256};
 
 #[doc(inline)]
-pub use maestro_request::oauth::Pkce;
+pub use maestro_interchange::oauth::Pkce;
 
 /// Generate a proof key, returning the native entropy failure if entropy is unavailable.
 ///

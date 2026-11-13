@@ -9,7 +9,7 @@ use crate::parameters::replay::nullish_default;
 use crate::providers::json_text::{is_truthy, json_value, member, raw_json};
 use crate::providers::selected_fields::{count, field, native, required};
 use crate::{DiagnosticErrorInfo, JsonObject, Usage, UsageCost};
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 
 /// The members of a part that decide which updates it makes.
 pub(super) struct Part<'a> {

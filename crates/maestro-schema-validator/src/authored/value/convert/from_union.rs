@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_type::from_type;

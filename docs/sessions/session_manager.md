@@ -30,7 +30,7 @@ The named header and entry records implement the standard serde views. Decode fr
 validate unused payloads. Context messages and settings stay raw, owned values.
 
 ```rust
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::{parse_session_entries, build_session_context};
 use std::collections::HashMap;
 

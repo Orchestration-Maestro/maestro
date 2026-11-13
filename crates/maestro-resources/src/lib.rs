@@ -19,7 +19,7 @@ pub use catalog::{
     load_skills, load_skills_from_dir, metadata, read_entries, read_text, real_path,
     symlink_metadata,
 };
-pub use maestro_request::slash_commands::{SlashCommandInfo, SlashCommandSource};
+pub use maestro_interchange::slash_commands::{SlashCommandInfo, SlashCommandSource};
 pub use metadata::{
     FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, parse_yaml,
     strip_frontmatter,

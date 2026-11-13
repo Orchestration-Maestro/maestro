@@ -4,4 +4,4 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-pub use maestro_request::slash_commands::{SlashCommandInfo, SlashCommandSource};
+pub use maestro_interchange::slash_commands::{SlashCommandInfo, SlashCommandSource};

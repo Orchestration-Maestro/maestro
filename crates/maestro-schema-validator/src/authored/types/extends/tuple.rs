@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::extends_left::extends_left;
 use super::extends_right::extends_right;
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// A tuple extends a tuple of the same length whose positions it all extends.
 pub(crate) fn extends_tuple<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {
@@ -40,7 +40,7 @@ pub(crate) fn tuple_items<'n, 'a>(
     match &**node {
         Node::Tuple(parts, _) => Some(std::borrow::Cow::Borrowed(parts)),
         Node::Leaf(view)
-            if view.kind == Some(&maestro_request::parameter_schema::SchemaKind::Tuple) =>
+            if view.kind == Some(&maestro_interchange::parameter_schema::SchemaKind::Tuple) =>
         {
             Some(std::borrow::Cow::Owned(
                 view.children("items")?

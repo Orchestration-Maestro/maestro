@@ -2,7 +2,7 @@
 
 use std::collections::VecDeque;
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::{Map, Value};
 
 use super::super::{

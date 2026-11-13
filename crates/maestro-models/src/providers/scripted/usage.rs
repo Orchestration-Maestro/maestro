@@ -3,7 +3,7 @@ use crate::{
     AssistantContent, AssistantMessage, CacheRetention, Context, DiagnosticErrorInfo, Message,
     ProviderExecution, StreamOptions, UserBlock, UserContent,
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use std::{borrow::Cow, sync::Mutex};
 
 /// Estimate tokens from Unicode scalar count in groups of four.

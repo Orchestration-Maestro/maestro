@@ -36,7 +36,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 
 use maestro_cancellation::Cancellation;
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 
 pub use base64_text::FORGIVING;
 #[cfg(not(target_arch = "wasm32"))]

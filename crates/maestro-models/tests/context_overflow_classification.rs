@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use maestro_interchange::presence::Presence;
     use maestro_models::{AssistantMessage, StopReason, is_context_overflow};
-    use maestro_request::presence::Presence;
 
     fn message(text: Option<&str>) -> AssistantMessage {
         serde_json::from_value(serde_json::json!({

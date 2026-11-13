@@ -15,7 +15,7 @@ use crate::{
     parsed_arguments,
 };
 use maestro_http::RequestFailure;
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 
 /// Failure of a message that opens with a turn other than the assistant's.
 const USER_START_TEXT: &str =

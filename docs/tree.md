@@ -53,7 +53,7 @@ Loading a history replays its label records in order and keeps raw values;
 the entries. Labels never enter model context.
 
 ```rust
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::json;

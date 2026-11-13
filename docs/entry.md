@@ -1,11 +1,11 @@
 # Session interchange records
 
-`maestro-entry` declares session headers, entry identity, the nine concrete entry
-records, new-session options, built-context records and compaction preparation,
-results, settings and file-operation records, plus `ForkPosition` and
-`NavigateTreeOptions` shared by native session operations and guest authoring. It depends only on `maestro-request` within
-the workspace. [Approved libraries](libraries/entry.md) supply serialization and
-ordered sets.
+The `entry` module of `maestro-interchange` declares session headers, entry identity, the
+nine concrete entry records, new-session options, built-context records and compaction
+preparation, results, settings and file-operation records, plus `ForkPosition` and
+`NavigateTreeOptions` shared by native session operations and guest authoring, at
+`maestro_interchange::entry`. [Approved libraries](libraries/entry.md) supply serialization
+and ordered sets.
 
 ## Consumer views
 
@@ -22,7 +22,7 @@ Both consumers retain their existing public names through re-exports or aliases.
 
 Native context views are built by projection. See [session context](sessions/session_manager.md)
 for history, file reading and selection, and [guest records](extensions/guest.md#session-entries)
-for guest decoding. The entry crate adds no history, discovery, persistence or
+for guest decoding. The entry module adds no history, discovery, persistence or
 compaction algorithm; consumers own those operations.
 
 ## Encoded members
@@ -36,9 +36,9 @@ write those identity members before their own fields. Preparation writes
 `CompactionResult<T>` writes `summary`, `firstKeptEntryId`, `tokensBefore`, then
 optional `details`. It carries no generation or persistence behavior.
 
-Optional entry/header fields, result details and `previousSummary` use the request owner's
+Optional entry/header fields, result details and `previousSummary` use the record owner's
 [`Presence<T>`](records.md#stored-session-entries). Detail types need no `Default`
-for decoding. [`Omittable`](../crates/maestro-request/src/presence.rs) in the request
+for decoding. [`Omittable`](../crates/maestro-interchange/src/presence.rs) in the record
 owner controls serialization of context settings and the
 new-session parent: `Presence::Missing` and `None` are omitted; text is written,
 including empty text. These generic fields have no deserialization default.

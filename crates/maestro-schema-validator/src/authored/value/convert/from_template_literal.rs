@@ -1,6 +1,6 @@
 //! Conversion through the literals a template pattern names.
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_string::from_string;

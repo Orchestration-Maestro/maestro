@@ -7,7 +7,7 @@ use super::{
     template_literal::extends_decoded, union::extends_right_union,
 };
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Perform the structural check a left handler falls through to.
 ///

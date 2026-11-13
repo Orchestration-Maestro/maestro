@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use super::extends_right::extends_right;
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// A literal node extends the matching literal or the matching scalar kind.
 pub(crate) fn extends_literal<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {

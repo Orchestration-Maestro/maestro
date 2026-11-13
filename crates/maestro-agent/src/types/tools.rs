@@ -1,11 +1,11 @@
 //! Stored executable tool declarations.
-use maestro_models::{DiagnosticErrorInfo, Tool};
 /// Tool scheduling preference.
-pub use maestro_tool::types::ToolExecutionMode;
+pub use maestro_interchange::tool::types::ToolExecutionMode;
+use maestro_models::{DiagnosticErrorInfo, Tool};
 use std::sync::RwLock;
 /// Tool output with caller-defined optional details and termination.
 pub type AgentToolResult<TDetails = serde_json::Value> =
-    maestro_tool::types::AgentToolResult<Option<TDetails>, Option<bool>>;
+    maestro_interchange::tool::types::AgentToolResult<Option<TDetails>, Option<bool>>;
 /// A progress observer for tool output.
 pub type AgentToolUpdateCallback<D = serde_json::Value, E = super::Threaded> =
     <E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::Update<D>>;

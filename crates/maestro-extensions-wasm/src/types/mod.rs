@@ -58,7 +58,7 @@ pub use events::{
     SessionShutdownEvent, SessionShutdownReason, SessionStartEvent, SessionStartReason,
 };
 pub use extension_result::{ExtensionFuture, ExtensionResult, HookFuture, HookResult};
-pub use maestro_request::presence::Presence;
+pub use maestro_interchange::presence::Presence;
 pub use selection_events::*;
 pub use session_events::*;
 pub use tool_events::*;

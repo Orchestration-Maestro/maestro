@@ -1,6 +1,6 @@
 //! Creation of attributed diagnostics.
 pub use maestro_http::timestamp_now;
-pub use maestro_request::diagnostics::*;
+pub use maestro_interchange::diagnostics::*;
 /// Create a diagnostic using current Unix epoch milliseconds and supplied fields.
 #[must_use]
 pub fn create_assistant_message_diagnostic(

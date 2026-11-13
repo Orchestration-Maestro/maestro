@@ -16,7 +16,7 @@ pub(super) struct ProviderRequestConfig {
     /// Synthesize Authorization after header resolution.
     pub auth_header: bool,
 }
-pub use maestro_request::model_registry::ResolvedRequestAuth;
+pub use maestro_interchange::model_registry::ResolvedRequestAuth;
 impl ModelRegistry {
     /// Select a provider key with the credentials fallback disabled, running
     /// configured commands through the catalog's own handle.

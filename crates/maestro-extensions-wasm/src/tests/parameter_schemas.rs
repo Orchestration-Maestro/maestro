@@ -63,7 +63,7 @@ async fn ask(driver: &mut impl Driver, method: &str, input: Value) -> Result<Val
 #[test]
 fn guest_exports_the_request_schema_owner() {
     let authored = ParameterSchema::authored(mixed_schema(), mixed_kinds());
-    let shared: &maestro_request::parameter_schema::ParameterSchema = &authored;
+    let shared: &maestro_interchange::parameter_schema::ParameterSchema = &authored;
     assert_eq!(shared.as_json(), &mixed_schema());
     let listed: ToolInfo = serde_json::from_value(json!({
         "name": "listed",

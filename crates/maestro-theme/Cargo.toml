@@ -12,7 +12,7 @@ maestro-json = { path = "../maestro-json" }
 maestro-text = { path = "../maestro-text" }
 maestro-watch = { path = "../maestro-watch" }
 maestro-path = { path = "../maestro-path" }
-maestro-request = { path = "../maestro-request" }
+maestro-interchange = { path = "../maestro-interchange" }
 maestro-tui = { path = "../maestro-tui" }
 indexmap = "=2.14.2"
 serde.workspace = true

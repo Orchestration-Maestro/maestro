@@ -1,6 +1,6 @@
 //! Resource provenance without configuration selection.
 
-pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
+pub use maestro_interchange::source_info::{SourceInfo, SourceOrigin, SourceScope};
 
 /// Complete provenance accompanying a resolved path.
 #[derive(Clone)]

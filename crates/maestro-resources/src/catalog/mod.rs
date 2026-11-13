@@ -21,7 +21,7 @@ use maestro_path::{basename, dirname, join};
 use std::{io, path::Path};
 pub use validation::SkillFrontmatter;
 
-pub use maestro_request::skills::Skill;
+pub use maestro_interchange::skills::Skill;
 /// Ordered discoveries and their diagnostics.
 #[derive(Debug, Default)]
 pub struct LoadSkillsResult {
