@@ -317,7 +317,7 @@ repository tooling and the feature unifier (`maestro-dependencies`) are dedicate
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
 optional utility and the unifier. Sparse workspaces need
-no placeholder crates. Chat, CLI and RPC require the application edge, web declares it only when it calls an application operation, and every frontend declares only the
+no placeholder crates. Chat, CLI and RPC require the application edge, web declares none, and every frontend declares only the
 edges in its row of the dependency table, when used. The terminal adapter
 requires toolkit and text. The
 utility edge never supplies a required edge. The daemon requires the terminal

@@ -1,8 +1,9 @@
 # Browser utility libraries
 
-The `maestro-web` utility library has exactly two internal dependencies:
-`maestro-app` supplies existing numeric records, markup escaping and attachment policy;
-`maestro-theme` supplies caller-resolved presentation. It introduces no runtime or application launcher. Production installs no default
+The `maestro-web` utility library declares the internal dependencies its
+[table row](../specs/maestro-port.md#crates-and-delivery-order) lists and no application edge:
+`maestro-text` supplies number formatting and markup escaping, `maestro-theme` supplies
+caller-resolved presentation, and the attachment policy is its own. It introduces no runtime or application launcher. Production installs no default
 font bundle; native tests enable the dev-only egui default fonts.
 
 | Library | Pin | Features used | License choice |
@@ -187,8 +188,8 @@ Malformed environment names retain the delimiter-spelled fallback. The registry
 package stays unchanged; there is no fork, formula preprocessing or HTML rewriting.
 Internal markup and error-tooltip wording may differ without changing the rendered
 formula or its error branch. The adapter-derived source shares the math MIT notice.
-Parsing is the shared [Markdown owner](../markdown.md), reached through the
-application edge; no browser binding feature is added.
+Parsing is the shared [Markdown owner](../markdown.md), declared directly;
+no browser binding feature is added.
 
 ## Supplied-content compiler
 
