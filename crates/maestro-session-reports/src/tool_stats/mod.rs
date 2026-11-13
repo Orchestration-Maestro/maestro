@@ -170,7 +170,7 @@ fn parse_options(args: &[String], stdout: &mut dyn Write) -> io::Result<Option<O
 /// Returns the native listing failure unchanged.
 fn journals(directory: &str) -> io::Result<Vec<String>> {
     let mut found = Vec::new();
-    for entry in maestro_listing::read_dir(directory)? {
+    for entry in maestro_path::fs::read_dir(directory)? {
         let path = entry.path().to_string_lossy().into_owned();
         let file_type = entry.file_type()?;
         if file_type.is_dir() {

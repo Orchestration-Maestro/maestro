@@ -66,7 +66,7 @@ pub fn resource_path(request: &str) -> io::Result<String> {
 
 /// Return canonical packaged bytes, retaining helper aliases before following links.
 fn resolve(root: &Path, request: &str) -> io::Result<Resource> {
-    let root = maestro_realpath::canonicalize(root)?;
+    let root = maestro_path::fs::canonicalize(root)?;
     let root_text = root
         .to_str()
         .ok_or_else(|| io::Error::other("resource root requires UTF-8"))?;
@@ -97,7 +97,7 @@ fn resolve(root: &Path, request: &str) -> io::Result<Resource> {
     if maestro_path::basename(&file, None) == "helper.js" {
         file = maestro_path::join(&[root_text, "helper.js"]);
     }
-    let file = maestro_realpath::canonicalize(&file)?;
+    let file = maestro_path::fs::canonicalize(&file)?;
     if !file.starts_with(&root) || file == root {
         return Err(io::Error::other("path outside packaged root"));
     }

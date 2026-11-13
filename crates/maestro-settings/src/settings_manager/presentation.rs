@@ -23,7 +23,7 @@ fn env_enabled(name: &str) -> bool {
 /// Expand the two supported home forms, keeping every other spelling as written.
 fn expand_session_dir(configured: &str) -> String {
     expand_session_dir_with(configured, || {
-        maestro_path::native_homedir()
+        maestro_path::native_home_dir()
             .map(|home| home.to_string_lossy().into_owned())
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "home directory is unknown"))
     })

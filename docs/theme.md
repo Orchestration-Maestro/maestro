@@ -109,7 +109,7 @@ failure.
 
 Theme loading reads files and process variables directly. It decodes file bytes as
 UTF-8 with replacement characters and lists a directory through the shared directory
-listing (`maestro-listing`): by name, in byte order of the names, without filtering
+listing (`maestro_path::fs::read_dir`): by name, in byte order of the names, without filtering
 by entry kind. Browser builds have no file system, so every read fails there and no
 directory is listed.
 Inventories sort with a stable locale collator (`maestro_theme::Collator`, a pure re-export of the text crate's comparator, also at `maestro_theme::palette::Collator` outside browser targets) built once per call; locale selection and fallback are

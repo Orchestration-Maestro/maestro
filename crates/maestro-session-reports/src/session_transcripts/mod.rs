@@ -127,7 +127,7 @@ fn options(args: &[String]) -> io::Result<Options> {
 /// # Errors
 /// Returns the native listing failure unchanged.
 fn journals(directory: &SessionDir) -> io::Result<Vec<String>> {
-    let mut names = maestro_listing::read_dir(directory.as_str())?
+    let mut names = maestro_path::fs::read_dir(directory.as_str())?
         .into_iter()
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .filter(|name| super::is_journal(name))
@@ -445,7 +445,7 @@ fn instructions(cwd: &str) -> io::Result<Vec<String>> {
 /// # Errors
 /// Returns the native listing failure unchanged.
 fn summaries(directory: &str) -> io::Result<Vec<String>> {
-    let mut names = maestro_listing::read_dir(directory)?
+    let mut names = maestro_path::fs::read_dir(directory)?
         .into_iter()
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .filter(|name| name.ends_with(".summary.txt"))

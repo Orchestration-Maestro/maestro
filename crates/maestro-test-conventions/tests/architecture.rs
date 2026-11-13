@@ -823,12 +823,9 @@ const DECLARATIONS: &[(&str, &str)] = &[
     ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
 ];
 
-/// Crates the specification excludes from the foundation utility.
+/// Crates the specification excludes from the path crate permission.
 fn utility_excluded() -> Vec<&'static str> {
     specification_names("The guest authoring crate", "are excluded from this")
-        .into_iter()
-        .filter(|name| *name != "maestro-lock")
-        .collect()
 }
 
 /// Direct dependencies a crate must declare.
@@ -836,7 +833,7 @@ fn required_targets(name: &str) -> &'static [&'static str] {
     support::required(name)
 }
 
-/// Manifest declaring the required targets and the foundation utility.
+/// Manifest declaring the required targets and the path crate.
 fn dependencies_with_utility(required: &[&str], kind: &str, extra: &str) -> String {
     let mut declarations = String::from("[dependencies]\n");
     for target in required {
@@ -872,10 +869,20 @@ fn path_utility_edges_preserve_native_layer_rules() {
         native_consumer_may_not_dev_declare_the_utility(from);
     }
     for from in excluded {
-        excluded_crate_may_not_declare_the_utility(from);
+        // A table row that names the path crate grants that crate its own edge.
+        if !row_names_the_path_crate(from) {
+            excluded_crate_may_not_declare_the_utility(from);
+        }
     }
     path_utility_has_no_outbound_edges();
     path_utility_does_not_replace_the_application();
+}
+
+/// Whether the table row of a crate lists the path crate among its dependencies.
+fn row_names_the_path_crate(name: &str) -> bool {
+    support::policy::POLICY
+        .iter()
+        .any(|row| row.0 == name && row.1.contains(&"maestro-path"))
 }
 
 /// Whether the table row of a crate lists no internal dependencies.
@@ -971,7 +978,7 @@ fn path_utility_has_no_outbound_edges() {
     }
 }
 
-/// Verify that the optional utility edge cannot replace the required application edge.
+/// Verify that the optional path crate edge cannot replace the required application edge.
 fn path_utility_does_not_replace_the_application() {
     for frontend in [
         "maestro-cli",
@@ -1911,12 +1918,12 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
-fn guest_listing_edges_are_refused_in_every_dependency_kind() {
-    const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-wasm -> maestro-listing";
+fn guest_path_edges_are_refused_in_every_dependency_kind() {
+    const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-wasm -> maestro-path";
     const PRODUCTION: &str =
-        "forbidden production dependency: maestro-extensions-wasm -> maestro-listing";
+        "forbidden production dependency: maestro-extensions-wasm -> maestro-path";
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-listing"]);
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-path"]);
     for (kind, extra, message) in [
         ("dev-dependencies", "", DEVELOPMENT),
         (
@@ -1938,7 +1945,7 @@ fn guest_listing_edges_are_refused_in_every_dependency_kind() {
             PRODUCTION,
         ),
     ] {
-        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\"{extra} }}"));
+        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nutility = {{ package = \"maestro-path\", path = \"../maestro-path\"{extra} }}"));
         assert_eq!(
             check_workspace(workspace.root.path()),
             Err(message.into()),
@@ -2718,7 +2725,6 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-http",
-    "maestro-listing",
     "maestro-lock",
     "maestro-models",
     "maestro-packages",
@@ -2838,11 +2844,9 @@ fn directory_support_owner_has_no_domain_dependencies() {
 /// other workspace crate.
 #[test]
 fn directory_support_owner_depends_only_on_the_real_path_owner() {
-    let targets = ["maestro-text", "maestro-path", "maestro-tooling"];
+    let targets = ["maestro-text", "maestro-tooling"];
     let workspace = Workspace::new();
-    workspace.foundation(&[
-        DIRECTORY, REALPATH, targets[0], targets[1], targets[2], UNIFIER,
-    ]);
+    workspace.foundation(&[DIRECTORY, REALPATH, targets[0], targets[1], UNIFIER]);
     for target in targets {
         for (table, refusal) in [
             ("dependencies", "forbidden production dependency"),
@@ -2876,7 +2880,7 @@ fn directory_support_owner_depends_only_on_the_real_path_owner() {
 }
 
 /// Owner of native real-path resolution.
-const REALPATH: &str = "maestro-realpath";
+const REALPATH: &str = "maestro-path";
 
 #[test]
 fn tracing_support_owner_has_no_domain_dependencies() {
