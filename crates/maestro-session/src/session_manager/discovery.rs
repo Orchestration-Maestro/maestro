@@ -84,7 +84,7 @@ async fn read_paths(
 ) -> io::Result<Vec<String>> {
     let dir = dir.to_owned();
     tokio::task::spawn_blocking(move || {
-        let entries = maestro_listing::read_dir(&dir)?;
+        let entries = maestro_path::fs::read_dir(&dir)?;
         Ok(entries
             .iter()
             .filter_map(|entry| keep(&dir, entry))

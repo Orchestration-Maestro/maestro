@@ -546,14 +546,11 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             .map(String::as_str)
             .collect::<Vec<_>>(),
         [
-            "crates/maestro-entry",
             "crates/maestro-extensions-wasm",
+            "crates/maestro-interchange",
             "crates/maestro-json",
-            "crates/maestro-package",
-            "crates/maestro-request",
             "crates/maestro-subagents",
-            "crates/maestro-text",
-            "crates/maestro-tool"
+            "crates/maestro-text"
         ]
     );
 }

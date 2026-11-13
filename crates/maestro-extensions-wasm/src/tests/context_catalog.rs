@@ -1036,7 +1036,7 @@ struct CompatibilityCase {
 /// Reuse the owning shared-model corpus rather than copying descriptors.
 async fn compatibility_corpus(driver: &mut impl Driver) -> Result<(), String> {
     let cases: Vec<CompatibilityCase> = serde_json::from_str(include_str!(
-        "../../../maestro-request/tests/fixtures/model_compatibility.json"
+        "../../../maestro-interchange/tests/fixtures/model_compatibility.json"
     ))
     .map_err(|e| e.to_string())?;
     let mut seen = std::collections::HashSet::new();

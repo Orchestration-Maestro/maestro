@@ -96,7 +96,7 @@ fn copy_standalone(
 fn copy_matches(source: &Path, destination: &Path, suffix: &str) -> io::Result<()> {
     fs::create_dir_all(destination)?;
     let mut matches =
-        maestro_listing::read_dir(source).map_err(|error| input_error(source, &error))?;
+        maestro_path::fs::read_dir(source).map_err(|error| input_error(source, &error))?;
     matches.retain(|entry| {
         let name = entry.file_name();
         let path = Path::new(&name);
@@ -130,7 +130,7 @@ pub fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
         return copy_file(source, destination);
     }
     fs::create_dir_all(destination)?;
-    for entry in maestro_listing::read_dir(source).map_err(|error| input_error(source, &error))? {
+    for entry in maestro_path::fs::read_dir(source).map_err(|error| input_error(source, &error))? {
         copy_tree(&entry.path(), &destination.join(entry.file_name()))?;
     }
     Ok(())

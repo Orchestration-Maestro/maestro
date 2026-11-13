@@ -4,7 +4,7 @@ use super::{
     conversions::invalid,
     history::{self, ecma_whitespace, truthy},
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use serde_json::{Map, Value};
 use std::collections::HashSet;
 use std::io;

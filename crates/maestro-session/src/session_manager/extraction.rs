@@ -3,7 +3,7 @@ use super::{
     FileEntry, ReadonlySessionManager, SessionEntry, SessionManager, build_index, generate_id,
     session_header,
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use serde_json::{Map, Value, json};
 use std::collections::{HashMap, HashSet};
 use std::io;

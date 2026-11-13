@@ -8,7 +8,7 @@ use super::{
     flatten::flatten,
 };
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Broaden supplied members into one node, an alternative set or an impossible node.
 pub(crate) fn broaden<'a>(types: &[Rc<Node<'a>>]) -> Rc<Node<'a>> {

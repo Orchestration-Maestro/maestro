@@ -1,6 +1,6 @@
 //! Author programs corresponding to the recorded executable-schema inputs.
 
-use maestro_request::{
+use maestro_interchange::{
     diagnostics::DiagnosticErrorInfo,
     parameter_schema::{
         Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaKind, SchemaNode,

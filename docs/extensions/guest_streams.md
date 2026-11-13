@@ -1,7 +1,7 @@
 # Model invocation options
 
 The guest library re-exports `ThinkingBudgets`, `CacheRetention`, `Transport` and
-`ProviderResponse` from the shared request owner. `StreamOptions`,
+`ProviderResponse` from the shared record owner. `StreamOptions`,
 `ProviderStreamOptions` and `SimpleStreamOptions` specialize the same shared
 records with guest-local capabilities; they do not copy native option definitions.
 `StreamOptionsInput` specializes the shared raw/simple enum with those same

@@ -1,6 +1,6 @@
 //! Native typed catalog source emission.
 use super::{Catalog, utf16_order};
-use maestro_request::types::{Model, ModelInput};
+use maestro_interchange::types::{Model, ModelInput};
 use std::fmt::Write as _;
 use std::{fs, io, path::Path};
 
@@ -30,7 +30,7 @@ pub(super) fn write_catalog(catalog: &Catalog, destination: &Path) -> io::Result
     providers.sort_by(|(left, _), (right, _)| utf16_order(left, right));
     let mut registry = String::from(INSTRUCTIONS);
     let mut table = String::from(
-        "/// Construct one provider registry.\n#[rustfmt::skip]\ntype ProviderConstructor = fn() -> indexmap::IndexMap<&'static str, maestro_request::types::Model>;\n/// Provider constructor table in emitted order.\n#[rustfmt::skip]\nconst PROVIDERS: &[(&str, ProviderConstructor)] = &[",
+        "/// Construct one provider registry.\n#[rustfmt::skip]\ntype ProviderConstructor = fn() -> indexmap::IndexMap<&'static str, maestro_interchange::types::Model>;\n/// Provider constructor table in emitted order.\n#[rustfmt::skip]\nconst PROVIDERS: &[(&str, ProviderConstructor)] = &[",
     );
     let mut owned = std::collections::HashSet::new();
     for (index, (provider, models)) in providers.into_iter().enumerate() {
@@ -45,7 +45,7 @@ pub(super) fn write_catalog(catalog: &Catalog, destination: &Path) -> io::Result
     }
     table.push_str("];\n");
     registry.push_str(&table);
-    registry.push_str("/// Assemble providers in emitted order.\n#[rustfmt::skip]\npub fn models() -> indexmap::IndexMap<&'static str, indexmap::IndexMap<&'static str, maestro_request::types::Model>> {\nPROVIDERS.iter().map(|(key, constructor)| (*key, constructor())).collect()\n}\n");
+    registry.push_str("/// Assemble providers in emitted order.\n#[rustfmt::skip]\npub fn models() -> indexmap::IndexMap<&'static str, indexmap::IndexMap<&'static str, maestro_interchange::types::Model>> {\nPROVIDERS.iter().map(|(key, constructor)| (*key, constructor())).collect()\n}\n");
     fs::write(destination.join("lib.rs"), registry)?;
     for entry in fs::read_dir(destination)? {
         let entry = entry?;
@@ -68,7 +68,7 @@ pub(super) fn write_catalog(catalog: &Catalog, destination: &Path) -> io::Result
 fn provider_source(models: &indexmap::IndexMap<String, Model>) -> String {
     let mut source = String::from(INSTRUCTIONS);
     let mut table = String::from(
-        "/// Construct one model descriptor.\ntype ModelConstructor = fn() -> maestro_request::types::Model;\n/// Model constructor table in emitted order.\nconst MODELS: &[(&str, ModelConstructor)] = &[\n",
+        "/// Construct one model descriptor.\ntype ModelConstructor = fn() -> maestro_interchange::types::Model;\n/// Model constructor table in emitted order.\nconst MODELS: &[(&str, ModelConstructor)] = &[\n",
     );
     let mut models: Vec<_> = models.values().collect();
     models.sort_by(|left, right| utf16_order(&left.id, &right.id));
@@ -76,13 +76,13 @@ fn provider_source(models: &indexmap::IndexMap<String, Model>) -> String {
         let _ = writeln!(table, "({:?}, model_{index}),", model.id);
         let _ = writeln!(
             source,
-            "/// Construct a model descriptor.\nfn model_{index}() -> maestro_request::types::Model {{\n{}\n}}",
+            "/// Construct a model descriptor.\nfn model_{index}() -> maestro_interchange::types::Model {{\n{}\n}}",
             model_expression(model)
         );
     }
     table.push_str("];\n");
     source.push_str(&table);
-    source.push_str("/// Assemble this provider's models in emitted order.\npub(super) fn models() -> indexmap::IndexMap<&'static str, maestro_request::types::Model> {\nMODELS.iter().map(|(key, constructor)| (*key, constructor())).collect()\n}\n");
+    source.push_str("/// Assemble this provider's models in emitted order.\npub(super) fn models() -> indexmap::IndexMap<&'static str, maestro_interchange::types::Model> {\nMODELS.iter().map(|(key, constructor)| (*key, constructor())).collect()\n}\n");
     source
 }
 /// Format a finite number, normalizing both zero signs to positive zero.
@@ -151,7 +151,7 @@ fn thinking(model: &Model) -> String {
                     let value = value
                         .as_ref()
                         .map_or_else(|| "None".into(), |value| format!("Some({})", string(value)));
-                    format!("(maestro_request::types::ModelThinkingLevel::{level:?}, {value})")
+                    format!("(maestro_interchange::types::ModelThinkingLevel::{level:?}, {value})")
                 })
                 .collect::<Vec<_>>()
                 .join(",");
@@ -165,13 +165,13 @@ pub(super) fn model_expression(model: &Model) -> String {
         .input
         .iter()
         .map(|kind| match kind {
-            ModelInput::Text => "maestro_request::types::ModelInput::Text",
-            ModelInput::Image => "maestro_request::types::ModelInput::Image",
+            ModelInput::Text => "maestro_interchange::types::ModelInput::Text",
+            ModelInput::Image => "maestro_interchange::types::ModelInput::Image",
         })
         .collect::<Vec<_>>()
         .join(",");
     format!(
-        "maestro_request::types::Model {{\nid: {},\nname: {},\napi: {},\nprovider: {},\nbase_url: {},\nreasoning: {},\nthinking_level_map: {},\ninput: vec![{}],\ncost: maestro_request::types::ModelCost {{ input: {}, output: {}, cache_read: {}, cache_write: {} }},\ncontext_window: {},\nmax_tokens: {},\nheaders: {},\ncompat: {},\n}}",
+        "maestro_interchange::types::Model {{\nid: {},\nname: {},\napi: {},\nprovider: {},\nbase_url: {},\nreasoning: {},\nthinking_level_map: {},\ninput: vec![{}],\ncost: maestro_interchange::types::ModelCost {{ input: {}, output: {}, cache_read: {}, cache_write: {} }},\ncontext_window: {},\nmax_tokens: {},\nheaders: {},\ncompat: {},\n}}",
         string(&model.id),
         string(&model.name),
         string(&model.api),

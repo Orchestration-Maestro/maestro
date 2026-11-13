@@ -6,7 +6,7 @@
 )]
 use crate::{AbortSignal, ExtensionAPI, ExtensionFuture, ExtensionResult, Model, OAuthCredentials};
 #[doc(inline)]
-pub use maestro_request::oauth::{
+pub use maestro_interchange::oauth::{
     OAuthAuthInfo, OAuthPrompt, OAuthSelectOption, OAuthSelectPrompt, Pkce,
 };
 use std::rc::Rc;

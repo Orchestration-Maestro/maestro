@@ -20,7 +20,7 @@ pub struct ReadToolInput {
 }
 /// Observations supplied by the read tool with guest field presence.
 pub type ReadToolDetails =
-    maestro_tool::tools::reading::ReadToolDetails<Presence<TruncationResult>>;
+    maestro_interchange::tool::tools::reading::ReadToolDetails<Presence<TruncationResult>>;
 
 /// Fallible asynchronous work supplied by a tool operation.
 pub type OperationFuture<'a, T> = std::pin::Pin<

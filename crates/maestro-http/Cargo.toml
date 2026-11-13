@@ -10,7 +10,7 @@ repository.workspace = true
 maestro-text = { path = "../maestro-text" }
 maestro-json = { path = "../maestro-json" }
 maestro-cancellation = { path = "../maestro-cancellation" }
-maestro-request = { path = "../maestro-request" }
+maestro-interchange = { path = "../maestro-interchange" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 serde_json = { workspace = true, features = ["raw_value"] }
 indexmap = { version = "=2.14.2", features = ["serde"] }

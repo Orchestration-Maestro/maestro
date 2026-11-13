@@ -190,7 +190,7 @@ pub(super) fn jsonl_path(dir: &str, entry: &fs::DirEntry) -> Option<String> {
 /// probe failures skip a file.
 #[must_use]
 pub fn find_most_recent_session(session_dir: &str) -> Option<String> {
-    let paths: Vec<_> = maestro_listing::read_dir(session_dir)
+    let paths: Vec<_> = maestro_path::fs::read_dir(session_dir)
         .ok()?
         .into_iter()
         .filter_map(|entry| jsonl_path(session_dir, &entry))

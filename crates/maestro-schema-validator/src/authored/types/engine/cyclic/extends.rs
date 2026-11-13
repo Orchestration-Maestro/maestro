@@ -5,7 +5,7 @@ use std::rc::Rc;
 use serde_json::Value;
 
 use crate::authored::schema_view::{Node, ObjectNode, View};
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Spell a cyclic node's definition with every reference replaced by a node accepting
 /// anything, so a recursive definition can be compared without recursing again.

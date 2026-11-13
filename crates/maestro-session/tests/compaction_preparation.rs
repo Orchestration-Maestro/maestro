@@ -28,7 +28,7 @@ fn saved_usage(total: Option<serde_json::Value>) -> serde_json::Value {
 /// Re-read a saved usage through the typed record and its written form.
 fn roundtrip(total: Option<serde_json::Value>) -> serde_json::Value {
     let saved = saved_usage(total);
-    let usage: maestro_request::types::Usage = serde_json::from_value(saved.clone()).unwrap();
+    let usage: maestro_interchange::types::Usage = serde_json::from_value(saved.clone()).unwrap();
     let written = serde_json::to_value(usage).unwrap();
     assert_eq!(written.get("totalTokens"), saved.get("totalTokens"));
     written
@@ -64,7 +64,7 @@ fn context_totals_keep_fallback_after_record_roundtrip() {
     for member in ["input", "output", "cacheRead", "cacheWrite"] {
         zeroed[member] = json!(0.0);
     }
-    let usage: maestro_request::types::Usage = serde_json::from_value(zeroed).unwrap();
+    let usage: maestro_interchange::types::Usage = serde_json::from_value(zeroed).unwrap();
     let written = serde_json::to_value(usage).unwrap();
     assert_eq!(
         maestro_session::calculate_context_tokens(&written)

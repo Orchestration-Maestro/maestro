@@ -9,7 +9,7 @@ repository.workspace = true
 [dependencies]
 maestro-text = { path = "../maestro-text" }
 maestro-json = { path = "../maestro-json" }
-maestro-request = { path = "../maestro-request" }
+maestro-interchange = { path = "../maestro-interchange" }
 maestro-path = { path = "../maestro-path" }
 num-bigint.workspace = true
 num-traits.workspace = true
@@ -23,7 +23,6 @@ serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
-maestro-listing = { path = "../maestro-listing" }
 
 [[test]]
 name = "integration"

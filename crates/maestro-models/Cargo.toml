@@ -10,7 +10,7 @@ repository.workspace = true
 maestro-text = { path = "../maestro-text" }
 maestro-json = { path = "../maestro-json" }
 maestro-cancellation = { path = "../maestro-cancellation" }
-maestro-request = { path = "../maestro-request" }
+maestro-interchange = { path = "../maestro-interchange" }
 maestro-models-catalog = { path = "../maestro-models-catalog" }
 maestro-http = { path = "../maestro-http" }
 maestro-schema-validator = { path = "../maestro-schema-validator" }
@@ -34,11 +34,11 @@ chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 maestro-lock = { path = "../maestro-lock" }
 
 [features]
-test-support = ["maestro-request/test-support"]
+test-support = ["maestro-interchange/test-support"]
 
 [dev-dependencies]
 maestro-http = { path = "../maestro-http", features = ["test-support"] }
-maestro-request = { path = "../maestro-request", features = ["test-support"] }
+maestro-interchange = { path = "../maestro-interchange", features = ["test-support"] }
 httpdate = "=1.0.3"
 maestro-test-fixtures.workspace = true
 
@@ -52,7 +52,6 @@ wasm-bindgen-futures = "=0.4.79"
 getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
 google-cloud-auth = "=1.17.0"

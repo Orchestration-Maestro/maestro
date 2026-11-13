@@ -1,5 +1,5 @@
 //! Recorded context calls.
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::session_manager::*;
 use serde::Deserialize;
 use serde_json::Value;

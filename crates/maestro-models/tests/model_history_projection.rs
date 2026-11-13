@@ -5,8 +5,8 @@ mod root_routes;
 #[cfg(test)]
 mod tests {
     use crate::clock::epoch_millis;
+    use maestro_interchange::test_support::target_model;
     use maestro_models::*;
-    use maestro_request::test_support::target_model;
     use serde_json::json;
 
     #[cfg(not(target_arch = "wasm32"))]

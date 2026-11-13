@@ -10,7 +10,7 @@ repository.workspace = true
 test = false
 
 [dependencies]
-maestro-request = { path = "../maestro-request" }
+maestro-interchange = { path = "../maestro-interchange" }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 serde_json.workspace = true
 

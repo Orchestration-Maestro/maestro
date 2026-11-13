@@ -149,7 +149,7 @@ impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocomplet
     }
 
     fn read_dir(&self, path: &str) -> io::Result<Vec<DirectoryEntry>> {
-        maestro_listing::read_dir(path)?
+        maestro_path::fs::read_dir(path)?
             .into_iter()
             .map(|entry| {
                 let kind = entry.file_type()?;

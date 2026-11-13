@@ -541,4 +541,4 @@ pub struct SwitchSessionOptions {
     /// One-shot continuation bound by the host to this operation.
     pub with_session: Option<WithSession>,
 }
-pub use maestro_entry::session_manager::NavigateTreeOptions;
+pub use maestro_interchange::entry::session_manager::NavigateTreeOptions;

@@ -1,7 +1,7 @@
 //! Inbound completion records admitted before reduction.
 use super::wire::SafeInteger;
 use crate::providers::json_text::required;
-use maestro_request::types::present;
+use maestro_interchange::types::present;
 use serde::Deserialize;
 
 /// An admitted complete event.

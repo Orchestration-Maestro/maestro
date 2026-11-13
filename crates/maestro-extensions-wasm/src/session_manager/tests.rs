@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use super::SessionEntry;
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use serde_json::{Value, json};
 
 #[test]

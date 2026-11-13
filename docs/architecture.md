@@ -52,34 +52,35 @@ Dependency descriptions here state domain edges, subject to the
 including leaves and exact sets. The unifier itself has no workspace dependencies.
 
 The extension domain may depend directly on resources. The crates that list
-`maestro-request` in the specification table may depend on it; its job is to define shared
-message and model-request records, including command provenance records
+`maestro-interchange` in the specification table may depend on it; its job is to define the
+records a guest shares with its host, including command provenance records
 `SlashCommandInfo` and the open `SlashCommandSource` label, and the renderer option
 record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`. Resources and
 application presentation data re-export the two command provenance records; session
 re-exports the six others; guest authoring re-exports every record except
 `CustomMessageInput`, which it defines as its own alias. The declaration scanner rejects
-a declaration of any of these records except `CustomMessageInput` outside the request
+a declaration of any of these records except `CustomMessageInput` outside the record
 owner, and duplicates within it.
-The request owner depends only on the dependency-free JSON leaf.
+The record owner depends only on the dependency-free JSON leaf.
 No reverse dependency is permitted.
 
-The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
-owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
-only on `maestro-request`, and `maestro-brand` depends on text and JSON.
+The [specification](specs/maestro-port.md#crates-and-delivery-order) declares these
+owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-interchange`
+depends only on the JSON leaf and holds the session, tool and package record modules,
+and `maestro-brand` depends on text and JSON.
 The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; the web frontend consumes it.
-The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, request, text and JSON; models consumes it and re-exports the client records at its existing paths.
-The `maestro-providers` crate adapts the built-in model providers: it holds their login flows, the callback server and the callback pages, and installs the built-in login providers into the registry that `maestro-models` owns. It depends on models, http, request, brand, text and JSON; the application and the composed executable consume it.
-The `maestro-package` leaf owns portable package interchange records; native
-packages and guest authoring specialize its resolved-package scope. Pattern depends
+The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, interchange, text and JSON; models consumes it and re-exports the client records at its existing paths.
+The `maestro-providers` crate adapts the built-in model providers: it holds their login flows, the callback server and the callback pages, and installs the built-in login providers into the registry that `maestro-models` owns. It depends on models, http, interchange, brand, text and JSON; the application and the composed executable consume it.
+The `packages` module of `maestro-interchange` owns the portable package interchange
+records; native packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
 the web frontend imports them directly. The dedicated conventions checker may
 consume the same parser's code-block source ranges for documentation checks.
 Tools may also depend directly on text for shared newline
-normalization. The guest authoring crate may depend on request,
-entry, tool, JSON and text, never on native session, tool or catalog runtimes. The table is not
+normalization. The guest authoring crate may depend on interchange,
+JSON and text, never on native session, tool or catalog runtimes. The table is not
 repeated here.
 
 Pure retained [session-tree projection](sessions/tree-projection.md) belongs to
@@ -103,13 +104,13 @@ Browser qualification (`maestro-test-browser`) is dedicated, unpublished and
 depends on tooling for preparation. Hakari excludes its test-only browser stack
 from traversal. Repository tooling (`maestro-tooling`) is development-only, never
 shipped and has
-no internal dependencies apart from the optional utility and the native-only
+no internal dependencies apart from the optional `maestro-path` edge and the native-only
 feature unifier. Classes are not numeric
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
 The specification table identifies leaves with no internal dependencies; the
-foundation utility `maestro-path` is also a leaf. The
+`maestro-path` crate is also a leaf. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
 checks the table against the enforced graph policy. The frontend rows of that table
 are the frontend edge table: chat, CLI, RPC, web, the multiplexer and the executable
@@ -148,14 +149,14 @@ owner is reachable only through those native development edges, has no outgoing
 domain edge and is never admitted by a `maestro-test-*` name pattern.
 The directory owner follows the same native-only declaration checks, with the
 exact caller list of its
-[directory contract](specs/maestro-port.md#test-directory-owner) and no outgoing
-domain or utility edge. The tracing owner
+[directory contract](specs/maestro-port.md#test-directory-owner) and one outgoing
+edge, to `maestro-path` for the real path of its roots. The tracing owner
 follows the same checks with its own five callers; see the
 [tracing contract](specs/maestro-port.md#test-tracing-owner). The portable fixture
 owner has six exact
 development callers, listed in its
 [fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
-be portable or target-specific; normal/build edges and outgoing domain or utility
+be portable or target-specific; normal/build edges and outgoing domain or `maestro-path`
 edges are forbidden. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
@@ -202,11 +203,6 @@ and an owned I/O actor. The `byte_queue` module owns ordered buffers and partial
 offsets shared by that actor and native terminal output; callers keep readiness and
 shutdown policy. See [pane processes](workspace-daemon.md#pane-processes).
 
-The listing leaf `maestro-listing` is declared core below layer 0 with no workspace
-dependencies, including `maestro-path`. It owns directory listing: one directory's
-entries, sorted by file name on every platform. Only resources, theme, the toolkit,
-tools, session, repository tooling and the application may depend on it, on native
-targets; they keep kind filtering, name decoding and any further ordering.
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.
@@ -221,11 +217,11 @@ half the slots are retired, so removal costs expected constant work amortized ov
 the removals and clearing every registration costs work proportional to their
 number. While a traversal runs, retired slots stay until it ends.
 
-## Authored paths and the foundation utility
+## Authored paths and `maestro-path`
 
 An authored path, the text a user, setting or file wrote, stays a `String` and
 goes through `maestro-path`; it becomes a `std::path::PathBuf` only at a
-file-system call. The utility offers `join`, `normalize`, `resolve`, `relative`,
+file-system call. The crate offers `join`, `normalize`, `resolve`, `relative`,
 `dirname`, `basename` and `is_absolute` for the `posix` and `win32` flavors, plus
 a POSIX `parse`, with the results of the JavaScript runtime's `path` module,
 except where its result is a defect; the crate's tests mark each one. The crate
@@ -237,7 +233,7 @@ directory. `resolve_with` delegates to `resolve_with_flavor` using the target
 flavor; callers can select either flavor explicitly with `resolve_with_flavor`.
 Both resolve several operand groups from callbacks the caller supplies: it calls the drive callback once, and the
 working-directory callback once, only for the groups the operands and drives
-leave open, and returns that callback's error unchanged. `homedir` returns a
+leave open, and returns that callback's error unchanged. `home_dir` returns a
 supplied home, empty included, and calls its account callback only when none
 was supplied. The callbacks decide what is read and when; the crate reads
 nothing itself. Windows relative paths require matching resolved
@@ -253,26 +249,32 @@ and only as a non-optional normal dependency under
 in the specification table, cannot satisfy a required direct dependency and is the
 only crate whose direct `serde_json` entries bypass member inheritance.
 
-`maestro-path` has no domain dependencies and is the optional utility exception to
+`maestro-path` has no domain dependencies and is the optional-edge exception to
 leaf and exact-set rules, alongside the native feature unifier. Any crate in the
 specification table may declare it as a normal or build dependency (optional and target-specific forms included)
 without changing its layer, subject to the exclusions in the specification's
 [crate graph](specs/maestro-port.md#crates-and-delivery-order).
-Shared path helpers take supplied directory observations; `native_homedir` alone
+Lexical path helpers take supplied directory observations; `native_home_dir` alone
 reads the native home environment and account entry. They add no filesystem
 service, directory cache, scheduler or workspace dependency. The edge is ignored when checking a crate's complete
 direct set or leaf
 status. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
-checks permitted table and utility edges. Dev-dependencies on the utility,
-dependencies from the utility, and cycles are rejected like any other internal edge.
+checks permitted table and `maestro-path` edges. Dev-dependencies on `maestro-path`,
+dependencies from it, and cycles are rejected like any other internal edge.
+
+The crate's `fs` module holds the path operations that read the file system, on
+native targets only. `maestro_path::fs::read_dir` lists one directory's entries
+sorted by file name on every platform; callers keep kind filtering, name decoding
+and any further ordering. `maestro_path::fs::canonicalize` resolves
+[real paths](#real-paths).
 
 ## Real paths
 
-`maestro-realpath` is the one crate that resolves a native path to its real path
-through the file system: links followed, `.` and `..` resolved. It depends only
-on `maestro-path`. Windows reports a real path in the verbatim form,
-`\\?\D:\work` or `\\?\UNC\server\share\work`. `maestro_realpath::canonicalize`
+`maestro_path::fs` is the one module that resolves a native path to its real path
+through the file system: links followed, `.` and `..` resolved. Windows reports a
+real path in the verbatim form,
+`\\?\D:\work` or `\\?\UNC\server\share\work`. `maestro_path::fs::canonicalize`
 returns the ordinary form instead, `D:\work` or `\\server\share\work`, through
 the lexical `maestro_path::win32::ordinary`. A real path then compares equal to
 the spelling users, settings and test directories hold, and Git, Cargo and the
@@ -294,8 +296,8 @@ same test. Each keeps its own policy: the skill walk converts a link target, the
 extension adapter maps a component spelling, and the pane drops the leading
 slash of a file-URI drive path.
 
-Like every caller, `maestro-lock` and `maestro-packages` declare the owner only
-on native targets. Their browser build reports `io::ErrorKind::Unsupported` for
+Like every caller, `maestro-lock` and `maestro-packages` call the owner only
+on native targets, where it exists. Their browser build reports `io::ErrorKind::Unsupported` for
 a real path, the failure a missing file system gives, so the containment checks
 in those two crates refuse there rather than admitting a lexical path.
 
@@ -320,8 +322,8 @@ Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/re
 belong to tools, except the guest author definition in
 `maestro-extensions-wasm/src/types/tools.rs`; application selector types and selector
 modules belong to chat.
-The four message delivery records belong to `maestro-request`; `ForkPosition` and
-`NavigateTreeOptions` belong to `maestro-entry`. Duplicate declarations in these
+The four message delivery records belong to `maestro-interchange`, and so do
+`ForkPosition` and `NavigateTreeOptions`. Duplicate declarations in these
 owners are rejected. Qualified uses and re-exports are not declarations. Duplicate tool declarations
 within either owner are rejected. Planning references in comments retain their separate policy and
 line-accurate diagnostics from native compiler-lexer comment spans.
@@ -505,12 +507,12 @@ platform directory. The diagnostic names `TEST_DIRECTORY_CALLERS`, where a crate
 asks for the owner.
 
 Conventions reject real-path resolution in production code outside
-`maestro-realpath`, with the file and line. There the name `canonicalize` is
-accepted only as the qualified path `maestro_realpath::canonicalize`. The check
+`maestro_path::fs`, with the file and line. There the name `canonicalize` is
+accepted only as the qualified path `maestro_path::fs::canonicalize`. The check
 rejects `std::fs::canonicalize` and `tokio::fs::canonicalize`; the `canonicalize`
 method on any receiver; a path such as `Path::canonicalize` used as a value; an
 import of the name from anywhere, under any alias; and the name in macro tokens
-without the owner's crate in front. The scan reads names, not types, so a crate's
+without the owner's crate and module in front. The scan reads names, not types, so a crate's
 own method needs another name. It skips test code as the other checks define it:
 test layouts, items inside an inherited `cfg(test)` context and the
 `maestro-test-*` crates.
@@ -569,7 +571,7 @@ multiplexer. Required direct edges are root → application and multiplexer,
 and multiplexer → application. The required root
 edges must be non-optional normal dependencies active on native builds. Like the
 CLI and chat, the multiplexer may use application, toolkit, terminal adapter and
-theme; it may also use the protocol crate for frame records. The foundation utility
+theme; it may also use the protocol crate for frame records. The `maestro-path`
 and native feature-unifier exceptions apply too.
 Declared-but-absent core owners require no placeholder crates.
 
@@ -682,7 +684,7 @@ one test target, the runnable `integration` target at `tests/integration.rs`.
 A library target that holds in-source tests keeps `[lib] test` on; one with none sets
 `test = false`, and the conventions check rejects either mismatch.
 
-Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Tool metadata has one generic record owner, `maestro-interchange::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Live callback storage
 belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
@@ -703,7 +705,7 @@ command-context binding remains independent.
 
 
 Shared extension event/result schemas and assembled prompt records belong to
-`maestro-request`, specialized with existing native/guest operands. The declaration
+`maestro-interchange`, specialized with existing native/guest operands. The declaration
 scanner rejects duplicate schemas while allowing specialization aliases and
 re-exports. One event inventory feeds author unions and guest adapter data.
 

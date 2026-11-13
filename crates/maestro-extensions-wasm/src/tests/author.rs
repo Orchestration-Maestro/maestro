@@ -807,7 +807,7 @@ fn write_number(event: &mut ExtensionEvent, bits: &str, field: Option<&str>) -> 
                 .write()
                 .map_err(|e| e.to_string())?
                 .usage
-                .total_tokens = maestro_request::presence::Presence::Present(value);
+                .total_tokens = maestro_interchange::presence::Presence::Present(value);
         }
         ExtensionEvent::Session(SessionEvent::BeforeCompact(compact)) => match field {
             Some("reserveTokens") => compact.preparation.settings.reserve_tokens = value,

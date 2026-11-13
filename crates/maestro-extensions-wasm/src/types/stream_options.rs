@@ -8,8 +8,8 @@ use crate::{AbortSignal, ExtensionFuture, Model};
 use std::{any::Any, convert::Infallible, rc::Rc, sync::Arc};
 
 /// Requested reasoning excludes the disabled level admitted by agent selection.
-pub use maestro_request::types::ThinkingLevel as RequestedThinkingLevel;
-pub use maestro_request::types::{
+pub use maestro_interchange::types::ThinkingLevel as RequestedThinkingLevel;
+pub use maestro_interchange::types::{
     CacheRetention, ProviderResponse, StreamOptionSlots, ThinkingBudgets, Transport,
 };
 
@@ -40,16 +40,16 @@ impl StreamOptionSlots for Local {
 }
 
 /// Common invocation data with local hooks and cancellation, without a fetch operation.
-pub type StreamOptions = maestro_request::types::StreamOptions<Local>;
+pub type StreamOptions = maestro_interchange::types::StreamOptions<Local>;
 /// Open provider options with retained opaque author controls.
 pub type ProviderStreamOptions =
-    maestro_request::types::ProviderStreamOptions<StreamOptions, ProviderObjects>;
+    maestro_interchange::types::ProviderStreamOptions<StreamOptions, ProviderObjects>;
 /// Simple invocation data without an authored tool-choice operation.
 pub type SimpleStreamOptions =
-    maestro_request::types::SimpleStreamOptions<StreamOptions, Infallible>;
+    maestro_interchange::types::SimpleStreamOptions<StreamOptions, Infallible>;
 /// Original raw or simple callback options with guest-local capability representations.
 pub type StreamOptionsInput =
-    maestro_request::types::StreamOptionsInput<StreamOptions, ProviderObjects, Infallible>;
+    maestro_interchange::types::StreamOptionsInput<StreamOptions, ProviderObjects, Infallible>;
 
 /// Retained local provider invoked with the original option variant.
 pub type StreamFunction<O = ProviderStreamOptions> = Rc<

@@ -228,7 +228,7 @@ fn native_git_observations(args: &[String]) {
     assert_eq!(run(&path, "0"), ["branch=feature/native"]);
     let logged = std::fs::read_to_string(&log).expect("log");
     let lines: Vec<_> = logged.lines().collect();
-    let repo_real = maestro_realpath::canonicalize(&repo).expect("repo path");
+    let repo_real = maestro_path::fs::canonicalize(&repo).expect("repo path");
     assert_eq!(lines[0], args.join(" "));
     assert_eq!(Path::new(lines[1]), repo_real);
     if cfg!(target_os = "linux") {

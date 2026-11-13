@@ -100,14 +100,14 @@ pub use component_adapter::Glue;
 /// The insertion-ordered map the tool presets return.
 pub use indexmap::IndexMap;
 pub use loader::{Extension, ExtensionFactory, load_extension_from_factory};
-pub use maestro_request::credentials::{AuthSource, AuthStatus};
-pub use maestro_request::diagnostics::{
+pub use maestro_interchange::credentials::{AuthSource, AuthStatus};
+pub use maestro_interchange::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo,
 };
-pub use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};
-pub use maestro_request::skills::Skill;
-pub use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
-pub use maestro_request::types::{
+pub use maestro_interchange::parameter_schema::{ParameterSchema, SchemaKind};
+pub use maestro_interchange::skills::Skill;
+pub use maestro_interchange::source_info::{SourceInfo, SourceOrigin, SourceScope};
+pub use maestro_interchange::types::{
     AnthropicMessagesCompat, Api, AssistantContent, AssistantMessage, AssistantMessageEvent,
     CacheControlFormat, Context, DataCollection, DoneReason, ErrorReason, ImageContent, MaxPrice,
     MaxTokensField, Message, Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel,

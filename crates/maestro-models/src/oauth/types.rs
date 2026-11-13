@@ -1,9 +1,9 @@
 //! Shared OAuth credential and prompt records.
 use std::borrow::Cow;
 
-pub use maestro_request::oauth::OAuthCredentials;
+pub use maestro_interchange::oauth::OAuthCredentials;
 
-pub use maestro_request::oauth::{
+pub use maestro_interchange::oauth::{
     OAuthAuthInfo, OAuthPrompt, OAuthSelectOption, OAuthSelectPrompt,
 };
 

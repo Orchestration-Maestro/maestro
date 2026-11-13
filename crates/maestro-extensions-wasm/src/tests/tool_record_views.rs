@@ -8,39 +8,43 @@ use crate::Presence;
 
 #[test]
 fn guest_tool_aliases_use_shared_records() {
-    let result: crate::AgentToolResult = maestro_tool::types::AgentToolResult {
+    let result: crate::AgentToolResult = maestro_interchange::tool::types::AgentToolResult {
         content: vec![],
         details: Presence::Null,
         terminate: Presence::Present(false),
     };
     let module: crate::agent::AgentToolResult = result;
     assert!(matches!(module.details, Presence::Null));
-    let mode: crate::ToolExecutionMode = maestro_tool::types::ToolExecutionMode::Parallel;
+    let mode: crate::ToolExecutionMode =
+        maestro_interchange::tool::types::ToolExecutionMode::Parallel;
     assert_eq!(serde_json::to_value(mode).unwrap(), "parallel");
-    let truncation: crate::TruncationResult = maestro_tool::tools::truncate::TruncationResult {
-        content: "guest".into(),
-        truncated: true,
-        truncated_by: Some(crate::TruncationLimit::Bytes),
-        total_lines: 1.25,
-        total_bytes: 2.5,
-        output_lines: 3.75,
-        output_bytes: 4.5,
-        last_line_partial: true,
-        first_line_exceeds_limit: false,
-        max_lines: 5.25,
-        max_bytes: 6.5,
-    };
+    let truncation: crate::TruncationResult =
+        maestro_interchange::tool::tools::truncate::TruncationResult {
+            content: "guest".into(),
+            truncated: true,
+            truncated_by: Some(crate::TruncationLimit::Bytes),
+            total_lines: 1.25,
+            total_bytes: 2.5,
+            output_lines: 3.75,
+            output_bytes: 4.5,
+            last_line_partial: true,
+            first_line_exceeds_limit: false,
+            max_lines: 5.25,
+            max_bytes: 6.5,
+        };
     let module: crate::registry::TruncationResult = truncation;
-    let reason: Option<maestro_tool::tools::truncate::TruncationBy> = module.truncated_by;
-    let details: crate::ReadToolDetails = maestro_tool::tools::reading::ReadToolDetails {
-        truncation: Presence::Present(crate::TruncationResult {
-            truncated_by: reason,
-            ..module
-        }),
-    };
+    let reason: Option<maestro_interchange::tool::tools::truncate::TruncationBy> =
+        module.truncated_by;
+    let details: crate::ReadToolDetails =
+        maestro_interchange::tool::tools::reading::ReadToolDetails {
+            truncation: Presence::Present(crate::TruncationResult {
+                truncated_by: reason,
+                ..module
+            }),
+        };
     let module: crate::registry::ReadToolDetails = details;
     assert!(matches!(module.truncation, Presence::Present(_)));
-    let bash: crate::BashResult = maestro_tool::bash_executor::BashResult {
+    let bash: crate::BashResult = maestro_interchange::tool::bash_executor::BashResult {
         output: "output".into(),
         exit_code: Presence::Present(-0.0),
         cancelled: false,

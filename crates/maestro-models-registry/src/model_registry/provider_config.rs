@@ -1,9 +1,9 @@
 //! Typed dynamic provider definitions and incoming validation.
 use super::CatalogError;
+use maestro_interchange::provider_config::ProviderConfig;
 use maestro_models::{
     DiagnosticErrorInfo, OAuthError, OAuthProviderHandle, StreamFunction, StreamOptionsInput,
 };
-use maestro_request::provider_config::ProviderConfig;
 use std::borrow::Cow;
 
 /// Native callable operations supplied with a dynamic registration.
@@ -17,7 +17,7 @@ pub struct ProviderCallbacks {
 /// Partially supplied dynamic registration; absent fields retain earlier values on replay.
 pub type ProviderConfigInput = ProviderConfig<ProviderCallbacks>;
 /// Complete metadata for a dynamically supplied model, without file-loader defaults.
-pub use maestro_request::provider_config::ProviderModelConfig as ProviderModelInput;
+pub use maestro_interchange::provider_config::ProviderModelConfig as ProviderModelInput;
 /// Check prerequisites in their consuming order before registration effects.
 pub(super) fn validate(config: &ProviderConfigInput, provider: &str) -> Result<(), CatalogError> {
     let models = config.models.as_deref().unwrap_or_default();

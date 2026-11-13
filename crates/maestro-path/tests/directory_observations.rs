@@ -1,7 +1,7 @@
 //! Resolution and home selection from caller-supplied observations.
 #![cfg(test)]
 
-use maestro_path::{homedir, resolve_with};
+use maestro_path::{home_dir, resolve_with};
 use serde::Deserialize;
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
@@ -54,7 +54,7 @@ fn run(
 fn supplied_home_preserves_present_values() {
     let fallback = || -> Option<&str> { panic!("a present home never asks the account") };
     for home in ["/home/user", "relative/home", ""] {
-        assert_eq!(homedir(Some(home), fallback), Some(home));
+        assert_eq!(home_dir(Some(home), fallback), Some(home));
     }
 }
 
@@ -62,7 +62,7 @@ fn supplied_home_preserves_present_values() {
 fn absent_home_calls_fallback_once() {
     for account in [Some("/account"), None] {
         let calls = Cell::new(0);
-        let home = homedir(None, || {
+        let home = home_dir(None, || {
             calls.set(calls.get() + 1);
             account
         });

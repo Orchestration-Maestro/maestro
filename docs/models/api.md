@@ -105,10 +105,10 @@ protocols.
 
 Use the existing typed records; do not define a second application schema. The
 documented declarations are in
-[messages and content](../../crates/maestro-request/src/types/messages.rs),
-[models and compatibility](../../crates/maestro-request/src/types/models.rs),
-[usage](../../crates/maestro-request/src/types/messages.rs),
-[events](../../crates/maestro-request/src/types/events.rs) and
+[messages and content](../../crates/maestro-interchange/src/types/messages.rs),
+[models and compatibility](../../crates/maestro-interchange/src/types/models.rs),
+[usage](../../crates/maestro-interchange/src/types/messages.rs),
+[events](../../crates/maestro-interchange/src/types/events.rs) and
 [invocation options](../../crates/maestro-models/src/records/types/options.rs).
 `maestro_models` re-exports them.
 
@@ -317,7 +317,7 @@ policies. No callback boundary is universal: read the
 `create_assistant_message_diagnostic` builds a diagnostic with the current
 timestamp. `append_assistant_message_diagnostic` adds the supplied details and
 keeps the existing diagnostics. The declarations are in
-[diagnostics](../../crates/maestro-request/src/diagnostics.rs), and the
+[diagnostics](../../crates/maestro-interchange/src/diagnostics.rs), and the
 `maestro_diagnostics_append_with_current_timestamp` witness is in the
 [record tests](../../crates/maestro-models/tests/model_records.rs).
 

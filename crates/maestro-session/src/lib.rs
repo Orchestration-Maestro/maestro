@@ -17,7 +17,7 @@ pub use session_manager::{SessionDir, sessions_dir};
 /// Missing stored working-directory diagnostics.
 pub mod cwd;
 
-pub use maestro_request::presence::Presence;
+pub use maestro_interchange::presence::Presence;
 
 /// Compaction preparation, summary generation and shared input utilities.
 pub mod summarization;

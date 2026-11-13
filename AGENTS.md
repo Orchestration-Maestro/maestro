@@ -148,16 +148,26 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - Dependencies point one way; core crates never use dedicated
   (non-core) crates as normal or build dependencies; the declared test-support
   development edges are permitted under their owners' target rules.
-- `maestro-path` is the foundation utility for lexical path strings. It sits
+- `maestro-path` owns path operations: lexical operations on path strings, and
+  the file-system module `maestro_path::fs`. It sits
   below layer 0 and depends on no workspace crate. Native normalization reuses its
   segment reducer without decoding path bytes or accessing the filesystem.
+  On native targets, `maestro_path::fs::read_dir` lists one directory's entries
+  sorted by file name on every platform; callers keep kind filtering, name
+  decoding and further ordering. `maestro_path::fs::canonicalize` resolves a
+  native path to its real path; on Windows it returns the ordinary form
+  (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes `\\s\sh\x`) through the
+  lexical conversion in `maestro_path::win32`. Callers keep their own fallback
+  and error policy. Conventions reject `std::fs::canonicalize`,
+  `tokio::fs::canonicalize` and the `canonicalize` method in production code
+  outside that module.
   Native crates may declare it as a production dependency without changing their
   layer, subject to the
   exclusions in the specification's [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
-  Shared path helpers take supplied directory observations
+  Lexical path helpers take supplied directory observations
   and add no filesystem service, directory cache, scheduler or workspace dependency.
-  `native_homedir` alone reads the native home environment and account entry.
-  Final-link traversal uses a supplied observation callback; the utility owns
+  `native_home_dir` alone reads the native home environment and account entry.
+  Final-link traversal uses a supplied observation callback; `maestro-path` owns
   relative-target joining and the forty-link bound, while callers retain native
   link I/O and error interpretation.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
@@ -165,10 +175,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, raw CR/LF byte-line framing, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (JSON Pointer token escaping, object acceptance, canonical keys, truth, selected-value display, compact and
-  pretty text, raw-value reading, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
-  interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
-  projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
-  `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
+  pretty text, raw-value reading, JSONL line framing). `maestro-interchange` owns the records a guest shares with its host: the session
+  module (with generic compaction results, `ForkPosition` and `NavigateTreeOptions`), the tool module and the
+  packages module; `maestro-brand` projects a brand pack and depends on text and JSON. Text, JSON, interchange and
+  brand exist; add no `common`, `utils` or `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
   parsing, owned source records and cursor-time extended links, depending only on text.
   The toolkit and the web frontend consume it. The dedicated
   conventions checker may consume its code-block source ranges for documentation
@@ -182,7 +192,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   Never hand-edit its generated manifest section.
 - `maestro-watch` is a core leaf below layer 0 without workspace dependencies.
   `maestro-lock` depends only on `maestro-path` for final-link resolution and
-  `maestro-realpath` for canonical targets, and uses the existing external
+  canonical targets, and uses the existing external
   `sha2 =0.11.0` to shorten lock and record names for long file names. Only
   theme/application may depend on watch. Every crate that holds
   shared state behind a mutex or read-write lock may depend on lock: settings,
@@ -214,22 +224,6 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   default action, while each native mode keeps its own exit policy. Synchronous
   capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
-- `maestro-listing` is a declared core leaf below layer 0 with no workspace
-  dependencies, including the path utility. It lists one directory's entries sorted
-  by file name on every platform. Only resources, theme, the toolkit, tools,
-  session, repository tooling and the application may depend on it, on native
-  targets; callers keep kind filtering, name decoding and further ordering.
-- `maestro-realpath` is a declared core leaf below layer 0 depending only on
-  `maestro-path`. It resolves a native path to its real path; on Windows it
-  returns the ordinary form (`\\?\D:\x` becomes `D:\x`, `\\?\UNC\s\sh\x` becomes
-  `\\s\sh\x`) through the lexical conversion in `maestro_path::win32`. Only the
-  application, daemon, detection, lock, models, packages, terminal, tools,
-  workspace, repository tooling, browser qualification, the conventions checker
-  and the test-directory owner may depend on it, on native targets; theme's
-  browser author example uses a native development edge. Callers keep their own
-  fallback and error policy. Conventions reject `std::fs::canonicalize`,
-  `tokio::fs::canonicalize` and the `canonicalize` method in production code
-  outside this leaf.
 - `maestro-listeners` is a declared core leaf below layer 0 with no workspace
   dependencies. It retains callbacks in live registration order and admits one per
   identity, or one per registration as an event-emitter listener list keeps them.
@@ -247,7 +241,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   only on text, JSON and lock, builds for the browser, and only the web frontend depends on it.
 - `maestro-http` is a core crate below layer 0 that performs HTTP requests: the replaceable
   client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and
-  complete-message sockets. It depends only on cancellation, request, text and JSON, plus
+  complete-message sockets. It depends only on cancellation, interchange, text and JSON, plus
   `maestro-path` on native targets, builds for the browser, and only models and providers
   depend on it.
   Models re-exports the client records at its existing paths. Its non-default `test-support`
@@ -257,15 +251,16 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   holds their login flows (subscription browser login, device code and response code login)
   with the callback server and pages, and `install_built_in_providers` places the built-in
   login providers as the base layer of the registry `maestro-models` owns. It depends only on
-  models, http, request, brand, text and JSON, builds for the browser, and only the
+  models, http, interchange, brand, text and JSON, builds for the browser, and only the
   application and the composed executable depend on it. The application installs the base
   layer at each composition entry; a registry reader below the application sees only what
   was registered.
-- `maestro-request` defines shared message and model-request records below layer 0:
+- `maestro-interchange` defines the records a guest shares with its host below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
   `SlashCommandSource`, re-exported by resources, application presentation data and
-  guest authoring rather than redeclared.
+  guest authoring rather than redeclared. Its `entry`, `tool` and `packages` modules
+  own the session, tool and package interchange records.
   Shared invocation options (`ThinkingBudgets`, `CacheRetention`, `Transport`,
   `ProviderResponse`, `StreamOptions`, `ProviderStreamOptions`, `SimpleStreamOptions`
   and `StreamOptionsInput`) and the data-only `StreamOptionSlots` family belong here;
@@ -283,7 +278,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and the provider registration records `provider_config::{ProviderConfig<C>,
   ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
-  (models, http, resources, theme, credentials, catalog, session, entry, tool and guest authoring)
+  (agent, credentials, http, models, the model catalog, the model registry, packages, resources,
+  the schema validator, session, theme, tools and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
@@ -311,7 +307,7 @@ Pure retained session-tree ordering, geometry, content extraction/search and raw
 and frontends import them from it; frontend filter, fold and selection state stay
 with their frontend.
 
-The guest authoring crate may depend on the request, entry, tool, JSON and text
+The guest authoring crate may depend on the interchange, JSON and text
 owners and never imports native session, tool or catalog runtimes. The terminal
 adapter requires the toolkit and `maestro-text` as direct dependencies; `maestro-text` is
 created, and so is `maestro-json`; the other declared leaf owners stay policy rows until their
@@ -324,12 +320,11 @@ conventions checker, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from `maestro-listing`, `maestro-realpath`, the
-optional utility and the unifier. Sparse workspaces need
+no internal dependencies apart from the optional `maestro-path` edge and the unifier. Sparse workspaces need
 no placeholder crates. Chat, CLI and RPC require the application edge, web declares none, and every frontend declares only the
 edges in its row of the dependency table, when used. The terminal adapter
 requires toolkit and text. The
-utility edge never supplies a required edge. The daemon requires the terminal
+`maestro-path` edge never supplies a required edge. The daemon requires the terminal
 engine. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic. The internal development
 edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
@@ -353,9 +348,7 @@ development edge for the product's one engine configuration, the native-only,
 non-optional `maestro-extensions-wasm` to `maestro-listeners` development edge for the
 controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
-executable's file-trigger test on the shared host fixture, the native-only,
-non-optional `maestro-theme` to `maestro-realpath` development edge for the
-browser author example's watched roots,
+executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
 of the twenty-nine declared callers on `maestro-test-process`, the owner of
 checked child tests (see
@@ -366,13 +359,14 @@ the required toolkit/text set.
 
 The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
 creation and cleanup. Its only internal edges are the native unifier and
-`maestro-realpath`, and it has no foundation utility permission. Only the
+`maestro-path`, which its table row names because the general `maestro-path`
+permission excludes it. Only the
 crates its [directory
 contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
 as a non-optional native development dependency when used; the checked child
 launcher declares it instead, and alone, as a native normal dependency, whose
 launch route reads `temporary_root` for its cleared children. `Scratch::new`
-resolves its chosen root through `maestro-realpath`, in the ordinary Windows
+resolves its chosen root through `maestro_path::fs`, in the ordinary Windows
 form; `Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
 and `enter_unreadable` put a test process in a removed or unreadable working
 directory, and `deny(path, mode)` sets a mode and
@@ -387,7 +381,7 @@ The dedicated, unpublished `maestro-test-fixtures` portable leaf owns shared tes
 fixture operations. Only models, request, catalog, chat, tools and export may declare
 it as a development dependency, portable or target-specific; models, request, catalog
 and chat use portable declarations, while tools and export use native declarations. It
-has no product or utility edge, only the native unifier exception. Both cycle checks
+has no product or `maestro-path` edge, only the native unifier exception. Both cycle checks
 apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
@@ -645,7 +639,7 @@ one test target, the runnable `integration` target at `tests/integration.rs`.
 A library target that holds in-source tests keeps `[lib] test` on; one with none sets
 `test = false`, and the conventions check rejects either mismatch.
 
-Tool parameter schemas have one owner, `maestro-request::parameter_schema::ParameterSchema<C = ()>`,
+Tool parameter schemas have one owner, `maestro-interchange::parameter_schema::ParameterSchema<C = ()>`,
 which keeps the supplied JSON Schema value beside the kinds its author declared for
 individual nodes and an optional executable payload. Shared Base/refinement records
 keep native callbacks local; the guest specializes the same records with borrowed
@@ -654,7 +648,7 @@ re-exports it, and `maestro-schema-validator` is its only converter.
 Serialization writes the supplied JSON alone; provider payloads and saved JSON never
 carry the declared kinds.
 
-Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Tool metadata has one generic record owner, `maestro-interchange::tool_info::ToolInfo<P>`.
 Native callers use the default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Live callback storage
 belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
@@ -669,10 +663,10 @@ traversal runs, so one removal and a complete clear both stay cheap.
 
 
 Shared extension event/result schemas and assembled prompt records belong to
-`maestro-request`, re-exported through models and specialized by native/guest
+`maestro-interchange`, re-exported through models and specialized by native/guest
 aliases. One event inventory feeds author unions and the guest data adapter.
-Request depends only on the JSON leaf; object reading stays JSON-owned and
-Presence adaptation stays beside shared schemas. Fork position stays entry-owned.
+The record owner depends only on the JSON leaf; object reading stays JSON-owned and
+Presence adaptation stays beside shared schemas. Fork position stays in the session module.
 Tool callback ownership and invocation are independent: SDK defaults remain
 Threaded/Threaded, registered invocation is Local. Registration stores no runner
 or context factory; the single tools wrapper creates a fresh context per call.
@@ -683,15 +677,14 @@ standalone default alias. The declaration checker permits only this native alias
 at `maestro-extensions/src/types/registration.rs`, never a second struct or enum.
 
 The parameter-schema owner also owns the component metadata transport in
-`maestro-request::parameter_schema::transport`, re-exported through models and native extensions
+`maestro-interchange::parameter_schema::transport`, re-exported through models and native extensions
 as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
-crate dependency: both extension adapters already reach the request owner through
+crate dependency: both extension adapters already reach the record owner through
 their declared edges.
 
-`maestro-package` is the dependency-free portable core owner of package interchange
-records below layer 0. Only packages and guest authoring may depend on it, plus
-the native feature-unifier exception. Native package effects stay in `maestro-packages`.
+`maestro-interchange::packages` owns the portable package interchange records below
+layer 0. Native package effects stay in `maestro-packages`.
 
 Typed test helpers may use their type owner's non-default `test-support` feature.
 Enable it through development dependencies, including a feature-only self

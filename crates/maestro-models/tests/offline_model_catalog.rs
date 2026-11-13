@@ -200,8 +200,8 @@ fn assert_cost_case(
     counts: [f64; 4],
     expected: [f64; 4],
 ) {
+    use maestro_interchange::presence::Presence;
     use maestro_models::{ModelCost, Usage, UsageCost, calculate_cost};
-    use maestro_request::presence::Presence;
     model.cost = ModelCost {
         input: rates[0],
         output: rates[1],

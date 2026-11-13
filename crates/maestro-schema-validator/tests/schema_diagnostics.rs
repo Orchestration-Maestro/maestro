@@ -1,5 +1,5 @@
 //! Schema checking without invocation argument conversion.
-use maestro_request::types::{Tool, ToolCall};
+use maestro_interchange::types::{Tool, ToolCall};
 use maestro_schema_validator::{validate_schema, validate_tool_arguments};
 use serde_json::json;
 
