@@ -226,7 +226,7 @@ impl Frame {
     pub fn draw_panel(
         &self,
         panel: &maestro_web::ArtifactsPanel,
-        caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+        caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
         events: Vec<egui::Event>,
     ) -> Result<egui::FullOutput, maestro_web::tools::documents::ArtifactUiError> {
         self.draw_panel_observing(panel, caller, events, |_| {})
@@ -239,7 +239,7 @@ impl Frame {
     pub fn draw_panel_observing(
         &self,
         panel: &maestro_web::ArtifactsPanel,
-        caller: &maestro_app::browser::tools::documents::LocalArtifactsPanel,
+        caller: &maestro_web::tools::browser::documents::LocalArtifactsPanel,
         events: Vec<egui::Event>,
         observe: impl FnOnce(&egui::FullOutput),
     ) -> Result<egui::FullOutput, maestro_web::tools::documents::ArtifactUiError> {

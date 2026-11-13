@@ -246,7 +246,7 @@ fn native_grep(
 /// Reads the original shared schema transport without converting it to JSON text.
 fn metadata(tool: &host::BuiltinTool) -> ExtensionResult<crate::ToolMetadata> {
     let (mut metadata, parameters): (crate::ToolMetadata, _) =
-        maestro_request::parameter_schema::transport::decode_metadata(&tool.metadata()?)?;
+        maestro_interchange::parameter_schema::transport::decode_metadata(&tool.metadata()?)?;
     metadata.parameters = parameters;
     Ok(metadata)
 }

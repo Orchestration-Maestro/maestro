@@ -3,7 +3,7 @@
 `maestro-extensions-wasm` is the Rust library an extension author links to. It owns the
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
-async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model, resource, application message, event/result and assembled prompt records. Native and guest aliases select their existing domain operands; the guest keeps its opaque text, header pairs and capability resources. Stream snapshots remain guest-adapter operations.
+async Rust that the host runs as a WebAssembly component. The facade uses `maestro-interchange` for shared model, resource, application message, event/result and assembled prompt records. Native and guest aliases select their existing domain operands; the guest keeps its opaque text, header pairs and capability resources. Stream snapshots remain guest-adapter operations.
 This page describes what is delivered so far: registration, 29 events and thirteen result
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
@@ -261,7 +261,7 @@ Ordinary extension results and string-error APIs are unchanged.
 A host import runs on the local owner, the thread that holds the extension's native
 capabilities. The Store thread never touches them: it sends the call itself, a closure
 built from the import's operands, and the owner runs it against the retained capability
-the resource names. Two call kinds carry each converted import.
+the resource names. Three call kinds carry each converted import.
 
 - **Run** answers inline. The Store thread waits on its reply channel while the owner
   runs the closure. A native operation that may call back into the instance returns a
@@ -270,6 +270,9 @@ the resource names. Two call kinds carry each converted import.
   pending set and keeps the lease's admission until it settles, so a cancelled import
   never revokes an operation already started. The concurrent import awaits the reply
   without blocking the Store.
+- **Observe** starts work like Admit, for a wait that nothing else depends on: a stream
+  read, a child wait, a byte read or a response body. When the guest drops its wait, the
+  work ends and the admission is released.
 
 When the capability has ended, the call settles with that capability's own text, for
 example `extension catalog resource ended`. The text is exact per capability kind.
@@ -285,12 +288,14 @@ handle the guest passed. These resources run on this route:
   close, the file watch and the native component;
 - the lent style, highlighter, row style, submenu closer and text callback, the
   overlay options and the keybindings manager;
-- the credential owner, the child process, the byte reader, the HTTP response and the
-  assistant stream.
+- the credential owner, the child process, the byte reader, the HTTP response, the
+  assistant stream, the event stream, the native tool, the borrowed lock update, the lent
+  completion provider, the replacement session context and the OAuth provider.
 
-For the credential owner, the child process, the byte reader, the HTTP response and the
-assistant stream, the synchronous methods run this way. Their asynchronous methods, and every
-free function, are still registered by hand.
+Resources with both kinds of method run the synchronous ones through the generated
+trait. Their asynchronous methods start through Admit or Observe but are still
+registered by hand, as are the byte writer, the local shell, the API facade's
+execution, model selection and factory-time operations, and every free function.
 A retained capability names the entry it lends and the text its callers receive once
 it has ended.
 
@@ -481,8 +486,8 @@ an acquisition or retained query is allowed remains the host's decision.
 `find` passes literal provider and model identifiers. The guest does not filter,
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
-`ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
-`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
+`ResolvedRequestAuth` is re-exported from the [shared record owner](../records.md#resolved-request-authentication),
+`maestro_interchange::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
 endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
@@ -702,7 +707,7 @@ collapse missing and null, while existing nested options retain explicit null.
 also uses standard `Option` decoding for `description`: missing and null both become `None`
 and are omitted on serialization; an empty string is retained. Command source is an open
 string with three default labels, not a closed enum. The declaration belongs to the shared
-request owner; see [ordinary command metadata](../application/commands.md).
+record owner; see [ordinary command metadata](../application/commands.md).
 
 Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
 Ordinary host nonfinite serialization writes null, which a required numeric decoder
@@ -714,7 +719,7 @@ failure or other encoded part is retained. Numeric-looking text remains text.
 The request body of `before_provider_request`, its replacement, tool-execution arguments
 and results, tool-result input and arbitrary `details` use `JsonText`.
 It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
-Tool schemas are `maestro_request::parameter_schema::ParameterSchema` values inside the
+Tool schemas are `maestro_interchange::parameter_schema::ParameterSchema` values inside the
 tool metadata, not quoted JSON documents. Thinking levels
 cross the component interface as JSON string literals in both directions.
 Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
@@ -1225,6 +1230,6 @@ context; neither introduces an extension-specific permission list. See
 
 ### Portable provider primitives
 
-`calculate_cost` re-exports the request owner's flat-rate arithmetic over supplied
+`calculate_cost` re-exports the record owner's flat-rate arithmetic over supplied
 model and usage records. `ByteLineDecoder` re-exports the text owner's raw CR/LF
 framing; callers keep their UTF-8, BOM and event-dispatch policies.

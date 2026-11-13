@@ -191,7 +191,7 @@ impl ThemeState {
 /// The entry names of a directory, in name order.
 #[cfg(not(target_arch = "wasm32"))]
 fn entry_names(dir: &str) -> io::Result<Vec<String>> {
-    Ok(maestro_listing::read_dir(dir)?
+    Ok(maestro_path::fs::read_dir(dir)?
         .iter()
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .collect())

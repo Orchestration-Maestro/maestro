@@ -2138,7 +2138,7 @@ fn maestro_tree_copy_keeps_modification_times() {
 /// Write the browser compile witnesses' sources into the fixture checkout.
 fn write_browser_witnesses(root: &Path) {
     for source in [
-        "crates/maestro-catalog/tests/support/browser_catalog_check.rs",
+        "crates/maestro-models-registry/tests/support/browser_catalog_check.rs",
         "crates/maestro-models/tests/support/bedrock_browser.rs",
         "crates/maestro-models/tests/support/browser_import_check.rs",
         "crates/maestro-models/tests/support/cloud_content_browser.rs",
@@ -2152,7 +2152,7 @@ fn write_browser_witnesses(root: &Path) {
 /// The controlled tool's browser witness invocations, in order.
 fn witness_invocations() -> Vec<String> {
     [
-        ("maestro-catalog", "browser_catalog_check"),
+        ("maestro-models-registry", "browser_catalog_check"),
         ("maestro-models", "bedrock_browser_witness"),
         ("maestro-models", "browser_import_check"),
         ("maestro-models", "cloud_content_browser_witness"),
@@ -3160,7 +3160,7 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
     drive();
     for (paths, active, expected) in [
         (vec!["crates/maestro-models/src/lib.rs"], true, 1usize),
-        (vec!["crates/maestro-catalog/src/lib.rs"], true, 1),
+        (vec!["crates/maestro-models-registry/src/lib.rs"], true, 1),
         (vec!["crates/shared/src/lib.rs"], true, 0),
         (vec!["Cargo.toml"], true, 0),
         (vec!["crates/alone/src/lib.rs"], true, 0),
@@ -3714,7 +3714,7 @@ fn example_builds_on_library(
     use std::os::unix::fs::PermissionsExt;
     fs::write(
         root.join("Cargo.lock"),
-        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-request\",\n]\n\n[[package]]\nname = \"maestro-request\"\n",
+        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-interchange\",\n]\n\n[[package]]\nname = \"maestro-interchange\"\n",
     )
     .unwrap();
     set_age(
@@ -3735,22 +3735,27 @@ fn example_builds_on_library(
             "maestro-extensions-wasm-1",
             "example-prepare_author_component",
             10,
-            vec![("maestro_request", 21)],
+            vec![("maestro_interchange", 21)],
         ),
         (
             "maestro-extensions-wasm-a1",
             "example-prepare_author_component",
             11,
-            vec![("maestro_request", 21)],
+            vec![("maestro_interchange", 21)],
         ),
-        ("maestro-request-1", "lib-maestro_request", 21, vec![]),
+        (
+            "maestro-interchange-1",
+            "lib-maestro_interchange",
+            21,
+            vec![],
+        ),
     ] {
         cargo_fingerprint(profile, target, name, hash, &dependencies);
     }
     for name in ["prepare_author_component.d", "prepare_author_component-1.d"] {
         fs::write(profile.join("examples").join(name), information).unwrap();
     }
-    let library = profile.join("deps/libmaestro_request-1.rlib");
+    let library = profile.join("deps/libmaestro_interchange-1.rlib");
     fs::write(&library, b"").unwrap();
     set_age(&library, age);
     copy
@@ -3801,17 +3806,17 @@ fn author_setup_ignores_unlinked_builds_of_a_consumers_library() {
         "maestro-extensions-wasmtime-b1",
         "test-integration-test-integration",
         12,
-        &[("maestro_request", 21)],
+        &[("maestro_interchange", 21)],
     );
     let old = SystemTime::now() - Duration::from_mins(20);
     set_modified(&consumer, old);
     set_age(&example, Duration::from_mins(10));
-    let unrelated = profile.join("deps/libmaestro_request-2.rlib");
+    let unrelated = profile.join("deps/libmaestro_interchange-2.rlib");
     fs::write(&unrelated, b"").unwrap();
     cargo_fingerprint(
         &profile,
-        "maestro-request-2",
-        "lib-maestro_request",
+        "maestro-interchange-2",
+        "lib-maestro_interchange",
         22,
         &[],
     );
@@ -3866,7 +3871,7 @@ fn author_setup_continues_when_cargo_keeps_an_outdated_example() {
     example_builds_on_library(root, &profile, Duration::from_mins(15));
     set_age(&example, Duration::from_mins(10));
     fs::remove_dir_all(profile.join(".fingerprint")).unwrap();
-    let check_only = profile.join("deps/libmaestro_request-2.rmeta");
+    let check_only = profile.join("deps/libmaestro_interchange-2.rmeta");
     fs::write(&check_only, b"").unwrap();
     set_age(&check_only, Duration::from_mins(1));
     recipe_support::scenario(

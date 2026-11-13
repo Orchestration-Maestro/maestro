@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use super::extends_right::extends_right;
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// A string node extends a string right node and asks every other right node.
 pub(crate) fn extends_string<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {

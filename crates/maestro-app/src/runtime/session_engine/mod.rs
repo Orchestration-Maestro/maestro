@@ -387,6 +387,7 @@ pub async fn create_agent_session_runtime(
     create_runtime: CreateAgentSessionRuntimeFactory,
     options: CreateAgentSessionRuntimeOptions,
 ) -> Result<AgentSessionRuntime, AgentSessionRuntimeError> {
+    maestro_providers::install_built_in_providers();
     assert_session_cwd_exists(&*options.session_manager.borrow(), &options.cwd)?;
     let result = create_runtime(options).await?;
     Ok(AgentSessionRuntime::new(result, create_runtime))

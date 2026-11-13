@@ -1,7 +1,7 @@
 //! Insertion-ordered renderer registration and shared tool headers.
 use super::types::{ToolRenderer, ToolRendererBinding};
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
-use maestro_app::browser::tools::{
+use crate::tools::browser::{
     extraction::{ExtractDocumentParams, ExtractDocumentResult},
     javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
 };

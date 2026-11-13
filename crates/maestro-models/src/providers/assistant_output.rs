@@ -3,12 +3,12 @@
 
 use std::sync::{Arc, PoisonError};
 
-use crate::providers::transport::RequestFailure;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
     AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation,
     DiagnosticErrorInfo, DoneReason, ErrorReason, Model, SharedAssistantMessage, StopReason, Usage,
 };
+use maestro_http::RequestFailure;
 
 /// The assistant message an invocation fills in, before any response arrives.
 #[must_use]
@@ -87,7 +87,7 @@ pub(crate) fn start_producer_for<E: crate::ProviderExecution>(
 
 /// Preserve the existing HTTP runtime's admission policy and failure.
 fn submit_http(task: BoxFuture<()>) -> Result<(), DiagnosticErrorInfo> {
-    crate::records::types::admitted(crate::providers::transport::spawn_detached(task))
+    crate::records::types::admitted(maestro_http::spawn_detached(task))
 }
 
 /// Publish completion only after reduction and cancellation checks succeed.

@@ -9,8 +9,9 @@ repository.workspace = true
 [dependencies]
 maestro-text = { path = "../maestro-text" }
 maestro-models = { path = "../maestro-models" }
+maestro-providers = { path = "../maestro-providers" }
 maestro-path = { path = "../maestro-path" }
-maestro-request = { path = "../maestro-request" }
+maestro-interchange = { path = "../maestro-interchange" }
 indexmap = "=2.14.2"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true

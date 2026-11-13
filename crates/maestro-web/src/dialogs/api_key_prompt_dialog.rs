@@ -3,13 +3,13 @@ use super::{
     dialog_base::DialogBase,
     surface::{DialogHeaderProps, dialog_content, dialog_header},
 };
+use crate::persistence::get_app_storage;
 use crate::{
     browser::timer::{Timer, native},
     components::provider_key_input::ProviderKeyInput,
     page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
-use maestro_app::get_app_storage;
 use std::{
     any::Any,
     cell::RefCell,

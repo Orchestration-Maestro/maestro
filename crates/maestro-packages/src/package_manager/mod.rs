@@ -48,7 +48,7 @@ pub use update::{PackageUpdate, PackageUpdateType};
 /// Resolves a path to its real path through the owner that carries the file system.
 #[cfg(not(target_arch = "wasm32"))]
 fn real_path(path: &Path) -> io::Result<PathBuf> {
-    maestro_realpath::canonicalize(path)
+    maestro_path::fs::canonicalize(path)
 }
 
 /// wasm32 has no file system, so no real path exists to resolve.

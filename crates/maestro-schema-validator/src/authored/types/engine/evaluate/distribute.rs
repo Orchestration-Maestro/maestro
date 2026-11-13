@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use super::{composite, evaluate_intersect, evaluate_type, narrow};
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Distribute the supplied members into the disjoint combinations their intersection keeps.
 pub(crate) fn distribute<'a>(types: &[Rc<Node<'a>>]) -> Vec<Rc<Node<'a>>> {

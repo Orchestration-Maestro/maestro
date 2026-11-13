@@ -592,7 +592,7 @@ async fn assert_setup_failure(
     );
     assert_eq!(
         usage.total_tokens,
-        maestro_request::presence::Presence::Present(0.0),
+        maestro_interchange::presence::Presence::Present(0.0),
         "a failed response reports an explicit zero total"
     );
     assert_eq!(message.stop_reason, maestro_models::StopReason::Error);

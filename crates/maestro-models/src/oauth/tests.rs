@@ -3,11 +3,43 @@
 #[cfg(not(target_arch = "wasm32"))]
 use super::*;
 #[cfg(not(target_arch = "wasm32"))]
-use crate::tests::oauth_admission::Admission;
+use crate::tests::login_registry::listed;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::tests::named_account::Named;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::tests::runtime::run;
 #[cfg(not(target_arch = "wasm32"))]
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Serialize observations of this program's registry.
+static ADMISSION: Mutex<()> = Mutex::new(());
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Reset registry membership on entry and on drop, including unwinding.
+struct Admission {
+    /// Retain admission until cleanup completes.
+    _guard: MutexGuard<'static, ()>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Admission {
+    /// Start an isolated registry observation.
+    fn enter() -> Self {
+        let guard = ADMISSION
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        reset_oauth_providers();
+        Self { _guard: guard }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Drop for Admission {
+    fn drop(&mut self) {
+        reset_oauth_providers();
+    }
+}
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Provider recording completed selection phases.
@@ -221,4 +253,111 @@ fn check_present_clock(events: &Arc<Mutex<Vec<&'static str>>>) {
             }
         );
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Serial admission that empties the base layer again when a test ends.
+struct BaseLayer {
+    /// Retain admission until the base layer is back.
+    _admission: Admission,
+}
+#[cfg(not(target_arch = "wasm32"))]
+impl BaseLayer {
+    /// Install `first`, `second` and `third` as the base layer of an otherwise empty registry.
+    fn enter() -> Self {
+        let layer = Self {
+            _admission: Admission::enter(),
+        };
+        install_built_in_oauth_providers(three());
+        layer
+    }
+}
+#[cfg(not(target_arch = "wasm32"))]
+impl Drop for BaseLayer {
+    fn drop(&mut self) {
+        install_built_in_oauth_providers([]);
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Three built-ins named after their positions.
+fn three() -> [OAuthProviderHandle; 3] {
+    [
+        Arc::new(Named("first", "First")),
+        Arc::new(Named("second", "Second")),
+        Arc::new(Named("third", "Third")),
+    ]
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn built_ins_installed_after_registrations_take_the_first_positions() {
+    let _layer = BaseLayer::enter();
+    install_built_in_oauth_providers([]);
+    register_oauth_provider(Arc::new(Named("custom", "Custom")));
+    register_oauth_provider(Arc::new(Named("second", "Replacement")));
+    assert_eq!(listed(), ["custom: Custom", "second: Replacement"]);
+
+    install_built_in_oauth_providers(three());
+
+    assert_eq!(
+        listed(),
+        [
+            "first: First",
+            "second: Replacement",
+            "third: Third",
+            "custom: Custom"
+        ]
+    );
+    assert_eq!(get_oauth_provider("second").unwrap().name(), "Replacement");
+    assert_eq!(get_oauth_provider("third").unwrap().name(), "Third");
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn removing_a_registration_restores_the_built_in_it_shadowed() {
+    let _layer = BaseLayer::enter();
+    register_oauth_provider(Arc::new(Named("custom", "Custom")));
+    register_oauth_provider(Arc::new(Named("second", "Replacement")));
+
+    unregister_oauth_provider("second");
+
+    assert_eq!(
+        listed(),
+        [
+            "first: First",
+            "second: Second",
+            "third: Third",
+            "custom: Custom"
+        ]
+    );
+    unregister_oauth_provider("custom");
+    unregister_oauth_provider("first");
+    assert_eq!(listed(), ["first: First", "second: Second", "third: Third"]);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn installing_the_same_built_ins_again_changes_nothing() {
+    let _layer = BaseLayer::enter();
+    register_oauth_provider(Arc::new(Named("custom", "Custom")));
+    register_oauth_provider(Arc::new(Named("third", "Replacement")));
+    let before = listed();
+
+    install_built_in_oauth_providers(three());
+
+    assert_eq!(listed(), before);
+    assert_eq!(before[2], "third: Replacement");
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn reset_drops_every_registration_and_keeps_the_built_ins() {
+    let _layer = BaseLayer::enter();
+    register_oauth_provider(Arc::new(Named("custom", "Custom")));
+    register_oauth_provider(Arc::new(Named("first", "Replacement")));
+
+    reset_oauth_providers();
+
+    assert_eq!(listed(), ["first: First", "second: Second", "third: Third"]);
 }

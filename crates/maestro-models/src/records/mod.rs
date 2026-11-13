@@ -3,7 +3,7 @@
 pub mod digest;
 pub mod events;
 pub mod header_values;
-pub mod typebox_helpers;
+pub mod string_enum;
 
 pub mod diagnostics;
 

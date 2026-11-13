@@ -2,9 +2,9 @@
 use super::{
     BrowserSandboxValue, DiagnosticErrorInfo, MessageConsumer, Owner, Provider, diagnostic,
 };
+use crate::components::browser::sandbox::console_runtime_provider::ConsoleRuntimeProvider;
 use crate::components::sandboxed_iframe::PrepareHtmlOptions;
 use js_sys::Reflect;
-use maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleRuntimeProvider;
 use maestro_models::SharedHandle;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};

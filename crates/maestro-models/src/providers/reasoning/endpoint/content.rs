@@ -61,7 +61,7 @@ struct Thinking {
     #[serde(
         default,
         rename = "closed",
-        deserialize_with = "maestro_request::types::present"
+        deserialize_with = "maestro_interchange::types::present"
     )]
     _closed: Option<bool>,
 }

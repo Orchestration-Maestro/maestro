@@ -3,8 +3,9 @@
 
 use crate::support::{
     run_io,
-    session_harness::{case, recorded_number, run_native_tool_child},
+    session_harness::{case, run_native_tool_child},
 };
+use maestro_app::test_support::recorded_number;
 use serde_json::json;
 
 #[test]

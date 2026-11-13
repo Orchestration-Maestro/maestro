@@ -2,11 +2,14 @@
 //! and user messages that always start a turn, compared with the recorded message cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Transcript, answer, assert_transcript, case, command_extension,
-    entries_view, hold_first_answer, labelled, of_kinds, on_task_set, outcome, queue_view,
-    recorded_skills, script_responses, start_prompt, template, transcribed, with_placeholders,
+    Harness, Transcript, assert_transcript, case, entries_view, labelled, of_kinds, outcome,
+    queue_view, recorded_skills, start_prompt, transcribed, transcribed_in, with_placeholders,
 };
 use maestro_app::agent_session::PromptOptions;
+use maestro_app::test_support::{
+    HarnessOptions, answer, command_extension, hold_first_answer, on_task_set, script_responses,
+    template,
+};
 use maestro_models::{ImageContent, TextContent, UserBlock, UserContent};
 use maestro_session::Presence;
 use maestro_session::message_records::{
@@ -87,7 +90,8 @@ fn streaming_custom_message_steers_by_default() {
             streaming_custom_case(name, message, delivery(None, None)).await;
         let results = json!([sent, labelled("queueWhileStreaming", streaming)]);
         assert_eq!(results, expected(name)["results"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -98,7 +102,8 @@ fn streaming_custom_message_follows_up_when_selected() {
         let options = delivery(Some(MessageDelivery::FollowUp), None);
         let (_, _, sent, _) = streaming_custom_case(name, message, options).await;
         assert_eq!(json!([sent]), expected(name)["results"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -123,7 +128,8 @@ fn next_turn_custom_message_waits_for_the_next_prompt() {
         ]);
         assert_eq!(results, expected["results"]);
         assert_message_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -139,7 +145,8 @@ fn triggered_custom_message_starts_a_turn() {
             .await;
         assert_eq!(json!([outcome(sent)]), expected["results"]);
         assert_message_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -155,7 +162,8 @@ fn direct_custom_message_appends_and_announces_itself() {
         assert_eq!(json!([outcome(sent)]), expected["results"]);
         assert_message_case(&h, &t, &expected);
         assert_eq!(json!(entries_view(&h)), expected["entries"]);
-    });
+    })
+    .unwrap();
 }
 
 /// Sends `content` as a user message to an idle session and asserts `name`.
@@ -180,7 +188,8 @@ fn user_message_always_starts_a_turn() {
             content,
         )
         .await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -195,7 +204,8 @@ fn user_message_puts_images_after_the_joined_text() {
             UserBlock::Text(TextContent::new("line two".into())),
         ]);
         idle_user_message_case("a user message splits text and images", content).await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -205,14 +215,13 @@ fn extension_user_message_skips_expansion_and_reports_its_source() {
             expected("a user message from an extension skips expansion and reports its source");
         let scratch = maestro_test_directory::Scratch::new().unwrap();
         let heard = Rc::new(RefCell::new(None));
-        let (h, t) = transcribed(HarnessOptions {
+        let options = HarnessOptions {
             skills: recorded_skills(&scratch),
             prompts: vec![template("plan", "Plan $1")],
-            scratch: Some(scratch),
             factories: vec![command_extension("hello", Rc::clone(&heard), None)],
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let (h, t) = transcribed_in(scratch, options).await;
         let replies = ["reply", "reply", "reply"].map(|text| answer(text, None, None));
         script_responses(&h, replies.into());
         let mut results = Vec::new();
@@ -227,7 +236,8 @@ fn extension_user_message_skips_expansion_and_reports_its_source() {
         results.push(labelled("commandArgs", &*heard.borrow()));
         assert_eq!(json!(results), expected["results"]);
         assert_message_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -253,7 +263,8 @@ fn queued_extension_slash_text_runs_no_command() {
         let results = json!([outcome(queued), labelled("commandArgs", &*heard.borrow())]);
         assert_eq!(results, expected["results"]);
         assert_message_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -280,5 +291,6 @@ fn user_message_during_a_response_needs_a_queue_choice() {
             expected["results"]
         );
         assert_message_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }

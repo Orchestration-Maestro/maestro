@@ -1,17 +1,22 @@
 //! Manual compaction preserves the saved branch, live context and delivered events.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::compaction::{assert_events, assert_prompts, assert_result, messages, seeded};
+use crate::support::compaction::{
+    assert_events, assert_prompts, assert_result, messages, seeded, seeded_in,
+};
 use crate::support::session_harness::{
-    Harness, HarnessOptions, answer, corpus, delivered_events, harness, history_view, load_history,
-    message_text, of_kinds, on_task_set, recorded, script_responses, start_prompt,
+    Harness, corpus, delivered_events, history_view, load_history, of_kinds, recorded, start_prompt,
+};
+use maestro_app::test_support::{
+    HarnessOptions, answer, harness, message_text, on_task_set, script_responses,
 };
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_session::{CompactionResult, SessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// Opens the literal synthetic branch through the existing session-file reader.
-fn literal_history_options(expected: &Value) -> HarnessOptions {
+fn literal_history_options(expected: &Value) -> (Scratch, HarnessOptions) {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = scratch.path().join("history.jsonl");
     let input = include_str!("fixtures/before-compaction.jsonl");
@@ -23,13 +28,13 @@ fn literal_history_options(expected: &Value) -> HarnessOptions {
         json!(manager.get_branch(None).unwrap().len()),
         expected["branch_count"]
     );
-    HarnessOptions {
+    let options = HarnessOptions {
         session_manager: Some(manager),
-        scratch: Some(scratch),
         context_window: Some(200_000.0),
         settings: json!({"compaction": {"enabled": false, "reserveTokens": 16384, "keepRecentTokens": 20000}}),
         ..HarnessOptions::default()
-    }
+    };
+    (scratch, options)
 }
 
 /// Checks message, model and thinking records plus tool-call links.
@@ -112,10 +117,10 @@ fn literal_histories_keep_the_exact_retained_tail() {
         .find(|row| row["name"] == "before" && row["changed_cut"] == false)
         .unwrap()
         .clone();
-    let options = literal_history_options(&expected);
+    let (scratch, options) = literal_history_options(&expected);
     expected["result"]["first_kept_index"] = expected["first_kept_index"].clone();
     on_task_set(|_| async {
-        let h = harness(options).await;
+        let h = harness(scratch, options).await.unwrap();
         load_history(&h);
         let before = messages(&h);
         assert_eq!(json!(before.len()), expected["before_count"]);
@@ -151,7 +156,8 @@ fn literal_histories_keep_the_exact_retained_tail() {
                 + 1
         );
         assert_changed_cut(&h, &result, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -202,7 +208,8 @@ fn manual_compaction_records_exact_summary_and_events() {
             &of_kinds(&events.borrow(), &["compaction_start", "compaction_end"]),
             &expected["events"],
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -255,7 +262,7 @@ fn compacted_session_accepts_the_next_prompt() {
         assert_eq!(message_text(&stored.last().unwrap()["message"]), "one");
         assert_eq!(of_kinds(&events.borrow(), &["message_end"]).len(), 2);
         assert_eq!(of_kinds(&events.borrow(), &["agent_end"]).len(), 1);
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -264,12 +271,11 @@ fn compaction_survives_reopening_the_history_file() {
     let root = scratch.path().display().to_string();
     let manager = SessionManager::create(&root, Some(&format!("{root}/sessions")), &root).unwrap();
     on_task_set(|_| async {
-        let h = seeded(HarnessOptions {
+        let options = HarnessOptions {
             session_manager: Some(manager),
-            scratch: Some(scratch),
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let h = seeded_in(scratch, options).await;
         drop(script_responses(
             &h,
             vec![answer("## Goal\nControlled summary", None, None); 2],
@@ -308,5 +314,6 @@ fn compaction_survives_reopening_the_history_file() {
             serde_json::from_value(json!(context)).unwrap();
         let restored = serde_json::to_value(restored).unwrap();
         assert_eq!(restored.as_array().unwrap()[1..], messages(&h)[1..]);
-    });
+    })
+    .unwrap();
 }

@@ -6,7 +6,7 @@
 )]
 use crate::{CallbackEmitter, ExtensionResult};
 /// The shared error record returned by executable schema callbacks.
-pub use maestro_request::diagnostics::DiagnosticErrorInfo;
+pub use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 /// A schema operation with its original structured failure.
 pub type SchemaResult<T> = Result<T, DiagnosticErrorInfo>;
 use serde_json::Value;
@@ -135,7 +135,7 @@ impl JsonView<'_> {
 /// An author callback over a borrowed JSON view and its originating emitter.
 type Callback<R> = dyn for<'a, 'b> Fn(&mut JsonView<'a>, CallbackEmitter<'b>) -> SchemaResult<R>;
 /// A local schema callback retaining its author captures.
-pub struct SchemaCallback<R>(maestro_request::parameter_schema::SchemaCallback<R, Callback<R>>);
+pub struct SchemaCallback<R>(maestro_interchange::parameter_schema::SchemaCallback<R, Callback<R>>);
 impl<R> Clone for SchemaCallback<R> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -157,7 +157,9 @@ impl<R> SchemaCallback<R> {
         callback: impl for<'a, 'b> Fn(&mut JsonView<'a>, CallbackEmitter<'b>) -> SchemaResult<R>
         + 'static,
     ) -> Self {
-        Self(maestro_request::parameter_schema::SchemaCallback::from_callback(Rc::new(callback)))
+        Self(
+            maestro_interchange::parameter_schema::SchemaCallback::from_callback(Rc::new(callback)),
+        )
     }
     /// Invoke the author callback against the current borrowed operand.
     ///
@@ -183,18 +185,18 @@ impl Default for SchemaCallback<Vec<Value>> {
     }
 }
 /// A schema's conversion, guard and guard-error callbacks.
-pub type Base = maestro_request::parameter_schema::Base<
+pub type Base = maestro_interchange::parameter_schema::Base<
     SchemaCallback<Option<Value>>,
     SchemaCallback<bool>,
     SchemaCallback<Vec<Value>>,
 >;
 /// One ordered refinement and its message producer.
 pub type Refinement =
-    maestro_request::parameter_schema::Refinement<SchemaCallback<bool>, SchemaCallback<String>>;
+    maestro_interchange::parameter_schema::Refinement<SchemaCallback<bool>, SchemaCallback<String>>;
 /// Executable callbacks at one schema location.
-pub type SchemaNode = maestro_request::parameter_schema::SchemaNode<Base, Refinement>;
+pub type SchemaNode = maestro_interchange::parameter_schema::SchemaNode<Base, Refinement>;
 /// Executable nodes keyed by the author's schema pointers.
-pub type SchemaCode = maestro_request::parameter_schema::SchemaCode<Base, Refinement>;
+pub type SchemaCode = maestro_interchange::parameter_schema::SchemaCode<Base, Refinement>;
 /// One existing callback-table entry retaining all callbacks at one location.
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) type Handler = Rc<SchemaNode>;

@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::support;
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::{SessionInfo, SessionManager, parse_session_entries};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
@@ -854,7 +854,7 @@ fn session_format_examples_replay_all_record_kinds() {
     let entries: Vec<_> = records.iter().skip(1).cloned().collect();
     let context = maestro_session::build_session_context(
         &entries,
-        maestro_request::presence::Presence::Present("f6a7b8c9"),
+        maestro_interchange::presence::Presence::Present("f6a7b8c9"),
         None::<&std::collections::HashMap<_, _>>,
     )
     .unwrap();
@@ -862,11 +862,11 @@ fn session_format_examples_replay_all_record_kinds() {
     assert_eq!(context.messages[1]["role"], "toolResult");
     assert_eq!(
         context.thinking_level,
-        maestro_request::presence::Presence::Present(json!("high"))
+        maestro_interchange::presence::Presence::Present(json!("high"))
     );
     let model = context.model.unwrap();
     assert_eq!(
         model.model_id,
-        maestro_request::presence::Presence::Present(json!("gpt-4o"))
+        maestro_interchange::presence::Presence::Present(json!("gpt-4o"))
     );
 }

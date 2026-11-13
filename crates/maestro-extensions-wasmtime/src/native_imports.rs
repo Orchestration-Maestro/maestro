@@ -109,19 +109,16 @@ fn launch<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
                 let api = accessor.with(|mut access| access.get().api().clone());
                 let result = api
                     .0
-                    .request_async(|id, reply, admission| {
-                        Message::Native(
-                            id,
-                            Request::Spawn(
-                                Spawn {
-                                    command,
-                                    args,
-                                    options: options.into(),
-                                },
-                                reply,
-                                admission,
-                            ),
-                        )
+                    .request_async(|_, reply, admission| {
+                        Message::Native(Request::Spawn(
+                            Spawn {
+                                command,
+                                args,
+                                options: options.into(),
+                            },
+                            reply,
+                            admission,
+                        ))
                     })
                     .await;
                 let result = match result {
@@ -139,7 +136,7 @@ fn launch<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
                 .data()
                 .api()
                 .0
-                .request(|id, reply| Message::Native(id, Request::Kill(pid, signal, reply)));
+                .request(|_, reply| Message::Native(Request::Kill(pid, signal, reply)));
             Ok((result,))
         },
     )
@@ -151,12 +148,7 @@ fn controls<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime:
         |accessor, (child,): (Resource<Child>,)| {
             Box::pin(async move {
                 let child = accessor.with(|mut a| a.get().ctx().table.get(&child).cloned())?;
-                let result = child
-                    .0
-                    .request_async(|id, reply, admission| {
-                        Message::Native(id, Request::Wait(reply, admission))
-                    })
-                    .await;
+                let result = child.wait().await;
                 Ok((result.map(|status| Exit {
                     code: status.code,
                     signal: status.signal,
@@ -172,12 +164,7 @@ fn reads<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Re
         |accessor, (reader,): (Resource<Reader>,)| {
             Box::pin(async move {
                 let reader = accessor.with(|mut a| a.get().ctx().table.get(&reader).cloned())?;
-                Ok((reader
-                    .0
-                    .request_async(|id, reply, admission| {
-                        Message::Native(id, Request::Read(reply, admission))
-                    })
-                    .await,))
+                Ok((reader.read().await,))
             })
         },
     )
@@ -190,12 +177,7 @@ fn writes<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
         |accessor, (writer, bytes): (Resource<Writer>, Vec<u8>)| {
             Box::pin(async move {
                 let writer = accessor.with(|mut a| a.get().ctx().table.get(&writer).cloned())?;
-                Ok((writer
-                    .0
-                    .request_async(|id, reply, admission| {
-                        Message::Native(id, Request::Write(bytes, reply, admission))
-                    })
-                    .await,))
+                Ok((writer.write(bytes).await,))
             })
         },
     )?;
@@ -204,12 +186,7 @@ fn writes<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::R
         |accessor, (writer,): (Resource<Writer>,)| {
             Box::pin(async move {
                 let writer = accessor.with(|mut a| a.get().ctx().table.get(&writer).cloned())?;
-                Ok((writer
-                    .0
-                    .request_async(|id, reply, admission| {
-                        Message::Native(id, Request::End(reply, admission))
-                    })
-                    .await,))
+                Ok((writer.end().await,))
             })
         },
     )

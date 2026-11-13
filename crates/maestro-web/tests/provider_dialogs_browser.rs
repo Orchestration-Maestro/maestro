@@ -6,9 +6,9 @@ use crate::{
         Fetch, Prompts, completed_reply, panel, panels, press, settled, storage, type_text, until,
     },
 };
-use maestro_app::CustomProvider;
 use maestro_models::{Model, get_model};
 use maestro_session::Presence;
+use maestro_web::CustomProvider;
 use maestro_web::{
     ApiKeyPromptDialog, CustomProviderDialog, ModelSelector, ProviderKeyInput, ProvidersModelsTab,
     SettingsTab,
@@ -131,7 +131,7 @@ pub async fn provider_key_input_tests_with_current_proxy_before_saving(import: j
     direct_after_disabling(&app, &root).await;
 }
 /// After the proxy is switched off, an edited key is tested directly.
-async fn direct_after_disabling(app: &maestro_app::AppStorage, root: &Element) {
+async fn direct_after_disabling(app: &maestro_web::AppStorage, root: &Element) {
     let (_, save) = key_controls(root);
     type_text("2").await;
     assert!(!save.disabled());
@@ -192,7 +192,7 @@ pub async fn provider_key_input_reports_failures_and_skips_unmapped_providers(
     );
 }
 /// An unmapped provider's key is stored untested, and a stored key shows on mounting.
-async fn unmapped_and_stored(view: &DomView, app: &maestro_app::AppStorage) {
+async fn unmapped_and_stored(view: &DomView, app: &maestro_web::AppStorage) {
     let (other, _second) = key_entry(view, "my-local");
     let (field, save) = key_controls(&other);
     field.focus().unwrap();
@@ -284,7 +284,7 @@ fn highlighted(shown: &Element, index: usize) -> bool {
         .contains("maestro-model-selected")
 }
 /// One stored manual provider offering a plain and a reasoning model.
-async fn seed_models(app: &maestro_app::AppStorage) {
+async fn seed_models(app: &maestro_web::AppStorage) {
     let models = vec![
         local("Local Box", "local-model", false),
         local("Local Box", "local-thinker", true),
@@ -593,7 +593,7 @@ async fn tested(shown: &Element, fetch: &Fetch) {
 /// Editing a manual provider keeps its identifier and models; a failed save keeps the edits.
 async fn edit_keeps_identity(
     view: &Rc<DomView>,
-    app: &Rc<maestro_app::AppStorage>,
+    app: &Rc<maestro_web::AppStorage>,
     prompts: &Prompts,
 ) {
     let original = manual("kept-id", "Manual", vec![local("Manual", "one", false)]);
@@ -610,14 +610,14 @@ async fn edit_keeps_identity(
     assert_eq!(name.value(), "Manual");
     name.focus().unwrap();
     type_text(" 2").await;
-    let unbound = Rc::new(maestro_app::AppStorage::new(
+    let unbound = Rc::new(maestro_web::AppStorage::new(
         Rc::default(),
         Rc::default(),
         Rc::default(),
         Rc::default(),
         Rc::clone(&app.backend),
     ));
-    maestro_app::set_app_storage(unbound);
+    maestro_web::set_app_storage(unbound);
     let save = all(&shown, ".maestro-provider-dialog-footer button").remove(1);
     click(&save);
     // The unbound store refuses at once, so the alert follows within the started work.
@@ -625,7 +625,7 @@ async fn edit_keeps_identity(
     assert_eq!(prompts.messages(), ["Failed to save provider"]);
     assert!(dialog.is_open());
     assert_eq!(name.value(), "Manual 2", "a failed save keeps the edit");
-    maestro_app::set_app_storage(Rc::clone(app));
+    maestro_web::set_app_storage(Rc::clone(app));
     click(&save);
     until(|| !dialog.is_open()).await;
     let stored = app.custom_providers.get("kept-id").await.unwrap().unwrap();
@@ -634,7 +634,7 @@ async fn edit_keeps_identity(
 }
 
 /// Two stored providers: a manual one with two models and a discovery server.
-async fn two_providers(app: &maestro_app::AppStorage) {
+async fn two_providers(app: &maestro_web::AppStorage) {
     let models = vec![local("Manual A", "x", false), local("Manual A", "y", false)];
     app.custom_providers
         .set(&manual("a", "Manual A", models))

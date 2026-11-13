@@ -3,18 +3,22 @@
 //! streamed content deltas and the terminal ends of failed and aborted runs.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    HarnessOptions, Scripted, agent_ended, agent_event_type, answer, corpus, delivered_events,
-    get_assistant_texts, get_message_text, harness, on_paused_task_set, on_task_set, retry_order,
-    script_responses, sdk_definition, session_run_ended, start_prompt, tool_definition,
+    agent_ended, agent_event_type, corpus, delivered_events, get_assistant_texts, get_message_text,
+    retry_order, sdk_definition, session_run_ended, start_prompt,
 };
 use maestro_agent::{AgentEvent, AgentMessage, CustomAgentMessages};
 use maestro_app::agent_session::ToolDefinitionHandle;
+use maestro_app::test_support::{
+    HarnessOptions, Scripted, answer, harness, on_paused_task_set, on_task_set, script_responses,
+    tool_definition,
+};
 use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
     ExtensionFactory, MessageEndEvent, MessageEndEventResult, MessageStartEvent, NativeAgentMessage,
 };
 use maestro_models::{AssistantMessageEvent, Local};
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -201,15 +205,19 @@ fn first_response_updates(
 #[test]
 fn multiple_failures_recover_on_last_response() {
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
-            ..scripted(vec![
-                Scripted::failure("overloaded_error"),
-                Scripted::failure("overloaded_error"),
-                Scripted::text("success"),
-            ])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
+                ..scripted(vec![
+                    Scripted::failure("overloaded_error"),
+                    Scripted::failure("overloaded_error"),
+                    Scripted::text("success"),
+                ])
+            },
+        )
+        .await
+        .unwrap();
         let events = delivered_events(&h.session);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         let events = events.borrow();
@@ -228,22 +236,27 @@ fn multiple_failures_recover_on_last_response() {
         assert_eq!(ends[0]["attempt"], json!(2));
         assert_eq!(get_assistant_texts(&h), ["success"]);
         assert!(!h.session.is_retrying());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn registered_slow_end_keeps_prompt_waiting() {
     on_paused_task_set(|_| async {
         let (entered, release) = (Rc::new(Notify::new()), Rc::new(Notify::new()));
-        let h = harness(HarnessOptions {
-            factories: vec![slow_assistant_end(Rc::clone(&entered), Rc::clone(&release))],
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
-            ..scripted(vec![
-                Scripted::failure("overloaded_error"),
-                Scripted::text("recovered"),
-            ])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![slow_assistant_end(Rc::clone(&entered), Rc::clone(&release))],
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
+                ..scripted(vec![
+                    Scripted::failure("overloaded_error"),
+                    Scripted::text("recovered"),
+                ])
+            },
+        )
+        .await
+        .unwrap();
         let ended = agent_ended(&h);
         let running = start_prompt(&h, "hi");
         entered.notified().await;
@@ -258,51 +271,66 @@ fn registered_slow_end_keeps_prompt_waiting() {
         assert_eq!(h.requests.0.borrow().len(), 2);
         assert_eq!(get_assistant_texts(&h), ["recovered"]);
         assert!(!h.session.is_retrying());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn disabled_retry_makes_one_attempt() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": false}}),
-            ..scripted(vec![Scripted::failure("overloaded_error")])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": false}}),
+                ..scripted(vec![Scripted::failure("overloaded_error")])
+            },
+        )
+        .await
+        .unwrap();
         let events = delivered_events(&h.session);
         let ended = session_run_ended(&h);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
         assert!(retry_order(&events.borrow()).is_empty());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn ordinary_provider_error_does_not_retry() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
-            ..scripted(vec![Scripted::failure("invalid_api_key")])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
+                ..scripted(vec![Scripted::failure("invalid_api_key")])
+            },
+        )
+        .await
+        .unwrap();
         let events = delivered_events(&h.session);
         let ended = session_run_ended(&h);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(h.requests.0.borrow().len(), 1);
         assert!(retry_order(&events.borrow()).is_empty());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn retry_sleep_cancellation_settles_prompt() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 100}}),
-            ..scripted(vec![Scripted::failure("overloaded_error")])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 100}}),
+                ..scripted(vec![Scripted::failure("overloaded_error")])
+            },
+        )
+        .await
+        .unwrap();
         let events = delivered_events(&h.session);
         let (started, finished) = (Rc::new(Notify::new()), Rc::new(Notify::new()));
         let (start, end) = (Rc::clone(&started), Rc::clone(&finished));
@@ -327,24 +355,29 @@ fn retry_sleep_cancellation_settles_prompt() {
         assert_eq!(ends[0]["attempt"], json!(1));
         assert_eq!(ends[0]["success"], json!(false));
         assert_eq!(ends[0]["finalError"], json!("Retry cancelled"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn recovered_tool_only_turn_settles_before_follow_up() {
     on_task_set(|_| async {
         let runs = Rc::new(RefCell::new(Vec::new()));
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
-            custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
-            ..scripted(vec![
-                Scripted::failure("overloaded_error"),
-                Scripted::echo_call("hello"),
-                Scripted::text("final answer"),
-                Scripted::text("follow-up answer"),
-            ])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
+                custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
+                ..scripted(vec![
+                    Scripted::failure("overloaded_error"),
+                    Scripted::echo_call("hello"),
+                    Scripted::text("final answer"),
+                    Scripted::text("follow-up answer"),
+                ])
+            },
+        )
+        .await
+        .unwrap();
         start_prompt(&h, "hi").await.unwrap().unwrap();
         assert_eq!(h.requests.0.borrow().len(), 3);
         assert_eq!(*runs.borrow(), ["hello"]);
@@ -367,7 +400,8 @@ fn recovered_tool_only_turn_settles_before_follow_up() {
         assert!(!h.session.is_streaming());
         start_prompt(&h, "follow-up").await.unwrap().unwrap();
         assert_eq!(h.requests.0.borrow().len(), 4);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -375,30 +409,41 @@ fn extensions_precede_public_message_events() {
     let expected = corpus("retry_event_sequences")["extension"].clone();
     on_task_set(|_| async {
         let order = Rc::new(RefCell::new(Vec::new()));
-        let h = harness(HarnessOptions {
-            factories: vec![recording_messages(Rc::clone(&order))],
-            ..scripted(vec![Scripted::text("done")])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![recording_messages(Rc::clone(&order))],
+                ..scripted(vec![Scripted::text("done")])
+            },
+        )
+        .await
+        .unwrap();
         record_public_messages(&h.session, Rc::clone(&order));
         let ended = session_run_ended(&h);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(json!(*order.borrow()), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn plain_prompt_keeps_event_sequence() {
     let expected = corpus("retry_event_sequences")["plain"].clone();
     on_task_set(|_| async {
-        let h = harness(scripted(vec![Scripted::text("hello")])).await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            scripted(vec![Scripted::text("hello")]),
+        )
+        .await
+        .unwrap();
         let order = event_order(&h.session);
         let ended = session_run_ended(&h);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(json!(*order.borrow()), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -406,34 +451,43 @@ fn tool_turn_keeps_event_sequence() {
     let expected = corpus("retry_event_sequences")["tool"].clone();
     on_task_set(|_| async {
         let runs = Rc::new(RefCell::new(Vec::new()));
-        let h = harness(HarnessOptions {
-            custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
-            ..scripted(vec![Scripted::echo_call("hello"), Scripted::text("done")])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                custom_tools: vec![recorded_echo_tool(Rc::clone(&runs))],
+                ..scripted(vec![Scripted::echo_call("hello"), Scripted::text("done")])
+            },
+        )
+        .await
+        .unwrap();
         let order = event_order(&h.session);
         let ended = session_run_ended(&h);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         assert_eq!(*runs.borrow(), ["hello"]);
         assert_eq!(json!(*order.borrow()), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn stream_updates_keep_all_content_delta_kinds() {
     let expected = corpus("retry_event_sequences")["deltas"].clone();
     on_task_set(|_| async {
-        let h = harness(scripted(vec![
-            Scripted {
-                thinking: Some("plan".into()),
-                text: Some("answer".into()),
-                tool_calls: vec![("echo".into(), json!({"text": "hello"}))],
-                ..Scripted::default()
-            },
-            Scripted::text("done"),
-        ]))
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            scripted(vec![
+                Scripted {
+                    thinking: Some("plan".into()),
+                    text: Some("answer".into()),
+                    tool_calls: vec![("echo".into(), json!({"text": "hello"}))],
+                    ..Scripted::default()
+                },
+                Scripted::text("done"),
+            ]),
+        )
+        .await
+        .unwrap();
         let updates = first_response_updates(&h.session);
         let ended = session_run_ended(&h);
         start_prompt(&h, "hi").await.unwrap().unwrap();
@@ -465,26 +519,35 @@ fn stream_updates_keep_all_content_delta_kinds() {
             serde_json::from_str::<Value>(&toolcall).unwrap(),
             json!({"text": "hello"})
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn error_response_finishes_with_agent_end() {
     on_task_set(|_| async {
-        let h = harness(scripted(vec![Scripted::failure("broken")])).await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            scripted(vec![Scripted::failure("broken")]),
+        )
+        .await
+        .unwrap();
         let events = delivered_events(&h.session);
         let ended = session_run_ended(&h);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         ended.notified().await;
         let last = events.borrow().last().map(|event| event["type"].clone());
         assert_eq!(last, Some(json!("agent_end")));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn abort_finishes_and_stores_partial_assistant() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let streamed = "x".repeat(20_000);
         script_responses(&h, vec![answer(&streamed, None, None)]);
         let events = delivered_events(&h.session);
@@ -527,21 +590,26 @@ fn abort_finishes_and_stores_partial_assistant() {
             .unwrap();
         assert_eq!(stored["message"]["role"], json!("assistant"));
         assert_eq!(stored["message"]["stopReason"], json!("aborted"));
-    });
+    })
+    .unwrap();
 }
 
 /// A final non-retryable response ends the visible retry with its current attempt.
 #[test]
 fn final_non_retryable_error_ends_retry_once() {
     on_paused_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
-            ..scripted(vec![
-                Scripted::failure("overloaded_error"),
-                Scripted::failure("invalid api key"),
-            ])
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
+                ..scripted(vec![
+                    Scripted::failure("overloaded_error"),
+                    Scripted::failure("invalid api key"),
+                ])
+            },
+        )
+        .await
+        .unwrap();
         let events = delivered_events(&h.session);
         start_prompt(&h, "hi").await.unwrap().unwrap();
         let ends: Vec<Value> = events
@@ -557,5 +625,6 @@ fn final_non_retryable_error_ends_retry_once() {
         );
         assert_eq!(h.session.retry_attempt(), 0);
         assert_eq!(h.requests.0.borrow().len(), 2);
-    });
+    })
+    .unwrap();
 }

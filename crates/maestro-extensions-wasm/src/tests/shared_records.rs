@@ -184,7 +184,7 @@ async fn optional(driver: &mut impl Driver) -> Result<(), String> {
         let event: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
         let answer = ask(driver, &event, &json!({})).await?;
         let actual = answer.event.ok_or("no event")?;
-        let host: maestro_request::types::Message =
+        let host: maestro_interchange::types::Message =
             serde_json::from_value(event["messages"][0].clone()).map_err(|e| e.to_string())?;
         assert_eq!(
             actual["messages"][0],
@@ -208,7 +208,7 @@ async fn optional(driver: &mut impl Driver) -> Result<(), String> {
             .await?
             .event
             .ok_or("no event")?;
-        let host: maestro_request::source_info::SourceInfo =
+        let host: maestro_interchange::source_info::SourceInfo =
             serde_json::from_str(&source_text).map_err(|e| e.to_string())?;
         assert_eq!(
             actual["systemPromptOptions"]["skills"][0]["sourceInfo"],

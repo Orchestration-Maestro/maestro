@@ -6,10 +6,10 @@ use maestro_app::configuration::timings::Timings;
 use maestro_app::presentation_data::mode_dispatch::{
     InteractiveModeOptions, InteractiveModeRunner, ModeLaunchers,
 };
-use maestro_catalog::{ModelResolverOutput, ScopedModel};
 use maestro_cli::startup::entrypoint::bootstrap::AppMode;
 use maestro_cli::startup::entrypoint::initialization::create_runtime;
 use maestro_cli::startup::entrypoint::routing::{DispatchOutput, ModeDispatch, dispatch_mode};
+use maestro_models_registry::{ModelResolverOutput, ScopedModel};
 use maestro_theme::ThemeState;
 use std::{
     cell::{Cell, RefCell},

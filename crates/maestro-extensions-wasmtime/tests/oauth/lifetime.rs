@@ -30,14 +30,14 @@ impl OAuthProviderInterface for Provider {
         callbacks: OAuthCallbacks,
         fetch: Option<Fetch>,
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
-        maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.login(callbacks, fetch)
+        maestro_providers::GITHUB_COPILOT_OAUTH_PROVIDER.login(callbacks, fetch)
     }
     fn refresh_token(
         &self,
         credentials: OAuthCredentials,
         fetch: Option<Fetch>,
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
-        maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.refresh_token(credentials, fetch)
+        maestro_providers::GITHUB_COPILOT_OAUTH_PROVIDER.refresh_token(credentials, fetch)
     }
     fn get_api_key<'a>(
         &self,
@@ -46,6 +46,6 @@ impl OAuthProviderInterface for Provider {
         if credentials.extra.get("deny") == Some(&serde_json::Value::Bool(true)) {
             return Err(DiagnosticErrorInfo::new(None, "literal key denial").into());
         }
-        maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.get_api_key(credentials)
+        maestro_providers::GITHUB_COPILOT_OAUTH_PROVIDER.get_api_key(credentials)
     }
 }

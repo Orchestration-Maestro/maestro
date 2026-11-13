@@ -6,7 +6,7 @@ use maestro_daemon::state::test_support::api::{
 };
 use maestro_daemon::state::test_support::pane_resize::{pair, ratio, resize_of};
 use maestro_daemon::state::test_support::run;
-use maestro_protocol::rpc_types::RpcCommand;
+use maestro_protocol::envelopes::RpcCommand;
 use maestro_protocol::schema::{PaneDirection, PaneResizeParams, PaneResizeResult};
 use serde_json::json;
 /// Resizes `pane` rightward by a decoded amount, which the wire form cannot carry.

@@ -1,0 +1,137 @@
+[
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "X-Z": "z",
+          "X-A": "first"
+        },
+        {
+          "x-a": "last",
+          "X-B": "b"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-z",
+          "z"
+        ],
+        [
+          "x-a",
+          "last"
+        ],
+        [
+          "x-b",
+          "b"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "X-Probe": "first",
+          "x-probe": "second"
+        },
+        {
+          "X-Probe": "third"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "third"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "X-Probe": "first"
+        },
+        {
+          "x-probe": "third"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "third"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "x-probe": "first"
+        },
+        {
+          "x-probe": "third"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "third"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {},
+        {
+          "X-Probe": ""
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          ""
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "x-probe": "bad\nvalue"
+        },
+        {
+          "x-probe": "valid"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "valid"
+        ]
+      ]
+    }
+  }
+]

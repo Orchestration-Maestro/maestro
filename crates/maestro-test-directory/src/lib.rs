@@ -35,7 +35,7 @@ impl Scratch {
     /// Returns a directory creation or canonicalization failure.
     pub fn new() -> io::Result<Self> {
         let mut scratch = Self::new_in(&temporary_root())?;
-        scratch.path = maestro_realpath::canonicalize(&scratch.path)?;
+        scratch.path = maestro_path::fs::canonicalize(&scratch.path)?;
         Ok(scratch)
     }
 
@@ -235,6 +235,12 @@ fn allocate(parent: &Path, sequence: &AtomicU64) -> io::Result<Scratch> {
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
             Err(error) => return Err(error),
         }
+    }
+}
+
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.path
     }
 }
 

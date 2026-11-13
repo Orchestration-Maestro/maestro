@@ -1,7 +1,7 @@
 //! Historical session conversion through the public operation.
 #![cfg(test)]
 use crate::support;
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::parse_session_entries;
 use maestro_session::{build_session_context, migrate_session_entries};
 use serde_json::Value;

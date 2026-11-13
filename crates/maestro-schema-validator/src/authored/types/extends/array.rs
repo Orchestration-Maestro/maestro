@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::extends_left::extends_left;
 use super::extends_right::extends_right;
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// A sequence extends a sequence with an item node its own item node extends.
 pub(crate) fn extends_array<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> bool {

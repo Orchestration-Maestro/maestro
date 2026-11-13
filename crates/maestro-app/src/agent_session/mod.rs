@@ -34,13 +34,13 @@ use crate::resources::loading::{LoadPromptsResult, ResourceLoader};
 use indexmap::{IndexMap, IndexSet};
 use maestro_agent::Subscription;
 use maestro_agent::{Agent, AgentListener, AgentSpawner, AgentState, QueueMode, SharedAgentTool};
-use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_extensions::{
     ExtensionExecution, ExtensionRunner, ReplacedSessionContext, SessionStartEvent,
 };
 use maestro_listeners::Listeners;
 use maestro_lock::{read, write};
 use maestro_models::{DiagnosticErrorInfo, Local, Model};
+use maestro_models_registry::{ModelRegistry, ScopedModel};
 use maestro_session::{
     Presence, SessionManager, message_records::CustomAgentMessages,
     session_manager::ReadonlySessionManager,

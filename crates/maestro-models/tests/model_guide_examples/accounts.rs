@@ -240,13 +240,7 @@ async fn check_account_handles() -> TestResult {
         get_oauth_provider, get_oauth_providers, reset_oauth_providers, unregister_oauth_provider,
     };
     reset_oauth_providers();
-    assert_eq!(
-        get_oauth_providers()
-            .iter()
-            .map(|p| p.id().to_owned())
-            .collect::<Vec<_>>(),
-        ["anthropic", "github-copilot", "openai-codex"]
-    );
+    assert!(get_oauth_providers().is_empty());
     let refreshes = Arc::new(AtomicUsize::new(0));
     register_oauth_provider(Arc::new(Account {
         access: "old account",
@@ -274,13 +268,7 @@ async fn check_account_handles() -> TestResult {
     reset_oauth_providers();
     let retained = old.refresh_token(credentials(0.0), None).await?;
     assert!(retained.access == "old account", "retained implementation");
-    assert_eq!(
-        get_oauth_providers()
-            .iter()
-            .map(|p| p.id().to_owned())
-            .collect::<Vec<_>>(),
-        ["anthropic", "github-copilot", "openai-codex"]
-    );
+    assert!(get_oauth_providers().is_empty());
     Ok(())
 }
 

@@ -1,4 +1,4 @@
-//! Opt-in helpers for controlled tests: the request owner's records and the recorded
+//! Opt-in helpers for controlled tests: the interchange records and the recorded
 //! tool-argument conversion corpus.
 
 use std::collections::BTreeMap;
@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
-pub use maestro_request::test_support::*;
+pub use maestro_interchange::test_support::*;
 
 use crate::{ParameterSchema, SchemaCodeSource, SchemaKind, Tool, ToolCall};
 

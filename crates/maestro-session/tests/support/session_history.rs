@@ -1,6 +1,6 @@
 //! Recorded public memory-history operations.
 use chrono::{DateTime, Utc};
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::{NewSessionOptions, SessionManager};
 use serde::{Deserialize, Serialize};

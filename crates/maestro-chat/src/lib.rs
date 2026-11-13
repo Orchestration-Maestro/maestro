@@ -87,8 +87,9 @@ mod local_dispatch;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use interactive_mode::{InteractiveMode, InteractiveModeOptions, is_api_key_login_provider};
+#[cfg(all(feature = "test-support", not(target_arch = "wasm32")))]
+pub use interactive_mode::{ModeView, Region};
 
-mod environment;
 #[cfg(not(target_arch = "wasm32"))]
 mod external_editor;
 mod whole_cell_width;

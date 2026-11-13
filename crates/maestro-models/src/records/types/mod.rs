@@ -1,5 +1,5 @@
 //! Model invocation types with retained adapter hooks.
-pub use maestro_request::types::*;
+pub use maestro_interchange::types::*;
 /// Closed ownership and future representations.
 mod execution;
 pub use execution::{Execution, Local, Threaded};
@@ -13,12 +13,7 @@ pub use options::{
     ToolChoice,
 };
 
-/// Owned native callback future.
-#[cfg(not(target_arch = "wasm32"))]
-pub type BoxFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'static>>;
-/// Owned browser-local callback future.
-#[cfg(target_arch = "wasm32")]
-pub type BoxFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + 'static>>;
+pub use maestro_http::BoxFuture;
 /// Shared native callback or retained operation handle.
 #[cfg(not(target_arch = "wasm32"))]
 pub type SharedHandle<T> = std::sync::Arc<T>;

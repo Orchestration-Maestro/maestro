@@ -14,7 +14,7 @@ use serde_json::{Value, json};
 
 #[test]
 fn guest_reexports_preserve_message_wire_and_presence() {
-    let shell: maestro_request::messages::BashExecutionMessage = BashExecutionMessage {
+    let shell: maestro_interchange::messages::BashExecutionMessage = BashExecutionMessage {
         command: "command".into(),
         output: "output".into(),
         exit_code: Presence::Missing,
@@ -28,7 +28,7 @@ fn guest_reexports_preserve_message_wire_and_presence() {
         serde_json::to_value(shell).unwrap(),
         json!({"role":"bashExecution","command":"command","output":"output","cancelled":false,"truncated":true,"fullOutputPath":null,"timestamp":1.0,"excludeFromContext":false})
     );
-    let custom: maestro_request::messages::CustomMessage<crate::JsonText> = CustomMessage {
+    let custom: maestro_interchange::messages::CustomMessage<crate::JsonText> = CustomMessage {
         custom_type: "kind".into(),
         content: crate::UserContent::Text("text".into()),
         display: false,
@@ -39,7 +39,7 @@ fn guest_reexports_preserve_message_wire_and_presence() {
         serde_json::to_value(custom).unwrap(),
         json!({"role":"custom","customType":"kind","content":"text","display":false,"details":"details","timestamp":2.0})
     );
-    let branch: maestro_request::messages::BranchSummaryMessage = BranchSummaryMessage {
+    let branch: maestro_interchange::messages::BranchSummaryMessage = BranchSummaryMessage {
         summary: "branch".into(),
         from_id: "origin".into(),
         timestamp: 3.0,
@@ -48,7 +48,7 @@ fn guest_reexports_preserve_message_wire_and_presence() {
         serde_json::to_value(branch).unwrap(),
         json!({"role":"branchSummary","summary":"branch","fromId":"origin","timestamp":3.0})
     );
-    let compaction: maestro_request::messages::CompactionSummaryMessage =
+    let compaction: maestro_interchange::messages::CompactionSummaryMessage =
         CompactionSummaryMessage {
             summary: "compact".into(),
             tokens_before: 4.5,
@@ -125,12 +125,12 @@ fn generic_payload_decoding() {
         value: u8,
     }
     let base = json!({"customType":"typed","content":"text","display":false,"timestamp":0});
-    let absent: maestro_request::messages::CustomMessage<Payload> =
+    let absent: maestro_interchange::messages::CustomMessage<Payload> =
         serde_json::from_value(base.clone()).unwrap();
     assert!(absent.details.is_missing());
     let mut input = base;
     input["details"] = json!({"value":7});
-    let present: maestro_request::messages::CustomMessage<Payload> =
+    let present: maestro_interchange::messages::CustomMessage<Payload> =
         serde_json::from_value(input).unwrap();
     assert!(matches!(
         present.details,

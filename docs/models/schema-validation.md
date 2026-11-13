@@ -10,7 +10,7 @@ it as `maestro_models::parameters::validation`, and re-exports
 Declare a tool, then check an invocation against it:
 
 ```rust
-use maestro_request::types::{Tool, ToolCall};
+use maestro_interchange::types::{Tool, ToolCall};
 use maestro_schema_validator::validate_tool_arguments;
 use serde_json::json;
 

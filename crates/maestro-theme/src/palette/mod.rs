@@ -1,6 +1,6 @@
 //! Immutable foreground/background theme prefixes and authored metadata.
 use indexmap::IndexMap;
-use maestro_request::source_info::SourceInfo;
+use maestro_interchange::source_info::SourceInfo;
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;

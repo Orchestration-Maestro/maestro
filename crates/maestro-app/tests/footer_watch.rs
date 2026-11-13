@@ -994,7 +994,7 @@ fn native_command_probe(root: &native::Scratch) {
         output,
         [
             "--no-optional-locks symbolic-ref --quiet --short HEAD",
-            maestro_realpath::canonicalize(root.0.path())
+            maestro_path::fs::canonicalize(root.0.path())
                 .unwrap()
                 .to_str()
                 .unwrap()

@@ -1,15 +1,47 @@
 # OAuth authorization
 
-`maestro-models` exports OAuth records, `generate_pkce`, `oauth_success_html` and
-`oauth_error_html`, callback/provider contracts, Anthropic subscription login
-and refresh, and response-account `login_openai_codex`,
-`refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`,
-and GitHub Copilot device login and refresh.
+Two crates share OAuth authorization. `maestro-models` owns the provider registry,
+the OAuth records, the callback and provider contracts and `generate_pkce`.
+`maestro-providers` owns the login flows behind the built-in providers: Anthropic
+subscription login and refresh, response-account `login_openai_codex`,
+`refresh_openai_codex_token` and `OPENAI_CODEX_OAUTH_PROVIDER`, GitHub Copilot
+device login and refresh, and the callback pages `oauth_success_html` and
+`oauth_error_html`. `maestro_providers::install_built_in_providers` installs the
+built-in providers into the registry, and every credential store calls it when it is built.
+
+## Quick start
+
+Install the built-in providers, then resolve a request key from stored credentials.
+A program that builds an `AuthStorage` or composes through `maestro-app` skips the first
+line, because both install them. This example reads a built-in key without contacting an
+account service:
+
+```rust
+use maestro_models::{get_oauth_api_key, OAuthCredentials};
+use indexmap::IndexMap;
+
+maestro_providers::install_built_in_providers();
+let supplied = IndexMap::from([("anthropic".into(), OAuthCredentials {
+    refresh: "supplied-refresh".into(),
+    access: "supplied-access".into(),
+    expires: f64::INFINITY,
+    extra: Default::default(),
+})]);
+let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+let result = runtime.block_on(get_oauth_api_key("anthropic", &supplied, None))?
+    .ok_or("missing credential")?;
+assert_eq!(result.api_key, "supplied-access");
+assert_eq!(result.new_credentials, supplied["anthropic"]);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+## Records, proof keys and callback pages
 
 A terminal frontend imports this metadata from the crates that own it:
 `get_providers` from `maestro-models`, `DEFAULT_MODEL_PER_PROVIDER` and
-`BUILT_IN_PROVIDER_DISPLAY_NAMES` from `maestro-catalog`, and `OAuthSelectPrompt`
-and `OAuthSelectOption` from `maestro-request`. `maestro-app` does not export them.
+`BUILT_IN_PROVIDER_DISPLAY_NAMES` from `maestro-models-registry`, and
+`OAuthSelectPrompt` and `OAuthSelectOption` from `maestro-interchange`. `maestro-app`
+does not export them.
 A frontend selects a model and presents an authorization prompt from the owners'
 own tables and records, without keeping copies.
 
@@ -49,11 +81,30 @@ its optional fields. A supplied selector returning `None` is still present.
 
 ## Provider registry
 
-The registry starts with `anthropic`, `github-copilot` and `openai-codex`, in that
-order. `register_oauth_provider` appends a new literal ID or replaces an existing
+The registry in `maestro-models` starts empty. `maestro_providers::install_built_in_providers()`
+installs `anthropic`, `github-copilot` and `openai-codex`, in that order, as the
+registry's base layer. Every `AuthStorage` constructor calls it, so login, refresh and a
+model catalog built over a store find the built-ins with no other call, before any session
+exists. `maestro-app` also calls it at each composition entry
+(`create_agent_session_services`, `create_agent_session_runtime` and
+`create_agent_session`), and the model-account executable calls it before it reads the
+registry. A program that reads the registry before it builds a store or composes through
+the application calls the function first. The web frontend makes no call:
+`maestro-web` sends requests with stored keys and never reads the registry, so a program
+built on `maestro-web` alone calls the function before it reads the login list. On browser
+targets the registry is thread-local, so the call installs on the current thread.
+
+Built-ins hold the first positions wherever registrations already stand. A registration
+made earlier with a built-in's ID keeps shadowing that built-in in its position, exactly
+as if the built-in had been there first and then replaced. Installing is idempotent: a
+second call changes neither membership nor order.
+`maestro_models::install_built_in_oauth_providers(providers)` is the registry operation
+behind it; it takes the base layer to place and replaces any earlier one.
+
+`register_oauth_provider` appends a new literal ID or replaces an existing
 implementation without moving its slot. `unregister_oauth_provider` restores a
 built-in implementation or removes a custom entry; unknown IDs are ignored.
-`reset_oauth_providers` restores the original roster and order.
+`reset_oauth_providers` drops every registration and leaves the built-ins in their order.
 `get_oauth_provider` looks up an exact ID; `get_oauth_providers` returns an ordered
 membership snapshot whose handles share provider state.
 
@@ -76,32 +127,11 @@ Key resolution replaces only refresh failures with
 failures retain their provider errors. Account-specific behavior is documented
 in the owning flow sections below.
 
-### Supplied nonexpiring credential example
-
-This example reads a built-in key without contacting an account service:
-
-```rust
-use maestro_models::{get_oauth_api_key, OAuthCredentials};
-use indexmap::IndexMap;
-
-let supplied = IndexMap::from([("anthropic".into(), OAuthCredentials {
-    refresh: "supplied-refresh".into(),
-    access: "supplied-access".into(),
-    expires: f64::INFINITY,
-    extra: Default::default(),
-})]);
-let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
-let result = runtime.block_on(get_oauth_api_key("anthropic", &supplied, None))?
-    .ok_or("missing credential")?;
-assert_eq!(result.api_key, "supplied-access");
-assert_eq!(result.new_credentials, supplied["anthropic"]);
-# Ok::<(), Box<dyn std::error::Error>>(())
-```
-
 ## No-network example
 
 ```rust
-use maestro_models::{generate_pkce, oauth_success_html, OAuthCredentials};
+use maestro_models::{generate_pkce, OAuthCredentials};
+use maestro_providers::oauth_success_html;
 
 let credentials = OAuthCredentials {
     refresh: "supplied-refresh".into(),
@@ -233,7 +263,8 @@ originator, borrows the access key and supplies no model modifier.
 This example supplies its response without contacting an account service:
 
 ```rust
-use maestro_models::{Fetch, HttpResponse, refresh_openai_codex_token};
+use maestro_models::{Fetch, HttpResponse};
+use maestro_providers::refresh_openai_codex_token;
 use std::{collections::BTreeMap, sync::Arc};
 
 let fetch: Fetch = Arc::new(|_| Box::pin(async {
@@ -311,12 +342,13 @@ enterprise metadata skips modifier normalization. Refresh retains supplied strin
 or null metadata; absent metadata remains absent. Other non-string values fail
 before refresh effects; truthy non-string values fail before model modification
 with a native decoding error. These exports are also available through
-`oauth::device::browser` and `oauth`.
+`maestro_providers::oauth::device::browser` and `maestro_providers::oauth`.
 
 ### Controlled refresh example
 
 ```rust
-use maestro_models::{Fetch, HttpResponse, refresh_github_copilot_token};
+use maestro_models::{Fetch, HttpResponse};
+use maestro_providers::refresh_github_copilot_token;
 use std::sync::Arc;
 
 let fetch: Fetch = Arc::new(|request| {

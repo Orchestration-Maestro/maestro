@@ -1,8 +1,8 @@
 //! Source-derived document preparation observations.
 use super::document::{insert_runtime, prepare};
 use super::{PrepareHtmlOptions, runtime::COMPLETION_PROPERTY};
+use crate::components::browser::sandbox::providers::{BuiltinRuntime, Runtime};
 use crate::components::sandbox::runtime_bundle::BUNDLE;
-use maestro_app::{BuiltinRuntime, Runtime};
 
 /// Options for a loaded HTML artifact.
 const ARTIFACT: PrepareHtmlOptions = PrepareHtmlOptions {

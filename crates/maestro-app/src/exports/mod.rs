@@ -1,9 +1,5 @@
 //! Private declaration fragments for the application interface.
 
-/// Browser storage stores, records and the application storage accessor.
-mod browser_storage;
-/// Browser document extraction, sandbox runtime and JavaScript execution tools.
-mod browser_tools;
 /// Clipboard copy helpers.
 mod clipboard;
 /// Application name, version, directory names and environment variable names.
@@ -20,9 +16,6 @@ mod packages;
 mod presentation_data;
 /// Resource loader, its options, diagnostics and collisions.
 mod resources;
-/// The JSONL protocol records and server.
-#[cfg(not(target_arch = "wasm32"))]
-mod rpc;
 /// Session manager, session entry records and skill block parsing.
 mod session;
 /// The settings manager and its compaction, image and retry records.
@@ -33,8 +26,6 @@ mod theme;
 /// Built-in tool constructors, options and execution records.
 mod tools;
 
-pub use browser_storage::*;
-pub use browser_tools::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use clipboard::*;
 pub use configuration::*;
@@ -45,8 +36,6 @@ pub use models::*;
 pub use packages::*;
 pub use presentation_data::*;
 pub use resources::*;
-#[cfg(not(target_arch = "wasm32"))]
-pub use rpc::*;
 pub use session::*;
 pub use settings::*;
 #[cfg(not(target_arch = "wasm32"))]

@@ -30,7 +30,7 @@ pub struct ResourceEntry {
 /// Returns the directory I/O cause.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn read_entries(path: &Path) -> io::Result<Vec<ResourceEntry>> {
-    maestro_listing::read_dir(path)?
+    maestro_path::fs::read_dir(path)?
         .into_iter()
         .map(|entry| {
             Ok(ResourceEntry {

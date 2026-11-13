@@ -95,9 +95,7 @@ fn package_dependencies_reuse_only_the_guest_record_owners() {
     let mut dependencies = String::from("[dependencies]\n");
     for name in [
         "maestro-extensions-wasm",
-        "maestro-request",
-        "maestro-entry",
-        "maestro-tool",
+        "maestro-interchange",
         "maestro-json",
     ] {
         workspace.member(name, name, "");

@@ -1,5 +1,5 @@
 //! Supplied nested declarations shared by the author and its host witnesses.
-use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};
+use maestro_interchange::parameter_schema::{ParameterSchema, SchemaKind};
 use serde::Deserialize;
 use std::collections::HashMap;
 

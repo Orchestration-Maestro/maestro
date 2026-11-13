@@ -191,7 +191,7 @@ impl<E: ExtensionExecution> AgentSession<E> {
     ) -> Option<(String, Option<IndexMap<String, String>>, Option<String>)> {
         let model = self.model();
         let auth = self.model_registry.get_api_key_and_headers(&model).await;
-        let maestro_catalog::ResolvedRequestAuth::Ok {
+        let maestro_models_registry::ResolvedRequestAuth::Ok {
             api_key: Some(api_key),
             headers,
             base_url,

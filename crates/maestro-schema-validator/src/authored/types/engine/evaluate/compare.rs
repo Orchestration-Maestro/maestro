@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use crate::authored::schema_view::Node;
 use crate::authored::types::extends::extends;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Relation of one node's values to another node's values.
 #[derive(Clone, Copy, PartialEq, Eq)]

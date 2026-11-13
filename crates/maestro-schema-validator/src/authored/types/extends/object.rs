@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::extends_left::extends_left;
 use super::extends_right::extends_right;
 use crate::authored::schema_view::{Members, Node};
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// An object extends an object whose every member it declares and extends; it may leave out
 /// a member the other object marks optional.

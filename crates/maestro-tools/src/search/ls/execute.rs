@@ -121,7 +121,7 @@ impl LsOperations for NativeLsOperations {
         absolute_path: String,
     ) -> BoxFuture<Result<Vec<String>, DiagnosticErrorInfo>> {
         Box::pin(blocking(move || {
-            Ok(maestro_listing::read_dir(absolute_path)?
+            Ok(maestro_path::fs::read_dir(absolute_path)?
                 .iter()
                 .map(|entry| entry.file_name().to_string_lossy().into_owned())
                 .collect())

@@ -59,14 +59,19 @@ fn the_same_tree_passes_once_the_modules_say_what_they_hold() {
 #[test]
 fn a_module_in_the_exemption_table_keeps_its_name() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-tool"]);
+    workspace.foundation(&["maestro-interchange"]);
     source(
         &workspace,
-        "maestro-tool",
+        "maestro-interchange",
         "src/lib.rs",
-        "//! Tool records.\npub mod types;\n",
+        "//! Shared records.\npub mod types;\n",
     );
-    source(&workspace, "maestro-tool", "src/types.rs", "//! Records.\n");
+    source(
+        &workspace,
+        "maestro-interchange",
+        "src/types.rs",
+        "//! Records.\n",
+    );
 
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }

@@ -124,7 +124,7 @@ close it.
 
 The `javascript_repl` and `extract_document` renderers register once. Replacement,
 removal and JSON mode follow the same policy as the command card. Both accept
-model objects, explicit JSON objects and their application-owned native records.
+model objects, explicit JSON objects and their native tool records.
 
 JavaScript cards keep literal code and console output in a collapsed body;
 returned files remain accessible outside it. Document cards show the URL and
@@ -214,7 +214,7 @@ explicit JSON values and native `ArtifactsParams`; it does not read result
 details. Partial JSON arguments are rendered without execution-schema decoding.
 
 ```rust,ignore
-use maestro_app::browser::tools::documents::ArtifactsParams;
+use maestro_web::tools::browser::documents::ArtifactsParams;
 use maestro_models::JsonObject;
 use maestro_web::{ArtifactsToolRenderer, register_tool_renderer,
     tools::types::ToolRendererBinding};

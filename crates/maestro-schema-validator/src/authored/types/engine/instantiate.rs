@@ -5,7 +5,7 @@ use std::rc::Rc;
 use super::r#ref::instantiate::ref_instantiate;
 use crate::authored::context::Context;
 use crate::authored::schema_view::{Node, ObjectNode, View};
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Instantiate one authored node: substitute the references that cannot recurse.
 ///

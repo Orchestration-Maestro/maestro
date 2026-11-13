@@ -1,14 +1,14 @@
 # Browser collection storage
 
-The application owns browser-store policy. Both `maestro_app` and
-`maestro_web` export `Store`, `SettingsStore`, `ProviderKeysStore`,
+The web frontend owns browser-store policy in `maestro_web::persistence`.
+`maestro_web` exports `Store`, `SettingsStore`, `ProviderKeysStore`,
 `CustomProvidersStore`, `SessionsStore`, `SessionData`, `SessionMetadata`,
 `AppStorage`, `get_app_storage`, `set_app_storage`, their configuration records
 and the storage traits.
 `maestro_web` also exports the backend signature types `IndexDirection`,
 `TransactionMode`, `StorageOperation` and `QuotaInfo`.
 Backend implementations are supplied by the caller, not constructed by stores.
-The WebAssembly SDK supplies a complete application-trait implementation through
+The WebAssembly SDK supplies a complete storage-trait implementation through
 [the browser database adapter](../browser/storage.md), alongside unrestricted
 native-value operations and retained multi-store transactions. The adapter's JSON
 face follows browser JSON representation; raw callers retain native types.
@@ -70,5 +70,5 @@ Quota and persistence use its own backend. Initialize the realm-local slot with
 handles usable.
 
 Transactions, prefix/index ordering, quota and persistence are
-[adapter contracts](../../crates/maestro-app/src/browser/persistence/types.rs),
+[adapter contracts](../../crates/maestro-web/src/persistence/types.rs),
 not platform implementations here. No browser store redirects into native history.

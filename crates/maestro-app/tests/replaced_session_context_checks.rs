@@ -2,11 +2,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::agent_session_runtime_events_checks::bind_command_runtime;
-use crate::support::runtime_fixtures::runtime_for;
-use crate::support::session_harness::{
-    answer, corpus, delivery_message_view, on_task_set, script_responses,
-};
+use crate::support::session_harness::{corpus, delivery_message_view};
 use maestro_app::PromptOptions;
+use maestro_app::test_support::{answer, on_task_set, runtime_for, script_responses};
 use maestro_extensions::{
     EventError, ExtensionAPI, ExtensionCommandContext, ExtensionFactory, ForkPosition,
     SessionShutdownEvent, SessionStartEvent,
@@ -16,6 +14,7 @@ use maestro_extensions::{
     },
 };
 use maestro_models::{Local, UserContent};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -248,7 +247,9 @@ async fn replacement_case(operation: Replacement) -> Value {
     let target = Rc::new(RefCell::new(None));
     let observed = Rc::new(RefCell::new(Observed::default()));
     let extension = command_extension(operation, Rc::clone(&target), Rc::clone(&observed));
-    let (h, runtime, _) = runtime_for("commands", vec![(None, extension)]).await;
+    let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "commands", vec![(None, extension)])
+        .await
+        .unwrap();
     drop(script_responses(
         &h,
         vec![
@@ -300,7 +301,8 @@ fn new_session_rebinds_before_the_old_command_continues() {
             replacement_case(Replacement::New).await,
             expected["with_new"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -311,7 +313,8 @@ fn fork_continuation_sends_into_the_replacement_branch() {
             replacement_case(Replacement::Fork).await,
             expected["with_fork"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -322,5 +325,6 @@ fn switch_continuation_sends_into_the_destination_session() {
             replacement_case(Replacement::Switch).await,
             expected["with_switch"]
         );
-    });
+    })
+    .unwrap();
 }

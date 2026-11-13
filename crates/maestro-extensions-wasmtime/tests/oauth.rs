@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 
 #[test]
 fn oauth_provider_enumeration_keeps_metadata_and_callable_keys() {
+    maestro_providers::install_built_in_providers();
     super::components::local(async {
         let bus = super::components::TracedBus::new();
         let (_owner, runner, _) =
@@ -41,6 +42,7 @@ mod refresh;
 
 #[test]
 fn oauth_refresh_and_model_modification_use_the_native_owner() {
+    maestro_providers::install_built_in_providers();
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

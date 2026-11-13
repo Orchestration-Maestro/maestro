@@ -2,11 +2,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::compaction::{messages, seeded};
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, delivery_requests, history_view, of_kinds, on_task_set,
-    prompt_to_end, recorded, summary_provider,
+    Harness, delivery_requests, history_view, of_kinds, prompt_to_end, recorded, summary_provider,
 };
 use maestro_agent::{AgentEvent, AgentMessage};
 use maestro_app::AgentSessionEvent;
+use maestro_app::test_support::{HarnessOptions, Scripted, on_task_set};
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::{Value, json};
 use std::{cell::Cell, rc::Rc};
@@ -117,5 +117,6 @@ fn public_threshold_compaction_drains_the_agent_only_queue() {
         assert!(queued.get());
         assert_queue_drained(&h, &recorded("compaction_sessions", "public_queue"));
         assert_queue_compaction(&h);
-    });
+    })
+    .unwrap();
 }

@@ -19,9 +19,9 @@ pub struct TruncationOptions {
 }
 
 /// The limit that stopped selection.
-pub use maestro_tool::tools::truncate::TruncationBy;
+pub use maestro_interchange::tool::tools::truncate::TruncationBy;
 /// Selected output with native counts.
-pub type TruncationResult = maestro_tool::tools::truncate::TruncationResult<usize>;
+pub type TruncationResult = maestro_interchange::tool::tools::truncate::TruncationResult<usize>;
 
 /// Account for input lines, excluding the empty entry after a final newline.
 fn initial_result(content: &str, options: TruncationOptions) -> TruncationResult {

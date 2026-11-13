@@ -17,7 +17,7 @@ pub struct ModeDispatch {
     /// The prompt inputs and existing presentation configuration.
     pub interactive_options: InteractiveModeOptions,
     /// The scope captured by startup before reporting diagnostics.
-    pub scoped_models: Vec<maestro_catalog::ScopedModel>,
+    pub scoped_models: Vec<maestro_models_registry::ScopedModel>,
 }
 /// Caller-owned streams and timing observations.
 pub struct DispatchOutput<'a> {
@@ -140,7 +140,9 @@ async fn run_interactive(
 }
 
 /// Formats the captured scope in one walk, keeping each read guard local.
-fn model_list<'a>(models: impl IntoIterator<Item = &'a maestro_catalog::ScopedModel>) -> String {
+fn model_list<'a>(
+    models: impl IntoIterator<Item = &'a maestro_models_registry::ScopedModel>,
+) -> String {
     models
         .into_iter()
         .map(|scoped| {

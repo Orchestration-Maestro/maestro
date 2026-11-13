@@ -233,7 +233,7 @@ fn names(view: &DomView, fixture: &Value, recorder: &Recorder) {
         crate::attachment_support::Host::default(),
     )));
     let panel =
-        maestro_app::browser::tools::documents::LocalArtifactsPanel::new_local(presentation);
+        maestro_web::tools::browser::documents::LocalArtifactsPanel::new_local(presentation);
     for case in fixture["assistantNames"].as_array().unwrap() {
         let tools = case["tools"].as_array().map(|names| {
             Rc::new(RwLock::new(

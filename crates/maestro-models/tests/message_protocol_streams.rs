@@ -475,7 +475,7 @@ async fn counts_are_doubles() -> TestResult {
     );
     assert_eq!(
         usage.total_tokens,
-        maestro_request::presence::Presence::Present(f64::INFINITY)
+        maestro_interchange::presence::Presence::Present(f64::INFINITY)
     );
     assert_eq!(usage.cost.input.to_bits(), f64::INFINITY.to_bits());
     assert_eq!(usage.cost.total.to_bits(), f64::INFINITY.to_bits());

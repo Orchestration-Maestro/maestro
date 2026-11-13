@@ -5,7 +5,7 @@ use std::rc::Rc;
 use self::extends_left::extends_left;
 use crate::authored::schema_view::Node;
 use crate::authored::types::engine::cyclic::extends::cyclic_extends;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 pub(crate) mod any;
 pub(crate) mod array;
@@ -52,7 +52,7 @@ mod tests {
     use crate::authored::context::Context;
     use crate::authored::schema_view::{Document, Node};
     use crate::authored::types::engine::instantiate::instantiate;
-    use maestro_request::parameter_schema::SchemaKind;
+    use maestro_interchange::parameter_schema::SchemaKind;
 
     /// Compare two authored operands the way conversion asks the question.
     #[track_caller]

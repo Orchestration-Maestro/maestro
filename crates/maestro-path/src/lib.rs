@@ -5,24 +5,27 @@
 //! system or the process working directory. The string operations follow the
 //! JavaScript runtime's `path` module for both of its flavors, except where
 //! that module's result is a defect; the crate's tests mark each one.
-//! [`native_homedir`] alone reads the environment and native account home;
+//! [`native_home_dir`] alone reads the environment and native account home;
 //! [`home_directory`] is its text form and [`home_directory_text`] converts a supplied home.
 //! Convert an authored path to [`std::path::PathBuf`] only at a file-system call.
 //! [`normalize_native`] shares segment reduction with these string operations
 //! when a native filesystem path must retain non-UTF-8 components.
 //! [`resolve_final_links`] traverses native link targets supplied by the caller.
+//! The [`fs`] module alone reads the file system: on native targets it lists a
+//! directory in name order and resolves real paths.
 //!
 //! The [`posix`] and [`win32`] modules behave the same on every platform. The
 //! crate root re-exports the flavor of the compile target; the POSIX-only
 //! [`posix::parse`] is also re-exported on targets other than Windows.
 
+pub mod fs;
 mod links;
 mod os;
 mod path;
 mod tilde;
 
 pub use links::resolve_final_links;
-pub use os::{home_directory, home_directory_text, homedir, native_homedir};
+pub use os::{home_dir, home_directory, home_directory_text, native_home_dir};
 pub use path::{
     Cwd, CwdUnavailable, normalize_native, posix, resolve_with, resolve_with_flavor, slashed, win32,
 };

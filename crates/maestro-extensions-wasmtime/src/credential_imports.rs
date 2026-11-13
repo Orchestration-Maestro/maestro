@@ -6,7 +6,7 @@
 )]
 use crate::{
     api_imports::ApiView,
-    bindings::maestro::extension::host::HostAuthStorage,
+    bindings::maestro::extension::host::{HostAuthLockUpdate, HostAuthStorage},
     callback_imports::retain,
     context_imports::add_resource,
     credential_reads::Endpoint,
@@ -15,10 +15,7 @@ use crate::{
     lifecycle::State,
     read_imports::{endpoint, forwards, reads, release, routes},
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
-};
+use wasmtime::component::{LinkerInstance, Resource};
 use wasmtime_wasi::WasiView;
 
 impl HostAuthStorage for State {
@@ -129,25 +126,35 @@ pub(crate) fn add_to_linker<T: crate::callback_imports::CallbackView + 'static>(
     )
 }
 
+impl HostAuthLockUpdate for State {
+    reads! { crate::local_resources::credential_scope::Endpoint;
+        update(current: Option<String>) -> Option<String>;
+    }
+
+    fn drop(
+        &mut self,
+        this: Resource<crate::local_resources::credential_scope::Endpoint>,
+    ) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Registers the borrowed lock update with its synchronous method forwarded to the trait.
+pub(crate) fn add_lock_update(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, crate::local_resources::credential_scope::Endpoint>(
+        host,
+        "auth-lock-update",
+    )?;
+    forwards! { host, "auth-lock-update", HostAuthLockUpdate, crate::local_resources::credential_scope::Endpoint,
+        "update" => update(current: Option<String>);
+    }
+    Ok(())
+}
+
 /// Links authored backends and invocation-local native update operands.
 fn add_callbacks<T: crate::callback_imports::CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
-    crate::context_imports::add_resource::<T, crate::local_resources::credential_scope::Endpoint>(
-        host,
-        "auth-lock-update",
-    )?;
-    host.func_wrap(
-        "[method]auth-lock-update.update",
-        |mut store: StoreContextMut<'_, T>,
-         (resource, current): (
-            Resource<crate::local_resources::credential_scope::Endpoint>,
-            Option<String>,
-        )| {
-            let update = store.data_mut().ctx().table.get(&resource)?.clone();
-            Ok((update.update(current),))
-        },
-    )?;
     host.func_wrap_concurrent(
         "[method]auth-lock-update.update-async",
         |accessor,

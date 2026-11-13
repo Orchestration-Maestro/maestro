@@ -10,6 +10,11 @@ repository.workspace = true
 name = "integration"
 path = "tests/integration.rs"
 
+[[example]]
+name = "count_prompt_tokens"
+path = "scripts/count_prompt_tokens.rs"
+test = true
+
 [dependencies]
 oxc_allocator.workspace = true
 oxc_parser.workspace = true
@@ -20,19 +25,24 @@ tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 url = "=2.5.8"
 percent-encoding = "=2.3.2"
-maestro-app = { path = "../maestro-app" }
 maestro-agent = { path = "../maestro-agent" }
 maestro-json = { path = "../maestro-json" }
+maestro-lock = { path = "../maestro-lock" }
 maestro-markdown = { path = "../maestro-markdown" }
 maestro-models = { path = "../maestro-models" }
 maestro-protocol = { path = "../maestro-protocol" }
 maestro-session = { path = "../maestro-session" }
-maestro-text = { path = "../maestro-text" }
+maestro-text = { path = "../maestro-text", features = ["number-format"] }
 maestro-tools = { path = "../maestro-tools" }
 maestro-office = { path = "../maestro-office" }
 maestro-theme = { path = "../maestro-theme" }
-serde.workspace = true
-serde_json.workspace = true
+serde = { workspace = true, features = ["rc"] }
+serde_json = { workspace = true, features = ["raw_value"] }
+chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+futures-util.workspace = true
+hayro = "=0.8.0"
+hayro-interpret = "=0.8.0"
+rand = "=0.10.3"
 ryu-js.workspace = true
 num-traits.workspace = true
 web-sys = { version = "=0.3.106", features = ["DocumentFragment", "NodeList", "CssStyleDeclaration", "DomTokenList", "WebSocket", "BinaryType", "DomParser", "SupportedType", "ResizeObserver", "Window", "HtmlIFrameElement", "MessageEvent", "Navigator", "Storage", "Location", "console", "Document", "Node", "Element", "SvgElement", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "MediaQueryList", "HtmlCanvasElement", "DomRect", "HtmlInputElement", "HtmlTextAreaElement", "Event", "EventTarget", "KeyboardEvent", "DomException", "DomStringList", "IdbDatabase", "IdbFactory", "IdbIndex", "IdbIndexParameters", "IdbObjectStore", "IdbObjectStoreParameters", "IdbOpenDbRequest", "IdbRequest", "IdbTransaction", "IdbTransactionMode", "IdbKeyRange", "IdbCursor", "IdbCursorWithValue", "IdbCursorDirection", "StorageManager", "StorageEstimate", "CustomElementRegistry", "CustomEvent", "CustomEventInit", "HtmlButtonElement", "Response", "SvgGraphicsElement", "SvgRect", "Text", "File", "FileList", "MouseEvent", "DragEvent", "DataTransfer", "DataTransferItem", "DataTransferItemList", "ClipboardEvent", "HtmlSelectElement", "History", "UrlSearchParams", "Crypto", "FontFace", "FontFaceDescriptors", "FontFaceSet"] }
@@ -43,7 +53,6 @@ resvg = { version = "=0.48.1", default-features = false }
 katex = { package = "katex-rs", version = "=0.3.0", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 wasm-bindgen = "=0.2.129"
 wasm-bindgen-futures = "=0.4.79"
 js-sys = "=0.3.106"
@@ -51,6 +60,13 @@ custom-element = "=0.1.5"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+maestro-text = { path = "../maestro-text", features = ["collation"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-process.workspace = true
+tokio-tungstenite.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "macros", "net", "io-util", "time"] }
+zip = { version = "=9.0.5", default-features = false, features = ["deflate-flate2"] }
 
 [features]
 test-support = []
@@ -58,7 +74,7 @@ test-support = []
 [dev-dependencies]
 maestro-web = { path = ".", features = ["test-support"] }
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
-chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+maestro-models = { path = "../maestro-models", features = ["test-support"] }
 egui = { version = "=0.36.2", default-features = false, features = ["default_fonts"] }
 
 [lints]

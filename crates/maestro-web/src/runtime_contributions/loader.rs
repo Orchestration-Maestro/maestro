@@ -4,10 +4,10 @@ use super::{
     adapters::FrameView,
     host::{Callables, Invocation, interface, release},
 };
+use crate::components::browser::sandboxed_iframe::SandboxUrlProvider;
 use crate::page::DomView;
 use js_sys::{Function, Object, Promise, Reflect};
 use maestro_agent::{CustomAgentMessages, NoCustomMessages};
-use maestro_app::SandboxUrlProvider;
 use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use wasm_bindgen_futures::JsFuture;

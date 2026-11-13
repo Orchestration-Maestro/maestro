@@ -16,8 +16,6 @@ sha2.workspace = true
 toml = "=1.1.6"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-listing = { path = "../maestro-listing" }
-maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 
 [lints]

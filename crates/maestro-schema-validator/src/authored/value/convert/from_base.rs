@@ -1,7 +1,7 @@
 //! Conversion supplied by an authored Base node.
 
 use crate::authored::{context::Context, schema_view::View};
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 /// Run the retained converter, preserving replacement separately from in-place edits.

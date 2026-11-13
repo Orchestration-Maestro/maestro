@@ -1,14 +1,14 @@
 //! Formatting and projection of application conversation messages.
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone};
 use maestro_agent::AgentMessage;
-use maestro_lock::read;
-use maestro_models::{Message, TextContent, UserBlock, UserContent, UserMessage};
-pub use maestro_request::messages::{
+pub use maestro_interchange::messages::{
     BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage, CustomMessage,
     CustomMessageInput, MessageDelivery, MessageRenderOptions, SendMessageOptions,
     SendUserMessageOptions, UserMessageDelivery,
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
+use maestro_lock::read;
+use maestro_models::{Message, TextContent, UserBlock, UserContent, UserMessage};
 use std::convert::Infallible;
 
 /// Format a recorded shell execution for model input.

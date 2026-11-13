@@ -64,39 +64,42 @@ pub use utils::localization::{
     TranslationValue, Translations,
 };
 
-pub use maestro_app::browser::components::records::{
+pub use components::browser::records::{
     ArtifactMessage, UserMessageWithAttachments, convert_attachments, default_convert_to_llm,
     is_artifact_message, is_user_message_with_attachments,
 };
-pub use maestro_app::browser::utils::attachments::{Attachment, SharedAttachment, load_attachment};
-pub use maestro_app::browser::utils::proxy::{
+pub use utils::attachments::{Attachment, SharedAttachment, load_attachment};
+pub use utils::proxy::{
     apply_proxy_if_needed, create_local_stream_fn, create_stream_fn, is_cors_error,
     should_use_proxy_for_provider,
 };
 
-pub use maestro_app::{
+/// Injected collection storage.
+pub mod persistence;
+pub use persistence::{
     AppStorage, AutoDiscoveryProviderType, CustomProvider, CustomProviderType,
     CustomProvidersStore, IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore,
     SessionData, SessionMetadata, SessionsStore, SettingsStore, StorageBackend, StorageTransaction,
     Store, StoreConfig, get_app_storage, set_app_storage,
 };
 
-pub use maestro_app::browser::persistence::{
-    IndexDirection, QuotaInfo, StorageOperation, TransactionMode,
-};
+pub use persistence::{IndexDirection, QuotaInfo, StorageOperation, TransactionMode};
 
 pub use components::sandbox::routing::RuntimeMessageBridge;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandbox::runtime_message_router::RUNTIME_MESSAGE_ROUTER;
 
-pub use maestro_app::browser::components::sandbox::{
+pub use components::browser::sandbox::{
     artifacts_runtime_provider::ArtifactsRuntimeProvider,
     attachments_runtime_provider::AttachmentsRuntimeProvider,
     console_runtime_provider::{ConsoleLog, ConsoleRuntimeProvider},
     file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
 };
-pub use maestro_app::browser::tools::prompts::ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW;
+pub use tools::browser::prompts::{
+    ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW,
+    ATTACHMENTS_RUNTIME_DESCRIPTION,
+};
 pub mod tools;
 pub use tools::documents::ArtifactElement;
 
@@ -107,10 +110,12 @@ pub use tools::documents::HtmlArtifact;
 /// Artifact records and tabbed views using the application-selected filename.
 pub use tools::documents::{Artifact, ArtifactsPanel, ArtifactsParams};
 
-pub use maestro_app::{
-    BuiltinRuntime, Runtime, SandboxFile, SandboxResult, SandboxRuntimeProvider,
-    SandboxUrlProvider, create_javascript_repl_tool,
+pub use components::browser::sandbox::providers::{
+    BuiltinRuntime, Runtime, SandboxRuntimeProvider,
 };
+pub use components::browser::sandboxed_iframe::{SandboxFile, SandboxResult, SandboxUrlProvider};
+pub use tools::browser::extraction::{EXTRACT_DOCUMENT_TOOL, create_extract_document_tool};
+pub use tools::browser::javascript_repl::create_javascript_repl_tool;
 #[cfg(target_arch = "wasm32")]
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;
 
@@ -144,6 +149,9 @@ pub use tools::documents::ArtifactsToolRenderer;
 pub use tools::documents::artifact_pill::artifact_pill;
 
 mod ui_error;
+
+#[cfg(test)]
+mod tests;
 
 /// Rendered-value projections of prepared page content for native tests.
 #[cfg(all(not(target_arch = "wasm32"), any(test, feature = "test-support")))]

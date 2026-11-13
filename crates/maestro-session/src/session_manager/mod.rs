@@ -30,7 +30,7 @@ pub use history::{build_session_context, get_latest_compaction_entry, parse_sess
 pub use views::*;
 
 use chrono::{SecondsFormat, Utc};
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use serde_json::{Map, Value, json};
 use std::collections::HashMap;
 use uuid::Uuid;

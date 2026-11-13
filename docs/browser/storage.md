@@ -1,7 +1,7 @@
 # Browser-native record storage
 
 On WebAssembly, `maestro_web::IndexedDBStorageBackend` opens a browser database
-lazily from the application's `IndexedDBConfig`. Calls share the retained opening
+lazily from the `persistence` `IndexedDBConfig`. Calls share the retained opening
 result, including a failed open. Upgrade creates configured stores and indices
 only for names not already present; existing stores are left untouched.
 
@@ -46,8 +46,8 @@ Real-browser qualification is tracked in [#1061](https://github.com/Orchestratio
 without a separate browser runner.
 
 The complete [`StorageBackend`](../application/browser-storage.md) implementation
-adapts JSON application values on this same owner. Use `Rc<dyn StorageBackend>`
-with application stores; the concrete API remains raw and unrestricted.
+adapts JSON store values on this same owner. Use `Rc<dyn StorageBackend>`
+with the `persistence` stores; the concrete API remains raw and unrestricted.
 
 `keys` uses an inclusive range from a nonempty prefix to that prefix followed by
 U+FFFF. An absent or empty prefix enumerates all keys. Key spelling and order

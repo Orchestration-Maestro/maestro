@@ -1,5 +1,6 @@
 //! Artifact command selection over borrowed raw and native operands.
 use super::artifact_pill::Pill;
+use crate::tools::browser::documents::{ArtifactCommand, ArtifactsParams, LocalArtifactsPanel};
 use crate::{
     components::{changes::DiffProps, console_block::ConsoleVariant},
     tools::{
@@ -11,9 +12,6 @@ use crate::{
         },
         types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError, json_params},
     },
-};
-use maestro_app::browser::tools::documents::{
-    ArtifactCommand, ArtifactsParams, LocalArtifactsPanel,
 };
 use maestro_models::JsonObject;
 use serde_json::Value;

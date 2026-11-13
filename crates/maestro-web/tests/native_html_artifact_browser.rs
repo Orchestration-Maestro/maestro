@@ -7,7 +7,6 @@ use crate::contributions_support::{
 use crate::native_html_artifact_support::{
     LOGGING, QUIET, before, failing, frame, listed, logged, marker, srcdoc,
 };
-use maestro_app::{Runtime, SandboxRuntimeProvider};
 use maestro_models::{DiagnosticErrorInfo, SharedHandle};
 use maestro_web::components::sandbox::runtime_bundle::BUNDLE;
 use maestro_web::{
@@ -15,6 +14,7 @@ use maestro_web::{
     browser::values::BrowserSandboxValue,
     page::{DomContent as _, DomRoot, DomView},
 };
+use maestro_web::{Runtime, SandboxRuntimeProvider};
 use std::{cell::Cell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue, prelude::wasm_bindgen};
 use web_sys::{Element, Node};
@@ -313,7 +313,7 @@ pub async fn html_artifact_dom_forwards_current_providers_and_url(import_module:
     address_before_connection().await;
 }
 /// A counting address provider for `path` below the page origin.
-fn address(path: &'static str, reads: &Rc<Cell<u32>>) -> maestro_app::SandboxUrlProvider {
+fn address(path: &'static str, reads: &Rc<Cell<u32>>) -> maestro_web::SandboxUrlProvider {
     let reads = Rc::clone(reads);
     SharedHandle::new(move || {
         reads.set(reads.get() + 1);
@@ -452,7 +452,7 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Editing {
     fn handle_message(
         &self,
         message: BrowserSandboxValue,
-        _: maestro_app::browser::components::sandbox::providers::SandboxRespond<
+        _: maestro_web::components::browser::sandbox::providers::SandboxRespond<
             BrowserSandboxValue,
         >,
     ) -> maestro_models::BoxFuture<Result<(), DiagnosticErrorInfo>> {

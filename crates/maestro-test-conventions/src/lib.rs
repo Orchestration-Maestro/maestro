@@ -16,6 +16,8 @@ mod child_tests;
 mod comments;
 /// Shell scripts in the runner configuration directory.
 mod config_scripts;
+/// Shared contract rows every crate step edits.
+mod contract_order;
 /// Home-directory programs in documented commands.
 mod documented_commands;
 /// Exact production function-body ownership.
@@ -230,6 +232,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| standard_error::check(&members),
         &|| tokio_macros::check(&metadata, &members),
         &|| test_input_routes::check(root, &members),
+        &|| contract_order::check(root),
         &|| fixture_includes::check(&members),
         &|| leaked_words::check(root, &members),
         &|| bucket_modules::check(root, &members),

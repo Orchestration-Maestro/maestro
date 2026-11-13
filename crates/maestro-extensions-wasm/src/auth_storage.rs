@@ -5,10 +5,10 @@
     clippy::excessive_nesting
 )]
 use crate::{AuthStatus, DiagnosticErrorInfo, ExtensionFuture, ExtensionResult};
-pub use maestro_request::credentials::{
+pub use maestro_interchange::credentials::{
     ApiKeyCredential, AuthCredential, AuthStorageData, OAuthCredential,
 };
-pub use maestro_request::oauth::OAuthCredentials;
+pub use maestro_interchange::oauth::OAuthCredentials;
 use std::rc::Rc;
 
 /// Optional controls for request key resolution.

@@ -5,10 +5,10 @@
     clippy::excessive_nesting
 )]
 use crate::component_adapter::outcome;
-use maestro_request::diagnostics::{
+use maestro_interchange::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo,
 };
-use maestro_request::types::{MaxPrice, RoutingPrice, RoutingThreshold};
+use maestro_interchange::types::{MaxPrice, RoutingPrice, RoutingThreshold};
 use serde::Serialize;
 
 /// Check the real encoder rather than a predicate isolated from event return.

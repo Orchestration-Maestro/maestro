@@ -156,3 +156,35 @@ pub mod agent_records {
             .unwrap()
     }
 }
+
+/// Complete `future` on a fresh current-thread runtime without I/O or time drivers.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn run<T>(future: impl std::future::Future<Output = T>) -> T {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+mod runtime;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use runtime::run_io;
+
+pub(crate) mod attachment_observation;
+pub(crate) mod attachments;
+pub(crate) mod browser_records;
+pub(crate) mod browser_storage_records;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod document_attachments;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod document_extraction;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod javascript_execution;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod pdf;
+#[cfg(not(target_arch = "wasm32"))]
+mod shared_operands;
+pub(crate) mod spreadsheet;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) mod spreadsheet_native;

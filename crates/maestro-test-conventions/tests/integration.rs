@@ -8,6 +8,7 @@ mod bucket_modules;
 mod child_tests;
 mod comments;
 mod config_scripts;
+mod contract_order;
 mod dependency_locks;
 mod development_guidance;
 mod documented_commands;

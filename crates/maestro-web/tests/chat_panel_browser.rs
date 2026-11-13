@@ -2,8 +2,8 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::contributions_support::{computed, container, host, sandbox_url, select, text, view};
 use maestro_agent::{AgentInitialState, AgentMessage, AgentOptions};
-use maestro_app::browser::tools::javascript_repl::RuntimeProvidersFactory;
 use maestro_models::{JsonObject, get_model};
+use maestro_web::tools::browser::javascript_repl::RuntimeProvidersFactory;
 use maestro_web::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW, ArtifactsPanel, BrowserSandboxHost, BrowserSession,
     ChatPanel, ChatPanelConfig, browser::values::BrowserSandboxValue, create_javascript_repl_tool,
@@ -19,7 +19,7 @@ use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 use web_sys::{Element, HtmlElement};
 
 /// The browser message family the sessions hold.
-type Browser = maestro_app::browser::components::records::CustomAgentMessages;
+type Browser = maestro_web::components::browser::records::CustomAgentMessages;
 
 /// A session on the controlled model holding `messages`.
 fn session(messages: Vec<Value>) -> Rc<BrowserSession> {

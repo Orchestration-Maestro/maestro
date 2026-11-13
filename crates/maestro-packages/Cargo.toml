@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-maestro-package = { path = "../maestro-package" }
+maestro-interchange = { path = "../maestro-interchange" }
 serde = { workspace = true, optional = true }
 maestro-json = { path = "../maestro-json" }
 maestro-text = { path = "../maestro-text" }
@@ -22,7 +22,6 @@ serde_json = { workspace = true, features = ["raw_value"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-realpath = { path = "../maestro-realpath" }
 maestro-dependencies.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "process", "time"] }
 maestro-process = { path = "../maestro-process" }

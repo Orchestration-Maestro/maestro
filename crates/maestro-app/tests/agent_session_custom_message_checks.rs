@@ -1,13 +1,14 @@
 //! A custom message that does not trigger a turn, sent while a run is active, is recorded
 //! once the current turn ends, in the same order in the history and in the message events.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    HarnessOptions, Scripted, custom_note, harness, hold_first_answer, on_task_set, start_prompt,
-    waiting_tool,
-};
+use crate::support::session_harness::{custom_note, start_prompt, waiting_tool};
 use indexmap::IndexMap;
 use maestro_app::AgentSessionEvent;
+use maestro_app::test_support::{
+    HarnessOptions, Scripted, harness, hold_first_answer, on_task_set,
+};
 use maestro_session::message_records::SendMessageOptions;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;
@@ -53,7 +54,9 @@ fn heard_roles(session: &maestro_app::AgentSession) -> Rc<RefCell<Vec<String>>> 
 #[test]
 fn message_sent_during_a_response_is_recorded_without_another_turn() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let heard = heard_roles(&h.session);
         let (requested, release) = hold_first_answer(&h, "answer", &["an extra turn"]);
         let running = start_prompt(&h, "question");
@@ -66,7 +69,8 @@ fn message_sent_during_a_response_is_recorded_without_another_turn() {
         running.await.unwrap().unwrap();
         assert_eq!(history_roles(&h.session), ["user", "assistant", "custom"]);
         assert_eq!(*heard.borrow(), ["user", "assistant", "custom"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -77,18 +81,22 @@ fn message_sent_during_a_tool_follows_the_turns_tool_results() {
             "wait".to_owned(),
             waiting_tool(Rc::clone(&started), Rc::clone(&release)),
         )]);
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(tools),
-            responses: Some(vec![
-                Scripted {
-                    tool_calls: vec![("wait".into(), json!({}))],
-                    ..Scripted::default()
-                },
-                Scripted::text("final"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(tools),
+                responses: Some(vec![
+                    Scripted {
+                        tool_calls: vec![("wait".into(), json!({}))],
+                        ..Scripted::default()
+                    },
+                    Scripted::text("final"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let heard = heard_roles(&h.session);
         let running = start_prompt(&h, "question");
         started.notified().await;
@@ -106,5 +114,6 @@ fn message_sent_during_a_tool_follows_the_turns_tool_results() {
             2,
             "no turn beyond the tool's follow-up"
         );
-    });
+    })
+    .unwrap();
 }

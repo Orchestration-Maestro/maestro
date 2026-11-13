@@ -60,7 +60,7 @@ pub(super) async fn try_prepared(
     fetch: crate::Fetch,
     signal: Option<crate::Cancellation>,
     timeout_ms: Option<f64>,
-) -> Result<request::Prepared, crate::providers::transport::RequestFailure> {
+) -> Result<request::Prepared, maestro_http::RequestFailure> {
     let model = super::request_corpus::model(&serde_json::json!({}));
     let context = serde_json::from_value(serde_json::json!({"messages":[]})).unwrap();
     let options: crate::MistralOptions = crate::MistralOptions {

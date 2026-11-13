@@ -10,7 +10,7 @@ use super::{
     union::extends_union, unknown::extends_unknown,
 };
 use crate::authored::schema_view::Node;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Perform the structural check for the left node's kind.
 ///
