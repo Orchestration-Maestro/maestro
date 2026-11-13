@@ -42,7 +42,6 @@ mod compaction_extensions_checks;
 mod configuration_paths;
 mod context_discovery;
 mod context_usage_estimates;
-mod daemon_connection;
 #[cfg(unix)]
 #[path = "support/default_configuration.rs"]
 mod default_configuration;
@@ -50,7 +49,6 @@ mod default_path_routes;
 mod diff_root_exports;
 mod extension_context_exports;
 mod extension_native_io;
-mod extension_ui;
 mod extension_ui_exports;
 mod footer_cwd_identity;
 mod footer_metadata;
@@ -82,12 +80,6 @@ mod resource_extension_loading;
 #[path = "support/resource_fixtures.rs"]
 mod resource_fixtures;
 mod resource_loading;
-mod rpc_client_events;
-mod rpc_client_lifecycle;
-mod rpc_client_transport;
-#[cfg(unix)]
-#[path = "support/rpc_peer.rs"]
-mod rpc_peer;
 mod runtime_agent;
 mod sdk_images;
 mod sdk_registration;
@@ -96,9 +88,6 @@ mod sdk_session_options;
 mod sdk_skill_loading;
 mod self_update_native;
 mod self_update_selection;
-mod server_commands;
-mod server_events;
-mod server_lifetime;
 #[cfg(unix)]
 #[path = "support/service_observations.rs"]
 mod service_observations;
@@ -140,7 +129,6 @@ mod support {
     pub use runtime::*;
     pub mod compaction;
     #[cfg(not(target_arch = "wasm32"))]
-    pub mod export_fixtures;
     pub mod no_commands;
     #[cfg(not(target_arch = "wasm32"))]
     mod plain_runtimes;
@@ -148,10 +136,6 @@ mod support {
     pub use plain_runtimes::paused_io_runtime;
     #[cfg(not(target_arch = "wasm32"))]
     pub use plain_runtimes::{run, run_io};
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod rpc_connection;
-    #[cfg(not(target_arch = "wasm32"))]
-    pub mod runtime_fixtures;
     #[cfg(not(target_arch = "wasm32"))]
     pub mod sdk_sample;
     pub mod session_harness;
@@ -168,7 +152,6 @@ mod tree_traversal_checks;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/watching.rs"]
 mod watching;
-mod wire_records;
 
 mod executable_schemas;
 

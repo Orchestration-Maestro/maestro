@@ -1,9 +1,9 @@
 //! Statistics, context usage, the last answer's text, fork points, names, listeners and
 //! the session's view of its supplied owners.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    Harness, HarnessOptions, TS, assistant, case, corpus, harness, model_view, on_task_set,
-    session_event_view, usage, user,
+use crate::support::session_harness::{Harness, HarnessExt as _, case, corpus, model_view, user};
+use maestro_app::test_support::{
+    HarnessOptions, TS, assistant, harness, on_task_set, session_event_view, usage,
 };
 use maestro_app::{AgentSessionEventListener, SessionStats};
 use maestro_extensions::NativeAgentMessage;
@@ -12,6 +12,7 @@ use maestro_session::{
     SessionManager,
     session_manager::{CompactionOptions, ReadonlySessionManager},
 };
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -63,11 +64,11 @@ type Compaction = fn(&mut SessionManager, &[String]);
 fn stats_case(name: &str, messages: &[Value], window: Option<f64>, compaction: Option<Compaction>) {
     let expected = case("statistics", name);
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
+        let h = harness(Scratch::new().unwrap(), HarnessOptions {
             context_window: window,
             ..HarnessOptions::default()
         })
-        .await;
+        .await.unwrap();
         {
             let mut manager = h.session.session_manager().borrow_mut();
             let ids: Vec<String> = messages
@@ -113,7 +114,7 @@ fn stats_case(name: &str, messages: &[Value], window: Option<f64>, compaction: O
             "lastAssistantText": h.session.get_last_assistant_text(),
         });
         assert_eq!(js_numbers(&observed), expected);
-    });
+    }).unwrap();
 }
 
 /// Branches back to the answer at `index` and records a compaction kept from it.
@@ -302,7 +303,9 @@ fn fork_history(manager: &mut SessionManager) {
 fn fork_points_list_user_messages_with_text() {
     let expected = corpus("history");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         fork_history(&mut h.session.session_manager().borrow_mut());
         let forks = h.session.get_user_messages_for_forking();
         let texts: Vec<&str> = forks.iter().map(|fork| fork.text.as_str()).collect();
@@ -311,14 +314,17 @@ fn fork_points_list_user_messages_with_text() {
         let entries = manager.get_entries();
         assert_eq!(forks[0].entry_id, entries[0]["id"].as_str().unwrap());
         assert_eq!(forks[1].entry_id, entries[2]["id"].as_str().unwrap());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn session_names_are_trimmed_and_announced() {
     let expected = corpus("history");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let mut names = Vec::new();
         for name in ["  Release notes  ", "", "Second"] {
             h.session.set_session_name(name).unwrap();
@@ -333,14 +339,17 @@ fn session_names_are_trimmed_and_announced() {
         }
         assert_eq!(json!(names), expected["names"]);
         assert_eq!(json!(*h.events.borrow()), expected["sessionEvents"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn listeners_receive_events_until_removed() {
     let expected = corpus("listeners");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let seen = Rc::new(RefCell::new(Vec::new()));
         let listener = |label: &'static str| -> AgentSessionEventListener {
             let seen = Rc::clone(&seen);
@@ -358,7 +367,8 @@ fn listeners_receive_events_until_removed() {
         first();
         h.session.set_session_name("two").unwrap();
         assert_eq!(json!(*seen.borrow()), expected["seen"]);
-    });
+    })
+    .unwrap();
 }
 
 /// The owner-backed observations of a session.
@@ -384,7 +394,7 @@ fn session_getters_read_the_supplied_owners() {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
-        let memory = harness(HarnessOptions::default()).await;
+        let memory = harness(Scratch::new().unwrap(), HarnessOptions::default()).await.unwrap();
         let view = json!({"model": "faux/plain", "thinkingLevel": "off", "streaming": false,
             "systemPrompt": true, "liveHistory": true, "sessionId": true, "templates": 0, "scoped": 0});
         assert_eq!(owner_view(&memory), view);
@@ -395,20 +405,20 @@ fn session_getters_read_the_supplied_owners() {
         ));
         memory
             .session
-            .set_scoped_models(vec![Harness::scoped(memory.model("think"), Some("high"))]);
+            .set_scoped_models(vec![Harness::scoped(memory.model("think").unwrap(), Some("high"))]);
         let scoped = memory.session.scoped_models();
         assert_eq!(model_view(&scoped[0].model), "faux/think");
         let sessions = format!("{root}/sessions");
         let file =
             SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap();
         let path = file.get_session_file().map(str::to_owned);
-        let file = harness(HarnessOptions {
+        let file = harness(Scratch::new().unwrap(), HarnessOptions {
             session_manager: Some(file),
             ..HarnessOptions::default()
         })
-        .await;
+        .await.unwrap();
         assert_eq!(owner_view(&file), view);
         assert_eq!(file.session.session_file(), path);
         assert!(path.is_some());
-    });
+    }).unwrap();
 }

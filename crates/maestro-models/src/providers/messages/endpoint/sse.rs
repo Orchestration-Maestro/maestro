@@ -1,10 +1,10 @@
-//! Server-sent event framing of a message stream, the repair of event data and the point at
-//! which the stream is complete.
+//! Reduction of the server-sent events of a message stream: the repair of event data and the
+//! point at which the stream is complete.
 //!
-//! Events come from the shared server-sent event reader, whose line endings a carriage return
-//! ends at once, swallowing one line feed that follows it, even in the next chunk. This module
-//! selects the framing of a message stream (one byte-order mark at the start, the lines of
-//! each event kept for error text) and treats a stream as complete only at its stop event.
+//! The shared server-sent event reader frames the body. This module selects its options for a
+//! message stream (one byte-order mark dropped at the start, the lines of each event kept for
+//! error text, the last event dispatched when the body ends), reduces the message events the
+//! reader delivers and treats a stream as complete only at its stop event.
 
 use futures_util::StreamExt;
 use serde_json::value::RawValue;

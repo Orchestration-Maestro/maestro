@@ -91,7 +91,8 @@ where
     F: FnOnce(Sample) -> Fut,
     Fut: Future<Output = Result<Value, Error>>,
 {
-    super::session_harness::on_task_set(|local| async move { body(Sample::new(local)?).await })
+    maestro_app::test_support::on_task_set(|local| async move { body(Sample::new(local)?).await })
+        .unwrap()
 }
 
 /// A source marking an item as supplied by the SDK caller.

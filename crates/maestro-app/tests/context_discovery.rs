@@ -3,9 +3,10 @@
 #![cfg(unix)]
 use crate::resource_fixtures::{
     Entry, Root, child_stderr, child_stderr_with, child_with_closed_stderr, directory_read_error,
-    loader_case, on_task_set, run_loader_case, warnings,
+    loader_case, run_loader_case, warnings,
 };
 use maestro_app::load_project_context_files;
+use maestro_app::test_support::on_task_set;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -155,7 +156,8 @@ const UNREADABLE_SYSTEM_FILE: &str = "unreadable_system_file_keeps_its_path";
 fn load_unreadable_system_file(base: &str) {
     let case = loader_case(UNREADABLE_SYSTEM_FILE);
     let root = Root::new(base, UNREADABLE_SYSTEM_FILE);
-    let observed = on_task_set(|local| async move { run_loader_case(&root, &case, local).await });
+    let observed =
+        on_task_set(|local| async move { run_loader_case(&root, &case, local).await }).unwrap();
     assert_eq!(observed, loader_case(UNREADABLE_SYSTEM_FILE).expected);
 }
 

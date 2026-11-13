@@ -16,9 +16,6 @@ mod packages;
 mod presentation_data;
 /// Resource loader, its options, diagnostics and collisions.
 mod resources;
-/// The JSONL protocol records and server.
-#[cfg(not(target_arch = "wasm32"))]
-mod rpc;
 /// Session manager, session entry records and skill block parsing.
 mod session;
 /// The settings manager and its compaction, image and retry records.
@@ -39,8 +36,6 @@ pub use models::*;
 pub use packages::*;
 pub use presentation_data::*;
 pub use resources::*;
-#[cfg(not(target_arch = "wasm32"))]
-pub use rpc::*;
 pub use session::*;
 pub use settings::*;
 #[cfg(not(target_arch = "wasm32"))]

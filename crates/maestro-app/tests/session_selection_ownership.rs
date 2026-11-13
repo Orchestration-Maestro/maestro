@@ -2,16 +2,16 @@
 //! the recorded ownership cases: what each handler saw and when the caller saw it finish.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::session_model_selection::selection_entries;
-use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, corpus, harness, on_task_set,
-};
+use crate::support::session_harness::{Harness, HarnessExt as _, corpus};
 use futures_util::FutureExt;
 use maestro_app::agent_session::CycleDirection;
+use maestro_app::test_support::{Auth, HarnessOptions, harness, on_task_set};
 use maestro_app::{AgentSession, ModelCycleResult};
 use maestro_extensions::{
     EventError, ExtensionFactory, ModelSelectEvent, ThinkingLevelSelectEvent,
 };
 use maestro_models::{Local, ModelThinkingLevel};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -97,7 +97,7 @@ fn event_view(event: &ModelSelectEvent) -> Value {
 async fn capturing_harness(mut options: HarnessOptions, tasks: &Tasks) -> Harness {
     let queue = Rc::clone(tasks);
     options.spawn = Some(Rc::new(move |task| queue.borrow_mut().push(task)));
-    harness(options).await
+    harness(Scratch::new().unwrap(), options).await.unwrap()
 }
 
 /// A harness whose two model handlers park at each entry, with the controls that drive them.
@@ -226,7 +226,7 @@ fn selection<'a>(h: &'a Harness, route: &str) -> Pin<Box<dyn Future<Output = Out
     if route == "set" {
         return Box::pin(async move {
             h.session
-                .set_model(h.model("next"))
+                .set_model(h.model("next").unwrap())
                 .await
                 .map(|()| Value::Null)
                 .map_err(|error| error.message)
@@ -245,8 +245,8 @@ fn selection<'a>(h: &'a Harness, route: &str) -> Pin<Box<dyn Future<Output = Out
 fn scope(route: &str, h: &Harness) {
     if route == "scoped" {
         h.session.set_scoped_models(vec![
-            Harness::scoped(h.model("first"), None),
-            Harness::scoped(h.model("next"), None),
+            Harness::scoped(h.model("first").unwrap(), None),
+            Harness::scoped(h.model("next").unwrap(), None),
         ]);
     }
 }
@@ -332,7 +332,8 @@ fn observed_case(route: &str, observe: bool) {
             Value::Null
         };
         assert_eq!(result, after["result"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -479,7 +480,7 @@ impl Flat {
             h.session.set_scoped_models(
                 case.scoped
                     .iter()
-                    .map(|&id| Harness::scoped(h.model(id), None))
+                    .map(|&id| Harness::scoped(h.model(id).unwrap(), None))
                     .collect(),
             );
         }
@@ -509,7 +510,7 @@ async fn drive(h: &Harness, operation: Operation) -> Outcome {
     match operation {
         Operation::Select(id) => h
             .session
-            .set_model(h.model(id))
+            .set_model(h.model(id).unwrap())
             .await
             .map(|()| Value::Null)
             .map_err(|error| error.message),
@@ -542,7 +543,8 @@ fn recorded_case(route: &str, case: &Case, handler: Handler) {
         let session = Rc::downgrade(&h.session);
         drop((h, flat));
         assert!(session.upgrade().is_none(), "the case releases its session");
-    });
+    })
+    .unwrap();
 }
 
 /// The recorded cases that change the thinking level while the notification runs.

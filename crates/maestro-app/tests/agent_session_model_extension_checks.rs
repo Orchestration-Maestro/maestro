@@ -2,11 +2,11 @@
 //! the recorded cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, answer, echo_tools, harness, message_text, on_task_set,
-    prompt_to_end, recorded,
+    Harness, HarnessExt as _, echo_tools, prompt_to_end, recorded,
 };
 use maestro_app::ModelCycleResult;
 use maestro_app::agent_session::{ExtensionBindings, PromptOptions};
+use maestro_app::test_support::{Auth, HarnessOptions, answer, harness, message_text, on_task_set};
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ContextEvent, ContextEventResult,
     ExtensionFactory, InputEvent, InputEventResult, InputTransform, ModelSelectEvent,
@@ -20,6 +20,7 @@ use maestro_models::{
 };
 use maestro_session::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -113,13 +114,17 @@ fn model_selection_records_identity_and_event() {
     );
     on_task_set(|_| async {
         let log = Log::default();
-        let h = harness(HarnessOptions {
-            models: reasoning_models(),
-            factories: vec![model_recorder(&log)],
-            ..HarnessOptions::default()
-        })
-        .await;
-        let next = h.model("faux-2");
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: reasoning_models(),
+                factories: vec![model_recorder(&log)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
+        let next = h.model("faux-2").unwrap();
         h.session.set_model(next).await.unwrap();
         let observed = json!({
             "model": model_id(&h.session.model()),
@@ -127,7 +132,8 @@ fn model_selection_records_identity_and_event() {
             "changes": model_changes(&h),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -137,14 +143,18 @@ fn scoped_cycle_restores_each_model_thinking_preference() {
         "scoped_cycle_restores_each_model_thinking_preference",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: scoped_models(),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: scoped_models(),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.session.set_scoped_models(vec![
-            Harness::scoped(h.model("faux-1"), Some("high")),
-            Harness::scoped(h.model("faux-2"), None),
+            Harness::scoped(h.model("faux-1").unwrap(), Some("high")),
+            Harness::scoped(h.model("faux-2").unwrap(), None),
         ]);
         h.session
             .set_thinking_level(ModelThinkingLevel::High)
@@ -163,7 +173,8 @@ fn scoped_cycle_restores_each_model_thinking_preference() {
             }));
         }
         assert_eq!(json!(steps), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -173,11 +184,15 @@ fn non_reasoning_models_clamp_and_do_not_cycle_thinking() {
         "non_reasoning_models_clamp_and_do_not_cycle_thinking",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", false)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("faux-1", false)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.session
             .set_thinking_level(ModelThinkingLevel::High)
             .unwrap();
@@ -187,7 +202,8 @@ fn non_reasoning_models_clamp_and_do_not_cycle_thinking() {
             "cycle_absent": cycled.is_none(),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -197,19 +213,28 @@ fn unauthenticated_model_change_is_rejected() {
         "unauthenticated_model_change_is_rejected",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: reasoning_models(),
-            auth: Auth::None,
-            ..HarnessOptions::default()
-        })
-        .await;
-        let error = h.session.set_model(h.model("faux-2")).await.unwrap_err();
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: reasoning_models(),
+                auth: Auth::None,
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
+        let error = h
+            .session
+            .set_model(h.model("faux-2").unwrap())
+            .await
+            .unwrap_err();
         let observed = json!({
             "error": error.message,
             "model": model_id(&h.session.model()),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// The recorded details of a tool result: kept when it holds anything, since an empty or
@@ -342,12 +367,16 @@ fn tool_call_veto_reaches_the_provider_as_an_error() {
                 Box::pin(std::future::ready(registered.map(drop)))
             })
         };
-        let h = harness(HarnessOptions {
-            factories: vec![veto],
-            base_tools_override: Some(echo_tools(Rc::clone(&executed))),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![veto],
+                base_tools_override: Some(echo_tools(Rc::clone(&executed))),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let reply = Arc::new(AnswerToolResult(Mutex::new(None)));
         h.faux.set_responses(vec![
             FauxResponseStep::Message(Box::new(echo_call())),
@@ -363,7 +392,8 @@ fn tool_call_veto_reaches_the_provider_as_an_error() {
         });
         assert_eq!(observed, expected);
         assert_eq!(ran, 0, "the vetoed tool never ran");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -388,12 +418,16 @@ fn tool_result_patch_reaches_history_and_next_request() {
             );
             Box::pin(std::future::ready(registered.map(drop)))
         });
-        let h = harness(HarnessOptions {
-            factories: vec![patch],
-            base_tools_override: Some(echo_tools(Rc::clone(&executed))),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![patch],
+                base_tools_override: Some(echo_tools(Rc::clone(&executed))),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let reply = Arc::new(AnswerToolResult(Mutex::new(None)));
         h.faux.set_responses(vec![
             FauxResponseStep::Message(Box::new(echo_call())),
@@ -407,7 +441,8 @@ fn tool_result_patch_reaches_history_and_next_request() {
             "answer": last_answer(&h),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// An answer reporting the request's first user text.
@@ -506,11 +541,15 @@ fn context_rewrite_does_not_overwrite_saved_user_input() {
             );
             Box::pin(std::future::ready(registered.map(drop)))
         });
-        let h = harness(HarnessOptions {
-            factories: vec![rewrite],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![rewrite],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let answer = Arc::new(AnswerUserText(Mutex::new(None)));
         h.faux.set_responses(vec![
             FauxResponseStep::Factory(answer.clone()),
@@ -525,20 +564,24 @@ fn context_rewrite_does_not_overwrite_saved_user_input() {
             "stored": stored_users(&h).first().cloned(),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn context_transform_without_handlers_returns_the_shared_messages() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let runner_ref: maestro_app::agent_session::ExtensionRunnerRef<Local> =
             Rc::new(RefCell::new(Some(h.runner())));
         let transform = maestro_app::sdk::transform_context(&runner_ref);
         let messages = h.session.messages();
         let transformed = transform(Arc::clone(&messages), None).await.unwrap();
         assert!(Arc::ptr_eq(&messages, &transformed));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -557,11 +600,15 @@ fn input_transform_and_handled_paths_are_distinct() {
             );
             Box::pin(std::future::ready(registered.map(drop)))
         });
-        let h = harness(HarnessOptions {
-            factories: vec![transforming],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![transforming],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let answer = Arc::new(AnswerUserText(Mutex::new(None)));
         h.faux.set_responses(vec![
             FauxResponseStep::Factory(answer.clone()),
@@ -582,7 +629,8 @@ fn input_transform_and_handled_paths_are_distinct() {
             "calls": h.faux.state.call_count(),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -612,11 +660,11 @@ fn before_start_injection_reaches_prompt_and_history() {
             );
             Box::pin(std::future::ready(registered.map(drop)))
         });
-        let h = harness(HarnessOptions {
+        let options = HarnessOptions {
             factories: vec![injecting],
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let h = harness(Scratch::new().unwrap(), options).await.unwrap();
         let seen = Arc::new(AnswerSystemPrompt(Mutex::new(None)));
         h.faux.set_responses(vec![
             FauxResponseStep::Factory(seen.clone()),
@@ -642,7 +690,8 @@ fn before_start_injection_reaches_prompt_and_history() {
             },
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// An answer reporting whether the request carries the extra instructions and the injected
@@ -723,11 +772,15 @@ fn bound_reload_orders_shutdown_before_restart() {
     );
     on_task_set(|_| async {
         let seen = Log::default();
-        let h = harness(HarnessOptions {
-            factories: vec![lifecycle_recorder(&seen)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![lifecycle_recorder(&seen)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.session
             .bind_extensions(ExtensionBindings {
                 shutdown_handler: Some(Rc::new(|| Ok(()))),
@@ -737,5 +790,6 @@ fn bound_reload_orders_shutdown_before_restart() {
             .unwrap();
         h.session.reload().await.unwrap();
         assert_eq!(json!(*seen.borrow()), expected);
-    });
+    })
+    .unwrap();
 }

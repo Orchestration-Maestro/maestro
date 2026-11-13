@@ -3,18 +3,21 @@
 //! refusals, compared with the recorded operation cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, HarnessOptions, Scripted, answer, as_recorded, command_extension, delivery_requests,
-    delivery_view, expected, harness, observed_preflight, on_task_set, start_prompt, template,
+    as_recorded, delivery_requests, delivery_view, expected, observed_preflight, start_prompt,
     waiting_tool,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentToolRecord, AgentToolResult, SharedAgentTool};
 use maestro_app::PromptOptions;
+use maestro_app::test_support::{
+    Auth, HarnessOptions, Scripted, answer, command_extension, harness, on_task_set, template,
+};
 use maestro_models::{
     FauxResponseStep, ImageContent, Local, TextContent, Tool, UserBlock, UserContent,
 };
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
 use maestro_session::message_records::SendUserMessageOptions;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
@@ -67,7 +70,9 @@ fn echoing_tools(
 fn idle_prompt_records_one_answer() {
     on_task_set(|_| async {
         let expected = expected("idle_prompt_records_one_answer");
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         h.faux
             .set_responses(vec![FauxResponseStep::Message(Box::new(answer(
                 "hello", None, None,
@@ -80,7 +85,8 @@ fn idle_prompt_records_one_answer() {
         observed["preflight"] = json!(*accepted.borrow());
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -88,18 +94,22 @@ fn tool_turn_waits_for_the_final_answer() {
     on_task_set(|_| async {
         let expected = expected("tool_turn_waits_for_the_final_answer");
         let runs = Rc::new(RefCell::new(Vec::new()));
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(echoing_tools(&runs, &["echo"])),
-            responses: Some(vec![
-                Scripted {
-                    tool_calls: vec![("echo".into(), json!({"text": "hello"}))],
-                    ..Scripted::default()
-                },
-                Scripted::text("done"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(echoing_tools(&runs, &["echo"])),
+                responses: Some(vec![
+                    Scripted {
+                        tool_calls: vec![("echo".into(), json!({"text": "hello"}))],
+                        ..Scripted::default()
+                    },
+                    Scripted::text("done"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let result = h.session.prompt("start", PromptOptions::default()).await;
         assert!(result.is_ok());
         let mut observed = delivery_view(&h);
@@ -107,7 +117,8 @@ fn tool_turn_waits_for_the_final_answer() {
         observed["runs"] = json!(*runs.borrow());
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -115,21 +126,25 @@ fn tool_batch_reaches_one_continuation() {
     on_task_set(|_| async {
         let expected = expected("tool_batch_reaches_one_continuation");
         let runs = Rc::new(RefCell::new(Vec::new()));
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(echoing_tools(&runs, &["slow", "fast"])),
-            responses: Some(vec![
-                Scripted {
-                    tool_calls: vec![
-                        ("slow".into(), json!({"value": "a"})),
-                        ("fast".into(), json!({"value": "b"})),
-                    ],
-                    ..Scripted::default()
-                },
-                Scripted::text("tool results: 2"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(echoing_tools(&runs, &["slow", "fast"])),
+                responses: Some(vec![
+                    Scripted {
+                        tool_calls: vec![
+                            ("slow".into(), json!({"value": "a"})),
+                            ("fast".into(), json!({"value": "b"})),
+                        ],
+                        ..Scripted::default()
+                    },
+                    Scripted::text("tool results: 2"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let result = h
             .session
             .prompt("run tools", PromptOptions::default())
@@ -142,18 +157,23 @@ fn tool_batch_reaches_one_continuation() {
         observed["runs"] = json!(completed);
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn prompt_images_reach_the_provider() {
     on_task_set(|_| async {
         let expected = expected("prompt_images_reach_the_provider");
-        let h = harness(HarnessOptions {
-            responses: Some(vec![Scripted::text("ok")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                responses: Some(vec![Scripted::text("ok")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let options = PromptOptions {
             images: Some(vec![ImageContent {
                 data: "ZmFrZQ==".into(),
@@ -167,7 +187,8 @@ fn prompt_images_reach_the_provider() {
         observed["requests"] = delivery_requests(&h);
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -195,13 +216,16 @@ fn skill_input_reaches_the_provider_expanded() {
             base_dir: root.clone(),
             disable_model_invocation: false,
         };
-        let h = harness(HarnessOptions {
-            skills: vec![skill],
-            scratch: Some(scratch),
-            responses: Some(vec![Scripted::text("ok")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            scratch,
+            HarnessOptions {
+                skills: vec![skill],
+                responses: Some(vec![Scripted::text("ok")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let result = h
             .session
             .prompt("/skill:test explain this", PromptOptions::default())
@@ -214,19 +238,24 @@ fn skill_input_reaches_the_provider_expanded() {
             expected("skill_input_reaches_the_provider_expanded")
         );
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn template_input_reaches_the_provider_expanded() {
     on_task_set(|_| async {
         let expected = expected("template_input_reaches_the_provider_expanded");
-        let h = harness(HarnessOptions {
-            prompts: vec![template("review", "Review this code: $1")],
-            responses: Some(vec![Scripted::text("ok")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                prompts: vec![template("review", "Review this code: $1")],
+                responses: Some(vec![Scripted::text("ok")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let result = h
             .session
             .prompt("/review src/index.ts", PromptOptions::default())
@@ -236,7 +265,8 @@ fn template_input_reaches_the_provider_expanded() {
         observed["requests"] = delivery_requests(&h);
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -244,11 +274,15 @@ fn idle_command_keeps_a_scripted_answer() {
     on_task_set(|_| async {
         let expected = expected("idle_command_keeps_a_scripted_answer");
         let heard = Rc::new(RefCell::new(None));
-        let h = harness(HarnessOptions {
-            factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.faux
             .set_responses(vec![FauxResponseStep::Message(Box::new(answer(
                 "should stay queued",
@@ -265,18 +299,23 @@ fn idle_command_keeps_a_scripted_answer() {
         observed["calls"] = json!(h.faux.state.call_count());
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn idle_extension_message_starts_a_turn() {
     on_task_set(|_| async {
         let expected = expected("idle_extension_message_starts_a_turn");
-        let h = harness(HarnessOptions {
-            responses: Some(vec![Scripted::text("response")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                responses: Some(vec![Scripted::text("response")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let result = h
             .session
             .send_user_message(
@@ -289,7 +328,8 @@ fn idle_extension_message_starts_a_turn() {
         observed["requests"] = delivery_requests(&h);
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -298,21 +338,25 @@ fn busy_prompt_reports_the_queue_choice() {
         let expected = expected("busy_prompt_reports_the_queue_choice");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(IndexMap::from([(
-                "wait".to_owned(),
-                waiting_tool(Rc::clone(&started), Rc::clone(&release)),
-            )])),
-            responses: Some(vec![
-                Scripted {
-                    tool_calls: vec![("wait".into(), json!({}))],
-                    ..Scripted::default()
-                },
-                Scripted::text("done"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(IndexMap::from([(
+                    "wait".to_owned(),
+                    waiting_tool(Rc::clone(&started), Rc::clone(&release)),
+                )])),
+                responses: Some(vec![
+                    Scripted {
+                        tool_calls: vec![("wait".into(), json!({}))],
+                        ..Scripted::default()
+                    },
+                    Scripted::text("done"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let running = start_prompt(&h, "start");
         started.notified().await;
         let during = json!({
@@ -332,17 +376,22 @@ fn busy_prompt_reports_the_queue_choice() {
         observed["preflight"] = json!(*accepted.borrow());
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn unauthenticated_prompt_fails_before_dispatch() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            auth: Auth::None,
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                auth: Auth::None,
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let (accepted, options) = observed_preflight();
         let refused = h.session.prompt("hi", options).await;
         let mut observed = delivery_view(&h);
@@ -355,5 +404,6 @@ fn unauthenticated_prompt_fails_before_dispatch() {
             expected("unauthenticated_prompt_fails_before_dispatch")
         );
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }

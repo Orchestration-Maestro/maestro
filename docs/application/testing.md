@@ -1,17 +1,33 @@
 # Testing the application session
 
-The application's session tests share one local harness:
+The session tests share one harness in two parts. `maestro_app::test_support` holds
+what the application's tests and the protocol tests both use: the session over the
+scripted provider, the session runtimes over it, the export fixtures and the
+task-set runners. The module sits behind the application's `test-support`
+feature, which is off by default, and it builds for native targets only.
 [`tests/support/session_harness.rs`](../../crates/maestro-app/tests/support/session_harness.rs)
-in `maestro-app`. It is test support inside the crate's integration-test program,
-not a published testing library. Extend it only when a test needs something it
-lacks, and keep one owner for each helper.
+keeps the helpers only the application's tests use. Neither part is a published
+testing library. Extend them only when a test needs something they lack, and keep
+one owner for each helper.
+
+A crate that already depends on the application enables the module for its tests:
+
+```toml
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-app = { path = "../maestro-app", features = ["test-support"] }
+```
+
+A helper in the module returns the setup step that failed. The test decides how
+it ends, usually with `unwrap` at the call.
 
 ## The harness
 
-`harness(HarnessOptions)` builds a real `AgentSession` through
+`harness(scratch, HarnessOptions)` builds a real `AgentSession` through
 `AgentSession::new`. The session uses a registered scripted provider, in-memory
 credentials, a catalog that knows the scripted models, in-memory settings and
-history, and a disposable root that holds the working directory. Options supply
+history. `scratch` owns the disposable root that holds the working directory,
+usually `Scratch::new()` from `maestro-test-directory`; the harness keeps it
+until the test drops the harness. Options supply
 extension factories, tools in place of the built-in ones, skills, prompt
 templates, settings and scripted responses. Tests reach the provider through
 `h.faux`: they queue responses with `set_responses` and `append_responses`, read
@@ -72,8 +88,8 @@ provider sends:
   finished processing its queued events.
 
 `prompt_to_end` uses `session_run_ended` to wait for prompt completion, including
-session persistence. Both helpers live in the harness; concurrency and navigation
-checks use that same completion route. The harness also uses the SDK's
+session persistence. Both helpers live in `session_harness.rs`; concurrency and
+navigation checks use that same completion route. The harness also uses the SDK's
 `transform_context` adapter to deliver extension context hooks.
 
 Registered callbacks hold notifiers and recorders, not the session, and no

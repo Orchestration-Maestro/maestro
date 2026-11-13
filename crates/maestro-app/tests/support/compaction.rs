@@ -1,20 +1,27 @@
 //! Complete-session compaction setup and observations over the scripted provider.
 #![cfg(not(target_arch = "wasm32"))]
-use super::session_harness::{Harness, HarnessOptions, Scripted, harness, start_prompt};
+use super::session_harness::{Harness, start_prompt};
+use maestro_app::test_support::{HarnessOptions, Scripted, harness};
 use maestro_session::CompactionResult;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// Builds two completed turns, replacing supplied settings and the context window.
 ///
 /// Keeps one token's worth of recent history in a 200,000-token window with retries disabled.
-pub async fn seeded(mut options: HarnessOptions) -> Harness {
+pub async fn seeded(options: HarnessOptions) -> Harness {
+    seeded_in(Scratch::new().unwrap(), options).await
+}
+
+/// Builds the two completed turns of [`seeded`] in a session below `scratch`.
+pub async fn seeded_in(scratch: Scratch, mut options: HarnessOptions) -> Harness {
     options.context_window = Some(200_000.0);
     options.settings = json!({"compaction": {"keepRecentTokens": 1}, "retry": {"enabled": false}});
     options
         .responses
         .get_or_insert_with(|| vec![Scripted::text("one"), Scripted::text("two")]);
-    let h = harness(options).await;
+    let h = harness(scratch, options).await.unwrap();
     for text in ["first", "second"] {
         start_prompt(&h, text).await.unwrap().unwrap();
     }
