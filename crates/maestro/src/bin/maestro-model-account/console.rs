@@ -1,5 +1,5 @@
 //! Standard streams for the standalone account command's supplied console interface.
-use maestro_cli::model_login::cli::{AccountConsole, AccountInput};
+use maestro_cli::model_account::cli::{AccountConsole, AccountInput};
 use maestro_models::{BoxFuture, OAuthError};
 use std::{
     io::{self, Write},

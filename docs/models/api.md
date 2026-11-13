@@ -96,7 +96,7 @@ authentication, reasoning quality, cache-hit rates or billing.
 
 ### Not available yet
 
-- The standalone model-account executable and its terminal console: [tracked work](https://github.com/Orchestration-Maestro/maestro/issues/249). The account command library is delivered; see [standalone account commands](../model_login.md).
+- The standalone model-account executable and its terminal console: [tracked work](https://github.com/Orchestration-Maestro/maestro/issues/249). The account command library is delivered; see [standalone account commands](../model-account.md).
 
 In the table, cloud content generation and cloud conversations are distinct
 protocols.
