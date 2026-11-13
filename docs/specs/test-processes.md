@@ -95,6 +95,7 @@ Convert every remaining controlled Python or shell child, shared producer and in
 **Confidence: proven requirement. Evidence: C01, C05.**
 
 Keep `STARTUP_OBSERVATION` and the 100 ms startup boundary. The early-exit case retains code 7, `boot failed\n`, accumulated stderr, duplicate-start and signal assertions. Qualify it in 200 separate runs while controlled Rust CPU workers keep every assigned test core busy. Start/release and join those workers explicitly. Save each outcome; this qualification is not a permanent long-running test.
+The held clock of the early-exit test replaces wall-clock luck, so the 200 runs became a loaded 200-test-run stress qualification; the lane saved it as a log.
 
 ### S07: retained real boundaries
 

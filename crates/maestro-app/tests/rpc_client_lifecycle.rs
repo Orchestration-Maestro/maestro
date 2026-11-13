@@ -170,6 +170,7 @@ fn startup_reports_duplicate_and_early_exit() {
         client.stop().await.unwrap();
 
         // The window cannot end while the clock is held: only each child's exit ends its start.
+        // A regression hangs here until the 120 s nextest kill: the held clock never ends the window.
         let (release, hold) = hold_clock();
         let failing = RpcClient::new(peer.options(Scenario::BootFailure));
         for runs in 1..=2 {

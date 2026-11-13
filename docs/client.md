@@ -20,7 +20,7 @@ launches the child, `stop` ends it, and a stopped client can start again.
   next, unchanged, after `--mode rpc`. No shell is involved.
 
 `start` fails with `Client already started` while a child runs. A new child has
-100 ms to fail. If it exits within them, `start` reports the exit as soon as the
+100 ms to fail. If it exits within that time, `start` reports the exit as soon as the
 child's diagnostic stream ends, with its exit code (`null` when a signal ended it)
 and its diagnostic text. A descendant that keeps that stream open delays the report
 to the end of the 100 ms, and the report then carries the text read so far. When the

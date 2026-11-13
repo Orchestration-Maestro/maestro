@@ -102,8 +102,8 @@ impl RpcClient {
 
     /// Launches the child in RPC mode, starts reading its output and diagnostics, then
     /// reports a child that exits within its first 100 ms: once its diagnostics end, or
-    /// when the 100 ms end while a descendant still holds them open. When the 100 ms end,
-    /// it asks the system once more for the child's exit before it reports the child
+    /// when the 100 ms are up while a descendant still holds them open. When the 100 ms are
+    /// up, it asks the system once more for the child's exit before it reports the child
     /// started.
     ///
     /// # Errors
