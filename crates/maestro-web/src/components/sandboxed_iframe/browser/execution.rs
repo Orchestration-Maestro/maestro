@@ -5,8 +5,8 @@ use super::{
     SharedHandle, diagnostic,
 };
 use crate::browser::timer::{self, Timer};
-use maestro_app::SandboxResult;
-use maestro_app::browser::components::{
+use crate::components::browser::sandboxed_iframe::SandboxResult;
+use crate::components::browser::{
     sandbox::{
         console_runtime_provider::ConsoleRuntimeProvider, providers::RuntimeProviderValue as _,
     },

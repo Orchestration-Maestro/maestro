@@ -4,8 +4,8 @@
 pub mod canvas_paint;
 pub mod dialog_paint;
 use egui::{Context, Event, Pos2, RawInput, Rect, Shape, Vec2};
-use maestro_app::browser::utils::attachments::AttachmentType;
 use maestro_theme::{BrandMode, BrandPack};
+use maestro_web::utils::attachments::AttachmentType;
 use maestro_web::{Attachment, I18n, browser::attachment_content::*};
 use std::{
     cell::{Cell, RefCell},
@@ -310,8 +310,8 @@ impl Input {
         std::sync::Arc::new(std::sync::RwLock::new(maestro_web::Attachment {
             id: self.id.clone(),
             r#type: match self.r#type.as_str() {
-                "image" => maestro_app::browser::utils::attachments::AttachmentType::Image,
-                "document" => maestro_app::browser::utils::attachments::AttachmentType::Document,
+                "image" => maestro_web::utils::attachments::AttachmentType::Image,
+                "document" => maestro_web::utils::attachments::AttachmentType::Document,
                 _ => panic!("unknown fixture type"),
             },
             file_name: self.file_name.clone(),

@@ -381,11 +381,11 @@ pub fn native_defaults_register_once_and_keep_override_json_modes() {
 }
 /// Typed application arguments use the same built-in preparations as raw model objects.
 fn typed_default_captions(caption: &impl Fn(ToolRenderResult) -> String) {
-    use maestro_app::browser::tools::{
+    use maestro_web::render_tool;
+    use maestro_web::tools::browser::{
         extraction::{ExtractDocumentParams, ExtractDocumentResult},
         javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
     };
-    use maestro_web::render_tool;
     let repl: JavaScriptReplParams =
         serde_json::from_value(serde_json::json!({"title": "", "code": "1"})).unwrap();
     let typed = Some(ToolParams::typed(&repl, |_| Ok(None)));

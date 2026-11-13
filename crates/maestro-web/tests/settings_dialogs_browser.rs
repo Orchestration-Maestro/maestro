@@ -4,13 +4,13 @@ use crate::{
     contributions_support::{computed, container, host, rgb, text, view},
     dialog_support::{Prompts, panel, panels, press, settled, storage, type_text, until},
 };
-use maestro_app::{SessionData, SessionMetadata};
 use maestro_theme::BrandMode;
 use maestro_web::{
     ApiKeysTab, PersistentStorageDialog, ProvidersModelsTab, ProxyTab, SessionListDialog,
     SettingsDialog, SettingsTab,
     page::{DomContent, DomView},
 };
+use maestro_web::{SessionData, SessionMetadata};
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},
@@ -118,7 +118,7 @@ fn visible(slots: &[Element]) -> Vec<bool> {
 
 /// Wait for a stored value through storage reads alone.
 async fn stored<T: serde::de::DeserializeOwned + PartialEq>(
-    app: &maestro_app::AppStorage,
+    app: &maestro_web::AppStorage,
     key: &str,
     expected: &T,
 ) {
@@ -201,10 +201,8 @@ async fn loaded_values(view: &DomView) {
 
 /// A stored session with `id`, `title`, modification time and message count.
 fn session(id: &str, title: &str, modified: &str, count: f64) -> (SessionData, SessionMetadata) {
-    let fixture: Value = serde_json::from_str(include_str!(
-        "../../maestro-app/tests/fixtures/browser_sessions.json"
-    ))
-    .unwrap();
+    let fixture: Value =
+        serde_json::from_str(include_str!("fixtures/browser_sessions.json")).unwrap();
     let row = fixture["rows"]
         .as_array()
         .unwrap()
@@ -234,7 +232,7 @@ fn days_ago(days: f64) -> String {
     js_sys::Date::new(&time.into()).to_iso_string().into()
 }
 /// Store sessions modified 0, 1, 3 and 10 days ago.
-async fn four_sessions(app: &maestro_app::AppStorage) {
+async fn four_sessions(app: &maestro_web::AppStorage) {
     for (id, days) in [
         ("today", 0.0),
         ("yesterday", 1.0),

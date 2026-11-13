@@ -986,4 +986,4 @@ an independent snapshot. Poisoned read locks recover their retained values.
 `CustomAgentMessages::role` is a read-only accessor called under the message's
 read lock. It must not access that same lock or call back into the agent.
 Browser attachment records and conversion live in the
-[application](../application/browser-attachments.md).
+[web frontend](../application/browser-attachments.md).

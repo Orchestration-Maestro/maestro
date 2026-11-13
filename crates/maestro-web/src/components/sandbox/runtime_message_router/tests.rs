@@ -1,6 +1,6 @@
 //! Native observations of the shared routing core.
 use super::*;
-use maestro_app::browser::components::sandbox::providers::{
+use crate::components::browser::sandbox::providers::{
     Runtime, SandboxRespond, SandboxRuntimeProvider,
 };
 use maestro_models::SharedHandle;

@@ -1,4 +1,6 @@
 //! The chat screen: a session view beside the artifacts its tools create.
+use crate::components::browser::sandbox::providers::SandboxRuntimeProvider;
+use crate::components::browser::sandboxed_iframe::SandboxUrlProvider;
 use crate::{
     AgentInterface, AgentInterfaceProps, ApiKeyRequired, ArtifactsPanel, ArtifactsToolRenderer,
     BeforeSend, BrowserSession,
@@ -11,20 +13,17 @@ use crate::{
     page::{DomView, MountedContent, report},
     tools::types::{ToolRendererBinding, ToolUiError},
 };
-use maestro_agent::{CustomAgentMessages, NoCustomMessages, SharedAgentTool};
-use maestro_app::{
-    SandboxRuntimeProvider, SandboxUrlProvider,
-    browser::{
-        components::sandbox::{
-            artifacts_runtime_provider::{AgentLike, ArtifactsRuntimeProvider},
-            attachments_runtime_provider::AttachmentsRuntimeProvider,
-        },
-        tools::{
-            documents::{ArtifactsParams, LocalArtifactsPanel},
-            javascript_repl::RuntimeProvidersFactory,
-        },
+use crate::{
+    components::browser::sandbox::{
+        artifacts_runtime_provider::{AgentLike, ArtifactsRuntimeProvider},
+        attachments_runtime_provider::AttachmentsRuntimeProvider,
+    },
+    tools::browser::{
+        documents::{ArtifactsParams, LocalArtifactsPanel},
+        javascript_repl::RuntimeProvidersFactory,
     },
 };
+use maestro_agent::{CustomAgentMessages, NoCustomMessages, SharedAgentTool};
 use maestro_models::{JsonObject, Local};
 use serde_json::Value;
 use std::{

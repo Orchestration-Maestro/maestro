@@ -1,8 +1,9 @@
 # Browser attachments
 
-The application owns attachment loading and browser-message conversion under
-`maestro_app::browser`. The browser crate re-exports these entry points; DOM
-file reads and rendered message components are separate features.
+The web frontend owns attachment loading in `maestro_web::utils::attachments` and
+browser-message conversion in `maestro_web::components::browser::records`. The crate
+root exports these entry points; DOM file reads and rendered message components are
+separate features.
 
 ## Loading
 
@@ -54,7 +55,7 @@ displaying `Failed to process PDF: ` followed by the native diagnostic; this nat
 error has no `Error::source`. Exhaustive SDK matches must handle this variant.
 The public `attachments::portable::PdfDocument` owns supplied document bytes.
 `num_pages` enumerates pages; `render_page` accepts a one-based page number and
-returns application-owned `PdfPage` PNG bytes and raster dimensions at scale 1.5.
+returns owned `PdfPage` PNG bytes and raster dimensions at scale 1.5.
 Invalid pages, dimensions and PNG failures return `AttachmentError::Pdf`.
 Geometry is projected at full precision before integer truncation. The browser
 uses this same raster operation for both PDF attachment and artifact pages.

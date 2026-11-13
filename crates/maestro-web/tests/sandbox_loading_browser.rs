@@ -2,9 +2,9 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::sandbox_bootstrap_support::loader_document;
 use crate::sandbox_loading_support;
-use maestro_app::browser::components::sandbox::providers::SandboxRuntimeProvider;
 use maestro_models::SharedHandle;
 use maestro_web::browser::values::BrowserSandboxValue;
+use maestro_web::components::browser::sandbox::providers::SandboxRuntimeProvider;
 use sandbox_loading_support::*;
 
 /// Native values retain their stringify semantics at the public preparation boundary.
@@ -58,7 +58,7 @@ pub async fn standalone_runtime_keeps_helpers_without_parent_messaging() {
 /// Every built-in helper set installs, and none leaves a compiler-reserved global behind.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn builtin_helpers_leave_the_capture_namespace_unused() {
-    use maestro_app::BuiltinRuntime::{Artifacts, Attachments, Console, FileDownload};
+    use maestro_web::BuiltinRuntime::{Artifacts, Attachments, Console, FileDownload};
     let sandbox = adapter();
     let providers: Vec<_> = [Console, Attachments, FileDownload, Artifacts]
         .map(|kind| {
@@ -487,7 +487,7 @@ pub async fn failed_load_releases_native_registration_and_frame() {
                 maestro_models::SharedHandle::new(|| {
                     Err(maestro_models::DiagnosticErrorInfo::error("URL failure"))
                 })
-                    as maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider
+                    as maestro_web::components::browser::sandboxed_iframe::SandboxUrlProvider
             }));
         let error = sandbox
             .load_content("failed", "<body>attempt</body>", providers, vec![])
@@ -612,7 +612,7 @@ pub async fn bootstrap_outcomes_release_host_registrations() {
         (refusing, [Some("undefined"), Some("CompileError")]),
     ] {
         fixture.arm("loaded");
-        let helper = SharedHandle::new(Builtin(maestro_app::BuiltinRuntime::Attachments))
+        let helper = SharedHandle::new(Builtin(maestro_web::BuiltinRuntime::Attachments))
             as SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>;
         sandbox
             .load_content(
@@ -657,7 +657,7 @@ pub async fn bootstrap_url_handshake_settles_once() {
                 &format!("handshake-{load}"),
                 &loader_document("", REPLAY),
                 vec![
-                    SharedHandle::new(Builtin(maestro_app::BuiltinRuntime::Attachments))
+                    SharedHandle::new(Builtin(maestro_web::BuiltinRuntime::Attachments))
                         as SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>,
                 ],
                 vec![SharedHandle::new(Consumer(fixture.clone()))],

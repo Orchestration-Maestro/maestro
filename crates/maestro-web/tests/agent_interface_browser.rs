@@ -5,9 +5,9 @@ use crate::{
     dialog_support::{Fetch, completed_reply, press, settled, storage},
 };
 use maestro_agent::{AgentInitialState, AgentMessage, AgentOptions};
-use maestro_app::CustomProvider;
 use maestro_models::{DiagnosticErrorInfo, Model, get_model};
 use maestro_session::Presence;
+use maestro_web::CustomProvider;
 use maestro_web::{
     AgentInterface, AgentInterfaceProps, Attachment, BrowserSession, SharedAttachment,
 };
@@ -18,7 +18,7 @@ use std::{
 };
 use wasm_bindgen::{JsCast as _, prelude::wasm_bindgen};
 /// The browser message family the sessions hold.
-type Browser = maestro_app::browser::components::records::CustomAgentMessages;
+type Browser = maestro_web::components::browser::records::CustomAgentMessages;
 use web_sys::{Element, HtmlElement};
 
 /// A session on `model` with `messages` and no request defaults.
@@ -352,7 +352,7 @@ pub async fn agent_interface_session_replacement_and_request_configuration(
 }
 /// The first session's run no longer reaches the view; the proxy setting is read per request.
 async fn proxied(interface: &AgentInterface, first: &Rc<BrowserSession>) {
-    let app = maestro_app::get_app_storage().unwrap();
+    let app = maestro_web::get_app_storage().unwrap();
     app.settings.set("proxy.enabled", &true).await.unwrap();
     app.settings
         .set("proxy.url", &"https://proxy.test")

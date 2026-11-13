@@ -1,7 +1,7 @@
 # Browser utility library
 
 `maestro-web` provides caller-owned localization, numeric display text and SVG
-icons, plus re-exports of application-owned attachment records and conversion. It is a library, not an application entry point.
+icons, plus its own attachment records and conversion. It is a library, not an application entry point.
 
 ## Localization
 
@@ -64,8 +64,8 @@ text selection, original-byte downloads and the replaceable content host.
 The root exports `Attachment`, `load_attachment`, `UserMessageWithAttachments`,
 `ArtifactMessage`, `convert_attachments`, `default_convert_to_llm`,
 `is_user_message_with_attachments` and `is_artifact_message`. Input enums and
-supporting records remain in the public application modules. See
-[application attachment policy](../application/browser-attachments.md).
+supporting records remain in the public `utils::attachments` and `components::browser`
+modules. See [attachment policy](../application/browser-attachments.md).
 
 ### Sample-session replay data
 

@@ -1,8 +1,8 @@
 //! Assembly of provider carriers, the inert configuration and the runtime bundle.
 use super::document::encode_program;
 use super::lowering;
+use crate::components::browser::sandbox::providers::{BuiltinRuntime, Runtime};
 use crate::components::sandbox::runtime_bundle::BUNDLE;
-use maestro_app::{BuiltinRuntime, Runtime};
 use maestro_json::compact_json;
 use maestro_models::DiagnosticErrorInfo;
 use std::fmt::Write as _;

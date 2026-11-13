@@ -1,6 +1,6 @@
 //! The message being streamed, published at most once per animation frame.
+use crate::components::browser::records::CustomAgentMessages as BrowserMessages;
 use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages};
-use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 use maestro_models::ToolResultMessage;
 use std::{
     collections::{HashMap, HashSet},

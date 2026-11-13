@@ -1,7 +1,7 @@
 //! Ordered execution collection before native lifecycle projection.
 use super::super::execution::ExecutionState;
-use maestro_app::SandboxFile;
-use maestro_app::browser::components::sandboxed_iframe::SandboxFileContent;
+use crate::components::browser::sandboxed_iframe::SandboxFile;
+use crate::components::browser::sandboxed_iframe::SandboxFileContent;
 
 #[test]
 fn execution_state_keeps_file_order_and_binary_bytes() {
@@ -63,7 +63,7 @@ fn execution_state_ignores_nonterminal_messages() {
 #[test]
 fn execution_state_settles_once_and_keeps_first_result() {
     use super::super::execution::ExecutionMessage;
-    use maestro_app::browser::components::sandboxed_iframe::SandboxError;
+    use crate::components::browser::sandboxed_iframe::SandboxError;
     for success_first in [false, true] {
         let mut state = ExecutionState::<serde_json::Value, SandboxFileContent>::default();
         let complete = ExecutionMessage::Complete(Some(9.into()));
