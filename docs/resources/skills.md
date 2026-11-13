@@ -140,7 +140,7 @@ and `real_path` resolves links. Browser builds have no file system: listing
 fails with `Unsupported` and every read fails.
 
 The process directories come from `maestro_path::fs`, re-exported here:
-`current_directory` reads the process working directory, and `drive_directories`
+`current_dir` reads the process working directory, and `drive_dirs`
 reports the current directory of each Windows drive from its `=X:` environment
 variable (none elsewhere). `paths::resolve` and its group forms are the same
 re-export.

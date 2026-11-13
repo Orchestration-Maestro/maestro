@@ -15,7 +15,7 @@ pub mod provenance;
 mod skills;
 pub use maestro_interchange::slash_commands::{SlashCommandInfo, SlashCommandSource};
 #[doc(inline)]
-pub use maestro_path::fs::{current_directory, drive_directories};
+pub use maestro_path::fs::{current_dir, drive_dirs};
 pub use metadata::{
     FrontmatterError, FrontmatterValue, ParsedFrontmatter, parse_frontmatter, parse_yaml,
     strip_frontmatter,

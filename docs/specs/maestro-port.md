@@ -783,8 +783,8 @@ without filesystem observations.
 
 The file-system module resolves a path against the process directories on every
 target: `resolve`, `resolve_groups` and `resolve_groups_with` read the working
-directory and the Windows drive directories (`current_directory`,
-`drive_directories`) only when the operands leave a part open, so an anchored
+directory and the Windows drive directories (`current_dir`,
+`drive_dirs`) only when the operands leave a part open, so an anchored
 path never fails on an unreadable working directory. `maestro-resources`
 re-exports the five names at its existing paths, and `maestro-session` resolves
 its session paths through the module directly.

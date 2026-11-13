@@ -66,7 +66,7 @@ pub async fn run(args: Vec<String>, local: Rc<LocalSet>) -> Result<i32, Box<dyn 
     };
     let load = |cwd: &str, agent: &str| Ok(settings(cwd, agent));
     let package = PackageCommandContext {
-        cwd: &maestro_resources::current_directory,
+        cwd: &maestro_resources::current_dir,
         agent_dir: &config::get_agent_dir,
         load_settings: &load,
         create_package_manager: &create,

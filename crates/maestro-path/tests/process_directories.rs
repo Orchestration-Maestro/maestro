@@ -1,7 +1,7 @@
 //! Resolution against the live process directories, which these tests read and never change.
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_path::fs::{current_directory, resolve, resolve_groups, resolve_groups_with};
+use maestro_path::fs::{current_dir, resolve, resolve_groups, resolve_groups_with};
 use std::io;
 
 /// The process working directory as the standard library reports it.
@@ -16,7 +16,7 @@ fn working_directory() -> String {
 fn an_open_path_resolves_below_the_process_working_directory() {
     let below = maestro_path::join(&[&working_directory(), "leaf"]);
 
-    assert_eq!(current_directory().unwrap(), working_directory());
+    assert_eq!(current_dir().unwrap(), working_directory());
     assert_eq!(resolve(&["leaf"]).unwrap(), below);
     assert_eq!(
         resolve_groups(&[&["leaf"], &["other", "../leaf"]]).unwrap(),

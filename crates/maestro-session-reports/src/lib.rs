@@ -41,8 +41,8 @@ pub(crate) fn session_base() -> io::Result<String> {
 pub(crate) fn resolve_path(path: &str) -> io::Result<String> {
     let resolved = maestro_path::resolve_with(
         &[&[path]],
-        maestro_resources::drive_directories,
-        maestro_resources::current_directory,
+        maestro_resources::drive_dirs,
+        maestro_resources::current_dir,
     )?;
     Ok(resolved.into_iter().next().unwrap_or_default())
 }

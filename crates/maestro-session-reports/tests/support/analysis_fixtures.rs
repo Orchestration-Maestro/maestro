@@ -89,8 +89,8 @@ pub fn sessions(base: &str, cwd: &str, files: &[(&str, &str)]) -> String {
 pub fn resolved(cwd: &str) -> String {
     maestro_path::resolve_with(
         &[&[cwd]],
-        maestro_resources::drive_directories,
-        maestro_resources::current_directory,
+        maestro_resources::drive_dirs,
+        maestro_resources::current_dir,
     )
     .expect("the process directory is readable")
     .remove(0)

@@ -16,7 +16,7 @@ use std::{
 /// The current directory of each Windows drive, keyed by uppercase letter: the `=X:`
 /// environment variables of the drives that have one. Other platforms have none.
 #[must_use]
-pub fn drive_directories() -> Vec<(char, String)> {
+pub fn drive_dirs() -> Vec<(char, String)> {
     if !cfg!(windows) {
         return Vec::new();
     }
@@ -27,7 +27,7 @@ pub fn drive_directories() -> Vec<(char, String)> {
 ///
 /// # Errors
 /// Returns the I/O cause when the directory cannot be read.
-pub fn current_directory() -> io::Result<String> {
+pub fn current_dir() -> io::Result<String> {
     Ok(std::env::current_dir()?.to_string_lossy().into_owned())
 }
 
@@ -35,12 +35,12 @@ pub fn current_directory() -> io::Result<String> {
 /// directory and the drive directories only when an operand leaves a part open.
 ///
 /// Every group sees one reading of those directories, and the working directory
-/// reaches its text through [`current_directory`].
+/// reaches its text through [`current_dir`].
 ///
 /// # Errors
 /// Returns the working directory's error when it was needed and unreadable.
 pub fn resolve_groups(groups: &[&[&str]]) -> io::Result<Vec<String>> {
-    resolve_groups_with(groups, current_directory)
+    resolve_groups_with(groups, current_dir)
 }
 
 /// Resolve each operand group, reading the working directory through
@@ -53,7 +53,7 @@ pub fn resolve_groups_with(
     groups: &[&[&str]],
     current_directory: impl FnOnce() -> io::Result<String>,
 ) -> io::Result<Vec<String>> {
-    crate::resolve_with(groups, drive_directories, current_directory)
+    crate::resolve_with(groups, drive_dirs, current_directory)
 }
 
 /// Resolve `paths` from right to left, reading the process working directory and the
