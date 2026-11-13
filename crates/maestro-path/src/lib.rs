@@ -5,7 +5,7 @@
 //! system or the process working directory. The string operations follow the
 //! JavaScript runtime's `path` module for both of its flavors, except where
 //! that module's result is a defect; the crate's tests mark each one.
-//! [`native_home_dir`] alone reads the environment and native account home;
+//! [`native_home_dir`] alone reads the home from the environment and the native account;
 //! [`home_directory`] is its text form and [`home_directory_text`] converts a supplied home.
 //! Convert an authored path to [`std::path::PathBuf`] only at a file-system call.
 //! [`normalize_native`] shares segment reduction with these string operations
