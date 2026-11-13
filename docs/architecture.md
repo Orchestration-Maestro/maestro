@@ -118,8 +118,9 @@ not satisfy a direct requirement. The permitted internal development edges are
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
-`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
-child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
+`maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-catalog` and
+`maestro-credentials` edges for protocol tests that render exports and drive a real session
+through the scripted provider, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
 tests that drive a real session through the scripted provider, the native-only
 `maestro-cli` to `maestro-listeners` development edge for the controlled print
 adapter, the native-only `maestro-extensions-wasm` to `maestro-listeners`
@@ -343,6 +344,16 @@ must establish caller-supplied generic tool context, no tools-to-extension or
 application coupling, no application policy in frontends, a wiring-only binary,
 and complete WIT code-generation evidence. Current absent owners are tested with
 scratch workspaces, not certified as delivered capabilities.
+
+The RPC mode lives in `maestro-rpc`: the session records in `rpc_types`, the one
+connection runner in `connection_runner`, the client of a child process
+(`RpcClient`) and the standard-stream adapter. The conventions check rejects an
+`Rpc*` declaration in any crate other than `maestro-rpc` and `maestro-protocol`,
+naming its file and line. One declaration is exempt: `RpcModeRunner` in the
+application's `presentation_data/mode_dispatch.rs`, the callback its mode dispatch
+runs. The protocol tests drive sessions through the application's scripted session
+harness, `maestro_app::test_support`. They enable it with the application's
+`test-support` feature on a native development dependency.
 
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in

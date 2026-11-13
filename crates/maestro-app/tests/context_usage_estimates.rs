@@ -1,19 +1,23 @@
 //! Context usage estimates over image attachments and all-zero assistant usage.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    HarnessOptions, assistant, harness, on_task_set, usage, user,
-};
+use crate::support::session_harness::user;
+use maestro_app::test_support::{HarnessOptions, assistant, harness, on_task_set, usage};
 use maestro_extensions::NativeAgentMessage;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// The estimated context tokens of a session whose agent holds `messages`.
 fn context_tokens(messages: &[Value]) -> Option<f64> {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            context_window: Some(100_000.0),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                context_window: Some(100_000.0),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let history: Vec<NativeAgentMessage> = serde_json::from_value(json!(messages)).unwrap();
         h.session
             .agent()
@@ -23,6 +27,7 @@ fn context_tokens(messages: &[Value]) -> Option<f64> {
             .set_messages(history);
         h.session.get_context_usage().unwrap().unwrap().tokens
     })
+    .unwrap()
 }
 
 #[test]

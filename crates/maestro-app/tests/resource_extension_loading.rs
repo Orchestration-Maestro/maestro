@@ -2,9 +2,10 @@
 //! factories, provenance and the event bus extensions share.
 #![cfg(unix)]
 use crate::resource_fixtures::{
-    ExtensionSpec, Root, check_loader_cases, factory, loader, loader_case, on_task_set,
-    resource_options, with_isolated_home,
+    ExtensionSpec, Root, check_loader_cases, factory, loader, loader_case, resource_options,
+    with_isolated_home,
 };
+use maestro_app::test_support::on_task_set;
 use maestro_app::{DefaultEventBus, ExtensionFactory, ResourceLoader};
 use maestro_extensions::{EventBus, EventListener, create_event_bus_for};
 use maestro_models::{Local, Threaded};
@@ -89,7 +90,8 @@ fn extension_provenance_reaches_commands_and_tools() {
             let loader = loader(&root, &case, options);
             loader.reload().await.unwrap();
             loader.get_extensions()
-        });
+        })
+        .unwrap();
         let extension = loaded.extensions[0].read().unwrap();
         let shared = &extension.source_info;
         let command = extension.commands["inline-command"].read().unwrap();
@@ -163,7 +165,8 @@ fn default_event_bus_runs_local_tails_on_the_task_set() {
                     "the prefix ran during emission"
                 );
                 receiver.await.unwrap();
-            });
+            })
+            .unwrap();
         },
     )
     .unwrap();
@@ -280,7 +283,8 @@ fn supplied_event_bus_receives_extension_events() {
             options.event_bus = Some(bus);
             options.extension_factories = vec![announcing()];
             loader(&root, &case, options).reload().await.unwrap();
-        });
+        })
+        .unwrap();
         assert_eq!(*received.borrow(), [json!({"from": "inline"})]);
     })
     .unwrap();

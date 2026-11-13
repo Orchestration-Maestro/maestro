@@ -5,7 +5,7 @@ answers and streams events as JSON lines on standard output. Use it to send
 prompts, select models, manage queues, compact context, run shell commands,
 replace sessions and respond to extension dialogs.
 
-The protocol has one connection runner, `maestro_app::run_rpc_connection`. It serves an
+The protocol has one connection runner, `maestro_rpc::run_rpc_connection`. It serves an
 optional workspace command handler and an optional local session over a caller's line
 reader and writer and returns how the connection ended; it never exits the process.
 `RpcModeOptions::workspace` supplies the workspace handler. With `None`, workspace

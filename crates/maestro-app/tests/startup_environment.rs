@@ -3,7 +3,6 @@
 #![cfg(unix)]
 use crate::resource_fixtures::{Root, module_loader, with_environment, with_isolated_home};
 use crate::service_observations as services;
-use crate::support::session_harness::on_task_set;
 use maestro_app::configuration::installation::{
     is_install_telemetry_enabled, report_install_telemetry,
 };
@@ -14,6 +13,7 @@ use maestro_app::configuration::releases::{
 use maestro_app::resources::loading::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
 };
+use maestro_app::test_support::on_task_set;
 use maestro_app::{
     AgentSession, AgentSessionServices, CreateAgentSessionFromServicesOptions,
     CreateAgentSessionServicesOptions, create_agent_session_from_services,
@@ -455,7 +455,8 @@ fn session_startup_selection_reaches_find_and_grep() {
                 );
                 assert_eq!(services.offline, Some(false));
                 assert_no_search_program(&services);
-            });
+            })
+            .unwrap();
         },
     )
     .unwrap();
@@ -469,7 +470,8 @@ fn session_startup_selection_reaches_find_and_grep() {
                 assert!(marker.exists(), "the package selection stays independent");
                 assert_eq!(services.offline, Some(true));
                 assert_search_offline(&services, &session_search(&services).await);
-            });
+            })
+            .unwrap();
         },
     )
     .unwrap();
@@ -513,7 +515,8 @@ fn startup_selection_survives_service_replacement() {
                     marker.exists(),
                     "a separate service keeps its own selection"
                 );
-            });
+            })
+            .unwrap();
         },
     )
     .unwrap();

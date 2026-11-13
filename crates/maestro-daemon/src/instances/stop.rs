@@ -4,7 +4,7 @@ use super::{DEFAULT_SESSION_NAME, Selection, SessionInfo};
 use crate::service::local_socket::{LocalStream, LocalStreamExt, connect_local_stream_until};
 use crate::service::transport::request_line;
 use maestro_protocol::{
-    rpc_types::{Request, RpcCommand, RpcResponse},
+    envelopes::{Request, RpcCommand, RpcResponse},
     schema::EmptyParams,
 };
 use std::io::{self, Read, Write};

@@ -19,7 +19,7 @@ pub use health::{RuntimeStatus, read_runtime_status_at};
 pub mod local_socket;
 
 use maestro_protocol::{
-    rpc_types::RpcCommand,
+    envelopes::RpcCommand,
     schema::{ErrorBody, ResponseResult},
 };
 
