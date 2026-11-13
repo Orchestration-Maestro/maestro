@@ -7,8 +7,8 @@ use super::{
 use crate::components::session_selector::list::tests::session_picker::decode_cases;
 use maestro_agent::ThinkingLevel;
 use maestro_app::utils::image_clipboard::ClipboardImage;
-use maestro_catalog::ScopedModel;
 use maestro_models::{DiagnosticErrorInfo, Model, OAuthError};
+use maestro_models_registry::ScopedModel;
 use maestro_tui::{Component, InputHandler};
 #[cfg(target_os = "linux")]
 use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};

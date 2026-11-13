@@ -1,22 +1,23 @@
 //! Active-branch forks and destination state restored through the runtime.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support::runtime_fixtures::{RuntimeOptions, runtime_for, runtime_with};
-use crate::support::session_harness::{
-    Harness, answer, corpus, delivery_message_view, on_task_set, script_responses,
-    with_placeholders,
-};
+use crate::support::session_harness::{Harness, corpus, delivery_message_view, with_placeholders};
 use maestro_app::PromptOptions;
+use maestro_app::test_support::{
+    RuntimeOptions, answer, on_task_set, runtime_for, runtime_with, script_responses,
+};
 use maestro_extensions::{
     ForkPosition,
     types::{ForkOptions, SwitchSessionOptions},
 };
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// Forks at the complete branch's leaf and records storage and ordered messages.
 async fn leaf_fork(persisted: bool) -> Value {
     let (h, runtime, _) = runtime_with(
+        Scratch::new().unwrap(),
         "leaf",
         RuntimeOptions {
             persisted,
@@ -24,7 +25,8 @@ async fn leaf_fork(persisted: bool) -> Value {
             ..RuntimeOptions::default()
         },
     )
-    .await;
+    .await
+    .unwrap();
     assert_eq!(runtime.session().model().read().unwrap().id, "faux-1");
     drop(script_responses(
         &h,
@@ -77,7 +79,8 @@ fn leaf_fork_preserves_the_file_backed_active_branch() {
     let expected = corpus("replacement");
     on_task_set(|_| async {
         assert_eq!(leaf_fork(true).await, expected["at_file"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -85,7 +88,8 @@ fn leaf_fork_preserves_the_in_memory_active_branch() {
     let expected = corpus("replacement");
     on_task_set(|_| async {
         assert_eq!(leaf_fork(false).await, expected["at_memory"]);
-    });
+    })
+    .unwrap();
 }
 
 /// A destination whose assistant and recorded selection both identify the second model.
@@ -117,7 +121,9 @@ fn destination_recording(h: &Harness, thinking: &str) -> SessionManager {
 fn switch_reads_the_destination_working_directory() {
     let expected = corpus("replacement");
     on_task_set(|_| async {
-        let (h, runtime, _) = runtime_for("original", Vec::new()).await;
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "original", Vec::new())
+            .await
+            .unwrap();
         let original = runtime.cwd();
         let target = destination(&h);
         assert_ne!(original, target.get_cwd());
@@ -150,7 +156,8 @@ fn switch_reads_the_destination_working_directory() {
             .collect();
         assert_eq!(json!(messages), expected["destination"]["messages"]);
         runtime.dispose().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -158,6 +165,7 @@ fn switch_restores_the_destination_model_and_thinking() {
     let expected = corpus("replacement");
     on_task_set(|_| async {
         let (h, runtime, _) = runtime_with(
+            Scratch::new().unwrap(),
             "restore",
             RuntimeOptions {
                 bootstrap_model: false,
@@ -166,7 +174,8 @@ fn switch_restores_the_destination_model_and_thinking() {
                 ..RuntimeOptions::default()
             },
         )
-        .await;
+        .await
+        .unwrap();
         // The recorded level differs from the medium default a reasoning model would take.
         let target = destination_recording(&h, "high");
         runtime
@@ -184,7 +193,8 @@ fn switch_restores_the_destination_model_and_thinking() {
         );
         assert_eq!(json!(runtime.session().thinking_level()), json!("high"));
         runtime.dispose().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 /// The normal session factory for its first call, then a recorded refusal.
@@ -200,25 +210,27 @@ async fn refusing_factory(
             Ok(None)
         },
     );
-    let h =
-        crate::support::session_harness::harness(crate::support::session_harness::HarnessOptions {
+    let h = maestro_app::test_support::harness(
+        Scratch::new().unwrap(),
+        maestro_app::test_support::HarnessOptions {
             models: vec![("faux-1", true)],
             ..Default::default()
-        })
-        .await;
+        },
+    )
+    .await
+    .unwrap();
     let extensions = std::rc::Rc::new(
-        crate::support::session_harness::create_test_extensions_result(
-            vec![(None, shutdown)],
-            &h.cwd,
-        )
-        .await,
+        maestro_app::test_support::create_test_extensions_result(vec![(None, shutdown)], &h.cwd)
+            .await
+            .unwrap(),
     );
-    let recorded = crate::support::runtime_fixtures::Recorded::default();
-    let create = crate::support::runtime_fixtures::factory(
+    let recorded = maestro_app::test_support::Recorded::default();
+    let create = maestro_app::test_support::factory(
         &h,
-        &crate::support::runtime_fixtures::Resources::of(&extensions),
+        &maestro_app::test_support::Resources::of(&extensions),
         &recorded,
-    );
+    )
+    .unwrap();
     let counted = std::rc::Rc::clone(calls);
     let seen = std::rc::Rc::clone(phases);
     let failing: maestro_app::CreateAgentSessionRuntimeFactory = std::rc::Rc::new(move |options| {
@@ -286,20 +298,22 @@ fn failed_replacement_keeps_the_torn_down_session_without_rollback() {
         runtime.set_before_session_invalidate(None);
         runtime.set_rebind_session(None);
         runtime.dispose().await.unwrap();
-    });
+    }).unwrap();
 }
 
 #[test]
 fn new_session_after_an_ephemeral_session_stays_ephemeral() {
     on_task_set(|_| async {
         let (_h, runtime, _) = runtime_with(
+            Scratch::new().unwrap(),
             "ephemeral-new",
             RuntimeOptions {
                 persisted: false,
                 ..RuntimeOptions::default()
             },
         )
-        .await;
+        .await
+        .unwrap();
         runtime
             .new_session(maestro_extensions::types::NewSessionCommandOptions::default())
             .await
@@ -308,5 +322,6 @@ fn new_session_after_an_ephemeral_session_stays_ephemeral() {
         assert!(!session.session_manager().borrow().is_persisted());
         assert_eq!(session.session_file(), None);
         runtime.dispose().await.unwrap();
-    });
+    })
+    .unwrap();
 }

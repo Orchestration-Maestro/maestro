@@ -13,7 +13,7 @@ registration and facade flag reads return the stale-context error.
 ## Register and query
 
 ```rust
-use maestro_catalog::ModelRegistry;
+use maestro_models_registry::ModelRegistry;
 use maestro_credentials::AuthStorage;
 use maestro_extensions::{create_event_bus, Extension, ExtensionAPI, ExtensionRunner, SourceInfo};
 use maestro_extensions::execution::ExtensionRunnerSession;
@@ -147,7 +147,7 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
 #   let session = maestro_extensions::execution::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
+#       model_registry: maestro_models::SharedHandle::new(maestro_models_registry::ModelRegistry::in_memory(auth, no_commands)?),
 #   };
     let runner = ExtensionRunner::<Local>::new(
         owners, runtime, session, Rc::new(|line| eprint!("{line}")),
@@ -288,7 +288,7 @@ by value and returns a `Send` future, so it reads the context before its first
 suspension; a `Local` callback may keep it across suspensions.
 
 ```rust
-use maestro_catalog::ModelRegistry;
+use maestro_models_registry::ModelRegistry;
 use maestro_credentials::AuthStorage;
 use maestro_extensions::execution::ExtensionRunnerSession;
 use maestro_extensions::{ExtensionContextActions, ExtensionRunner};
@@ -385,7 +385,7 @@ use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 # let session = ExtensionRunnerSession {
 #     cwd: "/work".into(),
 #     session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#     model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth, no_commands)?),
+#     model_registry: maestro_models::SharedHandle::new(maestro_models_registry::ModelRegistry::in_memory(auth, no_commands)?),
 # };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,

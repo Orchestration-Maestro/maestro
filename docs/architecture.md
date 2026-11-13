@@ -5,7 +5,15 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 `check_workspace(root)`; it does not execute product capabilities.
 Its crate dependency table lives in `src/graph/policy/table.rs` within the
 conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
-`POLICY` for its existing callers.
+`POLICY` for its existing callers. Table rows stay in crate-name order, as do
+the rows of the specification's crate table and the crate names of `wasm_crates`
+and each route of `test_inputs` in `.github/ci.toml`. The path patterns of
+`test_prepare_inputs` sort as text instead, so
+`crates/maestro-extensions-wasm/**` comes before
+`crates/maestro-extensions/**`. A crate step then writes its line where it
+sorts instead of at a position every other step shares. `check_workspace`
+reports a row or entry that is out of that order, and a CI entry written on its
+key's line.
 
 ## Application export layout
 
@@ -118,8 +126,9 @@ not satisfy a direct requirement. The permitted internal development edges are
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
-`maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
-child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
+`maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-models-registry` and
+`maestro-credentials` edges for protocol tests that render exports and drive a real session
+through the scripted provider, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
 tests that drive a real session through the scripted provider, the native-only
 `maestro-cli` to `maestro-listeners` development edge for the controlled print
 adapter, the native-only `maestro-extensions-wasm` to `maestro-listeners`
@@ -343,6 +352,16 @@ must establish caller-supplied generic tool context, no tools-to-extension or
 application coupling, no application policy in frontends, a wiring-only binary,
 and complete WIT code-generation evidence. Current absent owners are tested with
 scratch workspaces, not certified as delivered capabilities.
+
+The RPC mode lives in `maestro-rpc`: the session records in `rpc_types`, the one
+connection runner in `connection_runner`, the client of a child process
+(`RpcClient`) and the standard-stream adapter. The conventions check rejects an
+`Rpc*` declaration in any crate other than `maestro-rpc` and `maestro-protocol`,
+naming its file and line. One declaration is exempt: `RpcModeRunner` in the
+application's `presentation_data/mode_dispatch.rs`, the callback its mode dispatch
+runs. The protocol tests drive sessions through the application's scripted session
+harness, `maestro_app::test_support`. They enable it with the application's
+`test-support` feature on a native development dependency.
 
 The chat tests that drive the interactive frontend build their session,
 credentials, catalog and resource loader in

@@ -1,0 +1,117 @@
+//! A prepared native child serving finite application RPC scenarios.
+
+use maestro_rpc::{RpcClient, RpcClientOptions};
+use maestro_test_directory::Scratch;
+pub use maestro_test_process::rpc_peer::Scenario;
+use serde_json::Value;
+use std::{
+    io::Write,
+    net::{TcpListener, TcpStream},
+    path::Path,
+    rc::Rc,
+};
+use tokio::sync::mpsc;
+
+/// The installed executable, release socket and their disposable directory.
+pub struct Peer {
+    /// The directory, removed with the peer.
+    pub scratch: Scratch,
+    /// The executable's path.
+    pub entry: String,
+    /// Out-of-band release for raw fragments, ticks or a pipe-holding descendant.
+    control: TcpListener,
+}
+
+impl Peer {
+    /// Install the prepared executable in a fresh directory, without discovering build outputs.
+    pub fn new() -> Self {
+        let scratch = Scratch::new().unwrap();
+        let entry = scratch.path().join("peer").to_string_lossy().into_owned();
+        maestro_test_process::rpc_peer::install(Path::new(&entry), Scenario::Serve).unwrap();
+        Self {
+            scratch,
+            entry,
+            control: TcpListener::bind("127.0.0.1:0").unwrap(),
+        }
+    }
+
+    /// The path of `name` in the peer's directory.
+    pub fn join(&self, name: &str) -> String {
+        self.scratch
+            .path()
+            .join(name)
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    /// Options that launch one compiled scenario on the actual client transport.
+    pub fn options(&self, scenario: Scenario) -> RpcClientOptions {
+        if scenario == Scenario::Descendant {
+            maestro_test_process::rpc_peer::install(
+                Path::new(&self.join("holder")),
+                Scenario::PipeHolder,
+            )
+            .unwrap();
+        }
+        std::fs::write(
+            format!("{}.fixture", self.entry),
+            format!("rpc-peer\n{}\n", scenario.name()),
+        )
+        .unwrap();
+        let mut options = RpcClientOptions {
+            cli_path: Some(self.entry.clone()),
+            ..RpcClientOptions::default()
+        };
+        options.env.insert(
+            "PEER_PORT".into(),
+            self.control.local_addr().unwrap().port().to_string(),
+        );
+        options
+            .env
+            .insert("PEER_HOLDER".into(), self.join("holder"));
+        options
+    }
+
+    /// Accept a native peer's release connection, without a timed receive or polling.
+    ///
+    /// This blocks the calling thread; a peer that exits before connecting leaves the test
+    /// waiting for the test runner's hang limit.
+    pub fn control(&self) -> TcpStream {
+        self.control.accept().unwrap().0
+    }
+}
+
+/// Release exactly one native operation through its existing observation socket.
+pub fn release(control: &mut TcpStream) {
+    control.write_all(b"r").unwrap();
+}
+
+/// Every event the client delivers from now on, in order.
+pub fn events(client: &RpcClient) -> mpsc::UnboundedReceiver<Value> {
+    let (sender, receiver) = mpsc::unbounded_channel();
+    // The registration stays for the client's lifetime.
+    let _remove = client.on_event(Rc::new(move |event: &Value| {
+        let _ = sender.send(event.clone());
+        Ok(())
+    }));
+    receiver
+}
+
+/// The next delivered event whose `type` is `kind`.
+pub async fn next_of(events: &mut mpsc::UnboundedReceiver<Value>, kind: &str) -> Value {
+    loop {
+        let event = events.recv().await.unwrap();
+        if event["type"] == kind {
+            return event;
+        }
+    }
+}
+
+/// Keep a paused clock from advancing on its own until the returned sender is used.
+pub fn hold_clock() -> (std::sync::mpsc::Sender<()>, tokio::task::JoinHandle<()>) {
+    let (release, released) = std::sync::mpsc::channel::<()>();
+    let hold = tokio::task::spawn_blocking(move || {
+        let _ = released.recv();
+    });
+    (release, hold)
+}

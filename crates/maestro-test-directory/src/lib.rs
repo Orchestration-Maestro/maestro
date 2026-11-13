@@ -238,6 +238,12 @@ fn allocate(parent: &Path, sequence: &AtomicU64) -> io::Result<Scratch> {
     }
 }
 
+impl AsRef<Path> for Scratch {
+    fn as_ref(&self) -> &Path {
+        &self.path
+    }
+}
+
 impl Drop for Scratch {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.path);

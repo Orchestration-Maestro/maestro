@@ -3,14 +3,16 @@
 //! with the recorded prompt cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, Transcript, agent_ended, answer, as_recorded, assert_transcript,
-    assistant, case, command_extension, entries_view, harness, history_view, hold_first_answer,
-    input_extension, labelled, load_history, messages_view, observed_preflight, of_kinds,
-    on_task_set, outcome, queue_view, recorded_skills, script_responses, shell_entries,
-    start_and_abandon, start_prompt, supplied_failure, template, transcribed, usage, user,
-    with_placeholders,
+    Harness, HarnessExt as _, Transcript, agent_ended, as_recorded, assert_transcript, case,
+    entries_view, history_view, labelled, load_history, messages_view, observed_preflight,
+    of_kinds, outcome, queue_view, recorded_skills, shell_entries, start_and_abandon, start_prompt,
+    supplied_failure, transcribed, transcribed_in, user, with_placeholders,
 };
 use maestro_app::agent_session::PromptOptions;
+use maestro_app::test_support::{
+    Auth, HarnessOptions, answer, assistant, command_extension, harness, hold_first_answer,
+    input_extension, on_task_set, script_responses, template, usage,
+};
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionFactory, InputEventResult,
     InputTransform,
@@ -20,6 +22,7 @@ use maestro_session::Presence;
 use maestro_session::message_records::{
     CustomMessageInput, SendMessageOptions, UserMessageDelivery,
 };
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -62,12 +65,12 @@ fn start_extension(
 }
 
 /// Sends one prompt to a session over `options` and asserts it against `name`.
-async fn single_prompt_case(name: &str, options: HarnessOptions, text: &str) {
+async fn single_prompt_case(name: &str, resources: (Scratch, HarnessOptions), text: &str) {
     let expected = expected(name);
-    let (h, t) = transcribed(options).await;
+    let (h, t) = transcribed_in(resources.0, resources.1).await;
     script_responses(
         &h,
-        vec![crate::support::session_harness::answer("reply", None, None)],
+        vec![maestro_app::test_support::answer("reply", None, None)],
     );
     let result = h.session.prompt(text, PromptOptions::default()).await;
     assert_eq!(json!([outcome(result)]), expected["results"]);
@@ -75,14 +78,14 @@ async fn single_prompt_case(name: &str, options: HarnessOptions, text: &str) {
 }
 
 /// Options over the recorded skills and templates in a fresh project.
-fn with_resources() -> HarnessOptions {
+fn with_resources() -> (Scratch, HarnessOptions) {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    HarnessOptions {
+    let options = HarnessOptions {
         skills: recorded_skills(&scratch),
         prompts: vec![template("plan", "Plan for $1 with $2")],
-        scratch: Some(scratch),
         ..HarnessOptions::default()
-    }
+    };
+    (scratch, options)
 }
 
 #[test]
@@ -109,7 +112,8 @@ fn registered_command_runs_while_a_response_streams() {
         ]);
         assert_eq!(results, expected["results"]);
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -126,7 +130,8 @@ fn handled_input_sends_nothing_and_accepts() {
         let results = json!([outcome(result), labelled("preflight", &*accepted.borrow())]);
         assert_eq!(results, expected["results"]);
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -144,11 +149,12 @@ fn input_transform_replaces_text_and_images() {
         };
         single_prompt_case(
             "an input transform replaces text and images",
-            options,
+            (Scratch::new().unwrap(), options),
             "original",
         )
         .await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -161,7 +167,8 @@ fn skill_command_expands_with_arguments() {
             "/skill:review please look at main.rs",
         )
         .await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -169,7 +176,8 @@ fn skill_command_without_arguments_expands_alone() {
     on_task_set(|_| async {
         let name = "a skill command without arguments expands to the block alone";
         single_prompt_case(name, with_resources(), "/skill:review").await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -177,17 +185,19 @@ fn unknown_skill_command_keeps_the_text() {
     on_task_set(|_| async {
         let name = "an unknown skill command is left alone";
         single_prompt_case(name, with_resources(), "/skill:unknown keep me").await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn unreadable_skill_file_reports_and_keeps_the_text() {
     on_task_set(|_| async {
         let mut expected = expected("an unreadable skill file reports and keeps the text");
-        let (h, t) = transcribed(with_resources()).await;
+        let (scratch, options) = with_resources();
+        let (h, t) = transcribed_in(scratch, options).await;
         script_responses(
             &h,
-            vec![crate::support::session_harness::answer("reply", None, None)],
+            vec![maestro_app::test_support::answer("reply", None, None)],
         );
         let result = h
             .session
@@ -202,7 +212,8 @@ fn unreadable_skill_file_reports_and_keeps_the_text() {
         let error = std::fs::read(&missing).unwrap_err().to_string();
         expected["errorEvents"][0]["error"] = with_placeholders(json!(error), &h);
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -210,7 +221,8 @@ fn prompt_template_expands_before_sending() {
     on_task_set(|_| async {
         let name = "a prompt template expands before sending";
         single_prompt_case(name, with_resources(), "/plan alpha beta").await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -228,7 +240,8 @@ fn prompt_during_a_response_needs_a_queue_choice() {
         let results = json!([outcome(refused), labelled("preflight", &*accepted.borrow())]);
         assert_eq!(results, expected["results"]);
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 /// Queues `text` with `behavior` while the first answer streams and asserts `name`; the
@@ -265,7 +278,8 @@ fn follow_up_queue_holds_the_message_until_the_turn_ends() {
     on_task_set(|_| async {
         let name = "a streaming prompt queues a followed-up message when selected";
         queued_prompt_case(name, UserMessageDelivery::FollowUp, Vec::new()).await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -273,7 +287,8 @@ fn steer_queue_holds_text_and_images_until_the_turn_ends() {
     on_task_set(|_| async {
         let name = "a streaming prompt queues steering and its images after the text";
         queued_prompt_case(name, UserMessageDelivery::Steer, vec![image()]).await;
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -299,7 +314,7 @@ fn accepted_prompt_sends_user_then_next_turn_then_hook_messages() {
         .await;
         script_responses(
             &h,
-            vec![crate::support::session_harness::answer("reply", None, None)],
+            vec![maestro_app::test_support::answer("reply", None, None)],
         );
         let note = CustomMessageInput {
             custom_type: "note".into(),
@@ -318,7 +333,8 @@ fn accepted_prompt_sends_user_then_next_turn_then_hook_messages() {
             expected["results"]
         );
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -337,7 +353,7 @@ fn hook_prompt_override_resets_on_the_next_prompt() {
             ..HarnessOptions::default()
         })
         .await;
-        let answer = crate::support::session_harness::answer;
+        let answer = maestro_app::test_support::answer;
         script_responses(
             &h,
             vec![answer("first", None, None), answer("second", None, None)],
@@ -354,7 +370,8 @@ fn hook_prompt_override_resets_on_the_next_prompt() {
         ]);
         assert_eq!(results, expected["results"]);
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -375,18 +392,23 @@ fn prompt_without_credentials_is_refused() {
             expected["results"]
         );
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn invalid_http_idle_timeout_refuses_prompt_before_turn_or_retry() {
     on_task_set(|_| async {
         tokio::time::pause();
-        let h = harness(HarnessOptions {
-            settings: json!({"httpIdleTimeoutMs": -5, "retry": {"enabled": true}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                settings: json!({"httpIdleTimeoutMs": -5, "retry": {"enabled": true}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let requests = script_responses(&h, vec![answer("unused", None, None)]);
         let (accepted, options) = observed_preflight();
         let result = h.session.prompt("hi", options).await;
@@ -398,7 +420,8 @@ fn invalid_http_idle_timeout_refuses_prompt_before_turn_or_retry() {
         assert!(requests.lock().unwrap().is_empty(), "no provider request");
         assert!(h.events.borrow().is_empty(), "no turn or retry events");
         assert!(h.session.messages().read().unwrap().is_empty());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -412,14 +435,15 @@ fn throwing_input_handler_is_reported_and_the_prompt_continues() {
         .await;
         script_responses(
             &h,
-            vec![crate::support::session_harness::answer("reply", None, None)],
+            vec![maestro_app::test_support::answer("reply", None, None)],
         );
         let (accepted, options) = observed_preflight();
         let result = h.session.prompt("hi", options).await;
         let results = json!([outcome(result), labelled("preflight", &*accepted.borrow())]);
         assert_eq!(results, expected["results"]);
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -437,7 +461,8 @@ fn throwing_command_handler_is_reported_and_counts_as_handled() {
         let results = json!([outcome(result), labelled("preflight", &*accepted.borrow())]);
         assert_eq!(results, expected["results"]);
         assert_prompt_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -448,8 +473,7 @@ fn deferred_shell_result_flushes_before_the_next_prompt() {
         let (requested, release) = hold_first_answer(&h, "first", &["second"]);
         let running = start_prompt(&h, "first");
         requested.notified().await;
-        let operations =
-            crate::support::session_harness::ScriptedShell::output("waiting", Some(0.0));
+        let operations = maestro_app::test_support::ScriptedShell::output("waiting", Some(0.0));
         let options = maestro_app::agent_session::BashRunOptions {
             exclude_from_context: None,
             operations: Some(Rc::new(operations)),
@@ -472,7 +496,8 @@ fn deferred_shell_result_flushes_before_the_next_prompt() {
         assert_transcript(&h, &t, &expected);
         assert_eq!(queue_view(&h, &t), expected["queue"]);
         assert_eq!(json!(shell_entries(&entries_view(&h))), expected["entries"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -534,7 +559,7 @@ fn prompt_compacts_after_an_aborted_full_response_before_sending() {
         );
         assert_eq!(history[0]["summary"], "auto compacted");
         assert_eq!(history[3]["content"]["blocks"][0]["text"], "three");
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -546,12 +571,16 @@ fn supplied_system_prompt_reaches_the_first_prompt() {
             record.borrow_mut().push(event.system_prompt.clone());
             None
         });
-        let h = harness(HarnessOptions {
-            system_prompt: Some("Supplied instructions."),
-            factories: vec![observer],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                system_prompt: Some("Supplied instructions."),
+                factories: vec![observer],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         script_responses(&h, vec![answer("reply", None, None)]);
         h.session
             .prompt("hi", PromptOptions::default())
@@ -563,7 +592,8 @@ fn supplied_system_prompt_reaches_the_first_prompt() {
             "{installed}"
         );
         assert_eq!(*seen.borrow(), [installed]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -590,40 +620,51 @@ fn input_transform_clearing_images_keeps_an_empty_list() {
         assert_eq!(starts[0]["images"], json!(0));
         let history = messages_view(&h);
         assert_eq!(history[0]["content"]["blocks"].as_array().unwrap().len(), 1);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn failing_error_listener_keeps_its_supplied_fields() {
     on_task_set(|_| async {
         let heard = Rc::new(RefCell::new(None));
-        let h = harness(HarnessOptions {
-            factories: vec![command_extension("boom", heard, Some("command exploded"))],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![command_extension("boom", heard, Some("command exploded"))],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let _unsubscribe = h
             .runner()
             .on_error(Rc::new(|_| Err(Box::new(supplied_failure()))));
         let failure = h.session.prompt("/boom", PromptOptions::default()).await;
         assert_eq!(failure.unwrap_err(), supplied_failure());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn failing_credential_lookup_keeps_its_supplied_fields() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            auth: Auth::None,
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                auth: Auth::None,
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.registry
             .auth_storage()
             .set_fallback_resolver(|_| Err(supplied_failure().into()));
         let failure = h.session.prompt("hi", PromptOptions::default()).await;
         assert_eq!(failure.unwrap_err(), supplied_failure());
-    });
+    })
+    .unwrap();
 }
 
 /// The extension whose before-agent-start handler waits for `gate` once.
@@ -650,15 +691,19 @@ fn abandoned_prompt_still_delivers_its_next_turn_messages() {
         let gate = Rc::new(tokio::sync::Notify::new());
         let spawned = Rc::new(std::cell::Cell::new(0));
         let count = Rc::clone(&spawned);
-        let h = harness(HarnessOptions {
-            factories: vec![gated_start(Rc::clone(&gate))],
-            spawn: Some(Rc::new(move |task| {
-                count.set(count.get() + 1);
-                drop(tokio::task::spawn_local(task));
-            })),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![gated_start(Rc::clone(&gate))],
+                spawn: Some(Rc::new(move |task| {
+                    count.set(count.get() + 1);
+                    drop(tokio::task::spawn_local(task));
+                })),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         script_responses(&h, vec![answer("reply", None, None)]);
         let note = CustomMessageInput {
             custom_type: "note".into(),
@@ -684,17 +729,18 @@ fn abandoned_prompt_still_delivers_its_next_turn_messages() {
             .map(|message| message["customType"].clone())
             .collect();
         assert_eq!(kinds, [Value::Null, json!("note"), Value::Null]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn prompt_starts_before_observer_is_polled() {
     on_task_set(|_| async {
-        let refused = harness(HarnessOptions {
+        let options = HarnessOptions {
             auth: Auth::None,
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let refused = harness(Scratch::new().unwrap(), options).await.unwrap();
         let order = Rc::new(RefCell::new(Vec::new()));
         let queued = Rc::clone(&order);
         drop(refused.session.subscribe(Rc::new(move |event| {
@@ -717,7 +763,7 @@ fn prompt_starts_before_observer_is_polled() {
         let gate = Rc::new(tokio::sync::Notify::new());
         let inputs = Rc::new(RefCell::new(Vec::new()));
         let heard = Rc::clone(&inputs);
-        let accepted = harness(HarnessOptions {
+        let options = HarnessOptions {
             factories: vec![
                 input_extension(move |event| {
                     heard.borrow_mut().push(event.text.clone());
@@ -726,15 +772,12 @@ fn prompt_starts_before_observer_is_polled() {
                 gated_start(Rc::clone(&gate)),
             ],
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let accepted = harness(Scratch::new().unwrap(), options).await.unwrap();
         script_responses(&accepted, vec![answer("reply", None, None)]);
         let ended = agent_ended(&accepted);
-        drop(
-            accepted
-                .session
-                .prompt("accepted", PromptOptions::default()),
-        );
+        let session = &accepted.session;
+        drop(session.prompt("accepted", PromptOptions::default()));
         assert_eq!(
             *inputs.borrow(),
             ["accepted"],
@@ -749,5 +792,6 @@ fn prompt_starts_before_observer_is_polled() {
                 json!({"role": "assistant", "text": "reply"})
             ]
         );
-    });
+    })
+    .unwrap();
 }

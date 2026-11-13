@@ -3,12 +3,12 @@ use crate::resources::loading::ResourceLoader;
 use indexmap::IndexMap;
 use maestro_agent::SharedAgentTool;
 use maestro_agent::{Agent, AgentEvent};
-use maestro_catalog::{ModelRegistry, ScopedModel};
 use maestro_extensions::{
     ExtensionCommandContextActions, ExtensionErrorListener, ExtensionExecution, ExtensionRunner,
     ExtensionUIContextBinding, InputSource, SessionStartEvent, types::ShutdownHandler,
 };
 use maestro_models::{ImageContent, Local, Model, ModelThinkingLevel};
+use maestro_models_registry::{ModelRegistry, ScopedModel};
 use maestro_session::{
     BranchSummaryEntry, CompactionResult, SessionManager,
     message_records::{CustomAgentMessages, UserMessageDelivery},

@@ -56,8 +56,8 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
                 };
                 let response = api
                     .0
-                    .request_async(|id, reply, admission| {
-                        Message::Http(id, Request::Fetch(fetch, reply, admission))
+                    .request_async(|_, reply, admission| {
+                        Message::Http(Request::Fetch(fetch, reply, admission))
                     })
                     .await;
                 let result = match response {
@@ -73,23 +73,26 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
 
 /// Consumes a native response without holding a Store or capability-table borrow.
 fn consumers<T: ApiView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmtime::Result<()> {
-    for (name, request) in [
-        ("[method]response.text", Request::Text as fn(_, _) -> _),
-        ("[method]response.json", Request::Json),
-    ] {
-        host.func_wrap_concurrent(name, move |accessor, (response,): (Resource<Response>,)| {
+    host.func_wrap_concurrent(
+        "[method]response.text",
+        |accessor, (response,): (Resource<Response>,)| {
             Box::pin(async move {
                 let response =
                     accessor.with(|mut a| a.get().ctx().table.get(&response).cloned())?;
-                let result = response
-                    .0
-                    .request_async(|id, reply, lease| Message::Http(id, request(reply, lease)))
-                    .await;
-                Ok((result,))
+                Ok((response.text().await,))
             })
-        })?;
-    }
-    Ok(())
+        },
+    )?;
+    host.func_wrap_concurrent(
+        "[method]response.json",
+        |accessor, (response,): (Resource<Response>,)| {
+            Box::pin(async move {
+                let response =
+                    accessor.with(|mut a| a.get().ctx().table.get(&response).cloned())?;
+                Ok((response.json().await,))
+            })
+        },
+    )
 }
 
 impl HostResponse for State {

@@ -1,8 +1,8 @@
 //! Server mode: binds the API socket, announces it and serves it beside the daemon loop
 //! until the daemon stops.
 use super::server::Server;
+use crate::connection_runner::DaemonWorkspaceOperations;
 use maestro_agent::diagnostics::write_stderr_line;
-use maestro_app::connection_runner::DaemonWorkspaceOperations;
 use maestro_daemon::{
     diagnostics, locations::DaemonPaths, panes::launch::STARTUP_CWD_ENV,
     platform::current_process_is_detached_server_daemon, state::App,

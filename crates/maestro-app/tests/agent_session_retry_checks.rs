@@ -2,20 +2,26 @@
 //! a recovered tool turn that settles before a follow-up prompt.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, delivered_events, echo_tools, get_assistant_texts,
-    get_message_text, harness, on_task_set, retry_order, start_prompt,
+    Harness, delivered_events, echo_tools, get_assistant_texts, get_message_text, retry_order,
+    start_prompt,
 };
+use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
 /// A session over the scripted stream answering `responses` under the `retry` settings.
 async fn retrying(responses: Vec<Scripted>, retry: Value) -> Harness {
-    harness(HarnessOptions {
-        responses: Some(responses),
-        settings: json!({"retry": retry}),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            responses: Some(responses),
+            settings: json!({"retry": retry}),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 #[test]
@@ -45,7 +51,8 @@ fn retry_budget_ends_with_failure() {
         assert_eq!(ends[0]["finalError"], json!("overloaded_error"));
         assert!(!h.session.is_retrying());
         assert!(!h.session.is_streaming());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -73,7 +80,8 @@ fn provider_network_error_recovers() {
             json!("Provider finish_reason: network_error")
         );
         assert_eq!(get_assistant_texts(&h), ["Recovered after retry"]);
-    });
+    })
+    .unwrap();
 }
 
 /// A prompt whose first answer fails with `failure` is retried once and then recovers.
@@ -89,7 +97,8 @@ fn recovers_after(failure: &'static str) {
         assert_eq!(retry_order(&events.borrow()), ["start:1", "end:true"]);
         assert_eq!(h.requests.0.borrow().len(), 2);
         assert_eq!(get_assistant_texts(&h), ["Recovered"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -106,22 +115,26 @@ fn upstream_request_buffer_limit_recovers() {
 fn recovered_text_and_tool_turn_settle_before_follow_up() {
     on_task_set(|_| async {
         let executed = Rc::new(RefCell::new(false));
-        let h = harness(HarnessOptions {
-            responses: Some(vec![
-                Scripted::failure("overloaded_error"),
-                Scripted {
-                    text: Some("Looking that up now.".into()),
-                    tool_calls: vec![("echo".into(), json!({"text": "hello"}))],
-                    ..Scripted::default()
-                },
-                Scripted::text("Final answer."),
-                Scripted::text("Follow-up answer."),
-            ]),
-            settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
-            base_tools_override: Some(echo_tools(Rc::clone(&executed))),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                responses: Some(vec![
+                    Scripted::failure("overloaded_error"),
+                    Scripted {
+                        text: Some("Looking that up now.".into()),
+                        tool_calls: vec![("echo".into(), json!({"text": "hello"}))],
+                        ..Scripted::default()
+                    },
+                    Scripted::text("Final answer."),
+                    Scripted::text("Follow-up answer."),
+                ]),
+                settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
+                base_tools_override: Some(echo_tools(Rc::clone(&executed))),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         start_prompt(&h, "hi").await.unwrap().unwrap();
         assert_eq!(h.requests.0.borrow().len(), 3);
         assert!(*executed.borrow(), "the retried turn ran the tool");
@@ -143,5 +156,6 @@ fn recovered_text_and_tool_turn_settle_before_follow_up() {
         assert!(!h.session.is_streaming());
         start_prompt(&h, "follow-up").await.unwrap().unwrap();
         assert_eq!(h.requests.0.borrow().len(), 4);
-    });
+    })
+    .unwrap();
 }

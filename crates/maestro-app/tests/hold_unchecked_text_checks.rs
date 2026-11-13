@@ -2,17 +2,17 @@
 //! events unchanged while it is off.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, echo_tools, harness, on_task_set, prompt_to_end,
-};
+use crate::support::session_harness::{Harness, echo_tools, prompt_to_end};
 use indexmap::IndexMap;
 use maestro_agent::{AgentMessage, AgentToolRecord, AgentToolResult, SharedAgentTool};
+use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
 use maestro_app::{AgentSessionEvent, PromptOptions};
 use maestro_extensions::{
     ExtensionFactory, MessageEndEvent, MessageEndEventResult, NativeAgentMessage,
 };
 use maestro_models::{Local, TextContent, Tool, UserBlock};
 use maestro_session::Presence;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -74,7 +74,7 @@ fn record_delivered(h: &Harness) -> Rc<RefCell<Vec<String>>> {
 /// Runs one prompt on a session over `options` and returns every agent event its listeners
 /// heard, serialized, in order.
 async fn heard(options: HarnessOptions) -> Vec<String> {
-    let h = harness(options).await;
+    let h = harness(Scratch::new().unwrap(), options).await.unwrap();
     let events = record_heard(&h);
     prompt_to_end(&h, "hello", PromptOptions::default()).await;
     events.take()
@@ -193,7 +193,8 @@ fn text_and_thinking_deltas_wait_for_the_message_end() {
         assert_none_carry(&events[..end], REASONING);
         assert!(events[end].contains(UNCHECKED) && events[end].contains(REASONING));
         assert!(kinds(&events[..end]).contains(&"message_start".to_owned()));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -211,7 +212,8 @@ fn a_response_that_starts_whole_is_withheld_until_the_message_end() {
         assert_none_carry(&events[..end], REASONING);
         assert!(events[end].contains(UNCHECKED) && events[end].contains(REASONING));
         assert!(kinds(&events[..end]).contains(&"message_start".to_owned()));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -234,7 +236,8 @@ fn tool_call_updates_keep_flowing_without_the_text_beside_the_call() {
         let blocks = ends[0]["message"]["content"].as_array().unwrap();
         assert!(blocks.iter().any(|block| block["type"] == "toolCall"));
         assert!(events[end].contains(UNCHECKED));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -256,7 +259,8 @@ fn partial_tool_results_wait_for_the_completed_result() {
             .find(|event| record(event)["type"] == "tool_execution_end")
             .unwrap();
         assert!(finished.contains("checked result"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -277,7 +281,8 @@ fn listeners_hear_only_the_message_an_extension_rewrote() {
         let last = events.last().unwrap();
         assert_eq!(record(last)["type"], "agent_end");
         assert!(last.contains("checked-reply"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -298,7 +303,8 @@ fn tool_call_and_status_events_arrive_while_text_is_held() {
         assert!(open.iter().any(|kind| withheld(&kind)));
         assert!(expected.iter().any(|kind| kind.ends_with("toolcall_end")));
         assert_eq!(held.iter().collect::<Vec<_>>(), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -308,7 +314,7 @@ fn listeners_hear_the_agent_events_unchanged_while_nothing_is_held() {
             let mut open = options(false, vec![reply_with_call(), Scripted::text("done")]);
             open.settings = settings;
             open.base_tools_override = Some(echo_tools(Rc::new(RefCell::new(false))));
-            let h = harness(open).await;
+            let h = harness(Scratch::new().unwrap(), open).await.unwrap();
             let (agent, session) = (record_delivered(&h), record_heard(&h));
             prompt_to_end(&h, "hello", PromptOptions::default()).await;
             assert!(
@@ -318,5 +324,6 @@ fn listeners_hear_the_agent_events_unchanged_while_nothing_is_held() {
             );
             assert_eq!(*agent.borrow(), *session.borrow());
         }
-    });
+    })
+    .unwrap();
 }

@@ -2,10 +2,10 @@
 //! model and thinking level, the first history entries, the provider request options and
 //! hooks, withheld images and both resource routes, compared with the recorded SDK cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    Auth, Harness, HarnessOptions, TestResourceLoader, after_summary, answer, as_recorded,
-    assistant, create_test_extensions_result, create_test_resource_loader, harness, on_task_set,
-    recorded_number, script_responses, summary_provider, usage,
+use crate::support::session_harness::{Harness, after_summary, as_recorded, summary_provider};
+use maestro_app::test_support::{
+    Auth, HarnessOptions, TestResourceLoader, answer, assistant, create_test_extensions_result,
+    create_test_resource_loader, harness, on_task_set, recorded_number, script_responses, usage,
 };
 use maestro_app::{
     CreateAgentSessionOptions, CreateAgentSessionResult, PromptOptions, ResourceLoaderOptions,
@@ -23,6 +23,7 @@ use maestro_models::{
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_settings::SettingsManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -37,12 +38,16 @@ fn expected(name: &str) -> Value {
 
 /// A harness whose scripted provider serves the reasoning model `faux-1` as `auth` says.
 async fn fixture(auth: Auth) -> Harness {
-    harness(HarnessOptions {
-        models: vec![("faux-1", true)],
-        auth,
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            models: vec![("faux-1", true)],
+            auth,
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 /// Creation options over the fixture's catalog, in-memory history at `cwd` and `settings`,
@@ -134,7 +139,7 @@ fn resolves_the_working_directory_from_the_explicit_option() {
         options.cwd = Some(format!("{root}/explicit-cwd"));
         let ignored = SessionManager::in_memory(Some(&format!("{root}/ignored-cwd"))).unwrap();
         options.session_manager = Some(Rc::new(RefCell::new(ignored)));
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         let manager_cwd = created
             .session
@@ -144,7 +149,8 @@ fn resolves_the_working_directory_from_the_explicit_option() {
             .to_owned();
         let observed = json!({"manager_cwd": manager_cwd, "session_cwd": session_cwd(&created)});
         assert_eq!(as_recorded(observed, &[(&root, "$ROOT")]), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -156,7 +162,7 @@ fn resolves_the_working_directory_from_the_session_manager() {
         let mut options = options(&h, json!({}));
         let manager = SessionManager::in_memory(Some(&format!("{root}/session-cwd"))).unwrap();
         options.session_manager = Some(Rc::new(RefCell::new(manager)));
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         let manager_cwd = created
             .session
@@ -169,7 +175,8 @@ fn resolves_the_working_directory_from_the_session_manager() {
             "model_fallback_message": created.model_fallback_message,
         });
         assert_eq!(as_recorded(observed, &[(&root, "$ROOT")]), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -183,7 +190,7 @@ fn restores_an_authenticated_recorded_model() {
         let created = create(options).await;
         let observed = json!({"model": selected(&created), "model_fallback_message": created.model_fallback_message});
         assert_eq!(observed, expected);
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -200,7 +207,8 @@ fn reports_the_recorded_model_fallback_message() {
         let observed =
             json!({"model": provider, "model_fallback_message": created.model_fallback_message});
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -218,7 +226,8 @@ fn falls_back_from_a_recorded_model_without_credentials() {
             created.model_fallback_message.as_deref(),
             Some("Could not restore model openai-codex/gpt-5.5. Using faux/faux-1")
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -229,11 +238,11 @@ fn honours_an_explicit_model() {
         let mut options = options(&h, json!({}));
         let manager = seeded(&h.cwd, "gone-provider", "gone-model", None);
         options.session_manager = Some(Rc::new(RefCell::new(manager)));
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         let observed = json!({"model": selected(&created), "model_fallback_message": created.model_fallback_message});
         assert_eq!(observed, expected);
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -247,7 +256,8 @@ fn starts_without_a_model_when_none_is_available() {
         let guidance = maestro_credentials::format_no_models_available_message(&docs);
         assert_eq!(created.model_fallback_message, Some(guidance));
         assert_eq!(entry_types(&created), json!(["thinking_level_change"]));
-    });
+    })
+    .unwrap();
 }
 
 /// The history a thinking case starts from.
@@ -271,7 +281,7 @@ async fn thinking_case(
         let manager = seeded(&h.cwd, "faux", "faux-1", level);
         options.session_manager = Some(Rc::new(RefCell::new(manager)));
     }
-    options.model = Some(h.model("faux-1"));
+    options.model = Some(h.model("faux-1").unwrap());
     options.thinking_level = explicit;
     let created = create(options).await;
     json!({"thinking_level": created.session.thinking_level(), "entry_types": entry_types(&created)})
@@ -284,7 +294,8 @@ fn clamps_an_explicit_thinking_level() {
         let observed =
             thinking_case(&h, Some(ModelThinkingLevel::High), History::New, json!({})).await;
         assert_eq!(observed, expected("thinking_explicit_clamped"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -293,7 +304,8 @@ fn restores_a_recorded_thinking_level() {
         let h = fixture(Auth::Key).await;
         let observed = thinking_case(&h, None, History::Resumed(Some("low")), json!({})).await;
         assert_eq!(observed, expected("thinking_recorded_entry"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -306,7 +318,8 @@ fn appends_the_thinking_level_when_the_branch_has_none() {
             observed,
             expected("thinking_recorded_without_entry_uses_settings")
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -316,7 +329,8 @@ fn uses_the_settings_default_thinking_level() {
         let settings = json!({"defaultThinkingLevel": "low"});
         let observed = thinking_case(&h, None, History::New, settings).await;
         assert_eq!(observed, expected("thinking_settings_default"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -330,7 +344,8 @@ fn defaults_thinking_to_medium() {
             json!(["model_change", "thinking_level_change"]),
             "the creation appends its model and thinking entries"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -353,18 +368,23 @@ fn restores_stored_messages_into_agent_state() {
             entry_types(&created),
             expected("thinking_recorded_entry")["entry_types"]
         );
-    });
+    })
+    .unwrap();
 }
 
 /// A harness serving `faux-1` whose model reports `window` context tokens.
 async fn windowed_fixture(window: f64) -> Harness {
-    harness(HarnessOptions {
-        models: vec![("faux-1", true)],
-        auth: Auth::Key,
-        context_window: Some(window),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            models: vec![("faux-1", true)],
+            auth: Auth::Key,
+            context_window: Some(window),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 /// A stored history with one answered question whose usage is `usage` and, when asked, a
@@ -434,7 +454,8 @@ fn saved_history_readers_keep_missing_totals() {
         let h = windowed_fixture(100.0).await;
         saved_totals(&h).await;
         answers_after_compaction(&h).await;
-    });
+    })
+    .unwrap();
 }
 
 /// Restoring a saved answer without a total keeps the live record absent and reports the
@@ -518,13 +539,17 @@ async fn answers_after_compaction(h: &Harness) {
 #[test]
 fn saved_large_history_compacts_with_recorded_tail() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", true)],
-            auth: Auth::Key,
-            context_window: Some(200_000.0),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("faux-1", true)],
+                auth: Auth::Key,
+                context_window: Some(200_000.0),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let fixture = format!(
             "{}/../maestro-session/tests/fixtures/session_history_large.jsonl",
             env!("CARGO_MANIFEST_DIR")
@@ -534,7 +559,8 @@ fn saved_large_history_compacts_with_recorded_tail() {
         let manager = SessionManager::open(path.to_str().unwrap(), None, None).unwrap();
         let extensions =
             create_test_extensions_result(vec![(None, summary_provider("compacted"))], &h.cwd)
-                .await;
+                .await
+                .unwrap();
         let mut options = options(
             &h,
             json!({"compaction": {"reserveTokens": 16384, "keepRecentTokens": 20000}}),
@@ -558,7 +584,8 @@ fn saved_large_history_compacts_with_recorded_tail() {
         let after = live_records(&created);
         assert_eq!(after.len(), 182);
         assert_eq!(after[1..], before[before.len() - 181..]);
-    });
+    })
+    .unwrap();
 }
 
 /// A scripted answer that hands each request to `observe`.
@@ -573,7 +600,7 @@ impl<F: Fn(&FauxResponseInput<Local>) + 'static>
     >;
     fn invoke(&self, input: FauxResponseInput<Local>) -> Self::Return {
         (self.0)(&input);
-        let answer = crate::support::session_harness::answer("ok", None, None);
+        let answer = maestro_app::test_support::answer("ok", None, None);
         Box::pin(std::future::ready(Ok(answer)))
     }
 }
@@ -612,7 +639,7 @@ fn carries_provider_retry_settings_into_the_request() {
         let h = fixture(Auth::Key).await;
         let settings = json!({"retry": {"provider": {"timeoutMs": 1234, "maxRetries": 7, "maxRetryDelayMs": 4321}}});
         let mut options = options(&h, settings);
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         let captured = Arc::new(Mutex::new(Vec::new()));
         let capturing = Arc::clone(&captured);
@@ -633,7 +660,7 @@ fn carries_provider_retry_settings_into_the_request() {
             .unwrap();
         let observed = json!({"stream_options": *captured.lock().unwrap()});
         assert_eq!(observed, expected);
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -650,7 +677,7 @@ fn http_idle_timeout_is_the_default_request_timeout_and_zero_disables_it() {
         ] {
             let h = fixture(Auth::Key).await;
             let mut options = options(&h, settings.clone());
-            options.model = Some(h.model("faux-1"));
+            options.model = Some(h.model("faux-1").unwrap());
             let created = create(options).await;
             let captured = Arc::new(Mutex::new(None));
             let capturing = Arc::clone(&captured);
@@ -664,7 +691,8 @@ fn http_idle_timeout_is_the_default_request_timeout_and_zero_disables_it() {
                 .unwrap();
             assert_eq!(*captured.lock().unwrap(), Some(expected), "{settings}");
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -672,7 +700,7 @@ fn invalid_http_idle_timeout_fails_each_sdk_request() {
     on_task_set(|_| async {
         let h = fixture(Auth::Key).await;
         let mut setup = options(&h, json!({"httpIdleTimeoutMs": -5}));
-        let model = h.model("faux-1");
+        let model = h.model("faux-1").unwrap();
         setup.model = Some(Arc::clone(&model));
         let created = create(setup).await;
         let requests = script_responses(&h, vec![answer("unused", None, None)]);
@@ -695,7 +723,8 @@ fn invalid_http_idle_timeout_fails_each_sdk_request() {
             "Invalid httpIdleTimeoutMs setting: -5"
         );
         assert!(requests.lock().unwrap().is_empty());
-    });
+    })
+    .unwrap();
 }
 
 /// Exact-spelled request headers captured before protocol normalization.
@@ -736,13 +765,13 @@ fn attribution_request(
 /// request function a created session installs.
 async fn capture_attribution_headers(case: AttributionCase) -> Option<AttributionHeaders> {
     let h = attribution_fixture(&case.provider).await;
-    let mut descriptor = h.model("faux-1").read().unwrap().clone();
+    let mut descriptor = h.model("faux-1").unwrap().read().unwrap().clone();
     descriptor.provider.clone_from(&case.provider);
     descriptor.base_url = case.base_url;
-    let config = maestro_catalog::ProviderConfigInput {
+    let config = maestro_models_registry::ProviderConfigInput {
         api_key: Some("faux-key".into()),
         headers: case.credential_headers,
-        ..maestro_catalog::ProviderConfigInput::default()
+        ..maestro_models_registry::ProviderConfigInput::default()
     };
     h.registry
         .register_provider(&case.provider, Arc::new(std::sync::RwLock::new(config)))
@@ -843,7 +872,8 @@ fn check_attribution_cases(ids: &[&str]) {
                         "{id}"
                     );
                 }
-            });
+            })
+            .unwrap();
         },
     )
     .unwrap();
@@ -1013,9 +1043,7 @@ impl maestro_models::Invoke<Local, FauxResponseInput<Local>> for HookCall {
                 headers: std::collections::BTreeMap::new(),
             };
             response_hook(response, model).await?;
-            Ok(crate::support::session_harness::answer(
-                "hooked", None, None,
-            ))
+            Ok(maestro_app::test_support::answer("hooked", None, None))
         })
     }
 }
@@ -1040,11 +1068,12 @@ fn forwards_before_and_after_provider_hooks() {
         let seen = Rc::new(RefCell::new(Vec::new()));
         let extensions =
             create_test_extensions_result(vec![(Some("<hooks>"), hooks(Rc::clone(&seen)))], &h.cwd)
-                .await;
+                .await
+                .unwrap();
         let mut options = options(&h, json!({}));
         options.resources =
             SessionResources::Loader(Rc::new(create_test_resource_loader(Some(extensions))));
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         let forwarded = Arc::new(Mutex::new(None));
         let call = HookCall {
@@ -1068,14 +1097,15 @@ fn forwards_before_and_after_provider_hooks() {
             expected["message_count"]
         );
         assert_eq!(json!(h.faux.state.call_count()), expected["call_count"]);
-    });
+    })
+    .unwrap();
 }
 
 /// Prompts `look` with two images under `block_images` and returns the request's messages.
 async fn image_request(block_images: bool) -> Vec<Value> {
     let h = fixture(Auth::Key).await;
     let mut options = options(&h, json!({"images": {"blockImages": block_images}}));
-    options.model = Some(h.model("faux-1"));
+    options.model = Some(h.model("faux-1").unwrap());
     let created = create(options).await;
     let captured = Arc::new(Mutex::new(Vec::new()));
     let capturing = Arc::clone(&captured);
@@ -1107,7 +1137,8 @@ fn collapses_consecutive_blocked_image_placeholders() {
     let expected = expected("block_images_filters_per_conversion");
     on_task_set(|_| async {
         assert_eq!(json!(image_request(true).await), expected["messages"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1125,7 +1156,7 @@ fn keeps_images_when_blocking_is_off() {
             json!(messages[0]["content"].as_array().unwrap()[1..]),
             json!(images)
         );
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -1144,7 +1175,7 @@ fn builds_the_default_resource_loader_and_loads_it() {
         options.cwd = Some(h.cwd.clone());
         options.resources =
             SessionResources::Default(Box::new(ResourceLoaderOptions::new(local, module_loader)));
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         assert!(
             created
@@ -1153,7 +1184,8 @@ fn builds_the_default_resource_loader_and_loads_it() {
                 .contains("Project rule: answer briefly."),
             "the loaded context file reached the prompt"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1166,7 +1198,7 @@ fn uses_the_supplied_resource_loader_as_it_is() {
         };
         let mut options = options(&h, json!({}));
         options.resources = SessionResources::Loader(Rc::new(loader));
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         assert!(
             created
@@ -1174,7 +1206,8 @@ fn uses_the_supplied_resource_loader_as_it_is() {
                 .system_prompt()
                 .starts_with("Supplied base prompt")
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Default construction and reload share the application's original tool services.
@@ -1207,7 +1240,7 @@ fn session_tool_services_survive_resource_reload() {
         let mut options = options(&h, json!({}));
         options.cwd = Some(h.cwd.clone());
         options.resources = SessionResources::Default(Box::new(resources));
-        options.model = Some(h.model("faux-1"));
+        options.model = Some(h.model("faux-1").unwrap());
         let created = create(options).await;
         let services = created
             .extensions_result
@@ -1219,7 +1252,8 @@ fn session_tool_services_survive_resource_reload() {
         assert_eq!(*seen.borrow(), 1);
         created.session.reload().await.unwrap();
         assert_eq!(*seen.borrow(), 2);
-    });
+    })
+    .unwrap();
 }
 
 /// Resolves recorded settings without admitting them as explicit changes.
@@ -1248,11 +1282,15 @@ impl maestro_settings::SettingsDecider for ResolveRecorded {
 #[test]
 fn sdk_restoration_resolves_recorded_values_without_rewriting_history() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", true), ("blocked", true)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("faux-1", true), ("blocked", true)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let mut options = options(
             &h,
             json!({"defaultProvider":"faux", "defaultModel":"faux-1"}),
@@ -1300,7 +1338,8 @@ fn sdk_restoration_resolves_recorded_values_without_rewriting_history() {
                 .iter()
                 .any(|error| error.error.to_string() == "release bounds recorded thinking")
         );
-    });
+    })
+    .unwrap();
 }
 
 /// A publisher refusing explicit SDK tool requests.
@@ -1332,7 +1371,8 @@ fn sdk_explicit_tools_are_admitted_before_initial_history() {
         let result = create_agent_session(options).await;
         assert_eq!(result.err().unwrap().message, "release refuses SDK tools");
         assert!(manager.borrow().get_entries().is_empty());
-    });
+    })
+    .unwrap();
 }
 
 /// Refuses explicit SDK selections, retaining requested thinking before capability clamping.
@@ -1360,7 +1400,7 @@ fn sdk_explicit_selection_refuses_before_history_and_capability_clamp() {
         for explicit_model in [false, true] {
             let mut options = options(&h, json!({}));
             if explicit_model {
-                options.model = Some(h.model("faux-1"));
+                options.model = Some(h.model("faux-1").unwrap());
             }
             options.thinking_level = Some(ModelThinkingLevel::High);
             let manager = options.session_manager.as_ref().unwrap().clone();
@@ -1378,7 +1418,8 @@ fn sdk_explicit_selection_refuses_before_history_and_capability_clamp() {
             );
             assert!(manager.borrow().get_entries().is_empty());
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -1388,7 +1429,7 @@ fn cloudflare_session_request_uses_resolved_endpoint_without_mutating_selection(
         h.registry.auth_storage().set("cloudflare-ai-gateway", serde_json::from_value(json!({
             "type":"api_key", "key":"controlled", "env":{"CLOUDFLARE_ACCOUNT_ID":"account", "CLOUDFLARE_GATEWAY_ID":"gateway"},
         })).unwrap());
-        let mut descriptor = h.model("faux-1").read().unwrap().clone();
+        let mut descriptor = h.model("faux-1").unwrap().read().unwrap().clone();
         descriptor.provider = "cloudflare-ai-gateway".into();
         descriptor.base_url =
             "https://custom.invalid/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}".into();
@@ -1420,5 +1461,5 @@ fn cloudflare_session_request_uses_resolved_endpoint_without_mutating_selection(
             selected.read().unwrap().base_url,
             "https://custom.invalid/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}"
         );
-    });
+    }).unwrap();
 }

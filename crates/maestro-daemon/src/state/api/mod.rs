@@ -21,7 +21,7 @@ use super::{
 };
 use crate::{events::AppEvent, locations::DaemonPaths, settings::model::ToastDelivery};
 use maestro_protocol::{
-    rpc_types::RpcCommand,
+    envelopes::RpcCommand,
     schema::{ErrorBody, ResponseResult},
 };
 use maestro_settings::SettingsManager;

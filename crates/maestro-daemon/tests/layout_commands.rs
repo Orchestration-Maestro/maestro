@@ -8,8 +8,8 @@ use maestro_daemon::state::test_support::api::{
 use maestro_daemon::state::test_support::layout_commands::{adjusted, exported, two_tabs};
 use maestro_daemon::state::test_support::run;
 use maestro_protocol::{
+    envelopes::RpcCommand,
     events::EventData,
-    rpc_types::RpcCommand,
     schema::{LayoutNode, LayoutSetSplitRatioParams, SplitDirection},
 };
 use serde_json::json;

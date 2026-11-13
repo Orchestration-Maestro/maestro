@@ -7,7 +7,10 @@
 use crate::{
     guest_calls::Handle,
     import_route::Route,
-    local_resources::{Lease, Message, held::Credentials},
+    local_resources::{
+        Lease, Message,
+        held::{AcceptedCredentials, Credentials},
+    },
 };
 use maestro_extensions::{AuthStorage, DiagnosticErrorInfo};
 use std::sync::Arc;
@@ -148,8 +151,15 @@ impl Endpoint {
         controls: crate::oauth_callbacks::Controls,
     ) -> Result<(), String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::CredentialLogin(id, provider, controls, reply, admission)
+            .admit::<Credentials, _, _>(move |owner, registry| {
+                let callbacks = controls.callbacks(registry)?;
+                let owner = owner.clone();
+                Ok(async move {
+                    owner
+                        .login(&provider, callbacks)
+                        .await
+                        .map_err(|error| error.to_string())
+                })
             })
             .await
     }
@@ -160,8 +170,14 @@ impl Endpoint {
         include_fallback: Option<bool>,
     ) -> Result<Option<String>, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::CredentialKey(id, (provider, include_fallback), reply, admission)
+            .admit::<AcceptedCredentials, _, _>(move |accepted, _| {
+                let (owner, effects) = (accepted.owner.clone(), accepted.effects.clone());
+                Ok(async move {
+                    owner
+                        .get_api_key(&provider, include_fallback.unwrap_or(true), &*effects)
+                        .await
+                        .map_err(|error| error.to_string())
+                })
             })
             .await
     }

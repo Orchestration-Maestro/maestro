@@ -8,6 +8,8 @@ pub mod contributions;
 pub mod events;
 /// Frames.
 pub mod frames;
+/// Popup size.
+mod popup_size;
 /// Request.
 pub mod request;
 /// Response.
@@ -18,7 +20,7 @@ pub mod schema;
 pub mod shared;
 
 /// Shared RPC command and response records.
-pub mod rpc_types;
+pub mod envelopes;
 
 /// Shared command and binary-channel protocol version.
 pub const PROTOCOL_VERSION: u32 = 21;

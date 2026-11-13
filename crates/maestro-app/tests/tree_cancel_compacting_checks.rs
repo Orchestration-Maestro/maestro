@@ -1,13 +1,13 @@
 //! A cancelled tree navigation releasing the branch summary state, compared with the
 //! recorded regression case.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    HarnessOptions, assistant, harness, on_task_set, recorded, user,
-};
+use crate::support::session_harness::{recorded, user};
+use maestro_app::test_support::{HarnessOptions, assistant, harness, on_task_set};
 use maestro_extensions::{ExtensionFactory, SessionBeforeTreeEvent, SessionBeforeTreeResult};
 use maestro_models::Local;
 use maestro_session::session_manager::NavigateTreeOptions;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::rc::Rc;
 
@@ -34,11 +34,15 @@ fn tree_veto_releases_summary_state_without_moving_leaf() {
         "tree_veto_releases_summary_state_without_moving_leaf",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            factories: vec![vetoing()],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![vetoing()],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let (target, leaf) = {
             let mut manager = h.session.session_manager().borrow_mut();
             let target = manager.append_message(user(&json!("first"), 1)).unwrap();
@@ -67,5 +71,6 @@ fn tree_veto_releases_summary_state_without_moving_leaf() {
             "same_leaf": json!(before == after && after.as_deref() == Some(leaf.as_str())),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }

@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use crate::{
-    local_resources::{Lease, Message},
+    local_resources::{Lease, Message, held::ApiFacade},
     writer_reads::decode,
 };
 use maestro_extensions::{
@@ -211,15 +211,25 @@ impl Endpoint {
     /// Admits explicit execution on the original local runtime.
     pub(crate) async fn exec(&self, request: crate::exec::Request) -> Result<String, String> {
         self.0
-            .request_async(|id, reply, admission| Message::Exec(id, request, reply, admission))
+            .admit::<ApiFacade, _, _>(move |api, registry| {
+                let signal = request
+                    .signal
+                    .as_ref()
+                    .map(|signal| registry.cancellation(signal))
+                    .transpose()?;
+                Ok(crate::exec::run(request.data, api.clone(), signal))
+            })
             .await
     }
 
     /// Admits the selected model operation on the original local runtime.
     pub(crate) async fn set_model(&self, model: maestro_extensions::Model) -> Result<bool, String> {
         self.0
-            .request_async(|id, reply, admission| {
-                Message::ApiModel(id, Box::new(model), reply, admission)
+            .admit::<ApiFacade, _, _>(move |api, _| {
+                let work = api
+                    .set_model(std::sync::Arc::new(std::sync::RwLock::new(model)))
+                    .map_err(|error| error.to_string())?;
+                Ok(crate::command_reads::settled(work))
             })
             .await
     }

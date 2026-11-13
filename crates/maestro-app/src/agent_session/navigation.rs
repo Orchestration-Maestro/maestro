@@ -5,7 +5,6 @@ use super::{
 };
 use crate::configuration::config::get_docs_path;
 use indexmap::IndexMap;
-use maestro_catalog::ResolvedRequestAuth;
 use maestro_credentials::format_no_api_key_found_message;
 use maestro_extensions::{
     ExtensionExecution, SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionTreeEvent,
@@ -13,6 +12,7 @@ use maestro_extensions::{
 };
 use maestro_lock::{read, write};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Model};
+use maestro_models_registry::ResolvedRequestAuth;
 use maestro_session::{
     BranchSummaryResult, GenerateBranchSummaryOptions, Presence,
     collect_entries_for_branch_summary, generate_branch_summary,

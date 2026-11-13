@@ -4,7 +4,6 @@ use super::{
     state::thrown,
 };
 use maestro_agent::QueueMode;
-use maestro_catalog::DEFAULT_THINKING_LEVEL;
 use maestro_extensions::{ExtensionExecution, ModelSelectEvent, ThinkingLevelSelectEvent};
 use maestro_lock::{read, write};
 use maestro_models::{
@@ -12,6 +11,7 @@ use maestro_models::{
     extension_events::selection_events::ModelSelectSource, get_supported_thinking_levels,
     models_are_equal,
 };
+use maestro_models_registry::DEFAULT_THINKING_LEVEL;
 use maestro_session::Presence;
 use maestro_settings::{
     MessageDeliveryMode, PreparedSettingsEdit, ThinkingLevel as SavedThinkingLevel,

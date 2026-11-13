@@ -4,7 +4,7 @@
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
-use crate::local_resources::{SignalEndpoint, Work};
+use crate::local_resources::SignalEndpoint;
 use maestro_extensions::{Cancellation, ExtensionAPI, Local};
 use serde::Deserialize;
 use std::time::Duration;
@@ -26,41 +26,34 @@ struct Options {
     cwd: Option<String>,
 }
 
-/// Starts one native execution with owned operands and settles its original caller.
-pub(crate) fn start(
+/// Runs one native execution with owned operands.
+pub(crate) async fn run(
     data: String,
     api: ExtensionAPI<Local>,
     signal: Option<Cancellation>,
-    reply: tokio::sync::oneshot::Sender<Result<String, String>>,
-) -> Work {
-    Box::pin(async move {
-        let result = async {
-            let (command, args, options): (String, Vec<String>, Option<Options>) =
-                crate::writer_reads::decode(&data)?;
-            let options = options.unwrap_or_default();
-            let cwd = options
-                .cwd
-                .as_deref()
-                .map(maestro_extensions::helpers::native_path);
-            let exec = maestro_extensions::ExecOptions {
-                signal: signal.as_ref(),
-                timeout: options
-                    .timeout
-                    .filter(|value| *value > 0.0)
-                    .map(milliseconds),
-            };
-            let result = api
-                .exec(&command, &args, cwd.as_deref(), exec)
-                .map_err(|error| error.to_string())?
-                .await
-                .map_err(|error| error.to_string())?;
-            let result = serde_json::json!({"stdout": result.stdout, "stderr": result.stderr,
-                "code": result.code, "killed": result.killed});
-            Ok(result.to_string())
-        }
-        .await;
-        let _ = reply.send(result);
-    })
+) -> Result<String, String> {
+    let (command, args, options): (String, Vec<String>, Option<Options>) =
+        crate::writer_reads::decode(&data)?;
+    let options = options.unwrap_or_default();
+    let cwd = options
+        .cwd
+        .as_deref()
+        .map(maestro_extensions::helpers::native_path);
+    let exec = maestro_extensions::ExecOptions {
+        signal: signal.as_ref(),
+        timeout: options
+            .timeout
+            .filter(|value| *value > 0.0)
+            .map(milliseconds),
+    };
+    let result = api
+        .exec(&command, &args, cwd.as_deref(), exec)
+        .map_err(|error| error.to_string())?
+        .await
+        .map_err(|error| error.to_string())?;
+    let result = serde_json::json!({"stdout": result.stdout, "stderr": result.stderr,
+        "code": result.code, "killed": result.killed});
+    Ok(result.to_string())
 }
 
 /// A positive millisecond count as a native deadline: past the range it saturates to no

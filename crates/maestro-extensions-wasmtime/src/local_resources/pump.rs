@@ -1,12 +1,11 @@
 //! Shared local ownership of the sole request receiver and admitted work.
 use super::{Admission, Capability, Message, Registry, Work};
-use crate::context_reads::{Endpoint, Owner, Request};
+use crate::context_reads::Request;
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use maestro_extensions::{Cancellation, Model};
+use maestro_extensions::Cancellation;
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::Arc,
     task::{Context, Poll},
 };
 use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
@@ -185,9 +184,7 @@ impl State {
         match message {
             Message::ModelStart(request) => request.answer(&self.registry),
             Message::Provider(request) => self.provider_request(request),
-            Message::ModelStream(id, request) => self.model_stream_request(id, request),
             Message::NewStream(request) => request.answer(&self.registry),
-            Message::Stream(id, request) => self.stream_request(id, request),
             Message::Routed(message, route) => self.routed(*message, route),
             Message::Json(_, request) => request.reject(),
             Message::LockUpdate(_, _, reply) => Self::reject_lock_update(&reply),
@@ -197,33 +194,18 @@ impl State {
             Message::Completed(id, result) => self.synchronous.complete(id, result),
             Message::Read(id, request) => self.read_context(id, request),
             Message::Api(id, request) => self.api_request(id, request),
-            Message::Builtin(id, request) => self.builtin(id, request),
             Message::BuiltinOperation(operation) => self.builtin_operation(operation),
             Message::Events(id, request) => self.event(id, request),
             Message::Registration(id, request) => self.api_request(id, request),
-            Message::ApiModel(id, model, tx, scope) => self.start_api_model(id, *model, tx, scope),
-            Message::Exec(id, request, reply, scope) => self.start_exec(id, request, reply, scope),
-            Message::HostOperation(call) => self.host_operation(call),
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
-            message @ (Message::OAuthLogin(..)
-            | Message::OAuthRefresh(..)
-            | Message::OAuthProvider(..)
-            | Message::OAuthInteraction(..)) => self.oauth(message),
-            Message::CredentialLogin(id, provider, controls, reply, admission) => {
-                self.start_credential_login(id, (provider, controls), reply, admission);
-            }
-            Message::CredentialKey(id, request, reply, admission) => {
-                self.start_credential_key(id, request, reply, admission);
-            }
-            Message::Replaced(id, request, scope) => self.start_replaced(id, request, scope),
-            Message::ReplacedCommand(id, reply) => self.replaced_command(id, &reply),
+            Message::OAuthInteraction(request) => self.oauth_interaction(request),
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
             Message::Widgets(message) => self.widgets(message),
-            Message::Native(id, request) => self.native(id, request),
-            Message::Http(id, request) => self.http(id, request),
+            Message::Native(request) => self.native(request),
+            Message::Http(request) => self.http(request),
             Message::Watch(id, request) => self.watch(id, request),
             Message::Run(id, call) => self.run(id, call),
             Message::Admit(id, start, admission) => self.start(id, start, admission),
@@ -298,33 +280,6 @@ impl State {
         }
     }
 
-    /// Starts the original creating session's operation outside the registry borrow.
-    fn start_replaced(
-        &self,
-        id: u64,
-        request: crate::replaced_reads::Request,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        if let Some(Capability::Replaced(context)) = capability.as_deref() {
-            self.admit(request.start(context), admission);
-        } else {
-            request.reject("extension replaced-session resource ended");
-        }
-    }
-
-    /// Gives the original guarded command view its own independently retained identity.
-    fn replaced_command(&self, id: u64, reply: &std::sync::mpsc::Sender<Result<Endpoint, String>>) {
-        let capability = self.registry.capability(id);
-        let result = match capability.as_deref() {
-            Some(Capability::Replaced(context)) => {
-                self.registry.context(Owner::Command((**context).clone()))
-            }
-            _ => Err("extension replaced-session resource ended".to_owned()),
-        };
-        let _ = reply.send(result);
-    }
-
     /// Selects the original API once for reads and callback-bearing registrations.
     fn api_request(&self, id: u64, request: impl crate::api_reads::ApiRequest) {
         let capability = self.registry.capability(id);
@@ -344,56 +299,6 @@ impl State {
             }
         } else {
             request.reject("extension API resource ended");
-        }
-    }
-
-    /// Selects the original facade and cancellation before starting admitted execution.
-    fn start_exec(
-        &self,
-        id: u64,
-        request: crate::exec::Request,
-        reply: tokio::sync::oneshot::Sender<Result<String, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Api(api)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension API resource ended".to_owned()));
-            return;
-        };
-        let signal = request
-            .signal
-            .as_ref()
-            .map(|signal| self.registry.cancellation(signal))
-            .transpose();
-        match signal {
-            Ok(signal) => self.admit(
-                crate::exec::start(request.data, api.clone(), signal, reply),
-                admission,
-            ),
-            Err(error) => {
-                let _ = reply.send(Err(error));
-            }
-        }
-    }
-
-    /// Starts the native model operation at consumption and retains its admission.
-    fn start_api_model(
-        &self,
-        id: u64,
-        model: Model,
-        reply: tokio::sync::oneshot::Sender<Result<bool, String>>,
-        admission: Admission,
-    ) {
-        let capability = self.registry.capability(id);
-        let Some(Capability::Api(api)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension API resource ended".to_owned()));
-            return;
-        };
-        match api.set_model(Arc::new(std::sync::RwLock::new(model))) {
-            Ok(work) => self.admit(crate::command_reads::settle(work, reply), admission),
-            Err(error) => {
-                let _ = reply.send(Err(error.to_string()));
-            }
         }
     }
 

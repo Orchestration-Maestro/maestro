@@ -1,9 +1,9 @@
 //! The API socket: its private listener, the connections it accepts and the removal of the
 //! socket it bound.
-use maestro_app::connection_runner::{
+use crate::connection_runner::{
     JsonlLineReader, RpcInput, RpcLineReader, RpcOutput, WorkspaceOperations,
 };
-use maestro_app::{RpcModeOptions, run_rpc_connection};
+use crate::{RpcModeOptions, run_rpc_connection};
 use maestro_daemon::service::local_socket::{
     AsyncLocalListener, AsyncLocalListenerExt, AsyncLocalStream, SocketClaim, SocketFileIdentity,
     bind_async_local_listener, is_connection_closed_error, prepare_socket_path,

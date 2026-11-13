@@ -1,6 +1,7 @@
 //! Base factories execute early without changing extension precedence.
 #![cfg(unix)]
-use crate::resource_fixtures::{ExtensionSpec, factory, on_task_set};
+use crate::resource_fixtures::{ExtensionSpec, factory};
+use maestro_app::test_support::on_task_set;
 use maestro_app::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionFactory, ResourceLoader,
     ResourceLoaderOptions,
@@ -124,7 +125,8 @@ fn base_factories_run_first_without_moving_registrations() {
                 .iter()
                 .all(|error| error.path.ends_with("base.wasm"))
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Writes a local package with one extension and a prompt template.
@@ -215,7 +217,8 @@ fn base_contributions_load_sources_and_prompt_inputs_in_the_same_startup() {
         loader.reload().await.unwrap();
         assert_eq!(&*calls.borrow(), &["base", "extra", "base", "extra"]);
         assert_eq!(loader.get_prompts().prompts.len(), 2);
-    });
+    })
+    .unwrap();
 }
 
 /// A runner over the loader's actual ordered extension inventory.
@@ -233,7 +236,7 @@ fn runner(loader: &impl ResourceLoader<Local>) -> maestro_app::ExtensionRunner<L
                 maestro_session::SessionManager::in_memory(None).unwrap(),
             )),
             model_registry: std::sync::Arc::new(
-                maestro_catalog::ModelRegistry::in_memory(
+                maestro_models_registry::ModelRegistry::in_memory(
                     auth,
                     crate::resource_fixtures::no_commands(),
                 )
@@ -270,7 +273,8 @@ fn base_registration_conflicts_follow_ordinary_extension_order() {
         loader.reload().await.unwrap();
         let runner = runner(&loader);
         assert_conflict_winners(&runner);
-    });
+    })
+    .unwrap();
 }
 
 /// Checks conflict resolution through the runner, independently of factory order.
@@ -388,7 +392,8 @@ fn second_base_layer_publisher_is_reported_without_application() {
         loader.reload().await.unwrap();
         assert_eq!(loader.get_extensions().errors.len(), 1);
         assert_eq!(settings.borrow().get_base_layer().unwrap().source, "one");
-    });
+    })
+    .unwrap();
 }
 
 /// Session services read contributed model files below the user's file in the same startup.
@@ -448,7 +453,8 @@ fn session_services_apply_contributed_models_before_user_models() {
         assert_eq!(model.context_window.to_bits(), 12345.0_f64.to_bits());
         assert_eq!(model.cost.input.to_bits(), 3.0_f64.to_bits());
         assert_eq!(model.cost.output.to_bits(), 2.0_f64.to_bits());
-    });
+    })
+    .unwrap();
 }
 
 /// Registers distinct first defaults and replacement metadata in each factory.
@@ -527,7 +533,8 @@ fn ordinary_factories_read_their_first_registered_flag_defaults() {
             flags["optional"],
             maestro_extensions::types::FlagValue::String("base fallback".into())
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Multiple entrypoints of one base package share its publication identity.
@@ -567,7 +574,8 @@ fn one_base_package_can_publish_from_multiple_entrypoints() {
             settings.borrow().get_base_layer().unwrap().source,
             "one-extra"
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Offers inputs before returning the controlled factory failure.
@@ -626,7 +634,8 @@ fn failed_base_factories_do_not_apply_their_load_time_inputs() {
         let result = loader.get_extensions();
         assert_eq!(result.errors.len(), 1);
         assert!(result.errors[0].error.contains("factory failed"));
-    });
+    })
+    .unwrap();
 }
 
 /// Explicit flag values use the first extension's declared kind, not a later base kind.
@@ -677,7 +686,8 @@ fn extension_flag_values_use_the_first_registered_kind() {
                 .unwrap()["same"],
             maestro_extensions::types::FlagValue::String("chosen".into())
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Explicit base sources bootstrap while ordinary discovery is disabled.
@@ -724,7 +734,8 @@ fn disabled_extension_discovery_keeps_base_sources_at_package_precedence() {
             })
             .collect();
         assert_eq!(names, [Some("cli".into()), Some("base".into())]);
-    });
+    })
+    .unwrap();
 }
 
 /// Counts executions while using the same flag-reading factory at every path.
@@ -833,7 +844,8 @@ fn aliased_base_entrypoints_load_once_at_their_ordinary_position() {
             loader.get_extensions().runtime.flag_values.read().unwrap()["shared"],
             maestro_extensions::types::FlagValue::String("base first".into())
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Missing layer keys cannot remove accepted settings; explicit null still can.
@@ -894,7 +906,8 @@ fn base_layer_removal_requires_an_explicit_null() {
                 assert!(settings.borrow().is_key_path_locked("theme", &[]));
                 assert_eq!(settings.borrow().get_theme().as_deref(), Some("locked"));
             }
-        });
+        })
+        .unwrap();
     }
 }
 
@@ -967,7 +980,8 @@ fn base_provider_operations_follow_ordinary_extension_order() {
             let result = loader.get_extensions();
             assert!(result.errors.is_empty());
             assert_provider_operations(&result, explicit_alias);
-        });
+        })
+        .unwrap();
     }
 }
 
@@ -1070,7 +1084,8 @@ fn disabled_discovery_replays_failed_base_provider_operations() {
                 ]
             );
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Registers the controlled provider operations before failing the middle base factory.

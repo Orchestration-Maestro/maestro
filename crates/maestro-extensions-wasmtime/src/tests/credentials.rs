@@ -3,6 +3,7 @@ use crate::{
     guest_calls::{Call, Callbacks, credentials::Backend},
     lifecycle::replies::Replies,
     local_resources::Pump,
+    tests::awaited,
 };
 use maestro_extensions::AuthStorageBackend;
 use std::{
@@ -348,4 +349,38 @@ fn released_credentials_reject_every_kind_of_operation_with_their_ended_text() {
         ]
     });
     assert_eq!(errors, ["extension credential resource ended"; 14]);
+}
+
+#[test]
+fn released_credentials_reject_login_and_key_with_their_ended_text() {
+    let (pump, admission) = Pump::new(crate::tests::support::widgets());
+    let registry = pump.registry();
+    let (calls, _releases) = tokio::sync::mpsc::unbounded_channel::<Call>();
+    let handler = Callbacks::new(calls.downgrade(), Replies::default())
+        .observer(0)
+        .handle(registry.admission().unwrap())
+        .unwrap();
+    let credentials = registry
+        .credentials(
+            Arc::new(maestro_extensions::AuthStorage::in_memory(
+                maestro_extensions::AuthStorageData::default(),
+            )),
+            Arc::new(ConstructorEffects("ended")),
+        )
+        .unwrap();
+    let lease = credentials.0.clone();
+    let errors = crate::tests::ended_errors(lease, pump, admission, move || {
+        let controls = crate::oauth_callbacks::Controls {
+            handler,
+            options: (false, false, false),
+            signal: None,
+        };
+        awaited(async {
+            [
+                credentials.login("p".into(), controls).await.unwrap_err(),
+                credentials.key("p".into(), None).await.unwrap_err(),
+            ]
+        })
+    });
+    assert_eq!(errors, ["extension credential resource ended"; 2]);
 }

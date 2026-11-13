@@ -1,7 +1,8 @@
 //! A reload after startup reading new prompt settings into the live resources, compared with
 //! the recorded regression case.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{HarnessOptions, harness, on_task_set, recorded};
+use crate::support::session_harness::recorded;
+use maestro_app::test_support::{HarnessOptions, harness, on_task_set};
 use maestro_app::{
     CreateAgentSessionFromServicesOptions, CreateAgentSessionRuntimeFactory,
     CreateAgentSessionRuntimeOptions, CreateAgentSessionRuntimeResult,
@@ -11,12 +12,13 @@ use maestro_app::{
 };
 use maestro_models::{DiagnosticErrorInfo, Local};
 use maestro_session::SessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 /// The runtime factory building one services-backed session over `catalog` and `model`.
 fn services_factory(
-    catalog: Arc<maestro_catalog::ModelRegistry>,
+    catalog: Arc<maestro_models_registry::ModelRegistry>,
     model: Arc<std::sync::RwLock<maestro_models::Model>>,
     local: Rc<tokio::task::LocalSet>,
 ) -> CreateAgentSessionRuntimeFactory {
@@ -85,7 +87,9 @@ fn reload_reads_saved_prompt_exclusion_into_live_resources() {
         "reload_reads_saved_prompt_exclusion_into_live_resources",
     );
     on_task_set(|local| async move {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let cwd = h.scratch.path().join("cwd");
         let agent = h.scratch.path().join("agent");
         std::fs::create_dir_all(&cwd).unwrap();
@@ -93,8 +97,11 @@ fn reload_reads_saved_prompt_exclusion_into_live_resources() {
         std::fs::write(agent.join("prompts/test.md"), "Echo test prompt\n").unwrap();
         let cwd = cwd.to_str().unwrap().to_owned();
         let agent_dir = agent.to_str().unwrap().to_owned();
-        let factory =
-            services_factory(Arc::clone(&h.registry), h.model("plain"), Rc::clone(&local));
+        let factory = services_factory(
+            Arc::clone(&h.registry),
+            h.model("plain").unwrap(),
+            Rc::clone(&local),
+        );
         let manager = SessionManager::create(&cwd, Some(&agent_dir), &agent_dir).unwrap();
         let runtime = create_agent_session_runtime(
             factory,
@@ -130,5 +137,6 @@ fn reload_reads_saved_prompt_exclusion_into_live_resources() {
         assert_eq!(observed, expected);
         runtime.dispose().await.unwrap();
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
