@@ -4,7 +4,7 @@ pub use estimate::{
     calculate_context_tokens, estimate_context_tokens, estimate_message_context_tokens,
     estimate_tokens, get_last_assistant_usage, should_compact,
 };
-pub use maestro_interchange::entry::summarization::{CompactionSettings, FileOperations};
+pub use maestro_interchange::entry::compactions::{CompactionSettings, FileOperations};
 /// Library policy for automatic compaction and the retained window.
 pub const DEFAULT_COMPACTION_SETTINGS: CompactionSettings = CompactionSettings {
     enabled: true,
@@ -55,7 +55,7 @@ pub struct CompactionDetails {
 }
 /// Owned raw-message snapshots prepared for a pending compaction.
 pub type CompactionPreparation =
-    maestro_interchange::entry::summarization::CompactionPreparation<serde_json::Value>;
+    maestro_interchange::entry::compactions::CompactionPreparation<serde_json::Value>;
 mod prepare;
 pub use prepare::prepare_compaction;
 mod generation;
@@ -63,7 +63,7 @@ mod prompts;
 pub use generation::{
     GeneratedSummary, SummaryOptions, compact, generate_summary, generate_summary_with_usage,
 };
-pub use maestro_interchange::entry::summarization::CompactionResult;
+pub use maestro_interchange::entry::compactions::CompactionResult;
 
 mod branch_summarization;
 pub use branch_summarization::{CollectEntriesResult, collect_entries_for_branch_summary};

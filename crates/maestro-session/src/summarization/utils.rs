@@ -1,5 +1,5 @@
 //! Shared file tracking and conversation text for summaries.
-pub use maestro_interchange::entry::summarization::FileOperations;
+pub use maestro_interchange::entry::compactions::FileOperations;
 use maestro_json::is_truthy;
 use maestro_models::{AssistantContent, Message, UserBlock, UserContent};
 use serde::Deserialize;
