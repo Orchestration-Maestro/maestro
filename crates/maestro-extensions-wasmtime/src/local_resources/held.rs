@@ -248,7 +248,15 @@ held!(
     Credentials,
     std::sync::Arc<maestro_extensions::AuthStorage>,
     "extension credential resource ended",
-    Capability::Credentials(owner, _) => owner
+    Capability::Credentials(accepted) => &accepted.owner
+);
+
+held!(
+    /// The accepted credentials together with their request-time effects.
+    AcceptedCredentials,
+    super::capability::Accepted,
+    "extension credential resource ended",
+    Capability::Credentials(accepted) => accepted
 );
 
 held!(

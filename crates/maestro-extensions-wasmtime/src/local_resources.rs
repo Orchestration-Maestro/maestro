@@ -13,7 +13,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
 mod capability;
-pub(crate) use capability::Capability;
+pub(crate) use capability::{Accepted, Capability};
 pub(crate) mod builtin;
 pub(crate) mod builtin_bash;
 /// Exact-name native selection with independently retained effects.
@@ -104,21 +104,6 @@ pub(crate) enum Message {
     ),
     /// Uses native interaction callbacks on this same local owner.
     OAuthInteraction(crate::oauth_interaction::Request),
-    /// Authorizes and persists through the retained credential owner.
-    CredentialLogin(
-        u64,
-        String,
-        crate::oauth_callbacks::Controls,
-        tokio::sync::oneshot::Sender<Result<(), String>>,
-        Admission,
-    ),
-    /// Resolves a key while retaining the original owner through settlement.
-    CredentialKey(
-        u64,
-        (String, Option<bool>),
-        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
-        Admission,
-    ),
     /// Uses original native observers and explicit subscription removers.
     Effect(u64, effects::Request),
     /// Runs a request whose native code may call back into this instance through its route.
@@ -280,7 +265,9 @@ impl Registry {
             return Err("extension credential resource belongs to another host".into());
         }
         match self.capability(endpoint.0.id).as_deref() {
-            Some(Capability::Credentials(auth, effects)) => Ok((auth.clone(), effects.clone())),
+            Some(Capability::Credentials(accepted)) => {
+                Ok((accepted.owner.clone(), accepted.effects.clone()))
+            }
             _ => Err("extension credential resource ended".into()),
         }
     }
@@ -389,7 +376,7 @@ impl Registry {
         owner: Arc<maestro_extensions::AuthStorage>,
         effects: maestro_extensions::ConfigValues,
     ) -> Result<crate::credential_reads::Endpoint, String> {
-        self.insert(Capability::Credentials(owner, effects))
+        self.insert(Capability::Credentials(Accepted { owner, effects }))
             .map(crate::credential_reads::Endpoint)
     }
 

@@ -202,12 +202,6 @@ impl State {
             Message::Sleep(request, reply, admission) => self.sleep(request, reply, admission),
             Message::NewSignal(signal, reply) => self.new_signal(signal, &reply),
             Message::OAuthInteraction(request) => self.oauth_interaction(request),
-            Message::CredentialLogin(id, provider, controls, reply, admission) => {
-                self.start_credential_login(id, (provider, controls), reply, admission);
-            }
-            Message::CredentialKey(id, request, reply, admission) => {
-                self.start_credential_key(id, request, reply, admission);
-            }
             Message::Effect(id, request) => self.effect(id, request),
             Message::Ui(id, request) => self.ui(id, request),
             Message::Dialog(id, request, admission) => self.dialog(id, request, admission),
