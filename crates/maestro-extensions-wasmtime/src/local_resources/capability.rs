@@ -5,8 +5,8 @@ use maestro_extensions::{
 };
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-/// Accepted credentials with the effects their configured commands run through.
-pub(crate) struct Accepted {
+/// Original credentials with the effects their configured commands run through.
+pub(crate) struct CredentialOwner {
     /// The credential owner.
     pub(crate) owner: Arc<maestro_extensions::AuthStorage>,
     /// Request-time command effects of the creating catalog.
@@ -59,7 +59,7 @@ pub(crate) enum Capability {
     /// Original writable setup capability, not a copied or reconstructed history.
     Writer(Rc<RefCell<maestro_extensions::SessionManager>>),
     /// Original credentials and their request-time effects.
-    Credentials(Accepted),
+    Credentials(CredentialOwner),
     /// Original independently retained catalog.
     Catalog(SharedHandle<ModelRegistry>),
     /// A captured node, independent of the reader that produced its tree.

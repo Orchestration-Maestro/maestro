@@ -1,8 +1,11 @@
 //! A native child and its byte reader end with their capabilities.
 use super::ended_endpoint;
-use crate::local_resources::{
-    Capability,
-    native_resources::{Child, Reader, Writer},
+use crate::{
+    local_resources::{
+        Capability,
+        native_resources::{Child, Reader, Writer},
+    },
+    tests::awaited,
 };
 use maestro_extensions::native_io::{ChildProcess, ExitStatus, IoFuture, Readable, Writable};
 use std::rc::Rc;
@@ -89,16 +92,6 @@ impl Writable for Sink {
     fn end(&self) -> IoFuture<'_, ()> {
         Box::pin(async { Ok(()) })
     }
-}
-
-/// Runs `operations` on a current-thread runtime, as an asynchronous import does.
-fn awaited<const N: usize>(
-    operations: impl std::future::Future<Output = [String; N]>,
-) -> [String; N] {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(operations)
 }
 
 #[test]

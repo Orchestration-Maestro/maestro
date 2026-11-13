@@ -256,7 +256,7 @@ held!(
 held!(
     /// The accepted credentials together with their request-time effects.
     AcceptedCredentials,
-    super::capability::Accepted,
+    super::capability::CredentialOwner,
     "extension credential resource ended",
     Capability::Credentials(accepted) => accepted
 );

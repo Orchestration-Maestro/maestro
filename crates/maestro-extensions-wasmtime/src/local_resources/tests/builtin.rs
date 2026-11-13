@@ -4,7 +4,7 @@ use crate::{
     guest_calls::tool_renders::{Info, Phase},
     local_resources::{Capability, builtin::Factory},
     native_renders::{Render, Slot},
-    tests::ended_errors,
+    tests::{awaited, ended_errors},
 };
 use maestro_extensions::LiveTheme;
 
@@ -69,10 +69,7 @@ fn released_builtin_tool_rejects_execution_with_its_ended_text() {
             update: None,
             api,
         };
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(async { [tool.execute(execution).await.unwrap_err()] })
+        awaited(async { [tool.execute(execution).await.unwrap_err()] })
     });
     assert_eq!(errors, ["extension built-in tool resource ended"]);
 }

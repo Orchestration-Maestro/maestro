@@ -13,7 +13,7 @@ use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
 mod capability;
-pub(crate) use capability::{Accepted, Capability};
+pub(crate) use capability::{Capability, CredentialOwner};
 pub(crate) mod builtin;
 pub(crate) mod builtin_bash;
 /// Exact-name native selection with independently retained effects.
@@ -372,7 +372,7 @@ impl Registry {
         owner: Arc<maestro_extensions::AuthStorage>,
         effects: maestro_extensions::ConfigValues,
     ) -> Result<crate::credential_reads::Endpoint, String> {
-        self.insert(Capability::Credentials(Accepted { owner, effects }))
+        self.insert(Capability::Credentials(CredentialOwner { owner, effects }))
             .map(crate::credential_reads::Endpoint)
     }
 

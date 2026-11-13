@@ -3,7 +3,7 @@ use super::{Pump, handles};
 use crate::{
     guest_calls::bash::BashRequest,
     local_resources::{Capability, local_bash::Execution},
-    tests::ended_errors,
+    tests::{awaited, ended_errors},
 };
 use maestro_extensions::{Local, create_extension_runtime};
 
@@ -33,10 +33,7 @@ fn released_local_shell_rejects_execution_with_its_ended_text() {
             output,
             api,
         };
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap();
-        [runtime.block_on(shell.execute(execution)).unwrap_err()]
+        [awaited(shell.execute(execution)).unwrap_err()]
     });
     assert_eq!(errors, ["extension local shell resource ended"]);
 }

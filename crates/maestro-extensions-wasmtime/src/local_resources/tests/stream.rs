@@ -2,7 +2,7 @@
 use super::{Pump, ended_endpoint, handles};
 use crate::{
     local_resources::{Capability, model_streams::Endpoint},
-    tests::ended_errors,
+    tests::{awaited, ended_errors},
 };
 use maestro_extensions::AssistantMessageEventStream;
 
@@ -43,15 +43,12 @@ fn released_assistant_stream_rejects_observations_with_its_ended_text() {
         Capability::AssistantStream(AssistantMessageEventStream::new()),
         Endpoint,
         |stream| {
-            tokio::runtime::Builder::new_current_thread()
-                .build()
-                .unwrap()
-                .block_on(async {
-                    [
-                        stream.next().await.unwrap_err(),
-                        stream.result().await.unwrap_err(),
-                    ]
-                })
+            awaited(async {
+                [
+                    stream.next().await.unwrap_err(),
+                    stream.result().await.unwrap_err(),
+                ]
+            })
         },
     );
     assert_eq!(errors, ["extension assistant stream resource ended"; 2]);
@@ -65,15 +62,12 @@ fn released_event_stream_rejects_observations_with_its_ended_text() {
     let stream = registry.stream(classifier, extractor).unwrap();
     let lease = stream.0.clone();
     let errors = ended_errors(lease, pump, admission, move || {
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(async {
-                [
-                    stream.next().await.err().unwrap(),
-                    stream.result().await.err().unwrap(),
-                ]
-            })
+        awaited(async {
+            [
+                stream.next().await.err().unwrap(),
+                stream.result().await.err().unwrap(),
+            ]
+        })
     });
     assert_eq!(errors, ["extension stream resource ended"; 2]);
 }

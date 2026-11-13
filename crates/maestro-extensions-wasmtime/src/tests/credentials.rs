@@ -3,6 +3,7 @@ use crate::{
     guest_calls::{Call, Callbacks, credentials::Backend},
     lifecycle::replies::Replies,
     local_resources::Pump,
+    tests::awaited,
 };
 use maestro_extensions::AuthStorageBackend;
 use std::{
@@ -374,15 +375,12 @@ fn released_credentials_reject_login_and_key_with_their_ended_text() {
             options: (false, false, false),
             signal: None,
         };
-        tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap()
-            .block_on(async {
-                [
-                    credentials.login("p".into(), controls).await.unwrap_err(),
-                    credentials.key("p".into(), None).await.unwrap_err(),
-                ]
-            })
+        awaited(async {
+            [
+                credentials.login("p".into(), controls).await.unwrap_err(),
+                credentials.key("p".into(), None).await.unwrap_err(),
+            ]
+        })
     });
     assert_eq!(errors, ["extension credential resource ended"; 2]);
 }
