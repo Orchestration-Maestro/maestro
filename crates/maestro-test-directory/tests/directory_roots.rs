@@ -32,6 +32,18 @@ fn chosen_root_accepts_slash_joined_children() {
 }
 
 #[test]
+fn owner_names_its_directory_to_path_readers() {
+    let root = Scratch::new().unwrap();
+    let named: &std::path::Path = root.as_ref();
+    assert_eq!(named, root.path());
+    fs::write(named.join("kept"), "owned").unwrap();
+    assert_eq!(
+        fs::read_to_string(root.path().join("kept")).unwrap(),
+        "owned"
+    );
+}
+
+#[test]
 fn supplied_parent_keeps_components_and_existing_contents() {
     let root = Scratch::new().unwrap();
     let parent = root.path().join(".");
