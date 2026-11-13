@@ -1,9 +1,9 @@
 //! Validated header layers for response-session requests.
 
 use super::request::diagnostic;
-use crate::providers::transport::{layer_request_headers, normalize_request};
 use crate::{DiagnosticErrorInfo, Model, StreamOptions};
 use indexmap::IndexMap;
+use maestro_http::{layer_request_headers, normalize_request};
 
 /// Initial model headers combine; additional headers replace; provider headers win.
 pub(super) fn build_sse_headers<E: crate::ProviderExecution>(

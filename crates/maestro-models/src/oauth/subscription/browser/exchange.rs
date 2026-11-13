@@ -1,7 +1,7 @@
 //! Ordered token requests and complete-body response validation.
 use crate::providers::json_text::{object_record, raw_json};
-use crate::providers::transport::{Raced, decode_utf8, race};
 use crate::{Cancellation, Fetch, FetchError, HttpRequest, OAuthCredentials, OAuthError};
+use maestro_http::{Raced, decode_utf8, race};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -136,7 +136,7 @@ pub(super) async fn post_json(body: Vec<u8>, fetch: Fetch) -> Result<String, OAu
     };
     let work = async {
         let response = fetch(request).await.map_err(OAuthError::from)?;
-        let bytes = crate::providers::transport::collect_body(response.body)
+        let bytes = maestro_http::collect_body(response.body)
             .await
             .map_err(OAuthError::from)?;
         let text = decode_utf8(&bytes).into_owned();

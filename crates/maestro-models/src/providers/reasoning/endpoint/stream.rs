@@ -1,15 +1,15 @@
 //! Independently produced conversation updates.
 use super::{MistralOptions, request};
 use crate::options::resolve_api_key;
-use crate::providers::{
-    assistant_output::{conclude_with, fail, initial_message, start_producer_for},
-    transport::RequestFailure,
+use crate::providers::assistant_output::{
+    conclude_with, fail, initial_message, start_producer_for,
 };
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model,
     ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
     SimpleStreamOptions, StreamOptionsFamily, Threaded,
 };
+use maestro_http::RequestFailure;
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
 
