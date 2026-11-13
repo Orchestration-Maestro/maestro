@@ -7,15 +7,11 @@
 use crate::{
     context_reads::Endpoint,
     guest_calls::Handle,
-    local_resources::{Work, held::SessionCommands},
+    local_resources::held::SessionCommands,
     session_calls::{self, NewSession, Switch},
 };
 use maestro_extensions::{EventError, types::SessionChangeResult};
 use std::future::Future;
-use tokio::sync::oneshot;
-
-/// A catchable asynchronous import result.
-type Reply<T> = oneshot::Sender<Result<T, String>>;
 
 /// Operations available only through the original command context. Each selects its native
 /// operation when the local pump consumes the call and keeps the lease's admission until the
@@ -91,16 +87,8 @@ impl Endpoint {
 }
 
 /// Keeps the domain operation's unchanged error text as the catchable failure.
-async fn settled<T>(work: impl Future<Output = Result<T, EventError>>) -> Result<T, String> {
+pub(crate) async fn settled<T>(
+    work: impl Future<Output = Result<T, EventError>>,
+) -> Result<T, String> {
     work.await.map_err(|error| error.to_string())
-}
-
-/// Completes the original reply with the domain operation's unchanged error text.
-pub(crate) fn settle<T: 'static>(
-    work: impl Future<Output = Result<T, EventError>> + 'static,
-    reply: Reply<T>,
-) -> Work {
-    Box::pin(async move {
-        let _ = reply.send(settled(work).await);
-    })
 }

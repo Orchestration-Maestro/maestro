@@ -5,21 +5,26 @@
     clippy::excessive_nesting
 )]
 use crate::{
+    bindings::maestro::extension::host::HostEventStream,
     callback_imports::{CallbackView, transferred},
+    context_imports::add_resource,
     guest_calls::{Callback, Handle},
+    import_route::{Route, push},
+    lifecycle::State,
     local_resources::stream_reads::Endpoint,
+    read_imports::{endpoint, forwards, release},
 };
 use wasmtime::{
     StoreContextMut,
     component::{Accessor, LinkerInstance, Resource},
 };
+use wasmtime_wasi::WasiView as _;
 
 /// Install typed resources and their existing synchronous callback routes.
 pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, Handle>(host, "stream-value")?;
-    crate::context_imports::add_resource::<T, Endpoint>(host, "event-stream")?;
     host.func_wrap(
         "[constructor]stream-value",
         |mut s: StoreContextMut<'_, T>, (value,): (Resource<Callback>,)| {
@@ -47,25 +52,6 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             Ok((stream,))
         },
     )?;
-    host.func_wrap(
-        "[method]event-stream.push",
-        |mut s: StoreContextMut<'_, T>, (stream, value): (Resource<Endpoint>, Resource<Handle>)| {
-            let table = s.data_mut().ctx().table;
-            let value = table.delete(value)?;
-            let route = table.get(&stream)?.push(value);
-            Ok((table.push(route)?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]event-stream.end",
-        |mut s: StoreContextMut<'_, T>,
-         (stream, value): (Resource<Endpoint>, Option<Resource<Handle>>)| {
-            let table = s.data_mut().ctx().table;
-            let value = value.map(|value| table.delete(value)).transpose()?;
-            let route = table.get(&stream)?.end(value);
-            Ok((table.push(route)?,))
-        },
-    )?;
     host.func_wrap_concurrent(
         "[method]event-stream.next",
         |a, (stream,): (Resource<Endpoint>,)| Box::pin(next(a, stream)),
@@ -76,6 +62,44 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     )?;
     Ok(())
 }
+impl HostEventStream for State {
+    fn push(
+        &mut self,
+        this: Resource<Endpoint>,
+        value: Resource<Handle>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let stream = endpoint(self, &this)?;
+        let value = self.ctx().table.delete(value)?;
+        push(self, stream.push(value))
+    }
+
+    fn end(
+        &mut self,
+        this: Resource<Endpoint>,
+        value: Option<Resource<Handle>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let stream = endpoint(self, &this)?;
+        let value = value
+            .map(|value| self.ctx().table.delete(value))
+            .transpose()?;
+        push(self, stream.end(value))
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
+/// Forwards the synchronous methods of an event stream to its trait implementation.
+pub(crate) fn add_event_stream(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Endpoint>(host, "event-stream")?;
+    forwards! { host, "event-stream", HostEventStream, Endpoint,
+        "push" => push(value: Resource<Handle>);
+        "end" => end(value: Option<Resource<Handle>>);
+    }
+    Ok(())
+}
+
 /// Await a competing reader with no Store borrow held.
 async fn next<T: CallbackView + 'static>(
     a: &Accessor<T>,

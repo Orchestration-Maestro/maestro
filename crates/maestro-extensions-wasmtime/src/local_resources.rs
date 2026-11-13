@@ -6,14 +6,14 @@
 )]
 use crate::context_reads::{Endpoint, Owner, Request};
 use maestro_extensions::{
-    Cancellation, ExtensionUIContext, Model, ModelRegistry, ReadonlySessionManager, SharedHandle,
+    Cancellation, ExtensionUIContext, ModelRegistry, ReadonlySessionManager, SharedHandle,
 };
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Arc};
 use tokio::sync::mpsc::{UnboundedSender, WeakUnboundedSender};
 
 pub(crate) mod bash_output;
 mod capability;
-pub(crate) use capability::Capability;
+pub(crate) use capability::{Capability, CredentialOwner};
 pub(crate) mod builtin;
 pub(crate) mod builtin_bash;
 /// Exact-name native selection with independently retained effects.
@@ -75,40 +75,18 @@ pub(crate) enum Message {
     ModelStart(model_streams::Creation),
     /// Routes registered-provider setup and native hook calls.
     Provider(provider_controls::Command),
-    /// Operate on its original assistant FIFO and independent result.
-    ModelStream(u64, model_streams::Request),
     /// Construct the models-owned buffer with retained local callbacks.
     NewStream(stream_reads::Creation),
-    /// Operate on the original native event buffer.
-    Stream(u64, crate::local_resources::stream_reads::Request),
     /// An operation on its original guarded context.
     Read(u64, Request),
     /// Uses the original API's registration and runtime action owners.
     Api(u64, crate::api_reads::Request),
-    /// Reads or prepares an original native built-in definition.
-    Builtin(u64, crate::builtin_reads::Request),
     /// Constructs, executes or renders through an original native built-in owner.
     BuiltinOperation(builtin::Operation),
     /// Registers retained callbacks through the original facade.
     Registration(u64, crate::registration_reads::Request),
     /// Uses the original facade bus for listener registration and emission.
     Events(u64, crate::event_reads::Request),
-    /// Selects and admits a model operation without blocking synchronous reads.
-    ApiModel(
-        u64,
-        Box<Model>,
-        tokio::sync::oneshot::Sender<Result<bool, String>>,
-        Admission,
-    ),
-    /// Starts explicit execution through its original facade and signal.
-    Exec(
-        u64,
-        crate::exec::Request,
-        tokio::sync::oneshot::Sender<Result<String, String>>,
-        Admission,
-    ),
-    /// Calls the original factory-time settings and package owner.
-    HostOperation(host_operations::Call),
     /// Waits through the native owner without blocking other requests.
     Sleep(
         native_io::Wait,
@@ -120,43 +98,8 @@ pub(crate) enum Message {
         Option<Cancellation>,
         std::sync::mpsc::Sender<Result<SignalEndpoint, String>>,
     ),
-    /// Runs the retained provider's native authorization with original interaction.
-    OAuthLogin(
-        u64,
-        crate::oauth_callbacks::Controls,
-        tokio::sync::oneshot::Sender<Result<String, String>>,
-        Admission,
-    ),
-    /// Awaits token rotation while retaining the originally selected provider.
-    OAuthRefresh(
-        u64,
-        String,
-        tokio::sync::oneshot::Sender<Result<String, String>>,
-        Admission,
-    ),
     /// Uses native interaction callbacks on this same local owner.
     OAuthInteraction(crate::oauth_interaction::Request),
-    /// Calls an independently retained OAuth implementation.
-    OAuthProvider(u64, crate::oauth_reads::Request),
-    /// Authorizes and persists through the retained credential owner.
-    CredentialLogin(
-        u64,
-        String,
-        crate::oauth_callbacks::Controls,
-        tokio::sync::oneshot::Sender<Result<(), String>>,
-        Admission,
-    ),
-    /// Resolves a key while retaining the original owner through settlement.
-    CredentialKey(
-        u64,
-        (String, Option<bool>),
-        tokio::sync::oneshot::Sender<Result<Option<String>, String>>,
-        Admission,
-    ),
-    /// Sends through the original creating session, even after guarded reads retire.
-    Replaced(u64, crate::replaced_reads::Request, Admission),
-    /// Retains the replacement's original guarded command view independently.
-    ReplacedCommand(u64, std::sync::mpsc::Sender<Result<Endpoint, String>>),
     /// Uses original native observers and explicit subscription removers.
     Effect(u64, effects::Request),
     /// Runs a request whose native code may call back into this instance through its route.
@@ -171,9 +114,9 @@ pub(crate) enum Message {
     /// Builds, uses or lends host widgets and styles.
     Widgets(crate::widget_reads::WidgetMessage),
     /// Typed operations on original application-supplied native resources.
-    Native(u64, native_resources::Request),
+    Native(native_resources::Request),
     /// HTTP operations retain their native response and signal.
-    Http(u64, http::Request),
+    Http(http::Request),
     /// Native watch registration and explicit close on the same owner.
     Watch(u64, watches::Request),
     /// Runs a call on the local owner against one capability and answers inline.
@@ -318,7 +261,9 @@ impl Registry {
             return Err("extension credential resource belongs to another host".into());
         }
         match self.capability(endpoint.0.id).as_deref() {
-            Some(Capability::Credentials(auth, effects)) => Ok((auth.clone(), effects.clone())),
+            Some(Capability::Credentials(accepted)) => {
+                Ok((accepted.owner.clone(), accepted.effects.clone()))
+            }
             _ => Err("extension credential resource ended".into()),
         }
     }
@@ -382,7 +327,7 @@ impl Registry {
     }
 
     /// Resolves an original cancellation without retaining the capability table borrow.
-    fn cancellation(&self, signal: &SignalEndpoint) -> Result<Cancellation, String> {
+    pub(crate) fn cancellation(&self, signal: &SignalEndpoint) -> Result<Cancellation, String> {
         match self.capability(signal.0.id).as_deref() {
             Some(Capability::Signal(signal)) => Ok(signal.clone()),
             _ => Err("extension signal resource ended".to_owned()),
@@ -427,7 +372,7 @@ impl Registry {
         owner: Arc<maestro_extensions::AuthStorage>,
         effects: maestro_extensions::ConfigValues,
     ) -> Result<crate::credential_reads::Endpoint, String> {
-        self.insert(Capability::Credentials(owner, effects))
+        self.insert(Capability::Credentials(CredentialOwner { owner, effects }))
             .map(crate::credential_reads::Endpoint)
     }
 

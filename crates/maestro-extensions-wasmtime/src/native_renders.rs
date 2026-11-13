@@ -7,7 +7,10 @@
 use crate::local_resources::effects::ThemeEndpoint;
 use crate::{
     import_route::Value as Outcome,
-    local_resources::{Lease, Message, held::Component},
+    local_resources::{
+        Lease,
+        held::{BuiltinTool, Component},
+    },
 };
 use maestro_extensions::{ComponentHandle, ToolRenderContext, ToolRendererState};
 use serde_json::Value;
@@ -94,11 +97,10 @@ pub(crate) enum Slot {
 impl crate::builtin_reads::Endpoint {
     /// Enters a native renderer through the original nested-call route.
     pub(crate) fn render(&self, render: Render) -> crate::import_route::Route {
-        self.0.route(|id, reply| {
-            Message::BuiltinOperation(crate::local_resources::builtin::Operation::Render(
-                id, render, reply,
-            ))
-        })
+        self.0
+            .run_routed::<BuiltinTool, _>(move |definition, registry| {
+                registry.render_builtin(definition, render)
+            })
     }
 }
 impl ComponentEndpoint {

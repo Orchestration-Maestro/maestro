@@ -261,7 +261,7 @@ Ordinary extension results and string-error APIs are unchanged.
 A host import runs on the local owner, the thread that holds the extension's native
 capabilities. The Store thread never touches them: it sends the call itself, a closure
 built from the import's operands, and the owner runs it against the retained capability
-the resource names. Two call kinds carry each converted import.
+the resource names. Three call kinds carry each converted import.
 
 - **Run** answers inline. The Store thread waits on its reply channel while the owner
   runs the closure. A native operation that may call back into the instance returns a
@@ -270,6 +270,9 @@ the resource names. Two call kinds carry each converted import.
   pending set and keeps the lease's admission until it settles, so a cancelled import
   never revokes an operation already started. The concurrent import awaits the reply
   without blocking the Store.
+- **Observe** starts work like Admit, for a wait that nothing else depends on: a stream
+  read, a child wait, a byte read or a response body. When the guest drops its wait, the
+  work ends and the admission is released.
 
 When the capability has ended, the call settles with that capability's own text, for
 example `extension catalog resource ended`. The text is exact per capability kind.
@@ -285,12 +288,14 @@ handle the guest passed. These resources run on this route:
   close, the file watch and the native component;
 - the lent style, highlighter, row style, submenu closer and text callback, the
   overlay options and the keybindings manager;
-- the credential owner, the child process, the byte reader, the HTTP response and the
-  assistant stream.
+- the credential owner, the child process, the byte reader, the HTTP response, the
+  assistant stream, the event stream, the native tool, the borrowed lock update, the lent
+  completion provider, the replacement session context and the OAuth provider.
 
-For the credential owner, the child process, the byte reader, the HTTP response and the
-assistant stream, the synchronous methods run this way. Their asynchronous methods, and every
-free function, are still registered by hand.
+Resources with both kinds of method run the synchronous ones through the generated
+trait. Their asynchronous methods start through Admit or Observe but are still
+registered by hand, as are the byte writer, the local shell, the API facade's
+execution, model selection and factory-time operations, and every free function.
 A retained capability names the entry it lends and the text its callers receive once
 it has ended.
 
