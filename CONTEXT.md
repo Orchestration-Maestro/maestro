@@ -219,7 +219,7 @@ traversal runs, so one removal and a complete clear both stay cheap.
 - **CLI:** The command-line frontend for argument parsing, startup and print/JSON operations.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
-- **RPC client:** The typed embedding client in `maestro-app` that launches Maestro in RPC mode as a child process and sends it the session commands; it owns the child's I/O, stderr, request correlation and its own deadlines.
+- **RPC client:** The typed embedding client in `maestro-rpc` that launches Maestro in RPC mode as a child process and sends it the session commands; it owns the child's I/O, stderr, request correlation and its own deadlines.
 - **Web:** The browser frontend, including the offline exported session viewer.
 - **Brand pack:** One JSON file of palette, mode role aliases, fonts, type, spacing, mark paths, glyphs and terminal aliases; [the brand library](docs/brand.md) owns its pure admission and projection, while [the theme library](docs/theme.md#brand-pack) owns native pack/template loading and terminal theme documents. Callback pages consume the same brand owner with embedded assets.
 - **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances. Component color callbacks read the live theme when called (strikethrough and unselected settings labels do not); border callbacks keep the instance they were created from and the settings cursor keeps the color it had at creation. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns watch/timer effects to `maestro-watch::fs_watch`, leaving theme reload policy here.
@@ -230,7 +230,7 @@ Internal-dependency descriptions below state domain edges, subject to the
 [native feature-unifier exception](docs/specs/maestro-port.md#native-feature-unifier),
 including leaves and exact sets. The unifier itself has no workspace dependencies.
 
-- **Catalog:** The application-facing usable model selection resolved from models and credentials.
+- **Model registry:** The usable models resolved from the model catalog, local model files and credentials; `ModelRegistry` owns it. _Avoid:_ catalog for this concept.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The [tool-record library](docs/tool-records.md), `maestro-tool`, depends only on `maestro-request` and owns the tool interchange records; `maestro-tools` keeps execution.
 - **Export:** Session document serialization shared with application operations.
 - **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf, the native process owner, the shared Markdown parser and the optional foundation utility, without application selectors or framework/highlighting engines. It is not the terminal adapter in `maestro-tui-crossterm`, and not the terminal emulator in `maestro-terminal-emulator`.
@@ -309,7 +309,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Daemon state:** The daemon-owned record of workspace topology, terminal metadata, focus, notifications and pending persistence. Live process handles stay in the application runtime registry.
 - **Daemon loop:** The application loop that drains internal observations, consumes scheduled work, selects the next deadline and completes shutdown.
 - **Named daemon:** An independent workspace daemon with its own sockets and snapshot, chosen by name.
-- **Daemon protocol:** Maestro's single versioned RPC contract shared by stdio, daemon sockets and SDK clients. `maestro-protocol` owns the generic envelopes, the workspace and binary-channel records and JSON Schema; `maestro-app::rpc_types` owns the session command, response, event and dialog records; `maestro-json::lines` owns JSONL framing. Live screen frames are binary within that contract. See [daemon protocol](docs/daemon-protocol.md).
+- **Daemon protocol:** Maestro's single versioned RPC contract shared by stdio, daemon sockets and SDK clients. `maestro-protocol` owns the generic envelopes, the workspace and binary-channel records and JSON Schema; `maestro-rpc::rpc_types` owns the session command, response, event and dialog records; `maestro-json::lines` owns JSONL framing. Live screen frames are binary within that contract. See [daemon protocol](docs/daemon-protocol.md).
 - **Workspace:** A named project space in the daemon holding ordered tabs; not the Cargo workspace.
 - **Tab:** An ordered split layout of panes within a workspace.
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.

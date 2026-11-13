@@ -13,7 +13,7 @@ use indexmap::IndexMap;
 use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};
 use maestro_lock::{read, write};
 use maestro_models::{
-    BoxFuture, Execution, SharedHandle, StringEnumOptions, Threaded, Tool, present, string_enum,
+    BoxFuture, EnumOptions, Execution, SharedHandle, Threaded, Tool, present, string_enum,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -538,7 +538,7 @@ fn authored_kinds() -> [(String, maestro_models::SchemaKind); 5] {
 /// Ordinary JSON Schema text of the artifact parameters.
 fn typed_schema() -> serde_json::Value {
     json!({"type":"object", "required":["command","filename"], "properties": {
-        "command": string_enum(&["create", "update", "rewrite", "get", "delete", "logs"], Some(StringEnumOptions { description: Some("The operation to perform"), default: None })),
+        "command": string_enum(&["create", "update", "rewrite", "get", "delete", "logs"], Some(EnumOptions { description: Some("The operation to perform"), default: None })),
         "filename": {"type":"string", "description":"Filename including extension (e.g., 'index.html', 'script.js')"},
         "content": {"type":"string", "description":"File content"},
         "old_str": {"type":"string", "description":"String to replace (for update command)"},

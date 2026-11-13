@@ -95,6 +95,14 @@ pub(super) async fn during_routed_request<T: 'static>(
     result.borrow_mut().take().unwrap()
 }
 
+/// Runs `operation` on a current-thread runtime, as an asynchronous import does.
+pub(super) fn awaited<T>(operation: impl std::future::Future<Output = T>) -> T {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(operation)
+}
+
 /// Releases the capability behind `lease` (the endpoint's other handle moves into `operations`), then runs `operations` on a worker thread and
 /// answers each of its `N` requests; returns the failures the operations settled with.
 pub(super) fn ended_errors<const N: usize>(

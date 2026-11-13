@@ -11,7 +11,7 @@ clap = { version = "=4.6.7", default-features = false, features = ["std", "help"
 clap_complete = { version = "=4.6.5", default-features = false }
 maestro-app = { path = "../maestro-app" }
 maestro-agent = { path = "../maestro-agent" }
-maestro-catalog = { path = "../maestro-catalog" }
+maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-daemon = { path = "../maestro-daemon" }
 maestro-extensions = { path = "../maestro-extensions" }

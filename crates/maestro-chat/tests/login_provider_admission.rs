@@ -1,8 +1,8 @@
 //! Which providers `/login` offers for API-key sign-in.
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_catalog::BUILT_IN_PROVIDER_DISPLAY_NAMES;
 use maestro_chat::is_api_key_login_provider;
+use maestro_models_registry::BUILT_IN_PROVIDER_DISPLAY_NAMES;
 use std::collections::HashSet;
 
 /// Collects borrowed identifiers into the owned set the predicate reads.

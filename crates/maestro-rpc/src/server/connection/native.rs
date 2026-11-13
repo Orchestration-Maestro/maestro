@@ -1,5 +1,5 @@
 //! Termination signal delivery of the running process.
-use maestro_app::connection_runner::RpcProcessPort;
+use crate::connection_runner::RpcProcessPort;
 use maestro_process::TerminationSignal;
 #[cfg(unix)]
 use maestro_process::register_signals;

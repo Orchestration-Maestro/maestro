@@ -1,13 +1,14 @@
 //! Context usage and token totals on an application session, compared with the recorded
 //! statistics cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    HarnessOptions, after_summary, assistant, harness, load_history, on_task_set, recorded,
-    recorded_number, usage, user,
-};
+use crate::support::session_harness::{after_summary, load_history, recorded, user};
 use maestro_app::SessionStats;
+use maestro_app::test_support::{
+    HarnessOptions, assistant, harness, on_task_set, recorded_number, usage,
+};
 use maestro_extensions::ContextUsage;
 use maestro_session::session_manager::CompactionOptions;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// The window every case replaces the scripted model's with.
@@ -50,11 +51,15 @@ fn current_usage_matches_statistics_and_context_window() {
         "current_usage_matches_statistics_and_context_window",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            context_window: Some(WINDOW),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                context_window: Some(WINDOW),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         {
             let mut manager = h.session.session_manager().borrow_mut();
             manager.append_message(question("hello", 1)).unwrap();
@@ -68,7 +73,8 @@ fn current_usage_matches_statistics_and_context_window() {
             "usage": usage_view(stats.context_usage),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// The conversation before a compaction: two answers and the message its cut keeps.
@@ -87,11 +93,15 @@ fn before_compaction(manager: &mut maestro_session::SessionManager) -> String {
 fn compaction_hides_stale_kept_usage() {
     let expected = recorded("model_navigation", "compaction_hides_stale_kept_usage");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            context_window: Some(WINDOW),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                context_window: Some(WINDOW),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         {
             let mut manager = h.session.session_manager().borrow_mut();
             before_compaction(&mut manager);
@@ -104,7 +114,8 @@ fn compaction_hides_stale_kept_usage() {
             "usage": usage_view(stats.context_usage),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -114,11 +125,15 @@ fn fresh_usage_after_compaction_replaces_kept_usage() {
         "fresh_usage_after_compaction_replaces_kept_usage",
     );
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            context_window: Some(WINDOW),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                context_window: Some(WINDOW),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         {
             let mut manager = h.session.session_manager().borrow_mut();
             before_compaction(&mut manager);
@@ -135,5 +150,6 @@ fn fresh_usage_after_compaction_replaces_kept_usage() {
             "usage": usage_view(stats.context_usage),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }

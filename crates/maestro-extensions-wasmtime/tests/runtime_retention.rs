@@ -236,7 +236,7 @@ fn activation_failure_preserves_independent_registrations() {
 /// Binds a supplied registration operation that refuses one provider and registers the rest.
 fn bind_refusing(
     runner: &ExtensionRunner<Local>,
-    catalog: &maestro_extensions::SharedHandle<maestro_catalog::ModelRegistry>,
+    catalog: &maestro_extensions::SharedHandle<maestro_models_registry::ModelRegistry>,
 ) {
     let native = catalog.clone();
     runner
@@ -258,7 +258,7 @@ fn bind_refusing(
 
 /// Both valid factory providers stay registered, the one before and the one after the refusal.
 fn assert_unrelated_providers_kept(
-    catalog: &maestro_extensions::SharedHandle<maestro_catalog::ModelRegistry>,
+    catalog: &maestro_extensions::SharedHandle<maestro_models_registry::ModelRegistry>,
     when: &str,
 ) {
     assert!(

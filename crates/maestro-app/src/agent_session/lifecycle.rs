@@ -7,7 +7,6 @@ use crate::resources::loading::{
     ResourceExtensionPath, ResourceExtensionPaths, ResourceLoader, report,
 };
 use indexmap::IndexMap;
-use maestro_catalog::ModelRegistry;
 use maestro_extensions::execution::{
     ExtensionRunnerSession, ResourcePath, emit_session_shutdown_event,
 };
@@ -17,6 +16,7 @@ use maestro_extensions::{
 };
 use maestro_lock::write;
 use maestro_models::{DiagnosticErrorInfo, Execution, Local};
+use maestro_models_registry::ModelRegistry;
 use maestro_resources::{PathMetadata, SourceOrigin, SourceScope};
 use maestro_session::{Presence, SessionManager};
 use maestro_theme::LiveTheme;

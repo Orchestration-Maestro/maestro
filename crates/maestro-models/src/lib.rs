@@ -85,7 +85,7 @@ pub use records::sessions::{
     SessionResourceCleanup, SessionResourceCleanupError, SessionResourceRemoval,
     cleanup_session_resources, register_session_resource_cleanup,
 };
-pub use records::typebox_helpers::{StringEnumOptions, string_enum};
+pub use records::string_enum::{EnumOptions, string_enum};
 pub use records::types::*;
 
 pub mod providers;

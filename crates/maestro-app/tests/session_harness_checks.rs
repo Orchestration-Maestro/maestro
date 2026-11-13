@@ -2,13 +2,14 @@
 //! execution, failures and retries, usage, delivered events and streamed deltas, provider
 //! contexts, inline extensions and persistence, compared with the recorded harness cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, corpus, delivered_events, echo_tools, harness,
-    on_paused_task_set, on_task_set, recorded_number, retry_order,
+use crate::support::session_harness::{Harness, corpus, delivered_events, echo_tools, retry_order};
+use maestro_app::test_support::{
+    HarnessOptions, Scripted, harness, on_paused_task_set, on_task_set, recorded_number,
 };
 use maestro_extensions::{ExtensionFactory, types::RegisteredCommandOptions};
 use maestro_models::Local;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -19,11 +20,15 @@ fn expected(name: &str) -> Value {
 
 /// A session over the scripted stream answering with `responses`.
 async fn scripted(responses: Vec<Scripted>) -> Harness {
-    harness(HarnessOptions {
-        responses: Some(responses),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            responses: Some(responses),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 /// Sends `text` and waits for the session to settle.
@@ -109,12 +114,16 @@ fn joined(events: &[Value]) -> String {
 
 /// A session with the echo tool in place of the built-in tools, answering with `responses`.
 async fn echo_session(responses: Vec<Scripted>, executed: Rc<RefCell<bool>>) -> Harness {
-    harness(HarnessOptions {
-        responses: Some(responses),
-        base_tools_override: Some(echo_tools(executed)),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            responses: Some(responses),
+            base_tools_override: Some(echo_tools(executed)),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 #[test]
@@ -137,7 +146,8 @@ fn observes_simple_text_response() {
             .collect::<Vec<_>>();
         let recorded = expected["event_types"].as_array().unwrap().clone();
         assert_eq!(collapsed(types), collapsed(recorded));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -150,7 +160,8 @@ fn observes_response_sequence() {
         }
         assert_eq!(json!(h.requests.0.borrow().len()), expected["call_count"]);
         assert_eq!(json!(assistant_texts(&h)), expected["assistant_texts"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -168,7 +179,8 @@ fn observes_tool_call_response_triggers_tool_execution() {
             expected["tool_result_count"]
         );
         assert_eq!(roles(&h), expected["message_roles"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -185,7 +197,8 @@ fn observes_error_response() {
         assert_eq!(json!(answers.len()), expected["assistant_count"]);
         assert_eq!(answers[0]["stopReason"], expected["stop_reason"]);
         assert_eq!(answers[0]["errorMessage"], expected["error_message"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -193,7 +206,7 @@ fn observes_retry_on_transient_error() {
     let expected = expected("retry_on_transient_error");
     on_paused_task_set(|_| async {
         for answer in ["Success", "recovered"] {
-            let h = harness(HarnessOptions {
+            let h = harness(Scratch::new().unwrap(), HarnessOptions {
                 responses: Some(vec![
                     Scripted::failure("overloaded_error"),
                     Scripted::text(answer),
@@ -201,7 +214,7 @@ fn observes_retry_on_transient_error() {
                 settings: json!({"retry": {"enabled": true, "maxRetries": 3, "baseDelayMs": 1}}),
                 ..HarnessOptions::default()
             })
-            .await;
+            .await.unwrap();
             let events = delivered_events(&h.session);
             prompt(&h, "hi").await;
             let events = events.borrow();
@@ -219,7 +232,8 @@ fn observes_retry_on_transient_error() {
             assert!(!h.session.is_retrying(), "no retry is left in flight");
             assert!(!h.session.is_streaming(), "the response settled");
         }
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -237,7 +251,8 @@ fn observes_custom_usage_numbers() {
         assert_eq!(number("input"), expected["usage_input"]);
         assert_eq!(number("output"), expected["usage_output"]);
         assert_eq!(number("totalTokens"), expected["usage_total"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -263,7 +278,8 @@ fn captures_session_events_in_order() {
         let types = events.iter().map(|event| event["type"].clone());
         let recorded = expected["event_types"].as_array().unwrap().clone();
         assert_eq!(collapsed(types), collapsed(recorded));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -291,7 +307,8 @@ fn captures_provider_context() {
             .collect();
         assert_eq!(json!(tools), expected["tool_names"]);
         assert_eq!(context["systemPrompt"], json!(h.session.system_prompt()));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -304,7 +321,8 @@ fn cycles_scripted_responses() {
         }
         assert_eq!(json!(h.requests.0.borrow().len()), expected["call_count"]);
         assert_eq!(json!(assistant_texts(&h)), expected["texts"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -317,7 +335,8 @@ fn streams_text_delta_content() {
         let deltas = updates(&events.borrow(), "text_delta");
         assert!(!deltas.is_empty(), "the text arrives in deltas");
         assert_eq!(json!(joined(&deltas)), expected["reconstructed"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -343,7 +362,8 @@ fn streams_thinking_delta_content() {
         );
         assert!(!deltas.is_empty(), "the thinking arrives in deltas");
         assert_eq!(json!(joined(&deltas)), expected["reconstructed"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -371,7 +391,8 @@ fn tool_call_deltas_stream_before_the_call_runs() {
             !updates(&events, "toolcall_delta").is_empty(),
             "the arguments arrive in deltas"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -397,7 +418,8 @@ fn orders_thinking_text_and_tool_call_streams() {
         let first = |kind: &str| kinds.iter().position(|update| update == kind).unwrap();
         assert!(first("thinking_start") < first("text_start"));
         assert!(first("text_start") < first("toolcall_start"));
-    });
+    })
+    .unwrap();
 }
 
 /// An inline extension at `path` registering `shared-cmd` described as `description`,
@@ -432,14 +454,18 @@ fn disambiguates_duplicate_extension_commands() {
     let expected = expected("inline_extension_factories");
     on_task_set(|_| async {
         let calls = Rc::new(RefCell::new(Vec::new()));
-        let h = harness(HarnessOptions {
-            labelled_factories: vec![
-                shared_command("<alpha>", "Alpha command", "alpha", &calls),
-                shared_command("<beta>", "Beta command", "beta", &calls),
-            ],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                labelled_factories: vec![
+                    shared_command("<alpha>", "Alpha command", "alpha", &calls),
+                    shared_command("<beta>", "Beta command", "beta", &calls),
+                ],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let runner = h.session.extension_runner();
         let commands: Vec<Value> = runner
             .get_registered_commands()
@@ -470,7 +496,8 @@ fn disambiguates_duplicate_extension_commands() {
             json!(h.session.has_extension_handlers("unregistered")),
             expected["has_extension_handlers_unregistered"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -488,5 +515,6 @@ fn persists_message_entries() {
             .collect();
         assert_eq!(json!(types.len()), expected["message_entry_count"]);
         assert_eq!(json!(types), expected["entry_types"]);
-    });
+    })
+    .unwrap();
 }

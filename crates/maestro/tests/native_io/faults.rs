@@ -151,7 +151,7 @@ pub(crate) async fn session(
         maestro_credentials::AuthStorageData::default(),
     ));
     let registry = Arc::new(
-        maestro_catalog::ModelRegistry::create(
+        maestro_models_registry::ModelRegistry::create(
             auth.clone(),
             root.path("agent/models.json").display().to_string(),
             maestro_models::SharedHandle::new(NoCommands),

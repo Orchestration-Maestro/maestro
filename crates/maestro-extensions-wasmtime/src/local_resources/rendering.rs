@@ -1,11 +1,12 @@
 //! Original native rows and components share this registry and its release leases.
-use super::{Capability, Registry, pump::State};
+use super::{Capability, Registry};
 use crate::{
     import_route::Value as Outcome,
     native_renders::{ComponentEndpoint, Render, Row, RowEndpoint, Slot},
 };
 use maestro_extensions::{ComponentHandle, ToolRenderContext, ToolRenderResultLike};
 use serde_json::Value;
+use std::rc::Rc;
 
 impl Registry {
     /// Retains the actual native row environment and shared state without replacing effects.
@@ -25,34 +26,28 @@ impl Registry {
         }
     }
 }
-impl State {
+impl Registry {
     /// Calls a native renderer without borrowing the registry during author code.
-    pub(super) fn builtin_render(&self, id: u64, render: Render) -> Result<Outcome, String> {
-        let definition = self.registry.capability(id);
-        let Some(Capability::Builtin(definition)) = definition.as_deref() else {
-            return Err("extension built-in tool resource ended".into());
-        };
+    pub(crate) fn render_builtin(
+        &self,
+        definition: &Rc<dyn crate::builtin_tools::Definition>,
+        render: Render,
+    ) -> Result<Outcome, String> {
         let row = render
             .row
             .ok_or("native tool renderer requires a native row")?;
-        let row = self.registry.capability(row.0.id);
+        let row = self.capability(row.0.id);
         let Some(Capability::NativeRow(row)) = row.as_deref() else {
             return Err("extension native row resource ended".into());
         };
-        let theme = self.registry.capability(render.theme.0.id);
+        let theme = self.capability(render.theme.0.id);
         let Some(Capability::Theme(theme)) = theme.as_deref() else {
             return Err("extension theme resource ended".into());
         };
         let last = match render.last {
-            Some(crate::native_renders::Previous::Native(last)) => {
-                Some(self.registry.component(&last)?)
-            }
-            Some(crate::native_renders::Previous::Authored(last)) => Some(std::rc::Rc::new(
-                crate::guest_component::GuestComponent::new(
-                    last,
-                    self.registry.clone(),
-                    row.events.clone(),
-                ),
+            Some(crate::native_renders::Previous::Native(last)) => Some(self.component(&last)?),
+            Some(crate::native_renders::Previous::Authored(last)) => Some(Rc::new(
+                crate::guest_component::GuestComponent::new(last, self.clone(), row.events.clone()),
             )
                 as ComponentHandle),
             None => None,
@@ -65,8 +60,7 @@ impl State {
             .transpose()?;
         let context = row.context(&render.info, args.as_ref(), last);
         let component = rendered(definition.renderers()?, render.slot, theme, &context)?;
-        self.registry
-            .insert(Capability::NativeComponent(component))
+        self.insert(Capability::NativeComponent(component))
             .map(|lease| Outcome::Component(ComponentEndpoint(lease)))
     }
 }

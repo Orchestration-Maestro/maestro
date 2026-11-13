@@ -9,8 +9,8 @@ use crate::state::test_support::layout_commands::{adjusted, exported, two_tabs};
 use crate::state::tests::support::layouts::{balanced, chain, shell, sleeper, split};
 use crate::tests::block_on;
 use maestro_protocol::{
+    envelopes::RpcCommand,
     events::EventData,
-    rpc_types::RpcCommand,
     schema::{LayoutApplyParams, LayoutDescription, LayoutNode, LayoutPane, SplitDirection},
 };
 use maestro_workspace::tiling::PaneId;

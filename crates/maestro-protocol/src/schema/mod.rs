@@ -45,7 +45,7 @@ pub use tabs::*;
 pub use workspaces::*;
 pub use worktrees::*;
 
-pub use crate::rpc_types::{Request, RpcCommand, RpcResponse};
+pub use crate::envelopes::{Request, RpcCommand, RpcResponse};
 
 /// Retain compact string enums when Rust variant documentation is present.
 pub(crate) fn string_enum(schema: &mut schemars::Schema) {

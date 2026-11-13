@@ -1,6 +1,9 @@
 //! A native HTTP response ends with its capability.
 use super::ended_endpoint;
-use crate::local_resources::{Capability, http::Response};
+use crate::{
+    local_resources::{Capability, http::Response},
+    tests::awaited,
+};
 use maestro_extensions::native_io::{IoFuture, Readable, Response as NativeResponse};
 use std::rc::Rc;
 
@@ -48,4 +51,21 @@ fn released_response_rejects_every_kind_of_operation_with_its_ended_text() {
         },
     );
     assert_eq!(errors, ["native response resource ended"; 4]);
+}
+
+#[test]
+fn released_response_rejects_consumption_with_its_ended_text() {
+    let errors = ended_endpoint(
+        Capability::NativeResponse(Rc::new(Fixed)),
+        Response,
+        |response| {
+            awaited(async {
+                [
+                    response.text().await.unwrap_err(),
+                    response.json().await.unwrap_err(),
+                ]
+            })
+        },
+    );
+    assert_eq!(errors, ["native response resource ended"; 2]);
 }

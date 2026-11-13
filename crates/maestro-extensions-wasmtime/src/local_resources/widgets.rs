@@ -227,7 +227,6 @@ impl State {
             WidgetMessage::Suggestions(id, request, admission) => {
                 self.suggestions(id, request, admission);
             }
-            WidgetMessage::Provider(id, request) => self.provider(id, request),
             WidgetMessage::Foreign(id, build) => {
                 let reply = build.reply.clone();
                 let _ = reply.send(self.foreign(id, build));

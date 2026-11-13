@@ -1,6 +1,7 @@
 //! Factory-time operations use the same admitted local pump as session calls.
-use super::{Admission, Capability, Message, pump::State};
+use super::held::ApiFacade;
 use maestro_extensions::host_operations::{HostOperation, OperationScope};
+use std::future::Future;
 use wasmtime::component::{ComponentType, Lift, LinkerInstance};
 
 /// Canonical installed scope, with no temporary or caller-selected target.
@@ -77,17 +78,6 @@ impl From<Operation> for HostOperation {
         }
     }
 }
-/// One admitted request with its API identity and reply.
-pub(crate) struct Call {
-    /// The API resource whose original facade answers.
-    id: u64,
-    /// The selected domain request.
-    operation: HostOperation,
-    /// Serialized native result or native failure text.
-    reply: tokio::sync::oneshot::Sender<Result<String, String>>,
-    /// Keeps the pump alive until the operation settles.
-    admission: Admission,
-}
 /// Installs the asynchronous domain call without another request receiver.
 pub(crate) fn add_to_linker<T: crate::api_imports::ApiView + 'static>(
     host: &mut LinkerInstance<'_, T>,
@@ -97,45 +87,24 @@ pub(crate) fn add_to_linker<T: crate::api_imports::ApiView + 'static>(
         |accessor, (operation,): (Operation,)| {
             Box::pin(async move {
                 let api = accessor.with(|mut access| access.get().api().clone());
-                let result = api
-                    .0
-                    .request_async(|id, reply, admission| {
-                        Message::HostOperation(Call {
-                            id,
-                            operation: operation.into(),
-                            reply,
-                            admission,
-                        })
-                    })
-                    .await;
-                Ok((result,))
+                Ok((api.host_operation(operation.into()).await,))
             })
         },
     )
 }
-impl State {
-    /// Selects the original operation before releasing the API capability.
-    pub(super) fn host_operation(&self, call: Call) {
-        let Call {
-            id,
-            operation,
-            reply,
-            admission,
-        } = call;
-        let capability = self.registry.capability(id);
-        let Some(Capability::Api(api)) = capability.as_deref() else {
-            let _ = reply.send(Err("extension API resource ended".into()));
-            return;
-        };
-        let work = api.host_operation(operation);
-        self.admit(
-            Box::pin(async move {
-                let result = work.await.and_then(|value| {
-                    serde_json::to_string(&value).map_err(|error| error.to_string())
-                });
-                let _ = reply.send(result);
-            }),
-            admission,
-        );
+impl crate::api_reads::Endpoint {
+    /// Admits one factory-time operation on the original facade.
+    pub(crate) async fn host_operation(&self, operation: HostOperation) -> Result<String, String> {
+        self.0
+            .admit::<ApiFacade, _, _>(move |api, _| Ok(encoded(api.host_operation(operation))))
+            .await
     }
+}
+
+/// Encodes a finished operation's native result as the text the guest receives.
+async fn encoded<T: serde::Serialize>(
+    work: impl Future<Output = Result<T, String>>,
+) -> Result<String, String> {
+    let value = work.await?;
+    serde_json::to_string(&value).map_err(|error| error.to_string())
 }

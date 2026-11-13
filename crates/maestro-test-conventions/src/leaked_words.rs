@@ -26,7 +26,14 @@ mod words;
 ///
 /// A word is one or more segments joined by `_`. Edit this list to deny another generic
 /// library or product word; a word that is another project's own name goes in `HASHED`.
-const DENIED: &[&str] = &["ssf", "docx_preview", "minimatch", "plugin", "libghostty"];
+const DENIED: &[&str] = &[
+    "ssf",
+    "docx_preview",
+    "minimatch",
+    "plugin",
+    "libghostty",
+    "typebox",
+];
 
 /// Hashes of words that are another project's own name.
 ///

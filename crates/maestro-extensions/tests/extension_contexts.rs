@@ -14,7 +14,6 @@ use context_actions::{
 };
 use error_support::Marker;
 use local_support::{LocalBus, STALE, loaded, local, session::runner_session};
-use maestro_catalog::ModelRegistry;
 use maestro_extensions::types::{
     ExtensionCollection, ExtensionFlagOptions, ExtensionShortcutOptions, ExtensionUIContextPort,
     FlagType, RegisteredCommandOptions, ShortcutHandler,
@@ -24,6 +23,7 @@ use maestro_extensions::{
     ExtensionRunner, create_event_bus,
 };
 use maestro_models::{Cancellation, Local};
+use maestro_models_registry::ModelRegistry;
 use maestro_session::SessionManager;
 use maestro_theme::LiveTheme;
 use model_support::model;

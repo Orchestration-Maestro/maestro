@@ -343,9 +343,9 @@ const ADDED: &[(&str, &str, &str, &[usize])] = &[
         &[4],
     ),
     (
-        "maestro-catalog",
+        "maestro-models-registry",
         "tests/support/common.rs",
-        "//! Catalog fixtures.\n\n/// Disposable native file, created exclusively.\npub struct File(pub std::path::PathBuf);\nimpl File {\n    /// Create one file.\n    pub fn new(bytes: &[u8]) -> Self {\n        let path = std::env::temp_dir().join(\"maestro-catalog.json\");\n        std::fs::write(&path, bytes).unwrap();\n        Self(path)\n    }\n}\n",
+        "//! Catalog fixtures.\n\n/// Disposable native file, created exclusively.\npub struct File(pub std::path::PathBuf);\nimpl File {\n    /// Create one file.\n    pub fn new(bytes: &[u8]) -> Self {\n        let path = std::env::temp_dir().join(\"maestro-models-registry.json\");\n        std::fs::write(&path, bytes).unwrap();\n        Self(path)\n    }\n}\n",
         &[8],
     ),
     (
