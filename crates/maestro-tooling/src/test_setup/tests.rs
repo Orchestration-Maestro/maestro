@@ -547,8 +547,8 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             .collect::<Vec<_>>(),
         [
             "crates/maestro-extensions-wasm",
-            "crates/maestro-json",
             "crates/maestro-interchange",
+            "crates/maestro-json",
             "crates/maestro-subagents",
             "crates/maestro-text"
         ]

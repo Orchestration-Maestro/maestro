@@ -630,9 +630,10 @@ through a native-only dependency on the workspace owner, not a daemon re-export.
 rather than a new injected discovery port whose only other adapter is a test fake.
 
 
-The crate is core, sits below layer 0 and depends on no workspace crate, including
-`maestro-path`. Only the table entries that list it
-(models, resources, theme, catalog, session, entry, tool and the guest) may depend on it. The guest still cannot
+`maestro-interchange` is core, sits below layer 0 and depends only on `maestro-json`.
+Only the table entries that list it (agent, credentials, http, models, the model catalog,
+the model registry, packages, resources, the schema validator, session, theme, tools and the guest)
+may depend on it. The guest still cannot
 depend on models or resources, the runtime adapter still targets extensions with the optional native path utility, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its consumers.
 
