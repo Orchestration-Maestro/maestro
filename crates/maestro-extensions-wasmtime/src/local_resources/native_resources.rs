@@ -1,7 +1,7 @@
 //! Typed native resources serviced by the existing local request pump.
 use super::{
     Admission, Capability, Lease, Registry, Work,
-    held::{NativeChild, NativeReader, NativeWriter, Pending},
+    held::{NativeChild, NativeReader, NativeWriter},
     pump::State,
 };
 use maestro_extensions::native_io::{self, IoFuture};
@@ -58,9 +58,9 @@ impl Child {
     /// Waits for the sole native collector's completion; a dropped wait leaves the child alone.
     pub(crate) async fn wait(&self) -> Result<native_io::ExitStatus, String> {
         self.0
-            .observe::<NativeChild, _, _>(|child, _| {
+            .observe::<NativeChild, _>(|child, _| {
                 let child = child.clone();
-                Ok(Box::pin(async move { child.wait().await }) as Pending<_>)
+                Ok(Box::pin(async move { child.wait().await }) as IoFuture<'static, _>)
             })
             .await
     }
@@ -71,7 +71,7 @@ impl Writer {
         self.0
             .admit::<NativeWriter, _, _>(move |writer, _| {
                 let writer = writer.clone();
-                Ok(Box::pin(async move { writer.write(&bytes).await }) as Pending<_>)
+                Ok(Box::pin(async move { writer.write(&bytes).await }) as IoFuture<'static, _>)
             })
             .await
     }
@@ -80,7 +80,7 @@ impl Writer {
         self.0
             .admit::<NativeWriter, _, _>(|writer, _| {
                 let writer = writer.clone();
-                Ok(Box::pin(async move { writer.end().await }) as Pending<_>)
+                Ok(Box::pin(async move { writer.end().await }) as IoFuture<'static, _>)
             })
             .await
     }
@@ -89,9 +89,9 @@ impl Reader {
     /// Consumes the next raw output chunk.
     pub(crate) async fn read(&self) -> Result<Option<Vec<u8>>, String> {
         self.0
-            .observe::<NativeReader, _, _>(|reader, _| {
+            .observe::<NativeReader, _>(|reader, _| {
                 let reader = reader.clone();
-                Ok(Box::pin(async move { reader.read().await }) as Pending<_>)
+                Ok(Box::pin(async move { reader.read().await }) as IoFuture<'static, _>)
             })
             .await
     }

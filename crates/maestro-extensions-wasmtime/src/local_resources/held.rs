@@ -1,7 +1,9 @@
 //! Typed access to one retained capability for the pump's generic call kinds.
 use super::{Capability, Lease, Message, Registry, Work};
 use crate::context_reads::Owner;
-use maestro_extensions::{ExtensionCommandContext, ModelRegistry, SharedHandle};
+use maestro_extensions::{
+    ExtensionCommandContext, ModelRegistry, SharedHandle, native_io::IoFuture,
+};
 use std::{future::Future, sync::mpsc};
 
 /// One kind of retained capability, with the text its callers receive once it has ended.
@@ -390,27 +392,15 @@ fn settle<T: 'static, F: Future<Output = Result<T, String>> + 'static>(
 
 /// Settles like [`settle`], and ends the work as soon as the caller stops waiting, so a
 /// reader that was dropped leaves nothing pending.
-fn settle_observed<T: 'static, F: Future<Output = Result<T, String>> + 'static>(
-    started: Result<F, String>,
-    mut reply: tokio::sync::oneshot::Sender<Result<T, String>>,
+fn settle_observed<T: 'static>(
+    started: Result<IoFuture<'static, T>, String>,
+    reply: tokio::sync::oneshot::Sender<Result<T, String>>,
 ) -> Work {
-    Box::pin(async move {
-        match started {
-            Ok(work) => {
-                tokio::select! {
-                    result = work => { let _ = reply.send(result); }
-                    () = reply.closed() => {}
-                }
-            }
-            Err(error) => {
-                let _ = reply.send(Err(error));
-            }
-        }
-    })
+    match started {
+        Ok(work) => super::native_resources::consuming(work, reply),
+        failed => settle(failed, reply),
+    }
 }
-
-/// Work an admitted call started, with its borrows of the held capability boxed away.
-pub(crate) type Pending<T> = std::pin::Pin<Box<dyn Future<Output = Result<T, String>>>>;
 
 /// How an admitted call settles its caller's reply.
 type Settle<T, F> = fn(Result<F, String>, tokio::sync::oneshot::Sender<Result<T, String>>) -> Work;
@@ -451,16 +441,13 @@ impl Lease {
     /// Starts the work `call` selects like [`Lease::admit`], for a wait that nothing else
     /// depends on: the work ends, and releases the admission, once the caller drops its
     /// wait.
-    pub(crate) async fn observe<H, T, F>(
+    pub(crate) async fn observe<H: Held, T: Send + 'static>(
         &self,
-        call: impl FnOnce(&H::Target, &Registry) -> Result<F, String> + Send + 'static,
-    ) -> Result<T, String>
-    where
-        H: Held,
-        T: Send + 'static,
-        F: Future<Output = Result<T, String>> + 'static,
-    {
-        self.admit_settling::<H, T, F>(call, settle_observed::<T, F>)
+        call: impl FnOnce(&H::Target, &Registry) -> Result<IoFuture<'static, T>, String>
+        + Send
+        + 'static,
+    ) -> Result<T, String> {
+        self.admit_settling::<H, T, _>(call, settle_observed::<T>)
             .await
     }
 

@@ -1,13 +1,10 @@
 //! Typed forwarding to the models-owned event buffer on the existing local pump.
 use crate::{
     guest_calls::Handle,
-    local_resources::{
-        Capability, Lease, Message, Registry,
-        held::{EventBuffer, Pending},
-    },
+    local_resources::{Capability, Lease, Message, Registry, held::EventBuffer},
     stream_calls::{Operation, Selection},
 };
-use maestro_extensions::{EventStream, Local};
+use maestro_extensions::{EventStream, Local, native_io::IoFuture};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -44,17 +41,17 @@ impl Endpoint {
     /// Observe one native event while retaining only this observation's admission.
     pub(crate) async fn next(&self) -> Result<Option<Handle>, String> {
         self.0
-            .observe::<EventBuffer, _, _>(|owner, _| {
+            .observe::<EventBuffer, _>(|owner, _| {
                 let next = owner.buffer.next();
-                Ok(Box::pin(async move { Ok(next.await) }) as Pending<_>)
+                Ok(Box::pin(async move { Ok(next.await) }) as IoFuture<'static, _>)
             })
             .await
     }
     /// Observe the native result without consuming queued events.
     pub(crate) async fn result(&self) -> Result<Handle, String> {
         self.0
-            .observe::<EventBuffer, _, _>(|owner, _| {
-                Ok(Box::pin(owner.buffer.result()) as Pending<_>)
+            .observe::<EventBuffer, _>(|owner, _| {
+                Ok(Box::pin(owner.buffer.result()) as IoFuture<'static, _>)
             })
             .await
     }

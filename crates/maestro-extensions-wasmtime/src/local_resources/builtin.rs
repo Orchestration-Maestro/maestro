@@ -1,7 +1,7 @@
 //! Native tool resource ownership on the original local request pump.
-use super::{Capability, Message, Registry, held::Pending, pump::State};
+use super::{Capability, Message, Registry, pump::State};
 use crate::builtin_reads::{Endpoint, Execution};
-use maestro_extensions::ReadToolOptions;
+use maestro_extensions::{ReadToolOptions, native_io::IoFuture};
 use std::{
     rc::Rc,
     sync::{Arc, RwLock},
@@ -224,7 +224,7 @@ impl Registry {
         &self,
         definition: &Rc<dyn crate::builtin_tools::Definition>,
         execution: Execution,
-    ) -> Result<Pending<String>, String> {
+    ) -> Result<IoFuture<'static, String>, String> {
         let model = execution
             .model
             .as_deref()

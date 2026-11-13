@@ -1,11 +1,9 @@
 //! Immediate native model invocation on the existing local producer owner.
-use super::{
-    Capability, Lease, Message, Registry,
-    held::{AssistantStream, Pending},
-};
+use super::{Capability, Lease, Message, Registry, held::AssistantStream};
 use crate::model_calls::Controls;
 use maestro_extensions::{
     Context, Local, Model, ProviderSpawner, ProviderStreamOptions, SimpleStreamOptions,
+    native_io::IoFuture,
 };
 use std::{
     rc::Rc,
@@ -44,24 +42,24 @@ impl Endpoint {
     /// Await one native competing reader; canceled observers do not cancel its producer.
     pub(crate) async fn next(&self) -> Result<Option<String>, String> {
         self.0
-            .observe::<AssistantStream, _, _>(|stream, _| {
+            .observe::<AssistantStream, _>(|stream, _| {
                 let next = stream.next();
                 Ok(Box::pin(async move {
                     next.await
                         .map(|value| serde_json::to_string(&value).map_err(|e| e.to_string()))
                         .transpose()
-                }) as Pending<_>)
+                }) as IoFuture<'static, _>)
             })
             .await
     }
     /// Await the independent native final result.
     pub(crate) async fn result(&self) -> Result<String, String> {
         self.0
-            .observe::<AssistantStream, _, _>(|stream, _| {
+            .observe::<AssistantStream, _>(|stream, _| {
                 let result = stream.result();
                 Ok(Box::pin(async move {
                     serde_json::to_string(&result.await).map_err(|error| error.to_string())
-                }) as Pending<_>)
+                }) as IoFuture<'static, _>)
             })
             .await
     }

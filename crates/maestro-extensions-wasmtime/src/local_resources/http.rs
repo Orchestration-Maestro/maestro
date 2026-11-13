@@ -1,11 +1,9 @@
 //! Native HTTP resources live on the existing local capability owner.
 use super::{
-    Admission, Capability, Lease, Registry, SignalEndpoint,
-    held::{NativeResponse, Pending},
-    native_resources::Reader,
-    pump::State,
+    Admission, Capability, Lease, Registry, SignalEndpoint, held::NativeResponse,
+    native_resources::Reader, pump::State,
 };
-use maestro_extensions::native_io;
+use maestro_extensions::native_io::{self, IoFuture};
 use std::sync::Arc;
 use tokio::sync::oneshot;
 
@@ -42,21 +40,21 @@ impl Response {
     /// Collects the original body through its native response owner.
     pub(crate) async fn text(&self) -> Result<String, String> {
         self.0
-            .observe::<NativeResponse, _, _>(|response, _| {
+            .observe::<NativeResponse, _>(|response, _| {
                 let response = response.clone();
-                Ok(Box::pin(async move { response.text().await }) as Pending<_>)
+                Ok(Box::pin(async move { response.text().await }) as IoFuture<'static, _>)
             })
             .await
     }
     /// Parses the original body and uses the lossless JSON wire.
     pub(crate) async fn json(&self) -> Result<String, String> {
         self.0
-            .observe::<NativeResponse, _, _>(|response, _| {
+            .observe::<NativeResponse, _>(|response, _| {
                 let response = response.clone();
                 Ok(Box::pin(async move {
                     let value = response.json().await?;
                     serde_json::to_string(&value).map_err(|error| error.to_string())
-                }) as Pending<_>)
+                }) as IoFuture<'static, _>)
             })
             .await
     }
