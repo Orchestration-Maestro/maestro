@@ -21,7 +21,8 @@ impl SessionManager {
     ///
     /// # Errors
     /// Fails with `Entry {leaf_id} not found`, changing nothing, when the ancestry is empty.
-    /// A native publication error leaves the new history and the previous publication state.
+    /// A native publication error leaves the new history unsaved; the next save writes all
+    /// of it into an empty file.
     pub fn create_branched_session(&mut self, leaf_id: &str) -> io::Result<Option<String>> {
         self.branch_history(leaf_id, Uuid::new_v4)?;
         #[cfg(not(target_arch = "wasm32"))]

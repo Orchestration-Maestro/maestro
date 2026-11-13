@@ -518,8 +518,9 @@ fn append_failure_keeps_memory_and_partial_bytes() {
         .unwrap();
     let bytes = fs::read_to_string(&path).unwrap();
     let records = maestro_session::parse_session_entries(&bytes);
-    assert_eq!(records.len(), 1);
-    assert_eq!(records[0]["message"]["content"], "next");
+    assert_eq!(records.len(), 2);
+    assert_eq!(records[0]["message"]["content"], "failed-published");
+    assert_eq!(records[1]["message"]["content"], "next");
     assert_eq!(manager.get_entries().len(), 4);
 }
 

@@ -176,7 +176,7 @@ impl SessionManager {
         self.label_timestamps = label_timestamps;
         self.session_id = id;
         self.session_file = Some(path);
-        self.flushed = exists;
+        self.saved = if exists { self.file_entries.len() } else { 0 };
         Ok(())
     }
 
@@ -207,8 +207,8 @@ impl SessionManager {
 
     /// Write the extracted history now only when it holds an assistant message.
     ///
-    /// The publication state changes only after the scan, and the write when an
-    /// assistant is found, succeed.
+    /// After the scan the history counts as unsaved until the write succeeds, so a
+    /// failed write leaves the whole history for the next save.
     pub(super) fn publish_branched(
         &mut self,
         write: impl FnOnce(&str, &[FileEntry]) -> io::Result<()>,
@@ -217,10 +217,11 @@ impl SessionManager {
             return Ok(());
         };
         let assistant = has_assistant(&self.file_entries)?;
+        self.saved = 0;
         if assistant {
             write(path, &self.file_entries)?;
+            self.saved = self.file_entries.len();
         }
-        self.flushed = assistant;
         Ok(())
     }
 
@@ -230,6 +231,12 @@ impl SessionManager {
     }
 
     /// Keep memory acceptance before a private, unstored append effect.
+    ///
+    /// One append holds every record the file does not hold yet, so a save that follows
+    /// a failed one writes the records that one missed. Nothing is written before the
+    /// history holds an assistant message, and the first save starts from an empty file.
+    /// A failed append is cut back to the earlier length, so no torn line is left for the
+    /// next record to join.
     pub(super) fn publish(
         &mut self,
         mut append: impl FnMut(&str, &[u8]) -> io::Result<()>,
@@ -237,17 +244,20 @@ impl SessionManager {
         let Some(path) = self.session_file.as_deref().filter(|_| self.persist) else {
             return Ok(());
         };
-        if !self.flushed {
-            if !has_assistant(&self.file_entries)? {
-                return Ok(());
-            }
-            let bytes = encode_entries(&self.file_entries)?;
-            let before = fs::metadata(path).map_or(0, |metadata| metadata.len());
-            append(path, &bytes).map_err(|error| restore_length(path, before, error))?;
-            self.flushed = true;
-        } else if let Some(entry) = self.file_entries.last() {
-            append(path, &encode(entry)?)?;
+        let first = self.saved == 0;
+        if first && !has_assistant(&self.file_entries)? {
+            return Ok(());
         }
+        let unsaved = self.file_entries.get(self.saved..).unwrap_or_default();
+        let bytes = encode_entries(unsaved)?;
+        let before = if first {
+            cut(path, 0)?;
+            0
+        } else {
+            fs::metadata(path).map_or(0, |metadata| metadata.len())
+        };
+        append(path, &bytes).map_err(|error| restore_length(path, before, error))?;
+        self.saved = self.file_entries.len();
         Ok(())
     }
 }
@@ -264,10 +274,8 @@ pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
     })
 }
 
-/// Cut a failed first save back to its earlier length so the retry writes it once.
-///
-/// Returns the save error, extended with the restore error when the cut also fails.
-fn restore_length(path: &str, length: u64, error: io::Error) -> io::Error {
+/// Cut the session file to `length` under exclusion; an absent file stays absent.
+fn cut(path: &str, length: u64) -> io::Result<()> {
     let cut = super::storage::with_write_lock(path, |_holder| {
         fs::OpenOptions::new()
             .write(true)
@@ -275,11 +283,21 @@ fn restore_length(path: &str, length: u64, error: io::Error) -> io::Error {
             .set_len(length)
     });
     match cut {
-        Err(restore) if restore.kind() != io::ErrorKind::NotFound => io::Error::new(
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+        cut => cut,
+    }
+}
+
+/// Cut a failed save back to its earlier length so the retry writes it once.
+///
+/// Returns the save error, extended with the restore error when the cut also fails.
+fn restore_length(path: &str, length: u64, error: io::Error) -> io::Error {
+    match cut(path, length) {
+        Err(restore) => io::Error::new(
             error.kind(),
             format!("{error}; restoring the session file failed: {restore}"),
         ),
-        _ => error,
+        Ok(()) => error,
     }
 }
 

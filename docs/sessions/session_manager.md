@@ -129,8 +129,8 @@ assert!(history.get_entries().is_empty());
 Each append operation captures the selected entry as parent, a generated identity
 and a UTC millisecond timestamp, accepts the record into memory, then runs the
 publication routine described under [Native history](#native-history). A
-publication error leaves the accepted record, its selection and any written bytes
-in place. The operations are `append_message`, `append_thinking_level_change`,
+publication error leaves the accepted record and its selection in memory and the file
+as it was; the next save writes the record. The operations are `append_message`, `append_thinking_level_change`,
 `append_model_change`, `append_compaction`, `append_custom_entry`,
 `append_session_info`, `append_custom_message_entry`, `append_label_change` and
 `branch_with_summary`.
@@ -181,9 +181,11 @@ filesystem paths and displayed output.
 A fresh history publishes at its first assistant message, writing the header and every
 record so far in one append. A failed first write is cut back to the file's earlier
 length and leaves the history unpublished, so the next save writes it once from the
-start. Loaded and recovered histories stay published: each later append writes one
-record. A later append error leaves the accepted memory and any partial bytes in
-place, and a failed switch keeps the prior manager state. An empty file is initialised immediately at the
+start. Loaded and recovered histories stay published: each later save appends the
+records the file does not hold yet, normally one. A failed later append is cut back to
+the file's earlier length too, so no torn line is left for the next record to join, and
+the accepted record stays in memory: the next save writes it before the new one, and
+every record's parent is in the file. A failed switch keeps the prior manager state. An empty file is initialised immediately at the
 selected path. A nonempty file without a valid session header is refused with
 `Session file is not a valid maestro session: <path>` and keeps its bytes, so
 `open` and `set_session_file` never erase a file that is not a session. A missing
@@ -242,7 +244,8 @@ returns the new lexical filename and records the previous file as `parentSession
 It writes the file at once only when a retained message is from the assistant;
 otherwise it waits for [first publication](#native-history). Publication overwrites
 any bytes already at the new filename, under the shared write lock. A publication
-error leaves the new history installed and the previous publication state.
+error leaves the new history installed and unsaved: the next save empties the file and
+writes the header and every record.
 
 `SessionManager::fork_from(source, target_cwd, session_dir, agent_dir)` copies the
 nonheader records of a source file into a new published native history. It reads
