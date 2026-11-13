@@ -3,7 +3,7 @@ use super::{
     Frame,
     presentation::{Presentation, ready},
 };
-use maestro_app::browser::tools::documents::{Artifact, LocalArtifactsPanel};
+use maestro_web::tools::browser::documents::{Artifact, LocalArtifactsPanel};
 use maestro_web::{ArtifactsPanel, tools::documents::ArtifactUiError};
 use serde::Deserialize;
 use std::{

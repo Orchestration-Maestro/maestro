@@ -1008,8 +1008,7 @@ pub fn tile_dom_opened_overlays_outlive_tiles() {
     let view = view();
     let attachment = crate::attachment_support::attachment();
     attachment.write().unwrap().mime_type = "image/png".into();
-    attachment.write().unwrap().r#type =
-        maestro_app::browser::utils::attachments::AttachmentType::Image;
+    attachment.write().unwrap().r#type = maestro_web::utils::attachments::AttachmentType::Image;
     attachment.write().unwrap().content = "YQ==".into();
     attachment.write().unwrap().preview = None;
     let mut tile = AttachmentTile::from(std::sync::Arc::clone(&attachment));
@@ -1030,8 +1029,7 @@ pub fn tile_dom_opened_overlays_outlive_tiles() {
     tile.attachment = crate::attachment_support::attachment();
     let attachment = std::sync::Arc::clone(&tile.attachment);
     attachment.write().unwrap().mime_type = "image/png".into();
-    attachment.write().unwrap().r#type =
-        maestro_app::browser::utils::attachments::AttachmentType::Image;
+    attachment.write().unwrap().r#type = maestro_web::utils::attachments::AttachmentType::Image;
     attachment.write().unwrap().content = "c2Vjb25k".into();
     attachment.write().unwrap().file_name = "changed.txt".into();
     attachment.write().unwrap().preview = Some("PNG".into());

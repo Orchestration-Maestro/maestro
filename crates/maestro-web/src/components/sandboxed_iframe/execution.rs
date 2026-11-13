@@ -1,6 +1,6 @@
 //! Ordered files and single terminal ownership shared by native and browser execution.
-use maestro_app::browser::components::sandboxed_iframe::{SandboxError, SandboxValue};
-use maestro_app::{SandboxFile, SandboxResult};
+use crate::components::browser::sandboxed_iframe::{SandboxError, SandboxValue};
+use crate::components::browser::sandboxed_iframe::{SandboxFile, SandboxResult};
 
 /// Selected lifecycle fields, without converting native payloads.
 pub(super) enum ExecutionMessage<V: SandboxValue, C> {

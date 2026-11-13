@@ -1,5 +1,7 @@
 //! Browser attachment components.
 pub mod attachment_tile;
+/// Conversation records, runtime providers and the sandbox execution boundary.
+pub mod browser;
 #[cfg(any(target_arch = "wasm32", test, feature = "test-support"))]
 pub mod changes;
 /// Message composer with attachments, reasoning level and model choice.

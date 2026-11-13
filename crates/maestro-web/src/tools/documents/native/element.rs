@@ -1,10 +1,10 @@
 //! Bare source tags mounting the same native format owners consumed by the panel.
 use super::NativeArtifact;
+use crate::tools::browser::documents::FileType;
 use crate::{
     page::{self, DomContent as _, DomRoot, DomView, Getter, Link, Property, Reflected, Setter},
     tools::types::ToolUiError,
 };
-use maestro_app::browser::tools::documents::FileType;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 

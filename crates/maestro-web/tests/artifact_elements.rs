@@ -219,7 +219,7 @@ fn generic_styles_follow_supplied_brand_roles() {
 #[test]
 fn local_artifact_tool_updates_the_real_generic_view() {
     use artifact_support::presentation::{Presentation, ready};
-    use maestro_app::browser::tools::documents::LocalArtifactsPanel;
+    use maestro_web::tools::browser::documents::LocalArtifactsPanel;
     use serde_json::json;
     let host = Rc::new(Host::default());
     let presentation = Rc::new(Presentation {

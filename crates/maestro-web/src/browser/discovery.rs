@@ -1,9 +1,7 @@
 //! Local-server model discovery over the page's own fetch and socket effects.
-use maestro_app::{
-    AutoDiscoveryProviderType,
-    browser::utils::model_discovery::{
-        DiscoveryDiagnostic, DiscoveryError, DiscoveryOptions, DiscoveryProvider, discover_models,
-    },
+use crate::persistence::AutoDiscoveryProviderType;
+use crate::utils::model_discovery::{
+    DiscoveryDiagnostic, DiscoveryError, DiscoveryOptions, DiscoveryProvider, discover_models,
 };
 use maestro_models::{Model, default_fetch};
 use std::sync::Arc;

@@ -54,8 +54,8 @@ Source attribution is in the [third-party notices](../../THIRD-PARTY-NOTICES.md#
 
 ## PDF processing
 
-The application uses `hayro =0.8.0` and `hayro-interpret =0.8.0` with default
-embedded fonts/CMaps and native SIMD, both from the registry. The application's
+The web frontend uses `hayro =0.8.0` and `hayro-interpret =0.8.0` with default
+embedded fonts/CMaps and native SIMD, both from the registry. Its
 private PDF text module walks typed content operations and retains font resource
 bindings and logical show order. It delegates byte decoding and Unicode mapping
 to the registry interpreter, independently of painting and optional-layer visibility.

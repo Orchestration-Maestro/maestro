@@ -9,7 +9,7 @@ impl ArtifactsPanel {
     pub fn render<P>(
         &self,
         ui: &mut egui::Ui,
-        caller: &maestro_app::browser::tools::documents::ArtifactsPanel<P>,
+        caller: &crate::tools::browser::documents::ArtifactsPanel<P>,
         view: ArtifactView<'_>,
     ) -> Result<(), ArtifactUiError>
     where

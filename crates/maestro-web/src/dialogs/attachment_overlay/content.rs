@@ -1,6 +1,6 @@
 //! Attachment classification.
+use crate::utils::attachments::AttachmentType;
 use crate::{Attachment, browser::attachment_content::FileType};
-use maestro_app::browser::utils::attachments::AttachmentType;
 /// Select the first matching document presentation.
 pub(super) fn file_type(a: &Attachment) -> FileType {
     if a.r#type == AttachmentType::Image {

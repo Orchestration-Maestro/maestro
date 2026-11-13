@@ -1,11 +1,11 @@
 //! Shared public execution witnesses and native effect observations.
 use crate::browser_fixture_support::{Patch, dom_exception, error, get, global, invoke, object};
-use maestro_app::Runtime;
-use maestro_app::browser::components::{
+use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
+use maestro_web::Runtime;
+use maestro_web::components::browser::{
     sandbox::providers::{SandboxRespond, SandboxRuntimeProvider},
     sandboxed_iframe::{SandboxEnvironment, SandboxExecution},
 };
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
 use maestro_web::{SandboxIframe, browser::values::BrowserSandboxValue};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use wasm_bindgen::{JsCast, prelude::*};
@@ -147,9 +147,9 @@ pub(crate) fn pending<T>(
 pub(crate) async fn application(
     code: &str,
     providers: Vec<Provider>,
-) -> Result<maestro_app::browser::tools::javascript_repl::JavaScriptExecution, DiagnosticErrorInfo>
+) -> Result<maestro_web::tools::browser::javascript_repl::JavaScriptExecution, DiagnosticErrorInfo>
 {
-    maestro_app::browser::tools::javascript_repl::execute_javascript(
+    maestro_web::tools::browser::javascript_repl::execute_javascript(
         code.into(),
         providers,
         None,
@@ -163,7 +163,7 @@ pub(crate) async fn application(
 /// Downloads use the existing application runtime provider, including its acknowledgement.
 #[must_use]
 pub(crate) fn downloads() -> Provider {
-    SharedHandle::new(maestro_app::browser::components::sandbox::file_download_runtime_provider::FileDownloadRuntimeProvider::<BrowserSandboxValue>::new())
+    SharedHandle::new(maestro_web::components::browser::sandbox::file_download_runtime_provider::FileDownloadRuntimeProvider::<BrowserSandboxValue>::new())
 }
 /// Assert no owned parent or native frame survives a hidden call.
 pub(crate) fn hidden_released() {
@@ -176,7 +176,7 @@ pub(crate) async fn direct(
     sandbox: &SandboxIframe,
     code: &str,
     providers: Vec<Provider>,
-) -> maestro_app::SandboxResult<BrowserSandboxValue, BrowserSandboxValue> {
+) -> maestro_web::SandboxResult<BrowserSandboxValue, BrowserSandboxValue> {
     sandbox
         .execute(request(code, providers), vec![], false)
         .await
@@ -309,7 +309,7 @@ pub(crate) fn setup_providers(phase: &str, trace: &Trace) -> Vec<Provider> {
 
 /// Construct and consume the selected root records through the actual hidden host.
 pub(crate) async fn root_records() {
-    use maestro_app::browser::components::sandboxed_iframe::{SandboxFileContent, SandboxHost};
+    use maestro_web::components::browser::sandboxed_iframe::{SandboxFileContent, SandboxHost};
     use maestro_web::{
         BrowserSandboxHost, SandboxFile, SandboxResult, create_javascript_repl_tool,
     };
@@ -403,7 +403,7 @@ impl Fixture {
     #[must_use]
     pub(crate) fn bootstrap_callback(
         ready: bool,
-    ) -> maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider {
+    ) -> maestro_web::components::browser::sandboxed_iframe::SandboxUrlProvider {
         SharedHandle::new(move || Ok(Self::bootstrap(ready)))
     }
     /// Install routing observations plus deadline timer observations.

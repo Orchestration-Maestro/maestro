@@ -5,14 +5,14 @@ use crate::{
     contributions_support::{container, text, view},
 };
 use maestro_agent::AgentMessage;
-use maestro_app::browser::{
-    components::records::CustomAgentMessages, tools::documents::ArtifactsPanel,
-};
 use maestro_models::{AssistantContent, ToolResultMessage};
 use maestro_web::{
     AssistantMessage, UserMessage,
     components::messages::ToolResults,
     page::{DomContent as _, DomView},
+};
+use maestro_web::{
+    components::browser::records::CustomAgentMessages, tools::browser::documents::ArtifactsPanel,
 };
 use serde_json::{Value, json};
 use std::{
@@ -259,9 +259,9 @@ fn observe_call(row: &Element, call: &maestro_models::ToolCall, result: &ToolRes
             observe_update(row, call);
         }
         let consoles = texts(row, ".maestro-console pre");
-        if maestro_app::browser::tools::documents::get_file_type(
+        if maestro_web::tools::browser::documents::get_file_type(
             call.arguments["filename"].as_str().unwrap(),
-        ) == maestro_app::browser::tools::documents::FileType::Html
+        ) == maestro_web::tools::browser::documents::FileType::Html
         {
             assert_eq!(consoles.first(), Some(&output));
         } else {

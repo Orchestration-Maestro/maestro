@@ -1,5 +1,6 @@
 //! Native provider-card nodes retained across operand updates.
 use super::{CustomProviderCard, ProviderStatus};
+use crate::persistence::{AutoDiscoveryProviderType, CustomProviderType, ManualProviderType};
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error, set_text_if_changed},
@@ -9,7 +10,6 @@ use crate::{
     page::{DomContent, DomRoot, DomView},
     tools::types::ToolUiError,
 };
-use maestro_app::{AutoDiscoveryProviderType, CustomProviderType, ManualProviderType};
 use maestro_session::Presence;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::closure::Closure;

@@ -1,12 +1,12 @@
 //! WebAssembly signature witnesses, not executed browser observations.
 #![cfg(target_arch = "wasm32")]
-use maestro_app::Runtime;
-use maestro_app::browser::components::sandbox::providers::{
+use maestro_models::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
+use maestro_web::Runtime;
+use maestro_web::browser::values::BrowserSandboxValue;
+use maestro_web::components::browser::sandbox::providers::{
     SandboxRespond, SandboxRuntimeProvider,
 };
-use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
-use maestro_models::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
-use maestro_web::browser::values::BrowserSandboxValue;
+use maestro_web::components::browser::sandboxed_iframe::SandboxValue;
 use maestro_web::components::sandbox::routing::{
     MessageType, RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
@@ -100,7 +100,7 @@ fn concrete_providers_keep_native_browser_handles() {
     let raw = BrowserSandboxValue(js_sys::Uint8Array::new_with_length(3).into());
     let _: ConsoleLog<BrowserSandboxValue> = ConsoleLog {
         r#type:
-            maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleLogType::Log,
+            maestro_web::components::browser::sandbox::console_runtime_provider::ConsoleLogType::Log,
         text: raw.clone(),
         args: Some(raw.clone()),
     };
@@ -120,11 +120,11 @@ fn concrete_providers_keep_native_browser_handles() {
 
 #[test]
 fn artifact_storage_provider_serves_local_panels() {
-    use maestro_app::browser::components::sandbox::artifacts_runtime_provider::AgentLike;
-    use maestro_app::browser::tools::documents::{
+    use maestro_web::ArtifactsRuntimeProvider;
+    use maestro_web::components::browser::sandbox::artifacts_runtime_provider::AgentLike;
+    use maestro_web::tools::browser::documents::{
         ArtifactsPanelState, LocalArtifactPresentation, LocalArtifactsPanel,
     };
-    use maestro_web::ArtifactsRuntimeProvider;
     /// Read-write storage over the browser's local panel and conversation.
     fn serve(
         panel: &LocalArtifactsPanel,

@@ -474,6 +474,7 @@ forbidden_edge_tests! {
     chat_to_daemon_edge_is_rejected: "maestro-chat" => "maestro-daemon",
     rpc_to_packages_edge_is_rejected: "maestro-rpc" => "maestro-packages",
     web_to_process_edge_is_rejected: "maestro-web" => "maestro-process",
+    web_to_app_edge_is_rejected: "maestro-web" => "maestro-app",
     text_to_tools_edge_is_rejected: "maestro-text" => "maestro-tools",
 }
 
@@ -1058,7 +1059,7 @@ fn sparse_inventory_does_not_create_product_crates() {
 
 #[test]
 fn frontends_require_application_without_unused_allowed_edges() {
-    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
+    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc"] {
         let required = support::policy::POLICY
             .iter()
             .find(|row| row.0 == frontend)
@@ -2629,14 +2630,14 @@ fn session_lock_edge_is_scoped() {
     check_permitted_declarations(&workspace, "maestro-session", &["maestro-lock"]);
 
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-web", "maestro-lock"]);
-    let required =
-        required_targets("maestro-web")
-            .iter()
-            .fold(String::new(), |mut declarations, target| {
-                writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
-                declarations
-            });
+    workspace.foundation(&["maestro-multiplexer", "maestro-lock"]);
+    let required = required_targets("maestro-multiplexer").iter().fold(
+        String::new(),
+        |mut declarations, target| {
+            writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
+            declarations
+        },
+    );
     for (kind, extra) in DECLARATIONS {
         let alias =
             format!("alias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}");
@@ -2645,10 +2646,10 @@ fn session_lock_edge_is_scoped() {
         } else {
             format!("[dependencies]\n{required}[{kind}]\n{alias}")
         };
-        workspace.member("maestro-web", "maestro-web", &declarations);
+        workspace.member("maestro-multiplexer", "maestro-multiplexer", &declarations);
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-web -> maestro-lock".into()),
+            Err("forbidden production dependency: maestro-multiplexer -> maestro-lock".into()),
             "{kind}{extra}"
         );
     }

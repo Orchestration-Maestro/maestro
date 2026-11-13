@@ -2,7 +2,7 @@
 use crate::browser::attachment_content::{
     AttachmentHost, AttachmentHostError, ReadingContent, reading,
 };
-use maestro_app::browser::utils::attachments::portable::{PdfDocument, PdfPage};
+use crate::utils::attachments::portable::{PdfDocument, PdfPage};
 use std::{cell::RefCell, rc::Rc};
 /// Completed raster operands and their retained native nodes.
 #[derive(Default)]

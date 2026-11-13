@@ -104,9 +104,11 @@ hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] 
 hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
-image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
+image-2ffb4c3fe830441c = { package = "image", version = "0.25.10", default-features = false, features = ["jpeg", "png"] }
+image-adf3d7031871b0af = { package = "image", version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
+moxcms = { version = "0.8.1", features = ["in_place"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
@@ -127,6 +129,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
 zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zune-jpeg = { version = "0.5.15" }
 
 [target.x86_64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -161,9 +164,11 @@ hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] 
 hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
-image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
+image-2ffb4c3fe830441c = { package = "image", version = "0.25.10", default-features = false, features = ["jpeg", "png"] }
+image-adf3d7031871b0af = { package = "image", version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
+moxcms = { version = "0.8.1", features = ["in_place"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
@@ -184,6 +189,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
 zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zune-jpeg = { version = "0.5.15" }
 
 [target.aarch64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -219,8 +225,10 @@ hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] 
 hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
-image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
+image-2ffb4c3fe830441c = { package = "image", version = "0.25.10", default-features = false, features = ["jpeg", "png", "tiff"] }
+image-adf3d7031871b0af = { package = "image", version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+moxcms = { version = "0.8.1", features = ["in_place"] }
 nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 phf = { version = "0.14.0", features = ["macros"] }
@@ -243,6 +251,7 @@ uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
 zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zune-jpeg = { version = "0.5.15" }
 
 [target.x86_64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -278,8 +287,10 @@ hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] 
 hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
 iana-time-zone = { version = "0.1.65", default-features = false, features = ["fallback"] }
 icu_properties = { version = "2.3.0" }
-image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
+image-2ffb4c3fe830441c = { package = "image", version = "0.25.10", default-features = false, features = ["jpeg", "png", "tiff"] }
+image-adf3d7031871b0af = { package = "image", version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+moxcms = { version = "0.8.1", features = ["in_place"] }
 nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 phf = { version = "0.14.0", features = ["macros"] }
@@ -302,6 +313,7 @@ uuid = { version = "1.27.0", features = ["v4", "v7"] }
 winnow = { version = "1.0.4" }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
 zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zune-jpeg = { version = "0.5.15" }
 
 [target.aarch64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -333,7 +345,9 @@ getrandom = { version = "0.4.3", default-features = false, features = ["std", "s
 hyper = { version = "1.11.1", features = ["client", "http1", "http2", "server"] }
 hyper-rustls = { version = "0.27.10", default-features = false, features = ["aws-lc-rs", "http1", "http2", "native-tokio", "tls12"] }
 icu_properties = { version = "2.3.0" }
-image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
+image-2ffb4c3fe830441c = { package = "image", version = "0.25.10", default-features = false, features = ["bmp", "jpeg", "png"] }
+image-adf3d7031871b0af = { package = "image", version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
+moxcms = { version = "0.8.1", features = ["in_place"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 phf = { version = "0.14.0", features = ["macros"] }
 regress = { version = "0.12.0", default-features = false, features = ["utf16"] }
@@ -353,6 +367,7 @@ uuid = { version = "1.27.0", features = ["v4", "v7"] }
 windows-sys = { version = "0.61.2", features = ["Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security_Authentication_Identity", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_SystemInformation", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
 winnow = { version = "1.0.4" }
 zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+zune-jpeg = { version = "0.5.15" }
 
 [target.x86_64-pc-windows-msvc.build-dependencies]
 fastrand = { version = "2.5.0" }
