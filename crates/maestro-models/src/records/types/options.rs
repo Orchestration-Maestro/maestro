@@ -1,6 +1,6 @@
 //! Invocation settings with retained adapter hooks.
 use super::Threaded;
-use crate::providers::transport::Fetch;
+use maestro_http::Fetch;
 use serde::de::IntoDeserializer;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

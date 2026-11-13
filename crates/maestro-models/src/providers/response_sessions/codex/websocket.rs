@@ -10,8 +10,6 @@ use super::sessions::{CloseReason, Identity, Socket, acquire};
 use super::{CodexError, OpenAICodexResponsesOptions};
 use crate::parameters::json_parse::whitespace;
 use crate::providers::json_text::{BorrowedJson, raw_json};
-use crate::providers::transport::{Raced, client_pairs, decode_utf8, race};
-use crate::providers::websocket::upgrade;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
     DiagnosticErrorInfo, Model, SharedAssistantMessage, Transport,
@@ -19,6 +17,8 @@ use crate::{
 use futures_util::future::{Either, select as select_first};
 use futures_util::{FutureExt, Sink, SinkExt, Stream, StreamExt};
 use indexmap::IndexMap;
+use maestro_http::websocket::upgrade;
+use maestro_http::{Raced, client_pairs, decode_utf8, race};
 use maestro_json::compact_members_with_default;
 use maestro_lock::lock;
 use serde_json::Value;
