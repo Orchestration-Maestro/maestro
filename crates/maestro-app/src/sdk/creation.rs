@@ -177,6 +177,7 @@ struct Recorded {
 pub async fn create_agent_session(
     options: CreateAgentSessionOptions,
 ) -> Result<CreateAgentSessionResult, DiagnosticErrorInfo> {
+    maestro_providers::install_built_in_providers();
     let services = resolve_services(&options)?;
     let session_manager = match options.session_manager {
         Some(manager) => manager,

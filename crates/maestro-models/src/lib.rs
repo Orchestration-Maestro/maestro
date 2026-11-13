@@ -92,18 +92,7 @@ pub mod providers;
 pub use providers::scripted::*;
 
 pub mod oauth;
-pub use oauth::device::browser::{
-    GITHUB_COPILOT_OAUTH_PROVIDER, get_github_copilot_base_url, login_github_copilot,
-    normalize_domain, refresh_github_copilot_token,
-};
-pub use oauth::pages::{oauth_error_html, oauth_success_html};
 pub use oauth::proof_key::{Pkce, generate_pkce};
-pub use oauth::responses::code_login::{
-    OPENAI_CODEX_OAUTH_PROVIDER, login_openai_codex, refresh_openai_codex_token,
-};
-pub use oauth::subscription::browser::{
-    ANTHROPIC_OAUTH_PROVIDER, login_anthropic, refresh_anthropic_token,
-};
 pub use oauth::types::{
     OAuthAuthInfo, OAuthCredentials, OAuthPrompt, OAuthProvider, OAuthProviderId,
     OAuthSelectOption, OAuthSelectPrompt,

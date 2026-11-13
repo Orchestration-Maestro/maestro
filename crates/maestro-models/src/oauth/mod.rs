@@ -1,28 +1,13 @@
-#![doc = include_str!("../../../../docs/models/oauth.md")]
-pub mod device;
-pub mod pages;
+//! The login provider registry, its records and the proof-key helper.
+//!
+//! The registry starts empty. A composition installs the built-in providers as its base
+//! layer with [`install_built_in_oauth_providers`]; `maestro-providers` owns those providers
+//! and their login flows.
 pub mod proof_key;
-pub mod responses;
-pub mod subscription;
 pub mod types;
-
-mod callback;
-mod native;
-pub use device::browser::{
-    GITHUB_COPILOT_OAUTH_PROVIDER, get_github_copilot_base_url, login_github_copilot,
-    normalize_domain, refresh_github_copilot_token,
-};
-
-pub(crate) use maestro_text::is_whitespace_scalar as authorization_whitespace;
 
 use crate::SharedHandle;
 use indexmap::IndexMap;
-pub use responses::code_login::{
-    OPENAI_CODEX_OAUTH_PROVIDER, login_openai_codex, refresh_openai_codex_token,
-};
-pub use subscription::browser::{
-    ANTHROPIC_OAUTH_PROVIDER, login_anthropic, refresh_anthropic_token,
-};
 pub use types::{
     OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthLoginCallbacks, OAuthPrompt,
     OAuthProvider, OAuthProviderId, OAuthProviderInterface, OAuthSelectOption, OAuthSelectPrompt,
@@ -35,16 +20,8 @@ pub type OAuthProviderHandle = SharedHandle<dyn OAuthProviderInterface + Send + 
 #[cfg(target_arch = "wasm32")]
 pub type OAuthProviderHandle = SharedHandle<dyn OAuthProviderInterface>;
 
-/// Original account implementations in their registration order.
-fn builtin_providers() -> [OAuthProviderHandle; 3] {
-    [
-        SharedHandle::new(subscription::browser::AnthropicOAuthProvider),
-        SharedHandle::new(device::browser::GitHubCopilotOAuthProvider),
-        SharedHandle::new(responses::code_login::OpenAICodexOAuthProvider),
-    ]
-}
-
 /// Provider membership: the installed built-ins under the live registrations.
+#[derive(Default)]
 struct Registry {
     /// Built-in implementations in their installed order; they hold the first positions.
     built_ins: IndexMap<OAuthProviderId, OAuthProviderHandle>,
@@ -53,14 +30,6 @@ struct Registry {
 }
 
 impl Registry {
-    /// A registry whose base layer is the original account implementations.
-    fn seeded() -> Self {
-        Self {
-            built_ins: keyed(builtin_providers()),
-            registered: IndexMap::new(),
-        }
-    }
-
     /// The registration for `id`, or else its built-in.
     fn get(&self, id: &str) -> Option<&OAuthProviderHandle> {
         self.registered.get(id).or_else(|| self.built_ins.get(id))
@@ -82,24 +51,14 @@ impl Registry {
     }
 }
 
-/// `providers` under their own identifiers, in the order given.
-fn keyed(
-    providers: impl IntoIterator<Item = OAuthProviderHandle>,
-) -> IndexMap<OAuthProviderId, OAuthProviderHandle> {
-    providers
-        .into_iter()
-        .map(|provider| (provider.id().to_owned(), provider))
-        .collect()
-}
-
 /// Process-wide provider membership on native targets.
 #[cfg(not(target_arch = "wasm32"))]
 static PROVIDERS: std::sync::LazyLock<std::sync::Mutex<Registry>> =
-    std::sync::LazyLock::new(|| std::sync::Mutex::new(Registry::seeded()));
+    std::sync::LazyLock::new(std::sync::Mutex::default);
 #[cfg(target_arch = "wasm32")]
 thread_local! {
     /// Browser-local provider membership.
-    static PROVIDERS: std::cell::RefCell<Registry> = std::cell::RefCell::new(Registry::seeded());
+    static PROVIDERS: std::cell::RefCell<Registry> = std::cell::RefCell::default();
 }
 
 crate::records::platform_store_accessor!(
@@ -145,7 +104,10 @@ pub fn reset_oauth_providers() {
 /// registration restores the built-in there. Each call replaces the earlier base layer, so
 /// installing the same providers again changes neither membership nor order.
 pub fn install_built_in_oauth_providers(providers: impl IntoIterator<Item = OAuthProviderHandle>) {
-    let built_ins = keyed(providers);
+    let built_ins = providers
+        .into_iter()
+        .map(|provider| (provider.id().to_owned(), provider))
+        .collect();
     let retired = with_providers(|registry| std::mem::replace(&mut registry.built_ins, built_ins));
     drop(retired);
 }

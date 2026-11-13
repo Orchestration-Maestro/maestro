@@ -296,6 +296,7 @@ fn check_declarations(
                 | "maestro-listeners"
                 | "maestro-office"
                 | "maestro-http"
+                | "maestro-providers"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -370,6 +371,9 @@ fn single_name_owner(name: &str) -> Option<&'static str> {
         "FetchError" | "PacProxyAgent" => "maestro-http",
         "NumberFormatter" | "OpenXmlPackage" | "WorkbookError" => "maestro-office",
         "ObjectNode" | "Relation" => "maestro-schema-validator",
+        "AnthropicOAuthProvider" | "GitHubCopilotOAuthProvider" | "OpenAICodexOAuthProvider" => {
+            "maestro-providers"
+        }
         "serialize_json_line" | "JsonlLineSplitter" => "maestro-json",
         "serialize_rpc_response" => "maestro-protocol",
         "session_transcripts" => "maestro-session-reports",

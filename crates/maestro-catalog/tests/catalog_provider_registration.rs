@@ -609,6 +609,7 @@ fn builtin_oauth_transform_changes_only_matching_values() {
     if dynamic::isolated("builtin_oauth_transform_changes_only_matching_values") {
         return;
     }
+    maestro_providers::install_built_in_providers();
     let oauth = maestro_models::get_oauth_provider("github-copilot").unwrap();
     let auth = support::auth();
     let mut credentials = dynamic::tokens();
@@ -699,6 +700,7 @@ fn builtin_oauth_transform_detaches_changed_descriptors() {
     if dynamic::isolated("builtin_oauth_transform_detaches_changed_descriptors") {
         return;
     }
+    maestro_providers::install_built_in_providers();
     let oauth = maestro_models::get_oauth_provider("github-copilot").unwrap();
     let auth = support::auth();
     let registry = ModelRegistry::in_memory(Arc::clone(&auth), crate::support::values()).unwrap();
@@ -1019,6 +1021,7 @@ fn absent_oauth_modifier_preserves_unrelated_descriptor_alias() {
     if dynamic::isolated("absent_oauth_modifier_preserves_unrelated_descriptor_alias") {
         return;
     }
+    maestro_providers::install_built_in_providers();
     let auth = support::auth();
     let registry = ModelRegistry::in_memory(auth.clone(), crate::support::values()).unwrap();
     registry

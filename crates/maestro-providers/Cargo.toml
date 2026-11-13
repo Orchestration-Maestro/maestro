@@ -1,0 +1,47 @@
+[package]
+autotests = false
+name = "maestro-providers"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-models = { path = "../maestro-models" }
+maestro-http = { path = "../maestro-http" }
+maestro-brand = { path = "../maestro-brand" }
+maestro-text = { path = "../maestro-text" }
+maestro-json = { path = "../maestro-json" }
+base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
+getrandom = "=0.4.3"
+serde = { version = "=1.0.229", features = ["derive", "rc"] }
+serde_json = { workspace = true, features = ["raw_value"] }
+indexmap = { version = "=2.14.2", features = ["serde"] }
+futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
+url = "=2.5.8"
+
+[dev-dependencies]
+maestro-http = { path = "../maestro-http", features = ["test-support"] }
+
+[lints]
+workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "=0.4.3", features = ["wasm_js"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "net"] }
+hyper = { version = "=1.11.1", default-features = false, features = ["server", "http1"] }
+hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }
+http-body-util = { version = "=0.1.5", default-features = false }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-process.workspace = true
+reqwest = "=0.13.5"
+sha2 = { version = "=0.11.0", default-features = false }
+tokio = { version = "=1.53.3", features = ["rt", "time", "test-util", "io-util", "macros"] }
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"

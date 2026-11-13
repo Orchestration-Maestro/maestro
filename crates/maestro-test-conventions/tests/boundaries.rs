@@ -1373,6 +1373,17 @@ fn http_transport_records_have_one_shared_owner() {
 }
 
 #[test]
+fn built_in_login_providers_have_one_shared_owner() {
+    for name in [
+        "AnthropicOAuthProvider",
+        "GitHubCopilotOAuthProvider",
+        "OpenAICodexOAuthProvider",
+    ] {
+        assert_single_owner(name, "maestro-providers", &["maestro-models"]);
+    }
+}
+
+#[test]
 fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     let workspace = Workspace::new();
     let root = workspace.root.path();

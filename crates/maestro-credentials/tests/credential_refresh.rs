@@ -3,7 +3,7 @@
 mod tests {
     use crate::gate_support::gated;
     use crate::oauth_support::{
-        ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials, error,
+        ControlledProvider, FUTURE, NoBuiltIns, RefreshBehavior, Unregister, credentials, error,
     };
     use crate::support::{TempDir, api_key, block_on, is_child, run_isolated};
     use maestro_credentials::{
@@ -789,7 +789,11 @@ mod tests {
         let _cleanup = (
             Unregister("r13-zeta".into()),
             Unregister("r13-alpha".into()),
+            NoBuiltIns,
         );
+        let built_ins = ["anthropic", "github-copilot", "openai-codex"]
+            .map(|id| Arc::new(ControlledProvider::new(id)) as maestro_models::OAuthProviderHandle);
+        maestro_models::install_built_in_oauth_providers(built_ins);
         let ours = |storage: &AuthStorage| -> Vec<maestro_models::OAuthProviderHandle> {
             storage
                 .get_oauth_providers()

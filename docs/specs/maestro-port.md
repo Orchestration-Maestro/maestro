@@ -33,6 +33,8 @@ Each protocol adapter owns its projection, wire conversion, authentication defau
 
 Ship every catalog provider and all nine bundled real protocol adapters: message, chat-completion, conversation, response, cloud response, response-session, content-generation, cloud content-generation and cloud conversation streams. Wire identifiers and accepted provider/model literals remain unchanged. Include the opt-in scripted simulator with builders, chunking, pacing, usage/cache simulation, request-observing factories and pre-aborted queue consumption. Ship every bundled OAuth/device/refresh flow, registry operation and dedicated model-account command. Generic registration alone does not satisfy bundled-provider delivery.
 
+`maestro-models` holds the OAuth provider registry, its records and the proof-key helper, and the registry starts empty. `maestro-providers` holds the bundled login flows with their callback server and pages, and its `install_built_in_providers` places the built-in providers as the registry's base layer through `maestro_models::install_built_in_oauth_providers`. Built-ins take the first positions wherever registrations already stand; a registration carrying a built-in's identifier shadows that built-in until it is removed, and installing again changes nothing. The application installs the base layer at each of its composition entries before any registry use, and the model-account executable installs it before it reads the registry.
+
 Keep the complete offline catalog and developer generator. Do not add runtime catalog refresh. Preserve raw versus simple budgets/options and provider-specific payload defaults, omission rules, retry parsing, proxy/environment behavior, stream end-marker/EOF handling, overflow classification and accounting. A clean chat response can retain its initial stop outcome without a finish-reason field; other protocols retain their own completion rules. Successful measured usage can satisfy the public overflow predicate. Test all protocols with synthetic wire fixtures; paid/live calls require separate authorization.
 
 ## R02 — Agent ownership and execution
@@ -455,7 +457,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-office` | read office documents | `maestro-text`, `maestro-json`, `maestro-lock` | 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-package`, `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, `maestro-text` | 0 |
-| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
+| `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 0 |
 | `maestro-models-catalog` | define the model catalog | `maestro-request` | below 0 |
 | `maestro-http` | perform HTTP requests | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json` | below 0 |
 | `maestro-schema-validator` | validate values against a schema | `maestro-request`, `maestro-json`, `maestro-text` | below 0 |
@@ -472,6 +474,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-terminal-emulator` | emulate terminals | `maestro-text`, `maestro-realpath` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock`, `maestro-realpath` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock`, `maestro-realpath` | 0 |
+| `maestro-providers` | adapt the built-in model providers | `maestro-models`, `maestro-http`, `maestro-request`, `maestro-brand`, `maestro-text`, `maestro-json` | 1 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool`, `maestro-listeners`, `maestro-json`, `maestro-lock` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-request`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-package`, `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-realpath` | 1 |
@@ -483,7 +486,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-resources`, `maestro-lock`, `maestro-realpath` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners`, `maestro-lock` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal-emulator`, `maestro-markdown`, `maestro-office`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-terminal-emulator`, `maestro-markdown`, `maestro-office`, `maestro-models`, `maestro-providers`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-listing`, `maestro-daemon`, `maestro-workspace`, `maestro-listeners`, `maestro-lock`, `maestro-realpath` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts (optional path utility) | `maestro-extensions`, `maestro-lock` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock`, `maestro-agent`, `maestro-catalog`, `maestro-credentials`, `maestro-export`, `maestro-extensions`, `maestro-json`, `maestro-listeners`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools`, `maestro-watch` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-lock`, `maestro-agent`, `maestro-catalog`, `maestro-credentials`, `maestro-daemon`, `maestro-extensions`, `maestro-json`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-protocol`, `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-text`, `maestro-tools` | 5 |
@@ -491,7 +494,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-office`, `maestro-theme`, `maestro-agent`, `maestro-json`, `maestro-markdown`, `maestro-models`, `maestro-protocol`, `maestro-session`, `maestro-text`, `maestro-tools` | 5 |
 | `maestro-session-reports` | summarize session files for developers | `maestro-app`, `maestro-models`, `maestro-session`, `maestro-resources`, `maestro-process`, `maestro-json`, `maestro-text`, `maestro-theme`, `maestro-listing` | 5 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-daemon`, `maestro-terminal-emulator` | 5 |
-| `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer`, `maestro-agent`, `maestro-export`, `maestro-extensions`, `maestro-models`, `maestro-packages`, `maestro-resources`, `maestro-settings`, `maestro-tools` | 6 |
+| `maestro` | compose executable entry points | `maestro-theme`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-process`, `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer`, `maestro-agent`, `maestro-export`, `maestro-extensions`, `maestro-models`, `maestro-providers`, `maestro-packages`, `maestro-resources`, `maestro-settings`, `maestro-tools` | 6 |
 
 `maestro-cli` is a command-line frontend, not an interactive view. Its `configuration`
 module is only the wrapper that runs a chat-owned configuration view through a
@@ -852,14 +855,20 @@ toolkit/text dependency.
 lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
 The native component adapter (`maestro-extensions-wasmtime`) may depend on
-`maestro-catalog`, `maestro-credentials`, `maestro-models`, `maestro-session`,
+`maestro-catalog`, `maestro-credentials`, `maestro-models`, `maestro-providers`, `maestro-session`,
 `maestro-theme` and `maestro-tui` as native-only development dependencies. Its composition tests
 reuse the extension test support to build real catalogs, credentials, messages,
-sessions and themes. The toolkit edge supplies the real terminal and UI to observe
+sessions and themes, and install the built-in login providers the registry no longer seeds. The toolkit edge supplies the real terminal and UI to observe
 component-factory width synchronously; it adds no new production layer crossing.
 These edges permit no normal or build dependencies.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
+`maestro-catalog` to `maestro-providers`, declared as a native-only, non-optional
+development dependency, lets catalog tests install the built-in login providers whose
+names and model transforms they read. It permits no normal or build edge.
+`maestro-cli` to `maestro-providers`, declared the same way, lets the model-account
+tests offer the built-in login providers that the executable installs before it calls
+the command. It permits no normal or build edge.
 `maestro-rpc` to `maestro-theme`, `maestro-tui-crossterm`, `maestro-export`,
 `maestro-extensions`, `maestro-models`, `maestro-session` and `maestro-tools`, declared as native
 development dependencies, let the standard-stream child tests build the real export
@@ -944,7 +953,7 @@ the foundation utility permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-providers`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`,
 `maestro-session-reports`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`,
@@ -1127,7 +1136,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 **Below layer 0:** `maestro-protocol`, `maestro-models-catalog`, `maestro-http` and `maestro-schema-validator` join the existing foundation leaves.
 
 1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
-2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
+2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-providers`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
 5. **Layer 4:** `maestro-app`, `maestro-extensions-wasmtime`

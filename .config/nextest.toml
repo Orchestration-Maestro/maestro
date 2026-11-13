@@ -47,6 +47,7 @@ package(=maestro)
 | package(=maestro-models)
 | package(=maestro-packages)
 | package(=maestro-process)
+| package(=maestro-providers)
 | package(=maestro-resources)
 | package(=maestro-rpc)
 | package(=maestro-session)
@@ -115,14 +116,14 @@ test-group = "file-trigger"
 command = { command-line = "target/test-setup/development nextest-wrapper fixed-port", relative-to = "workspace-root" }
 
 [[profile.default.scripts]]
-filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
+filter = "(package(maestro-providers) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 run-wrapper = "fixed-port"
 
 [test-groups.oauth-callback]
 max-threads = 1
 
 [[profile.default.overrides]]
-filter = "(package(maestro-models) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
+filter = "(package(maestro-providers) | package(maestro-extensions-wasmtime)) & test(/(^|::)oauth_callback::/)"
 test-group = "oauth-callback"
 
 # Same filter as the `browser-author` setup rule above: the tests that build in a lane of the

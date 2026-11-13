@@ -949,9 +949,8 @@ both test programs. A test-only self alias lets the file name its owning crate
 consistently in either program; it adds no production export.
 
 For example, the models tests include
-[`oauth_admission.rs`](../crates/maestro-models/tests/support/oauth_admission.rs)
-from `src/tests.rs` and `tests/integration.rs`. Each program keeps its own registry
-admission lock and resets its registry on entry and drop. The same layout owns
+[`named_account.rs`](../crates/maestro-models/tests/support/named_account.rs)
+from `src/tests.rs` and `tests/integration.rs`. The same layout owns
 native peer reads, process readiness polling and image-enabled terminal fixtures.
 Helpers used only by sibling unit modules stay beside those tests, as the daemon's
 terminal fixture does. Chat callback recorders and web pointer events likewise

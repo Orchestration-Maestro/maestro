@@ -126,6 +126,15 @@ impl OAuthProviderInterface for ControlledProvider {
     }
 }
 
+/// Empties the registry's base layer when dropped.
+pub struct NoBuiltIns;
+
+impl Drop for NoBuiltIns {
+    fn drop(&mut self) {
+        maestro_models::install_built_in_oauth_providers([]);
+    }
+}
+
 /// Unregisters a provider id when dropped.
 pub struct Unregister(pub String);
 

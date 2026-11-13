@@ -100,10 +100,12 @@ use std::{
 };
 #[test]
 fn application_provider_lookup_reaches_default_title() {
-    let provider = maestro_models::get_oauth_providers()
-        .into_iter()
-        .next()
-        .unwrap();
+    let provider: maestro_models::OAuthProviderHandle = std::sync::Arc::new(
+        crate::refusing_provider::RefusingProvider::new("lookup-login", "Lookup Login", || {
+            maestro_models::OAuthError::message("unused")
+        }),
+    );
+    maestro_models::register_oauth_provider(provider.clone());
     let (_, theme) = published::published(&login_support::colors(0)).unwrap();
     let dialog = LoginDialogComponent::new(
         Rc::new(|| {}),
@@ -119,7 +121,8 @@ fn application_provider_lookup_reaches_default_title() {
         },
     )
     .unwrap();
-    assert!(dialog.render(80)[1].contains(&format!("Login to {}", provider.name())));
+    assert!(dialog.render(80)[1].contains("Login to Lookup Login"));
+    maestro_models::unregister_oauth_provider("lookup-login");
 }
 #[cfg(unix)]
 #[test]

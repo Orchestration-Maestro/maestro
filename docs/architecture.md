@@ -62,6 +62,7 @@ owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-
 only on `maestro-request`, and `maestro-brand` depends on text and JSON.
 The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; application and the web frontend consume it.
 The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, request, text and JSON; models consumes it and re-exports the client records at its existing paths.
+The `maestro-providers` crate adapts the built-in model providers: it holds their login flows, the callback server and the callback pages, and installs the built-in login providers into the registry that `maestro-models` owns. It depends on models, http, request, brand, text and JSON; the application and the composed executable consume it.
 The `maestro-package` leaf owns portable package interchange records; native
 packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
@@ -116,7 +117,9 @@ and targets plus host-resolved dependencies. Transitive and dev dependencies do
 not satisfy a direct requirement. The permitted internal development edges are
 `maestro-tui-crossterm` to `maestro-brand` for the terminal examples, the
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
-tests that build a real model catalog, the native-only `maestro-detection` to
+tests that build a real model catalog, the native-only `maestro-catalog`,
+`maestro-cli` and `maestro-extensions-wasmtime` to `maestro-providers` edges for tests
+that read the built-in login providers, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges for its standard-stream
 child tests, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode

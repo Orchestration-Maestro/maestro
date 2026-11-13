@@ -169,9 +169,11 @@ fn fixture_rows<T: serde::de::DeserializeOwned>(
     serde_json::from_str(&text)
 }
 
-/// Reconstruct synthetic account strings using the owning account fixture encoder.
+/// Reconstruct synthetic account strings from the synthetic account namespace.
 fn fixture_text(text: &str) -> String {
-    let prefix = crate::oauth::responses::code_login::tests::account_fixture_prefix();
+    use base64::Engine as _;
+    let prefix =
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(br#"{"https://api.openai.com/au"#);
     text.replace("<fake-account-prefix>", &prefix)
 }
 

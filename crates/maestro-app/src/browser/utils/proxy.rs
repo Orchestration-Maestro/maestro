@@ -65,6 +65,7 @@ pub type GetProxyUrl =
 /// Create a simple-stream adapter that reads proxy settings on each invocation.
 #[must_use]
 pub fn create_stream_fn(get_proxy_url: GetProxyUrl) -> StreamFn {
+    maestro_providers::install_built_in_providers();
     SharedHandle::new(move |model, context, options, _| {
         let get_proxy_url = SharedHandle::clone(&get_proxy_url);
         Box::pin(async move {
@@ -80,6 +81,7 @@ pub fn create_local_stream_fn(
     spawn: maestro_agent::AgentSpawner<maestro_models::Local>,
 ) -> StreamFn<maestro_models::Local> {
     use maestro_agent::AgentExecution as _;
+    maestro_providers::install_built_in_providers();
     let submission = maestro_models::Local::provider_submission(spawn);
     std::rc::Rc::new(move |model, context, options, _| {
         let get_proxy_url = SharedHandle::clone(&get_proxy_url);

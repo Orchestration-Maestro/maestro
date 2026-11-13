@@ -1,0 +1,121 @@
+//! Subscription callback policy.
+pub(super) use crate::oauth::callback::{AuthorizationCode, parse_authorization_input};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::oauth::callback::{CallbackResponse, first_query, query_fields};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{oauth_error_html, oauth_success_html};
+use maestro_models::OAuthError;
+#[cfg(not(target_arch = "wasm32"))]
+use url::Url;
+/// Route a target using the fixed localhost base without settling rejected input.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn route(target: &str, expected_state: &str) -> CallbackResponse {
+    route_result(target, expected_state).unwrap_or_else(|_| CallbackResponse {
+        status: 500,
+        content_type: "text/plain; charset=utf-8",
+        body: "Internal error".into(),
+        accepted: None,
+    })
+}
+
+/// Classify a callback and render its escaped response text.
+#[cfg(not(target_arch = "wasm32"))]
+fn route_result(target: &str, expected_state: &str) -> Result<CallbackResponse, OAuthError> {
+    let url = Url::parse("http://localhost")
+        .and_then(|base| base.join(target))
+        .map_err(|error| OAuthError::message(error.to_string()))?;
+    if url.path() != "/callback" {
+        return html_error(404, "Callback route not found.", None);
+    }
+    let error = first_query(url.query().unwrap_or_default(), "error");
+    if let Some(error) = error.filter(|error| !error.is_empty()) {
+        return html_error(
+            400,
+            "Anthropic authentication did not complete.",
+            Some(&format!("Error: {error}")),
+        );
+    }
+    let fields = query_fields(url.query().unwrap_or_default());
+    if fields.code.as_deref().unwrap_or_default().is_empty()
+        || fields.state.as_deref().unwrap_or_default().is_empty()
+    {
+        return html_error(400, "Missing code or state parameter.", None);
+    }
+    if fields.state.as_deref() != Some(expected_state) {
+        return html_error(400, "State mismatch.", None);
+    }
+    Ok(CallbackResponse {
+        status: 200,
+        content_type: "text/html; charset=utf-8",
+        body: oauth_success_html("Anthropic sign-in is complete. You can close this window.")?,
+        accepted: Some(fields),
+    })
+}
+
+/// Render a rejection without consuming the callback wait.
+#[cfg(not(target_arch = "wasm32"))]
+fn html_error(
+    status: u16,
+    message: &str,
+    details: Option<&str>,
+) -> Result<CallbackResponse, OAuthError> {
+    Ok(CallbackResponse {
+        status,
+        content_type: "text/html; charset=utf-8",
+        body: oauth_error_html(message, details)?,
+        accepted: None,
+    })
+}
+
+/// Port tried first, so it can be forwarded into containers or over SSH.
+pub(super) const PREFERRED_PORT: u16 = 53692;
+
+/// Bind the subscription callback listener on the preferred port, or on any free loopback
+/// port when that one cannot be bound; the server reports the port it holds. When no port
+/// can be bound the server is already cancelled and holds none, so sign-in continues with
+/// pasted input.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) async fn bind(
+    state: String,
+) -> Result<crate::oauth::native::CallbackServer, OAuthError> {
+    bind_with(state, |key| std::env::var(key).ok()).await
+}
+
+/// Bind as [`bind`] does, reading the binding host from `environment`.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) async fn bind_with(
+    state: String,
+    environment: impl Fn(&str) -> Option<String>,
+) -> Result<crate::oauth::native::CallbackServer, OAuthError> {
+    let bind_on = |state: String, port: u16| {
+        crate::oauth::native::bind_with(
+            state,
+            port,
+            route,
+            &environment,
+            crate::oauth::native::native_accept,
+        )
+    };
+    match bind_on(state.clone(), PREFERRED_PORT).await {
+        Ok(server) => Ok(server),
+        Err(_) => Ok(bind_on(state, 0)
+            .await
+            .unwrap_or_else(|_| crate::oauth::native::CallbackServer::cancelled())),
+    }
+}
+/// Reject native serving only at the browser effect boundary.
+#[cfg(target_arch = "wasm32")]
+pub(super) async fn bind(
+    state: String,
+) -> Result<crate::oauth::native::CallbackServer, maestro_models::OAuthError> {
+    unavailable(state).await
+}
+/// Refuse unavailable subscription callback serving.
+#[cfg(any(test, target_arch = "wasm32"))]
+pub(super) fn unavailable(
+    _state: String,
+) -> std::future::Ready<Result<crate::oauth::native::CallbackServer, maestro_models::OAuthError>> {
+    std::future::ready(Err(maestro_models::OAuthError::message(
+        "Anthropic OAuth requires a native callback listener",
+    )))
+}

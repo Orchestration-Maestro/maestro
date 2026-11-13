@@ -7,11 +7,39 @@ use crate::tests::login_registry::listed;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::tests::named_account::Named;
 #[cfg(not(target_arch = "wasm32"))]
-use crate::tests::oauth_admission::Admission;
-#[cfg(not(target_arch = "wasm32"))]
 use crate::tests::runtime::run;
 #[cfg(not(target_arch = "wasm32"))]
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Serialize observations of this program's registry.
+static ADMISSION: Mutex<()> = Mutex::new(());
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Reset registry membership on entry and on drop, including unwinding.
+struct Admission {
+    /// Retain admission until cleanup completes.
+    _guard: MutexGuard<'static, ()>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Admission {
+    /// Start an isolated registry observation.
+    fn enter() -> Self {
+        let guard = ADMISSION
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        reset_oauth_providers();
+        Self { _guard: guard }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Drop for Admission {
+    fn drop(&mut self) {
+        reset_oauth_providers();
+    }
+}
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Provider recording completed selection phases.
@@ -228,7 +256,7 @@ fn check_present_clock(events: &Arc<Mutex<Vec<&'static str>>>) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Serial admission that puts back the base layer this crate starts with when a test ends.
+/// Serial admission that empties the base layer again when a test ends.
 struct BaseLayer {
     /// Retain admission until the base layer is back.
     _admission: Admission,
@@ -247,7 +275,7 @@ impl BaseLayer {
 #[cfg(not(target_arch = "wasm32"))]
 impl Drop for BaseLayer {
     fn drop(&mut self) {
-        install_built_in_oauth_providers(builtin_providers());
+        install_built_in_oauth_providers([]);
     }
 }
 

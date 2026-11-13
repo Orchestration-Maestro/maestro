@@ -11,7 +11,3 @@ pub mod content_credentials;
 pub(crate) mod login_registry;
 #[path = "../tests/support/named_account.rs"]
 pub(crate) mod named_account;
-#[path = "../tests/support/native_peer.rs"]
-pub(crate) mod native_peer;
-#[path = "../tests/support/oauth_admission.rs"]
-pub(crate) mod oauth_admission;
