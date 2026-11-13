@@ -6,7 +6,8 @@ use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as re
 use crate::support::session_harness::{on_paused_task_set, on_task_set};
 use futures_util::FutureExt;
 use maestro_app::{RpcClient, RpcClientError, RpcClientOptions};
-use maestro_process::children::process_exists;
+use maestro_process::children::{kill_process, process_exists};
+use rustix::process::{WaitId, WaitIdOptions, waitid};
 use serde_json::{Value, json};
 use std::{
     io::{BufRead, Read},
@@ -246,16 +247,14 @@ fn early_exit_waits_for_held_diagnostics_only_until_the_window_ends() {
         let mut events = events(&client);
         let mut start = pin!(client.start());
         assert!(start.as_mut().now_or_never().is_none());
-        let ready = next_of(&mut events, "peer_ready").await;
-        let pid = u32::try_from(ready["pid"].as_u64().unwrap()).unwrap();
+        next_of(&mut events, "peer_ready").await;
         let mut state = pin!(client.get_state());
         assert!(state.as_mut().now_or_never().is_none());
         next_of(&mut events, "descendant_ready").await;
         let mut control = std::io::BufReader::new(peer.control());
         control.read_line(&mut String::new()).unwrap();
-        while process_exists(pid) {
-            tokio::task::yield_now().await;
-        }
+        // The child's exit ends its pending request.
+        assert!(matches!(state.await, Err(RpcClientError::Stopped)));
         assert!(
             start.as_mut().now_or_never().is_none(),
             "a descendant still holds the diagnostics open"
@@ -266,13 +265,41 @@ fn early_exit_waits_for_held_diagnostics_only_until_the_window_ends() {
             &error,
             RpcClientError::ProcessExit { code: Some(0), .. }
         ));
-        assert!(matches!(state.await, Err(RpcClientError::Stopped)));
         release.send(()).unwrap();
         hold.await.unwrap();
         release_peer(control.get_mut());
         let mut ended = Vec::new();
         control.read_to_end(&mut ended).unwrap();
         assert!(ended.is_empty(), "the descendant completed its release");
+        client.stop().await.unwrap();
+    });
+}
+
+#[test]
+fn startup_window_end_reports_an_exit_not_yet_handled() {
+    let peer = Peer::new();
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Resist));
+        let (release, hold) = hold_clock();
+        let mut events = events(&client);
+        let mut start = pin!(client.start());
+        assert!(start.as_mut().now_or_never().is_none());
+        let ready = next_of(&mut events, "peer_ready").await;
+        let pid = u32::try_from(ready["pid"].as_u64().unwrap()).unwrap();
+        // Nothing yields from the kill until the window ends, so the client meets the end of
+        // the window and the unreaped exit in the same turn.
+        kill_process(pid).unwrap();
+        let raw = rustix::process::Pid::from_raw(pid.cast_signed()).unwrap();
+        let exited = WaitIdOptions::EXITED | WaitIdOptions::NOWAIT;
+        waitid(WaitId::Pid(raw), exited).unwrap();
+        tokio::time::advance(Duration::from_millis(100)).await;
+        let error = start.await.unwrap_err();
+        assert!(matches!(
+            &error,
+            RpcClientError::ProcessExit { code: None, .. }
+        ));
+        release.send(()).unwrap();
+        hold.await.unwrap();
         client.stop().await.unwrap();
     });
 }
