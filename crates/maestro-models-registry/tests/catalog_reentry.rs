@@ -2,8 +2,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 //! Public callback re-entry and phase-specific catalog observations.
 use crate::{dynamic, request_support, support};
-use maestro_catalog::ModelRegistry;
 use maestro_models::SharedHandle;
+use maestro_models_registry::ModelRegistry;
 use std::sync::{Arc, Mutex};
 
 #[test]
@@ -81,7 +81,7 @@ fn transforming(
     > + Send
     + Sync
     + 'static,
-) -> Arc<std::sync::RwLock<maestro_catalog::ProviderConfigInput>> {
+) -> Arc<std::sync::RwLock<maestro_models_registry::ProviderConfigInput>> {
     let config = dynamic::config(ids);
     config.write().unwrap().callbacks.oauth = Some(Arc::new(dynamic::OAuth {
         calls: None,
@@ -284,7 +284,7 @@ fn replay_work() {
 fn recording(
     events: &Arc<Mutex<Vec<&'static str>>>,
     name: &'static str,
-) -> Arc<std::sync::RwLock<maestro_catalog::ProviderConfigInput>> {
+) -> Arc<std::sync::RwLock<maestro_models_registry::ProviderConfigInput>> {
     let events = events.clone();
     transforming(&[name], move |models| {
         events.lock().unwrap().push(name);
@@ -390,7 +390,7 @@ fn request_auth_keeps_early_provider_and_late_model_sources() {
 fn header_config(
     provider: &str,
     model: &str,
-) -> Arc<std::sync::RwLock<maestro_catalog::ProviderConfigInput>> {
+) -> Arc<std::sync::RwLock<maestro_models_registry::ProviderConfigInput>> {
     let config = dynamic::config(&["m"]);
     {
         let mut config = config.write().unwrap();
@@ -617,7 +617,7 @@ fn display_name_effect_can_reenter_catalog() {
         .register_provider(
             "p",
             Arc::new(std::sync::RwLock::new(
-                maestro_catalog::ProviderConfigInput {
+                maestro_models_registry::ProviderConfigInput {
                     name: Some(String::new()),
                     ..Default::default()
                 },
@@ -656,7 +656,7 @@ impl Files {
 }
 /// File-effect adapter retaining the caller-observed fixture.
 struct FileEffects(Arc<Files>);
-impl maestro_catalog::ModelFileOperations for FileEffects {
+impl maestro_models_registry::ModelFileOperations for FileEffects {
     fn exists(&self, _: &str) -> bool {
         self.0.effect("exists");
         self.0.mode.load(std::sync::atomic::Ordering::SeqCst) != 0
@@ -927,7 +927,7 @@ fn assert_retained_order(
     registry: &ModelRegistry,
     handles: &[(
         &'static str,
-        std::sync::Weak<std::sync::RwLock<maestro_catalog::ProviderConfigInput>>,
+        std::sync::Weak<std::sync::RwLock<maestro_models_registry::ProviderConfigInput>>,
     )],
     expected: &[String],
 ) {

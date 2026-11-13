@@ -7,7 +7,6 @@ use crate::{
 };
 use maestro_agent::AgentMessage;
 use maestro_app::{AgentSession, AgentSessionEvent, PromptOptions};
-use maestro_catalog::ProviderConfigInput;
 use maestro_extensions::{
     ExtensionFactory, ExtensionHandler,
     types::events::{InputEvent, InputEventResult},
@@ -19,6 +18,7 @@ use maestro_models::{
     get_api_provider, register_faux_provider,
 };
 use maestro_models::{ImageContent, Local, StopReason, UserBlock, UserContent};
+use maestro_models_registry::ProviderConfigInput;
 use maestro_session::Presence;
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tools::output::render_utils::strip_ansi;
@@ -143,7 +143,7 @@ impl Scripted {
                 &provider.models[0].provider,
                 Arc::new(RwLock::new(ProviderConfigInput {
                     api: Some(provider.api.clone()),
-                    callbacks: maestro_catalog::ProviderCallbacks {
+                    callbacks: maestro_models_registry::ProviderCallbacks {
                         stream_simple: Some(Arc::new(RetainedProvider(callback))),
                         ..Default::default()
                     },

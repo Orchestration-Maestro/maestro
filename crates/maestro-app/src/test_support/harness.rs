@@ -13,13 +13,13 @@ use maestro_agent::{
     Agent, AgentInitialState, AgentOptions, AgentSpawner, PrepareNextTurn, SharedAgentTool,
     StreamFn,
 };
-use maestro_catalog::{ModelRegistry, ProviderConfigInput, ProviderModelInput};
 use maestro_credentials::{AuthCredential, AuthStorage, AuthStorageData, test_support::NoCommands};
 use maestro_extensions::{EventError, ExtensionFactory};
 use maestro_models::{
     FauxModelDefinition, FauxProviderRegistration, Local, Model, RegisterFauxProviderOptions,
     SharedHandle, register_faux_provider,
 };
+use maestro_models_registry::{ModelRegistry, ProviderConfigInput, ProviderModelInput};
 use maestro_resources::{LoadSkillsResult, PromptTemplate, Skill};
 use maestro_session::{SessionManager, message_records::CustomAgentMessages};
 use maestro_settings::{Settings, SettingsManager};

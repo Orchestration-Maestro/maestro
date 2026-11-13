@@ -2,11 +2,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 //! Dynamic provider admission and request observations.
 use crate::support;
-use maestro_catalog::{ModelRegistry, ProviderConfigInput};
 use maestro_models::SharedHandle;
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StreamOptions, StreamOptionsInput,
 };
+use maestro_models_registry::{ModelRegistry, ProviderConfigInput};
 use std::sync::{Arc, RwLock};
 
 #[test]
@@ -24,11 +24,11 @@ fn registration_checks_incoming_fields_before_any_effect() {
     let api = maestro_models::get_api_provider("openai-completions").unwrap();
     for case in 0..9 {
         let config = invalid_config(case);
-        let error: maestro_catalog::CatalogError =
+        let error: maestro_models_registry::CatalogError =
             registry.register_provider("p", config).unwrap_err();
         assert!(matches!(
             error,
-            maestro_catalog::CatalogError::Diagnostic(_)
+            maestro_models_registry::CatalogError::Diagnostic(_)
         ));
         assert_eq!(error.to_string(), invalid_message(case));
         assert_eq!(
@@ -61,7 +61,7 @@ fn registration_checks_incoming_fields_before_any_effect() {
 #[test]
 fn provider_config_json_decodes_into_native_registration() {
     let shared: maestro_request::provider_config::ProviderModelConfig = dynamic::model("m");
-    let _: maestro_catalog::ProviderModelInput = shared;
+    let _: maestro_models_registry::ProviderModelInput = shared;
     let config: ProviderConfigInput = serde_json::from_str(
         r#"{"name":"","baseUrl":"https://json.invalid/v1","apiKey":"json-key",
             "api":"openai-completions","headers":{"b":"2","a":"1"},"authHeader":false,
@@ -381,7 +381,7 @@ fn oauth_registration_forces_id_and_delegates_existing_operations() {
         .register_provider(
             "p",
             SharedHandle::new(RwLock::new(ProviderConfigInput {
-                callbacks: maestro_catalog::ProviderCallbacks {
+                callbacks: maestro_models_registry::ProviderCallbacks {
                     oauth: Some(supplied.clone()),
                     ..Default::default()
                 },
@@ -841,7 +841,7 @@ fn register_peer_held_account() -> maestro_models::OAuthProviderHandle {
     peer.register_provider(
         "p",
         SharedHandle::new(RwLock::new(ProviderConfigInput {
-            callbacks: maestro_catalog::ProviderCallbacks {
+            callbacks: maestro_models_registry::ProviderCallbacks {
                 oauth: Some(dynamic::oauth("Held by the peer")),
                 ..Default::default()
             },

@@ -20,7 +20,7 @@ fn configured_auth_rereads_identity_after_fallback() {
     assert!(registry.has_configured_auth(&model).unwrap());
     registry.auth_storage().set_fallback_resolver(|_| Ok(None));
 }
-use maestro_catalog::{BUILT_IN_PROVIDER_DISPLAY_NAMES, ModelRegistry};
+use maestro_models_registry::{BUILT_IN_PROVIDER_DISPLAY_NAMES, ModelRegistry};
 use std::sync::Arc;
 #[test]
 fn availability_walk_reloads_slots_after_callbacks() {
@@ -79,7 +79,7 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         return crate::subprocess::run_child(process.case("*"), &environment).unwrap();
     }
     let marker = maestro_test_directory::temporary_root().join(format!(
-        "maestro-catalog-auth-marker-{}",
+        "maestro-models-registry-auth-marker-{}",
         std::process::id()
     ));
     let _ = std::fs::remove_file(&marker);
@@ -128,9 +128,11 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
 /// Observe absent and fallback-only provider metadata through the public registry.
 fn metadata_fallback() {
     use maestro_credentials::{AuthSource, AuthStatus};
-    let registry =
-        maestro_catalog::ModelRegistry::in_memory(support::auth(), crate::support::values())
-            .unwrap();
+    let registry = maestro_models_registry::ModelRegistry::in_memory(
+        support::auth(),
+        crate::support::values(),
+    )
+    .unwrap();
     assert_eq!(
         registry
             .get_provider_auth_status("unknown-metadata")
@@ -158,13 +160,15 @@ fn metadata_fallback() {
 }
 #[test]
 fn display_names_cover_table_oauth_and_identifier_precedence() {
-    let registry =
-        maestro_catalog::ModelRegistry::in_memory(support::auth(), crate::support::values())
-            .unwrap();
+    let registry = maestro_models_registry::ModelRegistry::in_memory(
+        support::auth(),
+        crate::support::values(),
+    )
+    .unwrap();
     let expected = DISPLAY_NAMES;
 
     assert_eq!(
-        maestro_catalog::BUILT_IN_PROVIDER_DISPLAY_NAMES
+        maestro_models_registry::BUILT_IN_PROVIDER_DISPLAY_NAMES
             .read()
             .unwrap()
             .iter()

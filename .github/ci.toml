@@ -6,7 +6,6 @@ wasm_crates = [
     "maestro-app",
     "maestro-brand",
     "maestro-cancellation",
-    "maestro-catalog",
     "maestro-chat",
     "maestro-credentials",
     "maestro-entry",
@@ -18,6 +17,7 @@ wasm_crates = [
     "maestro-markdown",
     "maestro-models",
     "maestro-models-catalog",
+    "maestro-models-registry",
     "maestro-office",
     "maestro-packages",
     "maestro-path",
@@ -35,7 +35,7 @@ wasm_crates = [
     "maestro-watch",
     "maestro-web",
 ]
-wasm_examples = { "maestro-catalog" = ["browser_catalog_check"], "maestro-models" = ["bedrock_browser_witness", "browser_import_check", "cloud_content_browser_witness"] }
+wasm_examples = { "maestro-models-registry" = ["browser_catalog_check"], "maestro-models" = ["bedrock_browser_witness", "browser_import_check", "cloud_content_browser_witness"] }
 emscripten_crates = ["maestro-sandbox-runtime"]
 browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]
 test_tools = true
@@ -49,7 +49,6 @@ test_prepare_inputs = [
     "crates/maestro-app/**",
     "crates/maestro-brand/**",
     "crates/maestro-cancellation/**",
-    "crates/maestro-catalog/**",
     "crates/maestro-credentials/**",
     "crates/maestro-dependencies/**",
     "crates/maestro-entry/**",
@@ -64,6 +63,7 @@ test_prepare_inputs = [
     "crates/maestro-lock/**",
     "crates/maestro-markdown/**",
     "crates/maestro-models-catalog/**",
+    "crates/maestro-models-registry/**",
     "crates/maestro-models/**",
     "crates/maestro-office/**",
     "crates/maestro-package/**",

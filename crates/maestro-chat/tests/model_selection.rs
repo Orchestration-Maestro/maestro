@@ -10,9 +10,9 @@ use crate::runtime_spy;
 use crate::selector_failure_support;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::subprocess;
-use maestro_catalog::ScopedModel;
 use maestro_chat::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
 use maestro_models::{Model, SharedHandle};
+use maestro_models_registry::ScopedModel;
 use maestro_settings::SettingsManager;
 use maestro_tui::{Component, Focusable, InputHandler, TUI, TerminalImage};
 use model_selector_support::*;
@@ -311,7 +311,7 @@ fn run(case: Case) {
 }
 /// Recover original descriptor order and duplicate occurrence identity after refresh.
 fn ordered_handles(
-    registry: &maestro_catalog::ModelRegistry,
+    registry: &maestro_models_registry::ModelRegistry,
     models: &[Descriptor],
 ) -> Vec<Arc<RwLock<Model>>> {
     let all = registry.get_all();
@@ -679,7 +679,7 @@ fn extra_observations(test: &str, selector: &ModelSelectorComponent) {
 fn failing_registry(
     input: &mut selector_failure_support::Input,
 ) -> (
-    maestro_catalog::ModelRegistry,
+    maestro_models_registry::ModelRegistry,
     Arc<std::sync::atomic::AtomicBool>,
 ) {
     let query: Query = serde_json::from_value(serde_json::json!({"available":[], "readFailure":{"message":input.notice.take().unwrap(), "path":"<models-file>"}})).unwrap();
@@ -688,8 +688,8 @@ fn failing_registry(
     registry
         .register_provider(
             "maestro-unconfigured",
-            SharedHandle::new(RwLock::new(maestro_catalog::ProviderConfigInput {
-                callbacks: maestro_catalog::ProviderCallbacks {
+            SharedHandle::new(RwLock::new(maestro_models_registry::ProviderConfigInput {
+                callbacks: maestro_models_registry::ProviderCallbacks {
                     oauth: Some(refusing()),
                     ..Default::default()
                 },
@@ -809,8 +809,8 @@ fn refusing() -> SharedHandle<RefusingProvider> {
     ))
 }
 /// Real retained provider whose transformation is first consumed by the next refresh.
-fn rejecting_registry() -> maestro_catalog::ModelRegistry {
-    let registry = maestro_catalog::ModelRegistry::in_memory(
+fn rejecting_registry() -> maestro_models_registry::ModelRegistry {
+    let registry = maestro_models_registry::ModelRegistry::in_memory(
         SharedHandle::new(maestro_credentials::AuthStorage::in_memory(
             std::iter::empty().collect(),
         )),
@@ -820,8 +820,8 @@ fn rejecting_registry() -> maestro_catalog::ModelRegistry {
     registry
         .register_provider(
             "maestro-refresh-failure",
-            SharedHandle::new(RwLock::new(maestro_catalog::ProviderConfigInput {
-                callbacks: maestro_catalog::ProviderCallbacks {
+            SharedHandle::new(RwLock::new(maestro_models_registry::ProviderConfigInput {
+                callbacks: maestro_models_registry::ProviderCallbacks {
                     oauth: Some(refusing()),
                     ..Default::default()
                 },
@@ -887,9 +887,9 @@ fn picker_refresh_failure_is_not_availability_notice() {
         );
         let error = result.err().unwrap();
         let error = error
-            .downcast_ref::<maestro_catalog::CatalogError>()
+            .downcast_ref::<maestro_models_registry::CatalogError>()
             .unwrap();
-        let maestro_catalog::CatalogError::OAuth(error) = error else {
+        let maestro_models_registry::CatalogError::OAuth(error) = error else {
             panic!("original error")
         };
         let actual = serde_json::json!({"branch":"error", "error":selector_failure_support::errors::error_value(error).unwrap(), "events":*runtime.events.borrow(), "calls":[]});

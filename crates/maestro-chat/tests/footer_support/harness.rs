@@ -5,10 +5,10 @@ use maestro_app::{
     AgentSession, AgentSessionConfig, AgentSessionServices, CreateAgentSessionRuntimeResult,
     DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoaderOptions,
 };
-use maestro_catalog::{ConfigValues, ModelRegistry};
 use maestro_credentials::{AuthStorage, ProcessConfigValueOperations};
 use maestro_extensions::ModuleLoader;
 use maestro_models::Local;
+use maestro_models_registry::{ConfigValues, ModelRegistry};
 use maestro_session::SessionManager;
 use maestro_settings::{Settings, SettingsManager};
 use maestro_theme::LiveTheme;

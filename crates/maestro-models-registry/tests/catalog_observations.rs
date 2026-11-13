@@ -3,8 +3,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 use crate::dynamic;
 use crate::support;
-use maestro_catalog::ModelRegistry;
 use maestro_models::{Model, get_model};
+use maestro_models_registry::ModelRegistry;
 use std::sync::{Arc, Mutex, RwLock};
 
 /// Complete catalog file text whose declared model overrides are replaced.
@@ -336,7 +336,7 @@ fn constructor_transform_failure_propagates_before_later_providers() {
         assert!(construct().unwrap().get_error().is_none());
         let before = *later.lock().unwrap();
         fail.store(true, Ordering::SeqCst);
-        let error: maestro_catalog::CatalogError = construct().err().unwrap();
+        let error: maestro_models_registry::CatalogError = construct().err().unwrap();
         dynamic::assert_account_failure(&error, "transform failed");
         assert_eq!(*later.lock().unwrap(), before);
         assert_eq!(reads.load(Ordering::SeqCst), if route == 2 { 2 } else { 0 });

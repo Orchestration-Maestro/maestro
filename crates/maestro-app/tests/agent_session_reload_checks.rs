@@ -5,12 +5,12 @@ use crate::support::session_harness::history_view;
 use maestro_agent::QueueMode;
 use maestro_app::PromptOptions;
 use maestro_app::test_support::{HarnessOptions, answer, harness, on_task_set, script_responses};
-use maestro_catalog::{ProviderCallbacks, ProviderConfigInput};
 use maestro_extensions::{ExtensionFactory, Local};
 use maestro_models::{
     AssistantMessageEventStream, DiagnosticErrorInfo, Invoke, ProviderCall, ProviderExecution,
     SharedHandle,
 };
+use maestro_models_registry::{ProviderCallbacks, ProviderConfigInput};
 use maestro_settings::MessageDeliveryMode;
 use maestro_test_directory::Scratch;
 use serde_json::json;

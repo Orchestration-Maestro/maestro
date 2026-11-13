@@ -14,7 +14,6 @@ use crate::sdk::{
     create_agent_session,
 };
 use indexmap::IndexMap;
-use maestro_catalog::{ConfigValues, ModelRegistry, ScopedModel};
 use maestro_credentials::{AuthStorage, ProcessConfigValueOperations};
 use maestro_extensions::SessionStartEvent;
 use maestro_extensions::{
@@ -25,6 +24,7 @@ use maestro_lock::{read, write};
 use maestro_models::{
     DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, SharedHandle, Threaded,
 };
+use maestro_models_registry::{ConfigValues, ModelRegistry, ScopedModel};
 use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_session::SessionManager;
 use maestro_settings::SettingsManager;

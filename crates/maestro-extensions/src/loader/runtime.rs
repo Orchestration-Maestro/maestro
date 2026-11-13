@@ -8,9 +8,9 @@ use crate::{
     },
 };
 use indexmap::IndexMap;
-use maestro_catalog::ModelRegistry;
 use maestro_lock::{read, write};
 use maestro_models::SharedHandle;
+use maestro_models_registry::ModelRegistry;
 #[cfg(target_arch = "wasm32")]
 use std::rc::Weak;
 #[cfg(not(target_arch = "wasm32"))]

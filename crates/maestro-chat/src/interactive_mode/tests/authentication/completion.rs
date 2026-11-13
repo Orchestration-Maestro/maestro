@@ -8,8 +8,8 @@ use super::{
     started_with, subscribe,
 };
 use crate::AuthType;
-use maestro_catalog::DEFAULT_MODEL_PER_PROVIDER;
 use maestro_models::{Model, OAuthCredentials, OAuthError};
+use maestro_models_registry::DEFAULT_MODEL_PER_PROVIDER;
 use std::ffi::OsStr;
 use std::{
     error::Error,

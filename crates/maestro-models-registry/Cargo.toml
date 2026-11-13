@@ -1,5 +1,5 @@
 [package]
-name = "maestro-catalog"
+name = "maestro-models-registry"
 version = "0.1.0"
 edition.workspace = true
 autotests = false

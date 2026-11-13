@@ -1,6 +1,6 @@
 //! Recorded availability and model-choice failures.
-use maestro_catalog::{CatalogError, ModelRegistry};
 use maestro_models::Model;
+use maestro_models_registry::{CatalogError, ModelRegistry};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock};

@@ -48,7 +48,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-agent",
             "maestro-credentials",
             "maestro-settings",
-            "maestro-catalog",
+            "maestro-models-registry",
             "maestro-session",
             "maestro-tools",
             "maestro-resources",
@@ -69,17 +69,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-brand", &["maestro-text", "maestro-json"]),
     ("maestro-cancellation", &["maestro-listeners"]),
     (
-        "maestro-catalog",
-        &[
-            "maestro-models",
-            "maestro-credentials",
-            "maestro-pattern",
-            "maestro-request",
-            "maestro-text",
-            "maestro-json",
-        ],
-    ),
-    (
         "maestro-chat",
         &[
             "maestro-app",
@@ -88,7 +77,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-theme",
             "maestro-lock",
             "maestro-agent",
-            "maestro-catalog",
+            "maestro-models-registry",
             "maestro-credentials",
             "maestro-export",
             "maestro-extensions",
@@ -114,7 +103,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-theme",
             "maestro-lock",
             "maestro-agent",
-            "maestro-catalog",
+            "maestro-models-registry",
             "maestro-credentials",
             "maestro-daemon",
             "maestro-extensions",
@@ -185,7 +174,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-models",
             "maestro-agent",
             "maestro-session",
-            "maestro-catalog",
+            "maestro-models-registry",
             "maestro-tools",
             "maestro-theme",
             "maestro-tui",
@@ -240,6 +229,17 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         ],
     ),
     ("maestro-models-catalog", &["maestro-request"]),
+    (
+        "maestro-models-registry",
+        &[
+            "maestro-models",
+            "maestro-credentials",
+            "maestro-pattern",
+            "maestro-request",
+            "maestro-text",
+            "maestro-json",
+        ],
+    ),
     (
         "maestro-multiplexer",
         &[

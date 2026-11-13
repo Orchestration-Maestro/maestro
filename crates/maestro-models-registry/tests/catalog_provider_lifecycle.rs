@@ -3,8 +3,8 @@
 //! Dynamic provider retention and catalog replay.
 use crate::dynamic;
 use crate::support;
-use maestro_catalog::{ModelRegistry, ProviderCallbacks, ProviderConfigInput};
 use maestro_models::SharedHandle;
+use maestro_models_registry::{ModelRegistry, ProviderCallbacks, ProviderConfigInput};
 use std::sync::{Arc, RwLock};
 
 #[test]
@@ -288,7 +288,7 @@ fn registered_oauth_label_precedes_current_global_provider() {
             .register_provider(
                 "p",
                 SharedHandle::new(RwLock::new(ProviderConfigInput {
-                    callbacks: maestro_catalog::ProviderCallbacks {
+                    callbacks: maestro_models_registry::ProviderCallbacks {
                         oauth: Some(dynamic::oauth(name)),
                         ..Default::default()
                     },
@@ -458,7 +458,8 @@ fn failed_transform_keeps_applied_effects_without_upserting_config() {
             transform: Arc::new(|_| Err(dynamic::account_failure("transform failed"))),
         }));
     }
-    let error: maestro_catalog::CatalogError = registry.register_provider("p", config).unwrap_err();
+    let error: maestro_models_registry::CatalogError =
+        registry.register_provider("p", config).unwrap_err();
     dynamic::assert_account_failure(&error, "transform failed");
     assert_eq!(registry.get_provider_display_name("p"), "retained");
     assert!(registry.find("p", "new").is_some());
@@ -522,7 +523,7 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
     }
     calls.lock().unwrap().clear();
     fail.store(true, std::sync::atomic::Ordering::SeqCst);
-    let error: maestro_catalog::CatalogError = registry.refresh().unwrap_err();
+    let error: maestro_models_registry::CatalogError = registry.refresh().unwrap_err();
     dynamic::assert_account_failure(&error, "replay q failed");
     assert_eq!(*calls.lock().unwrap(), ["p", "q"]);
     assert_eq!(
@@ -586,7 +587,8 @@ fn known_removal_stays_removed_when_survivor_replay_fails() {
         .register_provider("q", dynamic::config(&["removed"]))
         .unwrap();
     fail.store(true, std::sync::atomic::Ordering::SeqCst);
-    let error: maestro_catalog::CatalogError = registry.unregister_provider("q").unwrap_err();
+    let error: maestro_models_registry::CatalogError =
+        registry.unregister_provider("q").unwrap_err();
     dynamic::assert_account_failure(&error, "retained failure");
     assert!(registry.find("p", "m").is_some());
     assert!(registry.find("q", "removed").is_none());
@@ -606,7 +608,7 @@ fn removal_restores_builtin_oauth_and_deletes_custom_provider() {
             .register_provider(
                 id,
                 SharedHandle::new(RwLock::new(ProviderConfigInput {
-                    callbacks: maestro_catalog::ProviderCallbacks {
+                    callbacks: maestro_models_registry::ProviderCallbacks {
                         oauth: Some(dynamic::oauth("Override")),
                         ..Default::default()
                     },

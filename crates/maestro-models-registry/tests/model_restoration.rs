@@ -4,7 +4,7 @@ use crate::credential_fallback;
 use crate::fallback;
 use crate::isolation;
 use crate::scopes;
-use maestro_catalog::{
+use maestro_models_registry::{
     ModelResolverOutput, RestoreModelFromSessionOptions, restore_model_from_session,
 };
 use scopes::replay;
@@ -209,7 +209,7 @@ impl std::io::Write for Lines {
 }
 /// Install the branch's auth reader, rejecting accidental reads of the current model.
 fn restoration_auth(
-    registry: &maestro_catalog::ModelRegistry,
+    registry: &maestro_models_registry::ModelRegistry,
     branch: &str,
 ) -> Arc<std::sync::Mutex<Vec<String>>> {
     if branch == "saved-no-auth-current" {

@@ -57,13 +57,6 @@ mod loader;
 pub mod native_io;
 /// Owned registration records and callback types.
 pub mod types;
-pub use maestro_catalog::{
-    AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageData,
-    AuthStorageError, AuthStorageFuture, LockUpdate,
-};
-pub use maestro_catalog::{
-    ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
-};
 pub use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, AssistantMessageEventStreamPort, Base,
     BoxFuture, Context, DoneReason, ErrorReason, EventStream, FauxAssistantMessageOptions, Fetch,
@@ -74,6 +67,13 @@ pub use maestro_models::{
     SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamFunction, StreamOptions,
     StreamOptionsInput, Threaded, faux_assistant_message, schema_transport, stream_for,
     stream_simple_for, stream_simple_via_for,
+};
+pub use maestro_models_registry::{
+    AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageData,
+    AuthStorageError, AuthStorageFuture, LockUpdate,
+};
+pub use maestro_models_registry::{
+    ConfigValueOperations, ConfigValues, ModelRegistry, ResolvedRequestAuth,
 };
 pub use maestro_resources::SourceInfo;
 pub use maestro_session::message_records::CustomMessageInput;

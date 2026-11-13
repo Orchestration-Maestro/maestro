@@ -89,8 +89,8 @@ fn run_auth(assert_started: bool) {
 }
 
 /// Checks the supplied result without exposing credential material in failure output.
-fn check_auth(resolved: maestro_catalog::ResolvedRequestAuth) {
-    let maestro_catalog::ResolvedRequestAuth::Ok {
+fn check_auth(resolved: maestro_models_registry::ResolvedRequestAuth) {
+    let maestro_models_registry::ResolvedRequestAuth::Ok {
         api_key, headers, ..
     } = resolved
     else {

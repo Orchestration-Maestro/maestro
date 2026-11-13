@@ -12,10 +12,10 @@ use crate::{
     CreateAgentSessionRuntimeResult, SessionResources, create_agent_session,
     create_agent_session_runtime,
 };
-use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::{EventError, ExtensionFactory, LoadExtensionsResult, SessionStartEvent};
 use maestro_models::{DiagnosticErrorInfo, Local, Model};
+use maestro_models_registry::ModelRegistry;
 use maestro_resources::{LoadSkillsResult, PromptTemplate, Skill};
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_settings::{Settings, SettingsManager};

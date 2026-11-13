@@ -1,7 +1,6 @@
 //! Runtime actions through retained public extension facades.
 #![cfg(not(target_arch = "wasm32"))]
 #![cfg(test)]
-use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::{
     EventError, ExtensionAPI, ExtensionContextActions, ExtensionExecution,
@@ -16,6 +15,7 @@ use maestro_models::{
     Local, ModelCost, ModelInput, ModelThinkingLevel as ThinkingLevel, SharedHandle, Threaded,
     ToolInfo,
 };
+use maestro_models_registry::ModelRegistry;
 use maestro_session::message_records::CustomMessageInput;
 use std::{
     cell::RefCell,

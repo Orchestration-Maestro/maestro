@@ -8,7 +8,6 @@ use maestro_app::test_support::{
     session_event_view, tool_definition,
 };
 use maestro_app::{AgentSession, AgentSessionEvent};
-use maestro_catalog::ScopedModel;
 use maestro_extensions::NativeAgentMessage;
 use maestro_extensions::{
     BeforeAgentStartEvent, BeforeAgentStartEventResult, ExtensionAPI, ExtensionExecution,
@@ -16,6 +15,7 @@ use maestro_extensions::{
     SessionBeforeCompactEvent, SessionBeforeCompactResult,
 };
 use maestro_models::{DiagnosticErrorInfo, Local, Model, Tool, UserContent};
+use maestro_models_registry::ScopedModel;
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
 use maestro_session::{
     CompactionResult, Presence, SessionManager,
