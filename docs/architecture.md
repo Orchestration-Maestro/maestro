@@ -466,7 +466,7 @@ it mirrors. A module of Maestro's own that has no better name yet stays listed u
 renamed. The rows are sorted by member, then by module path, and a row out of order or
 repeated is reported. In the workspace a row that matches no module is reported too, so a
 renamed, moved or deleted module takes its row with it in the same change. A new module
-gets a name for what it holds, not a row.
+takes a name for what it holds, and the table gains no row for it.
 
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
