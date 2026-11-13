@@ -32,14 +32,15 @@ const CONFIGURATION: &str = ".github/ci.toml";
 ///
 /// # Errors
 ///
-/// Returns one diagnostic per file whose rows are in no shared order.
+/// Returns one diagnostic per table or array whose rows are out of order or whose entries
+/// share a line.
 pub(crate) fn check(root: &Path) -> Result<(), String> {
     let mut findings = policy_findings();
     if let Some((path, text)) = contract_file(root, SPECIFICATION)? {
         findings.extend(crate_table_findings(&path, &text));
     }
     if let Some((path, text)) = contract_file(root, CONFIGURATION)? {
-        findings.extend(array_findings(&path, &text)?);
+        findings.extend(array_findings(&path, &text));
     }
     if findings.is_empty() {
         return Ok(());
@@ -105,8 +106,8 @@ fn row_name(line: &str) -> &str {
         .trim_matches('`')
 }
 
-/// Reject a checked CI array that is out of order or not written one entry per line.
-fn array_findings(path: &Path, text: &str) -> Result<Vec<String>, String> {
+/// One finding per checked CI array that is out of order or not written one entry per line.
+fn array_findings(path: &Path, text: &str) -> Vec<String> {
     let lines: Vec<&str> = text.lines().collect();
     let mut findings = Vec::new();
     for (index, line) in lines.iter().enumerate() {
@@ -116,7 +117,13 @@ fn array_findings(path: &Path, text: &str) -> Result<Vec<String>, String> {
         if !checked_key(key) {
             continue;
         }
-        let entries = array_entries(path, &lines, index, key)?;
+        let entries = match array_entries(path, &lines, index, key) {
+            Ok(entries) => entries,
+            Err(layout) => {
+                findings.push(layout);
+                continue;
+            }
+        };
         let values: Vec<&str> = entries.iter().map(|(_, value)| value.as_str()).collect();
         let Some(position) = first_out_of_order(&values) else {
             continue;
@@ -129,7 +136,7 @@ fn array_findings(path: &Path, text: &str) -> Result<Vec<String>, String> {
             values[position]
         ));
     }
-    Ok(findings)
+    findings
 }
 
 /// Whether a CI key holds an array this check keeps in order.

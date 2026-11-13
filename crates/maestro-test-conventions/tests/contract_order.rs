@@ -116,6 +116,39 @@ fn a_crate_table_row_out_of_name_order_is_reported() {
 }
 
 #[test]
+fn every_table_and_array_out_of_place_is_reported_together() {
+    let configuration = "wasm_crates = [\n    \"maestro-web\",\n    \"maestro-agent\",\n]\ntest_prepare_inputs = [\"Cargo.toml\", \"Cargo.lock\"]\ntest_inputs.\"docs/\" = [\n    \"maestro-web\",\n    \"maestro-app\",\n]\n";
+    let table = crate_table(&[
+        "| `maestro-text` | own text | — | below 0 |",
+        "| `maestro-app` | coordinate | `maestro-text` | 4 |",
+    ]);
+    let (workspace, ci, specification) = workspace(configuration, &table);
+
+    let expected = [
+        format!(
+            "{}:4: crate table rows are not in crate-name order: `maestro-text` is listed before `maestro-app`, which sorts before it",
+            specification.display()
+        ),
+        unordered(&ci, 3, "wasm_crates", "maestro-web", "maestro-agent"),
+        format!(
+            "{}:5: test_prepare_inputs opens its entries on the key line; write one entry per line",
+            ci.display()
+        ),
+        unordered(
+            &ci,
+            8,
+            "test_inputs.\"docs/\"",
+            "maestro-web",
+            "maestro-app",
+        ),
+    ];
+    assert_eq!(
+        check_workspace(workspace.root.path()),
+        Err(expected.join("\n"))
+    );
+}
+
+#[test]
 fn rows_in_name_order_are_accepted() {
     let configuration = "wasm_crates = [\n    \"maestro-agent\",\n    \"maestro-web\",\n]\ntest_prepare_inputs = [\n    \"Cargo.lock\",\n    \"assets/**\",\n]\ntest_inputs.\"docs/\" = []\n";
     let table = crate_table(&[
