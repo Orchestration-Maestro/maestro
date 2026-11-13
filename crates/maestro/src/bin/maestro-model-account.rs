@@ -14,12 +14,14 @@ fn main() {
     std::process::exit(status);
 }
 
-/// Supply the native console and live provider registry to the delivered account entry.
+/// Install the built-in providers, then supply the native console and the live provider
+/// registry to the delivered account entry.
 fn execute() -> Result<i32, Box<dyn Error>> {
+    maestro_providers::install_built_in_providers();
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    Ok(runtime.block_on(maestro_cli::model_login::cli::main(
+    Ok(runtime.block_on(maestro_cli::model_account::cli::main(
         &std::env::args().skip(1).collect::<Vec<_>>(),
         get_oauth_providers(),
         &get_oauth_provider,

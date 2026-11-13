@@ -10,7 +10,7 @@ use crate::bindings::host_side::maestro::extension::host as wire;
 use crate::bindings::maestro::extension::host as wire;
 #[cfg(any(test, target_arch = "wasm32"))]
 use crate::bindings::maestro::extension::host as guest;
-use maestro_request::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
+use maestro_interchange::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
 
 /// Preserve every supplied diagnostic field on the wire.
 ///

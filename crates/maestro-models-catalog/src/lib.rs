@@ -126,7 +126,7 @@ mod provider_29;
 mod provider_30;
 /// Construct one provider registry.
 #[rustfmt::skip]
-type ProviderConstructor = fn() -> indexmap::IndexMap<&'static str, maestro_request::types::Model>;
+type ProviderConstructor = fn() -> indexmap::IndexMap<&'static str, maestro_interchange::types::Model>;
 /// Provider constructor table in emitted order.
 #[rustfmt::skip]
 const PROVIDERS: &[(&str, ProviderConstructor)] = &[("amazon-bedrock", provider_0::models),
@@ -163,6 +163,6 @@ const PROVIDERS: &[(&str, ProviderConstructor)] = &[("amazon-bedrock", provider_
 ];
 /// Assemble providers in emitted order.
 #[rustfmt::skip]
-pub fn models() -> indexmap::IndexMap<&'static str, indexmap::IndexMap<&'static str, maestro_request::types::Model>> {
+pub fn models() -> indexmap::IndexMap<&'static str, indexmap::IndexMap<&'static str, maestro_interchange::types::Model>> {
 PROVIDERS.iter().map(|(key, constructor)| (*key, constructor())).collect()
 }

@@ -9,8 +9,8 @@ use super::{
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
 };
 use crate::{Attachment, components::console_block::ConsoleVariant};
-use maestro_app::browser::{
-    tools::javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
+use crate::{
+    tools::browser::javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
     utils::attachments::AttachmentType,
 };
 use maestro_models::JsonObject;
@@ -23,7 +23,7 @@ use crate::{
 #[cfg(target_arch = "wasm32")]
 thread_local! {
     /// Each executable invocation obtains its own hidden sandbox.
-    pub static JAVASCRIPT_REPL_TOOL: std::cell::LazyCell<maestro_app::browser::tools::javascript_repl::JavaScriptReplTool<BrowserSandboxValue>> = std::cell::LazyCell::new(|| maestro_app::create_javascript_repl_tool(std::sync::Arc::new(BrowserSandboxHost)));
+    pub static JAVASCRIPT_REPL_TOOL: std::cell::LazyCell<crate::tools::browser::javascript_repl::JavaScriptReplTool<BrowserSandboxValue>> = std::cell::LazyCell::new(|| crate::tools::browser::javascript_repl::create_javascript_repl_tool(std::sync::Arc::new(BrowserSandboxHost)));
 }
 /// Stateless JavaScript execution renderer.
 pub struct JavaScriptReplRenderer;

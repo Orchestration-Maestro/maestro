@@ -2,11 +2,11 @@
 //! with managed output, workspace commands and framing.
 #![cfg(unix)]
 use crate::support::{Child, Served, on_local, options, runtime, serve};
-use maestro_app::connection_runner::{JsonlLineReader, RpcLine, RpcOutput};
-use maestro_app::{RpcConnectionOutcome, run_rpc_connection};
 use maestro_extensions::ExtensionFactory;
 use maestro_models::Local;
 use maestro_protocol::schema::{ErrorBody, EventData, ResponseResult};
+use maestro_rpc::connection_runner::{JsonlLineReader, RpcLine, RpcOutput};
+use maestro_rpc::{RpcConnectionOutcome, run_rpc_connection};
 use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -77,7 +77,7 @@ fn over_memory(input: &'static str) -> (Vec<String>, RpcConnectionOutcome) {
 /// Signal registration that delivers nothing, for a connection inside the test process.
 struct NoSignals;
 
-impl maestro_app::connection_runner::RpcProcessPort for NoSignals {
+impl maestro_rpc::connection_runner::RpcProcessPort for NoSignals {
     fn register_signals(
         &self,
         _callback: Rc<dyn Fn(maestro_process::TerminationSignal)>,
@@ -281,7 +281,7 @@ fn framing_reuse_handles_chunks_blanks_and_detach() {
 
 #[test]
 fn native_process_reopens_and_shares_termination_delivery() {
-    use maestro_app::connection_runner::RpcProcessPort;
+    use maestro_rpc::connection_runner::RpcProcessPort;
     if !maestro_test_process::selection().is_child() {
         let output = maestro_test_process::TestProcess::current(
             "native_process_reopens_and_shares_termination_delivery",

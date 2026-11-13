@@ -6,7 +6,7 @@ use maestro_daemon::instances::{Selection, SelectionEnvironment};
 use maestro_daemon::service::transport::{ApiClientError, ConnectionTarget, DaemonClient};
 use maestro_daemon::service::{RuntimeStatus, read_runtime_status_at};
 use maestro_protocol::{
-    rpc_types::{Request, RpcCommand, RpcResponse},
+    envelopes::{Request, RpcCommand, RpcResponse},
     schema::{ErrorBody, PingParams, ResponseResult, ServerCapabilities},
 };
 use maestro_test_directory::Scratch;

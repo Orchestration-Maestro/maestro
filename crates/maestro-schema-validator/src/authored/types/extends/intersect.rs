@@ -29,7 +29,7 @@ pub(crate) fn intersect_types<'n, 'a>(
     match &**node {
         Node::Intersect(parts, _) => Some(std::borrow::Cow::Borrowed(parts)),
         Node::Leaf(view)
-            if view.kind == Some(&maestro_request::parameter_schema::SchemaKind::Intersect) =>
+            if view.kind == Some(&maestro_interchange::parameter_schema::SchemaKind::Intersect) =>
         {
             Some(std::borrow::Cow::Owned(
                 view.children("allOf")?

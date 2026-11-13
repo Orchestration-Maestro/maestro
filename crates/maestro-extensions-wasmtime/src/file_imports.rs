@@ -15,11 +15,14 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
     host.func_wrap(
         "save-file",
         |store: StoreContextMut<'_, T>, (path, bytes, mode): (String, Vec<u8>, u32)| {
-            Ok((store.data().api().0.request(|id, reply| {
-                Message::Native(
-                    id,
-                    Request::SaveFile(path, bytes, mode, reply, store.data().api().0.admission()),
-                )
+            Ok((store.data().api().0.request(|_, reply| {
+                Message::Native(Request::SaveFile(
+                    path,
+                    bytes,
+                    mode,
+                    reply,
+                    store.data().api().0.admission(),
+                ))
             }),))
         },
     )?;
@@ -30,7 +33,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
                 .data()
                 .api()
                 .0
-                .request(|id, reply| Message::Native(id, Request::FileMode(path, reply))),))
+                .request(|_, reply| Message::Native(Request::FileMode(path, reply))),))
         },
     )?;
     host.func_wrap(
@@ -40,7 +43,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
                 .data()
                 .api()
                 .0
-                .request(|id, reply| Message::Native(id, Request::SetFileMode(path, mode, reply))),))
+                .request(|_, reply| Message::Native(Request::SetFileMode(path, mode, reply))),))
         },
     )?;
     host.func_wrap(
@@ -50,7 +53,7 @@ pub(crate) fn add_to_linker<T: ApiView + 'static>(
                 .data()
                 .api()
                 .0
-                .request(|id, reply| Message::Native(id, Request::CreateDir(path, mode, reply))),))
+                .request(|_, reply| Message::Native(Request::CreateDir(path, mode, reply))),))
         },
     )
 }

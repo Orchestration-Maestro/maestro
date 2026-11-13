@@ -2,8 +2,8 @@
 #[cfg(test)]
 mod tests;
 use super::dynamic_border::DynamicBorder;
-use maestro_catalog::{CatalogError, ModelRegistry, ScopedModel, model_id_comparator};
 use maestro_models::{Model, models_are_equal};
+use maestro_models_registry::{CatalogError, ModelRegistry, ScopedModel, model_id_comparator};
 use maestro_settings::SettingsManager;
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tools::key_hint;

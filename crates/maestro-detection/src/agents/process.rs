@@ -305,7 +305,7 @@ fn resolved_agent_name_from_path_token(token: &str) -> Option<String> {
         return None;
     }
 
-    let resolved = maestro_realpath::canonicalize(path).ok()?;
+    let resolved = maestro_path::fs::canonicalize(path).ok()?;
     let basename = resolved.file_name()?.to_str()?;
     agent_name_from_basename(basename)
 }

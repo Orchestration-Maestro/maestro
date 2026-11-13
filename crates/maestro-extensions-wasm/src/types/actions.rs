@@ -6,10 +6,10 @@
 )]
 /// The custom-message fields accepted by an action.
 pub type CustomMessageInput = crate::BeforeAgentStartMessage;
-pub use maestro_request::messages::{
+pub use maestro_interchange::messages::{
     MessageDelivery, SendMessageOptions, SendUserMessageOptions, UserMessageDelivery,
 };
 /// Host-supplied tool metadata with the shared parameter schema.
-pub type ToolInfo = maestro_request::tool_info::ToolInfo<
-    maestro_request::parameter_schema::ParameterSchema<crate::schema_code::SchemaCode>,
+pub type ToolInfo = maestro_interchange::tool_info::ToolInfo<
+    maestro_interchange::parameter_schema::ParameterSchema<crate::schema_code::SchemaCode>,
 >;

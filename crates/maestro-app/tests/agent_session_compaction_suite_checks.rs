@@ -1,9 +1,8 @@
 //! Public prompts respect the automatic-compaction threshold and enable switch.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::compaction::seeded;
-use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, of_kinds, on_task_set, prompt_to_end, summary_provider,
-};
+use crate::support::session_harness::{Harness, of_kinds, prompt_to_end, summary_provider};
+use maestro_app::test_support::{HarnessOptions, Scripted, on_task_set};
 use maestro_session::session_manager::ReadonlySessionManager;
 use serde_json::json;
 
@@ -86,5 +85,6 @@ fn public_compaction_obeys_the_threshold_boundary_and_switch() {
                 threshold_case(tokens, enabled, usize::from(enabled) * count).await;
             }
         }
-    });
+    })
+    .unwrap();
 }

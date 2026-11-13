@@ -115,7 +115,7 @@ fn conversion_ids_track_prior_allocations() {
     super::conversions::migrate(&mut entries, || candidates.next().unwrap()).unwrap();
     let context = super::build_session_context(
         &entries,
-        maestro_request::presence::Presence::Missing,
+        maestro_interchange::presence::Presence::Missing,
         None::<&std::collections::HashMap<_, _>>,
     )
     .unwrap();
@@ -282,7 +282,10 @@ fn new_session_clears_resolved_labels_and_timestamps() {
         .append_message(serde_json::json!({"role": "user", "content": "old", "timestamp": 1}))
         .unwrap();
     manager
-        .append_label_change(&old, maestro_request::presence::Presence::Present("mark"))
+        .append_label_change(
+            &old,
+            maestro_interchange::presence::Presence::Present("mark"),
+        )
         .unwrap();
     manager.new_session(super::NewSessionOptions::default());
     assert_eq!(manager.get_label(&old), None);

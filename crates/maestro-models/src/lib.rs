@@ -38,6 +38,12 @@ pub use catalog::models::{
     get_supported_thinking_levels, models_are_equal,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_http::configure_http_dispatcher;
+pub use maestro_http::{
+    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
+    unit_random,
+};
 pub use providers::chat::endpoint::{
     OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
 };
@@ -57,12 +63,6 @@ pub use providers::responses_api::azure_transport::{
 };
 pub use providers::responses_api::openai::{
     OpenAIResponsesOptions, stream_openai_responses, stream_openai_responses_for,
-};
-#[cfg(not(target_arch = "wasm32"))]
-pub use providers::transport::configure_http_dispatcher;
-pub use providers::transport::{
-    Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
-    unit_random,
 };
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
@@ -85,25 +85,14 @@ pub use records::sessions::{
     SessionResourceCleanup, SessionResourceCleanupError, SessionResourceRemoval,
     cleanup_session_resources, register_session_resource_cleanup,
 };
-pub use records::typebox_helpers::{StringEnumOptions, string_enum};
+pub use records::string_enum::{EnumOptions, string_enum};
 pub use records::types::*;
 
 pub mod providers;
 pub use providers::scripted::*;
 
 pub mod oauth;
-pub use oauth::device::browser::{
-    GITHUB_COPILOT_OAUTH_PROVIDER, get_github_copilot_base_url, login_github_copilot,
-    normalize_domain, refresh_github_copilot_token,
-};
-pub use oauth::pages::{oauth_error_html, oauth_success_html};
 pub use oauth::proof_key::{Pkce, generate_pkce};
-pub use oauth::responses::code_login::{
-    OPENAI_CODEX_OAUTH_PROVIDER, login_openai_codex, refresh_openai_codex_token,
-};
-pub use oauth::subscription::browser::{
-    ANTHROPIC_OAUTH_PROVIDER, login_anthropic, refresh_anthropic_token,
-};
 pub use oauth::types::{
     OAuthAuthInfo, OAuthCredentials, OAuthPrompt, OAuthProvider, OAuthProviderId,
     OAuthSelectOption, OAuthSelectPrompt,
@@ -111,7 +100,8 @@ pub use oauth::types::{
 pub use oauth::types::{OAuthCallbacks, OAuthError, OAuthLoginCallbacks, OAuthProviderInterface};
 pub use oauth::{
     OAuthApiKey, OAuthProviderHandle, get_oauth_api_key, get_oauth_provider, get_oauth_providers,
-    refresh_oauth_token, register_oauth_provider, reset_oauth_providers, unregister_oauth_provider,
+    install_built_in_oauth_providers, refresh_oauth_token, register_oauth_provider,
+    reset_oauth_providers, unregister_oauth_provider,
 };
 
 pub use providers::response_sessions::codex::{
@@ -130,12 +120,12 @@ extern crate self as maestro_models;
 #[cfg(test)]
 pub mod tests;
 
-pub use maestro_request::tool_info::ToolInfo;
 #[cfg(not(target_arch = "wasm32"))]
-pub use providers::websocket::default_web_socket;
-pub use providers::websocket::{
+pub use maestro_http::websocket::default_web_socket;
+pub use maestro_http::websocket::{
     ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest,
 };
+pub use maestro_interchange::tool_info::ToolInfo;
 
 pub use providers::content::managed::{
     GoogleVertexOptions, stream_google_vertex, stream_google_vertex_for,
@@ -143,12 +133,12 @@ pub use providers::content::managed::{
 };
 
 /// Shared extension event inventory for concrete native adapters.
-pub use maestro_request::extension_event_table;
+pub use maestro_interchange::extension_event_table;
 /// Shared extension events and assembled prompt records.
-pub use maestro_request::{extension_events, system_prompt};
+pub use maestro_interchange::{extension_events, system_prompt};
 
 /// Shared parameter-schema records and their declared node kinds.
-pub use maestro_request::parameter_schema::{
+pub use maestro_interchange::parameter_schema::{
     Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaKind,
     SchemaNode, transport as schema_transport,
 };

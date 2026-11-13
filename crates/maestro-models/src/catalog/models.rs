@@ -35,7 +35,7 @@ pub fn get_models(provider: &str) -> Vec<Model> {
         .unwrap_or_default()
 }
 
-pub use maestro_request::types::calculate_cost;
+pub use maestro_interchange::types::calculate_cost;
 
 /// Compare only provider and ID; either absent operand is unequal.
 /// Any supplied descriptors may be compared, independently of catalog membership.

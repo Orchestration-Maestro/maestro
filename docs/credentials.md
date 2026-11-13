@@ -8,7 +8,7 @@ expired OAuth tokens and formats login guidance.
 
 The typed credential and status records (`ApiKeyCredential`, `AuthCredential`,
 `AuthStorageData`, `AuthSource`, `AuthStatus` and `OAuthCredentials`) are defined
-in `maestro-request` and re-exported here unchanged, so extensions use the same
+in `maestro-interchange` and re-exported here unchanged, so extensions use the same
 types. Their ordinary serialization uses the stored field names and the snake-case
 source names; it is not the stored-file writer, which stays with `AuthStorage`.
 
@@ -166,6 +166,9 @@ asynchronous operation `with_lock_async` runs callbacks one at a time: each read
 the text the previous one stored, so two providers changed at once both stay. An
 awaited callback must not reenter `with_lock_async`.
 `AuthStorage::from_storage` accepts either, or any `AuthStorageBackend`.
+Every constructor installs the built-in login providers into the
+[provider registry](models/oauth.md#provider-registry), so `login` and token refresh find
+`anthropic`, `github-copilot` and `openai-codex` on a fresh store.
 
 ## Configured values
 

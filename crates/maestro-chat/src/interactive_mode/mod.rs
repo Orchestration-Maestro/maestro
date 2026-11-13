@@ -56,6 +56,8 @@ mod extension_ui;
 mod toggles;
 mod transcript;
 mod transfer;
+#[cfg(feature = "test-support")]
+mod view;
 mod working;
 
 #[cfg(test)]
@@ -70,6 +72,8 @@ type StreamingMessage = (Rc<AssistantMessageComponent>, SharedAssistantMessage);
 
 pub use authentication::is_api_key_login_provider;
 pub use maestro_app::presentation_data::mode_dispatch::InteractiveModeOptions;
+#[cfg(feature = "test-support")]
+pub use view::{ModeView, Region};
 
 /// The retained interactive presentation over the current session.
 pub struct InteractiveMode {

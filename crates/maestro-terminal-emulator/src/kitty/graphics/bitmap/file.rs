@@ -18,7 +18,7 @@ impl Drop for RemoveFile<'_> {
 /// Read a file payload using roots observed for this operation.
 pub(super) fn read(bytes: &[u8], transmission: &Transmission) -> Result<Vec<u8>, ImageError> {
     let path = native_path(bytes)?;
-    let path = maestro_realpath::canonicalize(path).map_err(|_| ImageError::InvalidData)?;
+    let path = maestro_path::fs::canonicalize(path).map_err(|_| ImageError::InvalidData)?;
     let roots = if transmission.medium == Medium::TemporaryFile {
         temp_dirs()
     } else {
@@ -86,7 +86,7 @@ fn temp_dirs() -> Vec<PathBuf> {
         selected_temp_dir(std::env::var_os("TMPDIR"), std::env::var_os("TMP")),
     ]
     .into_iter()
-    .filter_map(|path| maestro_realpath::canonicalize(path).ok())
+    .filter_map(|path| maestro_path::fs::canonicalize(path).ok())
     .collect()
 }
 

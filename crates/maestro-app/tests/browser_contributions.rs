@@ -106,7 +106,8 @@ fn invalid_contribution_files_report_a_warning_and_are_skipped() {
 #[cfg(unix)]
 #[test]
 fn resource_loader_reads_the_contributions_the_browser_receives() {
-    use crate::resource_fixtures::{module_loader, on_task_set};
+    use crate::resource_fixtures::module_loader;
+    use maestro_app::test_support::on_task_set;
     use maestro_app::{
         DefaultResourceLoader, DefaultResourceLoaderOptions, ResourceLoader, ResourceLoaderOptions,
     };
@@ -138,7 +139,8 @@ fn resource_loader_reads_the_contributions_the_browser_receives() {
         });
         loader.reload().await.unwrap();
         loader.get_contributions()
-    });
+    })
+    .unwrap();
     assert!(loaded.diagnostics.is_empty());
     let received: Vec<BrowserContribution> =
         serde_json::from_str(&fs::read_to_string(package.join("contributions.json")).unwrap())

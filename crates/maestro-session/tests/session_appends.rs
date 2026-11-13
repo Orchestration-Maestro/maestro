@@ -3,8 +3,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::support;
+use maestro_interchange::presence::Presence;
 use maestro_models::UserContent;
-use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_test_directory::Scratch;

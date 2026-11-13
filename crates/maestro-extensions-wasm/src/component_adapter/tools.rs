@@ -31,12 +31,15 @@ pub type ToolListing<C> = (
 
 /// Restore the shared schema owner with the guest callback representation.
 pub(super) fn decode_tools(text: &str) -> ExtensionResult<Vec<crate::ToolInfo>> {
-    maestro_request::parameter_schema::transport::decode_tools(text)
+    maestro_interchange::parameter_schema::transport::decode_tools(text)
 }
 
 /// Encode authored metadata through the shared parameter-schema transport.
 pub(super) fn encode_metadata(metadata: &crate::ToolMetadata) -> ExtensionResult<String> {
-    maestro_request::parameter_schema::transport::encode_metadata(metadata, &metadata.parameters)
+    maestro_interchange::parameter_schema::transport::encode_metadata(
+        metadata,
+        &metadata.parameters,
+    )
 }
 
 /// Owned resources delivered to one tool invocation.

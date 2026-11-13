@@ -32,11 +32,11 @@ pub async fn execution_preflight_avoids_all_effects() {
         ("", "Code parameter is required"),
         ("return 9", "Execution aborted"),
     ] {
-        let error = maestro_app::browser::tools::javascript_repl::execute_javascript(
+        let error = maestro_web::tools::browser::javascript_repl::execute_javascript(
             code.into(),
             vec![provider.clone()],
             Some(signal.clone()),
-            maestro_app::browser::components::sandboxed_iframe::SandboxEnvironment {
+            maestro_web::components::browser::sandboxed_iframe::SandboxEnvironment {
                 host: std::sync::Arc::new(maestro_web::BrowserSandboxHost),
                 sandbox_url_provider: None,
             },
@@ -190,7 +190,7 @@ pub async fn execution_collects_ordered_logs_and_original_downloads() {
     .unwrap();
     assert_eq!(
         result.files.unwrap()[0].content,
-        maestro_app::browser::components::sandboxed_iframe::SandboxFileContent::Bytes(vec![255, 2])
+        maestro_web::components::browser::sandboxed_iframe::SandboxFileContent::Bytes(vec![255, 2])
     );
     maestro_web::JAVASCRIPT_REPL_TOOL.with(|tool| {
         *tool.runtime_providers_factory.write().unwrap() = Some(SharedHandle::new(move || {
@@ -1064,7 +1064,7 @@ pub async fn execution_reads_terminal_fields_after_end_hooks() {
 /// Open download content reaches the shared native string fallback and tool encoder.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_encodes_nonbyte_download_content() {
-    use maestro_app::browser::components::sandboxed_iframe::SandboxFileContent;
+    use maestro_web::components::browser::sandboxed_iframe::SandboxFileContent;
 
     let fixture = Fixture::default();
     fixture.begin();
@@ -1100,7 +1100,7 @@ pub async fn execution_encodes_nonbyte_download_content() {
 /// Install the live replacement only when its start callback is reached.
 fn replace_bootstrap(
     slot: &Rc<
-        RefCell<Option<maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider>>,
+        RefCell<Option<maestro_web::components::browser::sandboxed_iframe::SandboxUrlProvider>>,
     >,
     calls: &Rc<RefCell<Vec<&'static str>>>,
 ) {

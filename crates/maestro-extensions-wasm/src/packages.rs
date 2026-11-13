@@ -7,12 +7,12 @@
 pub use crate::bindings::maestro::extension::host::OperationScope;
 use crate::bindings::maestro::extension::host::{HostOperation, PackageRequest, PackageSources};
 use crate::{ExtensionAPI, ExtensionFuture};
-pub use maestro_package::GitPinStatus;
+pub use maestro_interchange::packages::GitPinStatus;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 /// A selected package in the host operation's scope.
-pub type ResolvedPackage = maestro_package::ResolvedPackage<OperationScope>;
+pub type ResolvedPackage = maestro_interchange::packages::ResolvedPackage<OperationScope>;
 
 /// The host's package owner; the component copies no resolution or Git logic.
 ///

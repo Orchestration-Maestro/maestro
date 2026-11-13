@@ -87,7 +87,6 @@ mod context_overflow_classification;
 mod conversation_reasoning;
 mod conversation_streams;
 mod conversation_tool_schema;
-mod device_account_authorization;
 #[path = "empty_content.rs"]
 mod empty_content;
 #[path = "support/environment_children.rs"]
@@ -95,13 +94,10 @@ mod environment_children;
 mod environment_model_keys;
 #[path = "support/environment_rows.rs"]
 mod environment_rows;
-#[path = "support/ftp_server.rs"]
-mod ftp_server;
 mod handoff_tool_ids;
 #[path = "history_handoffs.rs"]
 mod history_handoffs;
 mod http_execution;
-mod http_status_text;
 mod interleaved_reasoning;
 mod invocation_cancellation;
 #[path = "support/json.rs"]
@@ -111,6 +107,10 @@ mod json_boundary_consumers;
 mod json_equivalence;
 #[path = "support/key_selection.rs"]
 mod key_selection;
+#[cfg(target_os = "linux")]
+use maestro_http::test_support::tls;
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_http::test_support::{ftp_server, runtime, socks};
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_test_process::loopback;
 mod message_adaptive_thinking;
@@ -137,12 +137,9 @@ mod model_stream_lifetimes;
 #[path = "model_streaming.rs"]
 mod model_streaming;
 mod model_thinking_levels;
-#[path = "support/native_peer.rs"]
-mod native_peer;
-#[path = "support/oauth_admission.rs"]
-mod oauth_admission;
+#[path = "support/named_account.rs"]
+mod named_account;
 mod oauth_primitives;
-mod oauth_provider_registry;
 mod offline_model_catalog;
 mod output_budget;
 #[cfg(unix)]
@@ -165,7 +162,6 @@ mod provider_unicode;
 mod reasoning_capabilities;
 #[path = "support/reasoning_qualification.rs"]
 mod reasoning_qualification;
-mod response_account_authorization;
 mod response_affinity;
 #[path = "support/response_case_schema.rs"]
 mod response_case_schema;
@@ -191,18 +187,10 @@ mod response_tool_images;
 #[path = "support/root_routes.rs"]
 mod root_routes;
 mod routed_cache_write;
-#[path = "support/runtime.rs"]
-mod runtime;
 mod scripted_model_invocation;
 mod simple_model_options;
-#[path = "support/socks.rs"]
-mod socks;
 mod stream_options;
 mod streamed_arguments;
-mod subscription_accounts;
-#[cfg(target_os = "linux")]
-#[path = "support/tls.rs"]
-mod tls;
 mod tool_argument_roots;
 #[path = "tool_images.rs"]
 mod tool_images;

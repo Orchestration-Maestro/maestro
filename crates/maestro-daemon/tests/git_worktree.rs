@@ -33,7 +33,7 @@ fn git_stdout(cwd: &Path, args: &[&str]) -> String {
 
 /// A canonical path, so entries compare equal across symbolic links.
 fn canonical(path: &Path) -> PathBuf {
-    maestro_realpath::canonicalize(path).unwrap()
+    maestro_path::fs::canonicalize(path).unwrap()
 }
 
 #[test]

@@ -12,9 +12,7 @@ use crate::source::{Member, Source, cfg_test, item_attributes, test_scope};
 /// Internal guest libraries available to a package on every target.
 const DEPENDENCIES: &[&str] = &[
     "maestro-extensions-wasm",
-    "maestro-request",
-    "maestro-entry",
-    "maestro-tool",
+    "maestro-interchange",
     "maestro-json",
 ];
 

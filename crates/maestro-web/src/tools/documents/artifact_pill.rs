@@ -1,7 +1,7 @@
 //! Literal artifact filenames that open the captured panel.
 #[cfg(target_arch = "wasm32")]
 use crate::page::PreparedContent;
-use maestro_app::browser::tools::documents::LocalArtifactsPanel;
+use crate::tools::browser::documents::LocalArtifactsPanel;
 use std::rc::Rc;
 
 /// Owned display and identity; malformed display values have no artifact identity.

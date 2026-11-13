@@ -84,7 +84,7 @@ fn pdf_artifact_retains_visibility_without_modal_ownership_for_pages_and_errors(
 fn encoded(name: &str) -> String {
     base64::engine::general_purpose::STANDARD.encode(
         std::fs::read(format!(
-            "{}/../maestro-app/tests/fixtures/pdf/{name}",
+            "{}/tests/fixtures/pdf/{name}",
             env!("CARGO_MANIFEST_DIR")
         ))
         .unwrap(),
@@ -140,7 +140,7 @@ fn pdf_download_preserves_name_mime_and_save_failures() {
     assert_eq!(host.downloads.borrow()[1].1, "application/pdf");
     assert_eq!(
         host.downloads.borrow()[1].2,
-        include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-wide.pdf")
+        include_bytes!("fixtures/pdf/synthetic-wide.pdf")
     );
 }
 
@@ -178,7 +178,7 @@ fn pdf_edits_cancel_old_pages_before_replacement() {
     frame.click(view.as_mut()).unwrap();
     assert_eq!(
         host.downloads.borrow().last().unwrap().2,
-        include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-wide.pdf")
+        include_bytes!("fixtures/pdf/synthetic-wide.pdf")
     );
 }
 
@@ -215,7 +215,7 @@ fn pdf_reading_publication_failures_preserve_owned_surface() {
 #[test]
 fn pdf_local_application_tool_updates_the_real_pdf_view() {
     use artifact_support::presentation::{Presentation, ready};
-    use maestro_app::browser::tools::documents::LocalArtifactsPanel;
+    use maestro_web::tools::browser::documents::LocalArtifactsPanel;
     use serde_json::json;
     use std::cell::{Cell, RefCell};
     let host = Rc::new(session_header_support::Host::default());
@@ -269,18 +269,17 @@ fn pdf_tool_edits() -> [(serde_json::Value, String, &'static [u8]); 3] {
         (
             json!({"command":"create","filename":"a.pdf","content":original}),
             original,
-            include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf")
-                .as_slice(),
+            include_bytes!("fixtures/pdf/synthetic-multipage.pdf").as_slice(),
         ),
         (
             json!({"command":"rewrite","filename":"a.pdf","content":replacement}),
             replacement.clone(),
-            include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-tall.pdf").as_slice(),
+            include_bytes!("fixtures/pdf/synthetic-tall.pdf").as_slice(),
         ),
         (
             json!({"command":"update","filename":"a.pdf","old_str":replacement,"new_str":appended}),
             appended,
-            include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-tall.pdf").as_slice(),
+            include_bytes!("fixtures/pdf/synthetic-tall.pdf").as_slice(),
         ),
     ]
 }

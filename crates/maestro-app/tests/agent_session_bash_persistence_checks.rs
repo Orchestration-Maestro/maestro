@@ -2,14 +2,17 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, answer, bash_result_view, case, custom_note, echo_tools,
-    entries_view, harness, on_task_set, recorded_number, run_native_tool_child, script_responses,
+    Harness, bash_result_view, case, custom_note, echo_tools, entries_view, run_native_tool_child,
     start_prompt, transcribed, waiting_tool,
+};
+use maestro_app::test_support::{
+    HarnessOptions, Scripted, answer, harness, on_task_set, recorded_number, script_responses,
 };
 use maestro_app::{AgentSessionEvent, agent_session::BashRunOptions};
 use maestro_session::{
     message_records::SendMessageOptions, session_manager::ReadonlySessionManager,
 };
+use maestro_test_directory::Scratch;
 use maestro_tools::BashResult;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -78,7 +81,8 @@ fn idle_shell_records_persist_without_message_events() {
                 "idle_shell_records_persist_without_message_events"
             )["expected"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -90,7 +94,7 @@ fn streaming_shell_records_flush_when_run_settles() {
             "wait".into(),
             waiting_tool(Rc::clone(&started), Rc::clone(&release)),
         )]);
-        let h = harness(HarnessOptions {
+        let h = harness(Scratch::new().unwrap(), HarnessOptions {
             base_tools_override: Some(tools),
             responses: Some(vec![
                 Scripted {
@@ -102,7 +106,7 @@ fn streaming_shell_records_flush_when_run_settles() {
             ]),
             ..HarnessOptions::default()
         })
-        .await;
+        .await.unwrap();
         let running = start_prompt(&h, "start");
         started.notified().await;
         assert!(h.session.is_streaming());
@@ -136,7 +140,7 @@ fn streaming_shell_records_flush_when_run_settles() {
                 "streaming_shell_records_flush_when_run_settles"
             )["expected"]
         );
-    });
+    }).unwrap();
 }
 
 /// A pending operation that settles only after its caller's cancellation signal fires.
@@ -163,7 +167,9 @@ impl maestro_app::BashOperations<maestro_models::Local> for CancelledShell {
 #[test]
 fn abort_shell_clears_running_state_and_persists_cancellation() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let started = Rc::new(tokio::sync::Notify::new());
         let run = h.session.execute_bash(
             "sleep",
@@ -188,7 +194,8 @@ fn abort_shell_clears_running_state_and_persists_cancellation() {
                 "abort_shell_clears_running_state_and_persists_cancellation"
             )["expected"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -204,12 +211,16 @@ fn custom_user_assistant_and_tool_messages_keep_record_order() {
                 ),
             )))
         });
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(tools),
-            responses: Some(vec![Scripted::echo_call("hello"), Scripted::text("done")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(tools),
+                responses: Some(vec![Scripted::echo_call("hello"), Scripted::text("done")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let mut note = custom_note("hello");
         note.details = maestro_session::Presence::Present(json!({"a":1}));
         h.session
@@ -244,13 +255,14 @@ fn custom_user_assistant_and_tool_messages_keep_record_order() {
                 "custom_user_assistant_and_tool_messages_keep_record_order"
             )["expected"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn interrupted_assistant_is_kept_in_session_entries() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default()).await.unwrap();
         script_responses(&h, vec![answer(&"x".repeat(20_000), None, None)]);
         let updated = Rc::new(tokio::sync::Notify::new());
         let notify = Rc::clone(&updated);
@@ -281,7 +293,7 @@ fn interrupted_assistant_is_kept_in_session_entries() {
                 "interrupted_assistant_is_kept_in_session_entries"
             )["expected"]
         );
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -290,7 +302,9 @@ fn direct_shell_runs_and_records_native_output() {
         return;
     }
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let cwd = h.session.session_manager().borrow().get_cwd().to_owned();
         std::fs::create_dir_all(cwd).unwrap();
         let result = h
@@ -307,5 +321,6 @@ fn direct_shell_runs_and_records_native_output() {
                 "direct_shell_runs_and_records_native_output"
             )["expected"]
         );
-    });
+    })
+    .unwrap();
 }

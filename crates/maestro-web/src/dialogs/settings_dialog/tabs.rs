@@ -1,5 +1,6 @@
 //! Built-in settings tabs: provider keys and the CORS proxy.
 use super::SettingsTab;
+use crate::persistence::get_app_storage;
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error},
@@ -12,7 +13,6 @@ use crate::{
     page::{DomContent, DomRoot, DomView, MountedContent, report},
     tools::types::ToolUiError,
 };
-use maestro_app::get_app_storage;
 use maestro_models::get_providers;
 use std::{
     cell::{Cell, RefCell},

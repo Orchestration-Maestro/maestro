@@ -1,7 +1,7 @@
 //! The session view: transcript, streaming response, message editor and usage totals.
+use crate::components::browser::records::CustomAgentMessages as BrowserMessages;
 use crate::components::composer::EditorControls;
 use maestro_agent::{Agent, AgentMessage, CustomAgentMessages, NoCustomMessages};
-use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 use maestro_models::{DiagnosticErrorInfo, Local, Usage};
 use std::{future::Future, pin::Pin, rc::Rc};
 

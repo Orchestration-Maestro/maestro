@@ -180,7 +180,7 @@ error.
 
 ## Stream and result
 
-The body uses the shared server-sent event reader in `maestro-models`; no event-stream
+The body uses the shared server-sent event reader in `maestro-http`; no event-stream
 library is involved. The recorded event corpus is part of the tests.
 
 Lines end at `\r\n`, `\r` or `\n`, wherever the chunks are cut. A carriage return ends

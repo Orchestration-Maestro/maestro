@@ -2,8 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_agent::{Agent, AgentMessage, AgentOptions, PromptInput};
+use maestro_interchange::presence::Presence;
 use maestro_models::{AssistantMessageEventStream, BoxFuture, UserContent};
-use maestro_request::presence::Presence;
 use maestro_session::message_records::{
     BashExecutionMessage, CustomAgentMessages, create_custom_message,
 };

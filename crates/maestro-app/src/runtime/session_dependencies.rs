@@ -14,7 +14,6 @@ use crate::sdk::{
     create_agent_session,
 };
 use indexmap::IndexMap;
-use maestro_catalog::{ConfigValues, ModelRegistry, ScopedModel};
 use maestro_credentials::{AuthStorage, ProcessConfigValueOperations};
 use maestro_extensions::SessionStartEvent;
 use maestro_extensions::{
@@ -25,6 +24,7 @@ use maestro_lock::{read, write};
 use maestro_models::{
     DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, SharedHandle, Threaded,
 };
+use maestro_models_registry::{ConfigValues, ModelRegistry, ScopedModel};
 use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_session::SessionManager;
 use maestro_settings::SettingsManager;
@@ -183,6 +183,7 @@ pub(crate) fn native_config_values() -> ConfigValues {
 pub async fn create_agent_session_services<E: DefaultEventBus>(
     options: CreateAgentSessionServicesOptions<E>,
 ) -> io::Result<AgentSessionServices<E>> {
+    maestro_providers::install_built_in_providers();
     let cwd = options.cwd;
     let agent_dir = match options.agent_dir {
         Some(agent_dir) => agent_dir,

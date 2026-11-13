@@ -1,4 +1,4 @@
-use maestro_request::parameter_schema::{Refinement, SchemaCallback, SchemaCode, SchemaNode};
+use maestro_interchange::parameter_schema::{Refinement, SchemaCallback, SchemaCode, SchemaNode};
 use serde_json::Value;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 

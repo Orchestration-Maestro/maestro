@@ -141,29 +141,29 @@ fn ready<T>(future: impl Future<Output = T>) -> T {
 /// Browser storage exports use application owners.
 fn browser_storage_exports_use_application_owners() {
     ready(async {
-        let settings: maestro_app::SettingsStore = SettingsStore::default();
-        let _: maestro_app::ProviderKeysStore = ProviderKeysStore::default();
-        let _: maestro_app::CustomProvidersStore = CustomProvidersStore::default();
-        let index: maestro_app::IndexConfig = IndexConfig {
+        let settings: maestro_web::SettingsStore = SettingsStore::default();
+        let _: maestro_web::ProviderKeysStore = ProviderKeysStore::default();
+        let _: maestro_web::CustomProvidersStore = CustomProvidersStore::default();
+        let index: maestro_web::IndexConfig = IndexConfig {
             name: "recent".into(),
             key_path: "time".into(),
             unique: Some(true),
         };
-        let config: maestro_app::StoreConfig = StoreConfig {
+        let config: maestro_web::StoreConfig = StoreConfig {
             name: "one".into(),
             key_path: Some("id".into()),
             auto_increment: Some(false),
             indices: Some(vec![index]),
         };
-        let db: maestro_app::IndexedDBConfig = IndexedDBConfig {
+        let db: maestro_web::IndexedDBConfig = IndexedDBConfig {
             db_name: "db".into(),
             version: 2.0,
             stores: vec![config.clone()],
         };
-        let base: maestro_app::Store = Store::new(config.clone());
+        let base: maestro_web::Store = Store::new(config.clone());
         assert_eq!(base.get_config(), db.stores[0]);
         let b = Rc::new(Adapter::default());
-        let backend: Rc<dyn maestro_app::StorageBackend> = b.clone();
+        let backend: Rc<dyn maestro_web::StorageBackend> = b.clone();
         settings.set_backend(backend.clone());
         settings
             .set("layout", &json!(["wide", false]))
@@ -219,18 +219,18 @@ async fn exercise_contract(backend: &dyn StorageBackend) {
 
 /// Construct all exported provider families and protocols.
 fn exported_provider_records() {
-    let families: [maestro_app::AutoDiscoveryProviderType; 4] = [
+    let families: [maestro_web::AutoDiscoveryProviderType; 4] = [
         AutoDiscoveryProviderType::Ollama,
         AutoDiscoveryProviderType::LlamaCpp,
         AutoDiscoveryProviderType::Vllm,
         AutoDiscoveryProviderType::Lmstudio,
     ];
-    let manuals: [maestro_app::ManualProviderType; 3] = [
+    let manuals: [maestro_web::ManualProviderType; 3] = [
         ManualProviderType::OpenaiCompletions,
         ManualProviderType::OpenaiResponses,
         ManualProviderType::AnthropicMessages,
     ];
-    let kinds: Vec<maestro_app::CustomProviderType> = families
+    let kinds: Vec<maestro_web::CustomProviderType> = families
         .into_iter()
         .map(CustomProviderType::AutoDiscovery)
         .chain(manuals.into_iter().map(CustomProviderType::Manual))
@@ -244,7 +244,7 @@ fn exported_provider_records() {
         "openai-responses",
         "anthropic-messages",
     ]) {
-        let p: maestro_app::CustomProvider = CustomProvider {
+        let p: maestro_web::CustomProvider = CustomProvider {
             id: "p".into(),
             name: "P".into(),
             r#type: kind,
@@ -267,7 +267,7 @@ async fn exercise_transactions(backend: &dyn StorageBackend) {
             .transaction(
                 &stores,
                 mode,
-                Box::new(|tx: Rc<dyn maestro_app::StorageTransaction>| {
+                Box::new(|tx: Rc<dyn maestro_web::StorageTransaction>| {
                     Box::pin(async move {
                         tx.set("two", "k", json!({"callback":17})).await?;
                         let result = tx.get("two", "k").await?;
@@ -308,7 +308,7 @@ fn browser_session_exports_use_the_application_owners() {
     use maestro_web::{AppStorage, SessionData, SessionsStore, get_app_storage, set_app_storage};
     ready(async {
         let (data, metadata) = browser_session_records();
-        let sessions: Rc<maestro_app::SessionsStore> = Rc::new(SessionsStore::default());
+        let sessions: Rc<maestro_web::SessionsStore> = Rc::new(SessionsStore::default());
         let backend = Rc::new(Adapter::default());
         sessions.set_backend(backend.clone());
         sessions.save(&data, &metadata).await.unwrap();
@@ -331,19 +331,19 @@ fn browser_session_exports_use_the_application_owners() {
                 .collect::<Vec<_>>(),
             ["user-with-attachments", "artifact"]
         );
-        let app: Rc<maestro_app::AppStorage> = Rc::new(AppStorage::new(
+        let app: Rc<maestro_web::AppStorage> = Rc::new(AppStorage::new(
             Rc::new(SettingsStore::default()),
             Rc::new(ProviderKeysStore::default()),
             sessions.clone(),
             Rc::new(CustomProvidersStore::default()),
             backend,
         ));
-        let set: fn(Rc<maestro_app::AppStorage>) = set_app_storage;
+        let set: fn(Rc<maestro_web::AppStorage>) = set_app_storage;
         set(app.clone());
-        let get: fn() -> io::Result<Rc<maestro_app::AppStorage>> = get_app_storage;
+        let get: fn() -> io::Result<Rc<maestro_web::AppStorage>> = get_app_storage;
         assert!(Rc::ptr_eq(&get().unwrap(), &app));
-        assert!(Rc::ptr_eq(&maestro_app::get_app_storage().unwrap(), &app));
-        maestro_app::set_app_storage(app.clone());
+        assert!(Rc::ptr_eq(&maestro_web::get_app_storage().unwrap(), &app));
+        maestro_web::set_app_storage(app.clone());
         assert_eq!(
             app.get_quota_info().await.unwrap().usage.to_bits(),
             3.0_f64.to_bits()
@@ -354,12 +354,10 @@ fn browser_session_exports_use_the_application_owners() {
 }
 
 /// Recorded browser roles decoded through the unqualified SDK default.
-fn browser_session_records() -> (maestro_app::SessionData, maestro_app::SessionMetadata) {
+fn browser_session_records() -> (maestro_web::SessionData, maestro_web::SessionMetadata) {
     use maestro_web::{SessionData, SessionMetadata};
-    let fixture: Value = serde_json::from_str(include_str!(
-        "../../maestro-app/tests/fixtures/browser_sessions.json"
-    ))
-    .unwrap();
+    let fixture: Value =
+        serde_json::from_str(include_str!("fixtures/browser_sessions.json")).unwrap();
     let rows = fixture["rows"].as_array().unwrap();
     let row = rows
         .iter()
@@ -380,8 +378,8 @@ fn browser_session_records() -> (maestro_app::SessionData, maestro_app::SessionM
         .as_array_mut()
         .unwrap()
         .push(artifact["input"]["data"]["messages"][0].clone());
-    let data: maestro_app::SessionData = serde_json::from_value::<SessionData>(value).unwrap();
-    let metadata: maestro_app::SessionMetadata =
+    let data: maestro_web::SessionData = serde_json::from_value::<SessionData>(value).unwrap();
+    let metadata: maestro_web::SessionMetadata =
         serde_json::from_value::<SessionMetadata>(row["input"]["metadata"].clone()).unwrap();
     (data, metadata)
 }
@@ -393,7 +391,7 @@ fn indexeddb_backend_exports_keep_raw_values() {
     use maestro_web::IndexedDBStorageBackend;
     use wasm_bindgen::JsValue;
     fn output<T>(_: impl Future<Output = io::Result<T>>) {}
-    let backend = IndexedDBStorageBackend::new(maestro_app::IndexedDBConfig {
+    let backend = IndexedDBStorageBackend::new(maestro_web::IndexedDBConfig {
         db_name: "native-values".into(),
         version: 1.0,
         stores: vec![],
@@ -439,7 +437,7 @@ fn indexeddb_adapter_exports_complete_storage_contract() {
         version: 1.0,
         stores: vec![],
     }));
-    let application: Rc<dyn maestro_app::StorageBackend> = backend.clone();
+    let application: Rc<dyn maestro_web::StorageBackend> = backend.clone();
     let _get = application.get("one", "k");
     let _contract = exercise_contract(application.as_ref());
     let names = vec!["one".into()];
@@ -447,7 +445,7 @@ fn indexeddb_adapter_exports_complete_storage_contract() {
         &names,
         TransactionMode::Readwrite,
         |tx: Rc<IndexedDBStorageTransaction>| async move {
-            let application: Rc<dyn maestro_app::StorageTransaction> = tx;
+            let application: Rc<dyn maestro_web::StorageTransaction> = tx;
             application.set("one", "k", Value::Null).await?;
             let value = application.get("one", "k").await?;
             application.delete("one", "k").await?;

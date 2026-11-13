@@ -18,7 +18,7 @@ fn chosen_root_is_canonical_and_keeps_written_files() {
 
 /// The real path of `path`, in the ordinary form on Windows.
 fn canonical(path: &std::path::Path) -> std::io::Result<std::ffi::OsString> {
-    maestro_realpath::canonicalize(path).map(std::path::PathBuf::into_os_string)
+    maestro_path::fs::canonicalize(path).map(std::path::PathBuf::into_os_string)
 }
 
 #[test]
@@ -29,6 +29,13 @@ fn chosen_root_accepts_slash_joined_children() {
         fs::read_to_string(root.path().join("kept")).unwrap(),
         "owned"
     );
+}
+
+#[test]
+fn owner_names_its_directory_to_path_readers() {
+    let root = Scratch::new().unwrap();
+    let named: &std::path::Path = root.as_ref();
+    assert_eq!(named, root.path());
 }
 
 #[test]

@@ -57,8 +57,12 @@ impl AuthStorage {
     }
 
     /// Accept a storage backend, loading it once.
+    ///
+    /// Every store installs the built-in login providers as the registry's base layer, so
+    /// login, refresh and a catalog built over this store find them without another call.
     #[must_use]
     pub fn from_storage(storage: impl AuthStorageBackend + 'static) -> Self {
+        maestro_providers::install_built_in_providers();
         let auth_storage = Self {
             storage: Box::new(storage),
             state: Mutex::default(),

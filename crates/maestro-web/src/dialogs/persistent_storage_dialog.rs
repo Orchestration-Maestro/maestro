@@ -3,6 +3,7 @@ use super::{
     dialog_base::DialogBase,
     surface::{DialogHeaderProps, dialog_content, dialog_header},
 };
+use crate::persistence::get_app_storage;
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error},
@@ -13,7 +14,6 @@ use crate::{
     storage::backends::indexeddb_storage_backend::storage_support,
     tools::types::ToolUiError,
 };
-use maestro_app::get_app_storage;
 use std::{
     any::Any,
     cell::RefCell,

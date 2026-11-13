@@ -175,7 +175,7 @@ pub(super) fn artifacts(view: &Rc<DomView>) {
     let renderer = Rc::new(ArtifactsToolRenderer::new(None));
     let binding = ToolRendererBinding::from_raw::<JsonObject, Details>(renderer.clone())
         .with_raw::<Value, Details>(renderer.clone())
-        .with_raw::<maestro_app::browser::tools::documents::ArtifactsParams, Details>(renderer);
+        .with_raw::<maestro_web::tools::browser::documents::ArtifactsParams, Details>(renderer);
     let names = TOOL_RENDERERS.with(|all| all.borrow().keys().cloned().collect::<Vec<_>>());
     assert!(!names.iter().any(|name| name == "artifacts"));
     register_tool_renderer("artifacts", binding.clone());
@@ -206,7 +206,7 @@ pub(super) fn artifacts(view: &Rc<DomView>) {
 /// are never formatted.
 fn artifact_adapters(view: &DomView, result: &ToolResultMessage<Details>) {
     let params = json!({"command":"create","filename":"literal.rs","content":"literal code"});
-    let typed: maestro_app::browser::tools::documents::ArtifactsParams =
+    let typed: maestro_web::tools::browser::documents::ArtifactsParams =
         serde_json::from_value(params.clone()).unwrap();
     let prepared = [
         render_tool(

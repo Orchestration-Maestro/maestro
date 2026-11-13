@@ -1,13 +1,13 @@
 //! The delivery choice input extensions hear: present only for input that arrives while a
 //! response streams.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    HarnessOptions, Scripted, harness, input_extension, on_task_set, start_prompt, waiting_tool,
-};
+use crate::support::session_harness::{start_prompt, waiting_tool};
 use indexmap::IndexMap;
 use maestro_app::PromptOptions;
+use maestro_app::test_support::{HarnessOptions, Scripted, harness, input_extension, on_task_set};
 use maestro_session::Presence;
 use maestro_session::message_records::UserMessageDelivery;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;
@@ -41,16 +41,21 @@ fn choosing(behavior: UserMessageDelivery) -> PromptOptions {
 fn idle_input_carries_no_delivery_choice() {
     on_task_set(|_| async {
         let choices = Choices::default();
-        let h = harness(HarnessOptions {
-            factories: vec![recording(&choices)],
-            responses: Some(vec![Scripted::text("done")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![recording(&choices)],
+                responses: Some(vec![Scripted::text("done")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let options = choosing(UserMessageDelivery::Steer);
         h.session.prompt("hello", options).await.unwrap();
         assert_eq!(*choices.borrow(), [None]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -62,20 +67,24 @@ fn streaming_input_carries_its_delivery_choice() {
             "wait".to_owned(),
             waiting_tool(Rc::clone(&started), Rc::clone(&release)),
         )]);
-        let h = harness(HarnessOptions {
-            factories: vec![recording(&choices)],
-            base_tools_override: Some(tools),
-            responses: Some(vec![
-                Scripted {
-                    tool_calls: vec![("wait".into(), json!({}))],
-                    ..Scripted::default()
-                },
-                Scripted::text("steered"),
-                Scripted::text("followed up"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![recording(&choices)],
+                base_tools_override: Some(tools),
+                responses: Some(vec![
+                    Scripted {
+                        tool_calls: vec![("wait".into(), json!({}))],
+                        ..Scripted::default()
+                    },
+                    Scripted::text("steered"),
+                    Scripted::text("followed up"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let running = start_prompt(&h, "first");
         started.notified().await;
         for behavior in [UserMessageDelivery::Steer, UserMessageDelivery::FollowUp] {
@@ -84,5 +93,6 @@ fn streaming_input_carries_its_delivery_choice() {
         release.notify_one();
         running.await.unwrap().unwrap();
         assert_eq!(*choices.borrow(), [None, Some("steer"), Some("followUp")]);
-    });
+    })
+    .unwrap();
 }

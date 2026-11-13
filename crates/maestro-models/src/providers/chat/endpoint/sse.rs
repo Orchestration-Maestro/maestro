@@ -6,7 +6,7 @@ use super::chunk::Chunk;
 use super::events::Reducer;
 use crate::Cancellation;
 use crate::providers::json_text::{is_truthy, object_record, raw_json};
-use crate::providers::transport::{
+use maestro_http::{
     FetchError, HttpBody, Raced, RequestFailure, ServerSentEvent, SseMessages, race, stream_failure,
 };
 

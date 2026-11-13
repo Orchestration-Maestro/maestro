@@ -165,7 +165,7 @@ fn summary_constructors_preserve_fields_and_time() {
     }
 }
 
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 
 /// Invoke the custom constructor for each selected recorded query.
 fn custom_factory_group(name: &str) {

@@ -1,8 +1,8 @@
 //! User text with caller-owned attachment handles.
+use crate::components::browser::records::CustomAgentMessages as BrowserMessages;
 #[cfg(any(target_arch = "wasm32", test))]
 use crate::{SharedAttachment, tools::types::ToolUiError};
 use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages};
-use maestro_app::browser::components::records::CustomAgentMessages as BrowserMessages;
 #[cfg(any(target_arch = "wasm32", test))]
 use maestro_models::{UserBlock, UserContent};
 

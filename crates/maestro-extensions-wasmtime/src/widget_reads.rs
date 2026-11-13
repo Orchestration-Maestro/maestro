@@ -175,8 +175,6 @@ pub(crate) enum WidgetMessage {
         crate::guest_calls::providers::SuggestionRequest,
         crate::local_resources::Admission,
     ),
-    /// One request on a lent completion provider.
-    Provider(u64, crate::guest_calls::providers::Lent),
     /// Builds an editor with another extension's editor factory for the extension whose API
     /// has this identity.
     Foreign(u64, crate::widget_foreign::ForeignBuild),

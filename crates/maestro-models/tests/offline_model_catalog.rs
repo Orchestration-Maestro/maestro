@@ -59,7 +59,7 @@ fn assert_exact_misses() {
 }
 
 #[test]
-fn maestro_catalog_retains_every_descriptor() {
+fn offline_catalog_retains_every_descriptor() {
     let fixture: Value =
         serde_json::from_str(include_str!("fixtures/offline_model_catalog.json")).unwrap();
     let providers = fixture.as_object().unwrap();
@@ -114,7 +114,7 @@ fn maestro_catalog_retains_every_descriptor() {
 }
 
 #[test]
-fn maestro_catalog_returns_independent_descriptors() {
+fn offline_catalog_returns_independent_descriptors() {
     use maestro_models::ModelThinkingLevel;
     let original = get_model("github-copilot", "gpt-4.1").unwrap();
     let mut edited = get_model("github-copilot", "gpt-4.1").unwrap();
@@ -200,8 +200,8 @@ fn assert_cost_case(
     counts: [f64; 4],
     expected: [f64; 4],
 ) {
+    use maestro_interchange::presence::Presence;
     use maestro_models::{ModelCost, Usage, UsageCost, calculate_cost};
-    use maestro_request::presence::Presence;
     model.cost = ModelCost {
         input: rates[0],
         output: rates[1],

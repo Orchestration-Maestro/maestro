@@ -562,7 +562,7 @@ async fn catalog_queries(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_catalog_queries_preserve_auth_outcomes() -> Result<(), String> {
+fn extension_catalog_queries_preserve_auth_outcomes() -> Result<(), String> {
     on_both_adapters!(catalog_queries)
 }
 /// Acquired capabilities retain their own owner when bindings change or context acquisition fails.
@@ -716,7 +716,7 @@ async fn pending_auth(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_catalog_auth_waits_for_completion_and_releases() -> Result<(), String> {
+fn extension_catalog_auth_waits_for_completion_and_releases() -> Result<(), String> {
     on_both_adapters!(pending_auth)
 }
 /// The registered compaction callback uses preparation, branch entries and live reader/catalog results.
@@ -1036,7 +1036,7 @@ struct CompatibilityCase {
 /// Reuse the owning shared-model corpus rather than copying descriptors.
 async fn compatibility_corpus(driver: &mut impl Driver) -> Result<(), String> {
     let cases: Vec<CompatibilityCase> = serde_json::from_str(include_str!(
-        "../../../maestro-request/tests/fixtures/model_compatibility.json"
+        "../../../maestro-interchange/tests/fixtures/model_compatibility.json"
     ))
     .map_err(|e| e.to_string())?;
     let mut seen = std::collections::HashSet::new();

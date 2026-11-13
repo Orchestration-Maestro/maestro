@@ -16,7 +16,7 @@ use crate::{
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
     StopReason, TextContent, ThinkingContent, ToolCall, Usage, calculate_cost,
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 
 /// The open item and the block position captured when it started.
 enum Current {

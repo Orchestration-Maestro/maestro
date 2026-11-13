@@ -4,7 +4,7 @@ use std::{borrow::Cow, collections::HashMap, rc::Rc};
 
 use serde_json::Value;
 
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Authored kinds indexed by the identity of the JSON node they describe.
 ///

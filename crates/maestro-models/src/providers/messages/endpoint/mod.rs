@@ -14,9 +14,6 @@ use crate::options::{fit_thinking, resolve_api_key};
 use crate::providers::assistant_output::{
     callback_failure, conclude, fail, initial_message, start_producer_for,
 };
-use crate::providers::transport::{
-    HttpResponse, RequestFailure, envelope_failure, send_with_status_error,
-};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation, Context,
     DiagnosticErrorInfo, Local, Model, ProviderExecution, ProviderInvocation, ProviderResponse,
@@ -24,6 +21,7 @@ use crate::{
     StreamOptionsFamily, ThinkingLevel, Threaded, ToolChoice, build_base_options_for,
 };
 use events::Reducer;
+use maestro_http::{HttpResponse, RequestFailure, envelope_failure, send_with_status_error};
 use request::Invocation;
 use serde_json::Value;
 use sse::{Reading, consume};

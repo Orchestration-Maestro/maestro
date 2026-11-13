@@ -1,24 +1,27 @@
 //! Fork candidates, selected text and retained conversation prefixes.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support::runtime_fixtures::{RuntimeOptions, runtime_with};
-use crate::support::session_harness::{
-    answer, corpus, delivery_message_view, on_task_set, script_responses,
-};
+use crate::support::session_harness::{corpus, delivery_message_view};
 use maestro_app::PromptOptions;
+use maestro_app::test_support::{
+    RuntimeOptions, answer, on_task_set, runtime_with, script_responses,
+};
 use maestro_extensions::types::ForkOptions;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// Prompts each candidate and observes the branch selected before `selected`.
 async fn branching_case(case: &Value, persisted: bool, selected: usize) -> Value {
     let (h, runtime, _) = runtime_with(
+        Scratch::new().unwrap(),
         "branch",
         RuntimeOptions {
             persisted,
             ..RuntimeOptions::default()
         },
     )
-    .await;
+    .await
+    .unwrap();
     drop(script_responses(
         &h,
         vec![
@@ -72,7 +75,8 @@ fn single_user_fork_has_an_unpublished_file() {
             branching_case(&expected["single_file"], true, 0).await,
             expected["single_file"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -83,7 +87,8 @@ fn single_user_memory_fork_keeps_storage_in_memory() {
             branching_case(&expected["single_memory"], false, 0).await,
             expected["single_memory"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -94,5 +99,6 @@ fn middle_user_fork_retains_only_the_preceding_exchange() {
             branching_case(&expected["middle"], true, 1).await,
             expected["middle"]
         );
-    });
+    })
+    .unwrap();
 }

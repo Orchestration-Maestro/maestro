@@ -6,7 +6,7 @@
 )]
 
 use crate::{CallbackEmitter, Component, CustomMessage, ExtensionResult, Theme};
-pub use maestro_request::messages::MessageRenderOptions;
+pub use maestro_interchange::messages::MessageRenderOptions;
 use std::rc::Rc;
 /// Renders a custom message or selects the host's fallback by returning no component.
 pub type MessageRenderer = Rc<

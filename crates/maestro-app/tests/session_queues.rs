@@ -2,10 +2,10 @@
 //! queues, compared with the recorded queue cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Transcript, assert_transcript, case, command_extension, entries_view,
-    labelled, on_task_set, outcome, queue_view, recorded_skills, template, transcribed,
-    with_placeholders,
+    Harness, Transcript, assert_transcript, case, entries_view, labelled, outcome, queue_view,
+    recorded_skills, transcribed, transcribed_in, with_placeholders,
 };
+use maestro_app::test_support::{HarnessOptions, command_extension, on_task_set, template};
 use maestro_models::ImageContent;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
@@ -33,13 +33,12 @@ fn assert_queue_case(h: &Harness, t: &Transcript, case: &Value) {
 /// A session over the recorded skills and the `plan` template.
 async fn expanding_session() -> (Harness, Transcript) {
     let scratch = maestro_test_directory::Scratch::new().unwrap();
-    transcribed(HarnessOptions {
+    let options = HarnessOptions {
         skills: recorded_skills(&scratch),
         prompts: vec![template("plan", "Plan $1")],
-        scratch: Some(scratch),
         ..HarnessOptions::default()
-    })
-    .await
+    };
+    transcribed_in(scratch, options).await
 }
 
 #[test]
@@ -55,7 +54,8 @@ fn steer_expands_skills_and_templates() {
         );
         assert_queue_case(&h, &t, &expected);
         assert_eq!(h.session.pending_message_count(), 2);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -72,7 +72,8 @@ fn follow_up_expands_skills_and_templates_as_steering_does() {
         let queued = json!(h.session.get_follow_up_messages());
         assert_eq!(with_placeholders(queued, &h), expected["queue"]["steering"]);
         assert!(h.session.get_steering_messages().is_empty());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -93,7 +94,8 @@ fn queuing_a_registered_command_is_refused() {
         );
         assert_queue_case(&h, &t, &expected);
         assert_eq!(*heard.borrow(), None);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -108,7 +110,8 @@ fn queuing_unknown_slash_text_is_accepted() {
             expected["results"]
         );
         assert_queue_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -134,7 +137,8 @@ fn clearing_the_queue_returns_and_publishes_texts() {
         assert_eq!(results, expected["results"]);
         assert_queue_case(&h, &t, &expected);
         assert!(!h.session.agent().has_queued_messages());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -158,5 +162,6 @@ fn pending_message_count_sums_both_queues() {
         assert_eq!(h.session.get_follow_up_messages(), ["two"]);
         h.session.clear_queue();
         assert_eq!(h.session.pending_message_count(), 0);
-    });
+    })
+    .unwrap();
 }

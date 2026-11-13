@@ -1,33 +1,39 @@
 //! Real-path resolution outside its owner.
 //!
-//! Production code resolves real paths only through `maestro_realpath::canonicalize`, which
+//! Production code resolves real paths only through `maestro_path::fs::canonicalize`, which
 //! returns the ordinary Windows form. The standard and Tokio functions, the path method and
 //! any import of the name return the verbatim form there, so every other spelling of the name
 //! is rejected. The scan reads names, not types: a method named `canonicalize` is rejected
 //! whatever its receiver, and the owner's function is always called by its qualified path.
 
-use crate::source::Member;
+use crate::source::{Member, Source};
 use proc_macro2::{TokenStream, TokenTree};
 
-/// The one crate that resolves real paths through the file system.
-const OWNER: &str = "maestro-realpath";
+/// The crate whose file-system module resolves real paths.
+const OWNER: &str = "maestro-path";
 
 /// The owner's crate name as code spells it.
-const OWNER_PATH: &str = "maestro_realpath";
+const OWNER_CRATE: &str = "maestro_path";
+
+/// The owner's module inside that crate.
+const OWNER_MODULE: &str = "fs";
+
+/// The owner module's source file inside its crate.
+const OWNER_FILE: &str = "src/fs.rs";
 
 /// The name the standard library, Tokio and the owner give real-path resolution.
 const NAME: &str = "canonicalize";
 
-/// Whether the member's production code is checked for real-path resolution.
-pub(crate) fn checked(member: &Member) -> bool {
-    member.name != OWNER
+/// Whether the source's production code is checked for real-path resolution: every file
+/// except the owner module's own.
+pub(crate) fn checked(member: &Member, source: &Source) -> bool {
+    !(member.name == OWNER && source.path.ends_with(OWNER_FILE))
 }
 
 /// Reject real-path resolution that production code performs outside the owner.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = members
         .iter()
-        .filter(|member| checked(member))
         .flat_map(|member| {
             member.sources.iter().flat_map(|source| {
                 source
@@ -46,7 +52,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         .into_iter()
         .map(|(file, line)| {
             format!(
-                "{file}:{line}: production code resolves a real path outside {OWNER}; call {OWNER_PATH}::{NAME}"
+                "{file}:{line}: production code resolves a real path outside {OWNER_CRATE}::{OWNER_MODULE}; call {OWNER_CRATE}::{OWNER_MODULE}::{NAME}"
             )
         })
         .collect::<Vec<_>>()
@@ -73,11 +79,12 @@ impl Resolutions {
         let Some(last) = path.segments.last().filter(|last| last.ident == NAME) else {
             return;
         };
-        let owner = path.segments.len() == 2
+        let owner = path.segments.len() == 3
             && path
                 .segments
-                .first()
-                .is_some_and(|first| first.ident == OWNER_PATH);
+                .iter()
+                .zip([OWNER_CRATE, OWNER_MODULE])
+                .all(|(segment, name)| segment.ident == name);
         if !owner {
             self.lines.push(last.ident.span().start().line);
         }
@@ -98,7 +105,7 @@ impl Resolutions {
         }
     }
 
-    /// Record the name inside a macro's tokens unless the owner's crate qualifies it.
+    /// Record the name inside a macro's tokens unless the owner's module qualifies it.
     pub(crate) fn macro_tokens(&mut self, invocation: &syn::Macro) {
         token_resolutions(&invocation.tokens, &mut self.lines);
     }
@@ -125,11 +132,24 @@ fn token_resolutions(tokens: &TokenStream, lines: &mut Vec<usize>) {
     }
 }
 
-/// Whether the tokens before a name end with the owner's crate and a path separator.
+/// Whether the tokens before a name end with the owner's crate, its module and their path
+/// separators.
 fn owner_qualified(before: &[TokenTree]) -> bool {
-    matches!(
-        before,
-        [.., TokenTree::Ident(owner), TokenTree::Punct(first), TokenTree::Punct(second)]
-            if owner == OWNER_PATH && first.as_char() == ':' && second.as_char() == ':'
-    )
+    let [
+        ..,
+        TokenTree::Ident(owner),
+        TokenTree::Punct(first),
+        TokenTree::Punct(second),
+        TokenTree::Ident(module),
+        TokenTree::Punct(third),
+        TokenTree::Punct(fourth),
+    ] = before
+    else {
+        return false;
+    };
+    owner == OWNER_CRATE
+        && module == OWNER_MODULE
+        && [first, second, third, fourth]
+            .iter()
+            .all(|separator| separator.as_char() == ':')
 }

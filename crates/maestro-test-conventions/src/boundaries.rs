@@ -30,7 +30,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         .iter()
         .find(|member| member.name == "maestro-extensions-wasm")
         .map(|member| {
-            maestro_realpath::canonicalize(&member.directory)
+            maestro_path::fs::canonicalize(&member.directory)
                 .map_err(|error| format!("cannot resolve guest member: {error}"))
         })
         .transpose()?;
@@ -290,11 +290,12 @@ fn check_declarations(
         if matches!(
             owner,
             "maestro-tools"
-                | "maestro-request"
-                | "maestro-entry"
+                | "maestro-interchange"
                 | "maestro-app"
                 | "maestro-listeners"
                 | "maestro-office"
+                | "maestro-http"
+                | "maestro-providers"
         ) && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
@@ -306,7 +307,8 @@ fn check_declarations(
     Ok(())
 }
 
-/// Rejects a protocol record declared outside the application and the protocol crate.
+/// Rejects a protocol record declared outside the RPC crate and the protocol crate. The
+/// application's `RpcModeRunner` is the callback its mode dispatch runs, not a record.
 fn foreign_rpc_record(
     member: &Member,
     source: &Source,
@@ -316,9 +318,15 @@ fn foreign_rpc_record(
     let record = name
         .strip_prefix("Rpc")
         .is_some_and(|rest| rest.starts_with(char::is_uppercase));
-    if record && !["maestro-app", "maestro-protocol"].contains(&member.name.as_str()) {
+    let dispatch = name == "RpcModeRunner"
+        && member.name == "maestro-app"
+        && source.path
+            == member
+                .directory
+                .join("src/presentation_data/mode_dispatch.rs");
+    if record && !dispatch && !["maestro-rpc", "maestro-protocol"].contains(&member.name.as_str()) {
         return Err(format!(
-            "{}:{line}: {name} declaration belongs to maestro-app or maestro-protocol, not {}",
+            "{}:{line}: {name} declaration belongs to maestro-rpc or maestro-protocol, not {}",
             source.path.display(),
             member.name
         ));
@@ -349,11 +357,11 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
             | "SendUserMessageOptions"
     ) || (shared_event_record(name) && kind != "type")
     {
-        "maestro-request"
+        "maestro-interchange"
     } else if name == "ModelConstructor" {
         "maestro-models-catalog"
     } else if matches!(name, "ForkPosition" | "NavigateTreeOptions") {
-        "maestro-entry"
+        "maestro-interchange"
     } else if input_presenter_record(name) {
         "maestro-app"
     } else {
@@ -366,8 +374,12 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
 fn single_name_owner(name: &str) -> Option<&'static str> {
     let owner = match name {
         "Listeners" => "maestro-listeners",
+        "FetchError" | "PacProxyAgent" => "maestro-http",
         "NumberFormatter" | "OpenXmlPackage" | "WorkbookError" => "maestro-office",
         "ObjectNode" | "Relation" => "maestro-schema-validator",
+        "AnthropicOAuthProvider" | "GitHubCopilotOAuthProvider" | "OpenAICodexOAuthProvider" => {
+            "maestro-providers"
+        }
         "serialize_json_line" | "JsonlLineSplitter" => "maestro-json",
         "serialize_rpc_response" => "maestro-protocol",
         "session_transcripts" => "maestro-session-reports",

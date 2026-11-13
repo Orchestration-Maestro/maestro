@@ -71,7 +71,7 @@ Stored sign-ins go to `~/.maestro/agent/auth.json` by default. A nonempty
 private and out of version control. `/logout` removes stored credentials, not
 environment variables or model-file configuration. See
 [signing in](chat/commands.md#signing-in) for save errors and model selection after
-login. The separate [account utility](model_login.md) writes a caller-relative
+login. The separate [account utility](model-account.md) writes a caller-relative
 account file; it is not the interactive session's credential store.
 
 ## 3. Get a first result

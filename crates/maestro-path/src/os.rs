@@ -11,10 +11,10 @@ use std::{io, path::PathBuf};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(maestro_path::homedir(Some(""), || Some("/account")), Some(""));
-/// assert_eq!(maestro_path::homedir(None, || Some("/account")), Some("/account"));
+/// assert_eq!(maestro_path::home_dir(Some(""), || Some("/account")), Some(""));
+/// assert_eq!(maestro_path::home_dir(None, || Some("/account")), Some("/account"));
 /// ```
-pub fn homedir<T>(home: Option<T>, account: impl FnOnce() -> Option<T>) -> Option<T> {
+pub fn home_dir<T>(home: Option<T>, account: impl FnOnce() -> Option<T>) -> Option<T> {
     home.or_else(account)
 }
 
@@ -22,8 +22,8 @@ pub fn homedir<T>(home: Option<T>, account: impl FnOnce() -> Option<T>) -> Optio
 ///
 /// Otherwise reads the account home through the standard library.
 #[must_use]
-pub fn native_homedir() -> Option<std::path::PathBuf> {
-    homedir(
+pub fn native_home_dir() -> Option<std::path::PathBuf> {
+    home_dir(
         std::env::var_os("HOME")
             .filter(|_| cfg!(unix))
             .map(std::path::PathBuf::from),
@@ -37,7 +37,7 @@ pub fn native_homedir() -> Option<std::path::PathBuf> {
 /// Returns a not-found error when the host knows no home directory, or an invalid-data one
 /// when the home directory is not valid UTF-8.
 pub fn home_directory() -> io::Result<String> {
-    home_directory_text(native_homedir())
+    home_directory_text(native_home_dir())
 }
 
 /// Convert one observed native home into its text.

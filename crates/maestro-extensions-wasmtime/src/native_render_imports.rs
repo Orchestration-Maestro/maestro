@@ -7,6 +7,9 @@
 use crate::local_resources::effects::ThemeEndpoint;
 use crate::{
     bindings::maestro::extension::host::HostNativeComponent,
+    bindings::maestro::extension::host::{
+        HostBuiltinTool, PreparedArguments, ToolRenderInfo, ToolRenderResultOptions,
+    },
     builtin_reads::Endpoint,
     callback_imports::CallbackView,
     context_imports::add_resource,
@@ -15,77 +18,33 @@ use crate::{
     native_renders::{ComponentEndpoint, Previous, Render, RowEndpoint, Slot},
     read_imports::{endpoint, forwards, release},
 };
-use wasmtime::{
-    StoreContextMut,
-    component::{LinkerInstance, Resource},
-};
+use wasmtime::component::{LinkerInstance, Resource};
 
 /// Installs opaque row/component resources and their existing native operations.
 pub(crate) fn link<T: CallbackView + 'static>(
     host: &mut LinkerInstance<'_, T>,
 ) -> wasmtime::Result<()> {
     crate::context_imports::add_resource::<T, RowEndpoint>(host, "native-row")?;
-    host.func_wrap(
-        "[method]builtin-tool.render-call",
-        |mut store: StoreContextMut<'_, T>,
-         (tool, args, info, theme, row, native, authored): CallArgs| {
-            let render = operands(
-                store.data_mut(),
-                (row, theme, native, authored),
-                info,
-                Slot::Call(args),
-            )?;
-            let tool = store.data_mut().ctx().table.get(&tool)?.clone();
-            Ok((crate::import_route::push(
-                store.data_mut(),
-                tool.render(render),
-            )?,))
-        },
-    )?;
-    host.func_wrap(
-        "[method]builtin-tool.render-result",
-        |mut store: StoreContextMut<'_, T>,
-         (tool, result, options, info, theme, row, native, authored): ResultArgs| {
-            let options = maestro_extensions::ToolRenderResultOptions {
-                expanded: options.expanded,
-                is_partial: options.is_partial,
-            };
-            let render = operands(
-                store.data_mut(),
-                (row, theme, native, authored),
-                info,
-                Slot::Result(result, options),
-            )?;
-            let tool = store.data_mut().ctx().table.get(&tool)?.clone();
-            Ok((crate::import_route::push(
-                store.data_mut(),
-                tool.render(render),
-            )?,))
-        },
-    )?;
     Ok(())
 }
-/// Exact ordinary call operands, independently of the opaque row context.
-type CallArgs = (
-    Resource<Endpoint>,
-    Option<String>,
-    crate::guest_calls::tool_renders::Info,
-    Resource<ThemeEndpoint>,
-    Option<Resource<RowEndpoint>>,
-    Option<Resource<ComponentEndpoint>>,
-    Option<Resource<crate::guest_calls::Callback>>,
-);
-/// Exact result operands with their independent options.
-type ResultArgs = (
-    Resource<Endpoint>,
-    String,
-    crate::guest_calls::tool_renders::Options,
-    crate::guest_calls::tool_renders::Info,
-    Resource<ThemeEndpoint>,
-    Option<Resource<RowEndpoint>>,
-    Option<Resource<ComponentEndpoint>>,
-    Option<Resource<crate::guest_calls::Callback>>,
-);
+impl From<ToolRenderInfo> for crate::guest_calls::tool_renders::Info {
+    fn from(info: ToolRenderInfo) -> Self {
+        Self {
+            tool_call_id: info.tool_call_id,
+            args: info.args,
+            cwd: info.cwd,
+            phase: crate::guest_calls::tool_renders::Phase {
+                execution_started: info.phase.execution_started,
+                args_complete: info.phase.args_complete,
+                is_partial: info.phase.is_partial,
+            },
+            expanded: info.expanded,
+            show_images: info.show_images,
+            is_error: info.is_error,
+        }
+    }
+}
+
 /// Original row, theme and previous component resource operands.
 type Resources = (
     Option<Resource<RowEndpoint>>,
@@ -133,6 +92,69 @@ fn operands<T: CallbackView>(
     })
 }
 
+impl HostBuiltinTool for State {
+    fn metadata(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<Result<String, String>> {
+        Ok(endpoint(self, &this)?.metadata())
+    }
+
+    fn prepare(
+        &mut self,
+        this: Resource<Endpoint>,
+        args: String,
+    ) -> wasmtime::Result<Result<PreparedArguments, String>> {
+        Ok(endpoint(self, &this)?.prepare(args))
+    }
+
+    fn render_call(
+        &mut self,
+        this: Resource<Endpoint>,
+        args: Option<String>,
+        info: ToolRenderInfo,
+        theme: Resource<ThemeEndpoint>,
+        row: Option<Resource<RowEndpoint>>,
+        last_native: Option<Resource<ComponentEndpoint>>,
+        last_authored: Option<Resource<crate::guest_calls::Callback>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let render = operands(
+            self,
+            (row, theme, last_native, last_authored),
+            info.into(),
+            Slot::Call(args),
+        )?;
+        let tool = endpoint(self, &this)?;
+        push(self, tool.render(render))
+    }
+
+    fn render_result(
+        &mut self,
+        this: Resource<Endpoint>,
+        value: String,
+        options: ToolRenderResultOptions,
+        info: ToolRenderInfo,
+        theme: Resource<ThemeEndpoint>,
+        row: Option<Resource<RowEndpoint>>,
+        last_native: Option<Resource<ComponentEndpoint>>,
+        last_authored: Option<Resource<crate::guest_calls::Callback>>,
+    ) -> wasmtime::Result<Resource<Route>> {
+        let options = maestro_extensions::ToolRenderResultOptions {
+            expanded: options.expanded,
+            is_partial: options.is_partial,
+        };
+        let render = operands(
+            self,
+            (row, theme, last_native, last_authored),
+            info.into(),
+            Slot::Result(value, options),
+        )?;
+        let tool = endpoint(self, &this)?;
+        push(self, tool.render(render))
+    }
+
+    fn drop(&mut self, this: Resource<Endpoint>) -> wasmtime::Result<()> {
+        release(self, this)
+    }
+}
+
 impl HostNativeComponent for State {
     fn render(
         &mut self,
@@ -171,6 +193,33 @@ impl HostNativeComponent for State {
     fn drop(&mut self, this: Resource<ComponentEndpoint>) -> wasmtime::Result<()> {
         release(self, this)
     }
+}
+
+/// Registers the tool resource with its synchronous methods forwarded to the trait.
+pub(crate) fn add_tool(host: &mut LinkerInstance<'_, State>) -> wasmtime::Result<()> {
+    add_resource::<State, Endpoint>(host, "builtin-tool")?;
+    forwards! { host, "builtin-tool", HostBuiltinTool, Endpoint,
+        "metadata" => metadata();
+        "prepare" => prepare(args: String);
+        "render-call" => render_call(
+            args: Option<String>,
+            info: ToolRenderInfo,
+            theme: Resource<ThemeEndpoint>,
+            row: Option<Resource<RowEndpoint>>,
+            last_native: Option<Resource<ComponentEndpoint>>,
+            last_authored: Option<Resource<crate::guest_calls::Callback>>
+        );
+        "render-result" => render_result(
+            value: String,
+            options: ToolRenderResultOptions,
+            info: ToolRenderInfo,
+            theme: Resource<ThemeEndpoint>,
+            row: Option<Resource<RowEndpoint>>,
+            last_native: Option<Resource<ComponentEndpoint>>,
+            last_authored: Option<Resource<crate::guest_calls::Callback>>
+        );
+    }
+    Ok(())
 }
 
 /// Forwards every native component method to its trait implementation.

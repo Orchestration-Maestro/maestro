@@ -3,6 +3,7 @@ use super::{
     rows::Rows,
     search::{ModelEntry, ModelFilter, filter_models, model_entries},
 };
+use crate::persistence::{CustomProviderType, get_app_storage};
 use crate::{
     browser::{
         attachment_content::browser::{append, element, host_error},
@@ -20,7 +21,6 @@ use crate::{
     page::{DomView, icon, report},
     tools::types::ToolUiError,
 };
-use maestro_app::{CustomProviderType, get_app_storage};
 use maestro_models::Model;
 use maestro_session::Presence;
 use std::{

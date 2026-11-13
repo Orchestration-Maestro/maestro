@@ -13,7 +13,7 @@ pub(super) mod original_options;
 
 /// Account operations with observable reentrant transformation and deterministic tokens.
 struct Account {
-    catalog: Weak<maestro_catalog::ModelRegistry>,
+    catalog: Weak<maestro_models_registry::ModelRegistry>,
     throws: bool,
     events: Arc<Mutex<Vec<&'static str>>>,
 }
@@ -93,7 +93,7 @@ impl OAuthLoginCallbacks for NoInteraction {
 }
 /// Supply every retained provider capability through the actual catalog record.
 fn consumer_config(
-    registry: &Arc<maestro_catalog::ModelRegistry>,
+    registry: &Arc<maestro_models_registry::ModelRegistry>,
     original: &Arc<original_options::OptionsProvider>,
     events: &Arc<Mutex<Vec<&'static str>>>,
 ) -> SharedHandle<std::sync::RwLock<maestro_extensions::ProviderConfig>> {
@@ -208,11 +208,11 @@ pub fn bound_provider_configuration_reaches_stream_oauth_and_request_consumers()
 
 /// Resolve the configured key and all header layers at their real consumer.
 async fn assert_request(
-    registry: &maestro_catalog::ModelRegistry,
+    registry: &maestro_models_registry::ModelRegistry,
     model: &Arc<std::sync::RwLock<Model>>,
 ) {
     match registry.get_api_key_and_headers(model).await {
-        maestro_catalog::ResolvedRequestAuth::Ok {
+        maestro_models_registry::ResolvedRequestAuth::Ok {
             api_key, headers, ..
         } => {
             assert!(matches!(api_key.as_deref(), Some("literal-key")));
@@ -227,7 +227,9 @@ async fn assert_request(
                 ["X-Provider", "X-Order", "X-Model", "Authorization"]
             );
         }
-        maestro_catalog::ResolvedRequestAuth::Error { .. } => panic!("request must resolve"),
+        maestro_models_registry::ResolvedRequestAuth::Error { .. } => {
+            panic!("request must resolve")
+        }
     }
 }
 
@@ -301,7 +303,7 @@ fn assert_descriptor(model: &Arc<std::sync::RwLock<Model>>) {
 }
 
 fn request_variants(
-    registry: &maestro_catalog::ModelRegistry,
+    registry: &maestro_models_registry::ModelRegistry,
     config: &SharedHandle<std::sync::RwLock<maestro_extensions::ProviderConfig>>,
 ) {
     for (auth, maps) in [(false, false), (true, false), (false, true), (true, true)] {
@@ -314,7 +316,7 @@ fn request_variants(
         registry.register_provider("p", config.clone()).unwrap();
         let model = registry.find("p", "m").unwrap();
         match crate::runtime_support::runtime().block_on(registry.get_api_key_and_headers(&model)) {
-            maestro_catalog::ResolvedRequestAuth::Ok {
+            maestro_models_registry::ResolvedRequestAuth::Ok {
                 api_key, headers, ..
             } => {
                 assert!(matches!(api_key.as_deref(), Some("literal-key")));
@@ -330,7 +332,9 @@ fn request_variants(
                     None => assert!(!auth),
                 }
             }
-            maestro_catalog::ResolvedRequestAuth::Error { .. } => panic!("request must resolve"),
+            maestro_models_registry::ResolvedRequestAuth::Error { .. } => {
+                panic!("request must resolve")
+            }
         }
     }
 }

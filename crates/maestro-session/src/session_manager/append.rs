@@ -5,8 +5,8 @@ use super::{
     ThinkingLevelChangeEntry, generate_id, history::ecma_whitespace,
 };
 use chrono::{SecondsFormat, Utc};
+use maestro_interchange::presence::Presence;
 use maestro_models::UserContent;
-use maestro_request::presence::Presence;
 use serde::Serialize;
 use serde_json::Value;
 use std::io;

@@ -101,9 +101,9 @@ pub(super) fn live_modes(view: &Rc<DomView>) {
             original.file_name = "changed".into();
             original.mime_type = mime.into();
             original.r#type = if image {
-                maestro_app::browser::utils::attachments::AttachmentType::Image
+                maestro_web::utils::attachments::AttachmentType::Image
             } else {
-                maestro_app::browser::utils::attachments::AttachmentType::Document
+                maestro_web::utils::attachments::AttachmentType::Document
             };
         }
         refresh(&overlay, view, &root);
@@ -213,9 +213,9 @@ pub(super) fn preserve_error(
             let mut original = record.write().unwrap();
             original.mime_type = mime.into();
             original.r#type = if mime == "image/png" {
-                maestro_app::browser::utils::attachments::AttachmentType::Image
+                maestro_web::utils::attachments::AttachmentType::Image
             } else {
-                maestro_app::browser::utils::attachments::AttachmentType::Document
+                maestro_web::utils::attachments::AttachmentType::Document
             };
         }
         refresh(overlay, view, root);

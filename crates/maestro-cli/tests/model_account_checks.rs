@@ -10,7 +10,7 @@ use std::{
     },
 };
 
-use maestro_cli::model_login::cli::{self, AccountConsole, AccountInput};
+use maestro_cli::model_account::cli::{self, AccountConsole, AccountInput};
 use maestro_models::{
     BoxFuture, DiagnosticErrorInfo, Fetch, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials,
     OAuthError, OAuthPrompt, OAuthProviderHandle, OAuthProviderInterface, get_oauth_providers,
@@ -565,6 +565,7 @@ struct World {
 /// The controlled world one case input describes.
 fn world(input: &CaseInput) -> World {
     let recorder = Arc::new(Recorder::new(input));
+    maestro_providers::install_built_in_providers();
     let published = get_oauth_providers();
     let mut providers = if input.registry.as_deref() == Some("builtin") {
         published

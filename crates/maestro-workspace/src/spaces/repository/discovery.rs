@@ -125,5 +125,5 @@ fn embedded_bare_repo_container(info: &GitWorktreeInfo) -> Option<&Path> {
 /// Canonicalize an identity path without rejecting an unavailable native path.
 #[must_use]
 pub fn canonicalize_best_effort_path(path: &Path) -> PathBuf {
-    maestro_realpath::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+    maestro_path::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }

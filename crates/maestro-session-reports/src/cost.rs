@@ -151,7 +151,7 @@ type Report = BTreeMap<String, BTreeMap<String, DayCost>>;
 /// Returns the native directory or read failure unchanged.
 fn collect(sessions: &SessionDir, cutoff: i64) -> io::Result<Report> {
     let mut report = Report::new();
-    for entry in maestro_listing::read_dir(sessions.as_str())? {
+    for entry in maestro_path::fs::read_dir(sessions.as_str())? {
         let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
             continue;
         };

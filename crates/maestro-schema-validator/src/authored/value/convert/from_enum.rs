@@ -1,6 +1,6 @@
 //! Conversion through the constants an enumerated node declares.
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_union::from_union;

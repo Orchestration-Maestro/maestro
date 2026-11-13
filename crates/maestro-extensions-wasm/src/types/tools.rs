@@ -4,7 +4,7 @@ use crate::{
     AbortSignal, AgentToolResult, AgentToolUpdateCallback, ExtensionContext, ExtensionFuture,
     ExtensionResult, ToolExecutionMode,
 };
-use maestro_request::parameter_schema::ParameterSchema;
+use maestro_interchange::parameter_schema::ParameterSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::any::{Any, TypeId};

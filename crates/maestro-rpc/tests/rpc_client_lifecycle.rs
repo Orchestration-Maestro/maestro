@@ -1,0 +1,578 @@
+//! Launching, observing and stopping the RPC client's child.
+//!
+//! Live child reports can follow the single-thread harness's test label on the same line.
+#![cfg(unix)]
+use crate::rpc_peer::{Peer, Scenario, events, hold_clock, next_of, release as release_peer};
+use futures_util::FutureExt;
+use maestro_app::test_support::{on_paused_task_set, on_task_set};
+use maestro_process::children::{kill_process, process_exists};
+use maestro_rpc::{RpcClient, RpcClientError, RpcClientOptions};
+use rustix::process::{WaitId, WaitIdOptions, waitid};
+use serde_json::{Value, json};
+use std::{
+    io::{BufRead, Read},
+    path::Path,
+    pin::pin,
+    time::Duration,
+};
+
+/// Changes one launch option.
+type Configure = fn(&mut RpcClientOptions);
+
+/// Starts `client`, returns its first `peer_ready` event and stops it.
+async fn ready(client: &RpcClient) -> Value {
+    let mut events = events(client);
+    client.start().await.unwrap();
+    let ready = next_of(&mut events, "peer_ready").await;
+    client.stop().await.unwrap();
+    ready
+}
+
+#[test]
+fn client_arguments_keep_literal_order_and_child_context() {
+    let peer = Peer::new();
+    let marker = peer.join("marker");
+    let here = std::env::current_dir().unwrap();
+    let cases: [(Configure, &[&str]); 8] = [
+        (|_| {}, &[]),
+        (|o| o.provider = Some(String::new()), &[]),
+        (|o| o.model = Some(String::new()), &[]),
+        (
+            |o| o.provider = Some("provider".into()),
+            &["--provider", "provider"],
+        ),
+        (|o| o.model = Some("model".into()), &["--model", "model"]),
+        (
+            |o| {
+                o.provider = Some("provider".into());
+                o.model = Some("model".into());
+                o.args = vec!["space arg".into(), ";literal".into(), "$HOME".into()];
+            },
+            &[
+                "--provider",
+                "provider",
+                "--model",
+                "model",
+                "space arg",
+                ";literal",
+                "$HOME",
+            ],
+        ),
+        (|o| o.args = Vec::new(), &[]),
+        (
+            |o| o.args = vec!["--model".into(), "late".into()],
+            &["--model", "late"],
+        ),
+    ];
+    on_task_set(|_| async {
+        for (index, (configure, extra)) in cases.into_iter().enumerate() {
+            let mut options = peer.options(Scenario::Report);
+            options.env.insert("PEER_MARKER".into(), marker.clone());
+            configure(&mut options);
+            let client = RpcClient::new(options);
+            let started = std::fs::read_to_string(&marker).unwrap_or_default();
+            assert_eq!(
+                started.lines().count(),
+                index,
+                "construction launches nothing"
+            );
+            let ready = ready(&client).await;
+            let mut argv = vec!["--mode", "rpc"];
+            argv.extend_from_slice(extra);
+            assert_eq!(ready["argv"], json!(argv));
+            assert_eq!(ready["cwd"], json!(here.to_str().unwrap()));
+            assert_eq!(ready["path"], json!(std::env::var("PATH").unwrap()));
+        }
+        child_context(&peer, &marker).await;
+    })
+    .unwrap();
+}
+
+/// A selected directory and an environment overlay reach the child, beside the inherited
+/// environment.
+async fn child_context(peer: &Peer, marker: &str) {
+    let mut options = peer.options(Scenario::Report);
+    options.env.insert("PEER_MARKER".into(), marker.to_owned());
+    options.env.insert("HOME".into(), "override".into());
+    options.cwd = Some(peer.join(""));
+    let ready = ready(&RpcClient::new(options)).await;
+    assert_eq!(ready["argv"], json!(["--mode", "rpc"]));
+    assert_eq!(ready["cwd"], json!(peer.scratch.path().to_str().unwrap()));
+    assert_eq!(ready["home"], json!("override"));
+    assert_eq!(ready["path"], json!(std::env::var("PATH").unwrap()));
+}
+
+#[test]
+fn relative_entry_uses_the_selected_child_directory() {
+    let peer = Peer::new();
+    let dist = peer.join("dist");
+    std::fs::create_dir(&dist).unwrap();
+    maestro_test_process::rpc_peer::install(&Path::new(&dist).join("maestro"), Scenario::Entry)
+        .unwrap();
+    let here = std::env::current_dir().unwrap();
+    let up = "../".repeat(here.components().count() - 1);
+    let from_here = format!("{up}{}", peer.entry.trim_start_matches('/'));
+    let launch = |cli_path: Option<&str>, cwd: Option<String>| {
+        let mut options = peer.options(Scenario::Entry);
+        options.cli_path = cli_path.map(str::to_owned);
+        options.cwd = cwd;
+        RpcClient::new(options)
+    };
+    on_task_set(|_| async {
+        let scratch = Some(peer.join(""));
+        for (cli_path, cwd, entry) in [
+            (None, scratch.clone(), dist.clone() + "/maestro"),
+            (Some("peer"), scratch.clone(), peer.entry.clone()),
+            (
+                Some("./dist/maestro"),
+                scratch.clone(),
+                dist.clone() + "/maestro",
+            ),
+            (Some(from_here.as_str()), None, peer.entry.clone()),
+            (
+                Some(peer.entry.as_str()),
+                Some(here.to_string_lossy().into_owned()),
+                peer.entry.clone(),
+            ),
+        ] {
+            let ready = ready(&launch(cli_path, cwd)).await;
+            let launched = std::fs::canonicalize(ready["entry"].as_str().unwrap()).unwrap();
+            assert_eq!(launched, std::fs::canonicalize(&entry).unwrap());
+        }
+        for (cli_path, cwd) in [
+            (None, None),
+            (Some("missing-peer"), scratch.clone()),
+            (Some(peer.entry.as_str()), Some(peer.join("absent"))),
+        ] {
+            let error = launch(cli_path, cwd).start().await.unwrap_err();
+            let RpcClientError::Io(error) = error else {
+                panic!("a native launch failure, not {error}");
+            };
+            assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+        }
+    })
+    .unwrap();
+}
+
+#[test]
+fn startup_reports_duplicate_and_early_exit() {
+    let peer = Peer::new();
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Serve));
+        let error = client.abort().await.unwrap_err();
+        assert!(matches!(error, RpcClientError::NotStarted));
+        assert_eq!(error.to_string(), "Client not started");
+        client.stop().await.unwrap();
+        client.stop().await.unwrap();
+        client.start().await.unwrap();
+        let error = client.start().await.unwrap_err();
+        assert!(matches!(error, RpcClientError::AlreadyStarted));
+        assert_eq!(error.to_string(), "Client already started");
+        client.stop().await.unwrap();
+        client.stop().await.unwrap();
+
+        // The window cannot end while the clock is held: only each child's exit ends its start.
+        // A regression hangs here until the 120 s nextest kill: the held clock never ends the window.
+        let (release, hold) = hold_clock();
+        let failing = RpcClient::new(peer.options(Scenario::BootFailure));
+        for runs in 1..=2 {
+            let error = failing.start().await.unwrap_err();
+            let stderr = "boot failed\n".repeat(runs);
+            let message = format!("The agent process exited at once with code 7. Stderr: {stderr}");
+            assert_eq!(
+                error.to_string(),
+                message,
+                "the diagnostic text outlives each child"
+            );
+            assert!(matches!(
+                &error,
+                RpcClientError::ProcessExit { code: Some(7), .. }
+            ));
+            assert!(matches!(
+                failing.start().await,
+                Err(RpcClientError::AlreadyStarted)
+            ));
+            failing.stop().await.unwrap();
+            failing.stop().await.unwrap();
+        }
+        assert_eq!(failing.get_stderr(), "boot failed\nboot failed\n");
+
+        let killed = RpcClient::new(peer.options(Scenario::Kill));
+        let error = killed.start().await.unwrap_err();
+        assert!(matches!(
+            &error,
+            RpcClientError::ProcessExit { code: None, .. }
+        ));
+        assert_eq!(
+            error.to_string(),
+            "The agent process exited at once with code null. Stderr: "
+        );
+        killed.stop().await.unwrap();
+        release.send(()).unwrap();
+        hold.await.unwrap();
+    })
+    .unwrap();
+}
+
+#[test]
+fn startup_observes_the_hundred_millisecond_boundary() {
+    let peer = Peer::new();
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Booting));
+        let (release, hold) = hold_clock();
+        let mut events = events(&client);
+        let launched = tokio::time::Instant::now();
+        let mut start = pin!(client.start());
+        assert!(start.as_mut().now_or_never().is_none());
+        next_of(&mut events, "peer_ready").await;
+        while client.get_stderr().is_empty() {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(client.get_stderr(), "booting\n");
+        // Released, the paused clock moves straight to the next deadline once every task waits.
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        start.await.unwrap();
+        assert_eq!(
+            launched.elapsed(),
+            Duration::from_millis(100),
+            "a running child is started when the window ends"
+        );
+        client.stop().await.unwrap();
+    })
+    .unwrap();
+}
+
+#[test]
+fn early_exit_waits_for_held_diagnostics_only_until_the_window_ends() {
+    let peer = Peer::new();
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Descendant));
+        let (release, hold) = hold_clock();
+        let mut events = events(&client);
+        let mut start = pin!(client.start());
+        assert!(start.as_mut().now_or_never().is_none());
+        next_of(&mut events, "peer_ready").await;
+        let mut state = pin!(client.get_state());
+        assert!(state.as_mut().now_or_never().is_none());
+        next_of(&mut events, "descendant_ready").await;
+        let mut control = std::io::BufReader::new(peer.control());
+        control.read_line(&mut String::new()).unwrap();
+        // The child's exit ends its pending request.
+        assert!(matches!(state.await, Err(RpcClientError::Stopped)));
+        assert!(
+            start.as_mut().now_or_never().is_none(),
+            "a descendant still holds the diagnostics open"
+        );
+        tokio::time::advance(Duration::from_millis(100)).await;
+        let error = start.await.unwrap_err();
+        assert!(matches!(
+            &error,
+            RpcClientError::ProcessExit { code: Some(0), .. }
+        ));
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        release_peer(control.get_mut());
+        let mut ended = Vec::new();
+        control.read_to_end(&mut ended).unwrap();
+        assert!(ended.is_empty(), "the descendant completed its release");
+        client.stop().await.unwrap();
+    })
+    .unwrap();
+}
+
+#[test]
+fn startup_window_end_reports_an_exit_not_yet_handled() {
+    let peer = Peer::new();
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Resist));
+        let (release, hold) = hold_clock();
+        let mut events = events(&client);
+        let mut start = pin!(client.start());
+        assert!(start.as_mut().now_or_never().is_none());
+        let ready = next_of(&mut events, "peer_ready").await;
+        let pid = u32::try_from(ready["pid"].as_u64().unwrap()).unwrap();
+        // Nothing yields from the kill until the window ends, so the client meets the end of
+        // the window and the unreaped exit in the same turn.
+        kill_process(pid).unwrap();
+        let raw = rustix::process::Pid::from_raw(pid.cast_signed()).unwrap();
+        let exited = WaitIdOptions::EXITED | WaitIdOptions::NOWAIT;
+        waitid(WaitId::Pid(raw), exited).unwrap();
+        tokio::time::advance(Duration::from_millis(100)).await;
+        let error = start.await.unwrap_err();
+        assert!(matches!(
+            &error,
+            RpcClientError::ProcessExit { code: None, .. }
+        ));
+        release.send(()).unwrap();
+        hold.await.unwrap();
+        client.stop().await.unwrap();
+    })
+    .unwrap();
+}
+
+/// More diagnostic text than a pipe holds, so an unread standard error blocks its writer.
+const FILL: usize = 1 << 20;
+
+/// Runs a client whose child writes more diagnostic text than this process's unread
+/// standard error holds, then reports the retained text and waits for the parent.
+fn forwarding_child() {
+    let peer = Peer::new();
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::ForwardStderr));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        client.abort().await.unwrap();
+        client.stop().await.unwrap();
+        let retained = client.get_stderr().replace(&"x".repeat(FILL), "<fill>");
+        println!("PROBE {}", json!(retained));
+    })
+    .unwrap();
+    // The parent lets this process end once it has read the forwarded text.
+    let _ = std::io::stdin().read_line(&mut String::new());
+}
+
+#[test]
+fn stderr_is_forwarded_and_retained_during_start_and_stop() {
+    if maestro_test_process::selection().is_child() {
+        forwarding_child();
+        return;
+    }
+    let mut child = maestro_test_process::TestProcess::current(
+        "stderr_is_forwarded_and_retained_during_start_and_stop",
+    )
+    .unwrap()
+    .nocapture()
+    .single_threaded()
+    .stdin(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped())
+    .case("*")
+    .spawn()
+    .unwrap();
+    let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+    let mut stderr = child.stderr.take().unwrap();
+    // The stop ends once the forwarded text is written, so it is read meanwhile.
+    let reading = std::thread::spawn(move || {
+        let mut seen = Vec::new();
+        while !seen.ends_with(b"terminating\xc3\xa9\n") {
+            let mut chunk = [0; 8192];
+            let read = stderr.read(&mut chunk).unwrap();
+            assert!(read > 0, "the forwarded text arrives before the child ends");
+            seen.extend_from_slice(&chunk[..read]);
+        }
+        seen
+    });
+    let probe = loop {
+        let mut line = String::new();
+        assert!(
+            stdout.read_line(&mut line).unwrap() > 0,
+            "the child reports"
+        );
+        if let Some((_, probe)) = line.split_once("PROBE ") {
+            break probe.trim_end().to_owned();
+        }
+    };
+    assert_eq!(
+        probe,
+        json!("boot\u{fffd}\n<fill>terminating\u{e9}\n").to_string()
+    );
+    let forwarded = [
+        &b"boot\xff\n"[..],
+        &b"x".repeat(FILL),
+        b"terminating\xc3\xa9\n",
+    ]
+    .concat();
+    let seen = reading.join().unwrap();
+    assert!(seen.ends_with(&forwarded));
+    drop(child.stdin.take());
+    assert!(child.wait().unwrap().success());
+}
+
+/// Runs a client whose child writes more diagnostic text than this process's unread
+/// standard error holds, then stops it and reports, once the child is reaped, whether the
+/// stop still waits for that text to be written.
+fn delivering_child() {
+    let peer = Peer::new();
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::DeliverStderr));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        let ready = next_of(&mut events, "peer_ready").await;
+        let pid = u32::try_from(ready["pid"].as_u64().unwrap()).unwrap();
+        while !client.get_stderr().ends_with("end\n") {
+            tokio::task::yield_now().await;
+        }
+        let mut stop = pin!(client.stop());
+        assert!(stop.as_mut().now_or_never().is_none());
+        while process_exists(pid) {
+            tokio::task::yield_now().await;
+        }
+        if stop.as_mut().now_or_never().is_some() {
+            println!("VERDICT stopped");
+        } else {
+            println!("VERDICT waiting");
+            stop.await.unwrap();
+        }
+    })
+    .unwrap();
+}
+
+#[test]
+fn stop_ends_after_every_captured_diagnostic_byte_is_written() {
+    if maestro_test_process::selection().is_child() {
+        delivering_child();
+        return;
+    }
+    let mut child = maestro_test_process::TestProcess::current(
+        "stop_ends_after_every_captured_diagnostic_byte_is_written",
+    )
+    .unwrap()
+    .nocapture()
+    .single_threaded()
+    .stderr(std::process::Stdio::piped())
+    .case("*")
+    .spawn()
+    .unwrap();
+    let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+    let verdict = loop {
+        let mut line = String::new();
+        assert!(
+            stdout.read_line(&mut line).unwrap() > 0,
+            "the child reports"
+        );
+        if let Some((_, verdict)) = line.split_once("VERDICT ") {
+            break verdict.trim_end().to_owned();
+        }
+    };
+    assert_eq!(
+        verdict, "waiting",
+        "the stop waits until the captured text is written"
+    );
+    let mut forwarded = Vec::new();
+    child
+        .stderr
+        .take()
+        .unwrap()
+        .read_to_end(&mut forwarded)
+        .unwrap();
+    let expected = [&b"x".repeat(FILL)[..], b"end\n"].concat();
+    assert!(
+        forwarded
+            .windows(expected.len())
+            .any(|window| window == expected)
+    );
+    assert!(child.wait().unwrap().success());
+}
+
+#[test]
+fn stderr_keeps_a_character_split_across_reads() {
+    let peer = Peer::new();
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::SplitStderr));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        while client.get_stderr().is_empty() {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            client.get_stderr(),
+            "a",
+            "a partial character waits for its end"
+        );
+        client.abort().await.unwrap();
+        while !client.get_stderr().ends_with('\n') {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(client.get_stderr(), "a\u{e9}\n");
+        client.stop().await.unwrap();
+    })
+    .unwrap();
+}
+
+#[test]
+fn stop_detaches_stdout_and_keeps_the_grace_boundary() {
+    let peer = Peer::new();
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Tick));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        let mut control = peer.control();
+        release_peer(&mut control);
+        next_of(&mut events, "tick").await;
+        let started = std::time::Instant::now();
+        let mut stop = pin!(client.stop());
+        assert!(stop.as_mut().now_or_never().is_none());
+        while events.try_recv().is_ok() {}
+        stop.await.unwrap();
+        assert!(
+            started.elapsed() < Duration::from_millis(1000),
+            "an ordinary child is not killed"
+        );
+        assert!(events.try_recv().is_err(), "stdout is detached at stop");
+    })
+    .unwrap();
+    on_paused_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Resist));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        let pid = u32::try_from(
+            next_of(&mut events, "peer_ready").await["pid"]
+                .as_u64()
+                .unwrap(),
+        )
+        .unwrap();
+        let (release, hold) = hold_clock();
+        let mut stop = pin!(client.stop());
+        assert!(stop.as_mut().now_or_never().is_none());
+        while !client.get_stderr().contains("terminating") {
+            tokio::task::yield_now().await;
+        }
+        tokio::time::advance(Duration::from_millis(999)).await;
+        assert!(stop.as_mut().now_or_never().is_none());
+        assert!(process_exists(pid));
+        tokio::time::advance(Duration::from_millis(1)).await;
+        stop.await.unwrap();
+        assert!(!process_exists(pid));
+        assert!(
+            events.try_recv().is_err(),
+            "nothing is delivered after stop"
+        );
+        release.send(()).unwrap();
+        hold.await.unwrap();
+    })
+    .unwrap();
+}
+
+#[test]
+fn restart_keeps_ids_stderr_and_registered_listeners() {
+    let peer = Peer::new();
+    on_task_set(|_| async {
+        let client = RpcClient::new(peer.options(Scenario::Restart));
+        let mut events = events(&client);
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        client.abort().await.unwrap();
+        assert_eq!(
+            next_of(&mut events, "wire_capture").await["raw"],
+            "{\"type\":\"abort\",\"id\":\"req_1\"}\n"
+        );
+        let mut pending = pin!(client.get_state());
+        assert!(pending.as_mut().now_or_never().is_none());
+        next_of(&mut events, "wire_capture").await;
+        client.stop().await.unwrap();
+        assert!(matches!(pending.await, Err(RpcClientError::Stopped)));
+
+        client.start().await.unwrap();
+        next_of(&mut events, "peer_ready").await;
+        client.abort().await.unwrap();
+        assert_eq!(
+            next_of(&mut events, "wire_capture").await["raw"],
+            "{\"type\":\"abort\",\"id\":\"req_3\"}\n"
+        );
+        client.stop().await.unwrap();
+        assert_eq!(client.get_stderr(), "child\nchild\n");
+    })
+    .unwrap();
+}

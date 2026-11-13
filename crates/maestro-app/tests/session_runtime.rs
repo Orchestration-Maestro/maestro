@@ -2,9 +2,9 @@
 //! re-checked switch, forks before and at an entry, imports and the final shutdown,
 //! compared with the recorded runtime cases.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::runtime_fixtures::{Recorded, runtime_for, stored_in};
-use crate::support::session_harness::{
-    Harness, answer, as_recorded, on_task_set, retry_started, script_responses, substituting,
+use crate::support::session_harness::{Harness, as_recorded, retry_started, substituting};
+use maestro_app::test_support::{
+    Recorded, answer, on_task_set, runtime_for, script_responses, stored_in,
 };
 use maestro_app::{
     AgentSessionRuntime, AgentSessionRuntimeError, CreateAgentSessionRuntimeOptions, PromptOptions,
@@ -18,6 +18,7 @@ use maestro_extensions::{
 use maestro_models::{Local, StopReason};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::{Presence, SessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 
@@ -40,7 +41,7 @@ fn normalized(h: &Harness, value: &Value, files: &[(String, &str)]) -> Value {
 fn stored_elsewhere(root: &str, sessions: &str) -> SessionManager {
     let gone = format!("{root}/gone");
     std::fs::create_dir_all(&gone).unwrap();
-    let manager = stored_in(&gone, &format!("{root}/{sessions}"), root);
+    let manager = stored_in(&gone, &format!("{root}/{sessions}"), root).unwrap();
     std::fs::remove_dir_all(&gone).unwrap();
     manager
 }
@@ -63,7 +64,10 @@ fn record_steps(runtime: &AgentSessionRuntime, recorded: &Recorded) {
 fn creates_the_first_runtime_after_the_working_directory_check() {
     let expected = expected("runtime_new_session");
     on_task_set(|_| async {
-        let (h, runtime, recorded) = runtime_for("new-session", Vec::new()).await;
+        let (h, runtime, recorded) =
+            runtime_for(Scratch::new().unwrap(), "new-session", Vec::new())
+                .await
+                .unwrap();
         let first = runtime.session().session_file().unwrap();
         let calls = json!(recorded.factory_calls.borrow()[..1]);
         let files = [(first, "<SESSION_FILE_1>")];
@@ -75,7 +79,8 @@ fn creates_the_first_runtime_after_the_working_directory_check() {
             runtime.cwd(),
             format!("{}/new-session", h.scratch.path().display())
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -85,7 +90,7 @@ fn refuses_a_first_runtime_whose_stored_directory_is_gone() {
         let root = scratch.path().display().to_string();
         let cwd = format!("{root}/missing-cwd");
         std::fs::create_dir_all(&cwd).unwrap();
-        let manager = stored_in(&cwd, &format!("{root}/sessions"), &root);
+        let manager = stored_in(&cwd, &format!("{root}/sessions"), &root).unwrap();
         let file = manager.get_session_file().unwrap().to_owned();
         std::fs::remove_dir_all(&cwd).unwrap();
         let manager = SessionManager::open(&file, None, None).unwrap();
@@ -117,14 +122,18 @@ fn refuses_a_first_runtime_whose_stored_directory_is_gone() {
             .replace(&file, "$ROOT/missing.jsonl")
             .replace(&root, "$ROOT");
         assert_eq!(json!(message), expected["missing_cwd"]["message"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn replaces_the_session_and_rebinds_before_with_session() {
     let expected = expected("runtime_new_session");
     on_task_set(|_| async {
-        let (_h, runtime, recorded) = runtime_for("new-session", Vec::new()).await;
+        let (_h, runtime, recorded) =
+            runtime_for(Scratch::new().unwrap(), "new-session", Vec::new())
+                .await
+                .unwrap();
         let first = runtime.session();
         record_steps(&runtime, &recorded);
         let order = Rc::clone(&recorded.order);
@@ -147,7 +156,8 @@ fn replaces_the_session_and_rebinds_before_with_session() {
             expected["replaced"]
         );
         assert_eq!(custom_types(&runtime.session()), ["probe"]);
-    });
+    })
+    .unwrap();
 }
 
 /// A hidden custom message of type `probe`.
@@ -174,7 +184,10 @@ fn custom_types(session: &maestro_app::AgentSession<Local>) -> Vec<Value> {
 #[test]
 fn suspended_rebind_keeps_its_continuation_on_the_rebound_session() {
     on_task_set(|_| async {
-        let (_h, runtime, _recorded) = runtime_for("suspended-rebind", Vec::new()).await;
+        let (_h, runtime, _recorded) =
+            runtime_for(Scratch::new().unwrap(), "suspended-rebind", Vec::new())
+                .await
+                .unwrap();
         let (release, resume) = tokio::sync::oneshot::channel::<()>();
         let resume = Rc::new(RefCell::new(Some(resume)));
         let target = Rc::new(RefCell::new(None));
@@ -215,13 +228,17 @@ fn suspended_rebind_keeps_its_continuation_on_the_rebound_session() {
         assert_eq!(custom_types(&target), ["probe"]);
         assert!(custom_types(&current).is_empty());
         assert!(Rc::ptr_eq(&current, &runtime.session()));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn suspended_setup_keeps_reload_and_continuation_on_the_created_session() {
     on_task_set(|_| async {
-        let (_h, runtime, _recorded) = runtime_for("suspended-setup", Vec::new()).await;
+        let (_h, runtime, _recorded) =
+            runtime_for(Scratch::new().unwrap(), "suspended-setup", Vec::new())
+                .await
+                .unwrap();
         let (release, resume) = tokio::sync::oneshot::channel::<()>();
         let resume = Rc::new(RefCell::new(Some(resume)));
         let options = NewSessionCommandOptions {
@@ -272,14 +289,18 @@ fn suspended_setup_keeps_reload_and_continuation_on_the_created_session() {
         assert!(current.messages().read().unwrap().is_empty());
         assert!(custom_types(&current).is_empty());
         assert!(Rc::ptr_eq(&current, &runtime.session()));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn applies_setup_entries_to_the_new_session() {
     let expected = expected("runtime_new_session_setup_applies_history");
     on_task_set(|_| async {
-        let (_h, runtime, recorded) = runtime_for("new-session-setup", Vec::new()).await;
+        let (_h, runtime, recorded) =
+            runtime_for(Scratch::new().unwrap(), "new-session-setup", Vec::new())
+                .await
+                .unwrap();
         let options = NewSessionCommandOptions {
             setup: Some(Rc::new(|manager| {
                 manager
@@ -305,7 +326,8 @@ fn applies_setup_entries_to_the_new_session() {
             .map(|entry| entry["type"].clone())
             .collect();
         assert_eq!(json!(types), expected["entry_types"]);
-    });
+    })
+    .unwrap();
 }
 
 /// An extension cancelling every switch.
@@ -326,7 +348,10 @@ fn vetoing() -> ExtensionFactory<Local> {
 #[test]
 fn reports_a_cancelled_switch() {
     on_task_set(|_| async {
-        let (_h, runtime, recorded) = runtime_for("vetoed", vec![(None, vetoing())]).await;
+        let (_h, runtime, recorded) =
+            runtime_for(Scratch::new().unwrap(), "vetoed", vec![(None, vetoing())])
+                .await
+                .unwrap();
         let first = runtime.session();
         let outcome = runtime
             .new_session(NewSessionCommandOptions::default())
@@ -339,14 +364,18 @@ fn reports_a_cancelled_switch() {
             1,
             "nothing was created"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn keeps_the_previous_session_file_in_the_start_event() {
     let expected = expected("runtime_new_session");
     on_task_set(|_| async {
-        let (h, runtime, recorded) = runtime_for("new-session", Vec::new()).await;
+        let (h, runtime, recorded) =
+            runtime_for(Scratch::new().unwrap(), "new-session", Vec::new())
+                .await
+                .unwrap();
         let previous = runtime.session().session_file().unwrap();
         runtime
             .new_session(NewSessionCommandOptions::default())
@@ -359,13 +388,16 @@ fn keeps_the_previous_session_file_in_the_start_event() {
             normalized(&h, &calls[1], &files),
             expected["factory_calls"][1]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn rechecks_the_stored_working_directory_when_switching() {
     on_task_set(|_| async {
-        let (h, runtime, _recorded) = runtime_for("switch", Vec::new()).await;
+        let (h, runtime, _recorded) = runtime_for(Scratch::new().unwrap(), "switch", Vec::new())
+            .await
+            .unwrap();
         let root = h.scratch.path().display().to_string();
         let other = stored_elsewhere(&root, "other");
         let path = other.get_session_file().unwrap().to_owned();
@@ -376,20 +408,24 @@ fn rechecks_the_stored_working_directory_when_switching() {
             switched,
             Err(AgentSessionRuntimeError::MissingSessionCwd(_))
         ));
-    });
+    })
+    .unwrap();
 }
 
 /// The file of a session stored in the test's directory and kept for `cwd`.
 fn stored_file(h: &Harness, cwd: &str) -> String {
     let root = h.scratch.path().display().to_string();
-    let manager = stored_in(cwd, &format!("{root}/stored"), &root);
+    let manager = stored_in(cwd, &format!("{root}/stored"), &root).unwrap();
     manager.get_session_file().unwrap().to_owned()
 }
 
 #[test]
 fn switches_to_a_stored_session_with_the_previous_file_in_its_start_event() {
     on_task_set(|_| async {
-        let (h, runtime, recorded) = runtime_for("switch-stored", Vec::new()).await;
+        let (h, runtime, recorded) =
+            runtime_for(Scratch::new().unwrap(), "switch-stored", Vec::new())
+                .await
+                .unwrap();
         let previous = runtime.session().session_file().unwrap();
         let cwd = runtime
             .session()
@@ -408,13 +444,20 @@ fn switches_to_a_stored_session_with_the_previous_file_in_its_start_event() {
             recorded.factory_calls.borrow()[1]["session_start_event"],
             json!({"type": "session_start", "reason": "resume", "previousSessionFile": previous})
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn reports_a_vetoed_switch_to_a_stored_session() {
     on_task_set(|_| async {
-        let (h, runtime, recorded) = runtime_for("switch-vetoed", vec![(None, vetoing())]).await;
+        let (h, runtime, recorded) = runtime_for(
+            Scratch::new().unwrap(),
+            "switch-vetoed",
+            vec![(None, vetoing())],
+        )
+        .await
+        .unwrap();
         let first = runtime.session();
         let cwd = first.session_manager().borrow().get_cwd().to_owned();
         let target = stored_file(&h, &cwd);
@@ -429,28 +472,33 @@ fn reports_a_vetoed_switch_to_a_stored_session() {
             1,
             "nothing was created"
         );
-    });
+    })
+    .unwrap();
+}
+
+/// The identity of the last user message entry `manager` holds.
+fn last_user_entry(manager: &SessionManager) -> String {
+    let users: Vec<&Value> = manager
+        .get_entries()
+        .into_iter()
+        .filter(|entry| entry["type"] == "message" && entry["message"]["role"] == "user")
+        .collect();
+    users.last().unwrap()["id"].as_str().unwrap().to_owned()
 }
 
 #[test]
 fn command_actions_forward_to_the_current_session_and_runtime() {
     on_task_set(|_| async {
-        let (h, runtime, recorded) = runtime_for("commands", Vec::new()).await;
+        let (h, runtime, recorded) = runtime_for(Scratch::new().unwrap(), "commands", Vec::new())
+            .await
+            .unwrap();
         drop(script_responses(&h, vec![answer("answer", None, None)]));
         let session = runtime.session();
         session
             .prompt("question", PromptOptions::default())
             .await
             .unwrap();
-        let user_entry = {
-            let manager = session.session_manager().borrow();
-            let users: Vec<&Value> = manager
-                .get_entries()
-                .into_iter()
-                .filter(|entry| entry["type"] == "message" && entry["message"]["role"] == "user")
-                .collect();
-            users.last().unwrap()["id"].as_str().unwrap().to_owned()
-        };
+        let user_entry = last_user_entry(&session.session_manager().borrow());
         let runtime = Rc::new(runtime);
         let actions = runtime.command_context_actions();
         (actions.operations().wait_for_idle)().await.unwrap();
@@ -493,13 +541,20 @@ fn command_actions_forward_to_the_current_session_and_runtime() {
             created_at + 2,
             "the switch created the replacement session"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn command_actions_project_cancelled_session_changes() {
     on_task_set(|_| async {
-        let (h, runtime, _recorded) = runtime_for("commands-vetoed", vec![(None, vetoing())]).await;
+        let (h, runtime, _recorded) = runtime_for(
+            Scratch::new().unwrap(),
+            "commands-vetoed",
+            vec![(None, vetoing())],
+        )
+        .await
+        .unwrap();
         let first = runtime.session();
         let cwd = first.session_manager().borrow().get_cwd().to_owned();
         let target = stored_file(&h, &cwd);
@@ -521,13 +576,17 @@ fn command_actions_project_cancelled_session_changes() {
             Rc::ptr_eq(&first, &runtime.session()),
             "a cancelled change leaves the current session in place"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn held_command_actions_report_the_ended_runtime() {
     on_task_set(|_| async {
-        let (_h, runtime, _recorded) = runtime_for("commands-ended", Vec::new()).await;
+        let (_h, runtime, _recorded) =
+            runtime_for(Scratch::new().unwrap(), "commands-ended", Vec::new())
+                .await
+                .unwrap();
         let runtime = Rc::new(runtime);
         let actions = runtime.command_context_actions();
         drop(runtime);
@@ -535,12 +594,15 @@ fn held_command_actions_report_the_ended_runtime() {
             .await
             .expect_err("the runtime has ended");
         assert_eq!(error.to_string(), "the session runtime has ended");
-    });
+    })
+    .unwrap();
 }
 
 /// Runs two prompts on the runtime's session and forks at the second user message.
 async fn fork_case(label: &str, position: ForkPosition) -> (AgentSessionRuntime, Value) {
-    let (h, runtime, _recorded) = runtime_for(label, Vec::new()).await;
+    let (h, runtime, _recorded) = runtime_for(Scratch::new().unwrap(), label, Vec::new())
+        .await
+        .unwrap();
     drop(script_responses(
         &h,
         vec![
@@ -601,7 +663,8 @@ fn forks_before_a_user_message_and_selects_its_text() {
     on_task_set(|_| async {
         let (_runtime, observed) = fork_case("fork-before", ForkPosition::Before).await;
         assert_eq!(observed, expected("runtime_fork_before"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -609,26 +672,33 @@ fn forks_at_an_entry() {
     on_task_set(|_| async {
         let (_runtime, observed) = fork_case("fork-at", ForkPosition::At).await;
         assert_eq!(observed, expected("runtime_fork_at"));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn refuses_an_unknown_fork_entry() {
     let expected = expected("runtime_fork_invalid_entry");
     on_task_set(|_| async {
-        let (_h, runtime, _recorded) = runtime_for("fork-invalid", Vec::new()).await;
+        let (_h, runtime, _recorded) =
+            runtime_for(Scratch::new().unwrap(), "fork-invalid", Vec::new())
+                .await
+                .unwrap();
         let refused = runtime.fork("no-such-entry", ForkOptions::default()).await;
         let Err(error) = refused else {
             panic!("the fork was expected to fail");
         };
         assert_eq!(json!({"invalid": {"error": error.to_string()}}), expected);
-    });
+    })
+    .unwrap();
 }
 
 /// A persisted runtime over an imported history whose only retained entry is a user message,
 /// and that working directory.
 async fn user_only_session(label: &str) -> (Harness, AgentSessionRuntime, String) {
-    let (h, runtime, _recorded) = runtime_for(label, Vec::new()).await;
+    let (h, runtime, _recorded) = runtime_for(Scratch::new().unwrap(), label, Vec::new())
+        .await
+        .unwrap();
     let root = h.scratch.path().display().to_string();
     let cwd = runtime.cwd();
     let stamp = "2026-01-01T00:00:00.000Z";
@@ -687,14 +757,17 @@ fn forks_at_a_user_message_with_no_assistant_reply_in_the_source_directory() {
             cwd,
             "the fork's runtime keeps the source directory"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn reports_a_missing_import_file() {
     let expected = expected("runtime_import_jsonl");
     on_task_set(|_| async {
-        let (h, runtime, _recorded) = runtime_for("import", Vec::new()).await;
+        let (h, runtime, _recorded) = runtime_for(Scratch::new().unwrap(), "import", Vec::new())
+            .await
+            .unwrap();
         let root = h.scratch.path().display().to_string();
         let missing = runtime
             .import_from_jsonl(&format!("{root}/absent.jsonl"), None)
@@ -704,14 +777,17 @@ fn reports_a_missing_import_file() {
         };
         let observed = json!({"error": error.to_string()});
         assert_eq!(normalized(&h, &observed, &[]), expected["missing"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn copies_an_imported_file_into_the_session_directory() {
     let expected = expected("runtime_import_jsonl");
     on_task_set(|_| async {
-        let (h, runtime, _recorded) = runtime_for("import", Vec::new()).await;
+        let (h, runtime, _recorded) = runtime_for(Scratch::new().unwrap(), "import", Vec::new())
+            .await
+            .unwrap();
         let root = h.scratch.path().display().to_string();
         let source = format!("{root}/import-source.jsonl");
         std::fs::write(&source, "").unwrap();
@@ -728,7 +804,8 @@ fn copies_an_imported_file_into_the_session_directory() {
             .to_owned();
         let copied = std::path::Path::new(&format!("{session_dir}/import-source.jsonl")).exists();
         assert_eq!(json!(copied), expected["copied"]);
-    });
+    })
+    .unwrap();
 }
 
 /// An extension recording each shutdown reason into `shutdowns`.
@@ -752,8 +829,13 @@ fn shuts_down_with_quit_and_invalidates_before_dispose() {
     on_task_set(|_| async {
         let shutdowns = Rc::new(RefCell::new(Vec::new()));
         let watch = shutdown_watch(Rc::clone(&shutdowns));
-        let (_h, runtime, recorded) =
-            runtime_for("dispose", vec![(Some("<shutdown-watch>"), watch)]).await;
+        let (_h, runtime, recorded) = runtime_for(
+            Scratch::new().unwrap(),
+            "dispose",
+            vec![(Some("<shutdown-watch>"), watch)],
+        )
+        .await
+        .unwrap();
         let order = Rc::clone(&recorded.order);
         runtime.set_before_session_invalidate(Some(Rc::new(move || {
             order.borrow_mut().push("before_invalidate".into());
@@ -769,14 +851,15 @@ fn shuts_down_with_quit_and_invalidates_before_dispose() {
             context.cwd().is_err(),
             "the disposed session's contexts are stale"
         );
-    });
+    })
+    .unwrap();
 }
 
 /// An inline extension registering the `probe` tool, which counts its runs in `runs`, and
 /// rewriting each finished answer's total cost to 7.
 fn probing(runs: Rc<std::cell::Cell<usize>>) -> ExtensionFactory<Local> {
     Rc::new(move |api| {
-        let mut tool = crate::support::session_harness::tool_definition("probe", None, None);
+        let mut tool = maestro_app::test_support::tool_definition("probe", None, None);
         let counted = Rc::clone(&runs);
         tool.execute = Rc::new(move |_, _, _, _, _| {
             counted.set(counted.get() + 1);
@@ -854,7 +937,9 @@ fn completes_a_tool_turn_then_reloads_and_replaces_with_fresh_contexts() {
     on_task_set(|_| async {
         let runs = Rc::new(std::cell::Cell::new(0));
         let probe = probing(Rc::clone(&runs));
-        let (h, runtime, _recorded) = runtime_for("smoke", vec![(Some("<probe>"), probe)]).await;
+        let (scratch, extensions) = (Scratch::new().unwrap(), vec![(Some("<probe>"), probe)]);
+        let fixture = runtime_for(scratch, "smoke", extensions).await;
+        let (h, runtime, _recorded) = fixture.unwrap();
         let session = runtime.session();
         drop(script_responses(
             &h,
@@ -908,13 +993,16 @@ fn completes_a_tool_turn_then_reloads_and_replaces_with_fresh_contexts() {
             "{stale}"
         );
         assert_eq!(probe_source(&runtime.session()), ["<probe>"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn command_wait_for_idle_returns_after_the_run_settles() {
     on_task_set(|_| async {
-        let (h, runtime, _) = runtime_for("wait-settles", Vec::new()).await;
+        let (h, runtime, _) = runtime_for(Scratch::new().unwrap(), "wait-settles", Vec::new())
+            .await
+            .unwrap();
         let session = runtime.session();
         session.settings_manager().borrow_mut().apply_overrides(
             serde_json::from_value(json!({"retry": {"baseDelayMs": 30}})).unwrap(),
@@ -940,5 +1028,6 @@ fn command_wait_for_idle_returns_after_the_run_settles() {
             "the wait outlasted the retry's backoff and the recovered answer"
         );
         running.await.unwrap().unwrap();
-    });
+    })
+    .unwrap();
 }

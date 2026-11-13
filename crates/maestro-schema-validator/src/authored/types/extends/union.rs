@@ -35,7 +35,7 @@ pub(crate) fn union_types<'n, 'a>(
     match &**node {
         Node::Union(parts, _) => Some(std::borrow::Cow::Borrowed(parts)),
         Node::Leaf(view)
-            if view.kind == Some(&maestro_request::parameter_schema::SchemaKind::Union) =>
+            if view.kind == Some(&maestro_interchange::parameter_schema::SchemaKind::Union) =>
         {
             Some(std::borrow::Cow::Owned(
                 view.children("anyOf")?

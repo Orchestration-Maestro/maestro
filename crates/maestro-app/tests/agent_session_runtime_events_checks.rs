@@ -1,8 +1,8 @@
 //! Lifecycle payloads, cancellation boundaries and context invalidation order.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support::runtime_fixtures::runtime_for;
-use crate::support::session_harness::{corpus, on_task_set, substituting};
+use crate::support::session_harness::{corpus, substituting};
+use maestro_app::test_support::{on_task_set, runtime_for};
 use maestro_app::{AgentSessionRuntime, ExtensionBindings, PromptOptions, RebindSession};
 use maestro_extensions::{
     ExtensionFactory, ForkPosition, SessionBeforeForkEvent, SessionBeforeForkResult,
@@ -11,6 +11,7 @@ use maestro_extensions::{
 };
 use maestro_models::Local;
 use maestro_session::{Presence, session_manager::ReadonlySessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -98,7 +99,13 @@ fn new_and_resume_emit_complete_lifecycle_payloads() {
     let expected = corpus("replacement");
     on_task_set(|_| async {
         let log = Rc::new(RefCell::new(Vec::new()));
-        let (_h, runtime, _) = runtime_for("events", lifecycle(&log, &Rc::default())).await;
+        let (_h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
+            "events",
+            lifecycle(&log, &Rc::default()),
+        )
+        .await
+        .unwrap();
         let runtime = Rc::new(runtime);
         bind_command_runtime(&runtime).await;
         assert_eq!(json!(*log.borrow()), expected["lifecycle"]["startup"]);
@@ -140,7 +147,8 @@ fn new_and_resume_emit_complete_lifecycle_payloads() {
             expected["lifecycle"]["resume"]
         );
         runtime.dispose().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -149,7 +157,10 @@ fn vetoed_new_and_resume_retain_the_original_session() {
     on_task_set(|_| async {
         let log = Rc::new(RefCell::new(Vec::new()));
         let veto = Rc::new(Cell::new(true));
-        let (h, runtime, recorded) = runtime_for("veto", lifecycle(&log, &veto)).await;
+        let (h, runtime, recorded) =
+            runtime_for(Scratch::new().unwrap(), "veto", lifecycle(&log, &veto))
+                .await
+                .unwrap();
         let first = runtime.session();
         let file = first.session_file();
         for resume in [false, true] {
@@ -186,7 +197,8 @@ fn vetoed_new_and_resume_retain_the_original_session() {
             );
         }
         runtime.dispose().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -202,7 +214,13 @@ fn shutdown_precedes_invalidation_and_rebinding() {
                 Ok(None)
             },
         );
-        let (_h, runtime, _) = runtime_for("invalidate", vec![(None, shutdown)]).await;
+        let (_h, runtime, _) = runtime_for(
+            Scratch::new().unwrap(),
+            "invalidate",
+            vec![(None, shutdown)],
+        )
+        .await
+        .unwrap();
         let old = runtime.session().extension_runner().create_context();
         let before = old.clone();
         let cwd = runtime.cwd();
@@ -229,7 +247,8 @@ fn shutdown_precedes_invalidation_and_rebinding() {
         runtime.set_before_session_invalidate(None);
         runtime.set_rebind_session(None);
         runtime.dispose().await.unwrap();
-    });
+    })
+    .unwrap();
 }
 
 /// A vetoed fork: the entry it names, its position and the recorded outcome and events.
@@ -265,7 +284,7 @@ fn vetoes<'a>(user: &'a str, fork: &'a Value) -> [Veto<'a>; 2] {
 /// A veto stops the fork before construction, whatever the entry it names.
 async fn assert_fork_veto(
     runtime: &AgentSessionRuntime,
-    recorded: &crate::support::runtime_fixtures::Recorded,
+    recorded: &maestro_app::test_support::Recorded,
     log: &RefCell<Vec<Value>>,
     labels: &[(&str, &str)],
     veto: Veto<'_>,
@@ -293,7 +312,9 @@ fn fork_veto_precedes_entry_validation_and_replacement() {
     on_task_set(|_| async {
         let log = Rc::new(RefCell::new(Vec::new()));
         let veto = Rc::new(Cell::new(false));
-        let (_h, runtime, recorded) = runtime_for("fork-events", lifecycle(&log, &veto)).await;
+        let (scratch, extensions) = (Scratch::new().unwrap(), lifecycle(&log, &veto));
+        let fixture = runtime_for(scratch, "fork-events", extensions).await;
+        let (_h, runtime, recorded) = fixture.unwrap();
         let runtime = Rc::new(runtime);
         bind_command_runtime(&runtime).await;
         runtime
@@ -343,5 +364,6 @@ fn fork_veto_precedes_entry_validation_and_replacement() {
             fork["error"]
         );
         runtime.dispose().await.unwrap();
-    });
+    })
+    .unwrap();
 }

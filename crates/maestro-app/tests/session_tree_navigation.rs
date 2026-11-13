@@ -2,10 +2,12 @@
 //! leaf, appended entries, rebuilt history, summary prompts and extension events.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Auth, HarnessOptions, Names, answer, as_recorded, build_tree, case, harness, history_view,
-    load_history, on_task_set, script_responses,
+    Names, as_recorded, build_tree, case, history_view, load_history,
 };
 use maestro_app::agent_session::NavigateTreeResult;
+use maestro_app::test_support::{
+    Auth, HarnessOptions, answer, harness, on_task_set, script_responses,
+};
 use maestro_extensions::{
     ExtensionFactory, SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionTreeEvent,
 };
@@ -14,6 +16,7 @@ use maestro_session::{
     Presence, SessionManager,
     session_manager::{NavigateTreeOptions, ReadonlySessionManager},
 };
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -198,13 +201,13 @@ fn navigate(name: &str, scenario: Scenario) -> Value {
             let sessions = format!("{root}/sessions");
             SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap()
         });
-        let h = harness(HarnessOptions {
+        let h = harness(Scratch::new().unwrap(), HarnessOptions {
             factories: vec![tree_recorder(&log, scenario.handler, views)],
             auth: scenario.auth.unwrap_or(Auth::Key),
             session_manager,
             ..HarnessOptions::default()
         })
-        .await;
+        .await.unwrap();
         let manager = Rc::clone(h.session.session_manager());
         let names = build_tree(&mut manager.borrow_mut());
         if scenario.reset {
@@ -235,7 +238,7 @@ fn navigate(name: &str, scenario: Scenario) -> Value {
             "extensionEvents": *log.borrow(),
         });
         as_recorded(observed, &[(&docs, "$DOCS")])
-    })
+    }).unwrap()
 }
 
 /// Runs a scenario and compares every observation with its recorded case.

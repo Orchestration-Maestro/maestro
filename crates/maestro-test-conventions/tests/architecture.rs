@@ -199,16 +199,13 @@ fn leaf_internal_dependencies_are_rejected() {
     for (leaf, class) in [
         ("maestro-path", "core"),
         ("maestro-cancellation", "core"),
-        ("maestro-request", "core"),
+        ("maestro-interchange", "core"),
         ("maestro-watch", "core"),
         ("maestro-lock", "core"),
         ("maestro-process", "core"),
         ("maestro-pattern", "core"),
         ("maestro-text", "core"),
         ("maestro-json", "core"),
-        ("maestro-entry", "core"),
-        ("maestro-tool", "core"),
-        ("maestro-package", "core"),
         ("maestro-brand", "core"),
         ("maestro-models", "core"),
         ("maestro-resources", "core"),
@@ -475,8 +472,9 @@ forbidden_edge_tests! {
     models_to_process_edge_is_rejected: "maestro-models" => "maestro-process",
     cli_to_watch_edge_is_rejected: "maestro-cli" => "maestro-watch",
     chat_to_daemon_edge_is_rejected: "maestro-chat" => "maestro-daemon",
-    rpc_to_catalog_edge_is_rejected: "maestro-rpc" => "maestro-catalog",
+    rpc_to_packages_edge_is_rejected: "maestro-rpc" => "maestro-packages",
     web_to_process_edge_is_rejected: "maestro-web" => "maestro-process",
+    web_to_app_edge_is_rejected: "maestro-web" => "maestro-app",
     text_to_tools_edge_is_rejected: "maestro-text" => "maestro-tools",
 }
 
@@ -549,32 +547,39 @@ fn export_reuses_text_and_json_without_frontend_edge() {
 
 #[test]
 fn catalog_pattern_edge_is_scoped() {
-    for from in ["maestro-catalog", "maestro-resources", "maestro-packages"] {
+    for from in [
+        "maestro-models-registry",
+        "maestro-resources",
+        "maestro-packages",
+    ] {
         let workspace = Workspace::new();
         workspace.foundation(&[from, "maestro-pattern"]);
         check_permitted_declarations(&workspace, from, &["maestro-pattern"]);
     }
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-catalog", "maestro-pattern"]);
+    workspace.foundation(&["maestro-models-registry", "maestro-pattern"]);
     workspace.member(
-        "maestro-catalog",
-        "maestro-catalog",
+        "maestro-models-registry",
+        "maestro-models-registry",
         "[dev-dependencies]\nalias = { package = \"maestro-pattern\", path = \"../maestro-pattern\" }",
     );
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err("internal dev dependency requires declared dependency-free test support: maestro-catalog -> maestro-pattern".into())
+        Err("internal dev dependency requires declared dependency-free test support: maestro-models-registry -> maestro-pattern".into())
     );
-    workspace.member("maestro-catalog", "maestro-catalog", "");
+    workspace.member("maestro-models-registry", "maestro-models-registry", "");
     for (kind, extra) in DECLARATIONS {
         workspace.member(
             "maestro-pattern",
             "maestro-pattern",
-            &format!("[{kind}]\nalias = {{ package = \"maestro-catalog\", path = \"../maestro-catalog\"{extra} }}"),
+            &format!("[{kind}]\nalias = {{ package = \"maestro-models-registry\", path = \"../maestro-models-registry\"{extra} }}"),
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-pattern -> maestro-catalog".into())
+            Err(
+                "forbidden production dependency: maestro-pattern -> maestro-models-registry"
+                    .into()
+            )
         );
     }
 }
@@ -678,27 +683,27 @@ fn process_owner_cannot_depend_on_cancellation() {
 #[test]
 fn session_shared_records_edge_is_scoped() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-session", "maestro-request"]);
-    check_permitted_declarations(&workspace, "maestro-session", &["maestro-request"]);
+    workspace.foundation(&["maestro-session", "maestro-interchange"]);
+    check_permitted_declarations(&workspace, "maestro-session", &["maestro-interchange"]);
     workspace.member(
         "maestro-session",
         "maestro-session",
-        "[dev-dependencies]\nalias = { package = \"maestro-request\", path = \"../maestro-request\" }",
+        "[dev-dependencies]\nalias = { package = \"maestro-interchange\", path = \"../maestro-interchange\" }",
     );
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err("internal dev dependency requires declared dependency-free test support: maestro-session -> maestro-request".into())
+        Err("internal dev dependency requires declared dependency-free test support: maestro-session -> maestro-interchange".into())
     );
     workspace.member("maestro-session", "maestro-session", "");
     for (kind, extra) in DECLARATIONS {
         workspace.member(
-            "maestro-request",
-            "maestro-request",
+            "maestro-interchange",
+            "maestro-interchange",
             &format!("[{kind}]\nalias = {{ package = \"maestro-session\", path = \"../maestro-session\"{extra} }}"),
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-request -> maestro-session".into())
+            Err("forbidden production dependency: maestro-interchange -> maestro-session".into())
         );
     }
 }
@@ -706,18 +711,18 @@ fn session_shared_records_edge_is_scoped() {
 #[test]
 fn credentials_shared_records_edge_is_scoped() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-credentials", "maestro-request"]);
-    check_permitted_declarations(&workspace, "maestro-credentials", &["maestro-request"]);
+    workspace.foundation(&["maestro-credentials", "maestro-interchange"]);
+    check_permitted_declarations(&workspace, "maestro-credentials", &["maestro-interchange"]);
 }
 
 #[test]
 fn theme_shared_records_edge_is_scoped() {
     let allowed = Workspace::new();
-    allowed.foundation(&["maestro-theme", "maestro-request"]);
-    check_permitted_declarations(&allowed, "maestro-theme", &["maestro-request"]);
+    allowed.foundation(&["maestro-theme", "maestro-interchange"]);
+    check_permitted_declarations(&allowed, "maestro-theme", &["maestro-interchange"]);
     for (from, to) in [
-        ("maestro-tui", "maestro-request"),
-        ("maestro-request", "maestro-theme"),
+        ("maestro-tui", "maestro-interchange"),
+        ("maestro-interchange", "maestro-theme"),
     ] {
         let workspace = Workspace::new();
         workspace.foundation(&[from, to]);
@@ -815,12 +820,9 @@ const DECLARATIONS: &[(&str, &str)] = &[
     ("target.'cfg(target_os = \"none\")'.build-dependencies", ""),
 ];
 
-/// Crates the specification excludes from the foundation utility.
+/// Crates the specification excludes from the path crate permission.
 fn utility_excluded() -> Vec<&'static str> {
     specification_names("The guest authoring crate", "are excluded from this")
-        .into_iter()
-        .filter(|name| *name != "maestro-lock")
-        .collect()
 }
 
 /// Direct dependencies a crate must declare.
@@ -828,7 +830,7 @@ fn required_targets(name: &str) -> &'static [&'static str] {
     support::required(name)
 }
 
-/// Manifest declaring the required targets and the foundation utility.
+/// Manifest declaring the required targets and the path crate.
 fn dependencies_with_utility(required: &[&str], kind: &str, extra: &str) -> String {
     let mut declarations = String::from("[dependencies]\n");
     for target in required {
@@ -864,10 +866,20 @@ fn path_utility_edges_preserve_native_layer_rules() {
         native_consumer_may_not_dev_declare_the_utility(from);
     }
     for from in excluded {
-        excluded_crate_may_not_declare_the_utility(from);
+        // A table row that names the path crate grants that crate its own edge.
+        if !row_names_the_path_crate(from) {
+            excluded_crate_may_not_declare_the_utility(from);
+        }
     }
     path_utility_has_no_outbound_edges();
     path_utility_does_not_replace_the_application();
+}
+
+/// Whether the table row of a crate lists the path crate among its dependencies.
+fn row_names_the_path_crate(name: &str) -> bool {
+    support::policy::POLICY
+        .iter()
+        .any(|row| row.0 == name && row.1.contains(&"maestro-path"))
 }
 
 /// Whether the table row of a crate lists no internal dependencies.
@@ -963,7 +975,7 @@ fn path_utility_has_no_outbound_edges() {
     }
 }
 
-/// Verify that the optional utility edge cannot replace the required application edge.
+/// Verify that the optional path crate edge cannot replace the required application edge.
 fn path_utility_does_not_replace_the_application() {
     for frontend in [
         "maestro-cli",
@@ -1016,13 +1028,10 @@ fn sparse_inventory_does_not_create_product_crates() {
         ("maestro-process", "core"),
         ("maestro-text", "core"),
         ("maestro-json", "core"),
-        ("maestro-entry", "core"),
-        ("maestro-tool", "core"),
-        ("maestro-package", "core"),
         ("maestro-brand", "core"),
     ]);
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    for absent in ["text", "json", "entry", "tool", "brand"] {
+    for absent in ["text", "json", "brand"] {
         assert!(
             !workspace
                 .root
@@ -1057,7 +1066,7 @@ fn sparse_inventory_does_not_create_product_crates() {
 
 #[test]
 fn frontends_require_application_without_unused_allowed_edges() {
-    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
+    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc"] {
         let required = support::policy::POLICY
             .iter()
             .find(|row| row.0 == frontend)
@@ -1579,7 +1588,7 @@ fn invalid_metadata_identities(workspace: &Workspace, valid: &serde_json::Value)
 
 #[test]
 fn test_dependency_cycles_are_rejected() {
-    support_edges_keep_cycle_checks(FIXTURES, "maestro-request");
+    support_edges_keep_cycle_checks(FIXTURES, "maestro-interchange");
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-agent", "maestro-models"]);
     workspace.member(
@@ -1903,12 +1912,12 @@ fn terminal_example_brand_edge_is_development_only() {
 }
 
 #[test]
-fn guest_listing_edges_are_refused_in_every_dependency_kind() {
-    const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-wasm -> maestro-listing";
+fn guest_path_edges_are_refused_in_every_dependency_kind() {
+    const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-wasm -> maestro-path";
     const PRODUCTION: &str =
-        "forbidden production dependency: maestro-extensions-wasm -> maestro-listing";
+        "forbidden production dependency: maestro-extensions-wasm -> maestro-path";
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-listing"]);
+    workspace.foundation(&["maestro-extensions-wasm", "maestro-path"]);
     for (kind, extra, message) in [
         ("dev-dependencies", "", DEVELOPMENT),
         (
@@ -1930,7 +1939,7 @@ fn guest_listing_edges_are_refused_in_every_dependency_kind() {
             PRODUCTION,
         ),
     ] {
-        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nlisting = {{ package = \"maestro-listing\", path = \"../maestro-listing\"{extra} }}"));
+        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nutility = {{ package = \"maestro-path\", path = \"../maestro-path\"{extra} }}"));
         assert_eq!(
             check_workspace(workspace.root.path()),
             Err(message.into()),
@@ -1942,7 +1951,7 @@ fn guest_listing_edges_are_refused_in_every_dependency_kind() {
 #[test]
 fn native_component_fixture_edges_are_development_only() {
     for dependency in [
-        "maestro-catalog",
+        "maestro-models-registry",
         "maestro-credentials",
         "maestro-models",
         "maestro-session",
@@ -2538,14 +2547,11 @@ fn chat_models_test_edge_is_native() {
 fn extension_and_rpc_test_edges_are_native() {
     for (owner, target) in [
         ("maestro-extensions", "maestro-credentials"),
-        ("maestro-rpc", "maestro-theme"),
         ("maestro-rpc", "maestro-tui-crossterm"),
-        ("maestro-rpc", "maestro-export"),
-        ("maestro-rpc", "maestro-extensions"),
-        ("maestro-rpc", "maestro-models"),
-        ("maestro-rpc", "maestro-session"),
-        ("maestro-rpc", "maestro-tools"),
-        ("maestro", "maestro-catalog"),
+        ("maestro-rpc", "maestro-models-registry"),
+        ("maestro-rpc", "maestro-credentials"),
+        ("maestro-rpc", "maestro-tui"),
+        ("maestro", "maestro-models-registry"),
         ("maestro", "maestro-credentials"),
         ("maestro", "maestro-json"),
         ("maestro", "maestro-session"),
@@ -2631,14 +2637,14 @@ fn session_lock_edge_is_scoped() {
     check_permitted_declarations(&workspace, "maestro-session", &["maestro-lock"]);
 
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-web", "maestro-lock"]);
-    let required =
-        required_targets("maestro-web")
-            .iter()
-            .fold(String::new(), |mut declarations, target| {
-                writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
-                declarations
-            });
+    workspace.foundation(&["maestro-multiplexer", "maestro-lock"]);
+    let required = required_targets("maestro-multiplexer").iter().fold(
+        String::new(),
+        |mut declarations, target| {
+            writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
+            declarations
+        },
+    );
     for (kind, extra) in DECLARATIONS {
         let alias =
             format!("alias = {{ package = \"maestro-lock\", path = \"../maestro-lock\"{extra} }}");
@@ -2647,10 +2653,10 @@ fn session_lock_edge_is_scoped() {
         } else {
             format!("[dependencies]\n{required}[{kind}]\n{alias}")
         };
-        workspace.member("maestro-web", "maestro-web", &declarations);
+        workspace.member("maestro-multiplexer", "maestro-multiplexer", &declarations);
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-web -> maestro-lock".into()),
+            Err("forbidden production dependency: maestro-multiplexer -> maestro-lock".into()),
             "{kind}{extra}"
         );
     }
@@ -2676,8 +2682,8 @@ const FIXTURES: &str = "maestro-test-fixtures";
 /// Independently declared fixture consumers.
 const FIXTURE_CALLERS: &[&str] = &[
     "maestro-models",
-    "maestro-request",
-    "maestro-catalog",
+    "maestro-interchange",
+    "maestro-models-registry",
     "maestro-chat",
     "maestro-tools",
     "maestro-export",
@@ -2692,7 +2698,7 @@ const TRACING: &str = "maestro-test-tracing";
 /// Independently declared native tracing consumers.
 const TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
-    "maestro-models",
+    "maestro-http",
     "maestro-process",
     "maestro-terminal-emulator",
     "maestro-workspace",
@@ -2702,7 +2708,7 @@ const TRACING_CALLERS: &[&str] = &[
 const DIRECTORY_CALLERS: &[&str] = &[
     "maestro",
     "maestro-app",
-    "maestro-catalog",
+    "maestro-models-registry",
     "maestro-chat",
     "maestro-cli",
     "maestro-credentials",
@@ -2712,7 +2718,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
-    "maestro-listing",
+    "maestro-http",
     "maestro-lock",
     "maestro-models",
     "maestro-packages",
@@ -2832,11 +2838,9 @@ fn directory_support_owner_has_no_domain_dependencies() {
 /// other workspace crate.
 #[test]
 fn directory_support_owner_depends_only_on_the_real_path_owner() {
-    let targets = ["maestro-text", "maestro-path", "maestro-tooling"];
+    let targets = ["maestro-text", "maestro-tooling"];
     let workspace = Workspace::new();
-    workspace.foundation(&[
-        DIRECTORY, REALPATH, targets[0], targets[1], targets[2], UNIFIER,
-    ]);
+    workspace.foundation(&[DIRECTORY, REALPATH, targets[0], targets[1], UNIFIER]);
     for target in targets {
         for (table, refusal) in [
             ("dependencies", "forbidden production dependency"),
@@ -2870,7 +2874,7 @@ fn directory_support_owner_depends_only_on_the_real_path_owner() {
 }
 
 /// Owner of native real-path resolution.
-const REALPATH: &str = "maestro-realpath";
+const REALPATH: &str = "maestro-path";
 
 #[test]
 fn tracing_support_owner_has_no_domain_dependencies() {
@@ -3622,10 +3626,10 @@ fn guest_schema_validation_edge_is_native_development_only() {
     }
     assert!(caller_declares(&workspace, "maestro-extensions-wasm", &format!("[{NATIVE_DEV}]\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\", optional = true }}")).is_err());
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-request", "maestro-models"]);
+    workspace.foundation(&["maestro-interchange", "maestro-models"]);
     assert_eq!(
-        caller_declares(&workspace, "maestro-request", &format!("[{NATIVE_DEV}]\n{declaration}")),
-        Err("internal dev dependency requires declared dependency-free test support: maestro-request -> maestro-models".into())
+        caller_declares(&workspace, "maestro-interchange", &format!("[{NATIVE_DEV}]\n{declaration}")),
+        Err("internal dev dependency requires declared dependency-free test support: maestro-interchange -> maestro-models".into())
     );
 }
 

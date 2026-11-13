@@ -1,14 +1,14 @@
-# Local model catalog
+# Local model registry
 
-`maestro-catalog::ModelRegistry` composes the offline descriptors with an explicit
-model file or an ordered list of files. `create` uses native file operations;
-`with_operations` accepts
-caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
+`maestro-models-registry::ModelRegistry` composes the offline descriptors with
+an explicit model file or an ordered list of files. `create` uses native file
+operations; `with_operations` accepts caller-selected `ModelFileOperations`.
+Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential
 owner. Constructors take that credential as
 `maestro_models::SharedHandle<AuthStorage>`: a shared handle on native targets
 and a local one in the browser, so each caller builds the owner its target
-allows. Every constructor also takes the catalog's own `ConfigValues` handle,
+allows. Every constructor also takes the registry's own `ConfigValues` handle,
 which runs the commands that configured credential values name; it is a platform
 handle in the same way. Native file and command effects require `Send + Sync`;
 browser effects may capture local `Rc` state.
@@ -22,7 +22,7 @@ overlays keep the loading rules below, including one-level routing overlays.
 
 `set_base_model_files` replaces the ordered base files below the construction-time
 files and refreshes the registry, replaying dynamic providers. An empty base that
-was already empty leaves the current catalog untouched. Session construction and
+was already empty leaves the current registry untouched. Session construction and
 reload use this operation for base-package contributions.
 
 [Configure custom models](models/custom.md) walks through editing `models.json`,
@@ -32,7 +32,7 @@ local endpoints, field defaults and compatibility settings.
 ## Errors
 
 Construction, registration, refresh, removal and provider-key lookup return
-`maestro_catalog::CatalogError`.
+`maestro_models_registry::CatalogError`.
 Its diagnostic accessor borrows the retained record; Display writes the supplied
 message, including an empty message. The OAuth variant exposes the original
 [account error](models/oauth.md) as its source. Authored catalog diagnostics have
@@ -121,9 +121,9 @@ A successful transformation publishes exactly its selected list, not a merge wit
 nested writes. A failing transformation leaves already-applied effects visible.
 Loading publishes its local selected list only after its complete transformation
 chain succeeds. Public regression witnesses in
-[`catalog_reentry.rs`](../crates/maestro-catalog/tests/catalog_reentry.rs) exercise
+[`catalog_reentry.rs`](../crates/maestro-models-registry/tests/catalog_reentry.rs) exercise
 these boundaries, live replay, owned diagnostics and native/local callers; the
-[browser witness](../crates/maestro-catalog/tests/support/browser_catalog_check.rs)
+[browser witness](../crates/maestro-models-registry/tests/support/browser_catalog_check.rs)
 provides compile-only evidence for local browser effects.
 
 ## Dynamic providers

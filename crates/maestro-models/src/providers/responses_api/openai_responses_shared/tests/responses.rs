@@ -154,7 +154,7 @@ pub fn model(overrides: Option<Value>) -> TestResult<Model> {
 }
 
 /// An all-zero usage record.
-pub use maestro_request::test_support::zero_usage;
+pub use maestro_interchange::test_support::zero_usage;
 
 /// Fill the members a fixture message leaves out, then decode the context.
 pub fn context(compact: Value) -> TestResult<Context> {

@@ -107,7 +107,7 @@ agents' hook files, and runtime mechanics ([list](#runtime-mechanics-not-copied)
 - **Class.** `workspace-crates.json` gains the class `package`. Conventions forbid any `core` or `dedicated` crate
   from depending on a `package` crate. They allow `package` → `package` edges, which must stay acyclic.
 - **Allowed dependencies.** A package crate may depend on `maestro-extensions-wasm`, other package crates,
-  `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json`, and approved libraries that build for
+  `maestro-interchange`, `maestro-json`, and approved libraries that build for
   `wasm32-wasip2`.
 - **Enforcement.** The conventions checker reads package classifications from the inventory, checks declared
   and host-resolved dependencies, and checks component targets and export locations in member sources.
@@ -241,7 +241,7 @@ data. Its `checklist` module is shared with the plan-mode example target (delive
 
 ### P13: MCP server
 
-The frontend crate `maestro-mcp-server` (layer 5) serves every tool registered in a headless session over stdio MCP
+The frontend crate `maestro-mcp-server` (layer 6) serves every tool registered in a headless session over stdio MCP
 as `maestro mcp`. No package carries server code (delivery 60).
 
 ### P14: Maestro skill pack
@@ -460,7 +460,7 @@ Results match the reference. These mechanisms are replaced, each listed once:
 - **R07.** Add: "Maestro's own packages are component guests specified in [Maestro packages](packages.md)."
 - **Crates and delivery order.** Add a *Package crates* table listing each package crate and shared library with
   its one job, outside the layer numbers. Add `maestro-mcp-server` (present MCP server operations; `maestro-app`;
-  layer 5) and add it to `maestro`'s allowed dependencies.
+  layer 6) and add it to `maestro`'s allowed dependencies.
 - **Completion and explicit later scope.** Replace "added MCP/supervisor capabilities remain later owner phases"
   with "Maestro's packages follow [Maestro packages](packages.md)."
 

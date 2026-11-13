@@ -1,6 +1,6 @@
 //! Dispatch of a value through the node it is converted against.
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::{
@@ -10,7 +10,7 @@ use super::{
 };
 use crate::authored::context::Context;
 use crate::authored::schema_view::{Node, View};
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Convert a supplied value through one schema node.
 ///

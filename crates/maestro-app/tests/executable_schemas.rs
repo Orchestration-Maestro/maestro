@@ -1,10 +1,10 @@
 //! Application enumeration keeps native schema author captures callable.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
-    HarnessOptions, harness, on_task_set, sdk_definition, tool_definition,
-};
+use crate::support::session_harness::sdk_definition;
+use maestro_app::test_support::{HarnessOptions, harness, on_task_set, tool_definition};
 use maestro_models::{Refinement, SchemaCallback, SchemaCode, SchemaNode, ToolCall};
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::Cell, rc::Rc};
 
@@ -29,11 +29,15 @@ fn enumerated_schema_code_can_be_registered_again() {
                     }],
                 },
             )]));
-        let first = harness(HarnessOptions {
-            custom_tools: vec![sdk_definition(original)],
-            ..Default::default()
-        })
-        .await;
+        let first = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                custom_tools: vec![sdk_definition(original)],
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
         let enumerated = first
             .session
             .get_all_tools()
@@ -42,11 +46,15 @@ fn enumerated_schema_code_can_be_registered_again() {
             .unwrap();
         let mut relay = tool_definition("relayed", None, None);
         relay.definition.parameters = enumerated.parameters;
-        let second = harness(HarnessOptions {
-            custom_tools: vec![sdk_definition(relay)],
-            ..Default::default()
-        })
-        .await;
+        let second = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                custom_tools: vec![sdk_definition(relay)],
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
         drop(first);
         let registered = second.session.get_tool_definition("relayed").unwrap();
         let definition = registered.metadata().definition;
@@ -60,5 +68,6 @@ fn enumerated_schema_code_can_be_registered_again() {
         assert_eq!(args, json!({"seen":true}));
         assert_eq!(call.arguments, json!({}));
         assert_eq!(calls.get(), 1);
-    });
+    })
+    .unwrap();
 }

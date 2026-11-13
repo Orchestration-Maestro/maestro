@@ -49,8 +49,8 @@ fn watch_directories(
     for file in [
         PathBuf::from(path),
         PathBuf::from(template),
-        maestro_realpath::canonicalize(path)?,
-        maestro_realpath::canonicalize(template)?,
+        maestro_path::fs::canonicalize(path)?,
+        maestro_path::fs::canonicalize(template)?,
     ] {
         roots.push(
             file.parent()

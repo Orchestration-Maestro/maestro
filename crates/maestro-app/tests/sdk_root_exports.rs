@@ -2,24 +2,29 @@
 //! services, the account file, and the compaction, history, resource, settings, tool and
 //! theme owners programs build on.
 #![cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::{
+use maestro_app::test_support::{
     HarnessOptions, create_test_resource_loader, harness, on_task_set,
 };
 use maestro_app::{
     AgentSessionServices, CreateAgentSessionFromServicesOptions, ExtensionBindings, NoTools,
     create_agent_session_from_services,
 };
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 #[test]
 fn creates_a_session_over_existing_services() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", true)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("faux-1", true)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let settings =
             maestro_app::SettingsManager::in_memory(maestro_settings::Settings::default());
         let services = Rc::new(AgentSessionServices {
@@ -39,7 +44,7 @@ fn creates_a_session_over_existing_services() {
             services,
             session_manager: Rc::new(RefCell::new(manager)),
             session_start_event: None,
-            model: Some(h.model("faux-1")),
+            model: Some(h.model("faux-1").unwrap()),
             thinking_level: None,
             scoped_models: Vec::new(),
             tools: None,
@@ -64,7 +69,8 @@ fn creates_a_session_over_existing_services() {
             .bind_extensions(ExtensionBindings::default())
             .await
             .unwrap();
-    });
+    })
+    .unwrap();
 }
 
 #[test]

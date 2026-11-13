@@ -1,9 +1,7 @@
 //! Native field selection for application-owned sandbox runtime providers.
 use super::{BrowserSandboxValue, diagnostic};
-use indexmap::IndexMap;
-use js_sys::{Array, Object, Reflect};
-use maestro_app::browser::{
-    components::{
+use crate::{
+    components::browser::{
         sandbox::{
             artifacts_runtime_provider::{ArtifactOperation, ArtifactResponse},
             console_runtime_provider::{ConsoleLog, ConsoleLogType},
@@ -14,6 +12,8 @@ use maestro_app::browser::{
     },
     utils::attachments::Attachment,
 };
+use indexmap::IndexMap;
+use js_sys::{Array, Object, Reflect};
 use maestro_models::DiagnosticErrorInfo;
 use wasm_bindgen::JsValue;
 

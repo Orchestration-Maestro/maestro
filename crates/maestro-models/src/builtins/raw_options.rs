@@ -15,7 +15,7 @@ use crate::{
     ModelThinkingLevel, OpenAICodexResponsesOptions, OpenAICompletionsOptions,
     OpenAIResponsesOptions, ProviderExecution, ProviderStreamOptions, ThinkingLevel, ToolChoice,
 };
-use maestro_request::types::present;
+use maestro_interchange::types::present;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 

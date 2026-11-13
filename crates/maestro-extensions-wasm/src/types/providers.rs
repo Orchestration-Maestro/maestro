@@ -5,10 +5,10 @@
     clippy::excessive_nesting
 )]
 
-pub use maestro_request::provider_config::ProviderModelConfig;
+pub use maestro_interchange::provider_config::ProviderModelConfig;
 
 /// Provider registration data; absent fields keep the host's earlier values.
-pub type ProviderConfig = maestro_request::provider_config::ProviderConfig<ProviderCallbacks>;
+pub type ProviderConfig = maestro_interchange::provider_config::ProviderConfig<ProviderCallbacks>;
 
 /// Callable provider operations, omitted from serialized registration metadata.
 #[derive(Clone, Default)]

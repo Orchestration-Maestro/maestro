@@ -1,12 +1,12 @@
 //! Recorded resource corpus: directory trees, a controlled module loader, loader
 //! construction, task-set execution and the projections the recordings compare.
 #![cfg(unix)]
+use maestro_app::test_support::on_task_set;
 use maestro_app::{
     DefaultResourceLoader, DefaultResourceLoaderOptions, ExtensionAPI, ExtensionFactory,
     ExtensionRunner, ResourceDiagnostic, ResourceExtensionPath, ResourceExtensionPaths,
     ResourceKind, ResourceLoader, ResourceLoaderOptions,
 };
-use maestro_catalog::ModelRegistry;
 use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_extensions::ModuleLoader;
 use maestro_extensions::{
@@ -15,6 +15,7 @@ use maestro_extensions::{
     types::{CommandHandler, ExtensionFlagOptions, FlagType, RegisteredCommandOptions},
 };
 use maestro_models::{Local, Tool};
+use maestro_models_registry::ModelRegistry;
 use maestro_resources::{DiagnosticType, PathMetadata, SourceOrigin, SourceScope};
 use maestro_session::SessionManager;
 use maestro_settings::{Settings, SettingsManager};
@@ -352,7 +353,7 @@ pub fn module_loader() -> ModuleLoader<Local> {
     })
 }
 
-pub use crate::support::session_harness::{no_commands, on_task_set};
+pub use crate::support::no_commands::no_commands;
 
 /// The loader inputs a recorded case describes.
 pub fn resource_options(
@@ -532,7 +533,8 @@ pub fn check_loader_cases(test: &str, names: &[&str]) {
             let case = loader_case(name);
             let root = Root::new(base, name);
             let observed =
-                on_task_set(|local| async move { run_loader_case(&root, &case, local).await });
+                on_task_set(|local| async move { run_loader_case(&root, &case, local).await })
+                    .unwrap();
             assert_eq!(observed, loader_case(name).expected, "case {name}");
         }
     })

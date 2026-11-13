@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::authored::context::Context;
 use crate::authored::schema_view::View;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 
 /// Whether the supplied node reaches one of the names already on the stack.
 ///

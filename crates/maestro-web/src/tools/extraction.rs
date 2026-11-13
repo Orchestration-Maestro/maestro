@@ -9,7 +9,7 @@ use super::{
     types::{ToolRenderResult, ToolRenderer, ToolResultMessageView, ToolUiError},
 };
 use crate::components::console_block::ConsoleVariant;
-use maestro_app::browser::tools::extraction::{ExtractDocumentParams, ExtractDocumentResult};
+use crate::tools::browser::extraction::{ExtractDocumentParams, ExtractDocumentResult};
 use maestro_models::JsonObject;
 use serde_json::Value;
 
