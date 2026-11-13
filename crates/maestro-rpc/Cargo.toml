@@ -39,6 +39,9 @@ indexmap = "=2.14.2"
 num-traits.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["io-util", "macros", "net", "rt", "sync", "test-util", "time"] }
 
+[target.'cfg(unix)'.dev-dependencies]
+rustix = { workspace = true, features = ["std", "process"] }
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
 

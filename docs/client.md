@@ -19,10 +19,13 @@ launches the child, `stop` ends it, and a stopped client can start again.
 - A nonempty `provider` or `model` adds `--provider` or `--model`. `args` come
   next, unchanged, after `--mode rpc`. No shell is involved.
 
-`start` fails with `Client already started` while a child runs. It waits 100 ms,
-then reports a child that exited in that time, with its exit code (`null` when a
-signal ended it) and its diagnostic text. That child still counts as started until
-`stop`.
+`start` fails with `Client already started` while a child runs. A new child has
+100 ms to fail. If it exits within that time, `start` reports the exit as soon as the
+child's diagnostic stream ends, with its exit code (`null` when a signal ended it)
+and its diagnostic text. A descendant that keeps that stream open delays the report
+to the end of the 100 ms, and the report then carries the text read so far. When the
+100 ms are up, `start` checks once more for an exit before it reports the child as
+started. A child whose start failed still counts as started until `stop`.
 
 The client keeps the child's stderr as it arrives and a separate thread copies it
 to the caller's stderr, so a slow reader of that stream never delays answers or
