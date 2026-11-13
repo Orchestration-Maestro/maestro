@@ -27,6 +27,7 @@ tokio = { version = "=1.53.3", default-features = false, features = ["test-util"
 maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-models = { path = "../maestro-models" }
+maestro-providers = { path = "../maestro-providers" }
 maestro-session = { path = "../maestro-session" }
 maestro-test-directory.workspace = true
 maestro-test-process = { path = "../maestro-test-process" }

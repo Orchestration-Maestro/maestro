@@ -70,6 +70,7 @@ fn oauth_builtin_logins_use_controlled_endpoints_and_original_algorithms() {
         assert!(output.status.success(), "{output:?}");
         return;
     }
+    maestro_providers::install_built_in_providers();
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

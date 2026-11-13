@@ -71,6 +71,7 @@ depends only on the JSON leaf and holds the session, tool and package record mod
 and `maestro-brand` depends on text and JSON.
 The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; the web frontend consumes it.
 The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, interchange, text and JSON; models consumes it and re-exports the client records at its existing paths.
+The `maestro-providers` crate adapts the built-in model providers: it holds their login flows, the callback server and the callback pages, and installs the built-in login providers into the registry that `maestro-models` owns. It depends on models, http, brand, text and JSON; credentials, the application and the composed executable consume it, and a credential store installs the built-ins when it is built.
 The `packages` module of `maestro-interchange` owns the portable package interchange
 records; native packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
@@ -125,7 +126,9 @@ and targets plus host-resolved dependencies. Transitive and dev dependencies do
 not satisfy a direct requirement. The permitted internal development edges are
 `maestro-tui-crossterm` to `maestro-brand` for the terminal examples, the
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
-tests that build a real model catalog, the native-only `maestro-detection` to
+tests that build a real model catalog, the native-only `maestro-models-registry`,
+`maestro-cli` and `maestro-extensions-wasmtime` to `maestro-providers` edges for tests
+that read the built-in login providers, the native-only `maestro-detection` to
 `maestro-text` edge for terminal newline normalization in checked-child tests, the native
 `maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-models-registry` and
 `maestro-credentials` edges for protocol tests that render exports and drive a real session
@@ -136,7 +139,7 @@ adapter, the native-only `maestro-extensions-wasm` to `maestro-listeners`
 development edge for the controlled guest bus, the native-only `maestro` to
 `maestro-lock` development edge that serializes the executable's file-trigger
 test on the shared host fixture, and the native development edges from the
-twenty-three declared callers to the
+thirty declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does

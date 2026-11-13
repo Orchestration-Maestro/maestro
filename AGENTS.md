@@ -245,10 +245,19 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - `maestro-http` is a core crate below layer 0 that performs HTTP requests: the replaceable
   client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and
   complete-message sockets. It depends only on cancellation, interchange, text and JSON, plus
-  `maestro-path` on native targets, builds for the browser, and only models depends on it.
+  `maestro-path` on native targets, builds for the browser, and only models and providers
+  depend on it.
   Models re-exports the client records at its existing paths. Its non-default `test-support`
   feature holds the scripted FTP, SOCKS and TLS peers and the test runtimes that its own
-  tests and the models tests share.
+  tests, the models tests and the providers tests share.
+- `maestro-providers` is a core crate at layer 1 that adapts the built-in model providers. It
+  holds their login flows (subscription browser login, device code and response code login)
+  with the callback server and pages, and `install_built_in_providers` places the built-in
+  login providers as the base layer of the registry `maestro-models` owns. It depends only on
+  models, http, brand, text and JSON, builds for the browser, and only
+  credentials, the application and the composed executable depend on it. `AuthStorage`
+  construction installs the base layer, so login, refresh and a catalog built over a store
+  find the built-ins; the application installs it again at each composition entry.
 - `maestro-interchange` defines the records a guest shares with its host below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
@@ -324,8 +333,10 @@ Production and test graphs are separately acyclic. The internal development
 edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests
 that build a real model catalog, the native-only `maestro-extensions-wasmtime`
-to catalog, credentials, models, session, theme and toolkit for reused native composition
-test support, including a real terminal for synchronous component factories, the native-only, non-optional `maestro-detection`
+to catalog, credentials, models, providers, session, theme and toolkit for reused native composition
+test support, including a real terminal for synchronous component factories and the built-in
+login providers, the native-only `maestro-models-registry` and `maestro-cli` to `maestro-providers`
+edges for catalog and model-account tests that read the built-in login providers, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
 the native `maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-models-registry` and
 `maestro-credentials` edges for protocol tests that render exports and drive a real session
@@ -342,7 +353,7 @@ controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
 executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
-of the twenty-eight declared callers on `maestro-test-process`, the owner of
+of the thirty declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build

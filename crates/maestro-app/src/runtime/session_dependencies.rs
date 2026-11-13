@@ -183,6 +183,7 @@ pub(crate) fn native_config_values() -> ConfigValues {
 pub async fn create_agent_session_services<E: DefaultEventBus>(
     options: CreateAgentSessionServicesOptions<E>,
 ) -> io::Result<AgentSessionServices<E>> {
+    maestro_providers::install_built_in_providers();
     let cwd = options.cwd;
     let agent_dir = match options.agent_dir {
         Some(agent_dir) => agent_dir,

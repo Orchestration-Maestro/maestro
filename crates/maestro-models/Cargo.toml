@@ -7,7 +7,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-maestro-brand = { path = "../maestro-brand" }
 maestro-text = { path = "../maestro-text" }
 maestro-json = { path = "../maestro-json" }
 maestro-cancellation = { path = "../maestro-cancellation" }
@@ -66,14 +65,13 @@ aws-credential-types = { version = "=1.3.0", default-features = false }
 aws-smithy-runtime-api = { version = "=1.19.2", features = ["client", "http-1x"] }
 aws-smithy-types = { version = "=1.9.1", features = ["http-body-1-x"] }
 
-hyper = { version = "=1.11.1", default-features = false, features = ["server", "client", "http1"] }
-hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }
+hyper = { version = "=1.11.1", default-features = false, features = ["client", "http1"] }
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "tls12", "aws_lc_rs"] }
-http-body-util = { version = "=0.1.5", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
+http-body-util = { version = "=0.1.5", default-features = false }
 image = { version = "=0.24.9", default-features = false, features = ["png"] }
 aws-smithy-runtime-api = { version = "=1.19.2", features = ["test-util"] }
 icu_collator = "=2.3.1"

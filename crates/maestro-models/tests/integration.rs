@@ -87,7 +87,6 @@ mod context_overflow_classification;
 mod conversation_reasoning;
 mod conversation_streams;
 mod conversation_tool_schema;
-mod device_account_authorization;
 #[path = "empty_content.rs"]
 mod empty_content;
 #[path = "support/environment_children.rs"]
@@ -138,12 +137,9 @@ mod model_stream_lifetimes;
 #[path = "model_streaming.rs"]
 mod model_streaming;
 mod model_thinking_levels;
-#[path = "support/native_peer.rs"]
-mod native_peer;
-#[path = "support/oauth_admission.rs"]
-mod oauth_admission;
+#[path = "support/named_account.rs"]
+mod named_account;
 mod oauth_primitives;
-mod oauth_provider_registry;
 mod offline_model_catalog;
 mod output_budget;
 #[cfg(unix)]
@@ -166,7 +162,6 @@ mod provider_unicode;
 mod reasoning_capabilities;
 #[path = "support/reasoning_qualification.rs"]
 mod reasoning_qualification;
-mod response_account_authorization;
 mod response_affinity;
 #[path = "support/response_case_schema.rs"]
 mod response_case_schema;
@@ -196,7 +191,6 @@ mod scripted_model_invocation;
 mod simple_model_options;
 mod stream_options;
 mod streamed_arguments;
-mod subscription_accounts;
 mod tool_argument_roots;
 #[path = "tool_images.rs"]
 mod tool_images;

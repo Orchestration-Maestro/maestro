@@ -22,7 +22,7 @@ impl OAuthProviderInterface for Provider {
         callbacks: OAuthCallbacks,
         _fetch: Option<Fetch>,
     ) -> BoxFuture<Result<OAuthCredentials, OAuthError>> {
-        maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.login(callbacks, None)
+        maestro_providers::GITHUB_COPILOT_OAUTH_PROVIDER.login(callbacks, None)
     }
     fn refresh_token(
         &self,
@@ -54,7 +54,7 @@ impl OAuthProviderInterface for Provider {
         });
         Box::pin(async move {
             let extra = credentials.extra["extensionData"].clone();
-            let mut result = maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER
+            let mut result = maestro_providers::GITHUB_COPILOT_OAUTH_PROVIDER
                 .refresh_token(credentials, Some(fetch))
                 .await?;
             result.extra.insert("extensionData".into(), extra);
@@ -65,14 +65,14 @@ impl OAuthProviderInterface for Provider {
         &self,
         credentials: &'a OAuthCredentials,
     ) -> Result<Cow<'a, str>, OAuthError> {
-        maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.get_api_key(credentials)
+        maestro_providers::GITHUB_COPILOT_OAUTH_PROVIDER.get_api_key(credentials)
     }
     fn modify_models<'m>(
         &self,
         models: &'m [Model],
         credentials: &OAuthCredentials,
     ) -> Option<Result<Vec<Cow<'m, Model>>, OAuthError>> {
-        maestro_models::GITHUB_COPILOT_OAUTH_PROVIDER.modify_models(models, credentials)
+        maestro_providers::GITHUB_COPILOT_OAUTH_PROVIDER.modify_models(models, credentials)
     }
 }
 
