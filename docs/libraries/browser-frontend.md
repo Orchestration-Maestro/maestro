@@ -1,10 +1,11 @@
 # Browser utility libraries
 
 The `maestro-web` utility library declares the internal dependencies its
-[table row](../specs/maestro-port.md#crates-and-delivery-order) lists and no application edge:
-`maestro-text` supplies number formatting and markup escaping, `maestro-theme` supplies
-caller-resolved presentation, and the attachment policy is its own. It introduces no runtime or application launcher. Production installs no default
-font bundle; native tests enable the dev-only egui default fonts.
+[table row](../specs/maestro-port.md#crates-and-delivery-order) lists and no
+`maestro-app` edge: `maestro-text` supplies number formatting and markup escaping,
+`maestro-theme` supplies caller-resolved presentation, and the attachment policy is
+its own. It introduces no runtime or application launcher. Production installs no
+default font bundle; native tests enable the dev-only egui default fonts.
 
 | Library | Pin | Features used | License choice |
 |---|---|---|---|

@@ -1,4 +1,4 @@
-//! Test-owned Tokio runtime shared by the library and integration tests.
+//! Test-owned Tokio runtime shared by the library, integration and example tests.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 

@@ -235,7 +235,7 @@ additional consumers and JavaScript-wrapper mode. The browser-local
 `JAVASCRIPT_REPL_TOOL` is a thread-local lazy application registration: access it
 with `.with(...)` to read or replace its existing provider-factory and URL slots.
 Initialization mounts nothing; each tool execution obtains its own adapter.
-[Application output and download formatting](../application/browser-tools.md#javascript-execution)
+[Output and download formatting](../application/browser-tools.md#javascript-execution)
 stay with the `tools::browser::javascript_repl` factory, exported at the crate root.
 
 Direct SDK execution takes an owned `SandboxExecution<BrowserSandboxValue>`,
