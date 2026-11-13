@@ -1,7 +1,7 @@
 //! Owned primitive conversion and explicitly declared collection traversal.
 
 use super::check::{self, Code};
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use serde_json::Value;

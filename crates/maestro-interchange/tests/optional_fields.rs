@@ -1,5 +1,5 @@
 //! Optional-field omission decisions.
-use maestro_request::presence::{Omittable, Presence};
+use maestro_interchange::presence::{Omittable, Presence};
 
 #[test]
 fn omission_predicate_keeps_string_option_and_presence_rules() {

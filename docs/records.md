@@ -335,14 +335,14 @@ ordered cancellable events through the ordinary invocation interface. See the
 
 ## Resolved request authentication
 
-`maestro-request::model_registry::ResolvedRequestAuth` owns the resolved key,
+`maestro-interchange::model_registry::ResolvedRequestAuth` owns the resolved key,
 optional endpoint, ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
 and [guest authoring library](extensions/guest.md). Both consumers re-export the
 same record; resolution policy remains with the producer.
 
 ## Provider registration records
 
-`maestro-request::provider_config` owns `ProviderConfig<C>` and
+`maestro-interchange::provider_config` owns `ProviderConfig<C>` and
 `ProviderModelConfig`, the data a provider registration carries. `C` holds the
 caller's callable operations and never enters the JSON form: the native catalog
 uses `ProviderConfigInput`, which is `ProviderConfig<ProviderCallbacks>`, and the
@@ -353,27 +353,27 @@ strings, lists, maps and `false` stay as written.
 
 ## Credential records
 
-`maestro-request::oauth::OAuthCredentials` and the `maestro-request::credentials`
+`maestro-interchange::oauth::OAuthCredentials` and the `maestro-interchange::credentials`
 records (`ApiKeyCredential`, `AuthCredential`, `AuthStorageData`, `AuthSource` and
 `AuthStatus`) are the [credential owner's](credentials.md) typed records, defined
 once here and re-exported by models, credentials and the guest.
-`maestro-request::oauth` also owns `OAuthPrompt`, `OAuthAuthInfo`,
+`maestro-interchange::oauth` also owns `OAuthPrompt`, `OAuthAuthInfo`,
 `OAuthSelectOption` and `OAuthSelectPrompt`, re-exported by models and the guest.
 These are plain interaction data; callable login operations stay with their
 native or guest owners.
 
 ## Raw user-block text
 
-[`UserBlock::text_output`](../crates/maestro-request/src/types/messages.rs)
+[`UserBlock::text_output`](../crates/maestro-interchange/src/types/messages.rs)
 joins text blocks in order with one newline, keeping empty blocks and repeated
 text while ignoring images. It leaves text unformatted; consuming renderers and
 protocol adapters own normalization, placeholders and presentation.
 
 ## Application message records
 
-`maestro-request::messages` owns `BashExecutionMessage`, generic
+`maestro-interchange::messages` owns `BashExecutionMessage`, generic
 `CustomMessage<T>`, `BranchSummaryMessage` and `CompactionSummaryMessage`.
-`maestro-request::presence::Presence<T>` distinguishes missing, null and present
+`maestro-interchange::presence::Presence<T>` distinguishes missing, null and present
 optional fields. Its `is_missing` predicate supports skipping omitted fields
 in record serializers; serializing Missing on its own returns an error.
 
@@ -383,11 +383,11 @@ records and converts their model-visible content.
 
 ## Stored session entries
 
-[Session interchange records](entry.md) are declared by `maestro_request::entry` and
+[Session interchange records](entry.md) are declared by `maestro_interchange::entry` and
 re-exported by `maestro_session::session_manager`.
 [Stored-entry context](sessions/session_manager.md) owns history and projection. Raw ordered JSON remains the
 file-entry representation; typed views are explicit consuming reads. Shared
-message records remain in `maestro-request`, and the existing
+message records remain in `maestro-interchange`, and the existing
 [conversation projection](sessions/messages.md) converts typed messages into
 model input. `Presence<T>` is copyable when its payload is copyable.
 
@@ -403,7 +403,7 @@ see [appends](sessions/session_manager.md#appends-names-and-branch-summaries) an
 the [tree guide](tree.md). Branch extraction and forking are described in
 [the extraction guide](sessions/session_manager.md#branch-extraction-and-forking).
 
-Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Tool metadata has one generic record owner, `maestro-interchange::tool_info::ToolInfo<P>`.
 Native callers use its default parameter-schema owner through models; guest authoring
 keeps a `ToolInfo` alias over the same owner. Live callback storage
 belongs to `maestro-listeners::Listeners<P>`, with one admission per identity by
@@ -419,8 +419,8 @@ traversal runs, so one removal and a complete clear both stay cheap.
 
 ## Extension event records
 
-`maestro-request::extension_events` owns generic event/result schemas and
-`maestro-request::system_prompt` owns assembled prompt inputs. Models re-exports
+`maestro-interchange::extension_events` owns generic event/result schemas and
+`maestro-interchange::system_prompt` owns assembled prompt inputs. Models re-exports
 both; the extension root also exports `BuildSystemPromptOptions`. Native and
 guest specializations retain their existing domain operands;
 stream snapshots and capability encoding remain adapter operations. The shared

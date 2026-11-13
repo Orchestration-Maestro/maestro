@@ -1,10 +1,10 @@
 # Session interchange records
 
-The `entry` module of `maestro-request` declares session headers, entry identity, the
+The `entry` module of `maestro-interchange` declares session headers, entry identity, the
 nine concrete entry records, new-session options, built-context records and compaction
 preparation, results, settings and file-operation records, plus `ForkPosition` and
 `NavigateTreeOptions` shared by native session operations and guest authoring, at
-`maestro_request::entry`. [Approved libraries](libraries/entry.md) supply serialization
+`maestro_interchange::entry`. [Approved libraries](libraries/entry.md) supply serialization
 and ordered sets.
 
 ## Consumer views
@@ -38,7 +38,7 @@ optional `details`. It carries no generation or persistence behavior.
 
 Optional entry/header fields, result details and `previousSummary` use the request owner's
 [`Presence<T>`](records.md#stored-session-entries). Detail types need no `Default`
-for decoding. [`Omittable`](../crates/maestro-request/src/presence.rs) in the request
+for decoding. [`Omittable`](../crates/maestro-interchange/src/presence.rs) in the request
 owner controls serialization of context settings and the
 new-session parent: `Presence::Missing` and `None` are omitted; text is written,
 including empty text. These generic fields have no deserialization default.

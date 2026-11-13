@@ -106,7 +106,7 @@ pub enum MessageDelivery {
 ///
 /// User messages have no next-turn delivery variant:
 /// ```compile_fail,E0599
-/// let delivery = maestro_request::messages::UserMessageDelivery::NextTurn;
+/// let delivery = maestro_interchange::messages::UserMessageDelivery::NextTurn;
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

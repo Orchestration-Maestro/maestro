@@ -1,5 +1,5 @@
 //! Tool calls carry their complete JSON argument value through the shared records.
-use maestro_request::types::{AssistantContent, AssistantMessage, StopReason, ToolCall, Usage};
+use maestro_interchange::types::{AssistantContent, AssistantMessage, StopReason, ToolCall, Usage};
 use serde_json::{Value, json};
 
 /// Wrap one call in the assistant message the records travel in.

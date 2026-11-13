@@ -1,8 +1,8 @@
 //! Shared parameter schemas and the ordinary JSON they carry.
 
-use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};
-use maestro_request::tool_info::ToolInfo;
-use maestro_request::types::{Context, Tool};
+use maestro_interchange::parameter_schema::{ParameterSchema, SchemaKind};
+use maestro_interchange::tool_info::ToolInfo;
+use maestro_interchange::types::{Context, Tool};
 use serde_json::json;
 
 /// A schema declaring a string member and a plain sibling member.
@@ -40,11 +40,11 @@ fn shared_tool_records_keep_one_schema_owner() {
         name: "echo".into(),
         description: "Echo".into(),
         parameters: ParameterSchema::authored(schema, kinds),
-        source_info: maestro_request::source_info::SourceInfo {
+        source_info: maestro_interchange::source_info::SourceInfo {
             path: "tools/echo.ts".into(),
             source: "supplied".into(),
-            scope: maestro_request::source_info::SourceScope::User,
-            origin: maestro_request::source_info::SourceOrigin::TopLevel,
+            scope: maestro_interchange::source_info::SourceScope::User,
+            origin: maestro_interchange::source_info::SourceOrigin::TopLevel,
             base_dir: None,
         },
     };
@@ -103,8 +103,8 @@ fn schema_serialization_is_plain_json() {
     assert_eq!(plain.into_json(), schema);
 }
 
-use maestro_request::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
-use maestro_request::parameter_schema::{Base, SchemaCallback, SchemaCode, SchemaNode};
+use maestro_interchange::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
+use maestro_interchange::parameter_schema::{Base, SchemaCallback, SchemaCode, SchemaNode};
 use serde_json::Value;
 use std::{cell::Cell, rc::Rc};
 

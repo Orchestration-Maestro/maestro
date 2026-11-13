@@ -41,7 +41,7 @@ framing to this leaf.
   A repeated tag reaches the decoder rather than selecting an entry to leave out.
 
 The optional-field helper that keeps null apart from absence is `present` in
-`maestro-request`; the JSON leaf does not depend on it. Dependencies are listed in
+`maestro-interchange`; the JSON leaf does not depend on it. Dependencies are listed in
 [JSON libraries](libraries/json.md).
 
 ## JSONL framing

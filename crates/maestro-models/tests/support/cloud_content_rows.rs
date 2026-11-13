@@ -2,11 +2,11 @@
 #![cfg(test)]
 use crate::{chat, content_credentials, loopback, response_output};
 use chat::TestResult;
+use maestro_interchange::presence::Presence;
 use maestro_models::{
     Cancellation, Context, DiagnosticErrorInfo, FetchError, HttpRequest, HttpResponse,
     ProviderStreamOptions, SimpleStreamOptions, StreamOptions,
 };
-use maestro_request::presence::Presence;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::BTreeMap;

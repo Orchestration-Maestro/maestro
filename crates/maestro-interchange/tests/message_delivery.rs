@@ -1,5 +1,5 @@
 //! Delivery records decode the same optional fields that authoring encodes.
-use maestro_request::messages::{SendMessageOptions, SendUserMessageOptions};
+use maestro_interchange::messages::{SendMessageOptions, SendUserMessageOptions};
 use serde_json::{Value, json};
 
 #[test]
@@ -37,9 +37,9 @@ fn user_delivery_options_preserve_empty_and_supported_placements() {
 /// Input delivery uses the same camel-case key as the other event fields.
 #[test]
 fn streaming_input_encodes_camel_case_delivery() {
-    use maestro_request::extension_events::{InputEvent, InputSource};
-    use maestro_request::messages::UserMessageDelivery;
-    use maestro_request::presence::Presence;
+    use maestro_interchange::extension_events::{InputEvent, InputSource};
+    use maestro_interchange::messages::UserMessageDelivery;
+    use maestro_interchange::presence::Presence;
     let event = InputEvent {
         text: "hello".into(),
         images: Presence::Missing,

@@ -9,7 +9,7 @@ and GitHub Copilot device login and refresh.
 A terminal frontend imports this metadata from the crates that own it:
 `get_providers` from `maestro-models`, `DEFAULT_MODEL_PER_PROVIDER` and
 `BUILT_IN_PROVIDER_DISPLAY_NAMES` from `maestro-catalog`, and `OAuthSelectPrompt`
-and `OAuthSelectOption` from `maestro-request`. `maestro-app` does not export them.
+and `OAuthSelectOption` from `maestro-interchange`. `maestro-app` does not export them.
 A frontend selects a model and presents an authorization prompt from the owners'
 own tables and records, without keeping copies.
 

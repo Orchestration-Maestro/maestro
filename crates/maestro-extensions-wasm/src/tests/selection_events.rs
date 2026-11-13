@@ -303,7 +303,7 @@ pub(super) fn assert_order(actual: &Value, expected: &Value) {
 /// Replay the shared transport corpus through each author driver.
 async fn mixed_compatibility(driver: &mut impl Driver) -> Result<(), String> {
     let cases: Vec<CompatibilityCase> = serde_json::from_str(include_str!(
-        "../../../maestro-request/tests/fixtures/model_compatibility.json"
+        "../../../maestro-interchange/tests/fixtures/model_compatibility.json"
     ))
     .map_err(|error| error.to_string())?;
     for case in cases {

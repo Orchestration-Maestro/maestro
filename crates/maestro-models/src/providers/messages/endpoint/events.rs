@@ -17,7 +17,7 @@ use crate::{
     SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool, ToolCall,
     calculate_cost, parsed_arguments,
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 
 /// Text of a redacted reasoning block.
 const REDACTED_TEXT: &str = "[Reasoning redacted]";

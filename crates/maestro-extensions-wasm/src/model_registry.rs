@@ -6,7 +6,7 @@
 )]
 
 use crate::{AuthStatus, ExtensionFuture, ExtensionResult, Model, ProviderConfig};
-pub use maestro_request::model_registry::ResolvedRequestAuth;
+pub use maestro_interchange::model_registry::ResolvedRequestAuth;
 use std::rc::Rc;
 port! {
     /// Host queries available through a retained catalog.

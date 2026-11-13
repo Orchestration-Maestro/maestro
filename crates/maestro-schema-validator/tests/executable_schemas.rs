@@ -6,7 +6,7 @@ mod executable_schema_programs;
 #[path = "support/schema_effects.rs"]
 mod schema_effects;
 
-use maestro_request::{
+use maestro_interchange::{
     parameter_schema::ParameterSchema,
     types::{Tool, ToolCall},
 };
@@ -88,7 +88,7 @@ fn callback_cases(test: &str) {
                 | "refinement_messages_keep_default_static_and_dynamic_text"
                 | "refinement_errors_keep_distinct_indices_and_the_error_limit"
         ) {
-            ParameterSchema::<()>::from(serde_json::json!({"type":"object", "properties":{"n":{"type":"number"}}, "required":["n"]})).with_code(std::collections::HashMap::from([("/properties/n".into(), maestro_request::parameter_schema::SchemaNode {base: None, refinements: refinements(&case.id)})]))
+            ParameterSchema::<()>::from(serde_json::json!({"type":"object", "properties":{"n":{"type":"number"}}, "required":["n"]})).with_code(std::collections::HashMap::from([("/properties/n".into(), maestro_interchange::parameter_schema::SchemaNode {base: None, refinements: refinements(&case.id)})]))
         } else {
             executable_schema_programs::parameters(&case.id)
         };
@@ -109,8 +109,8 @@ fn callback_cases(test: &str) {
 }
 
 /// Construct the same author callbacks as each recorded source program.
-fn refinements(id: &str) -> Vec<maestro_request::parameter_schema::Refinement> {
-    use maestro_request::parameter_schema::{Refinement, SchemaCallback};
+fn refinements(id: &str) -> Vec<maestro_interchange::parameter_schema::Refinement> {
+    use maestro_interchange::parameter_schema::{Refinement, SchemaCallback};
     let count = if matches!(id, "many-refinement-messages" | "error-factory-after-limit") {
         10
     } else if id.starts_with("refine-stack-") || id == "equal-refinement-messages" {
@@ -136,7 +136,7 @@ fn refinement_message(
     id: &str,
     index: usize,
     value: &Value,
-) -> Result<String, maestro_request::diagnostics::DiagnosticErrorInfo> {
+) -> Result<String, maestro_interchange::diagnostics::DiagnosticErrorInfo> {
     Ok(match id {
         "refine-default-message" => "Refine Error".into(),
         "refine-static-message" => "not admitted".into(),
@@ -147,9 +147,11 @@ fn refinement_message(
         "refine-empty-errors" => String::new(),
         "equal-refinement-messages" => "same".into(),
         "error-factory-after-limit" if index == 9 => {
-            return Err(maestro_request::diagnostics::DiagnosticErrorInfo::error(
-                "last factory stopped",
-            ));
+            return Err(
+                maestro_interchange::diagnostics::DiagnosticErrorInfo::error(
+                    "last factory stopped",
+                ),
+            );
         }
         "many-refinement-messages" | "error-factory-after-limit" => format!("error {index}"),
         "refine-stack-errors" | "refine-stack-first-ok" | "refine-stack-second-ok" => {
@@ -162,7 +164,7 @@ fn refinement_message(
 /// Compare the complete canonical value or the exact diagnostic envelope.
 fn assert_result(
     id: &str,
-    result: Result<Value, maestro_request::diagnostics::DiagnosticErrorInfo>,
+    result: Result<Value, maestro_interchange::diagnostics::DiagnosticErrorInfo>,
     expected: Expected,
 ) {
     match expected {

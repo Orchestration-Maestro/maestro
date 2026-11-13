@@ -13,7 +13,7 @@ pub struct ResolvedResource {
     pub metadata: PathMetadata,
 }
 /// One selected package, even when none of its resources are enabled.
-pub type ResolvedPackage = maestro_request::packages::ResolvedPackage<SourceScope>;
+pub type ResolvedPackage = maestro_interchange::packages::ResolvedPackage<SourceScope>;
 /// Resources separated by their discovery kind.
 #[derive(Default)]
 pub struct ResolvedPaths {

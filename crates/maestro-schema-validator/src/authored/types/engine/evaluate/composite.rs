@@ -11,12 +11,12 @@ use crate::authored::schema_view::{Member, Members, Node, ObjectNode};
 /// names only the left operand declares. A name both operands declare is narrowed to their
 /// intersection and stays optional only when both operands leave it optional.
 pub(crate) fn composite<'a>(left: &Rc<Node<'a>>, right: &Rc<Node<'a>>) -> Option<Rc<Node<'a>>> {
-    let left = if left.kind() == Some(maestro_request::parameter_schema::SchemaKind::Tuple) {
+    let left = if left.kind() == Some(maestro_interchange::parameter_schema::SchemaKind::Tuple) {
         crate::authored::types::engine::tuple::to_object::to_object(left)?
     } else {
         Rc::clone(left)
     };
-    let right = if right.kind() == Some(maestro_request::parameter_schema::SchemaKind::Tuple) {
+    let right = if right.kind() == Some(maestro_interchange::parameter_schema::SchemaKind::Tuple) {
         crate::authored::types::engine::tuple::to_object::to_object(right)?
     } else {
         Rc::clone(right)
@@ -58,7 +58,7 @@ pub(crate) mod tests {
     use crate::authored::context::Context;
     use crate::authored::schema_view::MEMBER_LOOKUPS;
     use crate::authored::types::engine::instantiate::instantiate;
-    use maestro_request::parameter_schema::SchemaKind;
+    use maestro_interchange::parameter_schema::SchemaKind;
 
     /// Two objects of the supplied width with disjoint member names, and their kinds.
     pub(crate) fn operands(width: usize) -> (Value, HashMap<String, SchemaKind>) {

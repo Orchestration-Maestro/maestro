@@ -33,7 +33,7 @@ pub struct ReadToolInput {
 
 /// Read observations with optional native truncation.
 pub type ReadToolDetails =
-    maestro_request::tool::tools::reading::ReadToolDetails<Option<TruncationResult>>;
+    maestro_interchange::tool::tools::reading::ReadToolDetails<Option<TruncationResult>>;
 
 /// The file access a read performs; replace it to read through another system.
 pub trait ReadOperations: Send + Sync {

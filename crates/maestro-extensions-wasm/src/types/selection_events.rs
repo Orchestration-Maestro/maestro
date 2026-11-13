@@ -6,10 +6,11 @@
 )]
 
 /// Shared schema specialized for the guest operands.
-pub type ModelSelectSource = maestro_request::extension_events::selection_events::ModelSelectSource;
+pub type ModelSelectSource =
+    maestro_interchange::extension_events::selection_events::ModelSelectSource;
 /// Shared schema specialized for the guest operands.
 pub type ModelSelectEvent =
-    maestro_request::extension_events::selection_events::ModelSelectEvent<crate::Model>;
+    maestro_interchange::extension_events::selection_events::ModelSelectEvent<crate::Model>;
 /// Shared schema specialized for the guest operands.
 pub type ThinkingLevelSelectEvent =
-    maestro_request::extension_events::selection_events::ThinkingLevelSelectEvent;
+    maestro_interchange::extension_events::selection_events::ThinkingLevelSelectEvent;

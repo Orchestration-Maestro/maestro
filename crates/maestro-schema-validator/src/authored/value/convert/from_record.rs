@@ -1,6 +1,6 @@
 //! Conversion through the pattern members of a record.
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::from_additional::from_additional;

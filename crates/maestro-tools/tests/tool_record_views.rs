@@ -81,7 +81,7 @@ fn native_bash_result_uses_shared_record() {
         truncated: false,
         full_output_path: None,
     };
-    let shared: maestro_request::tool::bash_executor::BashResult<Option<f64>, Option<String>> =
+    let shared: maestro_interchange::tool::bash_executor::BashResult<Option<f64>, Option<String>> =
         native;
     let result: maestro_tools::BashResult = shared;
     assert_eq!(
@@ -110,9 +110,9 @@ fn native_record_aliases_keep_producer_fields() {
             "tail" => maestro_tools::truncate_tail(&case.text, options),
             _ => panic!("unknown producer"),
         };
-        let shared: maestro_request::tool::tools::truncate::TruncationResult<usize> = result;
+        let shared: maestro_interchange::tool::tools::truncate::TruncationResult<usize> = result;
         let root: maestro_tools::TruncationResult = shared;
-        let reason: Option<maestro_request::tool::tools::truncate::TruncationBy> =
+        let reason: Option<maestro_interchange::tool::tools::truncate::TruncationBy> =
             root.truncated_by;
         let result = maestro_tools::TruncationResult {
             truncated_by: reason,
@@ -121,7 +121,7 @@ fn native_record_aliases_keep_producer_fields() {
         let details: maestro_tools::ReadToolDetails = maestro_tools::ReadToolDetails {
             truncation: Some(result),
         };
-        let shared: maestro_request::tool::tools::reading::ReadToolDetails<
+        let shared: maestro_interchange::tool::tools::reading::ReadToolDetails<
             Option<maestro_tools::TruncationResult>,
         > = details;
         assert_eq!(

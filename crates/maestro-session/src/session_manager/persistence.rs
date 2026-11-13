@@ -3,7 +3,7 @@ use super::{
     FileEntry, NewSessionOptions, SessionManager, build_index, conversions::invalid, files,
     files::Snapshot, session_header,
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use serde::Serialize;
 use serde_json::{Map, Value, ser::Formatter};
 use std::{

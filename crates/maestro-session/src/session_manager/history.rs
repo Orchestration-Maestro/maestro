@@ -1,8 +1,8 @@
 //! Projection of caller-supplied entries without session-file reads or writes.
 //! Stored timestamp conversion uses the existing [`crate::message_records`] owner.
 use super::types::{SessionContext, SessionContextModel, SessionEntry};
+use maestro_interchange::presence::Presence;
 pub(super) use maestro_json::is_truthy as truthy;
-use maestro_request::presence::Presence;
 use serde::de::Error as _;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -50,7 +50,7 @@ pub(crate) fn ancestor_path<'a>(
 ///
 /// # Examples
 /// ```
-/// use maestro_request::presence::Presence;
+/// use maestro_interchange::presence::Presence;
 /// use maestro_session::{build_session_context, parse_session_entries};
 /// use std::collections::HashMap;
 /// let entries = parse_session_entries(r#"{"type":"message","id":"a","parentId":null,"message":{"role":"user","content":"hello","timestamp":1}}"#);

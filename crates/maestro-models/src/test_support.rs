@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
-pub use maestro_request::test_support::*;
+pub use maestro_interchange::test_support::*;
 
 use crate::{ParameterSchema, SchemaCodeSource, SchemaKind, Tool, ToolCall};
 

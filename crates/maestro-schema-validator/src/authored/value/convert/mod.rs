@@ -21,7 +21,7 @@ mod from_union;
 #[path = "try/mod.rs"]
 mod r#try;
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::convert::from_type::from_type;

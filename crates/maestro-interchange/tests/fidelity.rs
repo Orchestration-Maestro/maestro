@@ -1,6 +1,6 @@
 //! Plain JSON fidelity of the single-owned host records.
-use maestro_request::diagnostics::{AssistantMessageDiagnostic, DiagnosticCode};
-use maestro_request::types::{
+use maestro_interchange::diagnostics::{AssistantMessageDiagnostic, DiagnosticCode};
+use maestro_interchange::types::{
     AssistantMessage, AssistantMessageEvent, Message, Model, ModelCost, RoutingPrice, RoutingSort,
     RoutingThreshold, StopReason, TextContent, Usage, UserContent, UserMessage,
 };
@@ -176,9 +176,9 @@ fn optional_fields_keep_the_host_missing_null_rules() -> Result<(), Box<dyn std:
 /// Fields read through the public optional-field helper.
 #[derive(Debug, serde::Deserialize, PartialEq)]
 struct Optional {
-    #[serde(default, deserialize_with = "maestro_request::types::present")]
+    #[serde(default, deserialize_with = "maestro_interchange::types::present")]
     flag: Option<bool>,
-    #[serde(default, deserialize_with = "maestro_request::types::present")]
+    #[serde(default, deserialize_with = "maestro_interchange::types::present")]
     open: Option<serde_json::Value>,
 }
 

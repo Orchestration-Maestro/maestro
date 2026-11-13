@@ -1,6 +1,6 @@
 [package]
 autotests = false
-name = "maestro-request"
+name = "maestro-interchange"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -25,7 +25,7 @@ workspace = true
 test-support = []
 
 [dev-dependencies]
-maestro-request = { path = ".", features = ["test-support"] }
+maestro-interchange = { path = ".", features = ["test-support"] }
 maestro-test-fixtures.workspace = true
 
 [[test]]

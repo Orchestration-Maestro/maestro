@@ -10,7 +10,11 @@ use super::{Edge, metadata::members, policy::UNIFIER};
 use crate::source::{Member, Source, cfg_test, item_attributes, test_scope};
 
 /// Internal guest libraries available to a package on every target.
-const DEPENDENCIES: &[&str] = &["maestro-extensions-wasm", "maestro-request", "maestro-json"];
+const DEPENDENCIES: &[&str] = &[
+    "maestro-extensions-wasm",
+    "maestro-interchange",
+    "maestro-json",
+];
 
 /// Handles every edge involving a package before native-owner exceptions apply.
 pub(super) fn dependency(edge: &Edge, packages: &BTreeSet<String>) -> Option<Result<(), String>> {

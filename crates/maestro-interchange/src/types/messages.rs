@@ -281,7 +281,7 @@ pub enum Message {
 /// where a schema with authored nodes belongs.
 ///
 /// ```compile_fail
-/// use maestro_request::types::Tool;
+/// use maestro_interchange::types::Tool;
 /// let tool = Tool {
 ///     name: "echo".to_owned(),
 ///     description: String::new(),

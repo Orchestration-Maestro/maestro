@@ -7,7 +7,7 @@ use brand_support::{
     forge_json, load_value, mode_id, presented, required_colors, terminal,
 };
 use live::{Scratch, TRUECOLOR, custom_json, in_child, state};
-use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
+use maestro_interchange::source_info::{SourceInfo, SourceOrigin, SourceScope};
 use maestro_theme::{
     BrandMode, BrandPack, BrandPresentation, ColorMode, Theme, ThemeBg, ThemeColor, ThemeError,
     ThemeExportColors, ThemeOptions, load_brand_pack, load_theme_from_path,

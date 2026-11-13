@@ -1,8 +1,8 @@
 //! Supplied truncate tool data.
 /// The limit reported as causing truncation.
-pub use maestro_request::tool::tools::truncate::TruncationBy as TruncationLimit;
+pub use maestro_interchange::tool::tools::truncate::TruncationBy as TruncationLimit;
 /// Supplied truncation output with floating-point accounting.
-pub type TruncationResult = maestro_request::tool::tools::truncate::TruncationResult<f64>;
+pub type TruncationResult = maestro_interchange::tool::tools::truncate::TruncationResult<f64>;
 
 /// Independent tool-output limits; absent fields select native defaults.
 #[derive(Clone, Copy, Debug, Default)]

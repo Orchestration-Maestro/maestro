@@ -16,7 +16,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// };
 /// assert!(options.on_payload.is_some() && options.on_response.is_some());
 /// ```
-pub type StreamOptions<E = Threaded> = maestro_request::types::StreamOptions<E, Fetch>;
+pub type StreamOptions<E = Threaded> = maestro_interchange::types::StreamOptions<E, Fetch>;
 /// Object handle retained by [`ProviderObjects`].
 #[cfg(not(target_arch = "wasm32"))]
 type ObjectHandle = std::sync::Arc<dyn std::any::Any + Send + Sync>;
@@ -71,14 +71,14 @@ impl std::fmt::Debug for ProviderObjects {
 
 /// Original common and open options with native opaque objects.
 pub type ProviderStreamOptions<E = Threaded> =
-    maestro_request::types::ProviderStreamOptions<StreamOptions<E>, ProviderObjects>;
+    maestro_interchange::types::ProviderStreamOptions<StreamOptions<E>, ProviderObjects>;
 /// Common invocation settings with native tool selection.
 pub type SimpleStreamOptions<E = Threaded> =
-    maestro_request::types::SimpleStreamOptions<StreamOptions<E>, ToolChoice>;
+    maestro_interchange::types::SimpleStreamOptions<StreamOptions<E>, ToolChoice>;
 
 /// Original callback options with native execution-family defaults and opaque controls.
 pub type StreamOptionsInput<E = Threaded> =
-    maestro_request::types::StreamOptionsInput<StreamOptions<E>, ProviderObjects, ToolChoice>;
+    maestro_interchange::types::StreamOptionsInput<StreamOptions<E>, ProviderObjects, ToolChoice>;
 
 /// Select whether and which tool the model must call.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]

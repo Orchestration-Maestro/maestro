@@ -11,7 +11,7 @@ use crate::{
     AssistantContent, AssistantMessageEvent as Event, AssistantMessageEventStream,
     SharedAssistantMessage, TextContent, ThinkingContent, ToolCall,
 };
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use num_traits::ToPrimitive;
 use std::sync::{Arc, PoisonError};
 

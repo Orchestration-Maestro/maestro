@@ -1,7 +1,7 @@
 //! Shared tool record wire behavior.
-use maestro_request::tool::tools::truncate::TruncationBy;
-use maestro_request::tool::types::ToolExecutionMode;
-use maestro_request::types::{TextContent, UserBlock};
+use maestro_interchange::tool::tools::truncate::TruncationBy;
+use maestro_interchange::tool::types::ToolExecutionMode;
+use maestro_interchange::types::{TextContent, UserBlock};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -91,9 +91,9 @@ fn tool_vocabularies_keep_wire_forms() {
 #[test]
 fn agent_result_fields_preserve_guest_presence() {
     check::<
-        maestro_request::tool::types::AgentToolResult<
-            maestro_request::presence::Presence<String>,
-            maestro_request::presence::Presence<bool>,
+        maestro_interchange::tool::types::AgentToolResult<
+            maestro_interchange::presence::Presence<String>,
+            maestro_interchange::presence::Presence<bool>,
         >,
     >("agent")
     .unwrap();
@@ -106,10 +106,11 @@ fn text_result_builds_one_unsigned_text_block() {
         Some(Value::Null),
         Some(serde_json::json!({"answer": 42})),
     ] {
-        let result = maestro_request::tool::types::AgentToolResult::<_, Option<bool>>::text_result(
-            "first\n雪".into(),
-            details.clone(),
-        );
+        let result =
+            maestro_interchange::tool::types::AgentToolResult::<_, Option<bool>>::text_result(
+                "first\n雪".into(),
+                details.clone(),
+            );
         assert_eq!(
             result.content,
             [UserBlock::Text(TextContent {
@@ -130,7 +131,7 @@ fn agent_result_native_details_remain_typed() {
         /// A distinguishable detail.
         answer: u8,
     }
-    let typed = maestro_request::tool::types::AgentToolResult {
+    let typed = maestro_interchange::tool::types::AgentToolResult {
         content: vec![],
         details: Some(Details { answer: 42 }),
         terminate: Some(false),
@@ -147,7 +148,7 @@ fn agent_result_native_details_remain_typed() {
             serde_json::json!({"content":[], "details":null, "terminate":true}),
         ),
     ] {
-        let result = maestro_request::tool::types::AgentToolResult {
+        let result = maestro_interchange::tool::types::AgentToolResult {
             content: vec![],
             details,
             terminate,
@@ -158,8 +159,9 @@ fn agent_result_native_details_remain_typed() {
 
 #[test]
 fn truncation_views_keep_numeric_domains() {
-    check::<maestro_request::tool::tools::truncate::TruncationResult<f64>>("truncation").unwrap();
-    let native = maestro_request::tool::tools::truncate::TruncationResult {
+    check::<maestro_interchange::tool::tools::truncate::TruncationResult<f64>>("truncation")
+        .unwrap();
+    let native = maestro_interchange::tool::tools::truncate::TruncationResult {
         content: "native".into(),
         truncated: true,
         truncated_by: Some(TruncationBy::Lines),
@@ -181,7 +183,7 @@ fn truncation_views_keep_numeric_domains() {
         })
     );
     for number in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-        let host = maestro_request::tool::tools::truncate::TruncationResult {
+        let host = maestro_interchange::tool::tools::truncate::TruncationResult {
             content: String::new(),
             truncated: false,
             truncated_by: None,
@@ -211,33 +213,35 @@ fn truncation_views_keep_numeric_domains() {
 #[test]
 fn read_details_keep_optional_truncation() {
     check::<
-        maestro_request::tool::tools::reading::ReadToolDetails<
-            maestro_request::presence::Presence<
-                maestro_request::tool::tools::truncate::TruncationResult<f64>,
+        maestro_interchange::tool::tools::reading::ReadToolDetails<
+            maestro_interchange::presence::Presence<
+                maestro_interchange::tool::tools::truncate::TruncationResult<f64>,
             >,
         >,
     >("details")
     .unwrap();
-    let absent = maestro_request::tool::tools::reading::ReadToolDetails::<
-        Option<maestro_request::tool::tools::truncate::TruncationResult<usize>>,
+    let absent = maestro_interchange::tool::tools::reading::ReadToolDetails::<
+        Option<maestro_interchange::tool::tools::truncate::TruncationResult<usize>>,
     > {
         truncation: None,
     };
     assert_eq!(serde_json::to_value(absent).unwrap(), serde_json::json!({}));
-    let present = maestro_request::tool::tools::reading::ReadToolDetails {
-        truncation: Some(maestro_request::tool::tools::truncate::TruncationResult {
-            content: "selected".into(),
-            truncated: true,
-            truncated_by: Some(TruncationBy::Bytes),
-            total_lines: 11_usize,
-            total_bytes: 22,
-            output_lines: 3,
-            output_bytes: 4,
-            last_line_partial: true,
-            first_line_exceeds_limit: false,
-            max_lines: 5,
-            max_bytes: 6,
-        }),
+    let present = maestro_interchange::tool::tools::reading::ReadToolDetails {
+        truncation: Some(
+            maestro_interchange::tool::tools::truncate::TruncationResult {
+                content: "selected".into(),
+                truncated: true,
+                truncated_by: Some(TruncationBy::Bytes),
+                total_lines: 11_usize,
+                total_bytes: 22,
+                output_lines: 3,
+                output_bytes: 4,
+                last_line_partial: true,
+                first_line_exceeds_limit: false,
+                max_lines: 5,
+                max_bytes: 6,
+            },
+        ),
     };
     assert_eq!(
         serde_json::to_value(present).unwrap(),
@@ -252,9 +256,9 @@ fn read_details_keep_optional_truncation() {
 #[test]
 fn bash_result_fields_keep_independent_presence() {
     check::<
-        maestro_request::tool::bash_executor::BashResult<
-            maestro_request::presence::Presence<f64>,
-            maestro_request::presence::Presence<String>,
+        maestro_interchange::tool::bash_executor::BashResult<
+            maestro_interchange::presence::Presence<f64>,
+            maestro_interchange::presence::Presence<String>,
         >,
     >("bash")
     .unwrap();

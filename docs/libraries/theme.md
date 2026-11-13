@@ -4,4 +4,4 @@
 theme admission, `indexmap =2.14.2` (default `std`) for ordered color records, and
 the workspace `serde` (`derive`, decoding theme records), `serde_json`, `num-traits`. Outside browser targets it also enables the `collation` feature of `maestro-text`
 ([text libraries](text.md)) for locale-sorted theme inventories. No third-party type appears in its interface. Its production
-dependency closure adds the internal `maestro-request` and `maestro-path` crates.
+dependency closure adds the internal `maestro-interchange` and `maestro-path` crates.

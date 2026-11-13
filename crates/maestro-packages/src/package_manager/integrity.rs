@@ -1,5 +1,5 @@
 //! Observations of managed pinned Git contents.
-pub use maestro_request::packages::GitPinStatus;
+pub use maestro_interchange::packages::GitPinStatus;
 
 use super::{DefaultPackageManager, InstalledSourceScope, PackageOperations, sources::Source};
 use crate::GitSource;

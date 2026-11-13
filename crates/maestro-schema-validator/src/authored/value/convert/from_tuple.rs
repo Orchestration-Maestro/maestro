@@ -1,6 +1,6 @@
 //! Conversion through the declared positions of a sequence.
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use super::convert_member;

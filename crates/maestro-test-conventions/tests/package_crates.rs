@@ -93,7 +93,11 @@ fn package_dependencies_reuse_only_the_guest_record_owners() {
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     let mut entries = vec![("maestro-subagents", "package")];
     let mut dependencies = String::from("[dependencies]\n");
-    for name in ["maestro-extensions-wasm", "maestro-request", "maestro-json"] {
+    for name in [
+        "maestro-extensions-wasm",
+        "maestro-interchange",
+        "maestro-json",
+    ] {
         workspace.member(name, name, "");
         entries.push((name, "core"));
         writeln!(dependencies, "{name} = {{ path = \"../{name}\" }}").unwrap();

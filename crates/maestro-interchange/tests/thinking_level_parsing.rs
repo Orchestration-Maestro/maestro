@@ -1,6 +1,6 @@
 #![cfg(test)]
 //! Exact user-facing thinking-level spellings.
-use maestro_request::types::ModelThinkingLevel;
+use maestro_interchange::types::ModelThinkingLevel;
 use serde::Deserialize;
 /// One recorded parse decision.
 #[derive(Deserialize)]

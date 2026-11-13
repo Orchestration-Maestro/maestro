@@ -1,5 +1,5 @@
 //! Emission of complete compatibility-option objects.
-use maestro_request::types::ModelCompat;
+use maestro_interchange::types::ModelCompat;
 use serde_json::Value;
 /// Emit the complete ordered object without a runtime JSON decoder.
 pub(super) fn compat(compat: Option<&ModelCompat>) -> String {
@@ -7,7 +7,7 @@ pub(super) fn compat(compat: Option<&ModelCompat>) -> String {
         || "None".into(),
         |compat| {
             format!(
-                "Some(maestro_request::types::ModelCompat({}))",
+                "Some(maestro_interchange::types::ModelCompat({}))",
                 object(&compat.0)
             )
         },

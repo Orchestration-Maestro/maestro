@@ -60,7 +60,7 @@ The initial record is the current session header, with `type: "session"`,
 `version`, `id`, `timestamp` and `cwd`; a fork can also carry `parentSession`.
 New sessions use format version 3. The timestamp is text and the directory is
 the session's working directory. See the [header format](sessions/session_format.md#header)
-and its [record owner](../crates/maestro-request/src/entry/session_manager.rs).
+and its [record owner](../crates/maestro-interchange/src/entry/session_manager.rs).
 
 For example, the controlled run began with these three complete records:
 
@@ -147,7 +147,7 @@ Nested updates use these fields:
 | `toolcall_end` | `contentIndex`, `toolCall`, `partial` |
 
 Here `toolcall_delta` is spelled differently from the message content block's
-`toolCall`. The [model event owner](../crates/maestro-request/src/types/events.rs)
+`toolCall`. The [model event owner](../crates/maestro-interchange/src/types/events.rs)
 also defines `start`, `done` and `error` for provider streams. The agent consumes
 those lifecycle events to produce `message_start` and `message_end`; do not wait
 for them inside a JSON-mode `message_update`.
@@ -156,9 +156,9 @@ for them inside a JSON-mode `message_update`.
 
 Dispatch on `message.role`, separately from the outer event's `type`. Standard
 message records belong to
-[`maestro-request::types`](../crates/maestro-request/src/types/messages.rs),
+[`maestro-interchange::types`](../crates/maestro-interchange/src/types/messages.rs),
 re-exported through models. Application message records belong to
-[`maestro-request::messages`](../crates/maestro-request/src/messages.rs),
+[`maestro-interchange::messages`](../crates/maestro-interchange/src/messages.rs),
 re-exported through session; see [application records](records.md#application-message-records)
 and [conversation projection](sessions/messages.md).
 

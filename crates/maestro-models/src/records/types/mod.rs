@@ -1,5 +1,5 @@
 //! Model invocation types with retained adapter hooks.
-pub use maestro_request::types::*;
+pub use maestro_interchange::types::*;
 /// Closed ownership and future representations.
 mod execution;
 pub use execution::{Execution, Local, Threaded};

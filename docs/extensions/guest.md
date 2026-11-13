@@ -3,7 +3,7 @@
 `maestro-extensions-wasm` is the Rust library an extension author links to. It owns the
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
-async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model, resource, application message, event/result and assembled prompt records. Native and guest aliases select their existing domain operands; the guest keeps its opaque text, header pairs and capability resources. Stream snapshots remain guest-adapter operations.
+async Rust that the host runs as a WebAssembly component. The facade uses `maestro-interchange` for shared model, resource, application message, event/result and assembled prompt records. Native and guest aliases select their existing domain operands; the guest keeps its opaque text, header pairs and capability resources. Stream snapshots remain guest-adapter operations.
 This page describes what is delivered so far: registration, 29 events and thirteen result
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
@@ -482,7 +482,7 @@ an acquisition or retained query is allowed remains the host's decision.
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
 `ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
-`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
+`maestro_interchange::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
 endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 
@@ -714,7 +714,7 @@ failure or other encoded part is retained. Numeric-looking text remains text.
 The request body of `before_provider_request`, its replacement, tool-execution arguments
 and results, tool-result input and arbitrary `details` use `JsonText`.
 It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
-Tool schemas are `maestro_request::parameter_schema::ParameterSchema` values inside the
+Tool schemas are `maestro_interchange::parameter_schema::ParameterSchema` values inside the
 tool metadata, not quoted JSON documents. Thinking levels
 cross the component interface as JSON string literals in both directions.
 Object key order and numbers are preserved; whitespace and duplicate keys are not retained.

@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-maestro-request = { path = "../maestro-request" }
+maestro-interchange = { path = "../maestro-interchange" }
 maestro-text = { path = "../maestro-text" }
 futures-util.workspace = true
 maestro-models = { path = "../maestro-models" }

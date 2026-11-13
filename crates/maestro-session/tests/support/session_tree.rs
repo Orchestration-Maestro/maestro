@@ -1,6 +1,6 @@
 //! Strict fixture replay of recorded session-tree operations through the public owner.
 use chrono::DateTime;
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, SessionTreeNode};
 use serde::Deserialize;

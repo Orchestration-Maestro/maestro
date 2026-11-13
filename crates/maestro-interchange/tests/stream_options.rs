@@ -1,5 +1,5 @@
 //! Shared invocation options retain data without requiring executable defaults.
-use maestro_request::types::{
+use maestro_interchange::types::{
     CacheRetention, ProviderResponse, ProviderStreamOptions, SimpleStreamOptions,
     StreamOptionSlots, StreamOptions, StreamOptionsInput, ThinkingBudgets, ThinkingLevel,
     Transport,

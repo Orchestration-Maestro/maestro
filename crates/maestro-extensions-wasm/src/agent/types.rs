@@ -9,7 +9,7 @@ use crate::{
     BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage, CustomMessage, Message,
 };
 /// Agent reasoning levels, including disabled reasoning.
-pub use maestro_request::types::ModelThinkingLevel as ThinkingLevel;
+pub use maestro_interchange::types::ModelThinkingLevel as ThinkingLevel;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 
@@ -73,11 +73,11 @@ impl<'de> Deserialize<'de> for AgentMessage {
 use crate::ExtensionResult;
 use crate::Presence;
 /// Authored execution ordering choice.
-pub use maestro_request::tool::types::ToolExecutionMode;
+pub use maestro_interchange::tool::types::ToolExecutionMode;
 use std::rc::Rc;
 /// Supplied tool output with guest field presence.
 pub type AgentToolResult =
-    maestro_request::tool::types::AgentToolResult<Presence<crate::JsonText>, Presence<bool>>;
+    maestro_interchange::tool::types::AgentToolResult<Presence<crate::JsonText>, Presence<bool>>;
 /// Synchronous delivery of a partial result.
 pub type AgentToolUpdateCallback = Rc<dyn Fn(AgentToolResult) -> ExtensionResult<()>>;
 

@@ -7,22 +7,27 @@
 
 /// Shared schema specialized for the guest operands.
 pub type SessionCompactEvent =
-    maestro_request::extension_events::session_events::SessionCompactEvent<crate::CompactionEntry>;
+    maestro_interchange::extension_events::session_events::SessionCompactEvent<
+        crate::CompactionEntry,
+    >;
 /// Shared schema specialized for the guest operands.
 pub type TreePreparation =
-    maestro_request::extension_events::session_events::TreePreparation<crate::SessionEntry>;
+    maestro_interchange::extension_events::session_events::TreePreparation<crate::SessionEntry>;
 /// Shared schema specialized for the guest operands.
-pub type SessionTreeEvent =
-    maestro_request::extension_events::session_events::SessionTreeEvent<crate::BranchSummaryEntry>;
+pub type SessionTreeEvent = maestro_interchange::extension_events::session_events::SessionTreeEvent<
+    crate::BranchSummaryEntry,
+>;
 /// Shared schema specialized for the guest operands.
 pub type SessionBeforeTreeSummary =
-    maestro_request::extension_events::session_events::SessionBeforeTreeSummary<crate::JsonText>;
+    maestro_interchange::extension_events::session_events::SessionBeforeTreeSummary<
+        crate::JsonText,
+    >;
 /// Shared schema specialized for the guest operands.
 pub type SessionBeforeTreeResult =
-    maestro_request::extension_events::session_events::SessionBeforeTreeResult<crate::JsonText>;
+    maestro_interchange::extension_events::session_events::SessionBeforeTreeResult<crate::JsonText>;
 /// Shared schema specialized for the guest operands.
 pub type SessionBeforeTreeEvent =
-    maestro_request::extension_events::session_events::SessionBeforeTreeEvent<
+    maestro_interchange::extension_events::session_events::SessionBeforeTreeEvent<
         TreePreparation,
         crate::AbortSignal,
     >;

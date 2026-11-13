@@ -3910,11 +3910,11 @@ dependencies = [
  "futures-util",
  "maestro-agent",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-listeners",
  "maestro-lock",
  "maestro-models",
- "maestro-request",
  "maestro-test-process",
  "maestro-text",
  "serde",
@@ -4005,10 +4005,10 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-credentials",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-models",
  "maestro-pattern",
- "maestro-request",
  "maestro-test-directory",
  "maestro-test-fixtures",
  "maestro-test-process",
@@ -4109,11 +4109,11 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-credentials",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-lock",
  "maestro-models",
  "maestro-path",
  "maestro-process",
- "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -4326,10 +4326,10 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
  "maestro-extensions-wasmtime",
+ "maestro-interchange",
  "maestro-json",
  "maestro-listeners",
  "maestro-models",
- "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -4367,6 +4367,19 @@ dependencies = [
  "tokio",
  "wasmtime",
  "wasmtime-wasi",
+]
+
+[[package]]
+name = "maestro-interchange"
+version = "0.1.0"
+dependencies = [
+ "indexmap 2.14.2",
+ "maestro-dependencies",
+ "maestro-interchange",
+ "maestro-json",
+ "maestro-test-fixtures",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -4451,12 +4464,12 @@ dependencies = [
  "maestro-brand",
  "maestro-cancellation",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-lock",
  "maestro-models-catalog",
  "maestro-path",
  "maestro-realpath",
- "maestro-request",
  "maestro-schema-validator",
  "maestro-test-directory",
  "maestro-test-fixtures",
@@ -4494,7 +4507,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
- "maestro-request",
+ "maestro-interchange",
  "serde_json",
 ]
 
@@ -4540,13 +4553,13 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-packages",
  "maestro-path",
  "maestro-pattern",
  "maestro-process",
  "maestro-realpath",
- "maestro-request",
  "maestro-resources",
  "maestro-settings",
  "maestro-test-directory",
@@ -4622,28 +4635,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-request"
-version = "0.1.0"
-dependencies = [
- "indexmap 2.14.2",
- "maestro-dependencies",
- "maestro-json",
- "maestro-request",
- "maestro-test-fixtures",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "maestro-resources"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-listing",
  "maestro-path",
  "maestro-pattern",
- "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -4689,8 +4689,8 @@ dependencies = [
  "icu_normalizer",
  "idna",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
- "maestro-request",
  "maestro-text",
  "num-bigint 0.4.8",
  "num-traits",
@@ -4712,12 +4712,12 @@ dependencies = [
  "indexmap 2.14.2",
  "maestro-agent",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-listing",
  "maestro-lock",
  "maestro-models",
  "maestro-path",
- "maestro-request",
  "maestro-resources",
  "maestro-test-directory",
  "maestro-test-process",
@@ -4910,11 +4910,11 @@ dependencies = [
  "jsonschema",
  "maestro-brand",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-listing",
  "maestro-path",
  "maestro-realpath",
- "maestro-request",
  "maestro-test-directory",
  "maestro-test-process",
  "maestro-text",
@@ -4962,6 +4962,7 @@ dependencies = [
  "kamadak-exif",
  "maestro-agent",
  "maestro-dependencies",
+ "maestro-interchange",
  "maestro-json",
  "maestro-listing",
  "maestro-lock",
@@ -4969,7 +4970,6 @@ dependencies = [
  "maestro-path",
  "maestro-process",
  "maestro-realpath",
- "maestro-request",
  "maestro-resources",
  "maestro-test-directory",
  "maestro-test-fixtures",

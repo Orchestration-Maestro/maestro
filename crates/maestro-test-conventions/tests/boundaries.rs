@@ -291,7 +291,7 @@ fn check_tool_fragment_owner(workspace: &Workspace, name: &str) {
 #[test]
 fn parameter_schema_records_have_one_owner() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-request", "maestro-models", "maestro-tui"]);
+    workspace.foundation(&["maestro-interchange", "maestro-models", "maestro-tui"]);
     source(
         &workspace,
         "maestro-tui",
@@ -301,19 +301,19 @@ fn parameter_schema_records_have_one_owner() {
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
         error.contains(&support::native_path_text("maestro-tui/src/lib.rs:2:"))
-            && error.contains("maestro-request"),
+            && error.contains("maestro-interchange"),
         "{error}"
     );
     source(
         &workspace,
         "maestro-tui",
         "src/lib.rs",
-        "pub use maestro_request::parameter_schema::{ParameterSchema, SchemaKind};\n\
+        "pub use maestro_interchange::parameter_schema::{ParameterSchema, SchemaKind};\n\
          fn use_schema(_: ParameterSchema, _: SchemaKind) {}",
     );
     source(
         &workspace,
-        "maestro-request",
+        "maestro-interchange",
         "src/lib.rs",
         "pub struct ParameterSchema { }\npub enum SchemaKind { String }\n\
          pub struct Tool { parameters: ParameterSchema }\n\
@@ -322,7 +322,7 @@ fn parameter_schema_records_have_one_owner() {
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
-        "maestro-request",
+        "maestro-interchange",
         "src/lib.rs",
         "pub struct ParameterSchema { }\npub enum SchemaKind { String }",
     );
@@ -336,7 +336,7 @@ fn parameter_schema_records_have_one_owner() {
     assert!(
         error.contains(&support::native_path_text("maestro-models/src/lib.rs:1:"))
             && error.contains("ParameterSchema")
-            && error.contains("maestro-request"),
+            && error.contains("maestro-interchange"),
         "{error}"
     );
 }
@@ -1317,7 +1317,7 @@ fn slash_command_records_have_one_shared_owner() {
     for name in ["SlashCommandInfo", "SlashCommandSource"] {
         assert_single_owner(
             name,
-            "maestro-request",
+            "maestro-interchange",
             &["maestro-app", "maestro-extensions-wasm", "maestro-tui"],
         );
     }
@@ -1327,7 +1327,7 @@ fn slash_command_records_have_one_shared_owner() {
 fn message_render_options_have_one_shared_owner() {
     assert_single_owner(
         "MessageRenderOptions",
-        "maestro-request",
+        "maestro-interchange",
         &[
             "maestro-session",
             "maestro-extensions",
@@ -1339,12 +1339,12 @@ fn message_render_options_have_one_shared_owner() {
 #[test]
 fn session_operation_records_have_one_shared_owner() {
     for (name, owner) in [
-        ("MessageDelivery", "maestro-request"),
-        ("UserMessageDelivery", "maestro-request"),
-        ("SendMessageOptions", "maestro-request"),
-        ("SendUserMessageOptions", "maestro-request"),
-        ("ForkPosition", "maestro-request"),
-        ("NavigateTreeOptions", "maestro-request"),
+        ("MessageDelivery", "maestro-interchange"),
+        ("UserMessageDelivery", "maestro-interchange"),
+        ("SendMessageOptions", "maestro-interchange"),
+        ("SendUserMessageOptions", "maestro-interchange"),
+        ("ForkPosition", "maestro-interchange"),
+        ("NavigateTreeOptions", "maestro-interchange"),
     ] {
         assert_single_owner(
             name,
@@ -1370,7 +1370,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     let workspace = Workspace::new();
     let root = workspace.root.path();
     workspace.foundation(&[
-        "maestro-request",
+        "maestro-interchange",
         "maestro-models",
         "maestro-extensions-wasm",
     ]);
@@ -1381,17 +1381,17 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         "pub struct ToolInfo;",
     );
     let error = check_workspace(root).unwrap_err();
-    let owner_message = "ToolInfo declaration belongs to maestro-request";
+    let owner_message = "ToolInfo declaration belongs to maestro-interchange";
     assert!(error.contains(owner_message), "{error}");
     source(
         &workspace,
         "maestro-models",
         "src/lib.rs",
-        "pub use maestro_request::tool_info::ToolInfo;",
+        "pub use maestro_interchange::tool_info::ToolInfo;",
     );
     source(
         &workspace,
-        "maestro-request",
+        "maestro-interchange",
         "src/lib.rs",
         "pub struct ToolInfo<P = ParameterSchema> { parameters: P }",
     );
@@ -1399,12 +1399,12 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         &workspace,
         "maestro-extensions-wasm",
         "src/types/actions.rs",
-        "pub type ToolInfo = maestro_request::tool_info::ToolInfo<String>;",
+        "pub type ToolInfo = maestro_interchange::tool_info::ToolInfo<String>;",
     );
     assert_eq!(check_workspace(root), Ok(()));
     source(
         &workspace,
-        "maestro-request",
+        "maestro-interchange",
         "other.rs",
         "pub struct ToolInfo;",
     );
@@ -1413,7 +1413,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
         error.contains(".rs:1:") && error.contains("duplicate declaration ToolInfo"),
         "{error}"
     );
-    std::fs::remove_file(root.join("crates/maestro-request/other.rs")).unwrap();
+    std::fs::remove_file(root.join("crates/maestro-interchange/other.rs")).unwrap();
     source(
         &workspace,
         "maestro-extensions-wasm",
@@ -1423,7 +1423,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     let error = check_workspace(root).unwrap_err();
     assert!(
         error.contains(&support::native_path_text("src/types/actions.rs:1:"))
-            && error.contains("belongs to maestro-request"),
+            && error.contains("belongs to maestro-interchange"),
         "{error}"
     );
 }
@@ -1480,7 +1480,7 @@ fn shared_event_records_have_one_owner() {
     registered_definition_alias_keeps_tools_ownership();
     let workspace = Workspace::new();
     workspace.foundation(&[
-        "maestro-request",
+        "maestro-interchange",
         "maestro-models",
         "maestro-extensions-wasm",
     ]);
@@ -1492,18 +1492,18 @@ fn shared_event_records_have_one_owner() {
     );
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
-        error.contains("ContextEvent declaration belongs to maestro-request"),
+        error.contains("ContextEvent declaration belongs to maestro-interchange"),
         "{error}"
     );
     source(
         &workspace,
         "maestro-models",
         "src/lib.rs",
-        "pub type ContextEvent<M> = maestro_request::extension_events::ContextEvent<M>;",
+        "pub type ContextEvent<M> = maestro_interchange::extension_events::ContextEvent<M>;",
     );
     source(
         &workspace,
-        "maestro-request",
+        "maestro-interchange",
         "src/lib.rs",
         "pub struct ContextEvent<M> { messages: Vec<M> }",
     );
@@ -1511,12 +1511,12 @@ fn shared_event_records_have_one_owner() {
         &workspace,
         "maestro-extensions-wasm",
         "src/types/events.rs",
-        "pub type ContextEvent = maestro_request::extension_events::ContextEvent<String>;",
+        "pub type ContextEvent = maestro_interchange::extension_events::ContextEvent<String>;",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
-        "maestro-request",
+        "maestro-interchange",
         "other.rs",
         "pub enum ContextEvent {}",
     );

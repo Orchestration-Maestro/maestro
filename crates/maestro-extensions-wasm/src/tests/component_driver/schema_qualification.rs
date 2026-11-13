@@ -2,7 +2,7 @@
 use super::*;
 use crate::bindings::host_side::maestro::extension::host::{SchemaOperation, SchemaShape};
 use crate::tests::{block_on, host::Identity, schema_host::JsonNode};
-use maestro_request::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
+use maestro_interchange::diagnostics::{DiagnosticCode, DiagnosticErrorInfo};
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
 

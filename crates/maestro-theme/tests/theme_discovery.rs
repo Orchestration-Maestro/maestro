@@ -1,6 +1,6 @@
 //! Theme registration, discovery and shared source metadata.
 use crate::live::{Scratch, TRUECOLOR, in_child};
-use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
+use maestro_interchange::source_info::{SourceInfo, SourceOrigin, SourceScope};
 use maestro_theme::{
     ColorMode, Theme, ThemeColor, ThemeDirectories, ThemeError, ThemeInfo, ThemeOptions,
     ThemeState, load_theme_from_path,

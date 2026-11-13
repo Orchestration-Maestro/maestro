@@ -531,13 +531,13 @@ mod tests {
 
     #[test]
     fn shared_credentials_keep_existing_type_identity() {
-        let shared: maestro_request::credentials::AuthCredential = oauth("r");
+        let shared: maestro_interchange::credentials::AuthCredential = oauth("r");
         let native: AuthCredential = shared.clone();
         let AuthCredential::OAuth(token) = native else {
             panic!("OAuth variant");
         };
         let _: (maestro_models::OAuthCredentials, OAuthCredential) = (token.clone(), token);
-        let mut data = maestro_request::credentials::AuthStorageData::new();
+        let mut data = maestro_interchange::credentials::AuthStorageData::new();
         data.insert("o".into(), shared);
         data.insert("k".into(), api_key(""));
         let text = serde_json::to_string(&data).unwrap();
@@ -547,7 +547,7 @@ mod tests {
         );
         let decoded: AuthStorageData = serde_json::from_str(&text).unwrap();
         assert_eq!(decoded, data);
-        let status: maestro_request::credentials::AuthStatus = AuthStatus {
+        let status: maestro_interchange::credentials::AuthStatus = AuthStatus {
             configured: false,
             source: Some(AuthSource::ModelsJsonCommand),
             label: None,

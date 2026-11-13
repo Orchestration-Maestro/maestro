@@ -5,8 +5,8 @@ pub use entry::{
     ModelChangeEntry, NavigateTreeOptions, SessionEntryBase, SessionHeader, SessionInfoEntry,
     ThinkingLevelChangeEntry,
 };
-use maestro_request::entry::session_manager as entry;
-use maestro_request::presence::Presence;
+use maestro_interchange::entry::session_manager as entry;
+use maestro_interchange::presence::Presence;
 use serde_json::Value;
 
 /// Unvalidated session entry.

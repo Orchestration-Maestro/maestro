@@ -3,7 +3,7 @@
 use super::chunk::RawUsage;
 use crate::providers::json_text::or_zero;
 use crate::{Model, Usage, UsageCost, calculate_cost};
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 
 /// A count raised to zero when it is zero or less; not-a-number stays not-a-number.
 fn nonnegative(count: f64) -> f64 {

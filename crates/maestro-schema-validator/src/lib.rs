@@ -11,7 +11,7 @@ mod references;
 mod scalars;
 mod schema;
 
-use maestro_request::{
+use maestro_interchange::{
     diagnostics::DiagnosticErrorInfo,
     parameter_schema::SchemaCodeSource,
     types::{Tool, ToolCall},

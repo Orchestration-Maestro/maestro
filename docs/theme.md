@@ -373,6 +373,6 @@ Font files, pack selection and frontend rendering are separate deliveries.
 ## Source metadata
 
 `Theme::source_info` and `Theme::set_source_info` expose a replaceable slot holding a
-shared `Rc<RefCell<SourceInfo>>` from `maestro-request`. Edits through any holder of the
+shared `Rc<RefCell<SourceInfo>>` from `maestro-interchange`. Edits through any holder of the
 record are visible through the theme; replacing or clearing the slot leaves the earlier
 record unchanged for its other holders.

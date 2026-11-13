@@ -10,11 +10,11 @@ mod value;
 
 use std::collections::HashMap;
 
-use maestro_request::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
 use serde_json::Value;
 
 use context::Context;
-use maestro_request::parameter_schema::SchemaKind;
+use maestro_interchange::parameter_schema::SchemaKind;
 pub(super) use schema_view::index;
 use schema_view::{Document, Node};
 

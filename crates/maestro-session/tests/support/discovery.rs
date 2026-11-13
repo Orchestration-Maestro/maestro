@@ -1,5 +1,5 @@
 //! Recorded listing cases written to disposable session files and compared field by field.
-use maestro_request::presence::Presence;
+use maestro_interchange::presence::Presence;
 use maestro_session::SessionInfo;
 use serde::Deserialize;
 use serde_json::{Value, json};

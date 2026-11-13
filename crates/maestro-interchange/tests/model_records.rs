@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn unsigned_text_content_preserves_owned_text_and_omits_signature() {
-        use maestro_request::types::TextContent;
+        use maestro_interchange::types::TextContent;
 
         for text in [
             "",
@@ -20,7 +20,7 @@ mod tests {
 
     #[test]
     fn maestro_diagnostics_preserve_name_without_message() {
-        use maestro_request::diagnostics::{
+        use maestro_interchange::diagnostics::{
             DiagnosticCode, DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
             format_thrown_value,
         };
@@ -57,7 +57,9 @@ mod tests {
 
     #[test]
     fn maestro_whole_messages_round_trip_by_role() {
-        use maestro_request::types::{AssistantMessage, Message, ToolResultMessage, UserMessage};
+        use maestro_interchange::types::{
+            AssistantMessage, Message, ToolResultMessage, UserMessage,
+        };
         let fixtures = [
             json!({"role":"user","content":"hello","timestamp":12.0}),
             json!({"role":"user","content":[{"type":"text","text":"hello","textSignature":"opaque"},{"type":"image","data":"YQ==","mimeType":"image/png"}],"timestamp":12.0}),
@@ -87,7 +89,7 @@ mod tests {
 
     #[test]
     fn custom_protocol_models_round_trip_each_compatibility_family() {
-        use maestro_request::types::Model;
+        use maestro_interchange::types::Model;
         for api in [
             "openai-completions",
             "openai-responses",
@@ -114,7 +116,7 @@ mod tests {
     }
 
     fn compatibility_contracts() {
-        use maestro_request::types::Model;
+        use maestro_interchange::types::Model;
         let completion = json!({"supportsStore":false,"supportsDeveloperRole":true,"supportsReasoningEffort":false,"supportsUsageInStreaming":true,"maxTokensField":"max_completion_tokens","requiresToolResultName":true,"requiresAssistantAfterToolResult":true,"requiresThinkingAsText":false,"requiresReasoningContentOnAssistantMessages":true,"thinkingFormat":"qwen-chat-template","openRouterRouting":{"allow_fallbacks":false,"require_parameters":true,"data_collection":"deny","zdr":true,"enforce_distillable_text":true,"order":["b","a"],"only":["b"],"ignore":["c"],"quantizations":["fp16"],"sort":{"by":"price","partition":null},"max_price":{"prompt":1.0,"completion":"2","image":3.0,"audio":"4","request":5.0},"preferred_min_throughput":{"p50":1.0,"p75":2.0,"p90":3.0,"p99":4.0},"preferred_max_latency":5.0},"vercelGatewayRouting":{"only":["b"],"order":["b","a"]},"zaiToolStream":false,"supportsStrictMode":false,"cacheControlFormat":"anthropic","sendSessionAffinityHeaders":true,"supportsLongCacheRetention":false});
         for (api, compat) in [
             ("openai-completions", completion),
@@ -141,7 +143,7 @@ mod tests {
     }
 
     fn event_contracts() {
-        use maestro_request::types::{AssistantMessage, AssistantMessageEvent};
+        use maestro_interchange::types::{AssistantMessage, AssistantMessageEvent};
         let message = json!({"role":"assistant","content":[],"api":"custom","provider":"custom","model":"m","usage":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"totalTokens":0.0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"stop","timestamp":1.0});
         let _: AssistantMessage = serde_json::from_value(message.clone()).unwrap();
         for tag in [
@@ -193,7 +195,7 @@ mod tests {
     }
 
     fn option_and_reason_contracts() {
-        use maestro_request::types::*;
+        use maestro_interchange::types::*;
         assert_literals::<ThinkingLevel>(&["minimal", "low", "medium", "high", "xhigh"]);
         assert_literals::<ModelThinkingLevel>(&[
             "off", "minimal", "low", "medium", "high", "xhigh",
@@ -232,7 +234,7 @@ mod tests {
 
     #[test]
     fn maestro_records_keep_wire_contracts() {
-        use maestro_request::types::*;
+        use maestro_interchange::types::*;
         option_and_reason_contracts();
         compatibility_contracts();
         event_contracts();
@@ -300,8 +302,8 @@ fn saved_assistant_without_total() -> serde_json::Value {
 
 #[test]
 fn saved_usage_preserves_total_presence() {
-    use maestro_request::presence::Presence;
-    use maestro_request::types::{Message, Usage};
+    use maestro_interchange::presence::Presence;
+    use maestro_interchange::types::{Message, Usage};
 
     let saved = saved_assistant_without_total();
     let message: Message = serde_json::from_value(saved.clone()).unwrap();
@@ -367,16 +369,16 @@ fn saved_usage_preserves_total_presence() {
 
 #[test]
 fn the_zero_usage_record_reads_as_the_default_usage() {
-    use maestro_request::test_support::zero_usage;
-    use maestro_request::types::Usage;
+    use maestro_interchange::test_support::zero_usage;
+    use maestro_interchange::types::Usage;
     let read: Usage = serde_json::from_value(zero_usage()).unwrap();
     assert_eq!(read, Usage::default());
 }
 
 #[test]
 fn usage_defaults_preserve_zero_fields() {
-    use maestro_request::presence::Presence;
-    use maestro_request::types::Usage;
+    use maestro_interchange::presence::Presence;
+    use maestro_interchange::types::Usage;
     let rows: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/assistant-records.json")).unwrap();
     let usage = Usage::default();
@@ -409,7 +411,7 @@ fn usage_defaults_preserve_zero_fields() {
 
 #[test]
 fn message_diagnostic_constructors_preserve_fields() {
-    use maestro_request::diagnostics::{
+    use maestro_interchange::diagnostics::{
         DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
     };
     for name in [
@@ -444,7 +446,7 @@ fn message_diagnostic_constructors_preserve_fields() {
 
 #[test]
 fn user_block_text_output_keeps_empty_repeated_and_literal_text() {
-    use maestro_request::types::{ImageContent, TextContent, UserBlock};
+    use maestro_interchange::types::{ImageContent, TextContent, UserBlock};
     let text = |value: &str| UserBlock::Text(TextContent::new(value.into()));
     let image = || {
         UserBlock::Image(ImageContent {
@@ -485,7 +487,7 @@ fn user_turn(content: &serde_json::Value) -> serde_json::Value {
 
 #[test]
 fn model_request_leaves_out_unknown_roles_and_blocks() {
-    use maestro_request::types::{Context, Message, UserBlock, UserContent};
+    use maestro_interchange::types::{Context, Message, UserBlock, UserContent};
 
     let kept = assistant_with(json!([{"type": "text", "text": "answer"}]));
     let mut annotated = kept.clone();
@@ -519,7 +521,7 @@ fn model_request_leaves_out_unknown_roles_and_blocks() {
             assert_eq!(
                 user.content,
                 UserContent::Blocks(vec![UserBlock::Text(
-                    maestro_request::types::TextContent::new("hello".into())
+                    maestro_interchange::types::TextContent::new("hello".into())
                 )])
             );
         }
@@ -529,7 +531,7 @@ fn model_request_leaves_out_unknown_roles_and_blocks() {
 
 #[test]
 fn all_unknown_blocks_decode_empty() {
-    use maestro_request::types::{Context, Message, UserContent};
+    use maestro_interchange::types::{Context, Message, UserContent};
 
     let request = json!({"messages": [
         {"role": "user", "content": [{"type": "unknown"}], "timestamp": 1},
@@ -548,7 +550,7 @@ fn all_unknown_blocks_decode_empty() {
 
 #[test]
 fn malformed_tags_and_bodies_still_fail() {
-    use maestro_request::types::Context;
+    use maestro_interchange::types::Context;
 
     let rows = [
         (
@@ -582,7 +584,7 @@ fn malformed_tags_and_bodies_still_fail() {
 
 #[test]
 fn open_json_and_ignored_fields_keep_their_duplicate_member_policy() {
-    use maestro_request::types::{Context, Message};
+    use maestro_interchange::types::{Context, Message};
 
     let assistant = assistant_with(json!([{
         "type": "toolCall", "id": "c", "name": "t", "arguments": null
@@ -608,7 +610,7 @@ fn open_json_and_ignored_fields_keep_their_duplicate_member_policy() {
 
 #[test]
 fn unknown_entries_with_repeated_body_members_are_left_out() {
-    use maestro_request::types::Context;
+    use maestro_interchange::types::Context;
 
     let request = r#"{"messages":[{"role":"other","extra":{"x":1,"x":2}},{"role":"user","content":[{"type":"unknown","extra":{"x":1,"x":2}},{"type":"text","text":"kept"}],"timestamp":1}]}"#;
     let expected: Context = serde_json::from_value(json!({"messages": [{
@@ -625,7 +627,7 @@ fn unknown_entries_with_repeated_body_members_are_left_out() {
 
 #[test]
 fn repeated_members_still_fail_when_the_request_is_read_from_text() {
-    use maestro_request::types::Context;
+    use maestro_interchange::types::Context;
 
     let rows = [
         (

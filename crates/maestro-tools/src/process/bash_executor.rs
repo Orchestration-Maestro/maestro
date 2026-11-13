@@ -11,7 +11,8 @@ use maestro_text::Utf8Stream;
 use std::{collections::VecDeque, io::Write};
 
 /// Selected direct output and its execution status.
-pub type BashResult = maestro_request::tool::bash_executor::BashResult<Option<f64>, Option<String>>;
+pub type BashResult =
+    maestro_interchange::tool::bash_executor::BashResult<Option<f64>, Option<String>>;
 /// Both execution families use the same output and settlement algorithm.
 macro_rules! executor {
     ($mode:ty, [$($bound:tt)*], [$($shared:tt)*]) => {

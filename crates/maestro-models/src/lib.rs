@@ -130,7 +130,7 @@ extern crate self as maestro_models;
 #[cfg(test)]
 pub mod tests;
 
-pub use maestro_request::tool_info::ToolInfo;
+pub use maestro_interchange::tool_info::ToolInfo;
 #[cfg(not(target_arch = "wasm32"))]
 pub use providers::websocket::default_web_socket;
 pub use providers::websocket::{
@@ -143,12 +143,12 @@ pub use providers::content::managed::{
 };
 
 /// Shared extension event inventory for concrete native adapters.
-pub use maestro_request::extension_event_table;
+pub use maestro_interchange::extension_event_table;
 /// Shared extension events and assembled prompt records.
-pub use maestro_request::{extension_events, system_prompt};
+pub use maestro_interchange::{extension_events, system_prompt};
 
 /// Shared parameter-schema records and their declared node kinds.
-pub use maestro_request::parameter_schema::{
+pub use maestro_interchange::parameter_schema::{
     Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaKind,
     SchemaNode, transport as schema_transport,
 };

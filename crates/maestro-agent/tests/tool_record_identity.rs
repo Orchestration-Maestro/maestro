@@ -10,11 +10,11 @@ fn native_tool_aliases_use_shared_records() {
         details: Some(Details),
         terminate: Some(false),
     };
-    let shared: maestro_request::tool::types::AgentToolResult<Option<Details>, Option<bool>> =
+    let shared: maestro_interchange::tool::types::AgentToolResult<Option<Details>, Option<bool>> =
         module_result;
     assert!(shared.details.is_some());
     assert_eq!(shared.terminate, Some(false));
-    let mode: maestro_request::tool::types::ToolExecutionMode = ToolExecutionMode::Parallel;
+    let mode: maestro_interchange::tool::types::ToolExecutionMode = ToolExecutionMode::Parallel;
     let copied = mode;
     assert_eq!(mode, copied);
     let module_mode: maestro_agent::types::ToolExecutionMode = copied;
