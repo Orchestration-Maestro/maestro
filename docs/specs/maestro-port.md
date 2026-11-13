@@ -814,7 +814,7 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), checked test-process owner (`maestro-test-process`),
 disposable directory owner
 (`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
-request owner (`maestro-interchange`), watch leaf (`maestro-watch`), process owner (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
+record owner (`maestro-interchange`), watch leaf (`maestro-watch`), process owner (`maestro-process`), listing leaf (`maestro-listing`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), office document reader (`maestro-office`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`) and brand projection
 (`maestro-brand`) are excluded from this
@@ -1278,14 +1278,14 @@ The parameter-schema owner also owns the component metadata transport in
 `maestro-interchange::parameter_schema::transport`, re-exported through models and native extensions
 as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
-crate dependency: both extension adapters already reach the request owner through
+crate dependency: both extension adapters already reach the record owner through
 their declared edges.
 
 Package interchange records have one owner, the `packages` module of `maestro-interchange`.
 It owns `ResolvedPackage<S>` and `GitPinStatus`; the native package manager
 specializes the former with resource scope, and guest authoring with operation
 scope. Runtime resolution, acquisition and Git effects remain in `maestro-packages`.
-Only packages and guest authoring declare them, through the record crate.
+Only packages and guest authoring declare them, through the record owner.
 
 ### Opt-in test helpers
 

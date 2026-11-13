@@ -60,9 +60,9 @@ record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 application presentation data re-export the two command provenance records; session
 re-exports the six others; guest authoring re-exports every record except
 `CustomMessageInput`, which it defines as its own alias. The declaration scanner rejects
-a declaration of any of these records except `CustomMessageInput` outside the request
+a declaration of any of these records except `CustomMessageInput` outside the record
 owner, and duplicates within it.
-The request owner depends only on the dependency-free JSON leaf.
+The record owner depends only on the dependency-free JSON leaf.
 No reverse dependency is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares these

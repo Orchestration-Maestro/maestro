@@ -36,9 +36,9 @@ write those identity members before their own fields. Preparation writes
 `CompactionResult<T>` writes `summary`, `firstKeptEntryId`, `tokensBefore`, then
 optional `details`. It carries no generation or persistence behavior.
 
-Optional entry/header fields, result details and `previousSummary` use the request owner's
+Optional entry/header fields, result details and `previousSummary` use the record owner's
 [`Presence<T>`](records.md#stored-session-entries). Detail types need no `Default`
-for decoding. [`Omittable`](../crates/maestro-interchange/src/presence.rs) in the request
+for decoding. [`Omittable`](../crates/maestro-interchange/src/presence.rs) in the record
 owner controls serialization of context settings and the
 new-session parent: `Presence::Missing` and `None` are omitted; text is written,
 including empty text. These generic fields have no deserialization default.

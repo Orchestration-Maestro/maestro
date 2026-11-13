@@ -1,4 +1,4 @@
-//! Controlled-test records of the request owner.
+//! Controlled-test records of the interchange crate.
 
 use serde_json::{Value, json};
 

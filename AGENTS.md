@@ -663,7 +663,7 @@ traversal runs, so one removal and a complete clear both stay cheap.
 Shared extension event/result schemas and assembled prompt records belong to
 `maestro-interchange`, re-exported through models and specialized by native/guest
 aliases. One event inventory feeds author unions and the guest data adapter.
-The record crate depends only on the JSON leaf; object reading stays JSON-owned and
+The record owner depends only on the JSON leaf; object reading stays JSON-owned and
 Presence adaptation stays beside shared schemas. Fork position stays in the session module.
 Tool callback ownership and invocation are independent: SDK defaults remain
 Threaded/Threaded, registered invocation is Local. Registration stores no runner
@@ -678,7 +678,7 @@ The parameter-schema owner also owns the component metadata transport in
 `maestro-interchange::parameter_schema::transport`, re-exported through models and native extensions
 as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
-crate dependency: both extension adapters already reach the request owner through
+crate dependency: both extension adapters already reach the record owner through
 their declared edges.
 
 `maestro-interchange::packages` owns the portable package interchange records below

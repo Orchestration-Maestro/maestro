@@ -31,7 +31,7 @@ From `docs/specs/maestro-port.md`.
 - **AssistantMessageEventStream:** EventStream specialization retaining shared assistant-message handles.
 - **Request:** An invocation of a supplied model descriptor with its inputs, options, authentication and cancellation; catalog membership is not required.
 - **Interchange records:** The request, session, tool and package records a guest and its host exchange: shared message and model-request data describing application messages and a model invocation's descriptor, conversation, instruction inputs and observations, with the session tree entries and the tool and package shapes beside them; the shared owner is `maestro-interchange`, not an invocation executor or a general data container.
-- **Stream option slots:** The shared request owner selects signal, payload hook, response hook and fetch representations without executable operations. Shared common, raw and simple options retain their native and guest aliases. Its `StreamOptionsInput` record preserves the supplied raw or simple variant without converting their policies; provider execution stays in models.
+- **Stream option slots:** The shared record owner selects signal, payload hook, response hook and fetch representations without executable operations. Shared common, raw and simple options retain their native and guest aliases. Its `StreamOptionsInput` record preserves the supplied raw or simple variant without converting their policies; provider execution stays in models.
 - **Request authentication:** Invocation data authorizing one selected provider, including explicitly configured secret-free access; distinct from credential lifecycle.
 - **Configured-auth status:** Non-secret configuration metadata, not live credential validation or a prediction of request success.
 - **PKCE:** Proof Key for Code Exchange: a random verifier paired with a SHA-256 challenge of its encoded text.
@@ -258,7 +258,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Fragment:** An incomplete escape sequence the input buffer retains for more input; it can be completed, explicitly flushed or cleared, released as it is at a representable deadline, or delivered as data immediately before a paste starts.
 - **Bracketed paste:** Text a terminal wraps in start and end markers; the input buffer delivers it as one paste event without the markers.
 - **Host binding:** The traits and records `maestro-extensions-wasmtime` generates from the interface files in the guest authoring crate, with each resource mapped to the type the host stores. An import that implements its trait method runs on the local owner as a run or admit call. See [host calls on the local owner](docs/extensions/guest.md#host-calls-on-the-local-owner).
-- **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the request, JSON and text owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
+- **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the interchange, JSON and text owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
 - **Shared record owner:** The core `maestro-interchange` library below layer 0, whose job is to define the records a guest shares with its host, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, `SlashCommandInfo`, `SlashCommandSource`, `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
 `UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, flat-rate `calculate_cost` arithmetic, `DiagnosticErrorInfo` as the one thrown-error form with its message-only construction, and the shared optional-field helper; only the crates that list it in the spec table (agent, credentials, http, models, the model catalog, the model registry, packages, resources, the schema validator, session, theme, tools and guest authoring) may depend on it directly, and it depends only on the JSON leaf.
 - **Extension JSON wire:** Plain serde_json payloads beside typed capabilities; finite numbers retain their value and signed zero, ordinary host nonfinite values serialize as null, and extension-written Infinity or NaN fails clearly before output. Shared records have no bit-number encoding or added Presence wrapper.
@@ -372,7 +372,7 @@ The parameter-schema owner also owns the component metadata transport in
 `maestro-interchange::parameter_schema::transport`, re-exported through models and native extensions
 as `schema_transport`. Guest registration and enumeration use that same codec;
 ordinary provider and persisted JSON omit the carried schema kinds. This adds no
-crate dependency: both extension adapters already reach the request owner through
+crate dependency: both extension adapters already reach the record owner through
 their declared edges.
 
 ## Package interchange

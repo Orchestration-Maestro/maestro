@@ -486,7 +486,7 @@ an acquisition or retained query is allowed remains the host's decision.
 `find` passes literal provider and model identifiers. The guest does not filter,
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
-`ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
+`ResolvedRequestAuth` is re-exported from the [shared record owner](../records.md#resolved-request-authentication),
 `maestro_interchange::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys,
 endpoints and ordered headers, including present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
@@ -707,7 +707,7 @@ collapse missing and null, while existing nested options retain explicit null.
 also uses standard `Option` decoding for `description`: missing and null both become `None`
 and are omitted on serialization; an empty string is retained. Command source is an open
 string with three default labels, not a closed enum. The declaration belongs to the shared
-request owner; see [ordinary command metadata](../application/commands.md).
+record owner; see [ordinary command metadata](../application/commands.md).
 
 Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
 Ordinary host nonfinite serialization writes null, which a required numeric decoder
@@ -1230,6 +1230,6 @@ context; neither introduces an extension-specific permission list. See
 
 ### Portable provider primitives
 
-`calculate_cost` re-exports the request owner's flat-rate arithmetic over supplied
+`calculate_cost` re-exports the record owner's flat-rate arithmetic over supplied
 model and usage records. `ByteLineDecoder` re-exports the text owner's raw CR/LF
 framing; callers keep their UTF-8, BOM and event-dispatch policies.

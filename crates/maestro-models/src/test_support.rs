@@ -1,4 +1,4 @@
-//! Opt-in helpers for controlled tests: the request owner's records and the recorded
+//! Opt-in helpers for controlled tests: the interchange records and the recorded
 //! tool-argument conversion corpus.
 
 use std::collections::BTreeMap;
