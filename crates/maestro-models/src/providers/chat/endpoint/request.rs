@@ -22,11 +22,11 @@ use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
 };
 use crate::providers::openai_prompt_cache::prompt_cache_key;
-use crate::providers::transport::{RequestFailure, copied, layer};
 use crate::{
     CacheControlFormat, CacheRetention, Context, MaxTokensField, Message, Model,
     ModelThinkingLevel, ThinkingFormat, ThinkingLevel, get_env_api_key,
 };
+use maestro_http::{RequestFailure, copied, layer};
 
 /// Account scope headers and the environment variables that default them.
 const SCOPE_HEADERS: [(&str, &str); 2] = [

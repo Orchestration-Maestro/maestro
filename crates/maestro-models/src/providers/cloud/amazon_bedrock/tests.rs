@@ -602,12 +602,11 @@ fn check_socks_environment(pairs: &[(&str, &str)], destination: &str, selected: 
         "environment selection"
     );
     if selected.is_some_and(|url| url.contains("%ZZ")) {
-        let fetch =
-            crate::providers::transport::configured_fetch(crate::providers::transport::Route {
-                proxy: Some(std::sync::Arc::new(move |_| Ok(chosen.clone()))),
-                ..crate::providers::transport::Route::default()
-            });
-        let request = crate::providers::transport::HttpRequest {
+        let fetch = maestro_http::configured_fetch(maestro_http::Route {
+            proxy: Some(std::sync::Arc::new(move |_| Ok(chosen.clone()))),
+            ..maestro_http::Route::default()
+        });
+        let request = maestro_http::HttpRequest {
             method: "GET".into(),
             url: destination.into(),
             headers: indexmap::IndexMap::new(),
@@ -621,7 +620,7 @@ fn check_socks_environment(pairs: &[(&str, &str)], destination: &str, selected: 
             .block_on(fetch(request));
         assert!(matches!(
             result,
-            Err(crate::providers::transport::FetchError::Connection(_))
+            Err(maestro_http::FetchError::Connection(_))
         ));
     }
 }

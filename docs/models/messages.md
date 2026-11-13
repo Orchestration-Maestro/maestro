@@ -172,7 +172,7 @@ endpoint's host plays no part.
 
 ## Stream
 
-The body is read as server-sent events by the shared reader in `maestro-models`, with the framing
+The body is read as server-sent events by the shared reader in `maestro-http`, with the framing
 this protocol selects; no event-stream library is involved. Lines end at `\r\n`, `\r` or `\n`: a
 carriage return ends its line at once and a line feed right after it, even in the next chunk,
 belongs to the same ending. Raw decoding uses the shared [streaming text decoder](../text.md). Bytes
