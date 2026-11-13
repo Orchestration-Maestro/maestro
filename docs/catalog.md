@@ -1,4 +1,4 @@
-# Local model catalog
+# Local model registry
 
 `maestro-models-registry::ModelRegistry` composes the offline descriptors with
 an explicit model file or an ordered list of files. `create` uses native file
@@ -8,7 +8,7 @@ Browser callers use that adapter surface.
 owner. Constructors take that credential as
 `maestro_models::SharedHandle<AuthStorage>`: a shared handle on native targets
 and a local one in the browser, so each caller builds the owner its target
-allows. Every constructor also takes the catalog's own `ConfigValues` handle,
+allows. Every constructor also takes the registry's own `ConfigValues` handle,
 which runs the commands that configured credential values name; it is a platform
 handle in the same way. Native file and command effects require `Send + Sync`;
 browser effects may capture local `Rc` state.
@@ -22,7 +22,7 @@ overlays keep the loading rules below, including one-level routing overlays.
 
 `set_base_model_files` replaces the ordered base files below the construction-time
 files and refreshes the registry, replaying dynamic providers. An empty base that
-was already empty leaves the current catalog untouched. Session construction and
+was already empty leaves the current registry untouched. Session construction and
 reload use this operation for base-package contributions.
 
 [Configure custom models](models/custom.md) walks through editing `models.json`,

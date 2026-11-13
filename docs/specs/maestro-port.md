@@ -1034,7 +1034,7 @@ It has no product dependencies or foundation utility edge; its only internal
 normal dependency is the native feature unifier.
 Fixture development callers are `maestro-models`, `maestro-request`, `maestro-models-registry`,
 `maestro-chat`, `maestro-tools` and `maestro-export`; declarations may be portable or
-target-specific, including aliases. Models, request, catalog and chat use portable
+target-specific, including aliases. Models, request, model registry and chat use portable
 development declarations; tools and export use native development declarations. No
 normal or build edge to this owner is permitted. Both production and test cycle
 checks apply.
