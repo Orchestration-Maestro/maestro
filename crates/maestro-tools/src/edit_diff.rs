@@ -13,7 +13,7 @@ pub use preview::{EditDiffError, compute_edit_diff, compute_edits_diff};
 
 use crate::utils::diagnostics::failure;
 use icu_normalizer::ComposingNormalizer;
-use lines::{lf_lines, splice};
+use lines::{Line, splice, split_lines};
 use maestro_models::DiagnosticErrorInfo;
 use maestro_text::is_whitespace_scalar;
 pub use maestro_text::normalize_to_lf;
@@ -338,6 +338,56 @@ fn locate<'a>(
     Ok(matched)
 }
 
+/// Match `edits` against `normalized` and rebuild `lines`, the same text with the line
+/// breaks it is stored with; replacement text takes `ending`.
+fn rebuild(
+    normalized: &str,
+    lines: &[Line],
+    ending: LineEnding,
+    edits: &[Edit],
+    path: &str,
+) -> Result<String, DiagnosticErrorInfo> {
+    let prepared: Vec<Prepared> = edits
+        .iter()
+        .map(|edit| {
+            let old = normalize_to_lf(&edit.old_text);
+            Prepared {
+                folded_old: normalize_for_fuzzy_match(&old),
+                old,
+                new: normalize_to_lf(&edit.new_text),
+            }
+        })
+        .collect();
+    if let Some(empty) = prepared.iter().position(|edit| edit.old.is_empty()) {
+        return Err(empty_old_text(path, empty, prepared.len()));
+    }
+    let original = Space::new(normalized);
+    let fuzzy = prepared.iter().any(|edit| {
+        original
+            .find(&edit.old, &edit.folded_old)
+            .is_some_and(|hit| hit.fuzzy)
+    });
+    let matching = if fuzzy { original.folded() } else { normalized };
+    let matched = locate(&Space::new(matching), &prepared, path)?;
+    splice(lines, matching, &matched, ending, path)
+}
+
+/// The result of edits that changed their base.
+fn changed(
+    base_content: String,
+    new_content: String,
+    path: &str,
+    total: usize,
+) -> Result<AppliedEditsResult, DiagnosticErrorInfo> {
+    if new_content == base_content {
+        return Err(no_change(path, total));
+    }
+    Ok(AppliedEditsResult {
+        base_content,
+        new_content,
+    })
+}
+
 /// Apply edits to LF-normalized content, all matched against the same original snapshot.
 ///
 /// `normalized_content` must already use LF endings; it is not converted here. When one
@@ -354,40 +404,36 @@ pub fn apply_edits_to_normalized_content(
     edits: &[Edit],
     path: &str,
 ) -> Result<AppliedEditsResult, DiagnosticErrorInfo> {
-    let prepared: Vec<Prepared> = edits
-        .iter()
-        .map(|edit| {
-            let old = normalize_to_lf(&edit.old_text);
-            Prepared {
-                folded_old: normalize_for_fuzzy_match(&old),
-                old,
-                new: normalize_to_lf(&edit.new_text),
-            }
-        })
-        .collect();
-    if let Some(empty) = prepared.iter().position(|edit| edit.old.is_empty()) {
-        return Err(empty_old_text(path, empty, prepared.len()));
-    }
-    let original = Space::new(normalized_content);
-    let fuzzy = prepared.iter().any(|edit| {
-        original
-            .find(&edit.old, &edit.folded_old)
-            .is_some_and(|hit| hit.fuzzy)
-    });
-    let matching = if fuzzy {
-        original.folded()
-    } else {
-        normalized_content
-    };
-    let matched = locate(&Space::new(matching), &prepared, path)?;
-    let new_content = splice(&lf_lines(normalized_content), matching, &matched, path)?;
-    if new_content == normalized_content {
-        return Err(no_change(path, prepared.len()));
-    }
-    Ok(AppliedEditsResult {
-        base_content: normalized_content.to_owned(),
+    let lines = split_lines(normalized_content, &['\n']);
+    let new_content = rebuild(normalized_content, &lines, LineEnding::Lf, edits, path)?;
+    changed(
+        normalized_content.to_owned(),
         new_content,
-    })
+        path,
+        edits.len(),
+    )
+}
+
+/// Apply edits to a file's text as stored, after its BOM, and return the LF comparison
+/// texts with the text to store.
+///
+/// Matching runs on the LF form, as in [`apply_edits_to_normalized_content`]. In the
+/// stored text every line break no match covers stays as it was, CR LF, lone CR or LF;
+/// replacement text takes the ending [`detect_line_ending`] reports.
+///
+/// # Errors
+/// Returns the diagnostics of [`apply_edits_to_normalized_content`].
+pub(crate) fn apply_edits_to_stored_content(
+    content: &str,
+    edits: &[Edit],
+    path: &str,
+) -> Result<(AppliedEditsResult, String), DiagnosticErrorInfo> {
+    let normalized = normalize_to_lf(content);
+    let lines = split_lines(content, &['\r', '\n']);
+    let ending = detect_line_ending(content);
+    let stored = rebuild(&normalized, &lines, ending, edits, path)?;
+    let applied = changed(normalized, normalize_to_lf(&stored), path, edits.len())?;
+    Ok((applied, stored))
 }
 
 #[cfg(test)]

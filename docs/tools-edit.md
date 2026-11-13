@@ -132,7 +132,8 @@ resolution enters the
 [file mutation queue](#file-mutation-queue) before polling.
 Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
 [matching owner](#original-snapshot-matching) against one original snapshot.
-After restoring the retained prefix BOM and detected line endings, it writes
+It restores the retained prefix BOM, gives replacement text the detected line ending
+and keeps every line break no match covers as it was read, CR LF, lone CR or LF. It then writes
 and returns one text block, `Successfully replaced N block(s) in <path>.`, using
 the requested count and authored path. Present `EditToolDetails` holds the LF
 numbered diff and optional `firstChangedLine`; no progress or termination is
@@ -173,6 +174,9 @@ diagnostic.
 - Trailing whitespace follows the shared set of [text](text.md).
 - `detect_line_ending` follows the first LF, `restore_line_endings` turns each LF into
   CR LF in CRLF mode, and `strip_bom` removes one leading BOM.
+- Stored line breaks: execution rebuilds the file line by line. A line no match reaches
+  is written back byte for byte, and a line a match reaches keeps its own break unless
+  the match covers it. Only replacement text takes the detected line ending.
 
 The nine failure messages are the exact texts in the module; single-edit calls use
 the unnumbered wording; multi-edit calls name `edits[n]` except for the no-change
