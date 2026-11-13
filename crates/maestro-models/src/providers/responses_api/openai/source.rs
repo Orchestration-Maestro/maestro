@@ -3,12 +3,12 @@
 use super::diagnostic;
 use crate::parameters::json_parse::whitespace;
 use crate::providers::json_text::{is_truthy, member, raw_json};
-use crate::providers::transport::{
+use crate::{Cancellation, DiagnosticErrorInfo, FetchError, ProviderResponse};
+use futures_util::StreamExt;
+use maestro_http::{
     HttpBody, HttpResponse, Raced, RequestFailure, ServerSentEvent, SseMessages, decode_utf8, race,
     sdk_stream_failure,
 };
-use crate::{Cancellation, DiagnosticErrorInfo, FetchError, ProviderResponse};
-use futures_util::StreamExt;
 pub(in crate::providers::responses_api) use maestro_json::is_truthy as streaming;
 use std::collections::VecDeque;
 

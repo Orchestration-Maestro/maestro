@@ -1,7 +1,7 @@
 //! Native transport context and provider diagnostics.
 
 use super::trim;
-use crate::providers::transport::{FetchError, RequestFailure};
+use maestro_http::{FetchError, RequestFailure};
 use std::fmt::Write as _;
 
 /// Format only nonempty trimmed HTTP bodies with scalar-safe clipping.

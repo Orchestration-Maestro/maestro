@@ -196,8 +196,8 @@ pub(super) async fn prepare<E: ProviderExecution>(
     context: &Context,
     options: &MistralOptions<E>,
     mapped_effort: Option<&str>,
-) -> Result<Prepared, crate::providers::transport::RequestFailure> {
-    use crate::providers::transport::RequestFailure;
+) -> Result<Prepared, maestro_http::RequestFailure> {
+    use maestro_http::RequestFailure;
     let key = options
         .common
         .api_key
@@ -230,7 +230,7 @@ pub(super) async fn prepare<E: ProviderExecution>(
     let timeout = options
         .common
         .timeout_ms
-        .map(crate::providers::transport::request_timeout)
+        .map(maestro_http::request_timeout)
         .transpose()?;
     Ok(Prepared {
         request: crate::HttpRequest {
@@ -252,6 +252,6 @@ pub(super) async fn prepare<E: ProviderExecution>(
 /// Send an already prepared request under this provider's one-attempt policy.
 pub(super) async fn send(
     prepared: Prepared,
-) -> Result<crate::HttpBody, crate::providers::transport::RequestFailure> {
+) -> Result<crate::HttpBody, maestro_http::RequestFailure> {
     transport::send(prepared).await
 }

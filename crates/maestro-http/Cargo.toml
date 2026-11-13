@@ -1,0 +1,66 @@
+[package]
+autotests = false
+name = "maestro-http"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-text = { path = "../maestro-text" }
+maestro-json = { path = "../maestro-json" }
+maestro-cancellation = { path = "../maestro-cancellation" }
+maestro-request = { path = "../maestro-request" }
+base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
+serde_json = { workspace = true, features = ["raw_value"] }
+indexmap = { version = "=2.14.2", features = ["serde"] }
+reqwest = { version = "=0.13.5", features = ["stream"] }
+futures-core = { version = "=0.3.34", default-features = false, features = ["std"] }
+futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
+httpdate = "=1.0.3"
+url = "=2.5.8"
+
+[features]
+test-support = ["tokio/test-util"]
+
+[dev-dependencies]
+maestro-http = { path = ".", features = ["test-support"] }
+serde = { version = "=1.0.229", features = ["derive", "rc"] }
+
+[lints]
+workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "=0.3.106"
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+maestro-path = { path = "../maestro-path" }
+regex = "=1.13.1"
+regress = "=0.12.0"
+percent-encoding = "=2.3.2"
+chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+if-addrs = { version = "=0.15.0", default-features = false, features = ["link-local"] }
+boa_engine = { version = "=0.22.0", default-features = false, features = ["system-time-zone"] }
+tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
+tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "time", "net", "io-util", "macros"] }
+tokio-tungstenite.workspace = true
+hyper = { version = "=1.11.1", default-features = false, features = ["server", "client", "http1"] }
+hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }
+tokio-socks = { version = "=0.5.3", default-features = false, features = ["tokio"] }
+hyper-rustls = { version = "=0.27.10", default-features = false, features = ["http1"] }
+rustls = { version = "=0.23.46", default-features = false, features = ["std", "tls12", "aws_lc_rs"] }
+rustls-platform-verifier = { version = "=0.7.1", default-features = false }
+tower-service = { version = "=0.3.3", default-features = false }
+http-body-util = { version = "=0.1.5", default-features = false }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
+maestro-test-tracing.workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"

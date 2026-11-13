@@ -8,13 +8,13 @@ use super::{
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::conclude;
 use crate::providers::assistant_output::{fail, initial_message, start_producer_for};
-use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model, ModelThinkingLevel,
     ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
     SimpleStreamOptions, StreamOptionsFamily, Threaded, build_base_options_for,
     clamp_thinking_level,
 };
+use maestro_http::RequestFailure;
 use std::{
     borrow::Cow,
     sync::{Arc, RwLock},
