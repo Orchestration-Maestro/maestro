@@ -32,13 +32,13 @@ use crate::providers::assistant_output::initial_message_for_api;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::providers::assistant_output::start_producer_for;
 use crate::providers::messages::endpoint::AnthropicThinkingDisplay;
-#[cfg(target_arch = "wasm32")]
-use crate::providers::transport::RequestFailure;
 use crate::{
     AssistantMessageEventStream, Context, Local, Model, ProviderCall, ProviderExecution,
     ProviderInvocation, ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily,
     ThinkingBudgets, ThinkingLevel, Threaded, ToolChoice, build_base_options_for,
 };
+#[cfg(target_arch = "wasm32")]
+use maestro_http::RequestFailure;
 use thinking::{is_anthropic_claude_model, supports_adaptive_thinking};
 
 /// Thinking display of a Claude request; the same values as the message protocol's display.
@@ -270,7 +270,6 @@ mod native {
     use super::request::{payload, prepare};
     use crate::providers::assistant_output::conclude;
     use crate::providers::assistant_output::{callback_failure, fail};
-    use crate::providers::transport::{Raced, RequestFailure, race};
     use crate::{
         AssistantMessageEventStream, Cancellation, Context, Model, ProviderResponse,
         SharedAssistantMessage,
@@ -278,6 +277,7 @@ mod native {
     use aws_sdk_bedrockruntime::primitives::event_stream::EventReceiver;
     use aws_sdk_bedrockruntime::types::ConverseStreamOutput;
     use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
+    use maestro_http::{Raced, RequestFailure, race};
 
     /// Text of the failure that ends a cancelled request.
     const ABORTED_TEXT: &str = "Request was aborted";

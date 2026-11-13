@@ -17,7 +17,6 @@ pub use compat::ResolvedOpenAICompletionsCompat;
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::{fail, initial_message, start_producer_for};
 use crate::providers::json_text::compact_json;
-use crate::providers::transport::{HttpRequest, HttpResponse, RequestFailure, endpoint_url, send};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
     Local, Model, ProviderExecution, ProviderInvocation, ProviderResponse, ProviderSpawner,
@@ -25,6 +24,7 @@ use crate::{
     ThinkingLevel, Threaded, ToolChoice, build_base_options_for, clamp_thinking_level,
 };
 use events::Reducer;
+use maestro_http::{HttpRequest, HttpResponse, RequestFailure, endpoint_url, send};
 use request::{ENDPOINT_PATH, Invocation};
 pub(crate) use request::{level_name, scope_headers};
 use sse::consume;

@@ -113,7 +113,7 @@ fn detect_mode() -> ColorMode {
 pub fn supports_color() -> bool {
     color_supported(
         io::stdout().is_terminal(),
-        |name| std::env::var_os(name).map(|value| value.to_string_lossy().into_owned()),
+        maestro_text::environment_variable,
         std::env::consts::OS,
     )
 }

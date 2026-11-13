@@ -61,6 +61,7 @@ The [specification](specs/maestro-port.md#crates-and-delivery-order) declares fi
 owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
 only on `maestro-request`, and `maestro-brand` depends on text and JSON.
 The `maestro-office` crate reads office documents (spreadsheet number formatting, workbooks and Word packages) and depends on text, JSON and lock; application and the web frontend consume it.
+The `maestro-http` crate performs HTTP requests: the replaceable client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and complete-message sockets. It depends on cancellation, request, text and JSON; models consumes it and re-exports the client records at its existing paths.
 The `maestro-package` leaf owns portable package interchange records; native
 packages and guest authoring specialize its resolved-package scope. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
@@ -352,6 +353,20 @@ returns a session with its services. The rule covers every chat test source in a
 directory, except the setup itself. Paths compare by component, so a native
 separator changes nothing, and the shared token walk includes macro arguments,
 closures and impl bodies.
+
+Tests of the interactive mode drive it the way a user does.
+`crates/maestro-chat/tests/interactive_mode_support/` builds the mode through
+`InteractiveMode::new` over the recording terminal and the manual frame host, with a
+session whose provider the test scripts. A test types keys into that terminal, prompts
+the session or stores its history, and reads the terminal's effects and the mode's
+read-only view. `InteractiveMode::view` returns a `ModeView`: `region` renders one of
+the eight laid-out regions (`Region`) at the terminal's width, and `editor_text`
+returns the current editor's text. The view exists only under the crate's non-default
+`test-support` feature, which the crate's own development dependency enables. A test
+that needs state the view does not show stays beside the code in
+`src/interactive_mode/tests/`. The child-process isolation and the recorded-case
+readers live once, in the support directory, and the tests inside the library include
+the same files.
 
 ## Quality checks
 

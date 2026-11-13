@@ -2702,7 +2702,7 @@ const TRACING: &str = "maestro-test-tracing";
 /// Independently declared native tracing consumers.
 const TRACING_CALLERS: &[&str] = &[
     "maestro-daemon",
-    "maestro-models",
+    "maestro-http",
     "maestro-process",
     "maestro-terminal-emulator",
     "maestro-workspace",
@@ -2722,6 +2722,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-extensions",
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
+    "maestro-http",
     "maestro-lock",
     "maestro-models",
     "maestro-packages",

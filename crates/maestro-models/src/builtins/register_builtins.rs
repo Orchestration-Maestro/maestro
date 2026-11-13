@@ -9,7 +9,6 @@ use crate::providers::messages::endpoint as messages;
 use crate::providers::reasoning::endpoint as conversation;
 use crate::providers::response_sessions::codex as sessions;
 use crate::providers::responses_api::{azure_transport as cloud, openai as responses};
-use crate::providers::transport::RequestFailure;
 use crate::records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers,
     register_api_provider,
@@ -18,6 +17,7 @@ use crate::{
     AssistantMessage, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Invoke, Model,
     ProviderCall, ProviderExecution, ProviderSpawner, ProviderStreamOptions, SimpleStreamOptions,
 };
+use maestro_http::RequestFailure;
 use sessions::stream_simple_openai_codex_responses as session_simple;
 use std::sync::{Arc, RwLock};
 

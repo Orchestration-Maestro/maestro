@@ -16,10 +16,8 @@ use crate::providers::chat::github_copilot_headers::{
 };
 use crate::providers::json_text::compact_json;
 use crate::providers::model_compat::compat_flag;
-use crate::providers::transport::{
-    HttpRequest, RequestFailure, copied, edge_whitespace, endpoint_url, layer,
-};
 use crate::{CacheRetention, Context, Model, ToolChoice, get_env_api_key};
+use maestro_http::{HttpRequest, RequestFailure, copied, edge_whitespace, endpoint_url, layer};
 
 /// Service endpoint used when the model names none.
 const DEFAULT_BASE_URL: &str = "https://api.anthropic.com";

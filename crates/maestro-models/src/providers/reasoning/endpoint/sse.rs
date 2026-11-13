@@ -1,11 +1,9 @@
 //! Conversation policy over the shared server-sent event reader.
 use super::events::Events;
-use crate::providers::{
-    json_text::{raw_json, try_object_record},
-    transport::{FetchError, RequestFailure, SseMessages},
-};
+use crate::providers::json_text::{raw_json, try_object_record};
 use crate::{AssistantMessageEventStream, HttpBody, SharedAssistantMessage};
 use futures_util::StreamExt;
+use maestro_http::{FetchError, RequestFailure, SseMessages};
 
 /// Reduce complete frames until EOF or the exact completion marker.
 pub(super) async fn read(

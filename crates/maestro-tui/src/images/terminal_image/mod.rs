@@ -105,7 +105,7 @@ impl Default for TerminalImage {
 fn native_environment(key: &str) -> Option<String> {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        std::env::var_os(key).map(|value| value.to_string_lossy().into_owned())
+        maestro_text::environment_variable(key)
     }
     #[cfg(target_arch = "wasm32")]
     {
