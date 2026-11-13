@@ -4,10 +4,13 @@
 //! and the reload, compared with the recorded binding and registry cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, answer, assistant, echo_tools, harness, load_history,
-    on_task_set, script_responses, sdk_definition, tool_definition, user,
+    Harness, HarnessExt as _, echo_tools, load_history, sdk_definition, user,
 };
 use maestro_app::agent_session::{ExtensionBindings, PromptOptions};
+use maestro_app::test_support::{
+    HarnessOptions, Scripted, answer, assistant, harness, on_task_set, script_responses,
+    tool_definition,
+};
 use maestro_extensions::types::{ExtensionFlagOptions, FlagValue, RegisteredCommandOptions};
 use maestro_extensions::{
     ExtensionAPI, ExtensionFactory, ResourcesDiscoverEvent, ResourcesDiscoverResult,
@@ -16,6 +19,7 @@ use maestro_extensions::{
 use maestro_models::Local;
 use maestro_session::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 
@@ -100,12 +104,16 @@ fn register_alpha(
 /// A session with the alpha extension at `<alpha>` and the allowlist `allowed`.
 async fn alpha_session(seen: &Seen, allowed: Option<Vec<String>>) -> Harness {
     let skill = String::from("alpha-skill.md");
-    harness(HarnessOptions {
-        labelled_factories: vec![("<alpha>", alpha(seen, skill))],
-        allowed_tool_names: allowed,
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            labelled_factories: vec![("<alpha>", alpha(seen, skill))],
+            allowed_tool_names: allowed,
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 #[test]
@@ -128,13 +136,17 @@ fn subscribes_before_installing_tool_hooks() {
             tool_calls: vec![("echo".into(), json!({}))],
             ..Scripted::default()
         };
-        let h = harness(HarnessOptions {
-            factories: vec![blocking],
-            responses: Some(vec![call, Scripted::text("done")]),
-            base_tools_override: Some(echo_tools(Rc::clone(&executed))),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![blocking],
+                responses: Some(vec![call, Scripted::text("done")]),
+                base_tools_override: Some(echo_tools(Rc::clone(&executed))),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.session
             .prompt("use it", PromptOptions::default())
             .await
@@ -150,7 +162,8 @@ fn subscribes_before_installing_tool_hooks() {
             .unwrap();
         assert_eq!(result["isError"], json!(true));
         assert_eq!(result["content"][0]["text"], json!("blocked by policy"));
-    });
+    })
+    .unwrap();
 }
 
 /// Each registered tool's name, source and path.
@@ -167,12 +180,16 @@ fn builds_tool_definitions_with_extension_and_sdk_overrides() {
     let expected = expected("tool_registry_without_allowlist");
     on_task_set(|_| async {
         let seen = Seen::default();
-        let h = harness(HarnessOptions {
-            labelled_factories: vec![("<alpha>", alpha(&seen, "alpha-skill.md".into()))],
-            custom_tools: vec![sdk_definition(tool_definition("sdk-tool", None, None))],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                labelled_factories: vec![("<alpha>", alpha(&seen, "alpha-skill.md".into()))],
+                custom_tools: vec![sdk_definition(tool_definition("sdk-tool", None, None))],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let mut rows = expected["tools"].as_array().unwrap().clone();
         rows.push(json!({"name": "sdk-tool", "source": "sdk", "path": "<sdk:sdk-tool>"}));
         assert_eq!(json!(registry_rows(&h)), json!(rows));
@@ -193,7 +210,8 @@ fn builds_tool_definitions_with_extension_and_sdk_overrides() {
             json!(h.session.has_extension_handlers("resources_discover")),
             expected["has_resources_discover"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -214,7 +232,8 @@ fn keeps_declared_tool_allowlist_in_active_names() {
             .map(|tool| tool.name)
             .collect();
         assert_eq!(names, ["read", "alpha-tool"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -234,7 +253,8 @@ fn emits_session_start_only_after_bindings() {
             json!(h.session.get_active_tool_names()),
             expected["after_bind"]["active"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -258,21 +278,22 @@ fn extends_resources_from_extension_discovery() {
         );
         let paths = &h.extended.borrow()[0];
         assert_eq!(paths.skill_paths[0].path, "alpha-skill.md");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn labels_extension_resources_by_source() {
     on_task_set(|_| async {
         let seen = Seen::default();
-        let h = harness(HarnessOptions {
+        let h = harness(Scratch::new().unwrap(), HarnessOptions {
             labelled_factories: vec![
                 ("<alpha>", alpha(&seen, "inline.md".into())),
                 ("/opt/extensions/beta.ts", alpha(&seen, "file.md".into())),
             ],
             ..HarnessOptions::default()
         })
-        .await;
+        .await.unwrap();
         h.session
             .bind_extensions(ExtensionBindings::default())
             .await
@@ -299,7 +320,7 @@ fn labels_extension_resources_by_source() {
             serde_json::to_value(metadata.origin).unwrap(),
             json!("top-level")
         );
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -330,7 +351,8 @@ fn reload_emits_shutdown_then_start_only_with_bindings() {
             json!(h.extended.borrow().len()),
             bound["after_reload"]["extended"]
         );
-    });
+    })
+    .unwrap();
 }
 
 /// An extension that keeps its registration facade in `slot` for later calls and has a
@@ -353,11 +375,15 @@ fn keeping(slot: Rc<RefCell<Option<ExtensionAPI<Local>>>>) -> ExtensionFactory<L
 /// A session with the keeping extension, and its facade.
 async fn kept_session() -> (Harness, ExtensionAPI<Local>) {
     let slot = Rc::new(RefCell::new(None));
-    let h = harness(HarnessOptions {
-        factories: vec![keeping(Rc::clone(&slot))],
-        ..HarnessOptions::default()
-    })
-    .await;
+    let h = harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            factories: vec![keeping(Rc::clone(&slot))],
+            ..HarnessOptions::default()
+        },
+    )
+    .await
+    .unwrap();
     let api = slot.borrow_mut().take().unwrap();
     (h, api)
 }
@@ -398,7 +424,8 @@ fn binds_partial_ui_bindings_without_clearing_others() {
             ["command failed", "command failed"],
             "the reload kept the listener"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -443,25 +470,32 @@ fn binds_every_extension_capability() {
         api.set_thinking_level(maestro_models::ModelThinkingLevel::High)
             .unwrap();
         assert_eq!(api.get_thinking_level().unwrap(), session.thinking_level());
-        assert!(api.set_model(h.model("think")).unwrap().await.unwrap());
+        let think = h.model("think").unwrap();
+        assert!(api.set_model(think).unwrap().await.unwrap());
         assert!(
             !api.set_model(h.elsewhere("think")).unwrap().await.unwrap(),
             "no credentials"
         );
-        let context = h.runner().create_context();
-        assert!(context.is_idle().unwrap());
-        assert!(!context.has_pending_messages().unwrap());
-        assert_eq!(
-            context.get_system_prompt().unwrap(),
-            session.system_prompt()
-        );
-        assert_eq!(
-            context.get_context_usage().unwrap(),
-            session.get_context_usage().unwrap()
-        );
-        let model = context.model().unwrap().unwrap();
-        assert!(std::sync::Arc::ptr_eq(&model, &session.model()));
-    });
+        assert_context_reads_session(&h);
+    })
+    .unwrap();
+}
+
+/// A context created now reports the session's idle state, prompt, usage and model.
+fn assert_context_reads_session(h: &Harness) {
+    let (context, session) = (h.runner().create_context(), &h.session);
+    assert!(context.is_idle().unwrap());
+    assert!(!context.has_pending_messages().unwrap());
+    assert_eq!(
+        context.get_system_prompt().unwrap(),
+        session.system_prompt()
+    );
+    assert_eq!(
+        context.get_context_usage().unwrap(),
+        session.get_context_usage().unwrap()
+    );
+    let model = context.model().unwrap().unwrap();
+    assert!(std::sync::Arc::ptr_eq(&model, &session.model()));
 }
 
 #[test]
@@ -475,7 +509,8 @@ fn keeps_captured_contexts_usable_across_a_direct_reload() {
             api.get_active_tools().unwrap(),
             h.session.get_active_tool_names()
         );
-    });
+    })
+    .unwrap();
 }
 
 /// A UI host whose editor text tells it apart from the headless fallback.
@@ -547,7 +582,8 @@ fn session_ui_bindings_keep_owned_hosts_and_reapply_borrowed_hosts() {
         assert!(!reloaded.has_ui().unwrap());
         assert!(!h.runner().has_ui());
         assert_eq!(reloaded.ui().unwrap().get_editor_text().unwrap(), "");
-    });
+    })
+    .unwrap();
 }
 
 /// Stores two turns and queues both possible summary requests.
@@ -576,14 +612,14 @@ fn compaction_completion_failure_reaches_the_error_callback_unchanged() {
     on_task_set(|_| async {
         let tasks = Rc::new(RefCell::new(Vec::new()));
         let spawned = Rc::clone(&tasks);
-        let h = harness(HarnessOptions {
+        let options = HarnessOptions {
             settings: json!({"compaction": {"keepRecentTokens": 1}}),
             spawn: Some(Rc::new(move |task| {
                 spawned.borrow_mut().push(tokio::task::spawn_local(task));
             })),
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let h = harness(Scratch::new().unwrap(), options).await.unwrap();
         prepare_compaction_history(&h);
         let failure = RefCell::new(Some(
             Box::new(std::io::Error::from_raw_os_error(13)) as maestro_extensions::EventError
@@ -630,7 +666,8 @@ fn compaction_completion_failure_reaches_the_error_callback_unchanged() {
             }
         }
         assert_eq!(*trace.borrow(), ["complete", "error"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -649,7 +686,8 @@ fn routes_shutdown_requests_to_the_bound_handler() {
         h.session.bind_extensions(bindings).await.unwrap();
         h.runner().create_context().shutdown().unwrap();
         assert_eq!(*requested.borrow(), 1);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -700,17 +738,22 @@ fn refreshes_the_current_model_after_provider_registration() {
             std::sync::Arc::ptr_eq(&h.session.model(), &after),
             "nothing replaces a gone model"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn reload_keeps_extension_flag_values() {
     on_task_set(|local| async move {
-        let h = harness(HarnessOptions {
-            models: vec![("faux-1", true)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                models: vec![("faux-1", true)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let flagged: ExtensionFactory<Local> = Rc::new(|api| {
             let options = ExtensionFlagOptions {
                 description: None,
@@ -734,7 +777,7 @@ fn reload_keeps_extension_flag_values() {
                 agent_dir: Some(h.scratch.path().display().to_string()),
                 auth_storage: None,
                 model_registry: Some(std::sync::Arc::clone(&h.registry)),
-                model: Some(h.model("faux-1")),
+                model: Some(h.model("faux-1").unwrap()),
                 thinking_level: None,
                 scoped_models: Vec::new(),
                 no_tools: None,
@@ -756,7 +799,8 @@ fn reload_keeps_extension_flag_values() {
         session.reload().await.unwrap();
         let values = session.extension_runner().get_flag_values();
         assert_eq!(values.get("verbose"), Some(&FlagValue::Boolean(true)));
-    });
+    })
+    .unwrap();
 }
 
 /// What a live tool description could change while it resolved: its own tool, and the
@@ -797,16 +841,21 @@ fn resolves_tool_descriptions_with_no_guard_held() {
     on_task_set(|_| async {
         let changes = Changes::default();
         let (tools, slot) = self_updating_tools(&changes);
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(tools),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(tools),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(*changes.borrow(), [(true, None)]);
         *slot.borrow_mut() = Rc::downgrade(&h.session);
         h.session.reload().await.unwrap();
         assert_eq!(*changes.borrow(), [(true, None), (true, Some(true))]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -826,7 +875,8 @@ fn extension_session_name_reaches_the_retained_session_and_listener() {
             .map(|event| event["name"].clone())
             .collect();
         assert_eq!(names, [json!("from extension")]);
-    });
+    })
+    .unwrap();
 }
 
 /// An abort handler alone is not a host binding for reload notifications or resources.
@@ -850,5 +900,6 @@ fn reload_with_only_abort_binding_skips_start_and_discovery() {
             [json!({"event": "session_shutdown", "reason": "reload"})]
         );
         assert_eq!(h.extended.borrow().len(), extended);
-    });
+    })
+    .unwrap();
 }

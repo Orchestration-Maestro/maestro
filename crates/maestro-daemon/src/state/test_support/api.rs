@@ -7,8 +7,8 @@ use crate::{
 };
 use maestro_detection::agents::{Agent, AgentState};
 use maestro_protocol::{
+    envelopes::RpcCommand,
     events::EventData,
-    rpc_types::RpcCommand,
     schema::{
         ErrorBody, LayoutDescription, PaneInfo, PaneLayoutSnapshot, ResponseResult, SplitDirection,
     },

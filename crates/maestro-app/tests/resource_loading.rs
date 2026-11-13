@@ -3,8 +3,9 @@
 #![cfg(unix)]
 use crate::resource_fixtures::{
     ExtensionSpec, LOADER, LoaderCorpus, Root, check_loader_cases, loader, loader_case, observe,
-    on_task_set, resource_options, run_loader_case, with_isolated_home,
+    resource_options, run_loader_case, with_isolated_home,
 };
+use maestro_app::test_support::on_task_set;
 use maestro_app::{LoadPromptsResult, LoadThemesResult, ResourceDiagnostic, ResourceLoader};
 use maestro_resources::{
     DiagnosticType, LoadSkillsResult, Skill, SourceInfo, SourceOrigin, SourceScope,
@@ -172,7 +173,7 @@ fn invalid_theme_files_warn_with_the_theme_error() {
         case.expected["themeDiagnostics"][0]["message"] = root.normalize(&json!(error.to_string()));
         let expected = case.expected.clone();
         let observed =
-            on_task_set(|local| async move { run_loader_case(&root, &case, local).await });
+            on_task_set(|local| async move { run_loader_case(&root, &case, local).await }).unwrap();
         assert_eq!(observed, expected);
     })
     .unwrap();
@@ -279,7 +280,8 @@ fn reload_rebuilds_package_provenance() {
             loader.reload().await.unwrap();
             let second = loader.get_skills();
             [first, second].map(|skills| skills.skills[0].source_info.scope)
-        });
+        })
+        .unwrap();
         assert_eq!(scopes, [SourceScope::User, SourceScope::Project]);
     })
     .unwrap();
@@ -321,7 +323,8 @@ fn overrides_see_base_results_in_reference_order() {
                 loader.reload().await.unwrap();
                 root.normalize(&observe(&loader))
             }
-        });
+        })
+        .unwrap();
         assert_eq!(Value::Array(seen.take()), row["seen"]);
         assert_eq!(observed, row["expected"]);
     })
@@ -418,7 +421,8 @@ fn missing_override_extension_path_uses_its_parent_directory() {
                     "extensionPath": extension.path,
                     "sourceInfo": *extension.source_info.read().unwrap(),
                 }))
-            });
+            })
+            .unwrap();
             assert_eq!(observed, row["expected"]);
         },
     )
@@ -460,7 +464,7 @@ fn in_memory_settings_survive_resource_reload() {
                 },
             );
             loader.reload().await.unwrap();
-        });
+        }).unwrap();
         let manager = manager.borrow();
         let observed = json!({
             "defaultThinkingLevel": manager.get_default_thinking_level().map(Value::from),

@@ -22,7 +22,7 @@ use maestro_process::{
     terminal::jobs::{self, ProcessDetectionMode},
 };
 use maestro_protocol::{
-    rpc_types::RpcCommand,
+    envelopes::RpcCommand,
     schema::{
         ErrorBody, PaneEdgesParams, PaneEdgesResult, PaneFocusDirectionParams,
         PaneFocusDirectionReason, PaneFocusDirectionResult, PaneLayoutSnapshot, PaneNeighborParams,

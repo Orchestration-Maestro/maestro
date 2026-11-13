@@ -165,3 +165,161 @@ fn the_end_of_the_body_dispatches_the_pending_event_only_when_asked() {
     assert!(plain.push(b"event: stop\ndata: z").is_empty());
     assert!(plain.finish().is_empty());
 }
+
+/// One recorded body with the events each framing reads from it.
+struct Framed {
+    /// What the body exercises.
+    name: &'static str,
+    /// Body chunks in delivery order.
+    chunks: &'static [&'static str],
+    /// Events of the default field framing.
+    fields: Vec<ServerSentEvent>,
+    /// Events of the message-stream framing.
+    message: Vec<ServerSentEvent>,
+    /// Segments of the whole-segment framing.
+    segments: Vec<ServerSentEvent>,
+    /// Text the whole-segment framing holds when the body ends.
+    tail: &'static str,
+}
+
+/// A field event named `event` with `data`, formed by the lines `raw` when they are kept.
+fn kept(event: Option<&str>, data: &str, raw: &[&str]) -> ServerSentEvent {
+    ServerSentEvent {
+        is_data: true,
+        event: event.map(str::to_owned),
+        data: data.to_owned(),
+        raw: raw.iter().map(|&line| line.to_owned()).collect(),
+    }
+}
+
+/// A whole segment holding `data`, which is event data when `is_data`.
+fn segment(is_data: bool, data: &str) -> ServerSentEvent {
+    ServerSentEvent {
+        is_data,
+        event: None,
+        data: data.to_owned(),
+        raw: Vec::new(),
+    }
+}
+
+/// Recorded bodies that differ in their marks and line endings.
+fn line_bodies() -> Vec<Framed> {
+    vec![
+        Framed {
+            name: "mark at the start",
+            chunks: &["\u{feff}data: 1\n\n"],
+            fields: vec![data_event("1")],
+            message: vec![kept(None, "1", &["data: 1"])],
+            segments: vec![segment(true, "1")],
+            tail: "",
+        },
+        Framed {
+            name: "mark in mid-stream",
+            chunks: &["data: 1\n\n\u{feff}data: 2\n\n"],
+            fields: vec![data_event("1"), data_event("2")],
+            message: vec![kept(None, "1", &["data: 1"])],
+            segments: vec![segment(true, "1"), segment(true, "2")],
+            tail: "",
+        },
+        Framed {
+            name: "line endings cut between their two bytes",
+            chunks: &["data: 1\r", "\n\r", "\ndata: 2\r\n\r\n"],
+            fields: vec![data_event("1"), data_event("2")],
+            message: vec![kept(None, "1", &["data: 1"]), kept(None, "2", &["data: 2"])],
+            segments: vec![segment(true, "1"), segment(true, "2")],
+            tail: "",
+        },
+        Framed {
+            name: "lone carriage returns",
+            chunks: &["event: a\rdata: 1\r\r"],
+            fields: vec![kept(Some("a"), "1", &[])],
+            message: vec![kept(Some("a"), "1", &["event: a", "data: 1"])],
+            segments: vec![segment(false, "event: a\rdata: 1")],
+            tail: "",
+        },
+    ]
+}
+
+/// Recorded bodies that differ in their fields and in how they end.
+fn field_bodies() -> Vec<Framed> {
+    vec![
+        Framed {
+            name: "comment lines",
+            chunks: &[": note\ndata: 1\n: more\n\n"],
+            fields: vec![data_event("1")],
+            message: vec![kept(None, "1", &[": note", "data: 1", ": more"])],
+            segments: vec![segment(false, ": note\ndata: 1\n: more")],
+            tail: "",
+        },
+        Framed {
+            name: "data on several lines",
+            chunks: &["data: 1\ndata: 2\n\n"],
+            fields: vec![data_event("1\n2")],
+            message: vec![kept(None, "1\n2", &["data: 1", "data: 2"])],
+            segments: vec![segment(true, "1\ndata: 2")],
+            tail: "",
+        },
+        Framed {
+            name: "no blank line before the end",
+            chunks: &["data: 1\n\ndata: 2"],
+            fields: vec![data_event("1")],
+            message: vec![kept(None, "1", &["data: 1"]), kept(None, "2", &["data: 2"])],
+            segments: vec![segment(true, "1")],
+            tail: "data: 2",
+        },
+        Framed {
+            name: "event without data",
+            chunks: &["event: ping\n\ndata: 1\n\n"],
+            fields: vec![kept(Some("ping"), "", &[]), data_event("1")],
+            message: vec![
+                kept(Some("ping"), "", &["event: ping"]),
+                kept(None, "1", &["data: 1"]),
+            ],
+            segments: vec![segment(false, "event: ping"), segment(true, "1")],
+            tail: "",
+        },
+    ]
+}
+
+/// Every event `reader` gives for `chunks` and the end of the body, with the text it still holds.
+fn read(mut reader: SseMessages, chunks: &[Vec<u8>]) -> (Vec<ServerSentEvent>, String) {
+    let mut events: Vec<_> = chunks.iter().flat_map(|chunk| reader.push(chunk)).collect();
+    events.extend(reader.finish());
+    (events, reader.segment_tail())
+}
+
+#[test]
+fn every_framing_gives_its_recorded_events_for_each_body() {
+    for case in line_bodies().into_iter().chain(field_bodies()) {
+        let delivered: Vec<Vec<u8>> = case
+            .chunks
+            .iter()
+            .map(|chunk| chunk.as_bytes().to_vec())
+            .collect();
+        let bytewise: Vec<Vec<u8>> = delivered
+            .concat()
+            .into_iter()
+            .map(|byte| vec![byte])
+            .collect();
+        for chunks in [&delivered, &bytewise] {
+            let cut = chunks.len();
+
+            let (fields, _) = read(SseMessages::default(), chunks);
+            let (message, _) = read(SseMessages::with_options(MESSAGE_STREAM), chunks);
+            let (segments, tail) = read(SseMessages::data_segments(), chunks);
+
+            assert_eq!(fields, case.fields, "{}: fields in {cut} chunks", case.name);
+            assert_eq!(
+                message, case.message,
+                "{}: message in {cut} chunks",
+                case.name
+            );
+            assert_eq!(
+                segments, case.segments,
+                "{}: segments in {cut} chunks",
+                case.name
+            );
+            assert_eq!(tail, case.tail, "{}: tail in {cut} chunks", case.name);
+        }
+    }
+}

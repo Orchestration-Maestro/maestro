@@ -5,7 +5,7 @@ use crate::service::health::RuntimeStatus;
 use crate::service::local_socket::{LocalStream, LocalStreamExt, connect_local_stream};
 use maestro_json::lines::serialize_native_json_line;
 use maestro_protocol::{
-    rpc_types::{Request, RpcCommand, RpcResponse},
+    envelopes::{Request, RpcCommand, RpcResponse},
     schema::{PingParams, ResponseResult},
 };
 use std::{

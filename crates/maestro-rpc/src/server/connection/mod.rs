@@ -3,9 +3,9 @@ mod native;
 
 pub use native::NativeRpcProcess;
 
-use maestro_app::connection_runner::{JsonlLineReader, stdout_output};
+use crate::connection_runner::{JsonlLineReader, stdout_output};
+use crate::{RpcModeOptions, run_rpc_connection};
 use maestro_app::output_guard::take_over_stdout;
-use maestro_app::{RpcModeOptions, run_rpc_connection};
 use std::{convert::Infallible, io};
 
 /// Serves the optional session over standard input and output until the input ends, an extension

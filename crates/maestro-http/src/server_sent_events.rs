@@ -1,4 +1,7 @@
 //! Reads a response body as server-sent events.
+//!
+//! One reader, [`SseMessages`], frames the stream of every protocol by the rules its
+//! documentation states; a protocol keeps only the reduction of the events it receives.
 
 use maestro_text::line_framing::ByteLineDecoder;
 use maestro_text::{decode_utf8, lossy_string};
@@ -81,12 +84,27 @@ impl SseDecoder {
 
 /// Reads server-sent events from body chunks.
 ///
-/// In field mode, completed lines are read as each chunk arrives. CR, LF and CRLF end a
-/// line; CR ends its line immediately and one following LF is skipped, even across chunks.
-/// UTF-8 bytes stay buffered until their line ends. A blank line dispatches the collected
-/// event. Data-segment mode instead preserves each completed segment's payload. Each line
-/// loses a leading byte-order mark unless [`SseOptions::stream_start_mark`] limits that to
-/// the first line.
+/// Field mode, the default, frames a body by these rules:
+///
+/// - CR, LF and CRLF end a line, wherever the chunks are cut. CR ends its line at once and
+///   one LF right after it is skipped, even in the next chunk.
+/// - A line is decoded once it ends: bytes that are not UTF-8 become U+FFFD, and a leading
+///   byte-order mark is dropped from every line unless [`SseOptions::stream_start_mark`]
+///   limits that to the first line of the stream.
+/// - A line is a field name, a colon and a value, less one space after the colon; a line
+///   without a colon is a name with an empty value. `data` values collect, the latest `event`
+///   value names the event, and comments and other fields are ignored.
+/// - A blank line dispatches the collected event, its data values joined by LF, when it has
+///   a nonempty name or a data field.
+/// - With [`SseOptions::raw_lines`], every nonblank line since the last dispatch, comments
+///   included, is kept in [`ServerSentEvent::raw`].
+/// - The end of the body reads a last line that has no ending. The event still being
+///   collected is dispatched only with [`SseOptions::flush_pending`].
+///
+/// Data-segment mode ([`Self::data_segments`]) frames whole segments instead: LF-LF, CR-CR
+/// and CRLF-CRLF end a segment, which is delivered trimmed, as data when it opens with
+/// `data:`; the trim drops a byte-order mark with the white space. The end of the body
+/// delivers nothing; [`Self::segment_tail`] returns what is left.
 #[derive(Default)]
 pub struct SseMessages {
     /// Splits body chunks into lines.

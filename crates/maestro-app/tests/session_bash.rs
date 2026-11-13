@@ -2,12 +2,15 @@
 //! cancellation and the recorded transcript, compared with the recorded shell cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, ScriptedShell, Transcript, assistant, bash_result_view, case,
-    entries_view, harness, hold_first_answer, labelled, messages_view, on_task_set, queue_view,
+    Harness, Transcript, bash_result_view, case, entries_view, labelled, messages_view, queue_view,
     start_prompt, supplied_failure, transcribed, with_placeholders,
 };
 use maestro_app::agent_session::{BashRunOptions, PromptOptions};
+use maestro_app::test_support::{
+    HarnessOptions, ScriptedShell, assistant, harness, hold_first_answer, on_task_set,
+};
 use maestro_session::SessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -79,7 +82,8 @@ fn shell_prefix_applies_to_execution_only() {
             expected["results"]
         );
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -94,7 +98,8 @@ fn shell_runs_in_the_session_directory() {
             expected["results"]
         );
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -123,7 +128,8 @@ fn shell_progress_reaches_the_caller() {
             expected["results"]
         );
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -145,7 +151,8 @@ fn cancelled_shell_is_recorded_as_cancelled() {
         let result = json!({"ok": bash_result_view(&result.unwrap())});
         assert_eq!(json!([result]), expected["results"]);
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -178,7 +185,8 @@ fn running_shell_state_spans_the_command() {
         ]);
         assert_eq!(results, expected["results"]);
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[cfg(unix)]
@@ -199,12 +207,11 @@ fn configured_shell_path_runs_the_command() {
                 "code": 0
             }),
         );
-        let (h, t) = transcribed(HarnessOptions {
+        let options = HarnessOptions {
             settings: json!({"shellPath": shell.display().to_string()}),
-            scratch: Some(scratch),
             ..HarnessOptions::default()
-        })
-        .await;
+        };
+        let (h, t) = crate::support::session_harness::transcribed_in(scratch, options).await;
         let result = h
             .session
             .execute_bash("ignored", None, BashRunOptions::default())
@@ -212,7 +219,8 @@ fn configured_shell_path_runs_the_command() {
         let result = json!({"ok": bash_result_view(&result.unwrap())});
         assert_eq!(json!([result]), expected["results"]);
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -223,7 +231,8 @@ fn shell_records_announce_no_messages() {
         let (h, t, result) = run(HarnessOptions::default(), "echo quiet", &operations, None).await;
         assert_eq!(json!([result]), expected["results"]);
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -240,7 +249,8 @@ fn excluded_shell_result_is_recorded_without_context() {
         .await;
         assert_eq!(json!([result]), expected["results"]);
         assert_shell_case(&h, &t, &expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -255,7 +265,8 @@ fn truncated_shell_result_keeps_its_artifact() {
         let record = serde_json::to_value(&messages.read().unwrap()[0]).unwrap();
         let artifact = record["fullOutputPath"].as_str().unwrap();
         assert_eq!(std::fs::read(artifact).unwrap().len(), 60 * 1024);
-    });
+    })
+    .unwrap();
 }
 
 /// Shell operations that fail with `0`.
@@ -282,7 +293,9 @@ impl maestro_tools::BashOperations<maestro_models::Local> for FailingShell {
 #[test]
 fn shell_failure_keeps_its_supplied_fields() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let options = BashRunOptions {
             exclude_from_context: None,
             operations: Some(Rc::new(FailingShell(supplied_failure()))),
@@ -290,13 +303,16 @@ fn shell_failure_keeps_its_supplied_fields() {
         let failure = h.session.execute_bash("remote", None, options).await;
         assert_eq!(failure.unwrap_err(), supplied_failure());
         assert!(!h.session.is_bash_running());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn shell_starts_and_accepts_abort_before_observation() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let operations = Rc::new(ScriptedShell::held(vec!["chunk".into()], Some(7.0)));
         let observer = h.session.execute_bash(
             "shell",
@@ -316,7 +332,8 @@ fn shell_starts_and_accepts_abort_before_observation() {
             (true, 1, true)
         );
         assert!(!h.session.is_bash_running());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -324,11 +341,15 @@ fn abandoned_shell_command_still_settles_and_records() {
     on_task_set(|_| async {
         let tasks = Rc::new(RefCell::new(Vec::new()));
         let queue = Rc::clone(&tasks);
-        let h = harness(HarnessOptions {
-            spawn: Some(Rc::new(move |task| queue.borrow_mut().push(task))),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                spawn: Some(Rc::new(move |task| queue.borrow_mut().push(task))),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let operations = Rc::new(ScriptedShell::held(vec!["late".into()], Some(0.0)));
         let options = BashRunOptions {
             exclude_from_context: None,
@@ -342,7 +363,8 @@ fn abandoned_shell_command_still_settles_and_records() {
         task.await;
         assert!(!h.session.is_bash_running());
         assert_eq!(shell_commands(&h), [json!("slow")]);
-    });
+    })
+    .unwrap();
 }
 
 /// The commands of the shell results in the history, in order.
@@ -362,12 +384,15 @@ fn failed_flush_keeps_the_unwritten_shell_results() {
         let sessions = format!("{root}/sessions");
         let manager =
             SessionManager::create(&format!("{root}/project"), Some(&sessions), &root).unwrap();
-        let h = harness(HarnessOptions {
-            session_manager: Some(manager),
-            scratch: Some(scratch),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            scratch,
+            HarnessOptions {
+                session_manager: Some(manager),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let seeded = assistant("seeded", 1, &json!({}));
         drop(
             h.session
@@ -406,7 +431,8 @@ fn failed_flush_keeps_the_unwritten_shell_results() {
             .unwrap();
         assert!(!h.session.has_pending_bash_messages());
         assert_eq!(shell_commands(&h), [json!("one"), json!("two")]);
-    });
+    })
+    .unwrap();
 }
 
 /// A caller-local operation checks synchronous output delivery before it settles.
@@ -473,5 +499,6 @@ fn shell_accepts_local_operations_and_chunk_observers() {
         assert_eq!(records[0]["output"], "one\né");
         assert_eq!(records[0]["excludeFromContext"], true);
         assert!(!h.session.is_bash_running());
-    });
+    })
+    .unwrap();
 }

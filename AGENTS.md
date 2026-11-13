@@ -188,7 +188,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   shared state behind a mutex or read-write lock may depend on lock: settings,
   credentials, workspace, detection, session, models, agent, tools, extensions, office,
   application, the daemon, the runtime adapter, the terminal adapter, the interactive
-  frontend and the command-line frontend, and the composed executable
+  frontend, the command-line frontend and the RPC frontend, and the composed executable
   crate only as a native development dependency so its tests serialize one shared
   native fixture. The edge is portable, so the shared-state operations serve
   browser callers; file exclusion stays native.
@@ -330,8 +330,9 @@ that build a real model catalog, the native-only `maestro-extensions-wasmtime`
 to catalog, credentials, models, session, theme and toolkit for reused native composition
 test support, including a real terminal for synchronous component factories, the native-only, non-optional `maestro-detection`
 to `maestro-text` edge for terminal newline normalization in checked-child tests,
-the native `maestro-rpc` to `maestro-theme` and `maestro-tui-crossterm` edges
-for its standard-stream child tests, the native-only, non-optional `maestro-chat`
+the native `maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-catalog` and
+`maestro-credentials` edges for protocol tests that render exports and drive a real session
+through the scripted provider, the native-only, non-optional `maestro-chat`
 to `maestro-models` edge for interactive-mode tests that drive a real session
 through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
@@ -405,16 +406,18 @@ Publish reusable adapter conformance from the owning leaf, not a forwarding test
 
 `maestro-protocol` owns the generic RPC envelopes, the workspace records, binary
 screen channel and generated JSON Schema, with no domain dependencies.
-`maestro-app::rpc_types` owns the session records and `maestro-app::connection_runner` the one
-connection runner; `maestro-rpc` is its standard-stream adapter. Session and workspace
+`maestro-rpc::rpc_types` owns the session records, `maestro-rpc::connection_runner` the one
+connection runner and `maestro-rpc::RpcClient` the client of a child process;
+`maestro-rpc::run_rpc_mode` is the runner's standard-stream adapter. Session and workspace
 operations use one contract across stdio and daemon sockets; JSONL framing belongs to
-`maestro-json::lines`. Conventions keep protocol records in the application and the
+`maestro-json::lines`. Conventions keep protocol records in the RPC crate and the
 protocol crate. The connection output accepts only an `RpcLine`, which only an
 `RpcRecord` builds, so protocol output has one writer by type. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
-The workspace daemon is core design: the root always wires the daemon through
-the application interface. A direct multiplexer dependency is permitted when its
+The workspace daemon is core design: the root always wires the daemon. The
+multiplexer, the CLI and the RPC frontend reach it directly; the application
+does not. A direct multiplexer dependency is permitted when its
 launcher is wired, not required for command-line startup.
 These declared owners need no placeholder crates before their first delivery.
 
