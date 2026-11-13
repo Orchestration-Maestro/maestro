@@ -1,14 +1,16 @@
 //! Finalized assistant costs through the session's message consumers.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::support::session_harness::{HarnessOptions, Scripted, corpus, harness, on_task_set};
+use crate::support::session_harness::corpus;
 use maestro_agent::{AgentEvent, AgentMessage};
+use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
 use maestro_app::{AgentSessionEvent, PromptOptions};
 use maestro_extensions::{
     ExtensionFactory, MessageEndEvent, MessageEndEventResult, NativeAgentMessage,
 };
 use maestro_models::Local;
 use maestro_session::{Presence, session_manager::ReadonlySessionManager};
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -67,12 +69,16 @@ fn message_boundaries(session: &maestro_app::AgentSession<Local>) -> Rc<RefCell<
 fn finalized_cost_replacement_reaches_every_message_consumer() {
     let expected = corpus("replacement");
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            factories: vec![replace_cost()],
-            responses: Some(vec![Scripted::text("hello")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![replace_cost()],
+                responses: Some(vec![Scripted::text("hello")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let events = message_boundaries(&h.session);
         h.session
             .prompt("hi", PromptOptions::default())
@@ -119,5 +125,6 @@ fn finalized_cost_replacement_reaches_every_message_consumer() {
                 .collect();
             assert_eq!(json!(costs), expected["cost"][key], "{key}");
         }
-    });
+    })
+    .unwrap();
 }

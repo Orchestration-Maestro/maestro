@@ -3,11 +3,9 @@
 
 use crate::support::{
     io_runtime, run_io,
-    session_harness::{
-        ScriptedShell, ShellFailure, as_recorded, bash_result_view, case, on_paused_task_set,
-        run_native_tool_child,
-    },
+    session_harness::{as_recorded, bash_result_view, case, run_native_tool_child},
 };
+use maestro_app::test_support::{ScriptedShell, ShellFailure, on_paused_task_set};
 use maestro_app::{BashToolOptions, create_bash_tool};
 use serde_json::json;
 use std::{
@@ -216,7 +214,8 @@ fn bash_coalesces_chatty_progress() {
         .unwrap();
         assert!(*updates.lock().unwrap() < 25);
         json!(result)
-    });
+    })
+    .unwrap();
     let artifact = result["details"]["fullOutputPath"].as_str().unwrap();
     let observed = json!({"ok":{"result":result},"artifact":artifact_contents(artifact)});
     assert_eq!(

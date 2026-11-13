@@ -1,11 +1,12 @@
 //! The concrete terminal and standard-stream presentations.
 use maestro_app::{
-    AgentSessionRuntime, RpcModeOptions, RpcSessionOptions,
+    AgentSessionRuntime,
     presentation_data::mode_dispatch::{
         InteractiveModeOptions, InteractiveModeRunner, ModeLaunchers,
     },
 };
 use maestro_export::ExportOperations;
+use maestro_rpc::{RpcModeOptions, RpcSessionOptions};
 use maestro_theme::{SyntectHighlighter, ThemeState};
 use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::TerminalHandle;

@@ -1,6 +1,6 @@
 //! Base extension context records through the application root.
 #[cfg(not(target_arch = "wasm32"))]
-use crate::support::session_harness::no_commands;
+use crate::support::no_commands::no_commands;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_app::{CompactOptions, ContextUsage, ExtensionContext, ExtensionContextActions};
 #[cfg(not(target_arch = "wasm32"))]

@@ -7,7 +7,7 @@ use crate::state::App;
 use crate::state::model::{ToastKind, ToastNotification};
 use crate::state::test_support::api::{daemon, daemon_with_workspaces, failure, request, settings};
 use crate::tests::block_on;
-use maestro_protocol::rpc_types::RpcCommand;
+use maestro_protocol::envelopes::RpcCommand;
 use maestro_protocol::schema::{EmptyParams, NotificationShowReason, ResponseResult};
 use maestro_protocol::shared::ToastMaestroPosition;
 use serde_json::{Value, json};

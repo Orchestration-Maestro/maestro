@@ -475,7 +475,7 @@ forbidden_edge_tests! {
     models_to_process_edge_is_rejected: "maestro-models" => "maestro-process",
     cli_to_watch_edge_is_rejected: "maestro-cli" => "maestro-watch",
     chat_to_daemon_edge_is_rejected: "maestro-chat" => "maestro-daemon",
-    rpc_to_catalog_edge_is_rejected: "maestro-rpc" => "maestro-models-registry",
+    rpc_to_packages_edge_is_rejected: "maestro-rpc" => "maestro-packages",
     web_to_process_edge_is_rejected: "maestro-web" => "maestro-process",
     text_to_tools_edge_is_rejected: "maestro-text" => "maestro-tools",
 }
@@ -2545,13 +2545,10 @@ fn chat_models_test_edge_is_native() {
 fn extension_and_rpc_test_edges_are_native() {
     for (owner, target) in [
         ("maestro-extensions", "maestro-credentials"),
-        ("maestro-rpc", "maestro-theme"),
         ("maestro-rpc", "maestro-tui-crossterm"),
-        ("maestro-rpc", "maestro-export"),
-        ("maestro-rpc", "maestro-extensions"),
-        ("maestro-rpc", "maestro-models"),
-        ("maestro-rpc", "maestro-session"),
-        ("maestro-rpc", "maestro-tools"),
+        ("maestro-rpc", "maestro-models-registry"),
+        ("maestro-rpc", "maestro-credentials"),
+        ("maestro-rpc", "maestro-tui"),
         ("maestro", "maestro-models-registry"),
         ("maestro", "maestro-credentials"),
         ("maestro", "maestro-json"),

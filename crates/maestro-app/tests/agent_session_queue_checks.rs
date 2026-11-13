@@ -3,18 +3,21 @@
 //! with the recorded operation cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, command_extension, delivery_requests, delivery_view,
-    expected, get_message_text, harness, input_sources, observed_preflight, on_task_set,
-    session_run_ended, start_prompt, waiting_tool,
+    Harness, delivery_requests, delivery_view, expected, get_message_text, input_sources,
+    observed_preflight, session_run_ended, start_prompt, waiting_tool,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentEvent, QueueMode, SharedAgentTool};
+use maestro_app::test_support::{
+    HarnessOptions, Scripted, command_extension, harness, on_task_set,
+};
 use maestro_app::{AgentSessionEvent, PromptOptions};
 use maestro_models::{DiagnosticErrorInfo, Local, UserContent};
 use maestro_session::Presence;
 use maestro_session::message_records::{
     CustomMessageInput, MessageDelivery, SendMessageOptions, UserMessageDelivery,
 };
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -97,11 +100,15 @@ fn idle_command_needs_no_scripted_answer() {
     on_task_set(|_| async {
         let expected = expected("idle_command_needs_no_scripted_answer");
         let heard = Rc::new(RefCell::new(None));
-        let h = harness(HarnessOptions {
-            factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let (accepted, options) = observed_preflight();
         let result = h.session.prompt("/testcmd hello world", options).await;
         assert!(result.is_ok());
@@ -112,7 +119,8 @@ fn idle_command_needs_no_scripted_answer() {
         observed["calls"] = json!(h.faux.state.call_count());
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -159,7 +167,8 @@ fn extension_steering_precedes_the_next_request() {
         let mut observed = held.finish().await;
         observed["sources"] = json!(input_sources(&t));
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -168,21 +177,26 @@ fn follow_up_waits_for_ordinary_continuation() {
         let expected = expected("follow_up_waits_for_ordinary_continuation");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(waiting_tools(&started, &release)),
-            responses: Some(vec![
-                waiting_answer(),
-                Scripted::text("follow-up response"),
-                Scripted::default(),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(waiting_tools(&started, &release)),
+                responses: Some(vec![
+                    waiting_answer(),
+                    Scripted::text("follow-up response"),
+                    Scripted::default(),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let held = Held::begin(h, started, release).await;
         let result = held.harness().session.follow_up("after current run", &[]);
         assert!(result.is_ok());
         assert_eq!(held.finish().await, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// Runs `order` as steering messages, then returns the delivered observations.
@@ -191,12 +205,16 @@ async fn steering_run(order: &[&str]) -> Value {
     let release = Rc::new(Notify::new());
     let mut responses = vec![waiting_answer()];
     responses.extend((1..=order.len()).map(|n| Scripted::text(&format!("handled steer {n}"))));
-    let h = harness(HarnessOptions {
-        base_tools_override: Some(waiting_tools(&started, &release)),
-        responses: Some(responses),
-        ..HarnessOptions::default()
-    })
-    .await;
+    let h = harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            base_tools_override: Some(waiting_tools(&started, &release)),
+            responses: Some(responses),
+            ..HarnessOptions::default()
+        },
+    )
+    .await
+    .unwrap();
     let held = Held::begin(h, started, release).await;
     held.harness()
         .session
@@ -223,7 +241,8 @@ fn steering_one_at_a_time_keeps_fifo() {
         let dropped = steering_run(&["steer 1"]).await;
         assert_ne!(dropped["users"], expected["users"]);
         assert_ne!(dropped["requests"], expected["requests"]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -232,17 +251,21 @@ fn follow_up_one_at_a_time_keeps_fifo() {
         let expected = expected("follow_up_one_at_a_time_keeps_fifo");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(waiting_tools(&started, &release)),
-            responses: Some(vec![
-                waiting_answer(),
-                Scripted::text("original turn complete"),
-                Scripted::text("handled follow-up 1"),
-                Scripted::text("handled follow-up 2"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(waiting_tools(&started, &release)),
+                responses: Some(vec![
+                    waiting_answer(),
+                    Scripted::text("original turn complete"),
+                    Scripted::text("handled follow-up 1"),
+                    Scripted::text("handled follow-up 2"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let held = Held::begin(h, started, release).await;
         held.harness()
             .session
@@ -255,7 +278,8 @@ fn follow_up_one_at_a_time_keeps_fifo() {
         assert!(held.harness().session.follow_up("follow-up 1", &[]).is_ok());
         assert!(held.harness().session.follow_up("follow-up 2", &[]).is_ok());
         assert_eq!(held.finish().await, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -264,15 +288,19 @@ fn steering_all_keeps_one_batch() {
         let expected = expected("steering_all_keeps_one_batch");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(waiting_tools(&started, &release)),
-            responses: Some(vec![
-                waiting_answer(),
-                Scripted::text("batched steer response"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(waiting_tools(&started, &release)),
+                responses: Some(vec![
+                    waiting_answer(),
+                    Scripted::text("batched steer response"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let held = Held::begin(h, started, release).await;
         held.harness()
             .session
@@ -285,7 +313,8 @@ fn steering_all_keeps_one_batch() {
         assert!(held.harness().session.steer("steer 1", &[]).is_ok());
         assert!(held.harness().session.steer("steer 2", &[]).is_ok());
         assert_eq!(held.finish().await, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -294,16 +323,20 @@ fn follow_up_all_keeps_one_batch() {
         let expected = expected("follow_up_all_keeps_one_batch");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(waiting_tools(&started, &release)),
-            responses: Some(vec![
-                waiting_answer(),
-                Scripted::text("original turn complete"),
-                Scripted::text("batched follow-up response"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(waiting_tools(&started, &release)),
+                responses: Some(vec![
+                    waiting_answer(),
+                    Scripted::text("original turn complete"),
+                    Scripted::text("batched follow-up response"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let held = Held::begin(h, started, release).await;
         held.harness()
             .session
@@ -316,7 +349,8 @@ fn follow_up_all_keeps_one_batch() {
         assert!(held.harness().session.follow_up("follow-up 1", &[]).is_ok());
         assert!(held.harness().session.follow_up("follow-up 2", &[]).is_ok());
         assert_eq!(held.finish().await, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// A custom message of the two streaming cases.
@@ -343,12 +377,16 @@ fn streaming_custom_steering_reaches_the_provider() {
         let expected = expected("streaming_custom_steering_reaches_the_provider");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(waiting_tools(&started, &release)),
-            responses: Some(vec![waiting_answer(), Scripted::text("done")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(waiting_tools(&started, &release)),
+                responses: Some(vec![waiting_answer(), Scripted::text("done")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let held = Held::begin(h, started, release).await;
         let result = held
             .harness()
@@ -360,7 +398,8 @@ fn streaming_custom_steering_reaches_the_provider() {
             .await;
         assert!(result.is_ok());
         assert_eq!(held.finish().await, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -369,16 +408,20 @@ fn streaming_custom_follow_up_waits_for_continuation() {
         let expected = expected("streaming_custom_follow_up_waits_for_continuation");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(waiting_tools(&started, &release)),
-            responses: Some(vec![
-                waiting_answer(),
-                Scripted::text("original turn complete"),
-                Scripted::text("done"),
-            ]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(waiting_tools(&started, &release)),
+                responses: Some(vec![
+                    waiting_answer(),
+                    Scripted::text("original turn complete"),
+                    Scripted::text("done"),
+                ]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let held = Held::begin(h, started, release).await;
         let result = held
             .harness()
@@ -390,18 +433,23 @@ fn streaming_custom_follow_up_waits_for_continuation() {
             .await;
         assert!(result.is_ok());
         assert_eq!(held.finish().await, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn next_turn_custom_message_follows_the_user() {
     on_task_set(|_| async {
         let expected = expected("next_turn_custom_message_follows_the_user");
-        let h = harness(HarnessOptions {
-            responses: Some(vec![Scripted::text("done")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                responses: Some(vec![Scripted::text("done")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let note = CustomMessageInput {
             custom_type: "next-turn".into(),
             content: UserContent::Text("carry this".into()),
@@ -424,7 +472,8 @@ fn next_turn_custom_message_follows_the_user() {
         observed["before"] = before;
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 /// Records the pending count each time the session starts the user message `text`.
@@ -459,12 +508,16 @@ fn queued_text_leaves_the_mirror_before_start() {
         let expected = expected("queued_text_leaves_the_mirror_before_start");
         let started = Rc::new(Notify::new());
         let release = Rc::new(Notify::new());
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(waiting_tools(&started, &release)),
-            responses: Some(vec![waiting_answer(), Scripted::text("done")]),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(waiting_tools(&started, &release)),
+                responses: Some(vec![waiting_answer(), Scripted::text("done")]),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let counts = message_start_counts(&h, "queued");
         let held = Held::begin(h, started, release).await;
         assert!(held.harness().session.steer("queued", &[]).is_ok());
@@ -472,7 +525,8 @@ fn queued_text_leaves_the_mirror_before_start() {
         let mut observed = held.finish().await;
         observed["counts"] = json!(*counts.borrow());
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -480,11 +534,15 @@ fn registered_command_cannot_be_steered() {
     on_task_set(|_| async {
         let expected = expected("registered_command_cannot_be_steered");
         let heard = Rc::new(RefCell::new(None));
-        let h = harness(HarnessOptions {
-            factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let refused = h.session.steer("/testcmd queued", &[]);
         assert!(heard.borrow().is_none());
         let mut observed = delivery_view(&h);
@@ -492,7 +550,8 @@ fn registered_command_cannot_be_steered() {
         observed["calls"] = json!(h.faux.state.call_count());
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -500,11 +559,15 @@ fn registered_command_cannot_be_followed_up() {
     on_task_set(|_| async {
         let expected = expected("registered_command_cannot_be_followed_up");
         let heard = Rc::new(RefCell::new(None));
-        let h = harness(HarnessOptions {
-            factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![command_extension("testcmd", Rc::clone(&heard), None)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let refused = h.session.follow_up("/testcmd queued", &[]);
         assert!(heard.borrow().is_none());
         let mut observed = delivery_view(&h);
@@ -512,5 +575,6 @@ fn registered_command_cannot_be_followed_up() {
         observed["calls"] = json!(h.faux.state.call_count());
         assert_eq!(observed, expected);
         h.session.dispose();
-    });
+    })
+    .unwrap();
 }

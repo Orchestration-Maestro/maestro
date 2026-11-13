@@ -4,11 +4,13 @@
 //! and disposal.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, Scripted, agent_event_type, echo_tools, free_to_change, harness,
-    hold_first_answer, on_paused_task_set, on_task_set, start_prompt,
+    Harness, HarnessExt as _, agent_event_type, echo_tools, free_to_change, start_prompt,
 };
 use maestro_agent::{AgentEvent, AgentMessage};
 use maestro_app::agent_session::PromptOptions;
+use maestro_app::test_support::{
+    HarnessOptions, Scripted, harness, hold_first_answer, on_paused_task_set, on_task_set,
+};
 use maestro_app::{AgentSession, AgentSessionEvent};
 use maestro_extensions::{
     ExtensionFactory, MessageEndEvent, MessageEndEventResult, NativeAgentMessage, ToolCallEvent,
@@ -18,6 +20,7 @@ use maestro_models::{Local, TextContent, UserBlock};
 use maestro_session::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::session_manager::SessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
@@ -81,12 +84,16 @@ async fn answer_after<R>(
 
 /// A session over the scripted stream with `factories` and `responses`.
 async fn session(factories: Vec<ExtensionFactory<Local>>, responses: Vec<Scripted>) -> Harness {
-    harness(HarnessOptions {
-        factories,
-        responses: Some(responses),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            factories,
+            responses: Some(responses),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 /// Sends `text` and waits for the session to settle.
@@ -140,7 +147,9 @@ fn log_events(h: &Harness, label: &'static str, log: &Rc<RefCell<Vec<String>>>) 
 /// Queues `text` with `queue` while the first answer streams and returns what the listeners
 /// recorded.
 async fn delivered_queue(queue: fn(&Harness, &str)) -> (Harness, Vec<String>) {
-    let h = harness(HarnessOptions::default()).await;
+    let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+        .await
+        .unwrap();
     let log = Rc::new(RefCell::new(Vec::new()));
     let (requested, release) = hold_first_answer(&h, "first", &["second"]);
     let running = start_prompt(&h, "first");
@@ -181,7 +190,8 @@ fn removes_a_queued_steering_message_before_its_listeners_run() {
             .unwrap();
         assert_eq!(log[delivered - 1], "listener:queue [] []");
         assert_eq!(log[delivered + 1], "mirrors [] []");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -194,13 +204,16 @@ fn removes_a_queued_follow_up_after_steering() {
             .unwrap();
         assert_eq!(log[delivered - 1], "listener:queue [] []");
         assert_eq!(log[delivered + 1], "mirrors [] []");
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn queue_listeners_can_change_the_delivered_user_message() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let (requested, release) = hold_first_answer(&h, "first", &["second"]);
         let running = start_prompt(&h, "first");
         requested.notified().await;
@@ -218,7 +231,8 @@ fn queue_listeners_can_change_the_delivered_user_message() {
         release.notify_one();
         running.await.unwrap().unwrap();
         assert_eq!(*writable.borrow(), [true]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -252,7 +266,8 @@ fn delivers_extension_events_before_session_listeners() {
                 "listener:message_end answer",
             ]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -275,7 +290,8 @@ fn replaces_a_finalized_message_before_listeners_and_persistence() {
         let manager = h.session.session_manager().borrow();
         let stored = manager.get_entries().last().unwrap()["message"]["content"][0]["text"].clone();
         assert_eq!(stored, json!("rewritten"));
-    });
+    })
+    .unwrap();
 }
 
 /// A scripted call of the echo tool.
@@ -291,13 +307,17 @@ async fn echo_session(
     factories: Vec<ExtensionFactory<Local>>,
     responses: Vec<Scripted>,
 ) -> Harness {
-    harness(HarnessOptions {
-        factories,
-        responses: Some(responses),
-        base_tools_override: Some(echo_tools(Rc::default())),
-        ..HarnessOptions::default()
-    })
+    harness(
+        Scratch::new().unwrap(),
+        HarnessOptions {
+            factories,
+            responses: Some(responses),
+            base_tools_override: Some(echo_tools(Rc::default())),
+            ..HarnessOptions::default()
+        },
+    )
     .await
+    .unwrap()
 }
 
 #[test]
@@ -323,7 +343,8 @@ fn increments_the_turn_index_across_turns() {
             *turns.borrow(),
             ["start 0", "end 0", "start 1", "end 1", "start 0", "end 0"]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -354,7 +375,8 @@ fn extension_handlers_run_with_the_session_free_to_change() {
             *free.borrow(),
             [("tool_call", true), ("turn_end", true), ("turn_end", true)]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -374,7 +396,8 @@ fn keeps_the_turn_index_when_the_turn_end_emission_fails() {
             .on_error(Rc::new(|_| Err("error listener failed".into())));
         prompt(&h, "use the tool").await;
         assert_eq!(*starts.borrow(), [0.0, 0.0]);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -384,12 +407,16 @@ fn keeps_the_retry_attempt_while_successful_retry_listeners_run() {
             error: Some("503 service unavailable".into()),
             ..Scripted::default()
         };
-        let h = harness(HarnessOptions {
-            responses: Some(vec![failure, Scripted::text("recovered")]),
-            settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                responses: Some(vec![failure, Scripted::text("recovered")]),
+                settings: json!({"retry": {"enabled": true, "maxRetries": 1, "baseDelayMs": 1}}),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let seen = Rc::new(RefCell::new(Vec::new()));
         let (session, observed) = (Rc::downgrade(&h.session), Rc::clone(&seen));
         drop(h.session.subscribe(Rc::new(move |event| {
@@ -404,7 +431,8 @@ fn keeps_the_retry_attempt_while_successful_retry_listeners_run() {
         prompt(&h, "question").await;
         assert_eq!(*seen.borrow(), [(1, 1)]);
         assert_eq!(h.session.retry_attempt(), 0);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -429,7 +457,8 @@ fn reports_extension_handler_failures_without_stopping_the_queue() {
             log.borrow()
                 .contains(&"listener:message_end answer".to_owned())
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -445,13 +474,16 @@ fn reports_a_failed_save_once_and_keeps_the_conversation_going() {
         .unwrap();
         let file = manager.get_session_file().unwrap().to_owned();
         std::fs::create_dir(&file).unwrap();
-        let h = harness(HarnessOptions {
-            responses: Some(vec![Scripted::text("answer"), Scripted::text("again")]),
-            session_manager: Some(manager),
-            scratch: Some(scratch),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            scratch,
+            HarnessOptions {
+                responses: Some(vec![Scripted::text("answer"), Scripted::text("again")]),
+                session_manager: Some(manager),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let errors = Rc::new(RefCell::new(Vec::new()));
         let reported = Rc::clone(&errors);
         let _unsubscribe = h.runner().on_error(Rc::new(move |error| {
@@ -471,7 +503,8 @@ fn reports_a_failed_save_once_and_keeps_the_conversation_going() {
             4,
             "the conversation keeps working after the failed save"
         );
-    });
+    })
+    .unwrap();
 }
 
 /// Notifies `ended` once the agent ends, recording whether the session's run was active.
@@ -502,13 +535,13 @@ fn the_run_is_active_when_the_agent_ends() {
                 Rc::clone(&release),
                 Rc::clone(&log),
             );
-            let h = harness(HarnessOptions {
+            let h = harness(Scratch::new().unwrap(), HarnessOptions {
                 factories: vec![busy],
                 responses: Some(vec![Scripted::failure(error), Scripted::text("recovered")]),
                 settings: json!({"retry": {"enabled": true, "maxRetries": retries, "baseDelayMs": 1}}),
                 ..HarnessOptions::default()
             })
-            .await;
+            .await.unwrap();
             let observed = Rc::new(RefCell::new(None));
             let ended = Rc::new(Notify::new());
             observe_run_at_agent_end(&h, Rc::clone(&observed), Rc::clone(&ended));
@@ -533,7 +566,7 @@ fn the_run_is_active_when_the_agent_ends() {
             assert_eq!(h.requests.0.borrow().len(), 2);
             assert!(!h.session.is_retrying(), "the retry settled");
         }
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -570,7 +603,8 @@ fn waits_for_queued_session_events_before_intercepting_a_tool_call() {
                 "tool_call intercepted"
             ]
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -602,7 +636,8 @@ fn keeps_content_details_and_error_from_tool_result_interception() {
         assert_eq!(result["details"], json!({"replaced": true}));
         assert_eq!(result["isError"], json!(true));
         assert!(result.get("terminate").is_none());
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -650,13 +685,16 @@ fn persists_application_and_llm_messages_at_message_end() {
                 "assistant"
             ])
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn compact_aborts_and_disconnects_before_observation() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let (requested, release) = hold_first_answer(&h, "first", &[]);
         let running = start_prompt(&h, "first");
         requested.notified().await;
@@ -674,13 +712,16 @@ fn compact_aborts_and_disconnects_before_observation() {
             .count();
         drop(observer.await);
         assert_eq!((aborted_at_call, forwarded_ends), (true, 0));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn disconnects_and_reconnects_around_a_manual_compaction() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let (requested, release) = hold_first_answer(&h, "first", &["summary", "after"]);
         let running = start_prompt(&h, "first");
         requested.notified().await;
@@ -703,7 +744,8 @@ fn disconnects_and_reconnects_around_a_manual_compaction() {
         log.borrow_mut().clear();
         prompt(&h, "after compaction").await;
         assert!(log.borrow().contains(&"listener:agent_end".to_owned()));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -728,7 +770,8 @@ fn dispose_invalidates_contexts_and_clears_listeners() {
             .await
             .unwrap();
         assert_eq!(*log.borrow(), Vec::<String>::new());
-    });
+    })
+    .unwrap();
 }
 
 /// Replaces a completed text response without changing tool-call messages.
@@ -817,7 +860,8 @@ fn tool_execution_events_keep_argument_root_values() {
                 .unwrap();
             check_argument_events(start, update).await;
         }
-    });
+    })
+    .unwrap();
 }
 
 /// Runs one complete session, retaining ordered extension events and the original call.
@@ -839,7 +883,7 @@ async fn check_argument_events(start: &ArgumentEventCase, update: &ArgumentEvent
         Ok(None)
     });
     let executed = Rc::new(RefCell::new(Vec::new()));
-    let h = harness(HarnessOptions {
+    let options = HarnessOptions {
         factories: vec![starts, updates, replacing_text()],
         responses: Some(vec![
             Scripted {
@@ -850,8 +894,8 @@ async fn check_argument_events(start: &ArgumentEventCase, update: &ArgumentEvent
         ]),
         base_tools_override: Some(inspecting_tools(Rc::clone(&executed))),
         ..HarnessOptions::default()
-    })
-    .await;
+    };
+    let h = harness(Scratch::new().unwrap(), options).await.unwrap();
     let listeners = Rc::new(RefCell::new(Vec::new()));
     log_events(&h, "listener", &listeners);
     prompt(&h, "inspect the arguments").await;

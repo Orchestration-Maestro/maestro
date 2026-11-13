@@ -4,11 +4,12 @@
 //! concurrency cases.
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support::session_harness::{
-    Harness, HarnessOptions, answer, corpus, get_assistant_texts, get_message_text, get_user_texts,
-    harness, on_task_set, prompt_to_end, session_run_ended, start_prompt,
+    Harness, HarnessExt as _, corpus, get_assistant_texts, get_message_text, get_user_texts,
+    prompt_to_end, session_run_ended, start_prompt,
 };
 use indexmap::IndexMap;
 use maestro_agent::{AgentEvent, AgentMessage, AgentToolRecord, AgentToolResult, SharedAgentTool};
+use maestro_app::test_support::{HarnessOptions, answer, harness, on_task_set};
 use maestro_app::{AgentSessionEvent, PromptOptions};
 use maestro_extensions::{
     ExtensionAPI, ExtensionFactory, InputEvent, InputEventResult, MessageEndEvent,
@@ -21,6 +22,7 @@ use maestro_models::{
     Tool, UserBlock, faux_assistant_message, faux_tool_call,
 };
 use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -307,7 +309,9 @@ fn assert_released(h: Harness) {
 #[test]
 fn dropping_the_harness_disposes_the_session() {
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         let context = h.runner().create_context();
         assert!(context.cwd().is_ok());
         drop(h);
@@ -315,7 +319,8 @@ fn dropping_the_harness_disposes_the_session() {
             context.cwd().is_err(),
             "the session disposed with its harness"
         );
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -323,11 +328,15 @@ fn controlled_exchange_retains_content_results_and_progress() {
     let expected = expected("exchange");
     let content = thinking_code_content();
     on_task_set(|_| async {
-        let h = harness(HarnessOptions {
-            base_tools_override: Some(dummy_tools(Some("y"))),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                base_tools_override: Some(dummy_tools(Some("y"))),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let blocks: Vec<AssistantContent> = serde_json::from_value(content.clone()).unwrap();
         let contexts = Arc::default();
         let calls = dummy_calls(None, &[("x", "toolu_1"), ("y", "toolu_2")]);
@@ -357,7 +366,8 @@ fn controlled_exchange_retains_content_results_and_progress() {
         );
         assert_eq!(final_contents(&h), (content.clone(), content));
         assert_released(h);
-    });
+    })
+    .unwrap();
 }
 
 /// What the test sends while the first response is held.
@@ -399,7 +409,9 @@ fn hold_first_request(h: &Harness) -> Held {
 /// Sends `second` while `First message` is held, then aborts; the recorded form of the state
 /// after sending and after the run ended.
 async fn send_while_streaming(second: WhileStreaming) -> Value {
-    let h = harness(HarnessOptions::default()).await;
+    let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+        .await
+        .unwrap();
     let held = hold_first_request(&h);
     let ended = session_run_ended(&h);
     let running = start_prompt(&h, "First message");
@@ -441,7 +453,8 @@ fn busy_prompt_reports_queue_guidance() {
     let expected = expected("busy");
     on_task_set(|_| async {
         assert_eq!(send_while_streaming(WhileStreaming::Prompt).await, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -449,7 +462,8 @@ fn steering_remains_available_during_streaming() {
     let expected = expected("steer");
     on_task_set(|_| async {
         assert_eq!(send_while_streaming(WhileStreaming::Steer).await, expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -460,7 +474,8 @@ fn follow_up_remains_available_during_streaming() {
             send_while_streaming(WhileStreaming::FollowUp).await,
             expected
         );
-    });
+    })
+    .unwrap();
 }
 
 /// The extension keeping its interface in `api` and the source of each input in `sources`.
@@ -565,11 +580,15 @@ fn extension_steering_reaches_the_next_provider_request() {
     let expected = expected("extension");
     on_task_set(|_| async {
         let (api, sources) = (Rc::default(), Rc::default());
-        let h = harness(HarnessOptions {
-            factories: vec![steering_extension(&api, &sources)],
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![steering_extension(&api, &sources)],
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         let (held, requests) = (Held::default(), Rc::default());
         steering_stream(&h, &held, &requests);
         let (updates, queued) = queue_updates(&h);
@@ -598,7 +617,8 @@ fn extension_steering_reaches_the_next_provider_request() {
             "requests": *requests.borrow(),
         });
         assert_eq!(json!({"during": during, "after": after}), expected);
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -611,7 +631,9 @@ fn completed_prompts_allow_another_run() {
     ]))
     .unwrap();
     on_task_set(|_| async {
-        let h = harness(HarnessOptions::default()).await;
+        let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+            .await
+            .unwrap();
         h.faux.set_responses(vec![
             FauxResponseStep::Message(Box::new(answer("Done", None, None))),
             FauxResponseStep::Message(Box::new(answer("Again", None, None))),
@@ -633,7 +655,8 @@ fn completed_prompts_allow_another_run() {
             "assistants": get_assistant_texts(&h), "roles": roles(&h),
         });
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// Each tool call's id and the roles stored when its hook ran, in call order.
@@ -664,12 +687,16 @@ fn tool_hooks_observe_both_persisted_messages() {
     let expected = expected("tool_queue");
     on_task_set(|_| async {
         let snapshots = Rc::default();
-        let h = harness(HarnessOptions {
-            factories: vec![tool_call_snapshots(&snapshots)],
-            base_tools_override: Some(dummy_tools(None)),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![tool_call_snapshots(&snapshots)],
+                base_tools_override: Some(dummy_tools(None)),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.faux.set_responses(vec![
             FauxResponseStep::Message(Box::new(dummy_calls(
                 None,
@@ -683,7 +710,8 @@ fn tool_hooks_observe_both_persisted_messages() {
         assert_eq!(ids, ["toolu_1", "toolu_2"]);
         let observed = json!({"snapshots": snapshots, "roles": roles(&h)});
         assert_eq!(observed, expected);
-    });
+    })
+    .unwrap();
 }
 
 /// When holding, reports the hold's notifier, then waits until its release turns true.
@@ -724,12 +752,16 @@ fn slow_message_handlers_preserve_history_order() {
     on_task_set(|_| async {
         let entered = Rc::new(Notify::new());
         let (release, released) = tokio::sync::watch::channel(false);
-        let h = harness(HarnessOptions {
-            factories: vec![slow_answer_handler(&entered, &released)],
-            base_tools_override: Some(dummy_tools(None)),
-            ..HarnessOptions::default()
-        })
-        .await;
+        let h = harness(
+            Scratch::new().unwrap(),
+            HarnessOptions {
+                factories: vec![slow_answer_handler(&entered, &released)],
+                base_tools_override: Some(dummy_tools(None)),
+                ..HarnessOptions::default()
+            },
+        )
+        .await
+        .unwrap();
         h.faux.set_responses(vec![
             FauxResponseStep::Message(Box::new(dummy_calls(
                 Some("calling tool"),
@@ -746,7 +778,8 @@ fn slow_message_handlers_preserve_history_order() {
         h.session.agent().wait_for_idle().await;
         ended.notified().await;
         assert_eq!(json!({"before": before, "after": roles(&h)}), expected);
-    });
+    })
+    .unwrap();
 }
 
 /// Copies the committed empty root `name` below `base`, returning the copy's path.
@@ -770,7 +803,9 @@ fn empty_resource_roots_keep_the_session_isolated() {
         let cwd = copy_empty_root(base, "empty-cwd");
         let agent_dir = copy_empty_root(base, "empty-agent");
         let counts = on_task_set(|local| async move {
-            let h = harness(HarnessOptions::default()).await;
+            let h = harness(Scratch::new().unwrap(), HarnessOptions::default())
+                .await
+                .unwrap();
             let module_loader: maestro_extensions::ModuleLoader<Local> =
                 Rc::new(|_| Box::pin(std::future::ready(Ok(None))));
             let resources = ResourceLoaderOptions::new(local, module_loader);
@@ -782,7 +817,7 @@ fn empty_resource_roots_keep_the_session_isolated() {
                 agent_dir: Some(agent_dir),
                 auth_storage: None,
                 model_registry: Some(Arc::clone(&h.registry)),
-                model: Some(h.model("plain")),
+                model: Some(h.model("plain").unwrap()),
                 thinking_level: None,
                 scoped_models: Vec::new(),
                 no_tools: None,
@@ -806,7 +841,8 @@ fn empty_resource_roots_keep_the_session_isolated() {
             });
             created.session.dispose();
             counts
-        });
+        })
+        .unwrap();
         assert_eq!(counts, expected);
     })
     .unwrap();

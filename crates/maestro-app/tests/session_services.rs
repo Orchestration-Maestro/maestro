@@ -2,9 +2,10 @@
 //! extension flag values.
 #![cfg(unix)]
 use crate::resource_fixtures::{
-    Root, factory, module_loader, no_commands, on_task_set, with_environment, with_isolated_home,
+    Root, factory, module_loader, no_commands, with_environment, with_isolated_home,
 };
 use indexmap::IndexMap;
+use maestro_app::test_support::on_task_set;
 use maestro_app::{
     AgentSessionRuntimeDiagnostic, AgentSessionRuntimeDiagnosticType, AgentSessionServices,
     CreateAgentSessionServicesOptions, ExtensionFactory, ProviderConfig, ProviderModelConfig,
@@ -133,7 +134,8 @@ fn extension_flag_values_follow_declared_types() {
                     "diagnostics": diagnostics(&services.diagnostics),
                     "runtimeFlags": runtime_flags(&services),
                 })
-            });
+            })
+            .unwrap();
             assert_eq!(observed, case.expected, "case {name}");
         }
     })
@@ -206,7 +208,8 @@ fn provider_registrations_apply_individually_and_clear() {
                     "goodModel": found("good-provider", "good-model"),
                     "badModel": found("bad-provider", "m"),
                 })
-            });
+            })
+            .unwrap();
             assert_eq!(observed, case.expected);
         },
     )
@@ -270,7 +273,8 @@ fn services_bind_auth_catalog_settings_and_resources() {
                 "skills": skills.skills.iter().map(|s| &s.name).collect::<Vec<_>>(),
                 "diagnostics": diagnostics(&services.diagnostics),
             }))
-        });
+        })
+        .unwrap();
         assert_eq!(observed, case.expected);
     })
     .unwrap();
@@ -296,7 +300,8 @@ fn omitted_agent_dir_uses_the_environment_root() {
                     .await
                     .unwrap()
                     .agent_dir
-            });
+            })
+            .unwrap();
             assert_eq!(
                 root.normalize(&json!({"agentDir": agent_dir})),
                 json!({"agentDir": "$ROOT/env-agent"})
@@ -325,7 +330,8 @@ fn supplied_services_are_reused() {
             assert!(Arc::ptr_eq(&services.auth_storage, &auth));
             assert!(Rc::ptr_eq(&services.settings_manager, &settings));
             assert!(Arc::ptr_eq(&services.model_registry, &catalog));
-        });
+        })
+        .unwrap();
     })
     .unwrap();
 }
@@ -351,7 +357,8 @@ fn native_services_resolve_configured_command_keys() {
                 .model_registry
                 .get_api_key_and_headers(&model)
                 .await
-        });
+        })
+        .unwrap();
         let ResolvedRequestAuth::Ok {
             api_key, headers, ..
         } = resolved
@@ -410,7 +417,7 @@ fn extension_catalog_defaults_are_available_during_factory_loading() {
                     "{:?}",
                     services.resource_loader.get_extensions().errors
                 );
-            });
+            }).unwrap();
             assert_eq!(
                 *observed.borrow(),
                 Some(json!({"model":"default-model", "key":"later-key"}))

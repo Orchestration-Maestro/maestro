@@ -44,7 +44,6 @@ maestro-lock = { path = "../maestro-lock" }
 maestro-realpath = { path = "../maestro-realpath" }
 maestro-export = { path = "../maestro-export" }
 maestro-workspace = { path = "../maestro-workspace" }
-maestro-daemon = { path = "../maestro-daemon" }
 maestro-packages = { path = "../maestro-packages" }
 maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
@@ -76,7 +75,11 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-t
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "=0.3.106"
 
+[features]
+test-support = ["maestro-credentials/test-support", "tokio/test-util"]
+
 [dev-dependencies]
+maestro-app = { path = ".", features = ["test-support"] }
 maestro-credentials = { path = "../maestro-credentials", features = ["test-support"] }
 maestro-extensions = { path = "../maestro-extensions", features = ["test-support"] }
 maestro-models = { path = "../maestro-models", features = ["test-support"] }
