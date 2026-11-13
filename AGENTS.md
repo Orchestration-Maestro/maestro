@@ -350,7 +350,7 @@ controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
 executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
-of the twenty-nine declared callers on `maestro-test-process`, the owner of
+of the thirty declared callers on `maestro-test-process`, the owner of
 checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
