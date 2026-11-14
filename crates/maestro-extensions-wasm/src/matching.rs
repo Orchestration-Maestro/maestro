@@ -5,14 +5,7 @@
     clippy::excessive_nesting
 )]
 use crate::{ExtensionAPI, ExtensionResult};
-/// A native match decision; lower scores rank first.
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct FuzzyMatch {
-    /// Whether the query matches.
-    pub matches: bool,
-    /// The native score, including its consecutive and boundary preferences.
-    pub score: f64,
-}
+pub use maestro_interchange::tui::FuzzyMatch;
 /// Scores the supplied query through the native fuzzy owner.
 ///
 /// # Errors

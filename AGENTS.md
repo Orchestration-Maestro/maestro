@@ -263,7 +263,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and `Skill`, plus the command provenance records `SlashCommandInfo` and
   `SlashCommandSource`, re-exported by resources, application presentation data and
   guest authoring rather than redeclared. Its `entry`, `tool` and `packages` modules
-  own the session, tool and package interchange records.
+  own the session, tool and package interchange records; its `tui`, `native_io`,
+  `extension_context` and `metadata` modules own the toolkit, child-process,
+  extension-context and front matter records that both sides re-export.
   Shared invocation options (`ThinkingBudgets`, `CacheRetention`, `Transport`,
   `ProviderResponse`, `StreamOptions`, `ProviderStreamOptions`, `SimpleStreamOptions`
   and `StreamOptionsInput`) and the data-only `StreamOptionSlots` family belong here;
@@ -282,7 +284,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
   (agent, credentials, http, models, the model catalog, the model registry, packages, resources,
-  the schema validator, session, theme, tools and guest authoring)
+  the schema validator, session, theme, tools, the toolkit, extensions and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
@@ -397,7 +399,7 @@ conventions check rejects `tracing`'s scoped subscriber functions and the
 its `Output` sink. See the
 [tracing contract](docs/specs/maestro-port.md#test-tracing-owner).
 
-The guest may declare `ToolDefinition`, `ToolRenderContext` and `ToolRenderResultOptions`
+The guest may declare `ToolDefinition` and `ToolRenderContext`
 only in `src/types/tools.rs`, in addition to their domain owner. Native extensions may
 specialize `ToolDefinition` with the alias in `src/types/registration.rs`; elsewhere the
 renderer declarations retain their domain ownership.

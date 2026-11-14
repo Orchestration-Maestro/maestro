@@ -417,6 +417,36 @@ for release outside guards, and it reclaims retired registrations while no
 traversal runs, so one removal and a complete clear both stay cheap.
 
 
+## Records both sides declare once
+
+Four more modules of `maestro-interchange` hold records that a native owner and guest
+authoring both use. Each record has one declaration, and both sides re-export it at their
+existing paths.
+
+- `maestro_interchange::tui`: `AutocompleteSuggestions<I>`, `ColumnSlice`, `EditorOptions`,
+  `ExtractedSegments`, `FuzzyMatch`, `KeyEventType`, `OverlayAnchor`, `SelectItem`,
+  `SettingItem<S>`, `SettingsListOptions`, `TextDecoration` and `TruncateOptions`. The
+  toolkit is the native side.
+- `maestro_interchange::native_io`: `Stdio`, `SpawnOptions` and `ExitStatus`. The extension
+  owner is the native side.
+- `maestro_interchange::extension_context`: `CompactOptions<C, E>`, `CustomUIOptions<O, H>`
+  and `SwitchSessionOptions<W>`. The extension owner is the native side.
+- `maestro_interchange::metadata`: `FrontmatterValue` and `ParsedFrontmatter`. The resource
+  owner is the native side.
+
+The [tool module](tool-records.md) holds the eight shared tool records.
+
+A record with type parameters has members whose types differ between the two sides: the
+completion item, the submenu factory, the compaction and overlay callbacks, and the
+overlay placement. Each side names its own form through one alias at its existing path, so
+`maestro_tui::SettingItem` and the guest's `SettingItem` remain the names you write. The
+three option records have a default whatever those types are.
+
+Five of the shared records cross the guest boundary as JSON: `ColumnSlice` and `FuzzyMatch`
+under their member names, `ExtractedSegments` and `TruncateLineResult` with camel-case
+members, and `OverlayAnchor` with kebab-case names. The guest also reads `ExecResult` from
+JSON. The other records are never serialized.
+
 ## Extension event records
 
 `maestro-interchange::extension_events` owns generic event/result schemas and

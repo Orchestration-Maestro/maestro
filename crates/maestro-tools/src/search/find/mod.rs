@@ -32,13 +32,7 @@ pub struct FindToolDetails {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result_limit_reached: Option<f64>,
 }
-/// Options forwarded to supplied glob operations.
-pub struct FindGlobOptions {
-    /// Ignore patterns, in their supplied order.
-    pub ignore: Vec<String>,
-    /// Original effective result limit.
-    pub limit: f64,
-}
+pub use maestro_interchange::tool::types::FindGlobOptions;
 /// Replaceable existence and glob effects.
 pub trait FindOperations: Send + Sync {
     /// Whether the search path exists.

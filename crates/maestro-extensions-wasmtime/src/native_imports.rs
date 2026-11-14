@@ -30,7 +30,7 @@ use wasmtime_wasi::WasiView;
     dead_code,
     reason = "constructed by Wasmtime Lift from wire values; host code only matches them"
 )]
-enum Stdio {
+enum WireStdio {
     /// Retained byte pipe.
     #[component(name = "pipe")]
     Pipe,
@@ -41,12 +41,12 @@ enum Stdio {
     #[component(name = "inherit")]
     Inherit,
 }
-impl From<Stdio> for native_io::Stdio {
-    fn from(value: Stdio) -> Self {
+impl From<WireStdio> for native_io::Stdio {
+    fn from(value: WireStdio) -> Self {
         match value {
-            Stdio::Pipe => Self::Pipe,
-            Stdio::Ignore => Self::Ignore,
-            Stdio::Inherit => Self::Inherit,
+            WireStdio::Pipe => Self::Pipe,
+            WireStdio::Ignore => Self::Ignore,
+            WireStdio::Inherit => Self::Inherit,
         }
     }
 }
@@ -61,7 +61,7 @@ struct Options {
     /// Native session selection.
     detached: bool,
     /// Independent input/output/error selections.
-    stdio: (Stdio, Stdio, Stdio),
+    stdio: (WireStdio, WireStdio, WireStdio),
 }
 impl From<Options> for native_io::SpawnOptions {
     fn from(options: Options) -> Self {

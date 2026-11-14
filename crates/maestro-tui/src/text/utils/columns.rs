@@ -5,28 +5,7 @@ use std::ops::Range;
 use super::parsed::{Grapheme, Parsed};
 use super::render::Emission;
 
-/// Text selected by columns and the cells it actually occupies.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ColumnSlice {
-    /// The selected graphemes. A non-empty selection starts with the escapes written before
-    /// its first grapheme and closes a hyperlink still open at its end.
-    pub text: String,
-    /// Terminal cells the selected graphemes occupy.
-    pub width: usize,
-}
-
-/// The text before an overlay and the text after it.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ExtractedSegments {
-    /// The graphemes that start before the overlay.
-    pub before: String,
-    /// Cells of [`before`](Self::before).
-    pub before_width: usize,
-    /// The graphemes that start in the requested range after the overlay.
-    pub after: String,
-    /// Cells of [`after`](Self::after).
-    pub after_width: usize,
-}
+pub use maestro_interchange::tui::{ColumnSlice, ExtractedSegments};
 
 /// Graphemes selected for one output, the cells they use and the escapes that follow them.
 #[derive(Default)]

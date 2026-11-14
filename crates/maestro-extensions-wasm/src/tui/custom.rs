@@ -59,15 +59,10 @@ pub enum OverlayOptionsSource {
 }
 
 /// Host-owned presentation options for a custom component.
-#[derive(Clone, Default)]
-pub struct CustomUIOptions {
-    /// Whether to show an overlay rather than replacing the editor.
-    pub overlay: Option<bool>,
-    /// Overlay placement, shared with the host.
-    pub overlay_options: Option<OverlayOptionsSource>,
-    /// Called with the overlay's handle after the overlay is shown.
-    pub on_handle: Option<OverlayHandleCallback>,
-}
+pub type CustomUIOptions = maestro_interchange::extension_context::CustomUIOptions<
+    OverlayOptionsSource,
+    OverlayHandleCallback,
+>;
 
 impl ExtensionUIContext {
     /// Shows a custom component and returns its first committed guest value.

@@ -4,24 +4,7 @@ use super::measure::visible_width;
 use super::parsed::{Grapheme, Parsed};
 use super::render::{Emission, RESET};
 
-/// How [`truncate_to_width`] marks and fills a shortened text.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct TruncateOptions<'a> {
-    /// Text appended after the kept prefix when something was cut.
-    pub ellipsis: &'a str,
-    /// Whether the result is padded with spaces up to the full width, measured on the
-    /// finished result.
-    pub pad: bool,
-}
-
-impl Default for TruncateOptions<'_> {
-    fn default() -> Self {
-        Self {
-            ellipsis: "...",
-            pad: false,
-        }
-    }
-}
+pub use maestro_interchange::tui::TruncateOptions;
 
 /// The graphemes of a parsed text, segmented once, and how much of it fits a width.
 struct Scan<'p, 'a> {

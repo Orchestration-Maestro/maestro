@@ -144,16 +144,11 @@ pub enum OverlayOptionsSource {
 /// Receives the shown overlay's handle, shared with the host.
 pub type OverlayHandleCallback = UIHostCall<OverlayHandle, ()>;
 
-/// Options for a custom component.
-#[derive(Clone, Default)]
-pub struct CustomUIOptions {
-    /// Whether the component is shown as an overlay.
-    pub overlay: Option<bool>,
-    /// Overlay positioning and sizing.
-    pub overlay_options: Option<OverlayOptionsSource>,
-    /// Receives the overlay handle once the overlay is on screen.
-    pub on_handle: Option<OverlayHandleCallback>,
-}
+/// Options for a custom component, with its overlay placement and handle receiver.
+pub type CustomUIOptions = maestro_interchange::extension_context::CustomUIOptions<
+    OverlayOptionsSource,
+    OverlayHandleCallback,
+>;
 
 /// Completes a typed custom component with its result.
 pub type CustomDone<T> = Rc<dyn Fn(T) -> Result<(), EventError>>;

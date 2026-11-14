@@ -207,11 +207,7 @@ fn toolkit_excludes_framework_and_highlighting_dependencies() {
 #[test]
 fn tool_declarations_have_one_owner() {
     tool_declaration_kinds();
-    for name in [
-        "ToolDefinition",
-        "ToolRenderContext",
-        "ToolRenderResultOptions",
-    ] {
+    for name in ["ToolDefinition", "ToolRenderContext"] {
         let workspace = Workspace::new();
         workspace.foundation(&["maestro-tools", "maestro-tui", "maestro-app"]);
         source(
@@ -1030,11 +1026,7 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
 fn tool_declaration_kinds() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-tools", "maestro-tui"]);
-    for name in [
-        "ToolDefinition",
-        "ToolRenderContext",
-        "ToolRenderResultOptions",
-    ] {
+    for name in ["ToolDefinition", "ToolRenderContext"] {
         for shape in [
             "pub enum NAME<T> { Entry(T) }",
             "pub union NAME { value: u8 }",
@@ -1211,12 +1203,12 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
         &workspace,
         "maestro-extensions-wasm",
         "src/types/tools.rs",
-        "pub struct ToolDefinition; pub struct ToolRenderContext; pub struct ToolRenderResultOptions;",
+        "pub struct ToolDefinition; pub struct ToolRenderContext;",
     );
     assert_eq!(
         check_workspace(workspace.root.path()),
         Ok(()),
-        "the guest declares its renderer records beside its tool definition"
+        "the guest declares its renderer context beside its tool definition"
     );
     guest_tool_declaration_decoys(&workspace);
     source(
@@ -1250,23 +1242,32 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
 }
 
 fn guest_tool_declaration_decoys(workspace: &Workspace) {
-    for (owner, path, name) in [
-        ("maestro-extensions-wasm", "src/lib.rs", "ToolDefinition"),
-        ("maestro-tui", "src/types/tools.rs", "ToolDefinition"),
-        ("maestro-extensions-wasm", "src/lib.rs", "ToolRenderContext"),
+    let tools = "maestro-tools";
+    for (member, path, name, owner) in [
         (
-            "maestro-tui",
+            "maestro-extensions-wasm",
+            "src/lib.rs",
+            "ToolDefinition",
+            tools,
+        ),
+        ("maestro-tui", "src/types/tools.rs", "ToolDefinition", tools),
+        (
+            "maestro-extensions-wasm",
+            "src/lib.rs",
+            "ToolRenderContext",
+            tools,
+        ),
+        (
+            "maestro-extensions-wasm",
             "src/types/tools.rs",
             "ToolRenderResultOptions",
+            "maestro-interchange",
         ),
     ] {
-        source(workspace, owner, path, &format!("pub struct {name};"));
-        assert!(
-            check_workspace(workspace.root.path())
-                .unwrap_err()
-                .contains("belongs to maestro-tools")
-        );
-        source(workspace, owner, path, "");
+        source(workspace, member, path, &format!("pub struct {name};"));
+        let error = check_workspace(workspace.root.path()).unwrap_err();
+        assert!(error.contains(&format!("belongs to {owner}")), "{error}");
+        source(workspace, member, path, "");
         source(
             workspace,
             "maestro-extensions-wasm",
@@ -1320,6 +1321,88 @@ fn slash_command_records_have_one_shared_owner() {
             "maestro-interchange",
             &["maestro-app", "maestro-extensions-wasm", "maestro-tui"],
         );
+    }
+}
+
+#[test]
+fn records_the_guest_shares_with_its_host_have_one_shared_owner() {
+    let toolkit: &[&str] = &[
+        "ColumnSlice",
+        "EditorOptions",
+        "ExtractedSegments",
+        "FuzzyMatch",
+        "KeyEventType",
+        "OverlayAnchor",
+        "SelectItem",
+        "SettingsListOptions",
+        "TextDecoration",
+        "TruncateOptions",
+    ];
+    let tools: &[&str] = &[
+        "BashExecResult",
+        "ExecResult",
+        "FindGlobOptions",
+        "ToolName",
+        "ToolRenderPhase",
+        "ToolRenderResultOptions",
+        "TruncateLineResult",
+        "TruncationOptions",
+    ];
+    for (native, names) in [
+        ("maestro-tui", toolkit),
+        ("maestro-tools", tools),
+        (
+            "maestro-extensions",
+            &["ExitStatus", "SpawnOptions", "Stdio"],
+        ),
+        (
+            "maestro-resources",
+            &["FrontmatterValue", "ParsedFrontmatter"],
+        ),
+    ] {
+        for name in names {
+            assert_single_owner(
+                name,
+                "maestro-interchange",
+                &[native, "maestro-extensions-wasm"],
+            );
+        }
+    }
+}
+
+/// A record whose member type differs per side has one declaration, and each side one alias.
+#[test]
+fn specialized_shared_records_keep_one_declaration_and_one_alias_per_side() {
+    for (native, name) in [
+        ("maestro-tui", "AutocompleteSuggestions"),
+        ("maestro-tui", "SettingItem"),
+        ("maestro-extensions", "CompactOptions"),
+        ("maestro-extensions", "CustomUIOptions"),
+        ("maestro-extensions", "SwitchSessionOptions"),
+    ] {
+        let workspace = Workspace::new();
+        let root = workspace.root.path();
+        workspace.foundation(&["maestro-interchange", native, "maestro-extensions-wasm"]);
+        for (side, path) in [
+            (native, "src/records.rs"),
+            ("maestro-extensions-wasm", "src/types/records.rs"),
+        ] {
+            let declared = format!("pub struct {name};");
+            source(&workspace, side, path, &declared);
+            let error = check_workspace(root).unwrap_err();
+            let message = format!("{name} declaration belongs to maestro-interchange, not {side}");
+            assert!(error.contains(&message), "{error}");
+            let alias = format!("pub type {name} = shared::{name}<()>;");
+            source(&workspace, side, path, &alias);
+        }
+        let owned = format!("pub struct {name}<T> {{ member: T }}");
+        source(&workspace, "maestro-interchange", "src/lib.rs", &owned);
+        assert_eq!(check_workspace(root), Ok(()));
+        let second = format!("pub enum {name} {{}}");
+        source(&workspace, "maestro-interchange", "other.rs", &second);
+        let error = check_workspace(root).unwrap_err();
+        let message = format!("duplicate declaration {name}");
+        assert!(error.contains(&message), "{error}");
     }
 }
 

@@ -76,14 +76,7 @@ pub struct ToolDefinition {
     pub render_result: Option<ToolRenderResult>,
 }
 
-/// Options of a result rendering.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ToolRenderResultOptions {
-    /// Whether the result is shown in its expanded form.
-    pub expanded: bool,
-    /// Whether the result is still streaming.
-    pub is_partial: bool,
-}
+pub use maestro_interchange::tool::types::{ToolRenderPhase, ToolRenderResultOptions};
 
 /// State and previous components one tool row keeps across renderings.
 #[derive(Default)]
@@ -93,17 +86,6 @@ pub(crate) struct ToolRow {
     /// The component each renderer slot returned last: call, then result.
     #[cfg(any(test, target_arch = "wasm32"))]
     pub(crate) last: RefCell<[Option<crate::Component>; 2]>,
-}
-
-/// Execution progress of a tool row.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct ToolRenderPhase {
-    /// Whether execution has started.
-    pub execution_started: bool,
-    /// Whether the arguments are complete.
-    pub args_complete: bool,
-    /// Whether the result is still streaming.
-    pub is_partial: bool,
 }
 
 /// What a tool renderer reads about its row at one rendering.

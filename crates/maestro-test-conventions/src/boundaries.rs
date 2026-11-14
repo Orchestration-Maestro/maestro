@@ -267,10 +267,8 @@ fn check_declarations(
         let Some(owner) = declaration_owner(name, kind) else {
             continue;
         };
-        let guest_tool = matches!(
-            name.as_str(),
-            "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
-        ) && member.name == "maestro-extensions-wasm"
+        let guest_tool = matches!(name.as_str(), "ToolDefinition" | "ToolRenderContext")
+            && member.name == "maestro-extensions-wasm"
             && source.path == member.directory.join("src/types/tools.rs");
         let guest_metadata = name == "ToolInfo"
             && kind == "type"
@@ -338,10 +336,7 @@ fn foreign_rpc_record(
 fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
     let owner = if selector(name) {
         "maestro-chat"
-    } else if matches!(
-        name,
-        "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
-    ) {
+    } else if matches!(name, "ToolDefinition" | "ToolRenderContext") {
         "maestro-tools"
     } else if matches!(
         name,
@@ -355,7 +350,8 @@ fn declaration_owner(name: &str, kind: &str) -> Option<&'static str> {
             | "UserMessageDelivery"
             | "SendMessageOptions"
             | "SendUserMessageOptions"
-    ) || (shared_event_record(name) && kind != "type")
+    ) || guest_shared_record(name)
+        || ((shared_event_record(name) || specialized_record(name)) && kind != "type")
     {
         "maestro-interchange"
     } else if name == "ModelConstructor" {
@@ -400,6 +396,48 @@ fn input_presenter_record(name: &str) -> bool {
             | "SessionSelectorFactory"
             | "SessionsFuture"
             | "SessionsLoader"
+    )
+}
+
+/// Records the guest and its host both use through one shared declaration.
+fn guest_shared_record(name: &str) -> bool {
+    matches!(
+        name,
+        "BashExecResult"
+            | "ColumnSlice"
+            | "EditorOptions"
+            | "ExecResult"
+            | "ExitStatus"
+            | "ExtractedSegments"
+            | "FindGlobOptions"
+            | "FrontmatterValue"
+            | "FuzzyMatch"
+            | "KeyEventType"
+            | "OverlayAnchor"
+            | "ParsedFrontmatter"
+            | "SelectItem"
+            | "SettingsListOptions"
+            | "SpawnOptions"
+            | "Stdio"
+            | "TextDecoration"
+            | "ToolName"
+            | "ToolRenderPhase"
+            | "ToolRenderResultOptions"
+            | "TruncateLineResult"
+            | "TruncateOptions"
+            | "TruncationOptions"
+    )
+}
+
+/// Shared records with a member whose type differs per side; each side keeps one alias.
+fn specialized_record(name: &str) -> bool {
+    matches!(
+        name,
+        "AutocompleteSuggestions"
+            | "CompactOptions"
+            | "CustomUIOptions"
+            | "SettingItem"
+            | "SwitchSessionOptions"
     )
 }
 

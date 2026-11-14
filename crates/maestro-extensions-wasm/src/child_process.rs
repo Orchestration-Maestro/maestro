@@ -10,39 +10,7 @@ use crate::{
 };
 use std::rc::Rc;
 
-/// Selection of one child descriptor.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum Stdio {
-    /// An independently retained byte pipe.
-    #[default]
-    Pipe,
-    /// The native null device.
-    Ignore,
-    /// The host's corresponding descriptor.
-    Inherit,
-}
-
-/// Literal selections for one child launch.
-#[derive(Default)]
-pub struct SpawnOptions {
-    /// Omitted inherits the host directory.
-    pub cwd: Option<String>,
-    /// The entire environment; present-empty replaces it with an empty environment.
-    pub env: Option<Vec<(String, String)>>,
-    /// Creates a new native session where the host supports it.
-    pub detached: bool,
-    /// Independent stdin, stdout and stderr selections.
-    pub stdio: [Stdio; 3],
-}
-
-/// Native numeric exit or terminating signal, kept distinct.
-#[derive(Debug, Eq, PartialEq)]
-pub struct ExitStatus {
-    /// Absent for signal termination.
-    pub code: Option<i32>,
-    /// Absent for numeric exit.
-    pub signal: Option<String>,
-}
+pub use maestro_interchange::native_io::{ExitStatus, SpawnOptions, Stdio};
 
 /// Child controls and byte pipes that can outlive their creating callback.
 pub trait ChildProcess {

@@ -11,15 +11,7 @@ use std::{
 /// Command notification callable.
 type ItemCallback = Rc<dyn Fn(Rc<SelectItem>)>;
 
-/// A command identity and its display text.
-pub struct SelectItem {
-    /// Command identity.
-    pub value: String,
-    /// Primary display text; an empty label displays the value.
-    pub label: String,
-    /// Optional description.
-    pub description: Option<String>,
-}
+pub use maestro_interchange::tui::SelectItem;
 /// Styling callbacks for command rows.
 #[derive(Clone)]
 pub struct SelectListTheme {

@@ -28,7 +28,7 @@ use indexmap::IndexMap;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_models::{Local, Threaded};
 use serde_json::Value;
-use std::{fmt, str::FromStr, sync::Arc};
+use std::sync::Arc;
 
 /// An executable tool, including caller-defined names.
 pub type Tool = maestro_agent::AgentTool;
@@ -72,57 +72,7 @@ impl<C, E: ToolExecution> ToolDefRecord<C, E> {
     }
 }
 
-/// The built-in tool identities; custom executable names remain unrestricted.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ToolName {
-    /// The read tool.
-    Read,
-    /// The bash tool.
-    Bash,
-    /// The edit tool.
-    Edit,
-    /// The write tool.
-    Write,
-    /// The grep tool.
-    Grep,
-    /// The find tool.
-    Find,
-    /// The ls tool.
-    Ls,
-}
-
-impl FromStr for ToolName {
-    type Err = DiagnosticErrorInfo;
-
-    fn from_str(name: &str) -> Result<Self, Self::Err> {
-        match name {
-            "read" => Ok(Self::Read),
-            "bash" => Ok(Self::Bash),
-            "edit" => Ok(Self::Edit),
-            "write" => Ok(Self::Write),
-            "grep" => Ok(Self::Grep),
-            "find" => Ok(Self::Find),
-            "ls" => Ok(Self::Ls),
-            _ => Err(DiagnosticErrorInfo::error(format!(
-                "Unknown tool name: {name}"
-            ))),
-        }
-    }
-}
-
-impl fmt::Display for ToolName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            Self::Read => "read",
-            Self::Bash => "bash",
-            Self::Edit => "edit",
-            Self::Write => "write",
-            Self::Grep => "grep",
-            Self::Find => "find",
-            Self::Ls => "ls",
-        })
-    }
-}
+pub use maestro_interchange::tool::types::ToolName;
 
 /// All built-in identities in factory insertion order.
 pub const ALL_TOOL_NAMES: [ToolName; 7] = [

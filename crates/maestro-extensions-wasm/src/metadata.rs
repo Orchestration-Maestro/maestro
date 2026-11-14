@@ -6,30 +6,7 @@
 )]
 use crate::bindings::maestro::extension::host::FrontmatterToken;
 use crate::{ExtensionAPI, ExtensionResult};
-/// Complete metadata interchange, including nonfinite numbers.
-#[derive(Clone, Debug, PartialEq)]
-pub enum FrontmatterValue {
-    /// Null scalar.
-    Null,
-    /// Boolean scalar.
-    Bool(bool),
-    /// Number retaining signed zero, NaN and infinities.
-    Number(f64),
-    /// Text scalar.
-    String(String),
-    /// Ordered sequence.
-    Sequence(Vec<Self>),
-    /// Ordered keys; header parsing enumerates array-index keys first.
-    Mapping(Vec<(String, Self)>),
-}
-/// Resolved metadata and the native extracted body.
-#[derive(Debug, PartialEq)]
-pub struct ParsedFrontmatter {
-    /// Complete native value tree.
-    pub frontmatter: FrontmatterValue,
-    /// Body, trimmed only when a header is present.
-    pub body: String,
-}
+pub use maestro_interchange::metadata::{FrontmatterValue, ParsedFrontmatter};
 /// Parses metadata through the installed native owner.
 ///
 /// # Errors

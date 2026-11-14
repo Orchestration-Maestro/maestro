@@ -133,22 +133,7 @@ pub fn apply_background_to_line(
     Ok(bg_fn(&padded))
 }
 
-/// The ellipsis and padding used by terminal-width truncation.
-#[derive(Clone, Copy, Debug)]
-pub struct TruncateOptions<'a> {
-    /// Appended marker, measured in terminal cells.
-    pub ellipsis: &'a str,
-    /// Whether the completed result fills the requested cell width.
-    pub pad: bool,
-}
-impl Default for TruncateOptions<'_> {
-    fn default() -> Self {
-        Self {
-            ellipsis: "...",
-            pad: false,
-        }
-    }
-}
+pub use maestro_interchange::tui::{ColumnSlice, ExtractedSegments, TruncateOptions};
 
 /// Truncates text through the native terminal owner, preserving whole clusters and styling.
 ///
@@ -164,15 +149,6 @@ pub fn truncate_to_width(
         "truncate_to_width",
         &(text, max_width, options.ellipsis, options.pad),
     )
-}
-
-/// Text selected by terminal columns and its actual cell width.
-#[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct ColumnSlice {
-    /// Selected text with its styling.
-    pub text: String,
-    /// Cells occupied by that text.
-    pub width: usize,
 }
 
 /// Selects whole graphemes by terminal columns, optionally excluding right-edge crossings.
@@ -201,20 +177,6 @@ pub fn slice_by_column(
     strict: bool,
 ) -> ExtensionResult<String> {
     Ok(slice_with_width(api, line, start_col, length, strict)?.text)
-}
-
-/// Both sides of an excluded terminal-column range.
-#[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ExtractedSegments {
-    /// Text before the excluded range.
-    pub before: String,
-    /// Cells occupied by the before text.
-    pub before_width: usize,
-    /// Text after the excluded range.
-    pub after: String,
-    /// Cells occupied by the after text.
-    pub after_width: usize,
 }
 
 /// Terminal-column boundaries; strictness applies only to the after side.

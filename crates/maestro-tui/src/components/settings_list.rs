@@ -17,21 +17,8 @@ type Submenu = Rc<dyn Fn(String, Done) -> Rc<dyn Component>>;
 type Change = Rc<dyn Fn(&str, &str) -> bool>;
 /// Row styling with selected state.
 type RowStyle = Rc<dyn Fn(&str, bool) -> String>;
-/// A displayed setting with optional activation behavior.
-pub struct SettingItem {
-    /// Setting identity; duplicate IDs are permitted.
-    pub id: String,
-    /// Display label.
-    pub label: String,
-    /// Selected-row description.
-    pub description: Option<String>,
-    /// Displayed value.
-    pub current_value: String,
-    /// Values available for cycling.
-    pub values: Option<Vec<String>>,
-    /// Submenu factory, taking precedence over cycling.
-    pub submenu: Option<Submenu>,
-}
+/// A displayed setting whose submenu is a toolkit component factory.
+pub type SettingItem = maestro_interchange::tui::SettingItem<Submenu>;
 /// Settings styling callbacks and cursor prefix.
 pub struct SettingsListTheme {
     /// Styles padded labels.
@@ -45,12 +32,7 @@ pub struct SettingsListTheme {
     /// Styles hints and scroll metadata.
     pub hint: Rc<dyn Fn(&str) -> String>,
 }
-/// Optional settings search.
-#[derive(Clone, Copy, Default)]
-pub struct SettingsListOptions {
-    /// Enables label search using the shared matcher.
-    pub enable_search: bool,
-}
+pub use maestro_interchange::tui::SettingsListOptions;
 /// A setting whose current value is shared by views and completion callbacks.
 struct SharedSetting {
     /// Setting identity.

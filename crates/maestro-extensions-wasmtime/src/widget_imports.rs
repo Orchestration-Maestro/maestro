@@ -98,7 +98,7 @@ struct DefaultTextStyle {
     #[component(name = "bg-color")]
     bg_color: Option<StyleSource>,
     /// Decorations to apply.
-    decorations: Vec<TextDecoration>,
+    decorations: Vec<WireTextDecoration>,
 }
 
 /// A text decoration of Markdown's base style.
@@ -109,7 +109,7 @@ struct DefaultTextStyle {
     dead_code,
     reason = "constructed by the Wasmtime Lift macro from wire values; host code only matches them"
 )]
-enum TextDecoration {
+enum WireTextDecoration {
     /// Bold text.
     #[component(name = "bold")]
     Bold,
@@ -124,13 +124,13 @@ enum TextDecoration {
     Underline,
 }
 
-impl From<TextDecoration> for maestro_extensions::presentation::TextDecoration {
-    fn from(decoration: TextDecoration) -> Self {
+impl From<WireTextDecoration> for maestro_extensions::presentation::TextDecoration {
+    fn from(decoration: WireTextDecoration) -> Self {
         match decoration {
-            TextDecoration::Bold => Self::Bold,
-            TextDecoration::Italic => Self::Italic,
-            TextDecoration::Strikethrough => Self::Strikethrough,
-            TextDecoration::Underline => Self::Underline,
+            WireTextDecoration::Bold => Self::Bold,
+            WireTextDecoration::Italic => Self::Italic,
+            WireTextDecoration::Strikethrough => Self::Strikethrough,
+            WireTextDecoration::Underline => Self::Underline,
         }
     }
 }

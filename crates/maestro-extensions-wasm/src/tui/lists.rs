@@ -10,16 +10,7 @@ use super::{Component, Style, TUI};
 use crate::{AbortSignal, CallbackEmitter, ExtensionResult, Theme};
 use std::rc::Rc;
 
-/// One choice of a selection list.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SelectItem {
-    /// The value the list filters by and reports.
-    pub value: String,
-    /// The shown label.
-    pub label: String,
-    /// The shown description, when there is one.
-    pub description: Option<String>,
-}
+pub use maestro_interchange::tui::{SelectItem, SettingsListOptions};
 
 /// What an authored primary-column truncation receives.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -118,29 +109,8 @@ pub struct SettingsListTheme {
     pub hint: Style,
 }
 
-/// Settings list options.
-#[derive(Clone, Copy, Default)]
-pub struct SettingsListOptions {
-    /// Shows a search row that filters by label.
-    pub enable_search: bool,
-}
-
-/// One setting of a settings list.
-#[derive(Clone)]
-pub struct SettingItem {
-    /// The setting's identity.
-    pub id: String,
-    /// The shown label.
-    pub label: String,
-    /// The description shown while the row is selected.
-    pub description: Option<String>,
-    /// The shown current value.
-    pub current_value: String,
-    /// Values that activation cycles through.
-    pub values: Option<Vec<String>>,
-    /// A submenu that activation opens.
-    pub submenu: Option<Submenu>,
-}
+/// One setting of a settings list, with an authored submenu.
+pub type SettingItem = maestro_interchange::tui::SettingItem<Submenu>;
 
 /// Bordered loader options.
 #[derive(Clone, Copy, Default)]

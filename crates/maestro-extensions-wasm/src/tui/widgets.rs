@@ -138,18 +138,7 @@ pub struct MarkdownTheme {
     pub code_block_indent: Option<String>,
 }
 
-/// A text decoration of Markdown's base style.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TextDecoration {
-    /// Bold text.
-    Bold,
-    /// Italic text.
-    Italic,
-    /// Struck-through text.
-    Strikethrough,
-    /// Underlined text.
-    Underline,
-}
+pub use maestro_interchange::tui::TextDecoration;
 
 /// Base style of Markdown text, applied unless an element styles it.
 #[derive(Clone, Default)]

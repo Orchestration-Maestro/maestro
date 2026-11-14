@@ -14,16 +14,7 @@ use names::{ALT, CTRL, KEYPAD_ENTER, SHIFT, raw_ctrl_char};
 pub use names::{Code, Identifier, Key, KeyId, Named, Target};
 pub use parse::parse_terminal_key_sequence;
 
-/// The phase of an enhanced key report: the key going down, repeating or going up.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum KeyEventType {
-    /// The key went down.
-    Press,
-    /// The key is held down and repeating.
-    Repeat,
-    /// The key went up.
-    Release,
-}
+pub use maestro_interchange::tui::KeyEventType;
 
 /// Whether the terminal runs the enhanced keyboard protocol.
 static KITTY_PROTOCOL_ACTIVE: AtomicBool = AtomicBool::new(false);

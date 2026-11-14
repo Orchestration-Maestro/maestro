@@ -43,12 +43,7 @@ pub struct BashExecOptions {
     /// Supplied environment, with absent values retained.
     pub env: Option<IndexMap<String, Option<String>>>,
 }
-/// Outcome of an authored execution, with an optional numeric exit code.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct BashExecResult {
-    /// Supplied process exit code.
-    pub exit_code: Option<f64>,
-}
+pub use maestro_interchange::tool::types::BashExecResult;
 /// Asynchronous execution supplied by an extension.
 pub type BashExec =
     Rc<dyn Fn(String, String, BashExecOptions) -> ExtensionFuture<'static, BashExecResult>>;

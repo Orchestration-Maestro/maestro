@@ -32,14 +32,7 @@ pub struct EditorTheme {
     /// Selection styling retained with the editor.
     pub select_list: SelectListTheme,
 }
-/// Optional horizontal padding and completion-list size.
-#[derive(Clone, Copy, Default)]
-pub struct EditorOptions {
-    /// Finite side padding is floored and clamped at zero; nonfinite values use zero.
-    pub padding_x: Option<f64>,
-    /// Finite completion maxima are floored and clamped to 3..20; nonfinite values use 5.
-    pub autocomplete_max_visible: Option<f64>,
-}
+pub use maestro_interchange::tui::EditorOptions;
 /// Multiline editable terminal component.
 ///
 /// A handle on one retained owner; delayed and asynchronous completion work holds

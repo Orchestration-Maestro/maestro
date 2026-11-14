@@ -20,25 +20,7 @@ pub enum ToolRenderShell {
     SelfRendered,
 }
 
-/// Flags that change how a result is drawn.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ToolRenderResultOptions {
-    /// Whether the result is expanded.
-    pub expanded: bool,
-    /// Whether the result is still streaming.
-    pub is_partial: bool,
-}
-
-/// Execution progress flags of a row.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ToolRenderPhase {
-    /// Whether execution has started.
-    pub execution_started: bool,
-    /// Whether the arguments are complete.
-    pub args_complete: bool,
-    /// Whether the result is still streaming.
-    pub is_partial: bool,
-}
+pub use maestro_interchange::tool::types::{ToolRenderPhase, ToolRenderResultOptions};
 
 /// Existing host effects supplied to tool renderers.
 pub struct ToolRenderEnvironment {
