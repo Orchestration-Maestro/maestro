@@ -27,7 +27,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo clippy|--workspace|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|browser-clippy|--workspace\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models-generator|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo clippy|--workspace|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|browser-clippy|--workspace\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -38,7 +38,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     assert!(!result.status.success());
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models-generator|--example|generate_catalog_data\ncargo build|--workspace|--locked\n"
     );
     for phase in ["fmt", "run", "hakari", "clippy", "doc", "test"] {
         fs::remove_file(workspace.path().join("log")).unwrap();
@@ -389,7 +389,7 @@ fn assert_package_build(workspace: &Workspace, prefix: &str, owner: &str) {
         assert!(!log.contains("clippy"));
         if recipe == "build" && prefix == "models" {
             assert!(log.starts_with(
-                "cargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\n"
+                "cargo run|--quiet|--locked|-p|maestro-models-generator|--example|generate_catalog_data\n"
             ));
             assert!(log.ends_with("cargo build|-p|maestro-models|--locked\n"));
         } else if recipe == "build" {
@@ -446,11 +446,17 @@ fn native_workspace(workspace: &Workspace) {
         .unwrap();
         fs::write(root.join("src/lib.rs"), "/// Adds one.\n/// ```\n/// assert_eq!(maestro_models::increment(1), 2);\n/// ```\npub fn increment(n: i32) -> i32 { n + 1 }\n#[test] fn selected_behavior() {}\n#[test] #[ignore] fn ignored_behavior() {}\n#[test] fn failing_behavior() { if std::env::var_os(\"MAESTRO_TEST_FAIL\").is_some() { panic!(\"controlled failure\"); } }\n".replace("maestro_models", &owner.replace('-', "_"))).unwrap();
     }
-    fs::create_dir_all(workspace.path().join("crates/maestro-models/examples")).unwrap();
+    let generator = workspace.path().join("crates/maestro-models-generator");
+    fs::create_dir_all(generator.join("examples")).unwrap();
+    fs::create_dir_all(generator.join("src")).unwrap();
     fs::write(
-        workspace
-            .path()
-            .join("crates/maestro-models/examples/generate_catalog_data.rs"),
+        generator.join("Cargo.toml"),
+        "[package]\nname = 'maestro-models-generator'\nversion = '0.1.0'\nedition = '2024'\n",
+    )
+    .unwrap();
+    fs::write(generator.join("src/lib.rs"), "").unwrap();
+    fs::write(
+        generator.join("examples/generate_catalog_data.rs"),
         "fn main() {}\n",
     )
     .unwrap();

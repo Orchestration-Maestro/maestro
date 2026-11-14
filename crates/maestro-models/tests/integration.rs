@@ -3,8 +3,6 @@
 
 #[cfg(not(target_arch = "wasm32"))]
 use chat::TestResult;
-#[cfg(not(target_arch = "wasm32"))]
-use maestro_models::Model;
 
 mod account_message_routing;
 mod account_tool_names;
@@ -37,10 +35,6 @@ mod cache_overflow_images;
 mod cache_preferences;
 #[path = "support/cases.rs"]
 mod cases;
-mod catalog_command;
-#[path = "support/catalog_command.rs"]
-mod catalog_command_support;
-mod catalog_generation;
 mod catalog_route_smoke;
 #[path = "support/chat.rs"]
 mod chat;
@@ -54,7 +48,6 @@ mod chat_response_identity;
 #[path = "chat_tool_choices.rs"]
 mod chat_tool_choices;
 mod checked_tool_arguments;
-mod circle_fixture;
 #[path = "support/clock.rs"]
 mod clock;
 mod cloud_content_projection;

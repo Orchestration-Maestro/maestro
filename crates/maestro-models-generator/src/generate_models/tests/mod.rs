@@ -1,6 +1,6 @@
 //! Recorded assembly and metadata behavior.
-use crate::Model;
 use indexmap::IndexMap;
+use maestro_interchange::types::Model;
 use maestro_test_directory::Scratch;
 use serde::Deserialize;
 /// A unique controlled query.
@@ -24,7 +24,7 @@ struct Case {
 /// The recorded generator corpus every case owner reads.
 fn corpus() -> Vec<Case> {
     let text = std::fs::read_to_string(format!(
-        "{}/src/catalog_generation/generate_models/tests/corpus.json",
+        "{}/src/generate_models/tests/corpus.json",
         env!("CARGO_MANIFEST_DIR")
     ))
     .expect("generator corpus");
@@ -251,7 +251,7 @@ fn expected_models(value: serde_json::Value) -> Vec<Model> {
     if value == "offline_catalog" {
         let providers: indexmap::IndexMap<String, indexmap::IndexMap<String, Model>> =
             serde_json::from_str(include_str!(
-                "../../../../tests/fixtures/offline_model_catalog.json"
+                "../../../../maestro-models/tests/fixtures/offline_model_catalog.json"
             ))
             .unwrap();
         providers

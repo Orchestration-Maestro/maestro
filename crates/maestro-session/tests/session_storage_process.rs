@@ -124,6 +124,7 @@ fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
     let concurrent = b"{\"type\":\"custom\",\"id\":\"concurrent\",\"parentId\":null}\n";
     let before_replace = [original.as_slice(), concurrent.as_slice()].concat();
     holder.append(concurrent).unwrap();
+    drop(holder);
     let output = child.wait_with_output().unwrap();
     assert!(
         output.status.success(),

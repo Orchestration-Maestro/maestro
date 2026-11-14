@@ -27,7 +27,7 @@ const GROUPS: [&str; 26] = [
     "edit_execution_uses_shared_fuzzy_comparison_base",
     "edit_execution_preserves_unrelated_exact_text",
     "edit_execution_restores_bom_and_first_newline_style",
-    "edit_execution_decodes_bytes_lossily",
+    "edit_execution_refuses_bytes_that_are_not_utf8",
     "edit_execution_resolves_authored_paths",
     "edit_execution_requires_read_and_write_access",
     "edit_execution_inherits_matching_corrections",

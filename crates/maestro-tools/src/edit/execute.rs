@@ -3,8 +3,7 @@
 use super::{EditOperations, EditToolDetails, EditToolInput};
 use crate::{
     edit_diff::{
-        access_failure, apply_edits_to_normalized_content, detect_line_ending,
-        generate_diff_string, normalize_to_lf, restore_line_endings, strip_bom,
+        access_failure, apply_edits_to_stored_content, generate_diff_string, strip_bom, utf8_text,
     },
     read::{NativeReadOperations, ReadOperations, access_file},
     utils::diagnostics::{check_aborted, failure},
@@ -33,6 +32,9 @@ impl EditOperations for NativeEditOperations {
 }
 
 /// Access, read, apply and write an admitted edit, then return its LF diff.
+///
+/// A line break no match covers keeps its own bytes, except that a kept lone CR
+/// followed by an LF becomes that LF.
 pub(super) async fn edit_file(
     operations: Arc<dyn EditOperations>,
     absolute: String,
@@ -48,15 +50,10 @@ pub(super) async fn edit_file(
     check_aborted(signal)?;
     let bytes = operations.read_file(absolute.clone()).await?;
     check_aborted(signal)?;
-    let text = String::from_utf8_lossy(&bytes);
-    let (bom, content) = strip_bom(&text);
-    let ending = detect_line_ending(content);
-    let applied =
-        apply_edits_to_normalized_content(&normalize_to_lf(content), &input.edits, &input.path)?;
-    let restored = format!(
-        "{bom}{}",
-        restore_line_endings(&applied.new_content, ending)
-    );
+    let text = utf8_text(&bytes, &input.path)?;
+    let (bom, content) = strip_bom(text);
+    let (applied, stored) = apply_edits_to_stored_content(content, &input.edits, &input.path)?;
+    let restored = format!("{bom}{stored}");
     check_aborted(signal)?;
     operations.write_file(absolute, restored).await?;
     check_aborted(signal)?;

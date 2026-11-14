@@ -245,11 +245,11 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - `maestro-http` is a core crate below layer 0 that performs HTTP requests: the replaceable
   client, retries, streamed bodies, server-sent events, proxies, proxy scripts, SOCKS and
   complete-message sockets. It depends only on cancellation, interchange, text and JSON, plus
-  `maestro-path` on native targets, builds for the browser, and only models and providers
-  depend on it.
+  `maestro-path` on native targets, builds for the browser, and only models, providers
+  and the catalog generator depend on it.
   Models re-exports the client records at its existing paths. Its non-default `test-support`
   feature holds the scripted FTP, SOCKS and TLS peers and the test runtimes that its own
-  tests, the models tests and the providers tests share.
+  tests, the models tests, the providers tests and the catalog generator's tests share.
 - `maestro-providers` is a core crate at layer 1 that adapts the built-in model providers. It
   holds their login flows (subscription browser login, device code and response code login)
   with the callback server and pages, and `install_built_in_providers` places the built-in
@@ -281,7 +281,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and the provider registration records `provider_config::{ProviderConfig<C>,
   ProviderModelConfig}`, specialized by the catalog and the guest, default zero usage, flat-rate `calculate_cost` arithmetic, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
-  (agent, credentials, http, models, the model catalog, the model registry, packages, resources,
+  (agent, credentials, http, models, the model catalog, the catalog generator, the model registry, packages, resources,
   the schema validator, session, theme, tools and guest authoring)
   may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.

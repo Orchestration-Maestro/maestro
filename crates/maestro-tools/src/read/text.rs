@@ -93,7 +93,8 @@ pub(super) fn read_text(
     let truncation = truncate_head(&selected, TruncationOptions::default());
     let notice = if truncation.first_line_exceeds_limit {
         Some(oversized_line_guidance(&lines, start, path))
-    } else if truncation.truncated {
+    } else if truncation.truncated && start + float(truncation.output_lines) < end {
+        // Truncation stops below `end`: lines remain past those shown.
         Some(truncation_notice(&truncation, start + 1.0, line_count))
     } else {
         None

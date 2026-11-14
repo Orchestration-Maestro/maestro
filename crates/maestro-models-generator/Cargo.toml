@@ -1,0 +1,43 @@
+[package]
+name = "maestro-models-generator"
+version = "0.1.0"
+edition.workspace = true
+autotests = false
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[example]]
+name = "generate_catalog_data"
+path = "scripts/generate_catalog_data.rs"
+
+[[example]]
+name = "generate_circle_fixture"
+path = "scripts/generate_circle_fixture.rs"
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+maestro-http = { path = "../maestro-http" }
+maestro-interchange = { path = "../maestro-interchange" }
+maestro-json = { path = "../maestro-json" }
+maestro-models = { path = "../maestro-models" }
+maestro-text.workspace = true
+futures-util.workspace = true
+indexmap = { version = "=2.14.2", features = ["serde"] }
+regex.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-http = { path = "../maestro-http", features = ["test-support"] }
+maestro-test-directory.workspace = true
+image = { version = "=0.24.9", default-features = false, features = ["png"] }
+serde.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["rt", "sync"] }
+
+[lints]
+workspace = true

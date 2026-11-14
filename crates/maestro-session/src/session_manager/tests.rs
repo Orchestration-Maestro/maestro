@@ -181,7 +181,7 @@ fn first_save_failure_part_way_leaves_nothing_for_the_retry() {
     );
     std::fs::remove_dir(&path).unwrap();
     let error = manager
-        .publish(|path, bytes| {
+        .publish(|_, path, bytes| {
             std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -204,6 +204,65 @@ fn first_save_failure_part_way_leaves_nothing_for_the_retry() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
+fn first_save_keeps_the_bytes_already_at_its_path() {
+    let scratch = Scratch::new().unwrap();
+    let directory = scratch.path().join("sessions");
+    let mut manager =
+        super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
+    let path = manager.get_session_file().unwrap().to_owned();
+    std::fs::write(&path, "another writer\n").unwrap();
+    manager
+        .append_message(serde_json::json!({"role":"assistant","content":"saved"}))
+        .unwrap();
+    let bytes = std::fs::read_to_string(&path).unwrap();
+    assert!(bytes.starts_with("another writer\n{\"type\":\"session\""));
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn later_save_failure_part_way_leaves_no_torn_line_and_the_retry_writes_the_missed_record() {
+    use std::io::Write;
+    let scratch = Scratch::new().unwrap();
+    let directory = scratch.path().join("sessions");
+    let mut manager =
+        super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
+    manager
+        .append_message(serde_json::json!({"role":"assistant","content":"saved"}))
+        .unwrap();
+    let path = manager.get_session_file().unwrap().to_owned();
+    let saved = std::fs::read(&path).unwrap();
+    let parked = scratch.path().join("parked");
+    std::fs::rename(&path, &parked).unwrap();
+    std::fs::create_dir(&path).unwrap();
+    let missed = manager.append_message(serde_json::json!({"role":"user","content":"missed"}));
+    assert!(missed.is_err());
+    std::fs::remove_dir(&path).unwrap();
+    std::fs::rename(&parked, &path).unwrap();
+    let error = manager
+        .publish(|_, path, bytes| {
+            std::fs::OpenOptions::new()
+                .append(true)
+                .open(path)?
+                .write_all(&bytes[..7])?;
+            Err(std::io::Error::from_raw_os_error(5))
+        })
+        .unwrap_err();
+    assert_eq!(error.raw_os_error(), Some(5));
+    assert_eq!(std::fs::read(&path).unwrap(), saved);
+    manager
+        .append_message(serde_json::json!({"role":"user","content":"next"}))
+        .unwrap();
+    let records = super::parse_session_entries(&std::fs::read_to_string(&path).unwrap());
+    let contents: Vec<_> = records[1..]
+        .iter()
+        .map(|record| record["message"]["content"].as_str().unwrap())
+        .collect();
+    assert_eq!(contents, ["saved", "missed", "next"]);
+    assert_eq!(records[3]["parentId"], records[2]["id"]);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
 fn first_save_writes_every_record_in_one_append() {
     let scratch = Scratch::new().unwrap();
     let directory = scratch.path().join("sessions");
@@ -222,7 +281,7 @@ fn first_save_writes_every_record_in_one_append() {
     std::fs::remove_dir(&path).unwrap();
     let mut appends = Vec::new();
     manager
-        .publish(|_, bytes| {
+        .publish(|_, _, bytes| {
             appends.push(bytes.to_vec());
             Ok(())
         })
@@ -330,14 +389,14 @@ fn failed_extraction_keeps_a_consistent_owner() {
     assert_eq!(error.raw_os_error(), Some(5));
     let path = manager.get_session_file().unwrap().to_owned();
     assert_ne!(path, previous);
-    assert!(manager.flushed);
     manager
         .append_message(serde_json::json!({"role": "user", "content": "next", "timestamp": 2}))
         .unwrap();
     let bytes = std::fs::read_to_string(&path).unwrap();
-    assert!(bytes.starts_with("{\"type\"{\"type\":\"message\""));
-    assert_eq!(bytes.lines().count(), 1);
-    assert!(!bytes.contains("\"type\":\"session\""));
+    assert!(bytes.starts_with("{\"type\":\"session\""));
+    let records = super::parse_session_entries(&bytes);
+    assert_eq!(records.len(), 3);
+    assert_eq!(records[2]["message"]["content"], "next");
     std::fs::remove_dir_all(directory).unwrap();
     let error = manager.create_branched_session(&leaf).unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::NotFound);

@@ -238,6 +238,22 @@ fn read_keeps_empty_lines_bom_and_lossy_utf8() {
 }
 
 #[test]
+fn read_offers_no_continuation_when_only_the_last_newline_passes_the_byte_limit() {
+    let file = format!(
+        "{}\n{}\n",
+        vec!["x".repeat(99); 511].join("\n"),
+        "x".repeat(100)
+    );
+    assert_eq!(file.len(), 51_201);
+    let shown = read_text(file.as_bytes(), None, None).unwrap();
+    assert_eq!(shown, file.trim_end_matches('\n'));
+    assert_eq!(
+        read_text(file.as_bytes(), Some(513.0), None).unwrap_err(),
+        "Offset 513 is beyond end of file (512 lines total)"
+    );
+}
+
+#[test]
 fn read_reports_line_and_byte_continuations() {
     let short = vec!["ab"; 2500].join("\n");
     let ops = Arc::new(ScriptedOps::new(short.as_bytes()));

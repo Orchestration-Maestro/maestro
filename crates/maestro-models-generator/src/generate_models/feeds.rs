@@ -1,8 +1,9 @@
 //! Single-fetch acquisition and source-specific progress reporting.
 use super::input::{self, Invalid};
-use crate::providers::json_text::{member, raw_json};
-use crate::{Fetch, HttpRequest, Model, ModelInput};
 use futures_util::StreamExt;
+use maestro_http::{Fetch, HttpRequest};
+use maestro_interchange::types::{Model, ModelCost, ModelInput};
+use maestro_json::raw_value::{member, raw_json};
 use serde_json::value::RawValue;
 use std::io::{self, Write};
 
@@ -206,7 +207,7 @@ fn gateway_model(raw: &RawValue, source: Source) -> Result<Option<Model>, Invali
             "https://openrouter.ai/api/v1",
         )
     };
-    if !gateway || member(raw, "name").is_some_and(crate::providers::json_text::is_truthy) {
+    if !gateway || member(raw, "name").is_some_and(maestro_json::is_raw_truthy) {
         model.name = input::text(member(raw, "name"))?;
     }
     model.reasoning = input::includes(tags, "reasoning")?;
@@ -235,9 +236,9 @@ pub(super) fn skipped(errors: &mut dyn Write, prefix: &str, id: &str) -> io::Res
 }
 
 /// Map the four distinct per-token fields through the owning finite-price conversion.
-fn gateway_cost(raw: &RawValue, source: Source) -> Result<crate::ModelCost, Invalid> {
+fn gateway_cost(raw: &RawValue, source: Source) -> Result<ModelCost, Invalid> {
     let gateway = matches!(source, Source::Gateway);
-    Ok(crate::ModelCost {
+    Ok(ModelCost {
         input: input::price(
             input::field(raw, "pricing", if gateway { "input" } else { "prompt" }),
             gateway,

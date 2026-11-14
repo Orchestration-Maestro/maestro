@@ -132,6 +132,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-http",
     "maestro-lock",
     "maestro-models",
+    "maestro-models-generator",
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
@@ -228,6 +229,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
             name,
             UNIFIER
                 | "maestro"
+                | "maestro-models-generator"
                 | "maestro-test-browser"
                 | "maestro-test-conventions"
                 | "maestro-test-process"

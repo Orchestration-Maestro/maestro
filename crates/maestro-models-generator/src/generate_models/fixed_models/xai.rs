@@ -1,6 +1,6 @@
 //! Authored xAI additions.
 use super::defaults::xai_base;
-use crate::{Model, ModelCost};
+use maestro_interchange::types::{Model, ModelCost};
 
 /// Construct an authored model descriptor.
 pub(super) fn xai_grok_3() -> Model {

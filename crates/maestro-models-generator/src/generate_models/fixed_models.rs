@@ -1,5 +1,7 @@
 //! Authored model additions with shared provider defaults.
-use crate::{Model, ModelCompat, ModelCost, ModelInput, OpenAICompletionsCompat, ThinkingFormat};
+use maestro_interchange::types::{
+    Model, ModelCompat, ModelCost, ModelInput, OpenAICompletionsCompat, ThinkingFormat,
+};
 mod defaults;
 mod xai;
 use defaults::{

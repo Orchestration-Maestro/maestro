@@ -12,8 +12,8 @@ pub use feeds::{fetch_ai_gateway_models, fetch_open_router_models, load_models_d
 #[cfg(test)]
 mod tests;
 
-use crate::Model;
 use indexmap::IndexMap;
+use maestro_interchange::types::Model;
 mod fixed_models;
 /// Unique descriptors retaining their provider and model encounter order.
 type Catalog = IndexMap<String, IndexMap<String, Model>>;
@@ -117,7 +117,7 @@ fn add_copilot(models: &mut Vec<Model>) {
 /// Returns filesystem or output-writer errors without reporting later success.
 /// Failed publication can leave partially written output files.
 pub async fn generate_models(
-    fetch: &crate::Fetch,
+    fetch: &maestro_http::Fetch,
     destination: &std::path::Path,
     output: &mut dyn std::io::Write,
     errors: &mut dyn std::io::Write,

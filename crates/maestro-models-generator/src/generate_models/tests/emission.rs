@@ -1,6 +1,6 @@
 //! Cargo-compiled native source witnesses for boundary descriptors.
 use super::Scratch;
-use crate::Model;
+use maestro_interchange::types::Model;
 use std::fmt::Write as _;
 
 /// Generated boundary constructors compiled by the ordinary crate build.
@@ -30,7 +30,7 @@ fn boundary_inputs() -> Vec<(String, Model)> {
     let command: Model = serde_json::from_str(r#"{"id":"boundary/\"\\\n\u0000😀","name":"Name \"\\\n\u0000😀","api":"openai-completions","provider":"openrouter","baseUrl":"https://openrouter.ai/api/v1","reasoning":false,"input":["text","image"],"cost":{"input":1,"output":2,"cacheRead":0,"cacheWrite":0},"contextWindow":4096,"maxTokens":4096}"#).unwrap();
     records.push(("command-boundary".into(), command));
     let mut open = records.last().unwrap().1.clone();
-    open.compat = Some(crate::ModelCompat(serde_json::from_str(r#"{"supportsStore":false,"sendSessionIdHeader":true,"openRouterRouting":{"unknown":{"values":["b","a","b"]}},"open":null,"precise":0.8455124082255701,"zero":-0.0}"#).unwrap()));
+    open.compat = Some(maestro_interchange::types::ModelCompat(serde_json::from_str(r#"{"supportsStore":false,"sendSessionIdHeader":true,"openRouterRouting":{"unknown":{"values":["b","a","b"]}},"open":null,"precise":0.8455124082255701,"zero":-0.0}"#).unwrap()));
     records.push(("open-compatibility".into(), open));
     records
 }
@@ -153,9 +153,9 @@ fn complete_catalog_matches_all_descriptors() {
         );
     }
     let expected = super::expected_models(serde_json::json!("offline_catalog"));
-    let actual: Vec<_> = crate::get_providers()
+    let actual: Vec<_> = maestro_models::get_providers()
         .iter()
-        .flat_map(|provider| crate::get_models(provider))
+        .flat_map(|provider| maestro_models::get_models(provider))
         .collect();
     assert_eq!(actual, expected);
     for (actual, expected) in actual.iter().zip(&expected) {

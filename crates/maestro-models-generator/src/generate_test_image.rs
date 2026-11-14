@@ -2,7 +2,7 @@
 use std::{fs, io, io::Write, path::Path};
 
 /// Immutable PNG data, embedded so materialization needs no runtime source file.
-const IMAGE: &[u8] = include_bytes!("../../tests/data/red-circle.png");
+const IMAGE: &[u8] = include_bytes!("../tests/data/red-circle.png");
 
 /// Write the fixed image under `package_dir`, then report its selected path.
 ///

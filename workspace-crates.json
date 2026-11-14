@@ -22,6 +22,7 @@
   "maestro-markdown": "core",
   "maestro-models": "core",
   "maestro-models-catalog": "core",
+  "maestro-models-generator": "dedicated",
   "maestro-models-registry": "core",
   "maestro-multiplexer": "core",
   "maestro-office": "core",

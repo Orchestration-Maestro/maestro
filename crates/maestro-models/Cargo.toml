@@ -72,7 +72,6 @@ rustls = { version = "=0.23.46", default-features = false, features = ["std", "t
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 http-body-util = { version = "=0.1.5", default-features = false }
-image = { version = "=0.24.9", default-features = false, features = ["png"] }
 aws-smithy-runtime-api = { version = "=1.19.2", features = ["test-util"] }
 icu_collator = "=2.3.1"
 tokio = { version = "=1.53.3", features = ["rt", "time", "test-util"] }
@@ -100,11 +99,3 @@ crate-type = ["cdylib"]
 [[example]]
 name = "browser_import_check"
 path = "tests/support/browser_import_check.rs"
-
-[[example]]
-name = "generate_catalog_data"
-path = "scripts/generate_catalog_data.rs"
-
-[[example]]
-name = "generate_circle_fixture"
-path = "scripts/generate_circle_fixture.rs"

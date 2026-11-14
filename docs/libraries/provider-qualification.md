@@ -115,7 +115,7 @@ transport. `maestro-path` is added as the native path-join utility edge.
 
 ## Fixed image fixture qualification
 
-Native `maestro-models` tests use `image =0.24.9` with defaults off and only the
+Native `maestro-models-generator` tests use `image =0.24.9` with defaults off and only the
 `png` feature to decode the fixed circle fixture. They check the encoded PNG
 and all decoded RGBA bytes against independently recorded SHA-256 digests using
 the existing `sha2 =0.11.0` dependency. Production materialization embeds the

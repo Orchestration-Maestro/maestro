@@ -130,11 +130,15 @@ Empty lists fail before path resolution or queue admission. Other calls resolve
 through [`resolve_existing_path`](../crates/maestro-tools/src/path_utils.rs); successful
 resolution enters the
 [file mutation queue](#file-mutation-queue) before polling.
-Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
-[matching owner](#original-snapshot-matching) against one original snapshot.
-After restoring the retained prefix BOM and detected line endings, it writes
-and returns one text block, `Successfully replaced N block(s) in <path>.`, using
-the requested count and authored path. Present `EditToolDetails` holds the LF
+Execution checks read/write access and reads the bytes as UTF-8. A file that is not
+valid UTF-8 is refused before anything is written, with
+`Could not edit file: <path>. The file is not valid UTF-8 text.`, so its bytes stay
+as they were. Execution then uses the
+[matching owner](#original-snapshot-matching) against one original snapshot. It
+restores the retained prefix BOM, gives replacement text the detected line ending and
+keeps every line break no match covers as it was read, CR LF, lone CR or LF. It then
+writes and returns one text block, `Successfully replaced N block(s) in <path>.`,
+using the requested count and authored path. Present `EditToolDetails` holds the LF
 numbered diff and optional `firstChangedLine`; no progress or termination is
 requested. Matching failures do not write.
 
@@ -161,9 +165,11 @@ diagnostic.
 - Snapshot: every edit is matched against the same text, never against another
   edit's output. Matches are sorted by position, must not overlap (touching is fine)
   and are then spliced in one pass.
-- Fuzzy base: matching tries the exact text first. If any edit matches only after
+- Fuzzy matching: matching tries the exact text first. If any edit matches only after
   NFKC, per-line trailing-whitespace removal and quote, dash and space folding,
-  every edit is matched against that normalized text, which is returned as the base.
+  every edit is matched against that normalized text. Only the lines a match reaches
+  are rewritten from it; every other line keeps its own text. The returned base is the
+  supplied content, so the diff shows each rewritten line as it stood in the file.
 - Uniqueness: occurrences are counted in normalized space, overlaps included, even
   when the chosen match is exact. A nonempty `old_text` that normalization erases
   matches and counts literally only; it is never an empty insertion point.
@@ -171,10 +177,16 @@ diagnostic.
 - Trailing whitespace follows the shared set of [text](text.md).
 - `detect_line_ending` follows the first LF, `restore_line_endings` turns each LF into
   CR LF in CRLF mode, and `strip_bom` removes one leading BOM.
+- Stored line breaks: execution rebuilds the file line by line. A line no match
+  reaches keeps its text and its own break, except that a kept lone CR followed by an
+  LF becomes that LF, so the two breaks stay two. A line a match reaches keeps its own
+  break unless the match covers it. Only replacement text takes the detected line
+  ending.
 
-The nine failure messages are the exact texts in the module; single-edit calls use
+The eleven failure messages are the exact texts in the module; single-edit calls use
 the unnumbered wording; multi-edit calls name `edits[n]` except for the no-change
-failure, which names no edit.
+failure, which names no edit. The line-count message is a guard that matching never
+reaches, because normalization keeps every line break.
 
 ## Numbered diffs and read-only previews
 
@@ -192,7 +204,8 @@ matching failures are returned by the future. Access failures retain the authore
 path and supplied error code, including native numeric codes; read and matching
 failures retain their messages.
 
-Preview decodes bytes lossily, strips one leading BOM and normalizes newlines,
+Preview refuses a file that is not valid UTF-8 with the same failure text as execution.
+Otherwise it strips one leading BOM and normalizes newlines,
 then uses the [matching operation's](#original-snapshot-matching) comparison base.
 
 ## Diff rendering

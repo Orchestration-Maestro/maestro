@@ -1,6 +1,7 @@
 //! Borrowed feed fields and typed descriptor projection.
-use crate::providers::json_text::{EntryKey, is_truthy, member, raw_number};
-use crate::{Model, ModelCost, ModelInput};
+use maestro_interchange::types::{Model, ModelCost, ModelInput};
+use maestro_json::is_raw_truthy;
+use maestro_json::raw_value::{EntryKey, member, raw_number};
 use serde_json::value::RawValue;
 
 /// Invalid metadata in a selected model.
@@ -30,7 +31,7 @@ pub(super) fn includes(raw: Option<&RawValue>, needle: &str) -> Result<bool, Inv
 }
 /// Use a default for missing/falsy values; otherwise require a finite number.
 pub(super) fn number(raw: Option<&RawValue>, fallback: f64) -> Result<f64, Invalid> {
-    let Some(raw) = raw.filter(|raw| is_truthy(raw)) else {
+    let Some(raw) = raw.filter(|raw| is_raw_truthy(raw)) else {
         return Ok(fallback);
     };
     raw_number(raw)
@@ -80,8 +81,8 @@ use maestro_text::is_whitespace_scalar as price_space;
 /// Convert one numeric/string price, replacing nonfinite scaled results with zero.
 /// Falsy fields default to zero; the gateway retains the sign of numeric zero.
 pub(super) fn price(raw: Option<&RawValue>, preserve_numeric_zero: bool) -> Result<f64, Invalid> {
-    let Some(raw) =
-        raw.filter(|raw| is_truthy(raw) || (preserve_numeric_zero && raw_number(raw).is_some()))
+    let Some(raw) = raw
+        .filter(|raw| is_raw_truthy(raw) || (preserve_numeric_zero && raw_number(raw).is_some()))
     else {
         return Ok(0.0);
     };
@@ -154,7 +155,7 @@ pub(super) fn entries(raw: Option<&RawValue>) -> Vec<(EntryKey, &RawValue)> {
     entries.sort_by_key(|(key, _)| {
         std::str::from_utf8(&key.0)
             .ok()
-            .and_then(crate::providers::json_text::array_index)
+            .and_then(maestro_json::array_index)
             .unwrap_or(u32::MAX)
     });
     entries

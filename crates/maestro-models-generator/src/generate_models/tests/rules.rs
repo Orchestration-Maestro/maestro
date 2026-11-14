@@ -1,7 +1,7 @@
 //! Authored generator rules checked from controlled feed input to the assembled catalog.
 use super::super::{Catalog, assemble, models_dev};
-use crate::Model;
-use crate::ModelThinkingLevel as Level;
+use maestro_interchange::types::Model;
+use maestro_interchange::types::ModelThinkingLevel as Level;
 use serde_json::{Value, json};
 
 /// Build a descriptor from the shared authored defaults.
@@ -414,7 +414,7 @@ fn messages_adaptive_metadata_merges_only_matching_case_sensitive_families() {
     for marker in markers {
         let id = format!("anthropic/claude-{marker}");
         let mut input = model("vercel-ai-gateway", &id, "anthropic-messages");
-        input.compat = Some(crate::ModelCompat(
+        input.compat = Some(maestro_interchange::types::ModelCompat(
             serde_json::from_value(json!({"supportsCacheControlOnTools": false})).unwrap(),
         ));
         let catalog = assembled(vec![input]);

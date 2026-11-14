@@ -66,7 +66,7 @@ models-clean:
 
 # Generate the native offline model catalog.
 models-generate:
-    cargo run --quiet --locked -p maestro-models --example generate_catalog_data
+    cargo run --quiet --locked -p maestro-models-generator --example generate_catalog_data
 
 # Generate the catalog once before the explicit models build.
 models-build:

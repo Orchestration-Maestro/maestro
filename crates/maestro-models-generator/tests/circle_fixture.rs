@@ -1,7 +1,6 @@
 //! Fixed-image materialization through the native developer operation.
-#![cfg(not(target_arch = "wasm32"))]
 use crate::catalog_command_support::Scratch;
-use maestro_models::catalog_generation::generate_test_image::generate_test_image;
+use maestro_models_generator::generate_test_image::generate_test_image;
 use sha2::{Digest, Sha256};
 use std::{fs, io, path::Path};
 

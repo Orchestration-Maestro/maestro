@@ -1,11 +1,14 @@
 //! Authored protocol routes and compatibility data.
 use super::input;
-use crate::providers::chat::cloudflare::{
+use maestro_interchange::types::{
+    AnthropicMessagesCompat, CacheControlFormat, MaxTokensField, Model, ModelCompat,
+    OpenAICompletionsCompat, ThinkingFormat,
+};
+use maestro_json::raw_value::member;
+use maestro_models::providers::chat::cloudflare::{
     CLOUDFLARE_AI_GATEWAY_ANTHROPIC_BASE_URL, CLOUDFLARE_AI_GATEWAY_COMPAT_BASE_URL,
     CLOUDFLARE_AI_GATEWAY_OPENAI_BASE_URL, CLOUDFLARE_WORKERS_AI_BASE_URL,
 };
-use crate::providers::json_text::member;
-use crate::{Model, ModelCompat, OpenAICompletionsCompat};
 use serde_json::value::RawValue;
 
 /// Source key, output provider, protocol and endpoint in authored encounter order.
@@ -207,9 +210,9 @@ pub(super) fn route(mut model: Model, raw: &RawValue) -> Option<Model> {
                 supports_store: Some(false),
                 supports_developer_role: Some(false),
                 supports_reasoning_effort: Some(false),
-                max_tokens_field: Some(crate::MaxTokensField::MaxTokens),
+                max_tokens_field: Some(MaxTokensField::MaxTokens),
                 supports_strict_mode: Some(false),
-                thinking_format: Some(crate::ThinkingFormat::Deepseek),
+                thinking_format: Some(ThinkingFormat::Deepseek),
                 ..Default::default()
             },
         ),
@@ -262,7 +265,7 @@ fn xiaomi(model: &mut Model) -> Option<()> {
         model,
         OpenAICompletionsCompat {
             requires_reasoning_content_on_assistant_messages: Some(true),
-            thinking_format: Some(crate::ThinkingFormat::Deepseek),
+            thinking_format: Some(ThinkingFormat::Deepseek),
             ..Default::default()
         },
     );
@@ -281,7 +284,7 @@ fn opencode(model: &mut Model, raw: &RawValue) {
     let mut compat = OpenAICompletionsCompat::default();
     let alibaba = npm == "@ai-sdk/alibaba";
     if alibaba {
-        compat.cache_control_format = Some(crate::CacheControlFormat::Anthropic);
+        compat.cache_control_format = Some(CacheControlFormat::Anthropic);
     }
     let qwen = model.provider == "opencode-go"
         && ["qwen3.5-plus", "qwen3.6-plus"].contains(&model.id.as_str());
@@ -289,14 +292,14 @@ fn opencode(model: &mut Model, raw: &RawValue) {
         model.api = "openai-completions".into();
     }
     if model.id == "kimi-k2.6" {
-        compat.thinking_format = Some(crate::ThinkingFormat::Deepseek);
+        compat.thinking_format = Some(ThinkingFormat::Deepseek);
         compat.supports_reasoning_effort = Some(false);
     }
     if qwen {
-        compat.thinking_format = Some(crate::ThinkingFormat::Qwen);
+        compat.thinking_format = Some(ThinkingFormat::Qwen);
     }
     if model.api == "openai-completions" {
-        compat.max_tokens_field = Some(crate::MaxTokensField::MaxTokens);
+        compat.max_tokens_field = Some(MaxTokensField::MaxTokens);
     }
     if model.api != "anthropic-messages" {
         model.base_url.push_str("/v1");
@@ -349,7 +352,7 @@ fn copilot(model: &mut Model) {
     } else if claude
         && ["claude-haiku-4.5", "claude-sonnet-4", "claude-sonnet-4.5"].contains(&model.id.as_str())
     {
-        model.compat = Some(ModelCompat::from(crate::AnthropicMessagesCompat {
+        model.compat = Some(ModelCompat::from(AnthropicMessagesCompat {
             supports_eager_tool_input_streaming: Some(false),
             ..Default::default()
         }));
@@ -364,7 +367,7 @@ fn zai(model: &mut Model) {
         model,
         OpenAICompletionsCompat {
             supports_developer_role: Some(false),
-            thinking_format: Some(crate::ThinkingFormat::Zai),
+            thinking_format: Some(ThinkingFormat::Zai),
             zai_tool_stream: (!legacy).then_some(true),
             ..Default::default()
         },

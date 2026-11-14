@@ -7,8 +7,9 @@ use maestro_interchange::presence::Presence;
 use serde::Serialize;
 use serde_json::{Map, Value, ser::Formatter};
 use std::{
+    borrow::Cow,
     fs,
-    io::{self, Write},
+    io::{self, Read, Seek, Write},
 };
 
 impl SessionManager {
@@ -176,7 +177,7 @@ impl SessionManager {
         self.label_timestamps = label_timestamps;
         self.session_id = id;
         self.session_file = Some(path);
-        self.flushed = exists;
+        self.saved = if exists { self.file_entries.len() } else { 0 };
         Ok(())
     }
 
@@ -207,8 +208,8 @@ impl SessionManager {
 
     /// Write the extracted history now only when it holds an assistant message.
     ///
-    /// The publication state changes only after the scan, and the write when an
-    /// assistant is found, succeed.
+    /// The history counts as unsaved until the write succeeds. A failed write is cut
+    /// back to an empty file, so the next save writes the whole history once.
     pub(super) fn publish_branched(
         &mut self,
         write: impl FnOnce(&str, &[FileEntry]) -> io::Result<()>,
@@ -216,65 +217,106 @@ impl SessionManager {
         let Some(path) = self.session_file.as_deref().filter(|_| self.persist) else {
             return Ok(());
         };
-        let assistant = has_assistant(&self.file_entries)?;
-        if assistant {
-            write(path, &self.file_entries)?;
+        self.saved = 0;
+        if has_assistant(&self.file_entries)? {
+            write(path, &self.file_entries).map_err(|error| {
+                restored(
+                    super::storage::with_write_lock(path, |_| cut(path, 0)),
+                    error,
+                )
+            })?;
+            self.saved = self.file_entries.len();
         }
-        self.flushed = assistant;
         Ok(())
     }
 
-    /// Publish accepted records with the native append effect.
+    /// Publish accepted records with the native write effect.
     pub(super) fn persist_entry(&mut self) -> io::Result<()> {
-        self.publish(append)
+        self.publish(write)
     }
 
-    /// Keep memory acceptance before a private, unstored append effect.
+    /// Keep memory acceptance before a private, unstored write effect.
+    ///
+    /// One write holds every record the file does not hold yet, so a save that follows
+    /// a failed one writes the records that one missed. Nothing is written before the
+    /// history holds an assistant message. The file's length is read, `write` runs and a
+    /// failed write is cut back to that length under one write lock, so no partial line
+    /// is left for the next record to join and the cut removes no other writer's record.
+    /// `write` must not take that lock itself.
     pub(super) fn publish(
         &mut self,
-        mut append: impl FnMut(&str, &[u8]) -> io::Result<()>,
+        write: impl FnOnce(Option<&maestro_lock::WriteLock>, &str, &[u8]) -> io::Result<()>,
     ) -> io::Result<()> {
         let Some(path) = self.session_file.as_deref().filter(|_| self.persist) else {
             return Ok(());
         };
-        if !self.flushed {
-            if !has_assistant(&self.file_entries)? {
-                return Ok(());
-            }
-            let bytes = encode_entries(&self.file_entries)?;
-            let before = fs::metadata(path).map_or(0, |metadata| metadata.len());
-            append(path, &bytes).map_err(|error| restore_length(path, before, error))?;
-            self.flushed = true;
-        } else if let Some(entry) = self.file_entries.last() {
-            append(path, &encode(entry)?)?;
+        if self.saved == 0 && !has_assistant(&self.file_entries)? {
+            return Ok(());
         }
+        let unsaved = self.file_entries.get(self.saved..).unwrap_or_default();
+        let bytes = encode_entries(unsaved)?;
+        super::storage::with_write_lock(path, |holder| {
+            let before = fs::metadata(path).map_or(0, |metadata| metadata.len());
+            write(holder.as_ref(), path, &bytes).map_err(|error| restored(cut(path, before), error))
+        })?;
+        self.saved = self.file_entries.len();
         Ok(())
     }
 }
 
-/// Append bytes to a native file, creating it when absent.
+/// Append bytes to a native file under its write lock, creating it when absent.
 pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
-    super::storage::with_write_lock(path, |holder| match holder {
+    super::storage::with_write_lock(path, |holder| write(holder.as_ref(), path, bytes))
+}
+
+/// Append bytes through the caller's holder, or directly where no lock file is accepted.
+///
+/// A file that does not end with a line break takes one first, so the first appended
+/// record starts a line of its own instead of joining the last one.
+fn write(holder: Option<&maestro_lock::WriteLock>, path: &str, bytes: &[u8]) -> io::Result<()> {
+    let bytes = &on_own_line(path, bytes)?;
+    match holder {
         Some(holder) => holder.append(bytes),
         None => fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(path)?
             .write_all(bytes),
+    }
+}
+
+/// `bytes`, behind a line break when the file at `path` holds bytes and ends without one.
+fn on_own_line<'a>(path: &str, bytes: &'a [u8]) -> io::Result<Cow<'a, [u8]>> {
+    let mut file = match fs::File::open(path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(bytes.into()),
+        Err(error) => return Err(error),
+    };
+    let mut last = *b"\n";
+    if file.metadata()?.len() > 0 {
+        file.seek(io::SeekFrom::End(-1))?;
+        file.read_exact(&mut last)?;
+    }
+    Ok(if last == *b"\n" {
+        bytes.into()
+    } else {
+        [b"\n", bytes].concat().into()
     })
 }
 
-/// Cut a failed first save back to its earlier length so the retry writes it once.
+/// Set the file at `path` to `length` bytes; the caller holds its write lock.
+fn cut(path: &str, length: u64) -> io::Result<()> {
+    fs::OpenOptions::new()
+        .write(true)
+        .open(path)?
+        .set_len(length)
+}
+
+/// The error of a failed save, extended with the restore error when its cut also failed.
 ///
-/// Returns the save error, extended with the restore error when the cut also fails.
-fn restore_length(path: &str, length: u64, error: io::Error) -> io::Error {
-    let cut = super::storage::with_write_lock(path, |_holder| {
-        fs::OpenOptions::new()
-            .write(true)
-            .open(path)?
-            .set_len(length)
-    });
-    match cut {
+/// A file that is absent needs no cut.
+fn restored(outcome: io::Result<()>, error: io::Error) -> io::Error {
+    match outcome {
         Err(restore) if restore.kind() != io::ErrorKind::NotFound => io::Error::new(
             error.kind(),
             format!("{error}; restoring the session file failed: {restore}"),

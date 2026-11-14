@@ -86,8 +86,8 @@ fn edit_execution_restores_bom_and_first_newline_style() {
 }
 
 #[test]
-fn edit_execution_decodes_bytes_lossily() {
-    native_cases("edit_execution_decodes_bytes_lossily");
+fn edit_execution_refuses_bytes_that_are_not_utf8() {
+    native_cases("edit_execution_refuses_bytes_that_are_not_utf8");
 }
 
 #[test]
@@ -98,6 +98,54 @@ fn edit_execution_resolves_authored_paths() {
 #[test]
 fn edit_execution_inherits_matching_corrections() {
     native_cases("edit_execution_inherits_matching_corrections");
+}
+
+/// The bytes one replacement leaves in a file that held `bytes`.
+fn edited(bytes: &[u8], old: &str, new: &str) -> Vec<u8> {
+    let ops = Arc::new(Operations::new(bytes));
+    run(start(
+        &tool(&ops, "/work"),
+        input("file.txt", old, new),
+        None,
+    ))
+    .unwrap();
+    ops.bytes.lock().unwrap().clone()
+}
+
+#[test]
+fn edit_refuses_a_file_that_is_not_valid_utf8_and_writes_nothing() {
+    let stored = b"caf\xe9\nname = old\n";
+    let ops = Arc::new(Operations::new(stored));
+    let error = run(start(
+        &tool(&ops, "/work"),
+        input("file.txt", "name = old", "name = new"),
+        None,
+    ))
+    .unwrap_err();
+    assert_eq!(
+        error.message,
+        "Could not edit file: file.txt. The file is not valid UTF-8 text."
+    );
+    assert_eq!(ops.script.names(), vec!["access", "read"]);
+    assert_eq!(*ops.bytes.lock().unwrap(), stored.to_vec());
+}
+
+#[test]
+fn edit_keeps_the_line_breaks_no_match_covers() {
+    assert_eq!(
+        edited(b"one\r\ntwo\nthree\rfour\nfive\r\n", "four", "FOUR"),
+        b"one\r\ntwo\nthree\rFOUR\nfive\r\n"
+    );
+    assert_eq!(
+        edited(b"one\r\ntwo\nthree\rfour\n", "two\nthree", "2\n3"),
+        b"one\r\n2\r\n3\rfour\n"
+    );
+    assert_eq!(
+        edited(b"one\ntwo\r\nthree\rfour", "four", "4\n"),
+        b"one\ntwo\r\nthree\r4\n"
+    );
+    // A lone CR and the LF after an emptied line stay two breaks.
+    assert_eq!(edited(b"a\rb\nc", "b\n", "\n"), b"a\n\nc");
 }
 
 use futures_util::FutureExt;

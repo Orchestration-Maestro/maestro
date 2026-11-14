@@ -15,7 +15,8 @@ use uuid::Uuid;
 impl SessionManager {
     /// Accept a record below the selected entry, select it, then publish it.
     ///
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub(super) fn append_record<T: Serialize>(
         &mut self,
         record: impl FnOnce(SessionEntryBase) -> T,
@@ -38,7 +39,8 @@ impl SessionManager {
     /// Append the raw message as a child of the selected entry and select it.
     ///
     /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn append_message(&mut self, message: Value) -> io::Result<String> {
         self.append_record(|base| SessionMessageEntry { base, message })
     }
@@ -46,7 +48,8 @@ impl SessionManager {
     /// Record the selected thinking level.
     ///
     /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn append_thinking_level_change(&mut self, thinking_level: &str) -> io::Result<String> {
         self.append_record(|base| ThinkingLevelChangeEntry {
             base,
@@ -57,7 +60,8 @@ impl SessionManager {
     /// Record the selected provider and model pair.
     ///
     /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn append_model_change(&mut self, provider: &str, model_id: &str) -> io::Result<String> {
         self.append_record(|base| ModelChangeEntry {
             base,
@@ -69,7 +73,8 @@ impl SessionManager {
     /// Record supplied compaction data; the cut identity is never checked.
     ///
     /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn append_compaction(
         &mut self,
         summary: &str,
@@ -90,7 +95,8 @@ impl SessionManager {
     /// Retain extension state that never enters model context.
     ///
     /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn append_custom_entry(
         &mut self,
         custom_type: &str,
@@ -106,7 +112,8 @@ impl SessionManager {
     /// Record a session name with outer ECMAScript whitespace removed; an empty name clears it.
     ///
     /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn append_session_info(&mut self, name: &str) -> io::Result<String> {
         let name = Presence::Present(name.trim_matches(ecma_whitespace).to_owned());
         self.append_record(|base| SessionInfoEntry { base, name })
@@ -115,7 +122,8 @@ impl SessionManager {
     /// Retain injected content that joins model context whether or not it is displayed.
     ///
     /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
+    /// Publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn append_custom_message_entry(
         &mut self,
         custom_type: &str,
@@ -136,7 +144,8 @@ impl SessionManager {
     ///
     /// # Errors
     /// Returns `Entry {id} not found` before any change when the branch point is not indexed;
-    /// publication errors leave the accepted memory and any written bytes in place.
+    /// publication errors leave the accepted memory in place and the file as it was; the
+    /// next save writes the record.
     pub fn branch_with_summary(
         &mut self,
         branch_from_id: Option<&str>,

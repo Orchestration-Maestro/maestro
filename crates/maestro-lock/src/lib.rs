@@ -73,15 +73,17 @@ impl WriteLock {
         &self.target
     }
 
-    /// Consumes this holder to append once, persisting recovery absence before writing.
+    /// Appends through this holder, persisting recovery absence before writing.
     ///
     /// A missing target is created with native default permissions. The appended
-    /// bytes are not synced; the caller retains its append durability policy.
+    /// bytes are not synced; the caller retains its append durability policy. The
+    /// holder keeps its exclusion, so the caller can cut a failed append back before
+    /// another writer is admitted.
     ///
     /// # Errors
-    /// Returns native directory-sync, open or append errors before releasing exclusion.
-    pub fn append(self, bytes: &[u8]) -> std::io::Result<()> {
-        recovery::append(&self, bytes)
+    /// Returns native directory-sync, open or append errors.
+    pub fn append(&self, bytes: &[u8]) -> std::io::Result<()> {
+        recovery::append(self, bytes)
     }
 
     /// Consumes this holder to publish one write, retaining native identity and access controls.

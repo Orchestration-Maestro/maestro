@@ -383,6 +383,7 @@ fn single_name_owner(name: &str) -> Option<&'static str> {
         "serialize_json_line" | "JsonlLineSplitter" => "maestro-json",
         "serialize_rpc_response" => "maestro-protocol",
         "session_transcripts" => "maestro-session-reports",
+        "generate_models" => "maestro-models-generator",
         _ => return None,
     };
     Some(owner)
