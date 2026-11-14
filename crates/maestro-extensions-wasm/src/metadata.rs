@@ -6,6 +6,7 @@
 )]
 use crate::bindings::maestro::extension::host::FrontmatterToken;
 use crate::{ExtensionAPI, ExtensionResult};
+#[doc(inline)]
 pub use maestro_interchange::metadata::{FrontmatterValue, ParsedFrontmatter};
 /// Parses metadata through the installed native owner.
 ///

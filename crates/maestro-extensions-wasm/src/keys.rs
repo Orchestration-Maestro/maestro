@@ -7,6 +7,7 @@
 use crate::{ExtensionAPI, ExtensionResult};
 /// An open terminal key identifier.
 pub type KeyId = String;
+#[doc(inline)]
 pub use maestro_interchange::tui::KeyEventType;
 /// Named keys and native modifier constructors.
 pub struct Key;

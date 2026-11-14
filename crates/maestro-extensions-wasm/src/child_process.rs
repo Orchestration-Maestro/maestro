@@ -10,6 +10,7 @@ use crate::{
 };
 use std::rc::Rc;
 
+#[doc(inline)]
 pub use maestro_interchange::native_io::{ExitStatus, SpawnOptions, Stdio};
 
 /// Child controls and byte pipes that can outlive their creating callback.

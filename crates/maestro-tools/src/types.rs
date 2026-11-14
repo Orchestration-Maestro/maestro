@@ -20,6 +20,7 @@ pub enum ToolRenderShell {
     SelfRendered,
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::{ToolRenderPhase, ToolRenderResultOptions};
 
 /// Existing host effects supplied to tool renderers.

@@ -5,6 +5,7 @@
     clippy::excessive_nesting
 )]
 use crate::{ExtensionAPI, ExtensionResult};
+#[doc(inline)]
 pub use maestro_interchange::tui::FuzzyMatch;
 /// Scores the supplied query through the native fuzzy owner.
 ///

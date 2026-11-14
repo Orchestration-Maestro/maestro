@@ -32,6 +32,7 @@ pub struct EditorTheme {
     /// Selection styling retained with the editor.
     pub select_list: SelectListTheme,
 }
+#[doc(inline)]
 pub use maestro_interchange::tui::EditorOptions;
 /// Multiline editable terminal component.
 ///

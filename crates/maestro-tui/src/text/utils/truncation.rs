@@ -4,6 +4,7 @@ use super::measure::visible_width;
 use super::parsed::{Grapheme, Parsed};
 use super::render::{Emission, RESET};
 
+#[doc(inline)]
 pub use maestro_interchange::tui::TruncateOptions;
 
 /// The graphemes of a parsed text, segmented once, and how much of it fits a width.

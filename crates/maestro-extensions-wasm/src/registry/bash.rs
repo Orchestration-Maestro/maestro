@@ -43,6 +43,7 @@ pub struct BashExecOptions {
     /// Supplied environment, with absent values retained.
     pub env: Option<IndexMap<String, Option<String>>>,
 }
+#[doc(inline)]
 pub use maestro_interchange::tool::types::BashExecResult;
 /// Asynchronous execution supplied by an extension.
 pub type BashExec =

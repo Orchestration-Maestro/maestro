@@ -13,6 +13,7 @@ mod resolve_flow_scalar;
 mod resolve_props;
 mod values;
 
+#[doc(inline)]
 pub use maestro_interchange::metadata::{FrontmatterValue, ParsedFrontmatter};
 
 /// A metadata failure with source coordinates when available.

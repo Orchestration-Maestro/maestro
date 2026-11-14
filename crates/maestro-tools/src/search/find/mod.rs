@@ -32,6 +32,7 @@ pub struct FindToolDetails {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result_limit_reached: Option<f64>,
 }
+#[doc(inline)]
 pub use maestro_interchange::tool::types::FindGlobOptions;
 /// Replaceable existence and glob effects.
 pub trait FindOperations: Send + Sync {

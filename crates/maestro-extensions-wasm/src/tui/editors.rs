@@ -20,6 +20,7 @@ pub type TextHandler = Rc<dyn for<'a> Fn(&str, CallbackEmitter<'a>) -> Extension
 /// Receives input before a custom editor and answers whether it consumed it.
 pub type EditorShortcut = Rc<dyn for<'a> Fn(&str, CallbackEmitter<'a>) -> ExtensionResult<bool>>;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::EditorOptions;
 
 port! {

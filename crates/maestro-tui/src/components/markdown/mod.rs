@@ -34,6 +34,7 @@ use std::{
 type ColorFn = dyn Fn(&str) -> String;
 /// Code-row highlighting callback.
 type HighlightFn = dyn Fn(&str, Option<&str>) -> Vec<String>;
+#[doc(inline)]
 pub use maestro_interchange::tui::TextDecoration;
 
 /// Base foreground and decorations; background is applied during final layout.

@@ -138,6 +138,7 @@ pub struct MarkdownTheme {
     pub code_block_indent: Option<String>,
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tui::TextDecoration;
 
 /// Base style of Markdown text, applied unless an element styles it.

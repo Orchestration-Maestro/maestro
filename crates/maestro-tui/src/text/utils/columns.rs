@@ -5,6 +5,7 @@ use std::ops::Range;
 use super::parsed::{Grapheme, Parsed};
 use super::render::Emission;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::{ColumnSlice, ExtractedSegments};
 
 /// Graphemes selected for one output, the cells they use and the escapes that follow them.

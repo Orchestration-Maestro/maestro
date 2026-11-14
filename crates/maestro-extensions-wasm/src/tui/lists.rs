@@ -10,6 +10,7 @@ use super::{Component, Style, TUI};
 use crate::{AbortSignal, CallbackEmitter, ExtensionResult, Theme};
 use std::rc::Rc;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::{SelectItem, SettingsListOptions};
 
 /// What an authored primary-column truncation receives.

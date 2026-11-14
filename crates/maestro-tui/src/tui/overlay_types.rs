@@ -2,6 +2,7 @@
 
 use std::rc::Rc;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::OverlayAnchor;
 
 /// Margin per viewport edge; absent and negative sides resolve to zero.

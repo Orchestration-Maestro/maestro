@@ -4,6 +4,7 @@ pub use maestro_interchange::tool::tools::truncate::TruncationBy as TruncationLi
 /// Supplied truncation output with floating-point accounting.
 pub type TruncationResult = maestro_interchange::tool::tools::truncate::TruncationResult<f64>;
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::{TruncateLineResult, TruncationOptions};
 
 /// Retains the head of tool output through the native owner, including all accounting.

@@ -14,6 +14,7 @@ use names::{ALT, CTRL, KEYPAD_ENTER, SHIFT, raw_ctrl_char};
 pub use names::{Code, Identifier, Key, KeyId, Named, Target};
 pub use parse::parse_terminal_key_sequence;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::KeyEventType;
 
 /// Whether the terminal runs the enhanced keyboard protocol.

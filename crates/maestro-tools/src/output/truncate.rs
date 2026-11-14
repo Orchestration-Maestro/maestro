@@ -7,6 +7,7 @@ pub const DEFAULT_MAX_BYTES: usize = 51200;
 /// Default scalar budget for match-line clipping.
 pub const GREP_MAX_LINE_LENGTH: usize = 500;
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::{TruncateLineResult, TruncationOptions};
 
 /// The limit that stopped selection.

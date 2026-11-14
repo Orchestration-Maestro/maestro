@@ -23,6 +23,7 @@ pub struct ExecOptions<'a> {
     pub timeout: Option<Duration>,
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::ExecResult;
 
 /// Runs `command` with `args` in `cwd`, without a shell and with stdin closed.

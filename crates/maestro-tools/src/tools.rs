@@ -72,6 +72,7 @@ impl<C, E: ToolExecution> ToolDefRecord<C, E> {
     }
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::ToolName;
 
 /// All built-in identities in factory insertion order.

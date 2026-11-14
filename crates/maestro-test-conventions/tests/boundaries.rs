@@ -1370,9 +1370,9 @@ fn records_the_guest_shares_with_its_host_have_one_shared_owner() {
     }
 }
 
-/// A record whose member type differs per side has one declaration, and each side one alias.
+/// A record whose member type differs per side has one declaration, and either side may alias it.
 #[test]
-fn specialized_shared_records_keep_one_declaration_and_one_alias_per_side() {
+fn specialized_shared_records_keep_one_declaration_and_allow_side_aliases() {
     for (native, name) in [
         ("maestro-tui", "AutocompleteSuggestions"),
         ("maestro-tui", "SettingItem"),

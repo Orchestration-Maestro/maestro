@@ -133,6 +133,7 @@ pub fn apply_background_to_line(
     Ok(bg_fn(&padded))
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tui::{ColumnSlice, ExtractedSegments, TruncateOptions};
 
 /// Truncates text through the native terminal owner, preserving whole clusters and styling.

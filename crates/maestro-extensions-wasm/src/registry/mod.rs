@@ -48,6 +48,7 @@ pub struct ToolsOptions {
     pub ls: LsToolOptions,
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::ToolName;
 
 impl From<crate::bindings::maestro::extension::host::ToolName> for ToolName {

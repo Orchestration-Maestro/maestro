@@ -76,6 +76,7 @@ pub struct ToolDefinition {
     pub render_result: Option<ToolRenderResult>,
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::{ToolRenderPhase, ToolRenderResultOptions};
 
 /// State and previous components one tool row keeps across renderings.

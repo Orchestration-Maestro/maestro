@@ -22,4 +22,5 @@ pub struct ExecOptions {
     pub cwd: Option<String>,
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::ExecResult;

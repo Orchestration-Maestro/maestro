@@ -11,6 +11,7 @@ use std::{
 /// Command notification callable.
 type ItemCallback = Rc<dyn Fn(Rc<SelectItem>)>;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::SelectItem;
 /// Styling callbacks for command rows.
 #[derive(Clone)]

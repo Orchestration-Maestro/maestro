@@ -2,6 +2,7 @@
 
 use crate::text::utils::is_whitespace_scalar;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::FuzzyMatch;
 
 /// Match case-insensitively, trying a letter/digit swap only after a failed match.

@@ -32,6 +32,7 @@ pub struct SettingsListTheme {
     /// Styles hints and scroll metadata.
     pub hint: Rc<dyn Fn(&str) -> String>,
 }
+#[doc(inline)]
 pub use maestro_interchange::tui::SettingsListOptions;
 /// A setting whose current value is shared by views and completion callbacks.
 struct SharedSetting {

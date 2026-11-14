@@ -32,6 +32,7 @@ pub struct BashExecOptions<'a, S: FnMut(&[u8]) + ?Sized = dyn FnMut(&[u8]) + Sen
     pub env: Option<&'a ShellEnv>,
 }
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::BashExecResult;
 
 /// Why a shell operation failed.

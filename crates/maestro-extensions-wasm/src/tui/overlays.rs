@@ -8,6 +8,7 @@ use crate::ExtensionResult;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 
+#[doc(inline)]
 pub use maestro_interchange::tui::OverlayAnchor;
 
 /// A size in cells or percentage text, kept as supplied.

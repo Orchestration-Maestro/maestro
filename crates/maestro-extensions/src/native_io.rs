@@ -8,6 +8,7 @@ pub use maestro_tools::sleep;
 /// A local native operation with its unchanged failure text.
 pub type IoFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, String>> + 'a>>;
 
+#[doc(inline)]
 pub use maestro_interchange::native_io::{ExitStatus, SpawnOptions, Stdio};
 /// Independently retained consuming byte reader.
 pub trait Readable {

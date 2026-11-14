@@ -5,6 +5,7 @@ use crate::Presence;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 
+#[doc(inline)]
 pub use maestro_interchange::tool::types::FindGlobOptions;
 /// Replaceable existence and glob effects; path and output policy remain native.
 #[derive(Clone)]
