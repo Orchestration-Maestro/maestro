@@ -1231,7 +1231,12 @@ fn append_syncs_recovery_absence_once_before_writing() {
     assert!(EFFECTS.take().events.is_empty());
     holder.append(b"after").unwrap();
     assert_eq!(EFFECTS.take().events, ["recovery_sync", "target_append"]);
-    assert_eq!(fs::read(target).unwrap(), b"beforeafter");
+    assert_eq!(fs::read(&target).unwrap(), b"beforeafter");
+    assert!(matches!(
+        crate::try_acquire_write(&target, true),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+    drop(holder);
     assert_eq!(fs::read_dir(scratch.path()).unwrap().count(), 1);
 }
 

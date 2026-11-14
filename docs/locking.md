@@ -5,9 +5,10 @@
 Use `maestro_lock::replace` to publish bytes in place with recovery, or
 `atomic_replace` when unlocked readers must see a complete old or new file.
 For a read-update-write transaction, acquire a `WriteLock`, read its `path()`,
-then publish through its consuming `replace` method. Use the holder's consuming
-`append` method to add bytes without replacement. Do not acquire a second lock for
-the same target while holding the first.
+then publish through its consuming `replace` method. Use the holder's `append`
+method to add bytes without replacement; the holder keeps its exclusion until it
+is dropped. Do not acquire a second lock for the same target while holding the
+first.
 
 Use `maestro_lock::read`, `maestro_lock::write` or `maestro_lock::lock` to take
 state held in memory behind an `RwLock` or a `Mutex`.
@@ -82,9 +83,10 @@ holds a creation-mode tag and a little-endian mode: 0 selects native defaults,
 1 selects exact AfterSync permissions and 2 selects AtCreation permissions. An
 incomplete header or an unknown tag is refused. A clean read-only guard does not
 sync the directory.
-Each holder performs at most one caller-requested write. `WriteLock::append`
-syncs recovery absence before opening the target, so an older record cannot
-resurrect after later appends. Replacement's staged-record directory sync gives
+Each holder publishes at most one replacement, which consumes it.
+`WriteLock::append` borrows the holder, so a caller can cut a failed append back
+before another writer is admitted. It syncs recovery absence before opening the
+target, so an older record cannot resurrect after later appends. Replacement's staged-record directory sync gives
 the same protection before its first target write. Append creates a missing
 target with native default permissions; it does not sync appended bytes.
 Writable session loaders recover and read under exclusion before selecting
@@ -185,7 +187,9 @@ if sessions.is_empty() {
 Settings and credential transactions use bounded acquisition to read fresh text
 before an update. A session rewrite waits for exclusion, compares the current
 bytes with its expected hash, then publishes through the held lock. Session
-appends consume the guard through `append`, which owns prewrite synchronization.
+appends go through the guard's `append`, which owns prewrite synchronization.
+A session save reads the file's length, appends and cuts a failed append back to
+that length under one guard.
 A snapshot save uses atomic publication because its readers do not acquire a lock.
 A native private-file save uses recoverable in-place publication:
 

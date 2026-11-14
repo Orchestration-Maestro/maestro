@@ -185,7 +185,9 @@ start. Loaded and recovered histories stay published: each later save appends th
 records the file does not hold yet, normally one. A failed later append is cut back to
 the file's earlier length too, so no partial line is left for the next record to join, and
 the accepted record stays in memory: the next save writes it before the new one, and
-every record's parent is in the file. A save into a file that does not end with a line
+every record's parent is in the file. The save reads the length, appends and cuts
+back under one write lock, so the cut never removes a record another process saved in
+the meantime. A save into a file that does not end with a line
 break, after a record was cut short or the file was edited by hand, writes one first, so
 the new record starts a line of its own; the file keeps its bytes until that save. A failed switch keeps the prior manager state. An empty file is initialised immediately at the
 selected path. A nonempty file without a valid session header is refused with

@@ -181,7 +181,7 @@ fn first_save_failure_part_way_leaves_nothing_for_the_retry() {
     );
     std::fs::remove_dir(&path).unwrap();
     let error = manager
-        .publish(|path, bytes| {
+        .publish(|_, path, bytes| {
             std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -239,7 +239,7 @@ fn later_save_failure_part_way_leaves_no_torn_line_and_the_retry_writes_the_miss
     std::fs::remove_dir(&path).unwrap();
     std::fs::rename(&parked, &path).unwrap();
     let error = manager
-        .publish(|path, bytes| {
+        .publish(|_, path, bytes| {
             std::fs::OpenOptions::new()
                 .append(true)
                 .open(path)?
@@ -281,7 +281,7 @@ fn first_save_writes_every_record_in_one_append() {
     std::fs::remove_dir(&path).unwrap();
     let mut appends = Vec::new();
     manager
-        .publish(|_, bytes| {
+        .publish(|_, _, bytes| {
             appends.push(bytes.to_vec());
             Ok(())
         })
