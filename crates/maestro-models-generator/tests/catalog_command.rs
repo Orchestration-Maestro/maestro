@@ -2,8 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::catalog_command_support::{FailingWriter, Scratch};
-use maestro_models::catalog_generation::generate_models::generate_models;
-use maestro_models::{Fetch, HttpResponse, Model};
+use maestro_http::{Fetch, HttpResponse};
+use maestro_interchange::types::Model;
+use maestro_models_generator::generate_models::generate_models;
 use std::{
     fs,
     future::Future,
@@ -34,8 +35,8 @@ fn controlled_with_bodies(
         Box::pin(async move {
             if fail == Some(position) {
                 recorded.lock().unwrap().push("failed".into());
-                return Err(maestro_models::FetchError::Connection(
-                    maestro_models::DiagnosticErrorInfo {
+                return Err(maestro_http::FetchError::Connection(
+                    maestro_interchange::diagnostics::DiagnosticErrorInfo {
                         name: None,
                         message: "controlled failure".into(),
                         stack: None,
@@ -358,7 +359,7 @@ fn completed_body(
     bytes: Vec<u8>,
     recorded: Arc<Mutex<Vec<String>>>,
     mut gate: Option<tokio::sync::oneshot::Receiver<()>>,
-) -> maestro_models::HttpBody {
+) -> maestro_http::HttpBody {
     let mut body = Some(bytes);
     Box::pin(futures_util::stream::poll_fn(move |context| {
         if let Some(bytes) = body.take() {

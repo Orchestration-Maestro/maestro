@@ -2721,6 +2721,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-http",
     "maestro-lock",
     "maestro-models",
+    "maestro-models-generator",
     "maestro-packages",
     "maestro-process",
     "maestro-resources",
