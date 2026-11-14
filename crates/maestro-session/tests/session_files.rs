@@ -484,6 +484,30 @@ fn failed_switch_keeps_previous_history_consistent() {
     assert_eq!(switch_snapshot(&manager, &leaf), original);
 }
 
+/// A file whose last line has no line break, whole or cut part-way, takes the next
+/// record on a line of its own.
+#[test]
+fn a_save_after_a_last_line_without_a_line_break_starts_its_own_line() {
+    let directory = Directory::new();
+    let mut manager = SessionManager::create("cwd", Some(directory.text()), "").unwrap();
+    manager
+        .append_message(json!({"role":"assistant","content":"saved"}))
+        .unwrap();
+    let path = manager.get_session_file().unwrap().to_owned();
+    let text = fs::read_to_string(&path).unwrap();
+    for (stored, held) in [(text.trim_end(), 2), (&text[..text.len() - 20], 1)] {
+        fs::write(&path, stored).unwrap();
+        let mut opened = SessionManager::open(&path, None, None).unwrap();
+        opened
+            .append_message(json!({"role":"user","content":"next"}))
+            .unwrap();
+        let entries = load_entries_from_file(&path).unwrap();
+        assert_eq!(entries.len(), held + 1, "{stored}");
+        assert_eq!(entries[held]["message"]["content"], "next");
+        assert!(fs::read_to_string(&path).unwrap().starts_with(stored));
+    }
+}
+
 #[test]
 fn append_failure_keeps_memory_and_the_next_save_writes_the_record() {
     let directory = Directory::new();

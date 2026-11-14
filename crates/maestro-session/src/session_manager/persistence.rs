@@ -7,8 +7,9 @@ use maestro_interchange::presence::Presence;
 use serde::Serialize;
 use serde_json::{Map, Value, ser::Formatter};
 use std::{
+    borrow::Cow,
     fs,
-    io::{self, Write},
+    io::{self, Read, Seek, Write},
 };
 
 impl SessionManager {
@@ -255,14 +256,39 @@ impl SessionManager {
 }
 
 /// Append bytes to a native file, creating it when absent.
+///
+/// A file that does not end with a line break takes one first, so the first appended
+/// record starts a line of its own instead of joining the last one.
 pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
-    super::storage::with_write_lock(path, |holder| match holder {
-        Some(holder) => holder.append(bytes),
-        None => fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)?
-            .write_all(bytes),
+    super::storage::with_write_lock(path, |holder| {
+        let bytes = &on_own_line(path, bytes)?;
+        match holder {
+            Some(holder) => holder.append(bytes),
+            None => fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)?
+                .write_all(bytes),
+        }
+    })
+}
+
+/// `bytes`, behind a line break when the file at `path` holds bytes and ends without one.
+fn on_own_line<'a>(path: &str, bytes: &'a [u8]) -> io::Result<Cow<'a, [u8]>> {
+    let mut file = match fs::File::open(path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(bytes.into()),
+        Err(error) => return Err(error),
+    };
+    let mut last = *b"\n";
+    if file.metadata()?.len() > 0 {
+        file.seek(io::SeekFrom::End(-1))?;
+        file.read_exact(&mut last)?;
+    }
+    Ok(if last == *b"\n" {
+        bytes.into()
+    } else {
+        [b"\n", bytes].concat().into()
     })
 }
 
