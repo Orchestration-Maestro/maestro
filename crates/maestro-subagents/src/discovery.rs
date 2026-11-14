@@ -3,7 +3,7 @@
 use maestro_extensions_guest::{
     ExtensionAPI, ExtensionResult, config,
     metadata::{FrontmatterValue, parse_frontmatter},
-    registry::path_utils::{guest_path, resolve},
+    tools::path_utils::{guest_path, resolve},
     utils::is_whitespace_char,
 };
 use serde::{Deserialize, Serialize};

@@ -27,9 +27,9 @@ pub use event_bus::*;
 mod background;
 pub use background::{Background, BackgroundTask};
 mod bash_executor;
-pub mod registry;
+pub mod tools;
 pub use bash_executor::*;
-pub use registry::{
+pub use tools::{
     ALL_TOOL_NAMES, BashExec, BashExecOptions, BashExecResult, BashOnData, BashOperations,
     BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions,
     DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, DetectImageMimeType, EditOperations, EditToolDetails,

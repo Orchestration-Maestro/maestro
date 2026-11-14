@@ -6,7 +6,7 @@
 )]
 use maestro_extensions_guest::{
     ExtensionAPI, ExtensionResult,
-    registry::path_utils::{expand_path, resolve_read_path, resolve_to_cwd},
+    tools::path_utils::{expand_path, resolve_read_path, resolve_to_cwd},
 };
 use serde_json::{Value, json};
 /// Reads a native expansion or resolution without guest filesystem access.

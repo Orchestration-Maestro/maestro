@@ -572,27 +572,27 @@ null-to-empty-map normalization apply only to `parse_frontmatter`.
 owner. `summarization::utils::serialize_conversation` uses its existing transcript
 serializer, including tool-result clipping and argument JSON spelling.
 
-`registry::limits` provides head and tail selection with complete accounting,
+`tools::limits` provides head and tail selection with complete accounting,
 scalar-aware line clipping and size formatting. Missing limits select the host's
 defaults: 2000 lines, 51200 bytes and 500 line characters. Size formatting accepts
 the native floating-point domain, including signed zero and nonfinite values.
 
 ### Paths and installation identity
 
-`registry::path_utils::{expand_path, resolve_to_cwd, resolve_read_path}` use the
+`tools::path_utils::{expand_path, resolve_to_cwd, resolve_read_path}` use the
 native host's home and filesystem, not the component's environment. They keep
 the native authored-path policy and existing-spelling fallback order.
-`registry::path_utils::basename(&api, path)` returns the final path component using
+`tools::path_utils::basename(&api, path)` returns the final path component using
 the host's path flavor, preserving literal backslashes on POSIX hosts.
-`registry::path_utils::shorten_path(&api, path)` shows the host home as `~` for the
+`tools::path_utils::shorten_path(&api, path)` shows the host home as `~` for the
 home itself and the paths below it, and leaves every other path unchanged.
 
-`registry::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
+`tools::path_utils::resolve(&api, &[cwd, path])` resolves operands lexically
 with the host platform's path rules. It reduces `.` and `..` segments and
 trailing separators without filesystem lookup, Unicode-space replacement or
 `~`/`@` expansion.
 
-`registry::path_utils::guest_path(&api, path)` spells a native host path the way the
+`tools::path_utils::guest_path(&api, path)` spells a native host path the way the
 component's standard library opens it. Windows drive and share paths change,
 Unix paths do not; see [the operating environment](host_io.md).
 

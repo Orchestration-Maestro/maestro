@@ -32,7 +32,7 @@ fn guest_tool_aliases_use_shared_records() {
             max_lines: 5.25,
             max_bytes: 6.5,
         };
-    let module: crate::registry::TruncationResult = truncation;
+    let module: crate::tools::TruncationResult = truncation;
     let reason: Option<maestro_interchange::tool::tools::truncate::TruncationBy> =
         module.truncated_by;
     let details: crate::ReadToolDetails =
@@ -42,7 +42,7 @@ fn guest_tool_aliases_use_shared_records() {
                 ..module
             }),
         };
-    let module: crate::registry::ReadToolDetails = details;
+    let module: crate::tools::ReadToolDetails = details;
     assert!(matches!(module.truncation, Presence::Present(_)));
     let bash: crate::BashResult = maestro_interchange::tool::bash_executor::BashResult {
         output: "output".into(),

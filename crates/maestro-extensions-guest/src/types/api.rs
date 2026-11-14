@@ -231,7 +231,7 @@ impl ExtensionAPI {
         file_path: String,
         operation: impl FnOnce() -> ExtensionFuture<'static, T> + 'static,
     ) -> ExtensionFuture<'static, T> {
-        crate::registry::file_mutation_queue::run(&*self.0, file_path, operation)
+        crate::tools::file_mutation_queue::run(&*self.0, file_path, operation)
     }
 
     /// Encodes ordinary operands without introducing another native algorithm.

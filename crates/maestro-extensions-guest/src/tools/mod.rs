@@ -22,31 +22,14 @@ mod ls;
 pub use ls::*;
 pub mod limits;
 pub use limits::*;
+mod options;
+pub use options::*;
 
 /// Native authored-path operations.
 pub mod path_utils;
 
 /// A definition returned by a built-in factory.
 pub type ToolDef = crate::ToolDefinition;
-
-/// Independent construction choices for each built-in tool.
-#[derive(Default)]
-pub struct ToolsOptions {
-    /// Read observations and image policy.
-    pub read: ReadToolOptions,
-    /// Shell backend and interception.
-    pub bash: BashToolOptions,
-    /// Edit observations.
-    pub edit: EditToolOptions,
-    /// Write observations.
-    pub write: WriteToolOptions,
-    /// Content-search observations.
-    pub grep: GrepToolOptions,
-    /// File-search observations.
-    pub find: FindToolOptions,
-    /// Directory observations.
-    pub ls: LsToolOptions,
-}
 
 /// Built-in tool identities; custom registered names remain ordinary strings.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

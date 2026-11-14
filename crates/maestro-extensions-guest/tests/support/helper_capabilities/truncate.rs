@@ -6,7 +6,7 @@
 )]
 use maestro_extensions_guest::{
     ExtensionAPI, ExtensionResult,
-    registry::limits::{
+    tools::limits::{
         DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, GREP_MAX_LINE_LENGTH, TruncationOptions, format_size,
         truncate_head, truncate_line, truncate_tail,
     },
