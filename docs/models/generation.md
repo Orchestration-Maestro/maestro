@@ -4,8 +4,9 @@
 just models-generate
 ```
 
-The native `generate_catalog_data` script at `crates/maestro-models/scripts/`
-supplies the default developer transport to `maestro_models::catalog_generation::generate_models::generate_models`.
+The native `generate_catalog_data` script at `crates/maestro-models-generator/scripts/`
+supplies the default developer transport to `maestro_models_generator::generate_models::generate_models`.
+The generator is its own developer crate, so the model library ships without it.
 The operation acquires models.dev, `OpenRouter` and Vercel AI Gateway sequentially;
 see [feed acquisition](#feed-acquisition) for normalization and source failures.
 
@@ -38,7 +39,7 @@ not need live services.
 
 ## Feed acquisition
 
-The native-only `maestro_models::catalog_generation::generate_models` module
+The native-only `maestro_models_generator::generate_models` module
 provides `fetch_open_router_models`, `fetch_ai_gateway_models` and
 `load_models_dev_data`. After its initial progress line is written successfully,
 each operation issues one GET through its supplied `Fetch`, with no supplied
@@ -107,8 +108,8 @@ No live service is needed to call the interface:
 
 ```rust
 use std::sync::Arc;
-use maestro_models::{Fetch, HttpResponse};
-use maestro_models::catalog_generation::generate_models::fetch_open_router_models;
+use maestro_http::{Fetch, HttpResponse};
+use maestro_models_generator::generate_models::fetch_open_router_models;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let fetch: Fetch = Arc::new(|request| {
@@ -140,16 +141,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```sh
 cargo run --quiet --locked \
-  -p maestro-models --example generate_circle_fixture
+  -p maestro-models-generator --example generate_circle_fixture
 ```
 
 This explicit native command recreates the fixed 200×200 red circle on white at
-`crates/maestro-models/tests/data/red-circle.png` from embedded PNG bytes. The
+`crates/maestro-models-generator/tests/data/red-circle.png` from embedded PNG bytes. The
 script uses its package directory, not the working directory. It creates missing
 parents recursively and replaces an existing target. It does not fetch feeds or
 run automatically during builds, tests or catalog generation.
 
-The native `catalog_generation::generate_test_image::generate_test_image` operation
+The native `maestro_models_generator::generate_test_image::generate_test_image` operation
 accepts a package directory and output writer. After the complete file is written,
 it emits `Generated test image at: {selected_path}` with one trailing newline.
 Directory or file failures return the original I/O error without a notice;

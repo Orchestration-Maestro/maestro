@@ -19,8 +19,6 @@ pub use builtins::{
 pub mod cancellation;
 /// Model descriptors and catalog lookup helpers.
 mod catalog;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod catalog_generation;
 mod options;
 pub use options::{
     AdjustedMaxTokens, ESTIMATED_IMAGE_CHARS, adjust_max_tokens_for_thinking, build_base_options,

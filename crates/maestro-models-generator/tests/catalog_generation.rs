@@ -1,11 +1,11 @@
 //! Controlled catalog feed normalization through the public developer interface.
-#![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 
-use maestro_models::catalog_generation::generate_models::{
+use maestro_http::{Fetch, FetchError, HttpResponse};
+use maestro_interchange::diagnostics::DiagnosticErrorInfo;
+use maestro_interchange::types::Model;
+use maestro_models_generator::generate_models::{
     fetch_ai_gateway_models, fetch_open_router_models, load_models_dev_data,
 };
-use maestro_models::{DiagnosticErrorInfo, Fetch, FetchError, HttpResponse, Model};
 use serde::Deserialize;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
@@ -635,7 +635,7 @@ fn body_gate(source: &str) -> BodyGate {
 
 /// A request recorder covering both successful and failed single attempts.
 fn request_fetch(
-    recorded: Arc<Mutex<Vec<maestro_models::HttpRequest>>>,
+    recorded: Arc<Mutex<Vec<maestro_http::HttpRequest>>>,
     bytes: Vec<u8>,
     connection_failure: bool,
 ) -> Fetch {
@@ -710,7 +710,7 @@ fn falsy_price_fields_keep_selected_models() {
         assert_eq!(models.len(), 1);
         assert_eq!(
             models[0].cost,
-            maestro_models::ModelCost {
+            maestro_interchange::types::ModelCost {
                 input: 0.0,
                 output: 7.0,
                 cache_read: 0.0,

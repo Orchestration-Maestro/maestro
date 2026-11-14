@@ -368,7 +368,8 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 |---|---|
 | `crates/maestro-test-process/tests/support/` | native test children |
 | `crates/maestro-extensions-wasm/tests/support/` | host-qualification fixture components and their preparation program |
-| `crates/maestro-models/scripts/`, `crates/maestro-models/tests/support/`, `crates/maestro-models-registry/tests/support/` | catalog and fixture generators, browser smoke checks |
+| `crates/maestro-models-generator/scripts/` | catalog and fixture generators |
+| `crates/maestro-models/tests/support/`, `crates/maestro-models-registry/tests/support/` | browser smoke checks |
 | `crates/maestro-theme/scripts/` | theme generation and browser author inputs |
 | `crates/maestro-tui-crossterm/tests/support/` | terminal development programs |
 | `crates/maestro-session-reports/scripts/` | cost, usage, tool and transcript reports |
@@ -461,6 +462,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-models` | supply model invocations | `maestro-models-catalog`, `maestro-http`, `maestro-schema-validator`, `maestro-cancellation`, `maestro-interchange`, `maestro-text`, `maestro-json`, `maestro-listeners`, `maestro-lock` | 0 |
 | `maestro-models-catalog` | define the model catalog | `maestro-interchange` | below 0 |
+| `maestro-models-generator` | generate the model catalog | `maestro-models`, `maestro-http`, `maestro-interchange`, `maestro-text`, `maestro-json` | 1 |
 | `maestro-models-registry` | resolve the usable models | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-interchange`, `maestro-text`, `maestro-json` | 3 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-protocol`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme`, `maestro-daemon`, `maestro-terminal-emulator` | 6 |
 | `maestro-office` | read office documents | `maestro-text`, `maestro-json`, `maestro-lock` | 0 |
@@ -638,7 +640,7 @@ rather than a new injected discovery port whose only other adapter is a test fak
 
 `maestro-interchange` is core, sits below layer 0 and depends only on `maestro-json`.
 Only the table entries that list it (agent, credentials, http, models, the model catalog,
-the model registry, packages, resources, the schema validator, session, theme, tools, the toolkit, extensions and the guest)
+the catalog generator, the model registry, packages, resources, the schema validator, session, theme, tools, the toolkit, extensions and the guest)
 may depend on it. The guest still cannot
 depend on models or resources, the runtime adapter still targets extensions with the optional native `maestro-path` edge, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its consumers.
@@ -997,7 +999,7 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-models-registry`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
 `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`,
-`maestro-lock`, `maestro-models`,
+`maestro-lock`, `maestro-models`, `maestro-models-generator`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-session-reports`, `maestro-settings`,
 `maestro-terminal-emulator`, `maestro-test-browser`,
@@ -1140,7 +1142,7 @@ unchanged.
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
 1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
-2. **Layer 1:** `maestro-agent`, `maestro-packages`, `maestro-providers`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
+2. **Layer 1:** `maestro-agent`, `maestro-models-generator`, `maestro-packages`, `maestro-providers`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-credentials`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-models-registry`, `maestro-export`
 5. **Layer 4:** `maestro-extensions`

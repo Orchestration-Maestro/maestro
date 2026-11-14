@@ -219,6 +219,16 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     ("maestro-models-catalog", &["maestro-interchange"]),
     (
+        "maestro-models-generator",
+        &[
+            "maestro-models",
+            "maestro-http",
+            "maestro-interchange",
+            "maestro-text",
+            "maestro-json",
+        ],
+    ),
+    (
         "maestro-models-registry",
         &[
             "maestro-models",

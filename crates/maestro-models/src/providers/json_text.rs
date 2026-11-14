@@ -10,7 +10,7 @@ pub(crate) use maestro_json::raw_value::{
     or_zero, raw_json, raw_number, record, required, try_object_record,
 };
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) use maestro_json::{BorrowedJson, array_index, compact_members};
+pub(crate) use maestro_json::{BorrowedJson, compact_members};
 
 #[cfg(test)]
 mod tests;

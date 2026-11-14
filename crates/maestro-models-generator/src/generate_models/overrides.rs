@@ -1,5 +1,5 @@
 //! Ordered corrections to acquired descriptors.
-use crate::{Model, ModelCompat};
+use maestro_interchange::types::{Model, ModelCompat};
 
 /// Copilot models offering the extended one-million-token context window.
 const GITHUB_COPILOT_EXTENDED_CONTEXT_MODELS: &[&str] = &[

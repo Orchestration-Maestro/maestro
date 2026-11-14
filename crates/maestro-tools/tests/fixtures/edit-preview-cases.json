@@ -27,7 +27,7 @@
           }
         ],
         "expected": {
-          "diff": "-1 \"hello\"\n+1 world\n 2 other",
+          "diff": "-1 “hello”  \n+1 world\n 2 other  ",
           "firstChangedLine": 1
         }
       }
@@ -96,28 +96,6 @@
         ],
         "expected": {
           "diff": "-1 hello\n+1 world",
-          "firstChangedLine": 1
-        }
-      }
-    ],
-    "preview_decodes_invalid_utf8_lossily": [
-      {
-        "file": "invalid.txt",
-        "bytes": [
-          97,
-          255,
-          195,
-          40,
-          10
-        ],
-        "edits": [
-          {
-            "oldText": "a",
-            "newText": "b"
-          }
-        ],
-        "expected": {
-          "diff": "-1 a��(\n+1 b��(",
           "firstChangedLine": 1
         }
       }
@@ -326,6 +304,27 @@
         ],
         "expected": {
           "error": "No changes made to multi-same.txt. The replacements left the content identical."
+        }
+      }
+    ],
+    "preview_refuses_invalid_utf8": [
+      {
+        "file": "invalid.txt",
+        "bytes": [
+          97,
+          255,
+          195,
+          40,
+          10
+        ],
+        "edits": [
+          {
+            "oldText": "a",
+            "newText": "b"
+          }
+        ],
+        "expected": {
+          "error": "Could not edit file: invalid.txt. The file is not valid UTF-8 text."
         }
       }
     ],

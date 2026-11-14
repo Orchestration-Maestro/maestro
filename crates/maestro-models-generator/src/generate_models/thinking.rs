@@ -1,5 +1,5 @@
 //! Ordered thinking metadata recognition.
-use crate::{Model, ModelThinkingLevel as Level};
+use maestro_interchange::types::{Model, ModelThinkingLevel as Level};
 
 /// Merge only the explicitly supplied levels.
 pub(super) fn merge_thinking_level_map(model: &mut Model, entries: &[(Level, Option<&str>)]) {

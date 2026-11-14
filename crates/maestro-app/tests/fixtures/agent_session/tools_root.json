@@ -410,7 +410,7 @@
           }
         ],
         "details": {
-          "diff": "-1 line one\n-2 line two\n+1 replaced\n 3 line three",
+          "diff": "-1 line one   \n-2 line two  \n+1 replaced\n 3 line three",
           "firstChangedLine": 1
         }
       },
@@ -430,7 +430,7 @@
           }
         ],
         "details": {
-          "diff": "-1 你好,世界\n-2 你好(世界)\n+1 你好，maestro\n+2 你好(maestro)",
+          "diff": "-1 你好，世界\n-2 你好（世界）\n+1 你好，maestro\n+2 你好(maestro)",
           "firstChangedLine": 1
         }
       },
@@ -450,7 +450,7 @@
           }
         ],
         "details": {
-          "diff": "-1 ABC123\n-2 café\n+1 XYZ789\n+2 coffee",
+          "diff": "-1 ＡＢＣ１２３\n-2 café\n+1 XYZ789\n+2 coffee",
           "firstChangedLine": 1
         }
       },
@@ -470,7 +470,7 @@
           }
         ],
         "details": {
-          "diff": "-1 console.log('hello');\n+1 console.log('world');",
+          "diff": "-1 console.log(‘hello’);\n+1 console.log('world');",
           "firstChangedLine": 1
         }
       },
@@ -490,7 +490,7 @@
           }
         ],
         "details": {
-          "diff": "-1 const msg = \"Hello World\";\n+1 const msg = \"Goodbye\";",
+          "diff": "-1 const msg = “Hello World”;\n+1 const msg = \"Goodbye\";",
           "firstChangedLine": 1
         }
       },
@@ -510,7 +510,7 @@
           }
         ],
         "details": {
-          "diff": "-1 range: 1-5\n-2 break-here\n+1 range: 10-50\n+2 break--here",
+          "diff": "-1 range: 1–5\n-2 break—here\n+1 range: 10-50\n+2 break--here",
           "firstChangedLine": 1
         }
       },
@@ -530,7 +530,7 @@
           }
         ],
         "details": {
-          "diff": "-1 hello world\n+1 hello universe",
+          "diff": "-1 hello world\n+1 hello universe",
           "firstChangedLine": 1
         }
       },
@@ -588,7 +588,7 @@
           }
         ],
         "details": {
-          "diff": "-1 console.log('hello');\n-2 hello world\n+1 console.log('world');\n+2 hello universe",
+          "diff": "-1 console.log(‘hello’);\n-2 hello world\n+1 console.log('world');\n+2 hello universe",
           "firstChangedLine": 1
         }
       },
@@ -717,7 +717,7 @@
           }
         ],
         "details": {
-          "diff": "-1 alpha\n-2 beta\n+1 changed",
+          "diff": "-1 alpha﻿\n-2 beta\n+1 changed",
           "firstChangedLine": 1
         }
       },
