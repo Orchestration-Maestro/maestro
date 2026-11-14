@@ -1,6 +1,4 @@
 //! Controlled command effects on native files and output sinks.
-#![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 use crate::catalog_command_support::{FailingWriter, Scratch};
 use maestro_http::{Fetch, HttpResponse};
 use maestro_interchange::types::Model;

@@ -1,6 +1,4 @@
 //! Controlled catalog feed normalization through the public developer interface.
-#![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 
 use maestro_http::{Fetch, FetchError, HttpResponse};
 use maestro_interchange::diagnostics::DiagnosticErrorInfo;
