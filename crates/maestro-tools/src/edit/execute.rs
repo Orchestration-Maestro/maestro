@@ -33,7 +33,8 @@ impl EditOperations for NativeEditOperations {
 
 /// Access, read, apply and write an admitted edit, then return its LF diff.
 ///
-/// A line break no match covers is written back as it was read.
+/// A line break no match covers keeps its own bytes, except that a kept lone CR
+/// followed by an LF becomes that LF.
 pub(super) async fn edit_file(
     operations: Arc<dyn EditOperations>,
     absolute: String,

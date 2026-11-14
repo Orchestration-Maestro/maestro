@@ -86,9 +86,10 @@ sync the directory.
 Each holder publishes at most one replacement, which consumes it.
 `WriteLock::append` borrows the holder, so a caller can cut a failed append back
 before another writer is admitted. It syncs recovery absence before opening the
-target, so an older record cannot resurrect after later appends. Replacement's staged-record directory sync gives
-the same protection before its first target write. Append creates a missing
-target with native default permissions; it does not sync appended bytes.
+target, so an older record cannot resurrect after later appends. Replacement's
+staged-record directory sync gives the same protection before its first target
+write. Append creates a missing target with native default permissions; it does not
+sync appended bytes.
 Writable session loaders recover and read under exclusion before selecting
 history or parent IDs. Where the session directory is missing or refuses the lock
 file, session reads and appends run without it; rewrites still require it.

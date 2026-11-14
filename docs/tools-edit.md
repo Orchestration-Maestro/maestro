@@ -132,13 +132,13 @@ resolution enters the
 [file mutation queue](#file-mutation-queue) before polling.
 Execution checks read/write access and reads the bytes as UTF-8. A file that is not
 valid UTF-8 is refused before anything is written, with
-`Could not edit file: <path>. The file is not valid UTF-8 text.`, so its bytes stay as
-they were. Execution then uses the
-[matching owner](#original-snapshot-matching) against one original snapshot.
-It restores the retained prefix BOM, gives replacement text the detected line ending
-and keeps every line break no match covers as it was read, CR LF, lone CR or LF. It then writes
-and returns one text block, `Successfully replaced N block(s) in <path>.`, using
-the requested count and authored path. Present `EditToolDetails` holds the LF
+`Could not edit file: <path>. The file is not valid UTF-8 text.`, so its bytes stay
+as they were. Execution then uses the
+[matching owner](#original-snapshot-matching) against one original snapshot. It
+restores the retained prefix BOM, gives replacement text the detected line ending and
+keeps every line break no match covers as it was read, CR LF, lone CR or LF. It then
+writes and returns one text block, `Successfully replaced N block(s) in <path>.`,
+using the requested count and authored path. Present `EditToolDetails` holds the LF
 numbered diff and optional `firstChangedLine`; no progress or termination is
 requested. Matching failures do not write.
 
@@ -177,13 +177,16 @@ diagnostic.
 - Trailing whitespace follows the shared set of [text](text.md).
 - `detect_line_ending` follows the first LF, `restore_line_endings` turns each LF into
   CR LF in CRLF mode, and `strip_bom` removes one leading BOM.
-- Stored line breaks: execution rebuilds the file line by line. A line no match reaches
-  is written back byte for byte, and a line a match reaches keeps its own break unless
-  the match covers it. Only replacement text takes the detected line ending.
+- Stored line breaks: execution rebuilds the file line by line. A line no match
+  reaches keeps its text and its own break, except that a kept lone CR followed by an
+  LF becomes that LF, so the two breaks stay two. A line a match reaches keeps its own
+  break unless the match covers it. Only replacement text takes the detected line
+  ending.
 
-The nine failure messages are the exact texts in the module; single-edit calls use
+The eleven failure messages are the exact texts in the module; single-edit calls use
 the unnumbered wording; multi-edit calls name `edits[n]` except for the no-change
-failure, which names no edit.
+failure, which names no edit. The line-count message is a guard that matching never
+reaches, because normalization keeps every line break.
 
 ## Numbered diffs and read-only previews
 
