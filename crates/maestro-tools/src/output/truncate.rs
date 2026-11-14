@@ -1,7 +1,5 @@
 //! Byte and line truncation of tool output.
 
-use serde::Serialize;
-
 /// Default line budget.
 pub const DEFAULT_MAX_LINES: usize = 2000;
 /// Default UTF-8 byte budget.
@@ -9,14 +7,8 @@ pub const DEFAULT_MAX_BYTES: usize = 51200;
 /// Default scalar budget for match-line clipping.
 pub const GREP_MAX_LINE_LENGTH: usize = 500;
 
-/// Independent output limits; absent fields select their defaults.
-#[derive(Clone, Copy, Default)]
-pub struct TruncationOptions {
-    /// Maximum retained entries; `usize::MAX` leaves this budget unbounded.
-    pub max_lines: Option<usize>,
-    /// Maximum retained UTF-8 bytes; `usize::MAX` leaves this budget unbounded.
-    pub max_bytes: Option<usize>,
-}
+#[doc(inline)]
+pub use maestro_interchange::tool::types::{TruncateLineResult, TruncationOptions};
 
 /// The limit that stopped selection.
 pub use maestro_interchange::tool::tools::truncate::TruncationBy;
@@ -131,16 +123,6 @@ fn suffix_within_bytes(entry: &str, max_bytes: usize) -> &str {
         start += 1;
     }
     &entry[start..]
-}
-
-/// A match line's text and clipping flag.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TruncateLineResult {
-    /// Original or clipped text.
-    pub text: String,
-    /// Whether the scalar budget was exceeded.
-    pub was_truncated: bool,
 }
 
 /// Clip a line on scalar boundaries, appending `... [truncated]` on overflow.

@@ -48,24 +48,8 @@ pub struct ToolsOptions {
     pub ls: LsToolOptions,
 }
 
-/// Built-in tool identities; custom registered names remain ordinary strings.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ToolName {
-    /// Native read identity.
-    Read,
-    /// Native shell identity.
-    Bash,
-    /// Native edit identity.
-    Edit,
-    /// Native write identity.
-    Write,
-    /// Native content-search identity.
-    Grep,
-    /// Native file-search identity.
-    Find,
-    /// Native listing identity.
-    Ls,
-}
+#[doc(inline)]
+pub use maestro_interchange::tool::types::ToolName;
 
 impl From<crate::bindings::maestro::extension::host::ToolName> for ToolName {
     fn from(name: crate::bindings::maestro::extension::host::ToolName) -> Self {

@@ -34,16 +34,9 @@ pub struct ContextUsage {
     pub percent: Option<f64>,
 }
 
-/// A compaction request that returns before compaction finishes.
-#[derive(Default)]
-pub struct CompactOptions {
-    /// Optional instructions for the summary.
-    pub custom_instructions: Option<String>,
-    /// Invoked with the finished compaction.
-    pub on_complete: Option<CompactionComplete>,
-    /// Invoked with the compaction failure.
-    pub on_error: Option<CompactionError>,
-}
+/// A compaction request whose callbacks receive the finished compaction and its failure.
+pub type CompactOptions =
+    maestro_interchange::extension_context::CompactOptions<CompactionComplete, CompactionError>;
 
 /// Application operations behind every base context.
 pub struct ExtensionContextActions {
@@ -151,12 +144,9 @@ pub struct ForkOptions {
     pub with_session: Option<WithSession>,
 }
 
-/// Options of a command session switch.
-#[derive(Default)]
-pub struct SwitchSessionOptions {
-    /// Continues against the replacement session.
-    pub with_session: Option<WithSession>,
-}
+/// Options of a command session switch, continued against the replacement session.
+pub type SwitchSessionOptions =
+    maestro_interchange::extension_context::SwitchSessionOptions<WithSession>;
 
 /// Starts a new session.
 pub type NewSessionHandler =

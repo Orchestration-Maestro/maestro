@@ -13,31 +13,8 @@ mod resolve_flow_scalar;
 mod resolve_props;
 mod values;
 
-/// An ordered YAML value retaining scalar kinds.
-#[derive(Debug, Clone, PartialEq)]
-pub enum FrontmatterValue {
-    /// A null scalar.
-    Null,
-    /// A boolean scalar.
-    Bool(bool),
-    /// A numeric scalar, including nonfinite values.
-    Number(f64),
-    /// A text scalar.
-    String(String),
-    /// An ordered collection.
-    Sequence(Vec<Self>),
-    /// An insertion-ordered string-keyed collection.
-    Mapping(Vec<(String, Self)>),
-}
-
-/// Metadata with its extracted document body.
-#[derive(Debug, PartialEq)]
-pub struct ParsedFrontmatter {
-    /// Resolved metadata.
-    pub frontmatter: FrontmatterValue,
-    /// Body text, trimmed only when a header is present.
-    pub body: String,
-}
+#[doc(inline)]
+pub use maestro_interchange::metadata::{FrontmatterValue, ParsedFrontmatter};
 
 /// A metadata failure with source coordinates when available.
 #[derive(Debug, PartialEq)]

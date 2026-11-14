@@ -17,14 +17,9 @@ pub struct CursorPosition {
     pub col: u32,
 }
 
-/// Candidates together with the text they replace.
-#[derive(Clone, Debug)]
-pub struct AutocompleteSuggestions {
-    /// Candidates; an empty list differs from no suggestions.
-    pub items: Vec<AutocompleteItem>,
-    /// The text being matched, such as `/` or `src/`.
-    pub prefix: String,
-}
+/// Completion candidates together with the text they replace.
+pub type AutocompleteSuggestions =
+    maestro_interchange::tui::AutocompleteSuggestions<AutocompleteItem>;
 
 /// Caller options for one asynchronous suggestion request.
 pub struct CompletionOptions<'a> {

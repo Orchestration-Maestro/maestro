@@ -32,12 +32,8 @@ pub struct BashExecOptions<'a, S: FnMut(&[u8]) + ?Sized = dyn FnMut(&[u8]) + Sen
     pub env: Option<&'a ShellEnv>,
 }
 
-/// The shell's exit result, without narrowing supplied implementations' values.
-#[derive(Debug)]
-pub struct BashExecResult {
-    /// Numeric status or no status when a signal ended the process.
-    pub exit_code: Option<f64>,
-}
+#[doc(inline)]
+pub use maestro_interchange::tool::types::BashExecResult;
 
 /// Why a shell operation failed.
 #[derive(Debug)]

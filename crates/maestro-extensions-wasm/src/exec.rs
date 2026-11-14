@@ -5,7 +5,7 @@
     clippy::excessive_nesting
 )]
 use crate::AbortSignal;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 /// Options of one explicit execution; absent fields take the host's defaults.
 #[derive(Clone, Default, Serialize)]
@@ -22,15 +22,5 @@ pub struct ExecOptions {
     pub cwd: Option<String>,
 }
 
-/// What one explicit execution produced.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
-pub struct ExecResult {
-    /// Captured standard output.
-    pub stdout: String,
-    /// Captured standard error.
-    pub stderr: String,
-    /// Exit code; 0 when a signal ended the command, 1 when it did not start.
-    pub code: i32,
-    /// Whether the abort or the timeout requested termination.
-    pub killed: bool,
-}
+#[doc(inline)]
+pub use maestro_interchange::tool::types::ExecResult;

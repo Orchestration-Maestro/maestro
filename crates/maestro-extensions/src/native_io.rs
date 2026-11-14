@@ -8,37 +8,8 @@ pub use maestro_tools::sleep;
 /// A local native operation with its unchanged failure text.
 pub type IoFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, String>> + 'a>>;
 
-/// Selection of one native standard descriptor.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum Stdio {
-    /// Retained raw byte pipe.
-    #[default]
-    Pipe,
-    /// Native null device.
-    Ignore,
-    /// Corresponding host descriptor.
-    Inherit,
-}
-/// Literal child launch selections; a present environment replaces ambient values.
-#[derive(Default)]
-pub struct SpawnOptions {
-    /// Omitted inherits the host directory.
-    pub cwd: Option<String>,
-    /// Entire supplied environment, including a present-empty selection.
-    pub env: Option<Vec<(String, String)>>,
-    /// Creates a native session where supported.
-    pub detached: bool,
-    /// Independent stdin, stdout and stderr selections.
-    pub stdio: [Stdio; 3],
-}
-/// Numeric exit and signal termination remain distinct.
-#[derive(Debug, Eq, PartialEq)]
-pub struct ExitStatus {
-    /// Absent for signal termination.
-    pub code: Option<i32>,
-    /// Absent for numeric exit.
-    pub signal: Option<String>,
-}
+#[doc(inline)]
+pub use maestro_interchange::native_io::{ExitStatus, SpawnOptions, Stdio};
 /// Independently retained consuming byte reader.
 pub trait Readable {
     /// Reads available raw bytes or observes EOF.

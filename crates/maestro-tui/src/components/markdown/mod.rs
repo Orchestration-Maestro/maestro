@@ -34,18 +34,8 @@ use std::{
 type ColorFn = dyn Fn(&str) -> String;
 /// Code-row highlighting callback.
 type HighlightFn = dyn Fn(&str, Option<&str>) -> Vec<String>;
-/// A requested base-text decoration.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TextDecoration {
-    /// Bold text.
-    Bold,
-    /// Italic text.
-    Italic,
-    /// Struck-through text.
-    Strikethrough,
-    /// Underlined text.
-    Underline,
-}
+#[doc(inline)]
+pub use maestro_interchange::tui::TextDecoration;
 
 /// Base foreground and decorations; background is applied during final layout.
 #[derive(Default)]

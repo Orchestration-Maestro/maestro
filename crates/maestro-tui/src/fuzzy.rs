@@ -2,14 +2,8 @@
 
 use crate::text::utils::is_whitespace_scalar;
 
-/// Whether a query matches, together with its ranking score.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct FuzzyMatch {
-    /// Whether the query or its letter/digit-swapped form matched.
-    pub matches: bool,
-    /// Lower matching scores rank first.
-    pub score: f64,
-}
+#[doc(inline)]
+pub use maestro_interchange::tui::FuzzyMatch;
 
 /// Match case-insensitively, trying a letter/digit swap only after a failed match.
 #[must_use]

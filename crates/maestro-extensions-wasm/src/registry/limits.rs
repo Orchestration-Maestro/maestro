@@ -4,14 +4,8 @@ pub use maestro_interchange::tool::tools::truncate::TruncationBy as TruncationLi
 /// Supplied truncation output with floating-point accounting.
 pub type TruncationResult = maestro_interchange::tool::tools::truncate::TruncationResult<f64>;
 
-/// Independent tool-output limits; absent fields select native defaults.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct TruncationOptions {
-    /// Maximum retained newline entries.
-    pub max_lines: Option<usize>,
-    /// Maximum retained UTF-8 bytes.
-    pub max_bytes: Option<usize>,
-}
+#[doc(inline)]
+pub use maestro_interchange::tool::types::{TruncateLineResult, TruncationOptions};
 
 /// Retains the head of tool output through the native owner, including all accounting.
 ///
@@ -43,15 +37,6 @@ pub fn truncate_tail(
     )
 }
 
-/// A selected line and its independent truncation flag.
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TruncateLineResult {
-    /// Selected scalar-aware text.
-    pub text: String,
-    /// Whether the original line was shortened.
-    pub was_truncated: bool,
-}
 /// Clips a line through the native scalar-aware owner; `None` selects its default.
 ///
 /// # Errors

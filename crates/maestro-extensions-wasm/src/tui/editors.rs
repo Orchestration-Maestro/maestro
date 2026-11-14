@@ -20,14 +20,8 @@ pub type TextHandler = Rc<dyn for<'a> Fn(&str, CallbackEmitter<'a>) -> Extension
 /// Receives input before a custom editor and answers whether it consumed it.
 pub type EditorShortcut = Rc<dyn for<'a> Fn(&str, CallbackEmitter<'a>) -> ExtensionResult<bool>>;
 
-/// Editor options; an absent member keeps the editor's default.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct EditorOptions {
-    /// Columns of padding on each side.
-    pub padding_x: Option<f64>,
-    /// Rows the completion list shows.
-    pub autocomplete_max_visible: Option<f64>,
-}
+#[doc(inline)]
+pub use maestro_interchange::tui::EditorOptions;
 
 port! {
     /// Requests to the host editor behind a facade.

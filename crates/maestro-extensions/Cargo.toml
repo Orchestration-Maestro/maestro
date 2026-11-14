@@ -9,6 +9,7 @@ repository.workspace = true
 [dependencies]
 chrono = { version = "=0.4.45", default-features = false, features = ["clock"] }
 maestro-agent = { path = "../maestro-agent" }
+maestro-interchange = { path = "../maestro-interchange" }
 maestro-listeners.workspace = true
 maestro-path = { path = "../maestro-path" }
 maestro-tools = { path = "../maestro-tools" }

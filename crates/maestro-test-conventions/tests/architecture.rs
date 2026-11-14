@@ -721,7 +721,7 @@ fn theme_shared_records_edge_is_scoped() {
     allowed.foundation(&["maestro-theme", "maestro-interchange"]);
     check_permitted_declarations(&allowed, "maestro-theme", &["maestro-interchange"]);
     for (from, to) in [
-        ("maestro-tui", "maestro-interchange"),
+        ("maestro-brand", "maestro-interchange"),
         ("maestro-interchange", "maestro-theme"),
     ] {
         let workspace = Workspace::new();

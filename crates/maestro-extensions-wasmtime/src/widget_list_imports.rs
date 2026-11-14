@@ -102,7 +102,7 @@ struct SettingsListStyles {
 /// One setting as the guest sends it.
 #[derive(ComponentType, Lift)]
 #[component(record)]
-struct SettingItem {
+struct WireSettingItem {
     /// Identity.
     id: String,
     /// Label.
@@ -254,7 +254,7 @@ fn constructors<T: CallbackView + 'static>(
         "new-settings-list",
         |mut store: StoreContextMut<'_, T>,
          (items, max_visible, theme, change, cancel, search): (
-            Vec<SettingItem>,
+            Vec<WireSettingItem>,
             u32,
             SettingsListStyles,
             Resource<Callback>,
@@ -298,7 +298,7 @@ fn loader<T: CallbackView + 'static>(host: &mut LinkerInstance<'_, T>) -> wasmti
 /// A settings list's build operands, retaining every authored callback.
 fn settings<T: CallbackView>(
     store: &mut T,
-    (items, max_visible): (Vec<SettingItem>, u32),
+    (items, max_visible): (Vec<WireSettingItem>, u32),
     theme: &SettingsListStyles,
     (change, cancel): (&Resource<Callback>, &Resource<Callback>),
     search: bool,

@@ -35,7 +35,7 @@ pub(crate) struct EditorStyles {
 /// Editor options as the guest sends them.
 #[derive(ComponentType, Lift)]
 #[component(record)]
-struct EditorOptions {
+struct WireEditorOptions {
     /// Side padding.
     #[component(name = "padding-x")]
     padding_x: Option<f64>,
@@ -121,7 +121,7 @@ fn editor<T: CallbackView>(
     store: &mut T,
     (tui, theme): (&Resource<TuiEndpoint>, &EditorStyles),
     keybindings: Option<&Resource<KeysEndpoint>>,
-    options: &EditorOptions,
+    options: &WireEditorOptions,
 ) -> wasmtime::Result<Result<Resource<WidgetEndpoint>, String>> {
     let options = (options.padding_x, options.autocomplete_max_visible);
     let editor = editor_build(store, (tui, theme), keybindings, options)?;
@@ -156,7 +156,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
     host.func_wrap(
         "new-editor",
         |mut store: StoreContextMut<'_, T>,
-         (tui, theme, options): (Resource<TuiEndpoint>, EditorStyles, EditorOptions)| {
+         (tui, theme, options): (Resource<TuiEndpoint>, EditorStyles, WireEditorOptions)| {
             Ok((editor(store.data_mut(), (&tui, &theme), None, &options)?,))
         },
     )?;
@@ -167,7 +167,7 @@ pub(crate) fn add_to_linker<T: CallbackView + 'static>(
             Resource<TuiEndpoint>,
             EditorStyles,
             Resource<KeysEndpoint>,
-            EditorOptions,
+            WireEditorOptions,
         )| {
             Ok((editor(
                 store.data_mut(),

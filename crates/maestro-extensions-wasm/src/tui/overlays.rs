@@ -8,29 +8,8 @@ use crate::ExtensionResult;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 
-/// Point of the viewport an overlay is anchored to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum OverlayAnchor {
-    /// Centered in both directions.
-    Center,
-    /// Top-left corner.
-    TopLeft,
-    /// Top-right corner.
-    TopRight,
-    /// Bottom-left corner.
-    BottomLeft,
-    /// Bottom-right corner.
-    BottomRight,
-    /// Centered along the top edge.
-    TopCenter,
-    /// Centered along the bottom edge.
-    BottomCenter,
-    /// Centered along the left edge.
-    LeftCenter,
-    /// Centered along the right edge.
-    RightCenter,
-}
+#[doc(inline)]
+pub use maestro_interchange::tui::OverlayAnchor;
 
 /// A size in cells or percentage text, kept as supplied.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
