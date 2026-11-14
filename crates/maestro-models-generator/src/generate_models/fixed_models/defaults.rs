@@ -1,5 +1,5 @@
 //! Authored model additions with shared provider defaults.
-use crate::{Model, ModelCost, ModelInput};
+use maestro_interchange::types::{Model, ModelCost, ModelInput};
 /// Construct shared provider defaults.
 pub(super) fn amazon_bedrock_base() -> Model {
     Model {

@@ -1,6 +1,4 @@
 //! Shared native command directories and failing output sinks.
-#![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
 pub(crate) use maestro_test_directory::Scratch;
 use std::io;
 /// Fail a writer at an exact byte boundary with an identifiable native cause.

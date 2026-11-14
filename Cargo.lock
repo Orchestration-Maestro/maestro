@@ -4476,7 +4476,6 @@ dependencies = [
  "httpdate",
  "hyper",
  "icu_collator",
- "image 0.24.9",
  "indexmap 2.14.2",
  "js-sys",
  "maestro-cancellation",
@@ -4520,6 +4519,27 @@ dependencies = [
  "maestro-dependencies",
  "maestro-interchange",
  "serde_json",
+]
+
+[[package]]
+name = "maestro-models-generator"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "image 0.24.9",
+ "indexmap 2.14.2",
+ "maestro-dependencies",
+ "maestro-http",
+ "maestro-interchange",
+ "maestro-json",
+ "maestro-models",
+ "maestro-test-directory",
+ "maestro-text",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tokio",
 ]
 
 [[package]]

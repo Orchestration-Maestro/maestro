@@ -67,7 +67,7 @@ const EXEMPT: &[Exemption] = &[
         reason: "GitHub Copilot's request header `Editor-Plugin-Version`, emitted by the catalog generator",
     },
     Exemption {
-        path: "crates/maestro-models/src/catalog_generation/generate_models/routes.rs",
+        path: "crates/maestro-models-generator/src/generate_models/routes.rs",
         word: "plugin",
         reason: "GitHub Copilot's request header `Editor-Plugin-Version`",
     },

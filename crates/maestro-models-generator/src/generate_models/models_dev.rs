@@ -1,7 +1,8 @@
 //! Authored provider traversal and selected model projection.
 use super::{input, routes};
-use crate::Model;
-use crate::providers::json_text::{is_truthy, member};
+use maestro_interchange::types::Model;
+use maestro_json::is_raw_truthy;
+use maestro_json::raw_value::member;
 use serde_json::value::RawValue;
 use std::io::{self, Write};
 
@@ -96,7 +97,7 @@ fn project(model: Model, raw: &RawValue) -> Result<Option<Model>, input::Invalid
     if alias {
         model.id = "kimi-for-coding".into();
         model.name = "Kimi For Coding".into();
-    } else if let Some(name) = member(raw, "name").filter(|raw| is_truthy(raw)) {
+    } else if let Some(name) = member(raw, "name").filter(|raw| is_raw_truthy(raw)) {
         model.name = input::text(Some(name))?;
     }
     input::dev_metadata(model, raw).map(Some)
