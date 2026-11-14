@@ -27,8 +27,8 @@ fn block_documentation_is_rejected_with_file_and_line() {
 #[test]
 fn only_generated_guest_bindings_allow_block_documentation() {
     let workspace = Workspace::new();
-    workspace.member("guest", "maestro-extensions-wasm", "");
-    workspace.list(&[("maestro-extensions-wasm", "core")]);
+    workspace.member("guest", "maestro-extensions-guest", "");
+    workspace.list(&[("maestro-extensions-guest", "core")]);
     let root = workspace
         .root
         .path()
@@ -53,7 +53,7 @@ fn only_generated_guest_bindings_allow_block_documentation() {
     std::fs::remove_file(manual).unwrap();
     workspace.member("models", "maestro-models", "");
     workspace.list(&[
-        ("maestro-extensions-wasm", "core"),
+        ("maestro-extensions-guest", "core"),
         ("maestro-models", "core"),
     ]);
     let other = workspace

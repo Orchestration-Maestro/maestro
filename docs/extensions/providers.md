@@ -23,10 +23,10 @@ Chat Completions server on port 18765 before sending a prompt. Nothing here
 implements a server or contacts a public provider.
 
 ```rust
-use maestro_extensions_wasm::{ExtensionAPI, ExtensionFuture, ProviderConfig};
+use maestro_extensions_guest::{ExtensionAPI, ExtensionFuture, ProviderConfig};
 use serde_json::json;
 
-maestro_extensions_wasm::export_extension!(factory);
+maestro_extensions_guest::export_extension!(factory);
 
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
@@ -86,7 +86,7 @@ binding they apply before the call returns. Queued validation failures are
 reported as extension errors, so inspect startup diagnostics as well as exit status.
 
 For working code behind this route, see the
-[provider catalog component](../../crates/maestro-extensions-wasm/tests/support/context_bridge/providers.rs)
+[provider catalog component](../../crates/maestro-extensions-guest/tests/support/context_bridge/providers.rs)
 and its [controlled host checks](../../crates/maestro-extensions-wasmtime/tests/provider_catalog.rs).
 Standalone provider example deliveries are tracked separately in
 [#2223](https://github.com/Orchestration-Maestro/maestro/issues/2223) and
@@ -181,13 +181,13 @@ the server will accept the credential. See
 ## Supply an account flow
 
 Implement the guest's
-[`OAuthProviderInterface`](../../crates/maestro-extensions-wasm/src/oauth.rs)
+[`OAuthProviderInterface`](../../crates/maestro-extensions-guest/src/oauth.rs)
 and set `config.callbacks.oauth = Some(Rc::new(your_provider))` before registration.
 The installed account ID is the registration name, not the implementation's
 `id()` return value. `name()` supplies the account label;
 `uses_callback_server()` reports optional metadata, not a running listener.
 
-The complete [authored account implementation](../../crates/maestro-extensions-wasm/tests/support/context_bridge/oauth/registration.rs)
+The complete [authored account implementation](../../crates/maestro-extensions-guest/tests/support/context_bridge/oauth/registration.rs)
 shows all methods, registration through both the facade and an independent catalog,
 and controlled login and refresh. Its token strings and endpoints are test data,
 not an authorization service. Replace those operations, not just their labels,
@@ -236,11 +236,11 @@ To select that bundled protocol per request, name its identifier through
 [`stream_simple_via`](guest_streams.md#invoking-registered-models); callers and
 final messages keep the model's API identity.
 
-Use the [model callback fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/model_registered.rs)
+Use the [model callback fixture](../../crates/maestro-extensions-guest/tests/support/context_bridge/model_registered.rs)
 for registration and dispatch, the
-[assistant event fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/assistant_streams.rs)
+[assistant event fixture](../../crates/maestro-extensions-guest/tests/support/context_bridge/assistant_streams.rs)
 for every event variant, and the
-[stream lifetime fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/stream_lifetimes.rs)
+[stream lifetime fixture](../../crates/maestro-extensions-guest/tests/support/context_bridge/stream_lifetimes.rs)
 for independently owned producers. These are executable component fixtures, not
 standalone provider packages.
 

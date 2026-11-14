@@ -1,6 +1,6 @@
 //! Named Markdown definitions from the user directory and nearest project directory.
 
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     ExtensionAPI, ExtensionResult, config,
     metadata::{FrontmatterValue, parse_frontmatter},
     registry::path_utils::{guest_path, resolve},
@@ -133,7 +133,7 @@ fn load(api: &ExtensionAPI, directory: &str, source: &str) -> ExtensionResult<Ve
 /// Accepts named, described definitions and the optional comma-separated tool selection.
 fn definition(
     api: &ExtensionAPI,
-    parsed: maestro_extensions_wasm::metadata::ParsedFrontmatter,
+    parsed: maestro_extensions_guest::metadata::ParsedFrontmatter,
     source: &str,
     file_path: String,
 ) -> ExtensionResult<Option<AgentConfig>> {

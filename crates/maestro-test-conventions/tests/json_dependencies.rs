@@ -441,7 +441,10 @@ fn json_rule_reads_toml_structure_not_text() {
 
 #[test]
 fn json_checks_include_guest_and_all_workspace_members() {
-    for (directory, name) in [("guest", "maestro-extensions-wasm"), ("tui", "maestro-tui")] {
+    for (directory, name) in [
+        ("guest", "maestro-extensions-guest"),
+        ("tui", "maestro-tui"),
+    ] {
         let workspace = fixture();
         workspace.member(
             "tui",

@@ -100,10 +100,10 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
             .unwrap();
     }
     for source in [
-        "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
-        "crates/maestro-extensions-wasm/src/lib.rs",
-        "crates/maestro-extensions-wasm/src/tests/build.rs",
-        "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
+        "crates/maestro-extensions-guest/tests/support/prepare_author_component.rs",
+        "crates/maestro-extensions-guest/src/lib.rs",
+        "crates/maestro-extensions-guest/src/tests/build.rs",
+        "crates/maestro-extensions-guest/src/tests/build/cargo.rs",
         "crates/maestro-tooling/src/example_files.rs",
         "crates/maestro-tooling/src/example_files/components.rs",
         "crates/maestro-tooling/src/example_files/preparation.rs",
@@ -138,11 +138,11 @@ fn component_workspace(root: &Path) {
     for (manifest, text) in [
         (
             root.join("Cargo.toml"),
-            "[workspace]\nmembers = [\"crates/maestro-extensions-wasm\"]\nresolver = \"3\"\n",
+            "[workspace]\nmembers = [\"crates/maestro-extensions-guest\"]\nresolver = \"3\"\n",
         ),
         (
-            root.join("crates/maestro-extensions-wasm/Cargo.toml"),
-            "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\n\
+            root.join("crates/maestro-extensions-guest/Cargo.toml"),
+            "[package]\nname = \"maestro-extensions-guest\"\nversion = \"0.0.0\"\n\
              edition = \"2024\"\n# example-index:start\n# example-index:end\n",
         ),
     ] {

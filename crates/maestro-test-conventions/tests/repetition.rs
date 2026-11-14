@@ -9,8 +9,8 @@ use support::Workspace;
 #[test]
 fn generated_bindings_reject_repeated_line_documentation() {
     let workspace = Workspace::new();
-    workspace.member("guest", "maestro-extensions-wasm", "");
-    workspace.list(&[("maestro-extensions-wasm", "core")]);
+    workspace.member("guest", "maestro-extensions-guest", "");
+    workspace.list(&[("maestro-extensions-guest", "core")]);
     let path = workspace
         .root
         .path()

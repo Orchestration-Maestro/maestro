@@ -12,7 +12,7 @@
   "maestro-detection": "core",
   "maestro-export": "core",
   "maestro-extensions": "core",
-  "maestro-extensions-wasm": "core",
+  "maestro-extensions-guest": "core",
   "maestro-extensions-wasmtime": "core",
   "maestro-http": "core",
   "maestro-interchange": "core",

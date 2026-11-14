@@ -39,7 +39,7 @@ callbacks as the individual factories.
 
 ```rust
 use std::rc::Rc;
-use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult, ReadToolOptions};
+use maestro_extensions_guest::{ExtensionAPI, ExtensionResult, ReadToolOptions};
 
 fn register_read(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
     let mut read = api.create_read_tool_definition(cwd, ReadToolOptions::default())?;
@@ -53,7 +53,7 @@ fn register_read(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
 }
 ```
 
-The [compiled registration fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/builtin_registered.rs)
+The [compiled registration fixture](../../crates/maestro-extensions-guest/tests/support/context_bridge/builtin_registered.rs)
 replaces edit operations, wraps `execute` to report progress, and registers the
 retained definition. It also selects the same definition from
 `create_all_tool_definitions`. The production-host tests invoke preparation,
@@ -63,7 +63,7 @@ constructing command returns.
 Build its component with:
 
 ```sh
-cargo build --locked -p maestro-extensions-wasm \
+cargo build --locked -p maestro-extensions-guest \
   --example context_bridge --target wasm32-wasip2 --release
 ```
 
@@ -210,7 +210,7 @@ unchanged without adding the accumulated output.
 
 ```rust
 use std::rc::Rc;
-use maestro_extensions_wasm::{BashToolOptions, ExtensionAPI, ExtensionResult};
+use maestro_extensions_guest::{BashToolOptions, ExtensionAPI, ExtensionResult};
 
 fn register_shell(api: &ExtensionAPI, cwd: String) -> ExtensionResult<()> {
     let options = BashToolOptions {
@@ -246,7 +246,7 @@ sanitization before recording and painting them. Direct `exec` calls still recei
 raw bytes. Supplying the same operations to `BashToolOptions` retains the native
 tool's truncation, artifact and status formatting.
 
-The executable [local shell author fixture](../../crates/maestro-extensions-wasm/tests/support/local_shell_component.rs)
+The executable [local shell author fixture](../../crates/maestro-extensions-guest/tests/support/local_shell_component.rs)
 shows direct execution and interactive interception through the same facade.
 
 ## Replace search observations
@@ -305,7 +305,7 @@ does not change their routing.
 ## Wait
 
 ```rust
-# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
+# use maestro_extensions_guest::{ExtensionAPI, ExtensionResult};
 # async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
 api.native_io().sleep(std::time::Duration::from_millis(250), None).await?;
 # Ok(())
@@ -329,8 +329,8 @@ completion or drop removes the forwarding listener without aborting the author s
 ## Children and bytes
 
 ```rust
-# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
-use maestro_extensions_wasm::child_process::SpawnOptions;
+# use maestro_extensions_guest::{ExtensionAPI, ExtensionResult};
+use maestro_extensions_guest::child_process::SpawnOptions;
 # async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
 let child = api.native_io().spawn(
     "git".into(), vec!["--version".into()], SpawnOptions::default(),
@@ -356,8 +356,8 @@ consumer; getting another handle does not reset or replay bytes.
 decoding them, and returns a read failure unchanged:
 
 ```rust
-# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
-# use maestro_extensions_wasm::streams::read_to_end;
+# use maestro_extensions_guest::{ExtensionAPI, ExtensionResult};
+# use maestro_extensions_guest::streams::read_to_end;
 # async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
 # let child = api.native_io().spawn("git".into(), vec![], Default::default()).await?;
 let log = if let Some(stdout) = child.stdout() {
@@ -380,8 +380,8 @@ signal failures remain catchable at their original operation without a diagnosti
 ## HTTP responses and raw bodies
 
 ```rust
-# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
-use maestro_extensions_wasm::http::Request;
+# use maestro_extensions_guest::{ExtensionAPI, ExtensionResult};
+use maestro_extensions_guest::http::Request;
 # async fn example(api: &ExtensionAPI) -> ExtensionResult<()> {
 let response = api.native_io().fetch(Request {
     url: "http://127.0.0.1:8000/data".into(),
@@ -427,7 +427,7 @@ last body consumer releases its work without aborting the caller signal.
 ## File watches
 
 ```rust
-# use maestro_extensions_wasm::{ExtensionAPI, ExtensionResult};
+# use maestro_extensions_guest::{ExtensionAPI, ExtensionResult};
 # fn example(api: &ExtensionAPI, path: String) -> ExtensionResult<()> {
 let watch = api.native_io().watch(path, std::rc::Rc::new(|emitter| {
     emitter.emit("file-changed", serde_json::Value::Null)
@@ -482,7 +482,7 @@ Native factories make the same calls with `ExtensionAPI::host_operation` and a
 Build the native-operation witness as a component:
 
 ```sh
-cargo build -p maestro-extensions-wasm --example native_io_component \
+cargo build -p maestro-extensions-guest --example native_io_component \
   --target wasm32-wasip2 --release --locked
 ```
 
@@ -493,7 +493,7 @@ against controlled imports.
 
 ## Native helpers
 
-Terminal text operations in `maestro_extensions_wasm::utils` receive an
+Terminal text operations in `maestro_extensions_guest::utils` receive an
 `&ExtensionAPI` explicitly. They synchronously call the installed host's existing
 terminal text owner; the component contains no text algorithms.
 

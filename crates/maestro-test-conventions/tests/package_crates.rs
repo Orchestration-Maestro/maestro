@@ -19,7 +19,7 @@ fn package(workspace: &Workspace, name: &str, dependencies: &str) {
         workspace,
         name,
         "src/component.rs",
-        "maestro_extensions_wasm::export_extension!(factory);\n",
+        "maestro_extensions_guest::export_extension!(factory);\n",
     );
 }
 
@@ -94,7 +94,7 @@ fn package_dependencies_reuse_only_the_guest_record_owners() {
     let mut entries = vec![("maestro-subagents", "package")];
     let mut dependencies = String::from("[dependencies]\n");
     for name in [
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "maestro-interchange",
         "maestro-json",
     ] {
@@ -169,7 +169,7 @@ fn package_components_keep_the_single_export_out_of_the_library() {
             &workspace,
             "maestro-subagents",
             path,
-            "maestro_extensions_wasm::export_extension!(factory);\n",
+            "maestro_extensions_guest::export_extension!(factory);\n",
         );
         assert!(
             check_workspace(workspace.root.path())
@@ -199,7 +199,7 @@ fn package_components_keep_the_single_export_out_of_the_library() {
         &workspace,
         "maestro-subagents",
         "src/component.rs",
-        "// export_extension!(fake);\nconst TEXT: &str = \"export_extension!(fake)\";\nmaestro_extensions_wasm::export_extension!(factory);\n",
+        "// export_extension!(fake);\nconst TEXT: &str = \"export_extension!(fake)\";\nmaestro_extensions_guest::export_extension!(factory);\n",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     support::source(
@@ -222,24 +222,24 @@ fn package_export_aliases_cannot_create_a_second_export_set() {
     workspace.list(&[("maestro-subagents", "package")]);
     for (import, call) in [
         (
-            "use maestro_extensions_wasm::export_extension as guest;",
+            "use maestro_extensions_guest::export_extension as guest;",
             "guest",
         ),
         (
-            "use maestro_extensions_wasm::{export_extension as guest};",
+            "use maestro_extensions_guest::{export_extension as guest};",
             "guest",
         ),
         (
-            "use maestro_extensions_wasm::r#export_extension as guest;",
+            "use maestro_extensions_guest::r#export_extension as guest;",
             "guest",
         ),
         (
-            "use maestro_extensions_wasm::{export_extension as r#guest};",
+            "use maestro_extensions_guest::{export_extension as r#guest};",
             "guest",
         ),
-        ("", "maestro_extensions_wasm::r#export_extension"),
+        ("", "maestro_extensions_guest::r#export_extension"),
         (
-            "use maestro_extensions_wasm::export_extension as first; use first as guest;",
+            "use maestro_extensions_guest::export_extension as first; use first as guest;",
             "guest",
         ),
     ] {

@@ -96,7 +96,7 @@ The protocol requires: revise the WIT/SDK for recoverable errors, owned persiste
 
 Extension events: an event emitted from inside a synchronous callback (an event-bus listener, or a footer, widget, header, editor or component builder) reaches listeners in other extensions right after that callback returns. Every other ordering follows the reference behavior.
 
-Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-wasm provides guest authoring and the canonical WIT. The guest's allowed internal dependencies are maestro-interchange (the request, session, tool and package records), maestro-json (JSON boundary semantics) and maestro-text (portable text and byte-line framing); it never imports native session, tool or catalog runtimes. The runtime adapter depends toward the domain, with the optional native path utility, and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
+Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-guest provides guest authoring and the canonical WIT. The guest's allowed internal dependencies are maestro-interchange (the request, session, tool and package records), maestro-json (JSON boundary semantics) and maestro-text (portable text and byte-line framing); it never imports native session, tool or catalog runtimes. The runtime adapter depends toward the domain, with the optional native path utility, and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
 
 Event payloads and results cross the existing generic native-async export as plain JSON beside their typed capability envelope. Use the shared records' existing serde_json representation, not duplicate guest models or a second serializer format. Finite floating-point numbers roundtrip exactly, including signed zero. Ordinary host serialization turns nonfinite numbers into null; this does not promise that null decodes into a required number. An extension writing Infinity or NaN receives a clear error before its edited event or result is encoded. This explicit error is the accepted difference from retaining the nonfinite value until serialization. No bit-encoded numbers, numeric transport wrappers or compatibility decoder are permitted. Shared records retain their existing optional-field semantics without added Presence wrappers; unshared event fields still preserve their meaningful missing/null distinctions. Preserve separate event-edit and callback-result outcomes when either fails.
 
@@ -367,7 +367,7 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 | Directory | Role |
 |---|---|
 | `crates/maestro-test-process/tests/support/` | native test children |
-| `crates/maestro-extensions-wasm/tests/support/` | host-qualification fixture components and their preparation program |
+| `crates/maestro-extensions-guest/tests/support/` | host-qualification fixture components and their preparation program |
 | `crates/maestro-models/scripts/`, `crates/maestro-models/tests/support/`, `crates/maestro-models-registry/tests/support/` | catalog and fixture generators, browser smoke checks |
 | `crates/maestro-theme/scripts/` | theme generation and browser author inputs |
 | `crates/maestro-tui-crossterm/tests/support/` | terminal development programs |
@@ -424,7 +424,7 @@ Tests are black-box. They use Maestro's public crates and programs and the same 
 
 **Pin moves.** One maestro-packages change moves every Maestro `rev`, the lock and any shared exact version Maestro moved, and fixes what the move breaks. An example broken by a Maestro change fails at the pin move. Maestro keeps its own host-feature tests on its fixture components, so host regressions still fail in Maestro's CI.
 
-**Crate graph.** The removal deletes the development edge from `maestro-extensions-wasm` to the directory-listing owner, which only an example used. In maestro-packages, `maestro-extension-examples` lists directories through `maestro-path` directly.
+**Crate graph.** The removal deletes the development edge from `maestro-extensions-guest` to the directory-listing owner, which only an example used. In maestro-packages, `maestro-extension-examples` lists directories through `maestro-path` directly.
 
 ## Crates and delivery order
 
@@ -434,7 +434,7 @@ descriptions below also permit the [native feature-unifier exception](#native-fe
 including leaves and exact sets. An em dash means no domain dependencies apart
 from the optional `maestro-path` edge described below.
 
-The table lists production edges. `maestro-extensions-wasm` also declares the leaf
+The table lists production edges. `maestro-extensions-guest` also declares the leaf
 as one portable build dependency and one portable development dependency.
 
 | Crate | One job | Allowed internal dependencies | Layer |
@@ -451,7 +451,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process`, `maestro-lock` | 0 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-models-registry`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources`, `maestro-listeners`, `maestro-lock` | 4 |
-| `maestro-extensions-wasm` | provide guest authoring | `maestro-interchange`, `maestro-json`, `maestro-text` | 0 |
+| `maestro-extensions-guest` | provide guest authoring | `maestro-interchange`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-extensions-wasmtime` | execute artifacts (optional `maestro-path` edge) | `maestro-extensions`, `maestro-lock` | 5 |
 | `maestro-http` | perform HTTP requests | `maestro-cancellation`, `maestro-interchange`, `maestro-text`, `maestro-json` | below 0 |
 | `maestro-interchange` | define the records a guest shares with its host | `maestro-json` | below 0 |
@@ -815,7 +815,7 @@ Native crates may depend on `maestro-path` without changing their delivery layer
 This optional edge is ignored when evaluating leaf status and exact
 direct-dependency sets; every other dependency rule, including cycle and internal
 dev-dependency checks, still applies. The guest authoring crate
-(`maestro-extensions-wasm`), checked test-process owner (`maestro-test-process`),
+(`maestro-extensions-guest`), checked test-process owner (`maestro-test-process`),
 disposable directory owner
 (`maestro-test-directory`), fixture owner (`maestro-test-fixtures`), test tracing owner (`maestro-test-tracing`), cancellation leaf (`maestro-cancellation`), shared
 record owner (`maestro-interchange`), watch leaf (`maestro-watch`), process owner (`maestro-process`), file-pattern owner (`maestro-pattern`),
@@ -886,13 +886,13 @@ It permits no normal or build dependency on the listener leaf.
 without optionality, lets the interactive mode's composed witness drive a real
 native terminal; it permits no normal or build dependency on the adapter and does
 not make the interactive frontend a terminal owner.
-`maestro-extensions-wasm` to `maestro-models`, declared as a native-only,
+`maestro-extensions-guest` to `maestro-models`, declared as a native-only,
 non-optional development dependency, lets component tests pass retained schema
 callbacks to the native argument validator. It permits no normal or build edge.
-`maestro-extensions-wasm` to `maestro-extensions-wasmtime`, declared as a native-only,
+`maestro-extensions-guest` to `maestro-extensions-wasmtime`, declared as a native-only,
 non-optional development dependency, lets component tests build their engine from the
 product's one engine configuration. It permits no normal or build edge.
-`maestro-extensions-wasm` to `maestro-listeners`, declared as a native-only,
+`maestro-extensions-guest` to `maestro-listeners`, declared as a native-only,
 non-optional development dependency, lets the controlled guest bus keep its
 callback registrations in the shared listener collection. It permits no normal or
 build edge.
@@ -952,7 +952,7 @@ the `maestro-path` permission. Its only
 incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro`, `maestro-agent`, `maestro-app`, `maestro-models-registry`, `maestro-chat`,
-`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-providers`,
+`maestro-cli`, `maestro-credentials`, `maestro-daemon`, `maestro-detection`, `maestro-extensions`, `maestro-extensions-guest`, `maestro-extensions-wasmtime`, `maestro-http`, `maestro-lock`, `maestro-models`, `maestro-packages`, `maestro-process`, `maestro-providers`,
 `maestro-resources`, `maestro-rpc`, `maestro-session`,
 `maestro-session-reports`, `maestro-settings`,
 `maestro-test-conventions`, `maestro-theme`,
@@ -991,7 +991,7 @@ Its only incoming edges are non-optional development
 dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-app`,
 `maestro-models-registry`, `maestro-chat`, `maestro-cli`, `maestro-credentials`,
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
-`maestro-extensions-wasm`, `maestro-extensions-wasmtime`, `maestro-http`,
+`maestro-extensions-guest`, `maestro-extensions-wasmtime`, `maestro-http`,
 `maestro-lock`, `maestro-models`,
 `maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-session-reports`, `maestro-settings`,
@@ -1134,7 +1134,7 @@ unchanged.
 
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-guest`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-directory`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-test-tracing`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-packages`, `maestro-providers`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-credentials`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-models-registry`, `maestro-export`

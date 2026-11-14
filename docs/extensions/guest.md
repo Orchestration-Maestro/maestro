@@ -1,7 +1,7 @@
 # Writing an extension as a component
 
-`maestro-extensions-wasm` is the Rust library an extension author links to. It owns the
-canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
+`maestro-extensions-guest` is the Rust library an extension author links to. It owns the
+canonical interface files in `crates/maestro-extensions-guest/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-interchange` for shared model, resource, application message, event/result and assembled prompt records. Native and guest aliases select their existing domain operands; the guest keeps its opaque text, header pairs and capability resources. Stream snapshots remain guest-adapter operations.
 This page describes what is delivered so far: registration, 29 events and thirteen result
@@ -19,14 +19,14 @@ just extension-author-component
 ```
 
 The recipe adds the `wasm32-wasip2` target and builds the fixture in
-`crates/maestro-extensions-wasm/tests/support/author_component.rs` as a component. An extension
+`crates/maestro-extensions-guest/tests/support/author_component.rs` as a component. An extension
 crate is a `cdylib` whose root names its factory:
 
 ```rust
-maestro_extensions_wasm::export_extension!(factory);
+maestro_extensions_guest::export_extension!(factory);
 
-fn factory(api: maestro_extensions_wasm::ExtensionAPI)
-    -> maestro_extensions_wasm::ExtensionFuture<'static, ()>
+fn factory(api: maestro_extensions_guest::ExtensionAPI)
+    -> maestro_extensions_guest::ExtensionFuture<'static, ()>
 {
     Box::pin(async move { api.on("input", handler) })
 }
@@ -63,7 +63,7 @@ description without rewriting, sorting or deduplicating them. Command and comple
 registrations release independently.
 
 `register_shortcut` forwards the literal key and optional description in `ShortcutOptions`.
-Its handler receives an ordinary [`ExtensionContext`](../../crates/maestro-extensions-wasm/src/types/context.rs),
+Its handler receives an ordinary [`ExtensionContext`](../../crates/maestro-extensions-guest/src/types/context.rs),
 not a command context. Immediate and suspended callback results retain supplied errors.
 
 `register_flag` forwards `FlagOptions`: optional description, declared `FlagType` and an
@@ -75,7 +75,7 @@ the guest neither caches values nor infers the kind from the default.
 
 ```rust
 use std::rc::Rc;
-use maestro_extensions_wasm::{AutocompleteItem, CommandOptions, ExtensionAPI, ExtensionResult};
+use maestro_extensions_guest::{AutocompleteItem, CommandOptions, ExtensionAPI, ExtensionResult};
 
 fn register_environment(api: &ExtensionAPI) -> ExtensionResult<()> {
     api.register_command("environment", CommandOptions {
@@ -124,7 +124,7 @@ already-produced `BashResult`. Operations travel as a typed capability, outside 
 
 ```rust
 use std::rc::Rc;
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     BashExecResult, BashOperations, ExtensionEventResult, Presence, UserBashEventResult,
 };
 
@@ -601,8 +601,8 @@ options remain distinct. Clearing a label uses `None`, not an empty string.
 
 `get_active_tools`, `get_all_tools` and `get_commands` return the host's ordered
 records without sorting or deduplication. `set_active_tools` forwards the requested
-names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) and
-[`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
+names. [`ToolInfo`](../../crates/maestro-extensions-guest/src/types/actions.rs) and
+[`SlashCommandInfo`](../../crates/maestro-extensions-guest/src/slash_commands.rs)
 retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
 schema and details text with semantic JSON serialization.
 
@@ -674,7 +674,7 @@ handler returned.
 
 `ExtensionContext::compact` is inherited by command and replacement command views.
 It returns admission before its optional completion or error notification.
-[`CompactOptions`](../../crates/maestro-extensions-wasm/src/types/context.rs) carries
+[`CompactOptions`](../../crates/maestro-extensions-guest/src/types/context.rs) carries
 optional literal instructions, `on_complete` and `on_error`. Absent options remain
 distinct from present options with every field empty. Completion receives
 `CompactionResult`; error receives the supplied message. A callback failure returns
@@ -703,7 +703,7 @@ Shared model records retain their own optional-field serialization: ordinary `Op
 collapse missing and null, while existing nested options retain explicit null.
 [Application message records](../records.md#application-message-records) keep their existing
 `Presence` fields; model records have no added wrapper. The inventory record
-[`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
+[`SlashCommandInfo`](../../crates/maestro-extensions-guest/src/slash_commands.rs)
 also uses standard `Option` decoding for `description`: missing and null both become `None`
 and are omitted on serialization; an empty string is retained. Command source is an open
 string with three default labels, not a closed enum. The declaration belongs to the shared
@@ -793,7 +793,7 @@ methods, which the rustdoc examples check at compile time.
 `switch_session` accept an optional `with_session`. Absent options remain distinct
 from present empty options, even when no callback is supplied. Tree navigation and
 reload have no replacement continuation. Setup receives a
-writable [`SessionManager`](../../crates/maestro-extensions-wasm/src/session_manager.rs);
+writable [`SessionManager`](../../crates/maestro-extensions-guest/src/session_manager.rs);
 ordinary contexts still expose a reader. When the host invokes the continuation, it
 supplies a `ReplacedSessionContext` while the operation is pending. The
 host calls the continuation closure once. Captures the closure keeps drop when that call
@@ -823,7 +823,7 @@ owners. The guest implements no persistence, context projection or navigation po
 
 ## Example
 
-`crates/maestro-extensions-wasm/src/tests/author.rs` registers an input handler that
+`crates/maestro-extensions-guest/src/tests/author.rs` registers an input handler that
 upper-cases text, a before-compact handler that cancels an aborted compaction and reports the
 state of the signal it kept from the previous one, a command that starts a new session and
 waits for idle from its continuation, a handler the host rejects, and a handler whose
@@ -1139,7 +1139,7 @@ This executable handler summarizes only supplied user messages; block content be
 session or choose compaction settings. Register it as `session_before_compact`:
 
 ```rust
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     AgentMessage, CompactionResult, ExtensionAPI, ExtensionEvent, ExtensionEventResult,
     ExtensionFuture, Message, Presence, SessionBeforeCompactResult, SessionEvent, UserContent,
 };
@@ -1222,7 +1222,7 @@ under the host's temporary root, with mode `0700` on Unix and the default
 Windows ACL. The prefix must be a nonempty leaf name; the caller owns cleanup.
 
 Rust standard-library environment, file and byte I/O use the host's WASI 0.2
-baseline. `maestro_extensions_wasm::wasi` also exposes the pinned standard WASI
+baseline. `maestro_extensions_guest::wasi` also exposes the pinned standard WASI
 0.3 asynchronous interfaces, including sockets, name lookup, filesystem streams
 and `wit_stream` byte-stream construction. Both generations use the same host
 context; neither introduces an extension-specific permission list. See

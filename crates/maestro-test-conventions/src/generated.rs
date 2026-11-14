@@ -6,7 +6,7 @@ use syn::punctuated::Punctuated;
 use crate::source::{Member, Source, read_manifest as read};
 
 /// Crate that generates the guest side of the extension bindings.
-pub(crate) const GUEST: &str = "maestro-extensions-wasm";
+pub(crate) const GUEST: &str = "maestro-extensions-guest";
 
 /// Crates that generate bindings from the interface files and hold their only lint exception.
 const GENERATED: [&str; 2] = [GUEST, "maestro-extensions-wasmtime"];

@@ -33,7 +33,7 @@ platform limitations.
 
 ## Create the project
 
-The supported authoring route today is Rust with `maestro-extensions-wasm`.
+The supported authoring route today is Rust with `maestro-extensions-guest`.
 Use a source checkout of the same Maestro revision as the host you will run;
 these instructions do not assume the library has been published to a registry.
 Keep that checkout beside your extension project:
@@ -81,7 +81,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-maestro-extensions-wasm = { path = "../maestro/crates/maestro-extensions-wasm" }
+maestro-extensions-guest = { path = "../maestro/crates/maestro-extensions-guest" }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { version = "=1.0.151", features = ["float_roundtrip"] }
 
@@ -106,7 +106,7 @@ tool definition, callbacks and JSON records.
 
 The SDK owns the interface; do not copy or modify WIT for an ordinary Rust
 extension. Its canonical
-[`wit/world.wit`](../crates/maestro-extensions-wasm/wit/world.wit) declares
+[`wit/world.wit`](../crates/maestro-extensions-guest/wit/world.wit) declares
 `maestro:extension@0.1.0`, world `extension`, which imports `host` and exports
 `guest`. The adjacent `host.wit`, `guest.wit`, `session.wit` and `standard/`
 inputs define the capabilities and standard interfaces. Rust's export macro

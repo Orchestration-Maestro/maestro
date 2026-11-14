@@ -3587,13 +3587,13 @@ fn maestro_hook_staged_clippy_warning_blocks_after_restaging() {
 /// The files the test build's author preparation is checked against.
 #[cfg(unix)]
 const AUTHOR_SETUP_SOURCES: [&str; 8] = [
-    "crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs",
-    "crates/maestro-extensions-wasm/src/tests/build.rs",
-    "crates/maestro-extensions-wasm/src/tests/build/cargo.rs",
+    "crates/maestro-extensions-guest/tests/support/prepare_author_component.rs",
+    "crates/maestro-extensions-guest/src/tests/build.rs",
+    "crates/maestro-extensions-guest/src/tests/build/cargo.rs",
     "crates/maestro-tooling/src/example_files.rs",
     "crates/maestro-tooling/src/example_files/components.rs",
     "crates/maestro-tooling/src/example_files/preparation.rs",
-    "crates/maestro-extensions-wasm/Cargo.toml",
+    "crates/maestro-extensions-guest/Cargo.toml",
     "Cargo.lock",
 ];
 
@@ -3646,14 +3646,14 @@ fn author_setup_checkout(root: &Path) -> (std::path::PathBuf, std::path::PathBuf
     .unwrap();
     for (path, body) in [
         (
-            "crates/maestro-extensions-wasm/Cargo.toml",
-            "[package]\nname = \"maestro-extensions-wasm\"\n# example-index:start\n# example-index:end\n",
+            "crates/maestro-extensions-guest/Cargo.toml",
+            "[package]\nname = \"maestro-extensions-guest\"\n# example-index:start\n# example-index:end\n",
         ),
         (
             "crates/maestro-tooling/Cargo.toml",
             "[package]\nname = \"maestro-tooling\"\n",
         ),
-        ("crates/maestro-extensions-wasm/src/lib.rs", ""),
+        ("crates/maestro-extensions-guest/src/lib.rs", ""),
         ("crates/maestro-tooling/src/lib.rs", ""),
     ] {
         let manifest = root.join(path);
@@ -3714,14 +3714,14 @@ fn example_builds_on_library(
     use std::os::unix::fs::PermissionsExt;
     fs::write(
         root.join("Cargo.lock"),
-        "[[package]]\nname = \"maestro-extensions-wasm\"\ndependencies = [\n \"maestro-interchange\",\n]\n\n[[package]]\nname = \"maestro-interchange\"\n",
+        "[[package]]\nname = \"maestro-extensions-guest\"\ndependencies = [\n \"maestro-interchange\",\n]\n\n[[package]]\nname = \"maestro-interchange\"\n",
     )
     .unwrap();
     set_age(
         &root.join("Cargo.lock"),
         std::time::Duration::from_secs(3600),
     );
-    let information = "prepare_author_component: crates/maestro-extensions-wasm/tests/support/prepare_author_component.rs\n";
+    let information = "prepare_author_component: crates/maestro-extensions-guest/tests/support/prepare_author_component.rs\n";
     let copy = profile.join("examples/prepare_author_component-1");
     fs::write(&copy, "copy\n").unwrap();
     fs::set_permissions(&copy, fs::Permissions::from_mode(0o755)).unwrap();
@@ -3732,13 +3732,13 @@ fn example_builds_on_library(
     .unwrap();
     for (target, name, hash, dependencies) in [
         (
-            "maestro-extensions-wasm-1",
+            "maestro-extensions-guest-1",
             "example-prepare_author_component",
             10,
             vec![("maestro_interchange", 21)],
         ),
         (
-            "maestro-extensions-wasm-a1",
+            "maestro-extensions-guest-a1",
             "example-prepare_author_component",
             11,
             vec![("maestro_interchange", 21)],
@@ -4230,7 +4230,7 @@ fn example_checkout(root: &Path) {
     )
     .unwrap();
     let folder = root.join("examples/extensions");
-    let local = root.join("crates/maestro-extensions-wasm/tests/support");
+    let local = root.join("crates/maestro-extensions-guest/tests/support");
     let fixture = root.join("crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension");
     fs::create_dir_all(&fixture).unwrap();
     fs::write(
@@ -4246,7 +4246,7 @@ fn example_checkout(root: &Path) {
     .unwrap();
     fs::write(
         fixture.join("Cargo.toml.in"),
-        "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\n[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro/crates/maestro-extensions-wasm\" }\n[workspace]\n",
+        "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\n[dependencies]\nmaestro-extensions-guest = { path = \"../maestro/crates/maestro-extensions-guest\" }\n[workspace]\n",
     ).unwrap();
     fs::write(fixture.join("Cargo.lock"), "version = 4\n").unwrap();
     fs::write(root.join("Cargo.lock"), "version = 4\n").unwrap();
@@ -4259,12 +4259,12 @@ fn example_checkout(root: &Path) {
     )
     .unwrap();
     fs::write(
-        root.join("crates/maestro-extensions-wasm/Cargo.toml"),
-        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n# old\n# example-index:end\n\n[dependencies]\n",
+        root.join("crates/maestro-extensions-guest/Cargo.toml"),
+        "[package]\nname = \"maestro-extensions-guest\"\nversion = \"0.1.0\"\n# example-index:start\n# old\n# example-index:end\n\n[dependencies]\n",
     )
     .unwrap();
-    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/src")).unwrap();
-    fs::write(root.join("crates/maestro-extensions-wasm/src/lib.rs"), "").unwrap();
+    fs::create_dir_all(root.join("crates/maestro-extensions-guest/src")).unwrap();
+    fs::write(root.join("crates/maestro-extensions-guest/src/lib.rs"), "").unwrap();
     fs::write(
         local.join("prepare_author_component.rs"),
         "//! Prepare.\n// example-index:start\nold\n// example-index:end\nfn main() {}\n",
@@ -4288,7 +4288,7 @@ fn example_index_renders_targets() {
     let folder = root.path().join("examples/extensions");
     let local = root
         .path()
-        .join("crates/maestro-extensions-wasm/tests/support");
+        .join("crates/maestro-extensions-guest/tests/support");
     example_checkout(root.path());
     fs::create_dir_all(folder.join("with-deps")).unwrap();
     fs::create_dir_all(folder.join("zebra")).unwrap();
@@ -4315,7 +4315,7 @@ fn example_index_renders_targets() {
     example_index(root.path(), false).unwrap();
     let manifest = root
         .path()
-        .join("crates/maestro-extensions-wasm/Cargo.toml");
+        .join("crates/maestro-extensions-guest/Cargo.toml");
     let prepare = local.join("prepare_author_component.rs");
     let rendered = (
         fs::read_to_string(&manifest).unwrap(),
@@ -4323,7 +4323,7 @@ fn example_index_renders_targets() {
     );
     assert_eq!(
         rendered.0,
-        "[package]\nname = \"maestro-extensions-wasm\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\npath = \"tests/support/bridge.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\npath = \"tests/support/plain.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
+        "[package]\nname = \"maestro-extensions-guest\"\nversion = \"0.1.0\"\n# example-index:start\n[[example]]\nname = \"alpha\"\npath = \"../../examples/extensions/alpha.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"bridge\"\npath = \"tests/support/bridge.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"plain\"\npath = \"tests/support/plain.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"with_deps\"\npath = \"../../examples/extensions/with-deps/main.rs\"\ncrate-type = [\"cdylib\"]\n\n[[example]]\nname = \"zebra\"\npath = \"../../examples/extensions/zebra.rs\"\ncrate-type = [\"cdylib\"]\n# example-index:end\n\n[dependencies]\n"
     );
     assert_eq!(
         rendered.1,
@@ -4383,7 +4383,7 @@ fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
     assert!(String::from_utf8_lossy(&before).contains("name = \"hello-extension\""));
     let guest = root
         .path()
-        .join("crates/maestro-extensions-wasm/Cargo.toml");
+        .join("crates/maestro-extensions-guest/Cargo.toml");
     let mut manifest = fs::read_to_string(&guest).unwrap();
     manifest.push_str("leaf = { path = \"../leaf\" }\n");
     fs::write(&guest, manifest).unwrap();

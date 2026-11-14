@@ -1,6 +1,6 @@
 //! Tool-call summaries share the host's semantic colors and home observation.
 use crate::extension::preview;
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     ExtensionAPI, ExtensionResult, Theme, registry::path_utils::shorten_path,
 };
 use serde_json::Value;

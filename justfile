@@ -205,7 +205,7 @@ run-source-windows *args:
 # Build the author example as a native-async extension component.
 extension-author-component:
     rustup target add wasm32-wasip2
-    cargo build -p maestro-extensions-wasm --example author_component --target wasm32-wasip2 --release --locked
+    cargo build -p maestro-extensions-guest --example author_component --target wasm32-wasip2 --release --locked
 
 # Compile the real browser entry when its owner has supplied it.
 check-browser-smoke:

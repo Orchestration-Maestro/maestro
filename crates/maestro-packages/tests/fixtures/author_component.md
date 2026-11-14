@@ -1,7 +1,7 @@
 # Author component fixture
 
-This is the compiled [author component example](../../../maestro-extensions-wasm/tests/support/author_component.rs),
-using its existing [extension body](../../../maestro-extensions-wasm/src/tests/author.rs).
+This is the compiled [author component example](../../../maestro-extensions-guest/tests/support/author_component.rs),
+using its existing [extension body](../../../maestro-extensions-guest/src/tests/author.rs).
 Discovery tests copy this one artifact; they do not compile or activate it.
 
 - Source revision: `b6b1f67edb5e2042a3103e270544bc2ff22bc860`.
@@ -14,7 +14,7 @@ Build from the repository root, then copy the resulting example artifact here:
 
 ```sh
 CARGO_PROFILE_RELEASE_STRIP=symbols \
-  cargo build -p maestro-extensions-wasm \
+  cargo build -p maestro-extensions-guest \
   --example author_component --target wasm32-wasip2 --release --locked
 ```
 

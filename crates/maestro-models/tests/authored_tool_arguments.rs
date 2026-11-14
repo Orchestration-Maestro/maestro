@@ -1054,7 +1054,7 @@ fn composed_candidates_keep_declared_constraints() {
     run_scope("composed candidates", 6);
 }
 
-#[path = "../../maestro-extensions-wasm/src/tests/nested_schema_fixture.rs"]
+#[path = "../../maestro-extensions-guest/src/tests/nested_schema_fixture.rs"]
 mod nested_schema_fixture;
 
 /// Nested declarations keep conversion provenance without changing the invocation.
@@ -1071,7 +1071,7 @@ fn nested_declarations_keep_authored_and_plain_preparation() {
         expected_json: String,
     }
     let cases: Vec<Invocation> = serde_json::from_str(include_str!(
-        "../../maestro-extensions-wasm/src/tests/nested_schema_invocations.json"
+        "../../maestro-extensions-guest/src/tests/nested_schema_invocations.json"
     ))
     .unwrap();
     for case in cases {

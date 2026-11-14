@@ -39,7 +39,7 @@ impl WitInputs {
         if input.paths.is_empty() && !input.inline {
             return Err(error());
         }
-        let is_guest = context.owner == "maestro-extensions-wasm";
+        let is_guest = context.owner == "maestro-extensions-guest";
         if input.inline && !is_guest {
             return Err(format!("{location}: inline WIT must be guest-owned"));
         }

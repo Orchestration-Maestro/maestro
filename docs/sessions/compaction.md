@@ -260,7 +260,7 @@ for application-specific state.
 A handler can build either result below with guest-owned types:
 
 ```rust,ignore
-use maestro_extensions_wasm::{CompactionResult, Presence, SessionBeforeCompactResult};
+use maestro_extensions_guest::{CompactionResult, Presence, SessionBeforeCompactResult};
 
 let cancel = SessionBeforeCompactResult {
     cancel: Presence::Present(true),
@@ -291,7 +291,7 @@ Its preparation holds `target_id`, `old_leaf_id`, `common_ancestor_id`,
 or supply a summary and details when the caller selected summarization:
 
 ```rust,ignore
-use maestro_extensions_wasm::{Presence, SessionBeforeTreeResult, SessionBeforeTreeSummary};
+use maestro_extensions_guest::{Presence, SessionBeforeTreeResult, SessionBeforeTreeSummary};
 
 let cancel = SessionBeforeTreeResult {
     cancel: Presence::Present(true),

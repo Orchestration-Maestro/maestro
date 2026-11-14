@@ -204,7 +204,7 @@ dialog answers first. The host still owns dialog dismissal and countdown display
 
 ## Resources and their native counterparts
 
-Each guest handle wraps one resource from `crates/maestro-extensions-wasm/wit/host.wit`.
+Each guest handle wraps one resource from `crates/maestro-extensions-guest/wit/host.wit`.
 The host answers it with the native owner in the right-hand column, so the guest
 holds no copy of the UI logic.
 

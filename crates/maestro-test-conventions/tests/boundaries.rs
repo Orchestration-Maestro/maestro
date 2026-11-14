@@ -139,7 +139,8 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
     for &(owner, _) in support::policy::POLICY {
         for &library in RUNTIME_LIBRARIES {
             // The guest's test-only host dependencies have their own test.
-            if owner == "maestro-extensions-wasm" && matches!(library, "wasmtime" | "wasmtime-wasi")
+            if owner == "maestro-extensions-guest"
+                && matches!(library, "wasmtime" | "wasmtime-wasi")
             {
                 continue;
             }
@@ -161,15 +162,15 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions", "maestro-extensions-wasm"]);
+    workspace.foundation(&["maestro-extensions", "maestro-extensions-guest"]);
     workspace.member(
         "maestro-extensions",
         "maestro-extensions",
-        "[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro-extensions-wasm\" }",
+        "[dependencies]\nmaestro-extensions-guest = { path = \"../maestro-extensions-guest\" }",
     );
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(
-        error.contains("maestro-extensions -> maestro-extensions-wasm"),
+        error.contains("maestro-extensions -> maestro-extensions-guest"),
         "{error}"
     );
     workspace.member("maestro-extensions", "maestro-extensions", "");
@@ -434,11 +435,11 @@ pub struct SettingsList;
 #[test]
 fn wit_codegen_inputs_share_one_canonical_source() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     let guest = workspace
         .root
         .path()
-        .join("crates/maestro-extensions-wasm/interfaces");
+        .join("crates/maestro-extensions-guest/interfaces");
     std::fs::create_dir(&guest).unwrap();
     std::fs::write(
         guest.join("world.wit"),
@@ -448,15 +449,15 @@ fn wit_codegen_inputs_share_one_canonical_source() {
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         r#"wit_bindgen::generate!({ path: "interfaces", world: "fixture" });"#,
     );
     for host in [
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces/../interfaces", world: "fixture" });"#,
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces" });"#,
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces/world.wit" });"#,
-        r##"wasmtime::component::bindgen!({ path: [r#"../maestro-extensions-wasm/interfaces"#, "../maestro-extensions-wasm/interfaces/world.wit"] });"##,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/interfaces/../interfaces", world: "fixture" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/interfaces" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/interfaces/world.wit" });"#,
+        r##"wasmtime::component::bindgen!({ path: [r#"../maestro-extensions-guest/interfaces"#, "../maestro-extensions-guest/interfaces/world.wit"] });"##,
     ] {
         source(&workspace, "maestro-extensions-wasmtime", "build.rs", host);
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
@@ -471,7 +472,7 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
     let second = workspace
         .root
         .path()
-        .join("crates/maestro-extensions-wasm/second");
+        .join("crates/maestro-extensions-guest/second");
     std::fs::create_dir(&second).unwrap();
     std::fs::copy(guest.join("world.wit"), second.join("world.wit")).unwrap();
     let copied = workspace
@@ -491,13 +492,13 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
             workspace,
             "maestro-extensions-wasmtime",
             "build.rs",
-            r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces" });"#,
+            r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/interfaces" });"#,
         );
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
     source(
         workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         r#"wit_bindgen::generate!({ path: "../maestro-extensions-wasmtime/copied" });"#,
     );
@@ -508,7 +509,7 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
     );
     source(
         workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         r#"wit_bindgen::generate!({ path: ["interfaces"] });"#,
     );
@@ -518,11 +519,11 @@ fn reject_noncanonical_wit(workspace: &Workspace, guest: &std::path::Path) {
 #[test]
 fn wit_options_ignore_module_paths_in_nested_values() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     let guest = workspace
         .root
         .path()
-        .join("crates/maestro-extensions-wasm/interfaces");
+        .join("crates/maestro-extensions-guest/interfaces");
     std::fs::create_dir(&guest).unwrap();
     std::fs::write(
         guest.join("world.wit"),
@@ -531,7 +532,7 @@ fn wit_options_ignore_module_paths_in_nested_values() {
     .unwrap();
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         r#"wit_bindgen::generate!({
             path: "interfaces",
@@ -543,7 +544,7 @@ fn wit_options_ignore_module_paths_in_nested_values() {
     );
     for input in [
         r#"wasmtime::component::bindgen!({
-            path: "../maestro-extensions-wasm/interfaces",
+            path: "../maestro-extensions-guest/interfaces",
             with: {
                 "maestro:fixture/types": crate::path::bindings,
                 "maestro:fixture/other": crate::inline::bindings,
@@ -554,7 +555,7 @@ fn wit_options_ignore_module_paths_in_nested_values() {
                 "maestro:fixture/types": crate::path::bindings,
                 "maestro:fixture/other": crate::inline::bindings,
             },
-            path: "../maestro-extensions-wasm/interfaces",
+            path: "../maestro-extensions-guest/interfaces",
         });"#,
     ] {
         source(&workspace, "maestro-extensions-wasmtime", "build.rs", input);
@@ -563,7 +564,7 @@ fn wit_options_ignore_module_paths_in_nested_values() {
             &workspace,
             "maestro-extensions-wasmtime",
             "build.rs",
-            &input.replace("../maestro-extensions-wasm/interfaces", "wrong-root"),
+            &input.replace("../maestro-extensions-guest/interfaces", "wrong-root"),
         );
         let error = check_workspace(workspace.root.path()).unwrap_err();
         assert!(error.contains("cannot resolve WIT input"), "{error}");
@@ -573,12 +574,12 @@ fn wit_options_ignore_module_paths_in_nested_values() {
 #[test]
 fn inline_guest_generator_adds_no_shared_wit_root() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     for directory in ["wit", "wit/standard"] {
         let root = workspace
             .root
             .path()
-            .join("crates/maestro-extensions-wasm")
+            .join("crates/maestro-extensions-guest")
             .join(directory);
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(
@@ -589,7 +590,7 @@ fn inline_guest_generator_adds_no_shared_wit_root() {
     }
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         concat!(
             r#"wit_bindgen::generate!({ path: "wit" });"#,
@@ -600,7 +601,7 @@ fn inline_guest_generator_adds_no_shared_wit_root() {
         &workspace,
         "maestro-extensions-wasmtime",
         "build.rs",
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/wit" });"#,
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
@@ -608,12 +609,12 @@ fn inline_guest_generator_adds_no_shared_wit_root() {
 #[test]
 fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     for directory in ["wit", "fixture"] {
         let root = workspace
             .root
             .path()
-            .join("crates/maestro-extensions-wasm")
+            .join("crates/maestro-extensions-guest")
             .join(directory);
         std::fs::create_dir(&root).unwrap();
         std::fs::write(
@@ -624,7 +625,7 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
     }
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         r#"wit_bindgen::generate!("fixture");"#,
     );
@@ -632,7 +633,7 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
         &workspace,
         "maestro-extensions-wasmtime",
         "build.rs",
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/fixture" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/fixture" });"#,
     );
     let error = check_workspace(workspace.root.path()).unwrap_err();
     assert!(error.contains("same canonical source"), "{error}");
@@ -640,7 +641,7 @@ fn wit_shorthand_world_uses_manifest_relative_wit_directory() {
         &workspace,
         "maestro-extensions-wasmtime",
         "build.rs",
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/wit" });"#,
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
@@ -691,7 +692,7 @@ fn raw_identifier_declarations_keep_their_owners() {
 #[test]
 fn maestro_conventions_decodes_static_paths_as_rust() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     for (directory, literal) in [
         ("interfaces", r#""\x69nterfaces""#),
         ("interfaces", r#""\u{69}nterfaces""#),
@@ -717,12 +718,12 @@ fn maestro_conventions_decodes_static_paths_as_rust() {
         workspace
             .root
             .path()
-            .join("crates/maestro-extensions-wasm/wit"),
+            .join("crates/maestro-extensions-guest/wit"),
     )
     .unwrap();
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         r#"wit_bindgen::generate!("fixture\0");"#,
     );
@@ -730,7 +731,7 @@ fn maestro_conventions_decodes_static_paths_as_rust() {
         &workspace,
         "maestro-extensions-wasmtime",
         "build.rs",
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/wit" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/wit" });"#,
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
@@ -770,7 +771,7 @@ const NONCANONICAL_WIT: &[(&str, &str)] = &[
         "guest-owned",
     ),
     (
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/second" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/second" });"#,
         "same canonical source",
     ),
     (
@@ -790,7 +791,7 @@ const NONCANONICAL_WIT: &[(&str, &str)] = &[
         "requires review",
     ),
     (
-        r#"wasmtime::component::bindgen!({ path: ["../maestro-extensions-wasm/interfaces", WIT_PATH] });"#,
+        r#"wasmtime::component::bindgen!({ path: ["../maestro-extensions-guest/interfaces", WIT_PATH] });"#,
         "requires review",
     ),
     (
@@ -978,7 +979,7 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
     let member = workspace
         .root
         .path()
-        .join(support::native_path("crates/maestro-extensions-wasm"));
+        .join(support::native_path("crates/maestro-extensions-guest"));
     // Windows refuses quotes and control characters in a name, so those spellings cannot
     // be exercised there.
     match std::fs::create_dir_all(member.join(directory)) {
@@ -991,11 +992,11 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
     }
     source(
         workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         &format!("wit_bindgen::generate!({{ path: {literal} }});"),
     );
-    let host_path = format!("../maestro-extensions-wasm/{directory}");
+    let host_path = format!("../maestro-extensions-guest/{directory}");
     let host = format!("wasmtime::component::bindgen!({{ path: {host_path:?} }});");
     source(workspace, "maestro-extensions-wasmtime", "build.rs", &host);
     assert_eq!(
@@ -1010,7 +1011,7 @@ fn assert_static_path(workspace: &Workspace, directory: &str, literal: &str) {
             "physical\rnewline"
         };
         std::fs::create_dir_all(member.join(other)).unwrap();
-        let wrong = format!("../maestro-extensions-wasm/{other}");
+        let wrong = format!("../maestro-extensions-guest/{other}");
         source(
             workspace,
             "maestro-extensions-wasmtime",
@@ -1086,14 +1087,14 @@ fn wit_ownership_without_both_sides() {
     );
     source(&workspace, "maestro-extensions-wasmtime", "build.rs", "");
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     for declaration in [
         r#"wit_bindgen::generate!({ inline: "package maestro:fixture; world fixture {}" });"#,
         r#"nested! { wit_bindgen::generate!({ inline: "package maestro:fixture; world fixture {}" }); }"#,
     ] {
         source(
             &workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             "src/bindings.rs",
             declaration,
         );
@@ -1108,7 +1109,7 @@ fn wit_ownership_without_both_sides() {
     ] {
         source(
             &workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             "src/bindings.rs",
             &format!("wit_bindgen::generate!({input});"),
         );
@@ -1117,7 +1118,12 @@ fn wit_ownership_without_both_sides() {
                 .unwrap_err()
                 .contains("requires review")
         );
-        source(&workspace, "maestro-extensions-wasm", "src/bindings.rs", "");
+        source(
+            &workspace,
+            "maestro-extensions-guest",
+            "src/bindings.rs",
+            "",
+        );
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     }
 }
@@ -1141,7 +1147,7 @@ fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
         workspace,
         "maestro-extensions-wasmtime",
         "build.rs",
-        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-wasm/interfaces/outside" });"#,
+        r#"wasmtime::component::bindgen!({ path: "../maestro-extensions-guest/interfaces/outside" });"#,
     );
     assert!(
         check_workspace(workspace.root.path())
@@ -1161,12 +1167,12 @@ fn wit_symlink_ownership(workspace: &Workspace, guest: &std::path::Path) {
 fn guest_host_probe_keeps_engine_dependencies_test_only() {
     for library in ["wasmtime", "wasmtime-wasi", "wasmtime-wasi-http"] {
         let workspace = Workspace::new();
-        workspace.foundation(&["maestro-extensions-wasm"]);
+        workspace.foundation(&["maestro-extensions-guest"]);
         workspace.external(library);
         let manifest = workspace
             .root
             .path()
-            .join("crates/maestro-extensions-wasm/Cargo.toml");
+            .join("crates/maestro-extensions-guest/Cargo.toml");
         let baseline = std::fs::read_to_string(&manifest).unwrap();
         for declaration in DECLARATIONS {
             let table = declaration.table;
@@ -1182,7 +1188,7 @@ fn guest_host_probe_keeps_engine_dependencies_test_only() {
             } else {
                 let error = outcome.unwrap_err();
                 assert!(
-                    error.contains("maestro-extensions-wasm") && error.contains(library),
+                    error.contains("maestro-extensions-guest") && error.contains(library),
                     "{library} in {table}: {error}"
                 );
             }
@@ -1193,7 +1199,7 @@ fn guest_host_probe_keeps_engine_dependencies_test_only() {
 #[test]
 fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-tools", "maestro-tui"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-tools", "maestro-tui"]);
     source(
         &workspace,
         "maestro-tools",
@@ -1202,14 +1208,14 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
     );
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/types/tools.rs",
         "pub struct ToolDefinition;",
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/types/tools.rs",
         "pub struct ToolDefinition; pub struct ToolRenderContext; pub struct ToolRenderResultOptions;",
     );
@@ -1221,7 +1227,7 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
     guest_tool_declaration_decoys(&workspace);
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/types/tools.rs",
         "pub struct ToolDefinition; pub type ToolDefinition = ();",
     );
@@ -1232,7 +1238,7 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
     );
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/types/tools.rs",
         "pub struct ToolDefinition;",
     );
@@ -1251,9 +1257,13 @@ fn guest_tool_wrapper_keeps_domain_declaration_ownership() {
 
 fn guest_tool_declaration_decoys(workspace: &Workspace) {
     for (owner, path, name) in [
-        ("maestro-extensions-wasm", "src/lib.rs", "ToolDefinition"),
+        ("maestro-extensions-guest", "src/lib.rs", "ToolDefinition"),
         ("maestro-tui", "src/types/tools.rs", "ToolDefinition"),
-        ("maestro-extensions-wasm", "src/lib.rs", "ToolRenderContext"),
+        (
+            "maestro-extensions-guest",
+            "src/lib.rs",
+            "ToolRenderContext",
+        ),
         (
             "maestro-tui",
             "src/types/tools.rs",
@@ -1269,7 +1279,7 @@ fn guest_tool_declaration_decoys(workspace: &Workspace) {
         source(workspace, owner, path, "");
         source(
             workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             "src/types/tools.rs",
             "pub struct ToolDefinition;",
         );
@@ -1279,11 +1289,11 @@ fn guest_tool_declaration_decoys(workspace: &Workspace) {
 #[test]
 fn wit_async_selector_keeps_static_path_admission() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm"]);
+    workspace.foundation(&["maestro-extensions-guest"]);
     let guest = workspace
         .root
         .path()
-        .join("crates/maestro-extensions-wasm/wit");
+        .join("crates/maestro-extensions-guest/wit");
     std::fs::create_dir(&guest).unwrap();
     std::fs::write(
         guest.join("world.wit"),
@@ -1297,14 +1307,14 @@ fn wit_async_selector_keeps_static_path_admission() {
     });"#;
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         input,
     );
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/bindings.rs",
         &input.replace("path: \"wit\"", "path: env!(\"WIT_PATH\")"),
     );
@@ -1318,7 +1328,7 @@ fn slash_command_records_have_one_shared_owner() {
         assert_single_owner(
             name,
             "maestro-interchange",
-            &["maestro-app", "maestro-extensions-wasm", "maestro-tui"],
+            &["maestro-app", "maestro-extensions-guest", "maestro-tui"],
         );
     }
 }
@@ -1331,7 +1341,7 @@ fn message_render_options_have_one_shared_owner() {
         &[
             "maestro-session",
             "maestro-extensions",
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
         ],
     );
 }
@@ -1352,7 +1362,7 @@ fn session_operation_records_have_one_shared_owner() {
             &[
                 "maestro-session",
                 "maestro-extensions",
-                "maestro-extensions-wasm",
+                "maestro-extensions-guest",
             ],
         );
     }
@@ -1390,7 +1400,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     workspace.foundation(&[
         "maestro-interchange",
         "maestro-models",
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
     ]);
     source(
         &workspace,
@@ -1415,7 +1425,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     );
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/types/actions.rs",
         "pub type ToolInfo = maestro_interchange::tool_info::ToolInfo<String>;",
     );
@@ -1434,7 +1444,7 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     std::fs::remove_file(root.join("crates/maestro-interchange/other.rs")).unwrap();
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/types/actions.rs",
         "pub struct ToolInfo;",
     );
@@ -1500,7 +1510,7 @@ fn shared_event_records_have_one_owner() {
     workspace.foundation(&[
         "maestro-interchange",
         "maestro-models",
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
     ]);
     source(
         &workspace,
@@ -1527,7 +1537,7 @@ fn shared_event_records_have_one_owner() {
     );
     source(
         &workspace,
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "src/types/events.rs",
         "pub type ContextEvent = maestro_interchange::extension_events::ContextEvent<String>;",
     );
@@ -1680,11 +1690,11 @@ fn listener_collection_declarations_stay_with_owner() {
 #[test]
 fn wit_generate_all_keeps_static_path_enforcement() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     let guest = workspace
         .root
         .path()
-        .join("crates/maestro-extensions-wasm/interfaces");
+        .join("crates/maestro-extensions-guest/interfaces");
     std::fs::create_dir(&guest).unwrap();
     std::fs::write(
         guest.join("world.wit"),
@@ -1698,7 +1708,7 @@ fn wit_generate_all_keeps_static_path_enforcement() {
     ] {
         source(
             &workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             "src/bindings.rs",
             input,
         );
@@ -1712,7 +1722,7 @@ fn wit_generate_all_keeps_static_path_enforcement() {
     ] {
         source(
             &workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             "src/bindings.rs",
             input,
         );

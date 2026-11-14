@@ -85,7 +85,7 @@ fn example_index_renders_the_workspace_component_crate() {
     let scratch = Scratch::new().unwrap();
     let root = scratch.path();
     consuming_workspace(root, true);
-    let own = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../crates/maestro-extensions-wasm");
+    let own = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../crates/maestro-extensions-guest");
     let before = fs::read(own.join("Cargo.toml")).unwrap();
 
     assert_eq!(

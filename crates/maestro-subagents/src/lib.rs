@@ -9,7 +9,7 @@ mod runs;
 /// Retained tool presentation.
 mod tui;
 
-use maestro_extensions_wasm::{ExtensionAPI, ExtensionFuture};
+use maestro_extensions_guest::{ExtensionAPI, ExtensionFuture};
 
 /// Registers the authored-agent tool.
 #[must_use]

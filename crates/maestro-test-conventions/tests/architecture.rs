@@ -42,7 +42,7 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
     for name in [
         "maestro-tui",
         "maestro-tui-crossterm",
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "maestro-extensions-wasmtime",
         "maestro-chat",
         "maestro-rpc",
@@ -51,6 +51,25 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
         let workspace = Workspace::new();
         workspace.foundation(&[name]);
         assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+    }
+}
+
+#[test]
+fn member_name_that_extends_another_last_segment_is_rejected() {
+    for (shorter, longer) in [
+        ("maestro-tool", "maestro-tools"),
+        ("maestro-x-wasm", "maestro-x-wasmtime"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.member("shorter", shorter, "");
+        workspace.member("longer", longer, "");
+        workspace.list(&[(shorter, "core"), (longer, "core")]);
+        assert_eq!(
+            check_workspace(workspace.root.path()),
+            Err(format!(
+                "workspace crate name {longer} only extends the last segment of {shorter}"
+            ))
+        );
     }
 }
 
@@ -210,7 +229,7 @@ fn leaf_internal_dependencies_are_rejected() {
         ("maestro-models", "core"),
         ("maestro-resources", "core"),
         ("maestro-settings", "core"),
-        ("maestro-extensions-wasm", "core"),
+        ("maestro-extensions-guest", "core"),
         ("maestro-test-conventions", "dedicated"),
     ] {
         let workspace = Workspace::new();
@@ -1913,11 +1932,11 @@ fn terminal_example_brand_edge_is_development_only() {
 
 #[test]
 fn guest_path_edges_are_refused_in_every_dependency_kind() {
-    const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-wasm -> maestro-path";
+    const DEVELOPMENT: &str = "internal dev dependency requires declared dependency-free test support: maestro-extensions-guest -> maestro-path";
     const PRODUCTION: &str =
-        "forbidden production dependency: maestro-extensions-wasm -> maestro-path";
+        "forbidden production dependency: maestro-extensions-guest -> maestro-path";
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-path"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-path"]);
     for (kind, extra, message) in [
         ("dev-dependencies", "", DEVELOPMENT),
         (
@@ -1939,7 +1958,7 @@ fn guest_path_edges_are_refused_in_every_dependency_kind() {
             PRODUCTION,
         ),
     ] {
-        workspace.member("maestro-extensions-wasm", "maestro-extensions-wasm", &format!("[{kind}]\nutility = {{ package = \"maestro-path\", path = \"../maestro-path\"{extra} }}"));
+        workspace.member("maestro-extensions-guest", "maestro-extensions-guest", &format!("[{kind}]\nutility = {{ package = \"maestro-path\", path = \"../maestro-path\"{extra} }}"));
         assert_eq!(
             check_workspace(workspace.root.path()),
             Err(message.into()),
@@ -2613,11 +2632,11 @@ publication = {{ package = "maestro-lock", path = "../maestro-lock" }}"#
         );
     }
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-lock"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-lock"]);
     for (kind, extra) in DECLARATIONS {
         workspace.member(
-            "maestro-extensions-wasm",
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
+            "maestro-extensions-guest",
             &format!(
                 r#"[{kind}]
 alias = {{ package = "maestro-lock", path = "../maestro-lock"{extra} }}"#
@@ -2625,7 +2644,7 @@ alias = {{ package = "maestro-lock", path = "../maestro-lock"{extra} }}"#
         );
         assert_eq!(
             check_workspace(workspace.root.path()),
-            Err("forbidden production dependency: maestro-extensions-wasm -> maestro-lock".into())
+            Err("forbidden production dependency: maestro-extensions-guest -> maestro-lock".into())
         );
     }
 }
@@ -2716,7 +2735,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
-    "maestro-extensions-wasm",
+    "maestro-extensions-guest",
     "maestro-extensions-wasmtime",
     "maestro-http",
     "maestro-lock",
@@ -3598,12 +3617,12 @@ fn interactive_native_witness_edge_is_native_development_only() {
 #[test]
 fn guest_schema_validation_edge_is_native_development_only() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-models"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-models"]);
     let declaration = "models = { package = \"maestro-models\", path = \"../maestro-models\" }";
     assert_eq!(
         caller_declares(
             &workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             &format!("[{NATIVE_DEV}]\n{declaration}")
         ),
         Ok(())
@@ -3617,14 +3636,14 @@ fn guest_schema_validation_edge_is_native_development_only() {
         assert!(
             caller_declares(
                 &workspace,
-                "maestro-extensions-wasm",
+                "maestro-extensions-guest",
                 &format!("[{table}]\n{declaration}")
             )
             .is_err(),
             "{table}"
         );
     }
-    assert!(caller_declares(&workspace, "maestro-extensions-wasm", &format!("[{NATIVE_DEV}]\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\", optional = true }}")).is_err());
+    assert!(caller_declares(&workspace, "maestro-extensions-guest", &format!("[{NATIVE_DEV}]\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\", optional = true }}")).is_err());
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-interchange", "maestro-models"]);
     assert_eq!(
@@ -3637,13 +3656,13 @@ fn guest_schema_validation_edge_is_native_development_only() {
 #[test]
 fn guest_bus_fixture_listener_edge_is_native_development_only() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-listeners"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-listeners"]);
     let declaration =
         "listeners = { package = \"maestro-listeners\", path = \"../maestro-listeners\" }";
     assert_eq!(
         caller_declares(
             &workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             &format!("[{NATIVE_DEV}]\n{declaration}")
         ),
         Ok(())
@@ -3657,7 +3676,7 @@ fn guest_bus_fixture_listener_edge_is_native_development_only() {
         assert!(
             caller_declares(
                 &workspace,
-                "maestro-extensions-wasm",
+                "maestro-extensions-guest",
                 &format!("[{table}]\n{declaration}")
             )
             .is_err(),
@@ -3700,12 +3719,12 @@ maestro-process = { path = "../maestro-process" }
 #[test]
 fn guest_engine_edge_is_native_development_only() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm", "maestro-extensions-wasmtime"]);
+    workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     let declaration = "engine = { package = \"maestro-extensions-wasmtime\", path = \"../maestro-extensions-wasmtime\" }";
     assert_eq!(
         caller_declares(
             &workspace,
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             &format!("[{NATIVE_DEV}]\n{declaration}")
         ),
         Ok(())
@@ -3719,7 +3738,7 @@ fn guest_engine_edge_is_native_development_only() {
         assert!(
             caller_declares(
                 &workspace,
-                "maestro-extensions-wasm",
+                "maestro-extensions-guest",
                 &format!("[{table}]\n{declaration}")
             )
             .is_err(),

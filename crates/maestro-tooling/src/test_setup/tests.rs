@@ -231,7 +231,7 @@ fn a_consuming_workspace_plans_its_own_components_alone() {
     assert!(
         named
             .iter()
-            .all(|path| !path.contains("maestro-extensions-wasm")
+            .all(|path| !path.contains("maestro-extensions-guest")
                 && !path.contains("maestro-subagents")),
         "{named:?}"
     );
@@ -546,7 +546,7 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
             .map(String::as_str)
             .collect::<Vec<_>>(),
         [
-            "crates/maestro-extensions-wasm",
+            "crates/maestro-extensions-guest",
             "crates/maestro-interchange",
             "crates/maestro-json",
             "crates/maestro-subagents",

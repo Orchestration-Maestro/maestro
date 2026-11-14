@@ -9,7 +9,7 @@
 //! so a generated trait method receives the very handle the linker closures use today.
 
 wasmtime::component::bindgen!({
-    path: "../maestro-extensions-wasm/wit",
+    path: "../maestro-extensions-guest/wit",
     world: "extension",
     imports: { default: trappable },
     with: {

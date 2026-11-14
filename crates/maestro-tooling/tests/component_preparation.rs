@@ -4,7 +4,7 @@ use maestro_test_directory::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use std::{collections::HashMap, fs, path::Path};
 
-#[path = "../../maestro-extensions-wasm/src/tests/build/cargo.rs"]
+#[path = "../../maestro-extensions-guest/src/tests/build/cargo.rs"]
 mod component_build;
 
 #[test]
@@ -12,7 +12,7 @@ fn component_consumers_have_prepared_examples() {
     let workspace = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut prepared = HashMap::new();
     maestro_tooling::example_files::prepare(
-        &[workspace.join("crates/maestro-extensions-wasm/tests/support")],
+        &[workspace.join("crates/maestro-extensions-guest/tests/support")],
         &maestro_tooling::example_files::FIXED_COMPONENTS,
         |name, variable| {
             prepared.insert(name.to_owned(), variable.to_owned());
@@ -21,7 +21,7 @@ fn component_consumers_have_prepared_examples() {
     )
     .unwrap();
     for folder in [
-        "crates/maestro-extensions-wasm/src/tests",
+        "crates/maestro-extensions-guest/src/tests",
         "crates/maestro-extensions-wasmtime/tests",
     ] {
         for file in maestro_tooling::example_files::collect(&workspace.join(folder)).unwrap() {
@@ -87,7 +87,7 @@ fn subagent_component_build_selects_its_package_in_the_shared_batch() {
     assert_eq!(
         selected("--package"),
         [
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             "maestro-subagents",
             "example-components"
         ]

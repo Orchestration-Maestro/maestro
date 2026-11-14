@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use futures_util::{StreamExt, TryStreamExt};
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     AbortSignal, AgentToolResult, AgentToolUpdateCallback, ExtensionAPI, ExtensionContext,
     ExtensionResult, Presence, ToolDefinition, ToolMetadata,
 };

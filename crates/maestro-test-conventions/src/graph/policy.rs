@@ -45,9 +45,9 @@ pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-rpc", "maestro-models-registry"),
     ("maestro-rpc", "maestro-credentials"),
     ("maestro-rpc", "maestro-tui"),
-    ("maestro-extensions-wasm", "maestro-models"),
-    ("maestro-extensions-wasm", "maestro-extensions-wasmtime"),
-    ("maestro-extensions-wasm", "maestro-listeners"),
+    ("maestro-extensions-guest", "maestro-models"),
+    ("maestro-extensions-guest", "maestro-extensions-wasmtime"),
+    ("maestro-extensions-guest", "maestro-listeners"),
     ("maestro-detection", "maestro-text"),
     ("maestro-cli", "maestro-listeners"),
     ("maestro-chat", "maestro-models"),
@@ -90,7 +90,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-daemon",
     "maestro-detection",
     "maestro-extensions",
-    "maestro-extensions-wasm",
+    "maestro-extensions-guest",
     "maestro-extensions-wasmtime",
     "maestro-http",
     "maestro-lock",
@@ -127,7 +127,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-detection",
     "maestro-export",
     "maestro-extensions",
-    "maestro-extensions-wasm",
+    "maestro-extensions-guest",
     "maestro-extensions-wasmtime",
     "maestro-http",
     "maestro-lock",
@@ -214,7 +214,7 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-office"
                 | "maestro-cancellation"
                 | "maestro-interchange"
-                | "maestro-extensions-wasm"
+                | "maestro-extensions-guest"
                 | "maestro-text"
                 | "maestro-json"
                 | "maestro-brand"
