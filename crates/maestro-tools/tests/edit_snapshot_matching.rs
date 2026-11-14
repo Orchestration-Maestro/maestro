@@ -222,6 +222,21 @@ fn snapshot_corrected_matching_keeps_shared_base_and_error_order() {
 }
 
 #[test]
+fn fuzzy_edit_keeps_the_lines_no_match_reaches() {
+    let content = "keep \u{201c}this\u{201d}  \nfix \u{201c}that\u{201d}\t\nlast\u{a0}\n";
+    let edits = [Edit {
+        old_text: "fix \"that\"".into(),
+        new_text: "done".into(),
+    }];
+    let done = apply_edits_to_normalized_content(content, &edits, "note.txt").unwrap();
+    assert_eq!(done.base_content, content);
+    assert_eq!(
+        done.new_content,
+        "keep \u{201c}this\u{201d}  \ndone\nlast\u{a0}\n"
+    );
+}
+
+#[test]
 fn every_recorded_group_has_a_test_and_no_query_repeats() {
     let source = include_str!("edit_snapshot_matching.rs");
     let rows = groups();

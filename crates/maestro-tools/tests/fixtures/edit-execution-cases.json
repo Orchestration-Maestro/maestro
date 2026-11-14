@@ -1715,7 +1715,7 @@
               }
             ],
             "details": {
-              "diff": "-1 line one\n-2 line two\n+1 replaced\n 3 line three",
+              "diff": "-1 line one   \n-2 line two  \n+1 replaced\n 3 line three",
               "firstChangedLine": 1
             }
           },
@@ -1743,7 +1743,7 @@
               }
             ],
             "details": {
-              "diff": "-1 你好,世界\n-2 你好(世界)\n+1 你好，maestro\n+2 你好(maestro)",
+              "diff": "-1 你好，世界\n-2 你好（世界）\n+1 你好，maestro\n+2 你好(maestro)",
               "firstChangedLine": 1
             }
           },
@@ -1771,7 +1771,7 @@
               }
             ],
             "details": {
-              "diff": "-1 ABC123\n-2 café\n+1 XYZ789\n+2 coffee",
+              "diff": "-1 ＡＢＣ１２３\n-2 café\n+1 XYZ789\n+2 coffee",
               "firstChangedLine": 1
             }
           },
@@ -1799,7 +1799,7 @@
               }
             ],
             "details": {
-              "diff": "-1 console.log('hello');\n+1 console.log('world');",
+              "diff": "-1 console.log(‘hello’);\n+1 console.log('world');",
               "firstChangedLine": 1
             }
           },
@@ -1827,7 +1827,7 @@
               }
             ],
             "details": {
-              "diff": "-1 const msg = \"Hello World\";\n+1 const msg = \"Goodbye\";",
+              "diff": "-1 const msg = “Hello World”;\n+1 const msg = \"Goodbye\";",
               "firstChangedLine": 1
             }
           },
@@ -1855,7 +1855,7 @@
               }
             ],
             "details": {
-              "diff": "-1 range: 1-5\n-2 break-here\n+1 range: 10-50\n+2 break--here",
+              "diff": "-1 range: 1–5\n-2 break—here\n+1 range: 10-50\n+2 break--here",
               "firstChangedLine": 1
             }
           },
@@ -1883,7 +1883,7 @@
               }
             ],
             "details": {
-              "diff": "-1 hello world\n+1 hello universe",
+              "diff": "-1 hello world\n+1 hello universe",
               "firstChangedLine": 1
             }
           },
@@ -1915,7 +1915,7 @@
               }
             ],
             "details": {
-              "diff": "-1 console.log('hello');\n-2 hello world\n+1 console.log('world');\n+2 hello universe",
+              "diff": "-1 console.log(‘hello’);\n-2 hello world\n+1 console.log('world');\n+2 hello universe",
               "firstChangedLine": 1
             }
           },
@@ -1943,11 +1943,11 @@
               }
             ],
             "details": {
-              "diff": "-1 \"hello\"\n+1 world\n 2 other",
+              "diff": "-1 “hello”  \n+1 world\n 2 other  ",
               "firstChangedLine": 1
             }
           },
-          "bytes": [119, 111, 114, 108, 100, 10, 111, 116, 104, 101, 114, 10]
+          "bytes": [119, 111, 114, 108, 100, 10, 111, 116, 104, 101, 114, 32, 32, 10]
         }
       },
       {
@@ -1971,7 +1971,7 @@
               }
             ],
             "details": {
-              "diff": "-1 a\n+1 A\n 2 other",
+              "diff": "-1 a﻿\n+1 A\n 2 other",
               "firstChangedLine": 1
             }
           },
@@ -2179,7 +2179,7 @@
               "firstChangedLine": 2
             }
           },
-          "bytes": [102, 105, 114, 115, 116, 10, 83, 69, 67, 79, 78, 68, 10, 116, 104, 105, 114, 100, 10]
+          "bytes": [102, 105, 114, 115, 116, 10, 83, 69, 67, 79, 78, 68, 10, 116, 104, 105, 114, 100, 13]
         }
       },
       {
@@ -2207,7 +2207,7 @@
               "firstChangedLine": 2
             }
           },
-          "bytes": [102, 105, 114, 115, 116, 13, 10, 83, 69, 67, 79, 78, 68, 13, 10, 116, 104, 105, 114, 100, 13, 10]
+          "bytes": [102, 105, 114, 115, 116, 13, 10, 83, 69, 67, 79, 78, 68, 13, 10, 116, 104, 105, 114, 100, 13]
         }
       },
       {
@@ -2235,7 +2235,7 @@
               "firstChangedLine": 2
             }
           },
-          "bytes": [102, 105, 114, 115, 116, 10, 83, 69, 67, 79, 78, 68]
+          "bytes": [102, 105, 114, 115, 116, 13, 83, 69, 67, 79, 78, 68]
         }
       },
       {
@@ -2295,7 +2295,7 @@
         }
       }
     ],
-    "edit_execution_decodes_bytes_lossily": [
+    "edit_execution_refuses_bytes_that_are_not_utf8": [
       {
         "input": {
           "path": "file.txt",
@@ -2308,20 +2308,8 @@
           ]
         },
         "expected": {
-          "ok": true,
-          "result": {
-            "content": [
-              {
-                "type": "text",
-                "text": "Successfully replaced 1 block(s) in file.txt."
-              }
-            ],
-            "details": {
-              "diff": "-1 a��(\n+1 b��(",
-              "firstChangedLine": 1
-            }
-          },
-          "bytes": [98, 239, 191, 189, 239, 191, 189, 40, 10]
+          "ok": false,
+          "bytes": [97, 255, 195, 40, 10]
         }
       }
     ],

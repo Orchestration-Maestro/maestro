@@ -43,8 +43,8 @@ pub struct SessionManager {
     session_dir: String,
     /// Whether native publication is enabled.
     persist: bool,
-    /// Whether the active history has already been published.
-    flushed: bool,
+    /// Leading retained records the session file holds; zero until the first save.
+    saved: usize,
     /// Selected native filename, including before publication.
     session_file: Option<String>,
     /// Current session identity.
@@ -92,7 +92,7 @@ impl SessionManager {
             cwd,
             session_dir,
             persist,
-            flushed: false,
+            saved: 0,
             session_file: None,
             session_id: String::new(),
             file_entries: Vec::new(),
@@ -110,7 +110,7 @@ impl SessionManager {
         if self.persist {
             self.session_file = Some(maestro_path::join(&[&self.session_dir, &file]));
         }
-        self.flushed = false;
+        self.saved = 0;
         self.file_entries = vec![header];
         self.by_id.clear();
         self.labels.clear();

@@ -244,13 +244,13 @@ fn check(name: &str) {
         vec![
             "preview_accepts_readable_nonwritable_files",
             "preview_applies_disjoint_edits_to_original_snapshot",
-            "preview_decodes_invalid_utf8_lossily",
             "preview_does_not_try_read_tool_filename_fallbacks",
             "preview_inherits_corrected_matching",
             "preview_large_edits_keep_numbered_hunks",
             "preview_normalizes_bom_newlines_without_writing",
             "preview_path_expansion_preserves_authored_error_path",
             "preview_preserves_match_failures_and_precedence",
+            "preview_refuses_invalid_utf8",
             "preview_reports_native_access_failures",
             "preview_reports_read_failure_after_successful_access",
             "preview_uses_selected_fuzzy_base",
@@ -304,8 +304,8 @@ fn preview_accepts_readable_nonwritable_files() {
 }
 
 #[test]
-fn preview_decodes_invalid_utf8_lossily() {
-    check("preview_decodes_invalid_utf8_lossily");
+fn preview_refuses_invalid_utf8() {
+    check("preview_refuses_invalid_utf8");
 }
 
 #[cfg(unix)]
