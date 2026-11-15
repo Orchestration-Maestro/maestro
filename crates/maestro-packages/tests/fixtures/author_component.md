@@ -4,7 +4,8 @@ This is the compiled [author component example](../../../maestro-extensions-gues
 using its existing [extension body](../../../maestro-extensions-guest/src/tests/author.rs).
 Discovery tests copy this one artifact; they do not compile or activate it.
 
-- Source revision: `b6b1f67edb5e2042a3103e270544bc2ff22bc860`.
+- Source revision: `b6b1f67edb5e2042a3103e270544bc2ff22bc860`. The crate was renamed
+  after that revision, so the command below applies from the rename onwards.
 - Toolchain: Rust `1.98.0` (`88d9e12ae`), target `wasm32-wasip2`.
 - Size: 2,318,584 bytes.
 - SHA-256: `953874aaaf935de05b63952780774ce97afc45ffd6cd0fbb3752a211b80812c1`.

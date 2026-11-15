@@ -9,21 +9,20 @@ use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOpti
 use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::{cell::RefCell, collections::HashSet, fs, rc::Rc};
+use std::{cell::RefCell, collections::HashSet, fmt::Write, fs, rc::Rc};
 
 /// The discovery fixture retains the digest recorded for its compiled artifact.
 #[test]
 fn author_component_matches_recorded_digest() {
     let bytes = fs::read("tests/fixtures/author_component.wasm").unwrap();
-    let digest = Sha256::digest(bytes);
+    let mut recorded = String::new();
+    for byte in Sha256::digest(bytes) {
+        write!(recorded, "{byte:02x}").unwrap();
+    }
 
     assert_eq!(
-        digest.as_slice(),
-        [
-            0x95, 0x38, 0x74, 0xaa, 0xaf, 0x93, 0x5d, 0xe0, 0x5b, 0x63, 0x95, 0x27, 0x80, 0x77,
-            0x4c, 0xe9, 0x7a, 0xfc, 0x45, 0xff, 0xd6, 0xcd, 0x0f, 0xbb, 0x37, 0x52, 0xa2, 0x11,
-            0xb8, 0x08, 0x12, 0xc1,
-        ]
+        recorded,
+        "953874aaaf935de05b63952780774ce97afc45ffd6cd0fbb3752a211b80812c1"
     );
 }
 
