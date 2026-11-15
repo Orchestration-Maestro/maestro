@@ -105,7 +105,7 @@ with string-valued classes.
 The binary composition root, conventions checker,
 checked test-process owner, disposable test-directory owner, test tracing owner,
 portable fixture owner, repository tooling and the feature unifier
-(`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
+(`maestro-feature-unifier`) are `dedicated`; all product libraries and adapters are `core`.
 Browser qualification (`maestro-test-browser`) is dedicated, unpublished and
 depends on tooling for preparation. Hakari excludes its test-only browser stack
 from traversal. Repository tooling (`maestro-tooling`) is development-only, never
@@ -249,7 +249,7 @@ shared first component. Empty tails still permit component traversal. Without a
 shared base the normalized destination is returned: `D:a` to `D:b` under a UNC
 working directory with no drive entries yields `D:b`, not `..\b`.
 
-`maestro-dependencies` is the other named exception: every member may declare it,
+`maestro-feature-unifier` is the other named exception: every member may declare it,
 and only as a non-optional normal dependency under
 `cfg(not(target_arch = "wasm32"))`. It has no internal dependencies, is not listed
 in the specification table, cannot satisfy a required direct dependency and is the

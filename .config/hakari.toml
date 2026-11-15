@@ -1,4 +1,4 @@
-hakari-package = "maestro-dependencies"
+hakari-package = "maestro-feature-unifier"
 dep-format-version = "4"
 workspace-hack-line-style = "workspace-dotted"
 resolver = "3"

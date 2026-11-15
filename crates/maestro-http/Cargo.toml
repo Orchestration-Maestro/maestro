@@ -36,7 +36,7 @@ wasm-bindgen = "=0.2.129"
 wasm-bindgen-futures = "=0.4.79"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 maestro-path = { path = "../maestro-path" }
 regex = "=1.13.1"
 regress = "=0.12.0"

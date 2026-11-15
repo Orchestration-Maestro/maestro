@@ -19,7 +19,7 @@ maestro-markdown = { path = "../maestro-markdown" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-path = { path = "../maestro-path" }
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 
 [[test]]
 name = "integration"

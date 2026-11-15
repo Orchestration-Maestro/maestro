@@ -2140,7 +2140,7 @@ fn complete_permitted_graph_is_acyclic() {
 }
 
 /// The feature unifier's package name.
-const UNIFIER: &str = "maestro-dependencies";
+const UNIFIER: &str = "maestro-feature-unifier";
 
 /// The only target table that may declare the unifier.
 const NATIVE: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies";

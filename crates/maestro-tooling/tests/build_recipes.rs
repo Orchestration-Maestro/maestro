@@ -991,12 +991,12 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     );
     let contents = contents.replace("Path::new(env!(\"CARGO\"))", "Path::new(\"bin/cargo\")");
     fs::write(main, contents).unwrap();
-    let unifier = workspace.path().join("crates/maestro-dependencies");
+    let unifier = workspace.path().join("crates/maestro-feature-unifier");
     fs::create_dir_all(unifier.join("src")).unwrap();
     fs::write(unifier.join("src/lib.rs"), "").unwrap();
     fs::write(
         unifier.join("Cargo.toml"),
-        "[package]\nname = 'maestro-dependencies'\nversion = '0.1.0'\nedition = '2024'\n[lints]\nworkspace = true\n",
+        "[package]\nname = 'maestro-feature-unifier'\nversion = '0.1.0'\nedition = '2024'\n[lints]\nworkspace = true\n",
     )
     .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();

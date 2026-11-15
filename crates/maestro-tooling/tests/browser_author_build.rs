@@ -1742,7 +1742,7 @@ fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
     browser_support::bootstrap_source(&browser);
     let manifest = fs::read(browser.fixture("Cargo.toml")).unwrap();
     let lock = fs::read(browser.fixture("Cargo.lock")).unwrap();
-    let unifier = browser.path("crates/maestro-dependencies");
+    let unifier = browser.path("crates/maestro-feature-unifier");
     let original = fs::canonicalize(&unifier).unwrap();
     fs::remove_file(&unifier).unwrap();
     assert!(

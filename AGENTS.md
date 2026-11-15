@@ -187,7 +187,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   conventions checker may consume its code-block source ranges for documentation
   checks. Terminal normalization and formatting remain in the toolkit.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
-- `maestro-dependencies` is the generated, API-free feature unifier (`cargo hakari`),
+- `maestro-feature-unifier` is the generated, API-free feature unifier (`cargo hakari`),
   dedicated, unpublished and without workspace dependencies. Members declare it only
   as a non-optional normal dependency under `cfg(not(target_arch = "wasm32"))`; it
   never supplies a required edge. The crate is exempt from member `serde_json`
@@ -323,7 +323,7 @@ through declared and host-resolved Cargo metadata, including optional, target an
 build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
-repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
+repository tooling and the feature unifier (`maestro-feature-unifier`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional `maestro-path` edge and the unifier. Sparse workspaces need
 no placeholder crates. Chat, CLI and RPC require the application edge, web declares none, and every frontend declares only the

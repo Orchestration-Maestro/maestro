@@ -116,7 +116,7 @@ mod tracked_sizes;
 /// fixed order is reported. Legal included fragments are counted without
 /// requiring a full-module parse; macros are not expanded.
 ///
-/// The feature unifier `maestro-dependencies` is dedicated, has no workspace dependencies and may be
+/// The feature unifier `maestro-feature-unifier` is dedicated, has no workspace dependencies and may be
 /// declared by other members only as a non-optional normal dependency under
 /// `cfg(not(target_arch = "wasm32"))`; it never satisfies a required direct dependency.
 ///

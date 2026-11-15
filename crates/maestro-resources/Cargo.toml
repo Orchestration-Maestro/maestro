@@ -22,7 +22,7 @@ serde_json = { workspace = true, features = ["raw_value"] }
 serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 
 [[test]]
 name = "integration"

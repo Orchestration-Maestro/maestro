@@ -25,7 +25,7 @@ zip = { version = "=9.0.5", default-features = false, features = ["deflate-flate
 serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 
 [lints]
 workspace = true

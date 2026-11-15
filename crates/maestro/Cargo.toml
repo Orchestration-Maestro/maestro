@@ -29,7 +29,7 @@ maestro-process = { path = "../maestro-process" }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "io-std", "io-util", "sync", "time", "net", "signal"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-extensions-wasmtime = { path = "../maestro-extensions-wasmtime", features = ["test-support"] }

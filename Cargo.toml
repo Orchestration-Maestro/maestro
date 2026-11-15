@@ -26,7 +26,7 @@ regex-syntax = { version = "=0.8.11", default-features = false, features = ["std
 maestro-text = { path = "crates/maestro-text" }
 maestro-listeners = { path = "crates/maestro-listeners" }
 interprocess = { version = "=2.4.2", default-features = false }
-maestro-dependencies = { path = "crates/maestro-dependencies" }
+maestro-feature-unifier = { path = "crates/maestro-feature-unifier" }
 maestro-test-process = { path = "crates/maestro-test-process" }
 maestro-test-fixtures = { path = "crates/maestro-test-fixtures" }
 maestro-test-directory = { path = "crates/maestro-test-directory" }

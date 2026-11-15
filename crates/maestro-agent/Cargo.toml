@@ -23,7 +23,7 @@ maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "macros", "net", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 
 [lints]
 workspace = true

@@ -184,7 +184,7 @@ fn production_temporary_directory_is_accepted() {
 #[test]
 fn every_member_outside_the_owner_is_checked() {
     check(
-        "maestro-dependencies",
+        "maestro-feature-unifier",
         "tests/generated_entries.rs",
         SEEDED,
         &[4],

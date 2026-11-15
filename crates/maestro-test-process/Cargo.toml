@@ -18,7 +18,7 @@ name = "integration"
 path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 maestro-test-directory.workspace = true
 serde_json.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt"] }
