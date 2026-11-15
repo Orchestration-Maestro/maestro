@@ -21,6 +21,27 @@ const BUILT_INS: [&str; 3] = [
     "openai-codex: ChatGPT Plus/Pro (Codex Subscription)",
 ];
 
+/// The API protocols in their built-in registration positions.
+const APIS: [&str; 9] = [
+    "anthropic-messages",
+    "openai-completions",
+    "mistral-conversations",
+    "openai-responses",
+    "azure-openai-responses",
+    "openai-codex-responses",
+    "google-generative-ai",
+    "google-vertex",
+    "bedrock-converse-stream",
+];
+
+/// Snapshot API membership in dispatch order.
+fn api_ids() -> Vec<String> {
+    maestro_models::get_api_providers()
+        .into_iter()
+        .map(|provider| provider.api)
+        .collect()
+}
+
 /// Start `mode` through the public entry and wait for its presentation to end.
 async fn compose(e: &Entry, local: &Rc<LocalSet>, mode: &str) {
     let status = match mode {
@@ -65,6 +86,7 @@ fn built_in_login_providers_hold_their_positions_after_each_mode_starts() {
             compose(&Entry::new(), &local, mode).await;
 
             assert_eq!(listed(), BUILT_INS, "{mode}");
+            assert_eq!(api_ids(), APIS, "{mode}");
         },
     );
 }
@@ -78,6 +100,19 @@ fn registrations_made_before_startup_keep_the_built_in_positions() {
         |local, mode| async move {
             register_oauth_provider(Arc::new(Named("custom-login", "Custom")));
             register_oauth_provider(Arc::new(Named("github-copilot", "Replacement")));
+            let custom = maestro_models::register_faux_provider(
+                maestro_models::RegisterFauxProviderOptions {
+                    api: Some("custom-api".into()),
+                    ..Default::default()
+                },
+            );
+            let replacement = maestro_models::register_faux_provider(
+                maestro_models::RegisterFauxProviderOptions {
+                    api: Some("anthropic-messages".into()),
+                    ..Default::default()
+                },
+            );
+            let selected = maestro_models::get_api_provider("anthropic-messages").unwrap();
 
             compose(&Entry::new(), &local, mode).await;
 
@@ -88,6 +123,24 @@ fn registrations_made_before_startup_keep_the_built_in_positions() {
                 "custom-login: Custom",
             ];
             assert_eq!(listed(), shadowed, "{mode}");
+            let mut expected = APIS.map(str::to_owned).to_vec();
+            expected.push("custom-api".into());
+            assert_eq!(api_ids(), expected, "{mode}");
+            assert!(Arc::ptr_eq(
+                &selected.stream,
+                &maestro_models::get_api_provider("anthropic-messages")
+                    .unwrap()
+                    .stream
+            ));
+            replacement.unregister();
+            custom.unregister();
+            assert_eq!(api_ids(), APIS, "{mode}: removed");
+            assert!(!Arc::ptr_eq(
+                &selected.stream,
+                &maestro_models::get_api_provider("anthropic-messages")
+                    .unwrap()
+                    .stream
+            ));
             unregister_oauth_provider("github-copilot");
             unregister_oauth_provider("custom-login");
             assert_eq!(listed(), BUILT_INS, "{mode}: removed");
@@ -106,9 +159,18 @@ fn resetting_after_startup_leaves_only_the_built_in_login_providers() {
             compose(&Entry::new(), &local, mode).await;
             register_oauth_provider(Arc::new(Named("custom-login", "Custom")));
 
+            let custom = maestro_models::register_faux_provider(
+                maestro_models::RegisterFauxProviderOptions {
+                    api: Some("custom-reset".into()),
+                    ..Default::default()
+                },
+            );
             reset_oauth_providers();
+            maestro_models::reset_api_providers();
 
             assert_eq!(listed(), BUILT_INS);
+            assert_eq!(api_ids(), APIS);
+            custom.unregister();
         },
     );
 }
