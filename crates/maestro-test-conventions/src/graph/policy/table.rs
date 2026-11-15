@@ -182,7 +182,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         ],
     ),
     (
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         &["maestro-interchange", "maestro-json", "maestro-text"],
     ),
     (

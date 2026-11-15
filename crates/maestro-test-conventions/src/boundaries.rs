@@ -28,7 +28,7 @@ mod terminal_detection;
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let guest = members
         .iter()
-        .find(|member| member.name == "maestro-extensions-wasm")
+        .find(|member| member.name == "maestro-extensions-guest")
         .map(|member| {
             maestro_path::fs::canonicalize(&member.directory)
                 .map_err(|error| format!("cannot resolve guest member: {error}"))
@@ -268,11 +268,11 @@ fn check_declarations(
             continue;
         };
         let guest_tool = matches!(name.as_str(), "ToolDefinition" | "ToolRenderContext")
-            && member.name == "maestro-extensions-wasm"
+            && member.name == "maestro-extensions-guest"
             && source.path == member.directory.join("src/types/tools.rs");
         let guest_metadata = name == "ToolInfo"
             && kind == "type"
-            && member.name == "maestro-extensions-wasm"
+            && member.name == "maestro-extensions-guest"
             && source.path == member.directory.join("src/types/actions.rs");
         let extension_tool = name == "ToolDefinition"
             && kind == "type"

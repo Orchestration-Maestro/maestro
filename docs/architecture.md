@@ -9,7 +9,7 @@ conventions crate. `src/graph/policy.rs` keeps the rule logic and re-exports
 the rows of the specification's crate table and the crate names of `wasm_crates`
 and each route of `test_inputs` in `.github/ci.toml`. The path patterns of
 `test_prepare_inputs` sort as text instead, so
-`crates/maestro-extensions-wasm/**` comes before
+`crates/maestro-extensions-guest/**` comes before
 `crates/maestro-extensions/**`. A crate step then writes its line where it
 sorts instead of at a position every other step shares. `check_workspace`
 reports a row or entry that is out of that order, and a CI entry written on its
@@ -50,6 +50,11 @@ Application-owned modules may group named records and operations.
 Dependency descriptions here state domain edges, subject to the
 [native feature-unifier exception](specs/maestro-port.md#native-feature-unifier),
 including leaves and exact sets. The unifier itself has no workspace dependencies.
+
+The checker rejects workspace member names that differ only by extending the final
+hyphen-separated segment, such as `maestro-tool` and `maestro-tools`. Its error
+reports both names. A separate role segment, as in `maestro-tui` and
+`maestro-tui-crossterm`, remains valid.
 
 The extension domain may depend directly on resources. The crates that list
 `maestro-interchange` in the specification table may depend on it; its job is to define the
@@ -136,7 +141,7 @@ that read the built-in login providers, the native-only `maestro-detection` to
 through the scripted provider, the native-only `maestro-chat` to `maestro-models` edge for interactive-mode
 tests that drive a real session through the scripted provider, the native-only
 `maestro-cli` to `maestro-listeners` development edge for the controlled print
-adapter, the native-only `maestro-extensions-wasm` to `maestro-listeners`
+adapter, the native-only `maestro-extensions-guest` to `maestro-listeners`
 development edge for the controlled guest bus, the native-only `maestro` to
 `maestro-lock` development edge that serializes the executable's file-trigger
 test on the shared host fixture, and the native development edges from the
@@ -323,10 +328,10 @@ and physical CRLF is converted to LF before native Rust parsing. Parsing, commen
 lexing, production line counts and WIT literals share that canonical text.
 Declarations are recognised from native tokens, so macro templates and every item
 shape are covered without expansion; attribute payloads are excluded.
-Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/render-context/result-option types
-belong to tools, except the guest author definition in
-`maestro-extensions-wasm/src/types/tools.rs`; application selector types and selector
-modules belong to chat.
+Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition and render-context types
+belong to tools, except their guest author declarations in
+`maestro-extensions-guest/src/types/tools.rs`. Render-result options belong to
+`maestro-interchange`; application selector types and selector modules belong to chat.
 The four message delivery records belong to `maestro-interchange`, and so do
 `ForkPosition` and `NavigateTreeOptions`. Duplicate declarations in these
 owners are rejected. Qualified uses and re-exports are not declarations. Duplicate tool declarations
@@ -541,7 +546,7 @@ test layouts, items inside an inherited `cfg(test)` context and the
 `maestro-test-*` crates.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide. The protected `module_name_repetitions` lint rejects an item whose name starts or ends with its containing module's name; rename the module and keep the exported item name.
-Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in the generated bindings at `maestro-extensions-wasm/src/bindings.rs` and `maestro-extensions-wasmtime/src/bindings.rs`. Line documentation in those files is still checked for repetition; allowed block comments end the comparison run.
+Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in the generated bindings at `maestro-extensions-guest/src/bindings.rs` and `maestro-extensions-wasmtime/src/bindings.rs`. Line documentation in those files is still checked for repetition; allowed block comments end the comparison run.
 Conventions reject consecutive identical nonempty trimmed physical documentation lines within one contiguous run of same-style line documentation comments, retaining list and quote markers. An attribute, an ordinary comment or code ends the run. All Markdown code blocks (including nested list and block-quote fences) reset comparison and are ignored. Blank documentation lines are retained and do not reset comparison; owner/style changes do. Headings, rules and HTML lines are compared in their physical order like other non-code lines.
 Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or be below a `tests` directory. A module named `tests` must carry `#[cfg(test)]`, every `#[cfg(test)]` module must be named `tests`, and test module declarations cannot carry `#[path]`. These layout conventions support production line counting; module declarations are validated throughout the syntax tree.
 Duplicate assertions are a review judgement.

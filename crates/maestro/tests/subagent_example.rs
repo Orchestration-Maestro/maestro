@@ -13,7 +13,7 @@ use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{path::Path, rc::Rc, sync::OnceLock};
 
-#[path = "../../maestro-extensions-wasm/src/tests/build/cargo.rs"]
+#[path = "../../maestro-extensions-guest/src/tests/build/cargo.rs"]
 mod component_build;
 
 /// Selects the setup artifact, retaining a direct-Cargo fallback outside nextest.

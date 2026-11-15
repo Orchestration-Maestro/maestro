@@ -69,7 +69,7 @@ Clippy lints are errors; production code may not use `unwrap`, `expect` or
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Clippy also rejects the ambiguous JSON map `remove`; see
 [quality checks](docs/architecture.md#quality-checks). Quality-lint allowances are forbidden apart from the generated-binding exception below.
-`maestro-extensions-wasm` and `maestro-extensions-wasmtime` each declare their own lint table
+`maestro-extensions-guest` and `maestro-extensions-wasmtime` each declare their own lint table
 instead of inheriting the workspace's: the same table with `pedantic`, `too_many_arguments` and
 `excessive_nesting` at `deny` rather than `forbid`, because the bindings each generates from the
 interface files cannot compile under `forbid`. A crate's generated `src/bindings.rs` alone may
@@ -127,7 +127,7 @@ Every crate root needs `//!` docs and every item, private included, needs
 `///` docs, enforced by Clippy.
 `just check` denies rustdoc warnings and missing documentation.
 Hand-written documentation uses only `///` and `//!`; generated guest bindings in
-`maestro-extensions-wasm/src/bindings.rs` may use block doc comments. Their line
+`maestro-extensions-guest/src/bindings.rs` may use block doc comments. Their line
 documentation is still checked for repetition; block comments end the comparison run.
 
 All Rust comments describe the code, not planning material. Never include
@@ -346,11 +346,11 @@ through the scripted provider, the native-only, non-optional `maestro-chat`
 to `maestro-models` edge for interactive-mode tests that drive a real session
 through the scripted provider, the native-only, non-optional `maestro-cli`
 to `maestro-listeners` development edge for the controlled print adapter,
-the native-only, non-optional `maestro-extensions-wasm` to `maestro-models`
+the native-only, non-optional `maestro-extensions-guest` to `maestro-models`
 development edge for component tests of the native schema validator,
-the native-only, non-optional `maestro-extensions-wasm` to `maestro-extensions-wasmtime`
+the native-only, non-optional `maestro-extensions-guest` to `maestro-extensions-wasmtime`
 development edge for the product's one engine configuration, the native-only,
-non-optional `maestro-extensions-wasm` to `maestro-listeners` development edge for the
+non-optional `maestro-extensions-guest` to `maestro-listeners` development edge for the
 controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
 executable's file-trigger test on the shared host fixture,

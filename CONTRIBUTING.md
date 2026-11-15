@@ -72,7 +72,7 @@ Rust file. Test directories, `tests.rs` and trailing test modules do not count
 against file length. Pedantic Clippy lints are errors; production code may not
 use `unwrap`, `expect` or `panic!`. Unsafe code is forbidden. Thresholds live in `clippy.toml`; levels live in
 `[workspace.lints]` and crates inherit them with `[lints] workspace = true`, except
-for the named `maestro-extensions-wasm` binding
+for the named `maestro-extensions-guest` binding
 exception documented in [quality checks](docs/architecture.md#quality-checks). The workspace forbids
 protected quality lints, so the compiler rejects their `allow` and `expect`
 attributes, including attributes emitted by macros.

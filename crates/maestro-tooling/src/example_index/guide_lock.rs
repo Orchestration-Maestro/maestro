@@ -35,7 +35,7 @@ pub(super) fn refresh(
     let fixture = crate_root.join(GUIDE);
     let project = Project::new()?;
     let manifest = fs::read_to_string(fixture.join("Cargo.toml.in"))?.replace(
-        "\"../maestro/crates/maestro-extensions-wasm\"",
+        "\"../maestro/crates/maestro-extensions-guest\"",
         &serde_json::to_string(&guest)?,
     );
     fs::write(project.0.join("Cargo.toml"), manifest)?;

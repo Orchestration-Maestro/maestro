@@ -18,7 +18,7 @@ const README: [&str; 2] = ["<!-- example-index:start -->", "<!-- example-index:e
 /// Markers around the manifest's example targets.
 const MANIFEST: [&str; 2] = [workspace::REGION_START, workspace::REGION_END];
 /// The crate whose examples the guide project builds on.
-const GUEST: &str = "maestro-extensions-wasm";
+const GUEST: &str = "maestro-extensions-guest";
 /// The crate's native preparation program, the one crate example that is not a component.
 const PREPARATION: &str = "prepare_author_component";
 /// One example target of the component crate.

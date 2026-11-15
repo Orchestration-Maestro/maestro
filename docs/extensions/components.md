@@ -8,7 +8,7 @@ component-enabled host and an interactive UI are separate requirements.
 
 This guide connects the native [component contract](../terminal/components.md)
 to the [guest UI](guest_ui.md). Extension authors use
-`maestro-extensions-wasm`; native toolkit implementations use `maestro-tui`.
+`maestro-extensions-guest`; native toolkit implementations use `maestro-tui`.
 Their Rust interfaces differ. Do not import the native toolkit into a guest
 extension.
 
@@ -82,7 +82,7 @@ wrappers forward `Focusable` getters and setters to the intended editor. Emit
 the writer removes it and uses its location for the hardware cursor, subject to
 the writer's [cursor policy](../terminal/rendering.md#defaults).
 
-The existing [focus author fixture](../../crates/maestro-extensions-wasm/src/tests/focus_author.rs)
+The existing [focus author fixture](../../crates/maestro-extensions-guest/src/tests/focus_author.rs)
 shows guest focus and editor conversions. Its tests check setters and markers,
 not physical input-method placement on a real terminal.
 
@@ -233,7 +233,7 @@ does not automatically append the default footer's fields to it.
 ### Wrap the application editor
 
 Use the tested `Modal` wrapper and `custom` factory in the
-[editor factory fixture](../../crates/maestro-extensions-wasm/src/tests/editor_factory_author.rs)
+[editor factory fixture](../../crates/maestro-extensions-guest/src/tests/editor_factory_author.rs)
 as the minimal delegation recipe:
 
 1. Construct `CustomEditor::new` from the factory's writer, editor theme,
@@ -265,7 +265,7 @@ required. The tests of the shipped example extensions run in maestro-packages.
 ```sh
 just prepare-tests
 cargo nextest run --locked \
-  -p maestro-extensions-wasm --lib
+  -p maestro-extensions-guest --lib
 cargo test --locked \
   -p maestro-tui --doc
 ```

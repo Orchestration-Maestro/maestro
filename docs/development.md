@@ -132,8 +132,8 @@ commands from the checkout using the pinned toolchain and checked-in lock:
 ```powershell
 just prepare-tests
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
-cargo nextest run --locked -p maestro-extensions-wasm --no-fail-fast
-cargo nextest run --locked -p maestro-extensions-wasm --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
+cargo nextest run --locked -p maestro-extensions-guest --no-fail-fast
+cargo nextest run --locked -p maestro-extensions-guest --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
 ```
 
 ## Platform test qualification
@@ -909,7 +909,7 @@ dependencies; this map points to the implementations and their usage guides.
 | Interactive chat presentation | [`maestro-chat/src`](../crates/maestro-chat/src/lib.rs) | [Chat](chat/interactive-mode.md) |
 | Native terminal effects | [`maestro-tui-crossterm/src`](../crates/maestro-tui-crossterm/src/lib.rs) | [Native terminal](terminal/native-terminal.md) |
 | RPC mode | [`maestro-rpc/src`](../crates/maestro-rpc/src/lib.rs): the session records, the connection runner, the client and the standard-stream adapter | [Daemon protocol](daemon-protocol.md) |
-| Extension author API and canonical component interfaces | [`maestro-extensions-wasm/src`](../crates/maestro-extensions-wasm/src/lib.rs) and its `wit/` directory; native execution is adapted by `maestro-extensions-wasmtime` | [Guest authoring](extensions/guest.md) |
+| Extension author API and canonical component interfaces | [`maestro-extensions-guest/src`](../crates/maestro-extensions-guest/src/lib.rs) and its `wit/` directory; native execution is adapted by `maestro-extensions-wasmtime` | [Guest authoring](extensions/guest.md) |
 
 ## Debugging
 
@@ -1217,7 +1217,7 @@ matching filter; no CI package list needs updating. A change to the nextest
 configuration runs the full test suite in CI.
 Shared CI caches the bundle under the contents of the files that
 `test_prepare_inputs` matches and restores it instead of preparing again. Those
-patterns cover the `maestro-extensions-wasm`, `maestro-tooling`, `maestro-web` and
+patterns cover the `maestro-extensions-guest`, `maestro-tooling`, `maestro-web` and
 `maestro-models` builds, the independent guide project and every workspace crate
 they depend on through a path dependency of any kind, plus the fixed inputs.
 A change to any other crate keeps the cached bundle.
@@ -1262,7 +1262,7 @@ Other runs reuse an existing manifest, rejecting stale or incomplete files; with
 a manifest they keep local auto-build. Archive strictness
 requires the shared CI release that supplies `TEST_ARCHIVE=1`. The manifest records one
 digest per artifact instead of one for the whole bundle. All components share one digest over
-the WebAssembly closure of `maestro-extensions-wasm` (its dependencies, without the edges
+the WebAssembly closure of `maestro-extensions-guest` (its dependencies, without the edges
 gated to native targets), the lock entries of the registry packages that closure uses, the
 part of the workspace manifest a release build reads, the Cargo configuration and the
 toolchain. `cargo build` compiles the
@@ -1317,7 +1317,7 @@ For a local check of that boundary, run:
 ```sh
 cargo run --quiet --locked -p maestro-tooling --bin development -- \
     prepare-test-setup prepare "$PWD/target/test-setup" "$PWD/target/test-prepare"
-TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maestro-extensions-wasm
+TEST_PREPARE_OUTPUT="$PWD/target/test-setup" cargo nextest run --locked -p maestro-extensions-guest
 ```
 
 The development tool's `nextest-setup` command runs every nextest setup entry:
@@ -1516,7 +1516,7 @@ Four things it needs are the workspace's own:
   installs them once per preparation instead, with
   `cargo install --locked --git <source> --rev <locked commit>` for
   `maestro-test-process --example native_fixture`,
-  `maestro-extensions-wasm --example prepare_author_component` and
+  `maestro-extensions-guest --example prepare_author_component` and
   `maestro --bin maestro`. The tool reads the repository and commit from
   `Cargo.lock`, so a pin move installs again.
 
@@ -1814,7 +1814,7 @@ diagnostics.
 
 Preparation stages those outputs in the existing `target/test-setup` bundle and
 records their digests in `cargo-checks.json`. Its source fingerprint covers the
-`maestro-models` and `maestro-extensions-wasm` package closures, the workspace
+`maestro-models` and `maestro-extensions-guest` package closures, the workspace
 manifest, Cargo configuration, toolchain and lock, the guide fixture directory
 and `examples/extensions/hello.rs`. Edits outside those inputs, including tooling
 source changes, leave these outputs current.

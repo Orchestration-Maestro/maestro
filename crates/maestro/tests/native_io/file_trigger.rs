@@ -2,7 +2,7 @@
 use crate::support::{Root, provider::Provider, rpc::Rpc};
 use serde_json::json;
 
-#[path = "../../../maestro-extensions-wasm/src/tests/file_trigger_path.rs"]
+#[path = "../../../maestro-extensions-guest/src/tests/file_trigger_path.rs"]
 mod file_trigger_path;
 
 #[test]

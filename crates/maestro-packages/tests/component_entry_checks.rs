@@ -8,7 +8,24 @@ use component_support::ExpectedPaths;
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{cell::RefCell, collections::HashSet, fs, rc::Rc};
+use sha2::{Digest, Sha256};
+use std::{cell::RefCell, collections::HashSet, fmt::Write, fs, rc::Rc};
+
+/// The discovery fixture retains the digest recorded for its compiled artifact.
+#[test]
+fn author_component_matches_recorded_digest() {
+    let bytes = fs::read("tests/fixtures/author_component.wasm").unwrap();
+    let mut recorded = String::new();
+    for byte in Sha256::digest(bytes) {
+        write!(recorded, "{byte:02x}").unwrap();
+    }
+
+    assert_eq!(
+        recorded,
+        "953874aaaf935de05b63952780774ce97afc45ffd6cd0fbb3752a211b80812c1"
+    );
+}
+
 /// One complete recorded discovery input and result.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

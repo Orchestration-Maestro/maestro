@@ -4,7 +4,7 @@ use crate::{
     extension::preview,
     runs::{SingleResult, SubagentDetails},
 };
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     Component, Container, ExtensionAPI, ExtensionResult, Markdown, Text, Theme,
     ToolRenderResultLike, ToolRenderResultOptions, UserBlock, get_markdown_theme,
 };

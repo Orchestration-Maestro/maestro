@@ -62,8 +62,8 @@ same-name usage page, register it in the family crate that builds it, and add it
 tests there.
 
 Maestro keeps host-feature tests on its own fixture components under
-`crates/maestro-extensions-wasm/tests/support`. A fixture that a test builds by
+`crates/maestro-extensions-guest/tests/support`. A fixture that a test builds by
 name carries `// maestro-component: MAESTRO_<NAME>_COMPONENT` after its opening
 docs. `just example-index` generates its `cdylib` target in
-`crates/maestro-extensions-wasm/Cargo.toml`, and component preparation writes the
+`crates/maestro-extensions-guest/Cargo.toml`, and component preparation writes the
 named variable into nextest's environment file.

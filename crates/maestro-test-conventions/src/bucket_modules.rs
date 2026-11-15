@@ -48,14 +48,14 @@ const EXEMPT: &[Row] = &[
     ("maestro-app", "utils", Reason::Mirrored),
     ("maestro-extensions", "helpers", Reason::Unnamed),
     ("maestro-extensions", "types", Reason::Mirrored),
-    ("maestro-extensions-wasm", "agent::types", Reason::Mirrored),
+    ("maestro-extensions-guest", "agent::types", Reason::Mirrored),
     (
-        "maestro-extensions-wasm",
+        "maestro-extensions-guest",
         "summarization::utils",
         Reason::Mirrored,
     ),
-    ("maestro-extensions-wasm", "types", Reason::Mirrored),
-    ("maestro-extensions-wasm", "utils", Reason::Mirrored),
+    ("maestro-extensions-guest", "types", Reason::Mirrored),
+    ("maestro-extensions-guest", "utils", Reason::Mirrored),
     ("maestro-http", "pac_script::util", Reason::Unnamed),
     (
         "maestro-interchange",

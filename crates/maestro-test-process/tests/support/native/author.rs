@@ -82,7 +82,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
             entries(record, Path::new(&environment))?;
             warm(record)?;
             if matches!(record, Record::Unstable) {
-                std::fs::write("crates/maestro-extensions-wasm/src/lib.rs", "edited\n")?;
+                std::fs::write("crates/maestro-extensions-guest/src/lib.rs", "edited\n")?;
             }
             Ok(())
         }
@@ -177,7 +177,7 @@ fn warm(record: &Record) -> io::Result<()> {
 /// Build each missing marked component and describe its independent source inputs.
 fn marked(environment: &Path) -> io::Result<()> {
     let root = std::env::current_dir()?;
-    let library = root.join("crates/maestro-extensions-wasm/src/lib.rs");
+    let library = root.join("crates/maestro-extensions-guest/src/lib.rs");
     let mut file = std::fs::File::options()
         .append(true)
         .create(true)

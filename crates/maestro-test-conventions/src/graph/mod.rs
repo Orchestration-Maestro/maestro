@@ -90,6 +90,10 @@ fn inventory(root: &Path, metadata: &Metadata) -> Result<BTreeSet<String>, Strin
     for (name, class) in &list {
         class.name(name)?;
     }
+    let names = members(metadata)
+        .map(|package| package.name.as_str())
+        .collect();
+    distinct_names(&names)?;
     let mut packages = BTreeSet::new();
     for package in members(metadata) {
         let name = package.name.as_str();
@@ -113,6 +117,23 @@ fn inventory(root: &Path, metadata: &Metadata) -> Result<BTreeSet<String>, Strin
         }
     }
     Ok(packages)
+}
+
+/// Refuse a member name that only adds characters to another member's last segment.
+fn distinct_names(names: &BTreeSet<&str>) -> Result<(), String> {
+    for shorter in names {
+        let extends = |longer: &&&str| {
+            longer
+                .strip_prefix(shorter)
+                .is_some_and(|added| !added.is_empty() && !added.contains('-'))
+        };
+        if let Some(longer) = names.iter().find(extends) {
+            return Err(format!(
+                "workspace crate name {longer} only extends the last segment of {shorter}"
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// Recognize the composition root or an accepted Maestro crate name.

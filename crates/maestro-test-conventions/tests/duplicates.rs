@@ -542,14 +542,14 @@ fn generated_exclusions_keep_exact_owner_and_path() {
     let body = copied(&";".repeat(30));
     for (name, path) in [
         ("maestro-models-catalog", "src/provider_openai.rs"),
-        ("maestro-extensions-wasm", "src/bindings.rs"),
+        ("maestro-extensions-guest", "src/bindings.rs"),
     ] {
         assert!(check(&[member(name, &[(path, body.clone())])]).is_ok());
     }
     // A generated owner stays excluded while its bodies carry test attributes.
     for (name, path) in [
         ("maestro-models-catalog", "src/provider_openai.rs"),
-        ("maestro-extensions-wasm", "src/bindings.rs"),
+        ("maestro-extensions-guest", "src/bindings.rs"),
     ] {
         let body = format!("#[cfg(test)]\n{body}");
         assert!(check(&[member(name, &[(path, body)])]).is_ok());
@@ -557,12 +557,12 @@ fn generated_exclusions_keep_exact_owner_and_path() {
     for (name, path) in [
         ("maestro-settings", "src/bindings.rs"),
         ("maestro-settings", "src/provider_openai.rs"),
-        ("maestro-extensions-wasm", "src/handwritten.rs"),
+        ("maestro-extensions-guest", "src/handwritten.rs"),
         ("maestro-models", "src/catalog/other.rs"),
         ("maestro-models", "src/provider_openai.rs"),
         ("maestro-models-catalog", "tests/provider_openai.rs"),
     ] {
-        let body = if name == "maestro-extensions-wasm" {
+        let body = if name == "maestro-extensions-guest" {
             format!(
                 "#![forbid(clippy::pedantic, clippy::too_many_arguments, clippy::excessive_nesting)]\n{body}"
             )

@@ -154,7 +154,7 @@ Use execution notifications for progress displays, rather than blocking policy.
 tool. Its event includes the working directory and whether output is excluded
 from context. Return operations to change execution, or a completed `BashResult`
 to replace it entirely; the first supplied result wins. Start from the
-[local shell component](../../crates/maestro-extensions-wasm/tests/support/local_shell_component.rs)
+[local shell component](../../crates/maestro-extensions-guest/tests/support/local_shell_component.rs)
 and [native shell operations](guest_operations.md#run-raw-local-shell-operations).
 Forward cancellation, timeout and byte-output callbacks when wrapping operations.
 Writing raw stdout can corrupt JSON or RPC output; use the host's UI or event
@@ -206,7 +206,7 @@ access checks or remote I/O while keeping its behavior:
 3. Register that definition. For rendering-only changes, wrap only the desired
    renderer and forward its supplied context, theme and previous component.
 
-The [native-definition registration fixture](../../crates/maestro-extensions-wasm/tests/support/context_bridge/builtin_registered.rs)
+The [native-definition registration fixture](../../crates/maestro-extensions-guest/tests/support/context_bridge/builtin_registered.rs)
 wraps edit execution with progress while keeping native matching and queueing.
 [Native operations](guest_operations.md#wrap-and-register-a-read-definition)
 explains renderer delegation: the opaque `native_row` is required by a native

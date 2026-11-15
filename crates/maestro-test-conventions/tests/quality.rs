@@ -83,16 +83,16 @@ fn all_crates_must_inherit_workspace_lints() {
 #[test]
 fn guest_crate_cannot_omit_its_qualified_lint_table() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-extensions-wasm"]);
+    workspace.foundation(&["maestro-extensions-guest"]);
     let manifest = workspace
         .root
         .path()
-        .join("crates/maestro-extensions-wasm/Cargo.toml");
+        .join("crates/maestro-extensions-guest/Cargo.toml");
     let baseline = std::fs::read_to_string(&manifest).unwrap();
     std::fs::write(&manifest, baseline.replace(support::GUEST_LINTS, "")).unwrap();
     assert_eq!(
         check_workspace(workspace.root.path()),
-        Err("maestro-extensions-wasm: must declare its own lint table".into())
+        Err("maestro-extensions-guest: must declare its own lint table".into())
     );
     std::fs::write(&manifest, baseline).unwrap();
     assert_eq!(check_workspace(workspace.root.path()), Ok(()));
@@ -462,8 +462,8 @@ fn documentation_markers_in_literals_and_ordinary_comments_count() {
 #[test]
 fn generated_block_documentation_excludes_only_documentation_characters() {
     let workspace = Workspace::new();
-    workspace.member("guest", "maestro-extensions-wasm", "");
-    workspace.list(&[("maestro-extensions-wasm", "core")]);
+    workspace.member("guest", "maestro-extensions-guest", "");
+    workspace.list(&[("maestro-extensions-guest", "core")]);
     let path = workspace.root.path().join("crates/guest/src/bindings.rs");
     let mut source = "/*!\n Module documentation.\n */\n".to_owned();
     for index in 0..500 {
@@ -594,7 +594,7 @@ fn redundant_clone_cannot_be_weakened() {
 
 #[test]
 fn generated_extension_bindings_keep_the_only_lint_exception() {
-    generated_bindings_keep_the_only_lint_exception("maestro-extensions-wasm");
+    generated_bindings_keep_the_only_lint_exception("maestro-extensions-guest");
 }
 
 #[test]

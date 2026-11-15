@@ -78,7 +78,7 @@ pub fn folders(workspace: &Path, component: &Path) -> Vec<PathBuf> {
 }
 
 /// The guest package: it holds the setup example and Maestro's own fixed components.
-pub const EXAMPLE_PACKAGE: &str = "maestro-extensions-wasm";
+pub const EXAMPLE_PACKAGE: &str = "maestro-extensions-guest";
 
 /// The target, package and export of each component prepared without a source marker.
 pub type Fixed = (&'static str, &'static str, &'static str);

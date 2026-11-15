@@ -1,7 +1,7 @@
 //! Child observations and live tool progress.
 
 use crate::discovery::AgentScope;
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     AgentToolResult, AgentToolUpdateCallback, ExtensionResult, Presence, TextContent, UserBlock,
 };
 use serde::{Deserialize, Serialize};

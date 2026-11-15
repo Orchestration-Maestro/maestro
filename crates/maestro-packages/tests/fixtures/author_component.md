@@ -1,10 +1,11 @@
 # Author component fixture
 
-This is the compiled [author component example](../../../maestro-extensions-wasm/tests/support/author_component.rs),
-using its existing [extension body](../../../maestro-extensions-wasm/src/tests/author.rs).
+This is the compiled [author component example](../../../maestro-extensions-guest/tests/support/author_component.rs),
+using its existing [extension body](../../../maestro-extensions-guest/src/tests/author.rs).
 Discovery tests copy this one artifact; they do not compile or activate it.
 
-- Source revision: `b6b1f67edb5e2042a3103e270544bc2ff22bc860`.
+- Source revision: `b6b1f67edb5e2042a3103e270544bc2ff22bc860`. The crate was renamed
+  after that revision, so the command below applies from the rename onwards.
 - Toolchain: Rust `1.98.0` (`88d9e12ae`), target `wasm32-wasip2`.
 - Size: 2,318,584 bytes.
 - SHA-256: `953874aaaf935de05b63952780774ce97afc45ffd6cd0fbb3752a211b80812c1`.
@@ -14,7 +15,7 @@ Build from the repository root, then copy the resulting example artifact here:
 
 ```sh
 CARGO_PROFILE_RELEASE_STRIP=symbols \
-  cargo build -p maestro-extensions-wasm \
+  cargo build -p maestro-extensions-guest \
   --example author_component --target wasm32-wasip2 --release --locked
 ```
 

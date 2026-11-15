@@ -4,4 +4,4 @@
 use maestro_subagents::factory;
 
 #[cfg(target_arch = "wasm32")]
-maestro_extensions_wasm::export_extension!(factory);
+maestro_extensions_guest::export_extension!(factory);

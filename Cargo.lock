@@ -4302,7 +4302,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-extensions-wasm"
+name = "maestro-extensions-guest"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -4860,7 +4860,7 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "maestro-dependencies",
- "maestro-extensions-wasm",
+ "maestro-extensions-guest",
  "maestro-json",
  "ryu-js",
  "serde",

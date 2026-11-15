@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// The crates that generate extension bindings from the interface files.
-const BINDING_CRATES: [&str; 2] = ["maestro-extensions-wasm", "maestro-extensions-wasmtime"];
+const BINDING_CRATES: [&str; 2] = ["maestro-extensions-guest", "maestro-extensions-wasmtime"];
 
 /// The lint table of each crate that generates extension bindings: the fixture workspace table with
 /// the three lints its generated bindings need at `deny`.

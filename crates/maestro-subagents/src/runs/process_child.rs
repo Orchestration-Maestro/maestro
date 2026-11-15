@@ -2,11 +2,11 @@
 
 use super::{Progress, SingleResult, TaskItem};
 use crate::discovery::AgentConfig;
-use maestro_extensions_wasm::{
+use maestro_extensions_guest::{
     AbortSignal, ExtensionAPI, ExtensionResult, Subscription,
     child_process::{ChildProcess, SpawnOptions, Stdio},
-    registry::path_utils::{guest_path, make_temp_dir, resolve},
     streams::Readable,
+    tools::path_utils::{guest_path, make_temp_dir, resolve},
 };
 use maestro_json::lines::JsonlLineSplitter;
 use serde_json::Value;

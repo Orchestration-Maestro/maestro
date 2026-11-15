@@ -880,7 +880,7 @@ fn local_author_setup_builds_only_the_components_a_base_cannot_supply() {
     assert_eq!(built(Some(&base)), ["MAESTRO_ALPHA_COMPONENT"]);
 
     fs::write(
-        root.join("crates/maestro-extensions-wasm/src/lib.rs"),
+        root.join("crates/maestro-extensions-guest/src/lib.rs"),
         "edited source",
     )
     .unwrap();
@@ -958,9 +958,9 @@ fn component_digest_follows_only_what_the_components_build_on() {
     prepare(root);
     assert_eq!(shared_digest(root), before);
 
-    fs::create_dir_all(root.join("crates/maestro-extensions-wasm/wit")).unwrap();
+    fs::create_dir_all(root.join("crates/maestro-extensions-guest/wit")).unwrap();
     fs::write(
-        root.join("crates/maestro-extensions-wasm/wit/world.wit"),
+        root.join("crates/maestro-extensions-guest/wit/world.wit"),
         "package maestro:fixture;",
     )
     .unwrap();
@@ -987,7 +987,7 @@ fn each_setup_checks_only_the_artifact_it_installs() {
     )
     .unwrap();
     fs::write(
-        root.join("crates/maestro-extensions-wasm/src/lib.rs"),
+        root.join("crates/maestro-extensions-guest/src/lib.rs"),
         "edited",
     )
     .unwrap();
@@ -1369,7 +1369,7 @@ fn resolver_fixture(root: &Path) {
             .set_modified(at(100))
             .unwrap();
     }
-    for source in ["Cargo.lock", "crates/maestro-extensions-wasm/Cargo.toml"] {
+    for source in ["Cargo.lock", "crates/maestro-extensions-guest/Cargo.toml"] {
         fs::File::options()
             .write(true)
             .open(root.join(source))
@@ -1391,7 +1391,7 @@ fn fixture_with(root: &Path, example: &str) {
     fs::create_dir_all(&guide).unwrap();
     fs::write(
         guide.join("Cargo.toml.in"),
-        "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[lib]\ncrate-type = [\"cdylib\"]\n\n[dependencies]\nmaestro-extensions-wasm = { path = \"../maestro/crates/maestro-extensions-wasm\" }\n\n[workspace]\n",
+        "[package]\nname = \"hello-extension\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[lib]\ncrate-type = [\"cdylib\"]\n\n[dependencies]\nmaestro-extensions-guest = { path = \"../maestro/crates/maestro-extensions-guest\" }\n\n[workspace]\n",
     )
     .unwrap();
     fs::write(guide.join("Cargo.lock"), "locked guide dependencies").unwrap();
@@ -1410,7 +1410,7 @@ fn fixture_with(root: &Path, example: &str) {
     fs::write(
         root.join("component.d"),
         format!(
-            "{0}/component.wasm: {0}/crates/maestro-extensions-wasm/src/lib.rs\n",
+            "{0}/component.wasm: {0}/crates/maestro-extensions-guest/src/lib.rs\n",
             root.display()
         ),
     )
@@ -1457,7 +1457,7 @@ fn workspace(root: &Path) {
     fs::write(
         root.join("Cargo.lock"),
         "version = 4\n\n[[package]]\nname = \"maestro-app\"\nversion = \"0.0.0\"\n\n\
-         [[package]]\nname = \"maestro-extensions-wasm\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
+         [[package]]\nname = \"maestro-extensions-guest\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
          [[package]]\nname = \"maestro-extensions-wasmtime\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-models\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
@@ -1476,7 +1476,7 @@ fn workspace(root: &Path) {
     for (name, dependency) in [
         ("maestro-app", ""),
         (
-            "maestro-extensions-wasm",
+            "maestro-extensions-guest",
             "\n[dependencies]\nshared = { path = \"../shared\" }\n",
         ),
         ("maestro-extensions-wasmtime", ""),
@@ -1491,7 +1491,7 @@ fn workspace(root: &Path) {
         let crate_root = root.join("crates").join(name);
         fs::create_dir_all(crate_root.join("src")).unwrap();
         fs::write(crate_root.join("src/lib.rs"), "original source").unwrap();
-        let region = if name == "maestro-extensions-wasm" {
+        let region = if name == "maestro-extensions-guest" {
             "# example-index:start\n# example-index:end\n"
         } else {
             ""
@@ -1597,18 +1597,18 @@ fn tamper(root: &Path, change: &str) -> PathBuf {
             fs::write(prepared.join("prepare_author_component"), "#!/bin/sh\n").unwrap();
         }
         "source" => fs::write(
-            root.join("crates/maestro-extensions-wasm/src/lib.rs"),
+            root.join("crates/maestro-extensions-guest/src/lib.rs"),
             "edited source",
         )
         .unwrap(),
         "dependency" => fs::write(root.join("crates/shared/src/lib.rs"), "edited source").unwrap(),
         "added" => fs::write(
-            root.join("crates/maestro-extensions-wasm/src/new.rs"),
+            root.join("crates/maestro-extensions-guest/src/new.rs"),
             "new source",
         )
         .unwrap(),
         "removed" => {
-            fs::remove_file(root.join("crates/maestro-extensions-wasm/src/lib.rs")).unwrap();
+            fs::remove_file(root.join("crates/maestro-extensions-guest/src/lib.rs")).unwrap();
         }
         "lock" => fs::write(root.join("Cargo.lock"), "new dependencies").unwrap(),
         "corrupt" => {
@@ -1849,7 +1849,7 @@ fn prepared_cargo_checks_track_their_package_inputs() {
     let bundle = root.join("target/test-setup");
     for source in [
         "crates/maestro-models/src/lib.rs",
-        "crates/maestro-extensions-wasm/src/lib.rs",
+        "crates/maestro-extensions-guest/src/lib.rs",
         "crates/shared/src/lib.rs",
         "crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.toml.in",
         "crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.lock",

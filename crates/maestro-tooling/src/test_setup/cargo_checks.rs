@@ -24,7 +24,7 @@ const MODELS: &str = "maestro-models";
 /// The example that witnesses the browser import.
 const BROWSER_EXAMPLE: &str = "browser_import_check";
 /// The crate that supplies the guest SDK to the independent author's guide.
-const GUEST: &str = "maestro-extensions-wasm";
+const GUEST: &str = "maestro-extensions-guest";
 /// The shipped extension the independent author's guide builds.
 const GUIDE_SOURCE: &str = "examples/extensions/hello.rs";
 
@@ -155,7 +155,7 @@ fn project_files(checkout: &Path, root: &Path, guide: &Path, guest: &Path) -> io
     let fixture = guide.join(GUIDE);
     let manifest = std::fs::read_to_string(fixture.join("Cargo.toml.in"))?;
     let manifest = manifest.replace(
-        "\"../maestro/crates/maestro-extensions-wasm\"",
+        "\"../maestro/crates/maestro-extensions-guest\"",
         &serde_json::to_string(guest)?,
     );
     std::fs::write(root.join("Cargo.toml"), manifest)?;
