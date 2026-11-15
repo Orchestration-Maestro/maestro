@@ -125,7 +125,7 @@ enum ToolChoiceMode {
 }
 
 /// Constant `function` discriminator.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum FunctionTag {
     /// The only accepted discriminator.
@@ -133,6 +133,7 @@ pub enum FunctionTag {
 }
 
 /// An enum read only from a JSON string; maps such as `{"high": null}` are rejected.
+#[derive(Debug)]
 pub struct Literal<T>(pub T);
 
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for Literal<T> {
@@ -143,6 +144,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Literal<T> {
 }
 
 /// Function reference inside a named tool choice, read only from a JSON object.
+#[derive(Debug)]
 pub struct FunctionName {
     /// Function name.
     pub name: String,
