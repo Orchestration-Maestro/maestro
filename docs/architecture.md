@@ -51,6 +51,11 @@ Dependency descriptions here state domain edges, subject to the
 [native feature-unifier exception](specs/maestro-port.md#native-feature-unifier),
 including leaves and exact sets. The unifier itself has no workspace dependencies.
 
+The checker rejects workspace member names that differ only by extending the final
+hyphen-separated segment, such as `maestro-tool` and `maestro-tools`. Its error
+reports both names. A separate role segment, as in `maestro-tui` and
+`maestro-tui-crossterm`, remains valid.
+
 The extension domain may depend directly on resources. The crates that list
 `maestro-interchange` in the specification table may depend on it; its job is to define the
 records a guest shares with its host, including command provenance records
@@ -323,10 +328,10 @@ and physical CRLF is converted to LF before native Rust parsing. Parsing, commen
 lexing, production line counts and WIT literals share that canonical text.
 Declarations are recognised from native tokens, so macro templates and every item
 shape are covered without expansion; attribute payloads are excluded.
-Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/render-context/result-option types
-belong to tools, except the guest author definition in
-`maestro-extensions-guest/src/types/tools.rs`; application selector types and selector
-modules belong to chat.
+Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition and render-context types
+belong to tools, except their guest author declarations in
+`maestro-extensions-guest/src/types/tools.rs`. Render-result options belong to
+`maestro-interchange`; application selector types and selector modules belong to chat.
 The four message delivery records belong to `maestro-interchange`, and so do
 `ForkPosition` and `NavigateTreeOptions`. Duplicate declarations in these
 owners are rejected. Qualified uses and re-exports are not declarations. Duplicate tool declarations
