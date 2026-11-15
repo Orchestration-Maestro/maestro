@@ -16,8 +16,9 @@ descriptor needs no catalog membership; dispatch looks up only its `api`.
 
 Application and credential-store construction install both the API and login
 base layers with `maestro_providers::install_built_in_providers()`. Browser stream
-adapters install only the API layer, without installing login providers. Direct
-SDK callers choose which layer to install.
+adapters and provider-key checks install only the API layer, without installing
+login providers. A key check works before a conversation starts. Direct SDK
+callers choose which layer to install.
 
 ## Registered protocols
 

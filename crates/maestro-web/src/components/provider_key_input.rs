@@ -395,6 +395,7 @@ async fn completes(model: maestro_models::Model, api_key: &str) -> Result<bool, 
         },
         ..ProviderStreamOptions::default()
     };
+    maestro_providers::install_built_in_api_providers();
     let result = complete(model, context, Some(options))
         .await
         .map_err(|error| error.message)?;
