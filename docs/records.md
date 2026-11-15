@@ -18,7 +18,12 @@ Unicode and control characters.
 Protocol registration, account membership, session cleanup and cloud callback
 selection retain separate owners on each target.
 
-The registry already holds the bundled protocols; see [bundled protocol linkage](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)
+The API registry starts empty. Install the built-in protocols with
+`maestro_providers::install_built_in_api_providers()` before generic dispatch, or
+use `maestro_providers::install_built_in_providers()` for both API and login providers.
+Application and credential-store construction install both; browser stream adapters
+install only API protocols. Existing custom registrations shadow the installed base layer
+until removal. See [bundled protocol linkage](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)
 for registration, reset, the root entry points and the raw extras they accept.
 
 `stream` and `stream_simple` invoke immediately and return a registered custom

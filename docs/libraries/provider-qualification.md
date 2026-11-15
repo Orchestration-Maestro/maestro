@@ -1,6 +1,6 @@
 # Provider qualification libraries
 
-Native message qualification in `maestro-models` uses the test-only dependency
+Native message qualification in `maestro-providers` uses the test-only dependency
 `icu_collator =2.3.1` with default features, including `compiled_data`, under
 Unicode-3.0. It supplies locale comparisons for source-owned provider probe
 selection; it does not change catalog enumeration or runtime model routing.
@@ -16,7 +16,7 @@ for the exercised inputs and service-qualification limits.
 
 ## Cloud conversation libraries
 
-Native Amazon Bedrock conversations in `maestro-models` use `aws-sdk-bedrockruntime =1.148.0`
+Native Amazon Bedrock conversations in `maestro-providers` use `aws-sdk-bedrockruntime =1.148.0`
 (features `default-https-client` and `rt-tokio`, no legacy `rustls` stack) and `aws-config =1.12.0`
 (features `behavior-version-latest`, `default-https-client`, `rt-tokio`, `credentials-process`,
 `sso` and `credentials-login`) for credential lookup, signing, retries and event decoding, plus
@@ -102,14 +102,14 @@ package identity.
 
 ## Native credentials
 
-Native application-default credentials in `maestro-models` use `google-cloud-auth =1.17.0` with
+Native application-default credentials in `maestro-providers` use `google-cloud-auth =1.17.0` with
 its default features (`default-idtoken-backend`, `default-rustls-provider`); `idtoken`,
 `jsonwebtoken` and `gdch` stay off. It is Apache-2.0, declared only for non-browser targets,
 and adds 34 packages to the lockfile. Its typed user, service-account, external-account and
 impersonated builders handle the ordinary file forms and nested impersonation over a retained
 source. Its discovery and metadata resolver are never called: it cannot honor the metadata
 endpoint precedence, and it lacks external-account authorized-user and certificate-sourced
-forms, which `maestro-models` implements over the shared HTTP sender with one demand-driven
+forms, which `maestro-providers` implements over the shared HTTP sender with one demand-driven
 token cache. The library has no HTTP-client injection, so its nested clients keep their own
 transport. `maestro-path` is added as the native path-join utility edge.
 

@@ -5,7 +5,7 @@ use maestro_interchange::types::{
     OpenAICompletionsCompat, ThinkingFormat,
 };
 use maestro_json::raw_value::member;
-use maestro_models::providers::openai_completions::cloudflare::{
+use maestro_providers::providers::openai_completions::cloudflare::{
     CLOUDFLARE_AI_GATEWAY_ANTHROPIC_BASE_URL, CLOUDFLARE_AI_GATEWAY_COMPAT_BASE_URL,
     CLOUDFLARE_AI_GATEWAY_OPENAI_BASE_URL, CLOUDFLARE_WORKERS_AI_BASE_URL,
 };

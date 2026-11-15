@@ -127,13 +127,13 @@ enum ToolChoiceMode {
 /// Constant `function` discriminator.
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub(crate) enum FunctionTag {
+pub enum FunctionTag {
     /// The only accepted discriminator.
     Function,
 }
 
 /// An enum read only from a JSON string; maps such as `{"high": null}` are rejected.
-pub(crate) struct Literal<T>(pub(crate) T);
+pub struct Literal<T>(pub T);
 
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for Literal<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -143,9 +143,9 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Literal<T> {
 }
 
 /// Function reference inside a named tool choice, read only from a JSON object.
-pub(crate) struct FunctionName {
+pub struct FunctionName {
     /// Function name.
-    pub(crate) name: String,
+    pub name: String,
 }
 
 impl<'de> Deserialize<'de> for FunctionName {

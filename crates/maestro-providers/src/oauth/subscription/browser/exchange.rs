@@ -1,8 +1,9 @@
 //! Ordered token requests and complete-body response validation.
+use maestro_cancellation::Cancellation;
 use maestro_http::{Fetch, FetchError, HttpRequest};
 use maestro_http::{Raced, decode_utf8, race};
 use maestro_json::raw_value::{object_record, raw_json};
-use maestro_models::{Cancellation, OAuthCredentials, OAuthError};
+use maestro_models::{OAuthCredentials, OAuthError};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 

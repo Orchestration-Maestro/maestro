@@ -7,7 +7,7 @@ mod options;
 use crate::Cancellation;
 use crate::records::diagnostics::DiagnosticErrorInfo;
 pub use crate::records::events::AssistantMessageEventStream;
-pub(crate) use options::{FunctionName, FunctionTag, Literal};
+pub use options::{FunctionName, FunctionTag, Literal};
 pub use options::{
     ProviderObjects, ProviderStreamOptions, SimpleStreamOptions, StreamOptions, StreamOptionsInput,
     ToolChoice,

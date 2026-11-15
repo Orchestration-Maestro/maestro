@@ -166,7 +166,7 @@ fn resetting_after_startup_leaves_only_the_built_in_login_providers() {
                 },
             );
             reset_oauth_providers();
-            maestro_models::reset_api_providers();
+            maestro_providers::reset_api_providers();
 
             assert_eq!(listed(), BUILT_INS);
             assert_eq!(api_ids(), APIS);

@@ -498,7 +498,7 @@ mod tests {
         use maestro_models::{
             SessionResourceCleanup, cleanup_session_resources, register_session_resource_cleanup,
         };
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let visits = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
         let log = SharedHandle::clone(&visits);
         let first: SessionResourceCleanup = SharedHandle::new(move |_| {
@@ -544,7 +544,7 @@ mod tests {
             SessionResourceCleanup, SessionResourceRemoval, cleanup_session_resources,
             register_session_resource_cleanup,
         };
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let visits = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
         let unvisited = SharedHandle::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
         let added = SharedHandle::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));

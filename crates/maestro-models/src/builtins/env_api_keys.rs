@@ -55,7 +55,8 @@ pub fn get_env_api_key(provider: &str) -> Option<String> {
 }
 
 /// Read a nonempty environment value, ignoring unavailable or empty variables.
-pub(crate) fn env_value(key: &str) -> Option<String> {
+#[must_use]
+pub fn env_value(key: &str) -> Option<String> {
     raw_env_value(key).filter(|value| !value.is_empty())
 }
 
@@ -110,6 +111,7 @@ fn get_api_key_env_vars(provider: &str) -> &'static [&'static str] {
 }
 
 /// Observe a native environment variable without discarding present-empty values.
-pub(crate) fn raw_env_value(key: &str) -> Option<String> {
+#[must_use]
+pub fn raw_env_value(key: &str) -> Option<String> {
     std::env::var(key).ok()
 }

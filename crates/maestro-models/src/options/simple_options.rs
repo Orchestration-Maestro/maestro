@@ -8,10 +8,8 @@ use crate::{
 };
 
 /// Keep a nonempty supplied key as written, otherwise look the provider's key up in the environment.
-pub(crate) fn resolve_api_key<'a>(
-    provider: &str,
-    explicit: Option<Cow<'a, str>>,
-) -> Option<Cow<'a, str>> {
+#[must_use]
+pub fn resolve_api_key<'a>(provider: &str, explicit: Option<Cow<'a, str>>) -> Option<Cow<'a, str>> {
     explicit
         .filter(|key| !key.is_empty())
         .or_else(|| get_env_api_key(provider).map(Cow::Owned))
@@ -87,7 +85,8 @@ pub fn clamp_reasoning(effort: Option<ThinkingLevel>) -> Option<ThinkingLevel> {
 
 /// The budget of a level: the caller's slot when set (zero included), otherwise 1,024, 2,048,
 /// 8,192 or 16,384 for minimal through high. Extra-high uses the high slot.
-pub(crate) fn thinking_budget(level: ThinkingLevel, custom: Option<&ThinkingBudgets>) -> f64 {
+#[must_use]
+pub fn thinking_budget(level: ThinkingLevel, custom: Option<&ThinkingBudgets>) -> f64 {
     let (slot, default) = match level {
         ThinkingLevel::Minimal => (custom.and_then(|b| b.minimal), 1024.0),
         ThinkingLevel::Low => (custom.and_then(|b| b.low), 2048.0),
@@ -143,7 +142,8 @@ pub fn adjust_max_tokens_for_thinking(
 /// The limit is [`adjust_max_tokens_for_thinking`]'s, fitted to the context window as
 /// [`build_base_options`] fits a limit, and the budget never takes the last 1,024 tokens of it.
 /// A NaN base limit counts as no limit; a NaN budget stays NaN.
-pub(crate) fn fit_thinking(
+#[must_use]
+pub fn fit_thinking(
     model: &Model,
     context: &Context,
     base_max_tokens: Option<f64>,
@@ -186,7 +186,8 @@ pub fn reasoning_from_thinking_level(level: &ModelThinkingLevel) -> Option<Think
 const CACHE_RETENTION_VARIABLE: &str = "MAESTRO_CACHE_RETENTION";
 
 /// Resolve an explicit retention choice before the environment default.
-pub(crate) fn resolve_cache_retention(explicit: Option<CacheRetention>) -> CacheRetention {
+#[must_use]
+pub fn resolve_cache_retention(explicit: Option<CacheRetention>) -> CacheRetention {
     match explicit {
         Some(retention) => retention,
         None if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") => {

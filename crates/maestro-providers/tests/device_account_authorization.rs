@@ -222,10 +222,9 @@ fn device_refresh_selects_surviving_fields() {
 
 #[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
+use maestro_cancellation::Cancellation;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::{
-    Cancellation, OAuthAuthInfo, OAuthCallbacks, OAuthLoginCallbacks, OAuthPrompt,
-};
+use maestro_models::{OAuthAuthInfo, OAuthCallbacks, OAuthLoginCallbacks, OAuthPrompt};
 #[cfg(not(target_arch = "wasm32"))]
 use std::collections::VecDeque;
 #[cfg(not(target_arch = "wasm32"))]

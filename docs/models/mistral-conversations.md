@@ -1,8 +1,8 @@
 # Mistral Conversations
 
 `MistralOptions` holds common request settings, tool choice, prompt mode and
-reasoning effort. The options are available from `maestro_models` and
-`maestro_models::providers::mistral_conversations::endpoint`, together with `stream_mistral`
+reasoning effort. The options are available from `maestro_providers` and
+`maestro_providers::providers::mistral_conversations::endpoint`, together with `stream_mistral`
 and `stream_simple_mistral`. These operations expose cumulative updates from
 independently owned work: dropping the reader does not cancel the producer.
 Default native calls need a running Tokio runtime.
@@ -15,8 +15,7 @@ stream; see the [linkage guide](https://github.com/Orchestration-Maestro/maestro
 handle through the terminal result.
 
 ```rust
-use maestro_models::{MistralOptions, MistralPromptMode, MistralReasoningEffort,
-    MistralToolChoice};
+use maestro_providers::{MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice};
 
 let options: MistralOptions = MistralOptions {
     tool_choice: Some(MistralToolChoice::Function { name: "lookup".into() }),
@@ -31,8 +30,8 @@ This controlled transport uses no network or secret credential:
 
 ```rust
 use std::sync::Arc;
-use maestro_models::{Context, Fetch, HttpResponse, MistralOptions, StreamOptions,
-    get_model, stream_mistral};
+use maestro_models::{Context, Fetch, HttpResponse, StreamOptions, get_model};
+use maestro_providers::{MistralOptions, stream_mistral};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let fetch: Fetch = Arc::new(|_| Box::pin(async {

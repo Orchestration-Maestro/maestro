@@ -369,7 +369,7 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 | `crates/maestro-test-process/tests/support/` | native test children |
 | `crates/maestro-extensions-guest/tests/support/` | host-qualification fixture components and their preparation program |
 | `crates/maestro-models-generator/scripts/` | catalog and fixture generators |
-| `crates/maestro-models/tests/support/`, `crates/maestro-models-registry/tests/support/` | browser smoke checks |
+| `crates/maestro-providers/tests/support/`, `crates/maestro-models-registry/tests/support/` | browser smoke checks |
 | `crates/maestro-theme/scripts/` | theme generation and browser author inputs |
 | `crates/maestro-tui-crossterm/tests/support/` | terminal development programs |
 | `crates/maestro-session-reports/scripts/` | cost, usage, tool and transcript reports |
@@ -872,10 +872,8 @@ component-factory width synchronously; it adds no new production layer crossing.
 These edges permit no normal or build dependencies.
 `maestro-detection` to `maestro-text`, declared as a non-optional native development
 dependency, supplies terminal newline normalization for checked-child tests.
-`maestro-models-registry` to `maestro-providers`, declared as a native-only, non-optional
-development dependency, lets catalog tests install the built-in login providers whose
-names and model transforms they read. It permits no normal or build edge.
-`maestro-cli` to `maestro-providers`, declared the same way, lets the model-account
+`maestro-cli` to `maestro-providers`, declared as a native-only, non-optional
+development dependency, lets the model-account
 tests offer the built-in login providers that the executable installs before it calls
 the command. It permits no normal or build edge.
 `maestro-rpc` to `maestro-tui-crossterm`, `maestro-tui`, `maestro-models-registry` and
@@ -1000,7 +998,7 @@ dependencies under `cfg(not(target_arch = "wasm32"))` from `maestro`, `maestro-a
 `maestro-daemon`, `maestro-detection`, `maestro-export`, `maestro-extensions`,
 `maestro-extensions-guest`, `maestro-extensions-wasmtime`, `maestro-http`,
 `maestro-lock`, `maestro-models`, `maestro-models-generator`,
-`maestro-packages`, `maestro-process`, `maestro-resources`, `maestro-rpc`,
+`maestro-packages`, `maestro-process`, `maestro-providers`, `maestro-resources`, `maestro-rpc`,
 `maestro-session`, `maestro-session-reports`, `maestro-settings`,
 `maestro-terminal-emulator`, `maestro-test-browser`,
 `maestro-test-conventions`, `maestro-test-process`,

@@ -27,7 +27,7 @@ or live billing. See [chat completions](openai-completions.md) for adapter rules
 ## Run the cases
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   chat_empty_tools:: chat_response_identity:: chat_tool_choices:: routed_cache_write::
 ```
 
@@ -38,7 +38,7 @@ Each invocation checks its own request and result.
 ## Inject a controlled response
 
 This native Rust example uses the same catalog model and cache-write report as
-that controlled completion. It needs `maestro-models`, `serde_json`, `tokio` with
+that controlled completion. It needs `maestro-models`, `maestro-providers`, `serde_json`, `tokio` with
 `rt` and `time`, and `futures-util` with `std`. The synthetic credential is used
 only by the injected transport.
 
@@ -47,6 +47,7 @@ use maestro_models::{Context, Fetch, HttpResponse, SimpleStreamOptions, StreamOp
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    maestro_providers::install_built_in_api_providers();
     let fetch: Fetch = Arc::new(|_| {
         let wire = concat!(
             "data: {\"id\":\"controlled\",\"choices\":[{\"delta\":{\"content\":\"OK\"},",
@@ -124,7 +125,7 @@ The message cases cover:
 Run these cases without provider credentials:
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   message_eager_input:: message_long_retention:: message_thinking_disabled:: message_adaptive_thinking:: account_tool_names:: account_message_routing::
 ```
 
@@ -139,6 +140,7 @@ use maestro_models::{Context, Fetch, HttpResponse, SimpleStreamOptions, StreamOp
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    maestro_providers::install_built_in_api_providers();
     let fetch: Fetch = Arc::new(|_| {
         let events = [
             serde_json::json!({"type":"message_start","message":{
@@ -212,7 +214,7 @@ These controlled responses establish local request and decoding observations,
 not live authentication acceptance, cache hits or remote answer quality.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   response_identity:: response_reasoning_replay:: response_affinity:: response_session_affinity:: response_tool_images:: interleaved_reasoning:: invocation_cancellation:: history_handoffs:: handoff_tool_ids::
 ```
 
@@ -243,7 +245,7 @@ These finite fixtures qualify local conversion, not remote reasoning quality,
 authentication validity or server schema acceptance.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   cloud_model_routes:: content_thinking_disabled:: conversation_reasoning:: conversation_tool_schema:: missing_tool_results:: provider_unicode::
 ```
 
@@ -269,9 +271,9 @@ requests. See [response sessions](openai-codex-responses.md) for socket behavior
 These local observations do not establish live account validity or model quality.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   empty_content:: model_streaming::
-cargo llvm-cov -p maestro-models --locked --fail-under-lines 80
+cargo llvm-cov -p maestro-providers --locked --fail-under-lines 80
 ```
 
 ## Controlled cache, overflow and tool images
@@ -301,6 +303,6 @@ establish server cache hits, live authentication or image understanding. See [me
 the adapter rules.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   cache_preferences:: provider_overflow:: tool_images::
 ```

@@ -1,7 +1,7 @@
 # Model invocation library
 
-`maestro-models` invokes model protocols through replaceable callbacks. It
-prepares requests, streams responses and provides account primitives. It has no
+`maestro-models` owns model records, registries and invocation through replaceable
+callbacks. `maestro-providers` prepares built-in requests and streams their responses. It has no
 agent loop, tool executor or credential store. Every example below is an offline
 Rust test that calls the same public operations an application calls. For topic
 navigation and current inputs, see
@@ -14,26 +14,32 @@ Depend on a workspace checkout; no published release is assumed:
 ```toml
 [dependencies]
 maestro-models = { path = "../maestro/crates/maestro-models" }
+maestro-providers = { path = "../maestro/crates/maestro-providers" }
 ```
 
-Change the path to match your checkout. The default native bundled adapters need
+Change the paths to match your checkout. Before generic dispatch, call
+`maestro_providers::install_built_in_api_providers()` for the built-in API protocols,
+or `maestro_providers::install_built_in_providers()` for API and login providers.
+Both registries start empty; custom registrations shadow the installed base layers.
+See [protocol installation](module-linkage.md) for removal, explicit registration
+and reset behavior. The default native bundled adapters need
 a Tokio runtime with the time and I/O drivers enabled, for example a
 current-thread runtime built with `enable_all()`. A pure custom callback working
 without a runtime says nothing about the native adapters.
 
-The [quick-start test](../../crates/maestro-models/tests/model_guide_examples/streams.rs),
+The [quick-start test](../../crates/maestro-providers/tests/model_guide_examples/streams.rs),
 `maestro_guide_quick_start_completes_without_network`, is the complete example.
 It selects `openai/gpt-4o-mini`, uses that descriptor's own API, injects a finite
 response and checks text, stop reason and usage through all four entry points.
-The shared [example data](../../crates/maestro-models/tests/model_guide_examples/mod.rs)
-and [controlled transport](../../crates/maestro-models/tests/support/bundled.rs)
+The shared [example data](../../crates/maestro-providers/tests/model_guide_examples/mod.rs)
+and [controlled transport](../../crates/maestro-providers/tests/support/bundled.rs)
 stand in for HTTP; protocol parsing still runs. It needs no live provider and no
 secret.
 
 Run all eleven examples from the checkout:
 
 ```sh
-cargo test --locked -p maestro-models --test integration model_guide_examples::
+cargo test --locked -p maestro-providers --test integration model_guide_examples::
 ```
 
 Build the public rustdoc with `cargo doc --no-deps -p maestro-models`. The
@@ -53,7 +59,7 @@ Three separate concepts:
 - An **API registration** pairs an API identifier with raw and simple callbacks.
   Invocation resolves the descriptor's API, never its catalog membership.
 
-The [custom descriptor example](../../crates/maestro-models/tests/model_guide_examples/providers.rs),
+The [custom descriptor example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
 `maestro_guide_invokes_custom_descriptors`, checks lookup and sends an authored
 model through an existing protocol to a controlled endpoint. It inspects the URL,
 headers, system-role selection, token-limit field and omitted compatibility
@@ -65,11 +71,11 @@ explicit generation commands acquire feeds.
 
 ### Bundled protocols and direct operations
 
-The registry starts with the nine protocols below, in this order. Catalog
+API installation places the nine protocols below first, in this order. Catalog
 membership is separate: a catalog can hold descriptors whose API is not
 registered. The scripted API is opt-in.
 
-Every module path below sits under `maestro_models::providers`. Each module's
+Every module path below sits under `maestro_providers::providers`. Each module's
 rustdoc documents its typed options and its direct raw and simple operations. The
 root forwarding functions and the provider-module simple functions differ; see
 [linkage and setup-error boundaries](module-linkage.md).
@@ -90,7 +96,7 @@ Each module exposes `stream_*` and `stream_simple_*` under its provider name.
 The cloud-conversation functions are `stream_bedrock` and
 `stream_simple_bedrock`, in their own module. None is a root convenience
 operation. The runtime witnesses named here live in the
-[integration target](../../crates/maestro-models/tests/integration.rs).
+[integration target](../../crates/maestro-providers/tests/integration.rs).
 Qualification checks controlled wire conversion. It does not check live
 authentication, reasoning quality, cache-hit rates or billing.
 
@@ -126,7 +132,7 @@ declarations. `Message` is `User`, `Assistant` or `ToolResult`.
 - A `Tool<TParameters>` is a named description with a parameter schema. It is not
   an executable callback.
 
-The [history example](../../crates/maestro-models/tests/model_guide_examples/providers.rs),
+The [history example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
 `maestro_guide_projects_and_serializes_history`, decodes and serializes a full
 context: image data, signed text and thinking, and explicit null tool-result
 details. It also checks the wire output of a continuation. Persist these records
@@ -183,7 +189,7 @@ snapshots. Read or clone their current data, and release the lock before any
 | `Error` | `error` | `reason`, `error` |
 
 Address blocks by `content_index`; do not assume they are contiguous. The
-[interleaved consumer](../../crates/maestro-models/tests/model_guide_examples/streams.rs),
+[interleaved consumer](../../crates/maestro-providers/tests/model_guide_examples/streams.rs),
 `maestro_guide_consumes_interleaved_stream`, checks event order, independent
 thinking, text and tool indices, and the same live final handle. The failure
 example covers the `error` event. A `ToolcallEnd` carries parsed and repaired
@@ -191,7 +197,7 @@ arguments, **not execution-validated arguments**.
 
 ## Schemas, tool progress and execution
 
-Three [tool examples](../../crates/maestro-models/tests/model_guide_examples/tools.rs)
+Three [tool examples](../../crates/maestro-providers/tests/model_guide_examples/tools.rs)
 cover declaration, progress and the caller's execution loop:
 
 1. `maestro_guide_builds_portable_tool_schemas` builds JSON Schema with
@@ -250,7 +256,7 @@ and `maestro_projection_downgrades_unsupported_images_once` in the
 `SimpleStreamOptions` holds the common options, the requested reasoning, optional
 per-level `ThinkingBudgets` and the tool choice. Raw options hold the common
 settings, open adapter fields and typed retained objects. The
-[thinking and options example](../../crates/maestro-models/tests/model_guide_examples/providers.rs),
+[thinking and options example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
 `maestro_guide_selects_thinking_and_transport_options`, shows a model without
 reasoning selecting off, an unsupported low level selecting medium, and
 independently chosen raw and simple controls reaching real requests. A missing
@@ -292,7 +298,7 @@ submission facility and keep local hooks in the selected producer. The default
 three-argument entries keep their threaded options and the provider's own default
 admission. See [linkage](module-linkage.md).
 
-The [failure and cancellation example](../../crates/maestro-models/tests/model_guide_examples/streams.rs),
+The [failure and cancellation example](../../crates/maestro-providers/tests/model_guide_examples/streams.rs),
 `maestro_guide_observes_failure_and_cancellation`, cancels only after visible text
 and a pending-body-read handshake. It checks the terminal reason, the retained
 text and the reported usage, then continues with the partial assistant message it
@@ -334,7 +340,7 @@ explicit-key precedence and the endpoint environment policy.
 Browser targets cannot discover the process environment. Supply an explicit key,
 or an application-controlled proxy or injected client, and weigh the browser
 origin and credential exposure. The
-[browser import witness](../../crates/maestro-models/tests/support/browser_import_check.rs)
+[browser import witness](../../crates/maestro-providers/tests/support/browser_import_check.rs)
 compiles a typed model, context, tool, options and a retained local client with
 an explicit key. It starts no request, native callback listener, cloud
 credential flow or native socket. `maestro_browser_environment_has_no_key` builds
@@ -351,7 +357,7 @@ Use the [subscription](oauth.md#subscription-accounts),
 login and refresh functions, with the `OAuthLoginCallbacks` interaction contract.
 Library login neither opens a browser nor stores credentials for the caller.
 
-The [supplied-account example](../../crates/maestro-models/tests/model_guide_examples/accounts.rs),
+The [supplied-account example](../../crates/maestro-providers/tests/model_guide_examples/accounts.rs),
 `maestro_guide_refreshes_supplied_account_credentials`, runs in a fresh process
 with fake state it owns. It covers the authorization and prompt callbacks, key
 extraction from unexpired credentials without a refresh, extraction from expired
@@ -384,7 +390,7 @@ missing, fallback before the start, session affinity, cached-context reuse, idle
 cleanup, explicit close and debug counters, and names the native socket
 qualifications. `maestro_socket_completions_continue_with_actual_assistants` also
 checks continuation in the
-[streaming socket tests](../../crates/maestro-models/tests/model_streaming/socket.rs).
+[streaming socket tests](../../crates/maestro-providers/tests/model_streaming/socket.rs).
 Do not apply these session policies to other adapters.
 
 `register_session_resource_cleanup` returns a removal handle. Dropping the handle

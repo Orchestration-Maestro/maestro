@@ -13,6 +13,24 @@ Choose one route:
 - [Edit the credential file](#credential-file-and-key-selection) for named variables or secret helpers.
 - [Configure a cloud service](#cloud-services) for Azure, AWS, Cloudflare or Vertex.
 
+## SDK installation
+
+Depend on `maestro-models` for model records, registry operations and generic
+invocation. Add `maestro-providers` for the built-in protocols, typed protocol
+options and login flows. Before direct SDK dispatch, install the API layer:
+
+```rust
+maestro_providers::install_built_in_api_providers();
+```
+
+Use `maestro_providers::install_built_in_providers()` when login providers are
+also needed. Installation keeps existing custom registrations above the built-ins;
+removing a custom registration restores the built-in in its original position.
+Application and credential-store construction install both layers. The browser
+stream adapters install only API protocols. Neither interface registry installs
+providers on lookup. See [protocol linkage](models/module-linkage.md) and the
+[model library quick start](models/api.md).
+
 ## Save a key or sign in
 
 These terminal steps use the native Unix frontend. Native Windows interactive

@@ -1,6 +1,6 @@
 # Anthropic Messages
 
-`maestro-models` sends message-protocol requests directly and streams the answer as shared
+`maestro-providers` sends message-protocol requests directly and streams the answer as shared
 assistant updates. `stream_anthropic(model, context, options)` takes `AnthropicOptions`: the
 common `StreamOptions`, a typed `ToolChoice`, thinking settings, the interleaved-reasoning
 switch and an optional client. It returns the call's `AssistantMessageEventStream`, and every
@@ -254,10 +254,8 @@ or whole body fails, its detail is empty, leaving `{status} `. The shared
 use std::sync::Arc;
 
 use futures_util::stream;
-use maestro_models::{
-    AnthropicClient, AnthropicOptions, AssistantMessageEvent, Context, HttpResponse, Model,
-    stream_anthropic,
-};
+use maestro_models::{AssistantMessageEvent, Context, HttpResponse, Model};
+use maestro_providers::{AnthropicClient, AnthropicOptions, stream_anthropic};
 
 let model: Model = serde_json::from_value(serde_json::json!({
     "id": "controlled", "name": "Controlled", "api": "anthropic-messages",

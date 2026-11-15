@@ -1,6 +1,6 @@
 # Amazon Bedrock
 
-`maestro-models` streams Amazon Bedrock conversations directly through the AWS SDK
+`maestro-providers` streams Amazon Bedrock conversations directly through the AWS SDK
 for Rust. `stream_bedrock(model, context, options)` takes `BedrockOptions`: the common
 `StreamOptions` plus `region`, `profile`, `request_metadata` (cost-allocation tags,
 sent as written), `bearer_token`, `tool_choice`, `reasoning`, `thinking_budgets`,
@@ -72,7 +72,7 @@ Thinking settings apply only to Claude models that reason.
   region environment variables, or a government model identifier, omits the display. The
   endpoint and the profile region do not decide the display.
 
-`stream_simple_bedrock`, in `maestro_models::providers::amazon_bedrock`, accepts
+`stream_simple_bedrock`, in `maestro_providers::providers::amazon_bedrock`, accepts
 `SimpleStreamOptions`. It resolves [base options and token budgets](../model-options.md),
 adjusts the token limit and the selected budget slot of fixed-budget Claude models, and
 then calls `stream_bedrock`. Adaptive Claude models and other models do not get that
@@ -396,7 +396,7 @@ message and only takes the aborted stop reason.
 ```rust
 use std::sync::{Arc, Mutex};
 
-use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
+use maestro_providers::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::{Context, DiagnosticErrorInfo, Model, StreamOptions};
 
 let model: Model = serde_json::from_value(serde_json::json!({

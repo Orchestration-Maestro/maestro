@@ -21,7 +21,7 @@ setup = "author-component"
 command = "target/test-setup/development nextest-setup cargo-checks"
 
 [[profile.default.scripts]]
-filter = "(package(maestro-models) & test(/^browser_build::/)) | (package(maestro-extensions-wasmtime) & test(/^extension_guide::/))"
+filter = "(package(maestro-providers) & test(/^browser_build::/)) | (package(maestro-extensions-wasmtime) & test(/^extension_guide::/))"
 setup = "cargo-checks"
 
 [scripts.setup.native-fixture]

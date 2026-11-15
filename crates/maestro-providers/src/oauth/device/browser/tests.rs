@@ -6,9 +6,10 @@ use super::*;
 use crate::tests::runtime::run_paused_after_start;
 #[cfg(not(target_arch = "wasm32"))]
 use futures_util::FutureExt as _;
+use maestro_cancellation::Cancellation;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_http::HttpResponse;
-use maestro_models::{Cancellation, OAuthLoginCallbacks};
+use maestro_models::OAuthLoginCallbacks;
 #[cfg(not(target_arch = "wasm32"))]
 use std::collections::VecDeque;
 #[cfg(not(target_arch = "wasm32"))]

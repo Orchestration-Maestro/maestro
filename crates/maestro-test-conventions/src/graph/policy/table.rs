@@ -221,6 +221,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-models-generator",
         &[
+            "maestro-providers",
             "maestro-models",
             "maestro-http",
             "maestro-interchange",
@@ -231,6 +232,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-models-registry",
         &[
+            "maestro-providers",
             "maestro-models",
             "maestro-credentials",
             "maestro-pattern",
@@ -273,6 +275,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-providers",
         &[
+            "maestro-interchange",
+            "maestro-lock",
+            "maestro-cancellation",
+            "maestro-listeners",
             "maestro-models",
             "maestro-http",
             "maestro-brand",
@@ -402,6 +408,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-web",
         &[
+            "maestro-providers",
             "maestro-office",
             "maestro-lock",
             "maestro-theme",

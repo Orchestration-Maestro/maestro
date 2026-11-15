@@ -1022,7 +1022,8 @@ cargo clippy -p maestro-http -p maestro-models --all-targets --locked -- -D warn
 ### TLS fixture certificates
 
 The provider tests trust fixed certificates under
-`crates/maestro-models/tests/fixtures/`; the transport tests trust the ones under
+`crates/maestro-models/tests/fixtures/` and `crates/maestro-providers/tests/fixtures/`;
+the transport tests trust the ones under
 `crates/maestro-http/tests/fixtures/socks-tls/`. They are committed data, and no script or
 certificate library issues them. Each one expires on 2126-10-18, so none of them
 lapses during a test run. The three server-side certificates start on 2019-06-01,
@@ -1800,7 +1801,7 @@ Run the browser import checks with their setup:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-models -E 'test(/^browser_build::/)'
+cargo nextest run --locked -p maestro-providers -E 'test(/^browser_build::/)'
 ```
 
 The `cargo-checks` setup builds `browser_import_check` for

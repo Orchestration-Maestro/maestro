@@ -1462,6 +1462,13 @@ fn http_transport_records_have_one_shared_owner() {
 }
 
 #[test]
+fn built_in_protocol_records_have_one_shared_owner() {
+    for name in ["BedrockProviderModule", "AnthropicClient"] {
+        assert_single_owner(name, "maestro-providers", &["maestro-models"]);
+    }
+}
+
+#[test]
 fn built_in_login_providers_have_one_shared_owner() {
     for name in [
         "AnthropicOAuthProvider",

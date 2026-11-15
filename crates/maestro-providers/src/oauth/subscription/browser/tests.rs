@@ -641,7 +641,7 @@ fn token_deadline_covers_headers_and_body() {
         tokio::time::pause();
         for headers_delay in [0, 10_000] {
             let signal = maestro_models::EventStream::new(
-                |_: &maestro_models::Cancellation| true,
+                |_: &maestro_cancellation::Cancellation| true,
                 Clone::clone,
             );
             let delivered = signal.clone();
@@ -701,7 +701,7 @@ struct Interaction {
     /// Ordered completed callback phases.
     events: maestro_models::EventStream<&'static str, ()>,
     /// Ignored caller cancellation.
-    signal: maestro_models::Cancellation,
+    signal: maestro_cancellation::Cancellation,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl maestro_models::OAuthLoginCallbacks for Interaction {
@@ -744,7 +744,7 @@ impl maestro_models::OAuthLoginCallbacks for Interaction {
     ) -> Option<maestro_models::BoxFuture<Result<Option<String>, OAuthError>>> {
         panic!("selector is not used")
     }
-    fn signal(&self) -> Option<&maestro_models::Cancellation> {
+    fn signal(&self) -> Option<&maestro_cancellation::Cancellation> {
         panic!("signal is not used")
     }
 }
@@ -763,7 +763,7 @@ impl Interaction {
             prompt: prompt.into(),
             failure,
             events: maestro_models::EventStream::new(|_| false, |_| ()),
-            signal: maestro_models::Cancellation::new(),
+            signal: maestro_cancellation::Cancellation::new(),
         })
     }
     /// Publish a completed callback phase and optionally fail it.

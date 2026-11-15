@@ -1,9 +1,10 @@
 //! Device-code validation and server-directed polling.
 use super::token::{CLIENT_ID, fetch_json, response_record, string_field};
+use maestro_cancellation::Cancellation;
 use maestro_http::{Fetch, HttpRequest};
 use maestro_http::{Raced, race};
 use maestro_json::raw_value::{member, raw_json, raw_number};
-use maestro_models::{Cancellation, OAuthError};
+use maestro_models::OAuthError;
 use std::future::pending;
 use std::time::Duration;
 

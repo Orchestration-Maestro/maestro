@@ -25,6 +25,7 @@ maestro-http = { path = "../maestro-http" }
 maestro-interchange = { path = "../maestro-interchange" }
 maestro-json = { path = "../maestro-json" }
 maestro-models = { path = "../maestro-models" }
+maestro-providers = { path = "../maestro-providers" }
 maestro-text.workspace = true
 futures-util.workspace = true
 indexmap = { version = "=2.14.2", features = ["serde"] }

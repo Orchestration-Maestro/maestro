@@ -1,20 +1,10 @@
 #![doc = include_str!("../../../docs/records.md")]
 
-pub mod native;
 pub mod parameters;
 pub use parameters::*;
 /// Built-in provider environment utilities.
 mod builtins;
-pub use builtins::{
-    BedrockProviderModule, find_env_keys, get_env_api_key, register_built_in_api_providers,
-    reset_api_providers, set_bedrock_provider_module, stream_simple_anthropic,
-    stream_simple_anthropic_for, stream_simple_azure_openai_responses,
-    stream_simple_azure_openai_responses_for, stream_simple_google, stream_simple_google_for,
-    stream_simple_mistral, stream_simple_mistral_for, stream_simple_openai_codex_responses,
-    stream_simple_openai_codex_responses_for, stream_simple_openai_completions,
-    stream_simple_openai_completions_for, stream_simple_openai_responses,
-    stream_simple_openai_responses_for,
-};
+pub use builtins::{find_env_keys, get_env_api_key};
 
 pub mod cancellation;
 /// Model descriptors and catalog lookup helpers.
@@ -42,29 +32,11 @@ pub use maestro_http::{
     Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
     unit_random,
 };
-pub use providers::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
-pub use providers::anthropic_messages::endpoint::{
-    AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
-    AnthropicThinkingDisplay, stream_anthropic, stream_anthropic_for,
-};
-pub use providers::google::conversion::GoogleThinkingLevel;
-pub use providers::google::generative::{GoogleOptions, stream_google, stream_google_for};
-pub use providers::mistral_conversations::endpoint::{
-    MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice, stream_mistral,
-    stream_mistral_for,
-};
-pub use providers::openai_completions::endpoint::{
-    OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
-};
-pub use providers::openai_responses::azure_transport::{
-    AzureOpenAIResponsesOptions, stream_azure_openai_responses, stream_azure_openai_responses_for,
-};
-pub use providers::openai_responses::openai::{
-    OpenAIResponsesOptions, stream_openai_responses, stream_openai_responses_for,
-};
+
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
-    get_api_providers, register_api_provider, unregister_api_providers,
+    get_api_providers, install_built_in_api_providers, register_api_provider,
+    unregister_api_providers,
 };
 pub use records::diagnostics::{
     AssistantMessageDiagnostic, DiagnosticCode, DiagnosticErrorInfo, DiagnosticInput,
@@ -108,11 +80,6 @@ pub use oauth::{
     reset_oauth_providers, unregister_oauth_provider,
 };
 
-pub use providers::openai_codex_responses::codex::{
-    OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats, stream_openai_codex_responses,
-    stream_openai_codex_responses_for,
-};
-
 pub use providers::json_text::compact_json;
 
 #[cfg(feature = "test-support")]
@@ -131,11 +98,6 @@ pub use maestro_http::websocket::{
 };
 pub use maestro_interchange::tool_info::ToolInfo;
 
-pub use providers::google::managed::{
-    GoogleVertexOptions, stream_google_vertex, stream_google_vertex_for,
-    stream_simple_google_vertex, stream_simple_google_vertex_for,
-};
-
 /// Shared extension event inventory for concrete native adapters.
 pub use maestro_interchange::extension_event_table;
 /// Shared extension events and assembled prompt records.
@@ -146,3 +108,10 @@ pub use maestro_interchange::parameter_schema::{
     Base, ParameterSchema, Refinement, SchemaCallback, SchemaCode, SchemaCodeSource, SchemaKind,
     SchemaNode, transport as schema_transport,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use builtins::{env_value, raw_env_value};
+#[cfg(not(target_arch = "wasm32"))]
+pub use options::thinking_budget;
+pub use options::{fit_thinking, resolve_api_key, resolve_cache_retention};
+pub use projection::{IMAGE_PLACEHOLDER, normalize_tool_call_id, tool_call_id_characters};

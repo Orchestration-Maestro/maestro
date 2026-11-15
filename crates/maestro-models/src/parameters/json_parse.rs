@@ -99,7 +99,7 @@ fn projection_error(error: &serde_json::Error) -> bool {
 pub(crate) use maestro_text::is_whitespace_scalar as whitespace;
 
 /// Whether `text` holds only whitespace.
-pub(crate) fn is_blank(text: &str) -> bool {
+pub fn is_blank(text: &str) -> bool {
     text.trim_matches(whitespace).is_empty()
 }
 

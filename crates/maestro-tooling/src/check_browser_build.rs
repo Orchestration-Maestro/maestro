@@ -16,19 +16,19 @@ pub(crate) const WITNESSES: [(&str, &str, &str); 4] = [
         "crates/maestro-models-registry/tests/support/browser_catalog_check.rs",
     ),
     (
-        "maestro-models",
+        "maestro-providers",
         "bedrock_browser_witness",
-        "crates/maestro-models/tests/support/bedrock_browser.rs",
+        "crates/maestro-providers/tests/support/bedrock_browser.rs",
     ),
     (
-        "maestro-models",
+        "maestro-providers",
         "browser_import_check",
-        "crates/maestro-models/tests/support/browser_import_check.rs",
+        "crates/maestro-providers/tests/support/browser_import_check.rs",
     ),
     (
-        "maestro-models",
+        "maestro-providers",
         "cloud_content_browser_witness",
-        "crates/maestro-models/tests/support/cloud_content_browser.rs",
+        "crates/maestro-providers/tests/support/cloud_content_browser.rs",
     ),
 ];
 

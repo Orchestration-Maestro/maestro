@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::response_support::failure as error;
+    use crate::invocation::{
+        TimestampProvider, assert_timestamp, context, final_stream, model, provider, ready,
+    };
     use maestro_models::records::sessions::{
         cleanup_session_resources, register_session_resource_cleanup,
     };
@@ -9,7 +11,7 @@ mod tests {
 
     #[test]
     fn maestro_cleanup_collects_failures_in_order() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let visits = Arc::new(Mutex::new(Vec::new()));
         let removals: Vec<_> = ["first", "success", "last"]
             .into_iter()
@@ -20,7 +22,7 @@ mod tests {
                     visits.lock().unwrap().push(name);
                     match name {
                         "success" => Ok(()),
-                        _ => Err(error(name)),
+                        _ => Err(DiagnosticErrorInfo::error(name)),
                     }
                 }))
             })
@@ -42,59 +44,12 @@ mod tests {
         assert!(cleanup_session_resources(None).is_ok());
     }
 
-    fn model(api: &str) -> maestro_models::records::types::Model {
-        serde_json::from_value(serde_json::json!({"id":"custom-model","name":"Custom","api":api,"provider":"custom","baseUrl":"https://fixture.invalid","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10})).unwrap()
-    }
-    fn context() -> maestro_models::records::types::Context {
-        maestro_models::records::types::Context {
-            system_prompt: Some("system".into()),
-            messages: vec![],
-            tools: None,
-        }
-    }
-    fn final_stream(timestamp: f64) -> maestro_models::records::types::AssistantMessageEventStream {
-        use maestro_models::records::types::{
-            AssistantMessageEvent, AssistantMessageEventStream, DoneReason,
-        };
-        let message = Arc::new(std::sync::RwLock::new(serde_json::from_value(serde_json::json!({"role":"assistant","content":[],"api":"custom","provider":"custom","model":"m","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":timestamp})).unwrap()));
-        let stream = AssistantMessageEventStream::new();
-        stream.push(AssistantMessageEvent::Done {
-            reason: DoneReason::Stop,
-            message,
-        });
-        stream
-    }
-    fn ready<F: std::future::Future>(future: F) -> F::Output {
-        let mut future = std::pin::pin!(future);
-        match future
-            .as_mut()
-            .poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
-        {
-            std::task::Poll::Ready(value) => value,
-            std::task::Poll::Pending => panic!("expected ready"),
-        }
-    }
-    fn provider(api: &str, timestamp: f64) -> maestro_models::records::api_registry::ApiProvider {
-        maestro_models::records::api_registry::ApiProvider {
-            api: api.into(),
-            stream: SharedHandle::new(TimestampProvider(timestamp)),
-            stream_simple: SharedHandle::new(TimestampProvider(timestamp + 1.0)),
-        }
-    }
-
-    fn assert_timestamp(stream: &maestro_models::AssistantMessageEventStream, expected: f64) {
-        assert_eq!(
-            ready(stream.result()).read().unwrap().timestamp.to_bits(),
-            expected.to_bits()
-        );
-    }
-
     #[test]
     fn explicit_protocol_keeps_the_public_model_api() {
         use maestro_models::{
             ApiProvider, Local, clear_api_providers, register_api_provider, stream_simple_via_for,
         };
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         register_api_provider(
             ApiProvider {
                 api: "selected-backend".into(),
@@ -129,99 +84,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
-    /// Invoke a retained default-family callback without changing its result observer.
-    fn assert_retained_timestamp<K: maestro_models::StreamOptionsFamily>(
-        callback: &maestro_models::StreamFunction<K>,
-        expected: f64,
-    ) -> crate::chat::TestResult {
-        let stream = callback.call(
-            model("separate"),
-            context(),
-            maestro_models::ProviderInvocation::Threaded(None, None),
-        )?;
-        assert_timestamp(&stream, expected);
-        Ok(())
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    fn assert_cloud_selection() -> crate::chat::TestResult {
-        for (call, expected) in [
-            (
-                maestro_models::stream(model("bedrock-converse-stream"), context(), None)?,
-                81.0_f64,
-            ),
-            (
-                maestro_models::stream_simple(model("bedrock-converse-stream"), context(), None)?,
-                82.0,
-            ),
-        ] {
-            assert_timestamp(&call, expected);
-        }
-        Ok(())
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    #[test]
-    fn maestro_platform_stores_keep_distinct_owners() -> crate::chat::TestResult {
-        use maestro_models::records::api_registry::*;
-        use maestro_models::{BedrockProviderModule, get_oauth_provider, reset_oauth_providers};
-        let _serial = crate::bundled::registry();
-        if !maestro_test_process::selection().is_child() {
-            let name = "maestro_platform_stores_keep_distinct_owners";
-            return {
-                let output = maestro_test_process::TestProcess::current(name)?
-                    .nocapture()
-                    .env_clear()
-                    .case("owners")
-                    .output()?;
-                assert!(output.status.success(), "{output:?}");
-                Ok(())
-            };
-        }
-        let visits = Arc::new(Mutex::new(Vec::new()));
-        let recorded = Arc::clone(&visits);
-        let removal = register_session_resource_cleanup(SharedHandle::new(move |session| {
-            recorded.lock().unwrap().push(session.map(str::to_owned));
-            Ok(())
-        }));
-        register_api_provider(provider("separate", 71.0), None);
-        let retained = get_api_provider("separate").unwrap();
-        let cloud = provider("bedrock-converse-stream", 81.0);
-        maestro_models::set_bedrock_provider_module(BedrockProviderModule {
-            stream_bedrock: cloud.stream,
-            stream_simple_bedrock: cloud.stream_simple,
-        });
-        let built_in: maestro_models::OAuthProviderHandle =
-            Arc::new(crate::named_account::Named("anthropic", "Anthropic"));
-        maestro_models::install_built_in_oauth_providers([built_in]);
-        reset_oauth_providers();
-        let account = get_oauth_provider("anthropic").unwrap();
-        assert_retained_timestamp(&retained.stream, 71.0)?;
-        cleanup_session_resources(Some("before"))?;
-        clear_api_providers();
-        assert!(Arc::ptr_eq(
-            &account,
-            &get_oauth_provider("anthropic").unwrap()
-        ));
-        assert_retained_timestamp(&retained.stream_simple, 72.0)?;
-        cleanup_session_resources(Some("cleared"))?;
-        maestro_models::reset_api_providers();
-        assert!(Arc::ptr_eq(
-            &account,
-            &get_oauth_provider("anthropic").unwrap()
-        ));
-        assert_cloud_selection()?;
-        removal.remove();
-        cleanup_session_resources(Some("removed"))?;
-        assert_eq!(
-            *visits.lock().unwrap(),
-            [Some("before".into()), Some("cleared".into())]
-        );
-        assert_retained_timestamp(&retained.stream, 71.0)?;
-        Ok(())
-    }
-
     fn assert_retained_provider(retained: &maestro_models::records::api_registry::ApiProvider) {
         assert_retained_families(&retained.stream, 20.0);
         assert_retained_families(&retained.stream_simple, 21.0);
@@ -247,14 +109,14 @@ mod tests {
     fn maestro_dispatch_preserves_registration_order() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::{stream, stream_simple};
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         clear_api_providers();
         for (api, stamp) in [("10", 10.0), ("2", 20.0), ("01", 30.0)] {
             register_api_provider(provider(api, stamp), Some("old".into()));
         }
         let retained = get_api_provider("2").unwrap();
         register_api_provider(provider("2", 40.0), Some("new".into()));
-        assert_eq!(crate::bundled::registered(), ["10", "2", "01"]);
+        assert_eq!(crate::registry::registered(), ["10", "2", "01"]);
         assert_eq!(
             ready(stream(model("2"), context(), None).unwrap().result())
                 .read()
@@ -272,7 +134,7 @@ mod tests {
             41.0_f64.to_bits()
         );
         unregister_api_providers("old");
-        assert_eq!(crate::bundled::registered(), ["2"]);
+        assert_eq!(crate::registry::registered(), ["2"]);
         unregister_api_providers("absent");
         clear_api_providers();
         assert!(get_api_providers().is_empty());
@@ -287,7 +149,7 @@ mod tests {
     #[test]
     fn maestro_api_wrappers_reject_wrong_models() {
         use maestro_models::records::api_registry::*;
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         clear_api_providers();
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         register_api_provider(
@@ -421,7 +283,7 @@ mod tests {
     fn maestro_dispatch_reports_missing_api() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::*;
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         clear_api_providers();
         assert_missing_api();
         let failure = DiagnosticErrorInfo {
@@ -593,7 +455,7 @@ mod tests {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::{complete, complete_simple};
         use maestro_models::records::types::*;
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         clear_api_providers();
         let output = final_stream(71.0);
         let retained = output.clone();
@@ -669,7 +531,7 @@ mod tests {
                             payload: serde_json::json!({"stamp":2}),
                             signal: hook_signal,
                         }),
-                        "payload_error" => Err(error("payload failure")),
+                        "payload_error" => Err(DiagnosticErrorInfo::error("payload failure")),
                         _ => Ok(maestro_models::PayloadHookInput {
                             payload,
                             signal: hook_signal,
@@ -685,9 +547,10 @@ mod tests {
                 response.headers.get("x").map(String::as_str),
                 Some("response")
             );
+            let failure = DiagnosticErrorInfo::error("response failure");
             Box::pin(async move {
                 match response.status.to_bits() {
-                    bits if bits == 500.0_f64.to_bits() => Err(error("response failure")),
+                    bits if bits == 500.0_f64.to_bits() => Err(failure),
                     _ => Ok(()),
                 }
             })
@@ -709,7 +572,7 @@ mod tests {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::stream;
         use maestro_models::records::types::*;
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         clear_api_providers();
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let (on_payload, on_response) = hook_callbacks(&calls);
@@ -719,8 +582,14 @@ mod tests {
         for (mode, expected) in [
             ("keep", Ok(1.0)),
             ("replace", Ok(2.0)),
-            ("payload_error", Err(error("payload failure"))),
-            ("response_error", Err(error("response failure"))),
+            (
+                "payload_error",
+                Err(DiagnosticErrorInfo::error("payload failure")),
+            ),
+            (
+                "response_error",
+                Err(DiagnosticErrorInfo::error("response failure")),
+            ),
         ] {
             let options = ProviderStreamOptions {
                 common: StreamOptions {
@@ -774,7 +643,7 @@ mod tests {
     fn maestro_callback_destruction_can_reenter() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::stream;
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         clear_api_providers();
         let drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         register_api_provider(reentrant_provider("reentrant", &drops), None);
@@ -809,20 +678,6 @@ mod tests {
         removal.remove();
         drop(removal);
         assert_eq!(drops.load(std::sync::atomic::Ordering::SeqCst), 4);
-    }
-
-    /// Retained invocation owner for the controlled provider.
-    struct TimestampProvider(f64);
-    impl<E: maestro_models::ProviderExecution, O>
-        maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for TimestampProvider
-    {
-        type Return = Result<
-            maestro_models::AssistantMessageEventStream,
-            maestro_models::DiagnosticErrorInfo,
-        >;
-        fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
-            Ok(final_stream(self.0))
-        }
     }
 
     /// Retained invocation owner for the controlled provider.

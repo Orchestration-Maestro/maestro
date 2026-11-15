@@ -15,6 +15,7 @@ pub mod api_registry;
 pub mod invocation;
 
 /// Generate access to an independently owned native or browser-local store.
+#[macro_export]
 macro_rules! platform_store_accessor {
     ($(#[$doc:meta])* $name:ident, $store:ident, $state:ty) => {
         $(#[$doc])*
@@ -30,4 +31,4 @@ macro_rules! platform_store_accessor {
         }
     };
 }
-pub(crate) use platform_store_accessor;
+pub use platform_store_accessor;

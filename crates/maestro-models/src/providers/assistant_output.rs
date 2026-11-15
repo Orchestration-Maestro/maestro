@@ -17,7 +17,8 @@ pub fn initial_message(model: &Model) -> AssistantMessage {
 }
 
 /// Initialize the provider-selected API while preserving the request descriptor.
-pub(crate) fn initial_message_for_api(model: &Model, api: &str) -> AssistantMessage {
+#[must_use]
+pub fn initial_message_for_api(model: &Model, api: &str) -> AssistantMessage {
     AssistantMessage {
         content: Vec::new(),
         api: api.to_owned(),
@@ -34,12 +35,13 @@ pub(crate) fn initial_message_for_api(model: &Model, api: &str) -> AssistantMess
 }
 
 /// The failure a callback reports, with its message as it is.
-pub(crate) fn callback_failure(error: DiagnosticErrorInfo) -> RequestFailure {
+#[must_use]
+pub fn callback_failure(error: DiagnosticErrorInfo) -> RequestFailure {
     RequestFailure::new(error.message)
 }
 
 /// End the stream with an error or abort update that keeps the partial message.
-pub(crate) fn fail(
+pub fn fail(
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
@@ -73,7 +75,7 @@ pub fn publish_failure(
 }
 
 /// Admit the family's producer without changing the provider's native fallback.
-pub(crate) fn start_producer_for<E: crate::ProviderExecution>(
+pub fn start_producer_for<E: crate::ProviderExecution>(
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
@@ -91,7 +93,10 @@ fn submit_http(task: BoxFuture<()>) -> Result<(), DiagnosticErrorInfo> {
 }
 
 /// Publish completion only after reduction and cancellation checks succeed.
-pub(crate) fn conclude(
+///
+/// # Errors
+/// Returns a failure for cancellation or an unsuccessful retained stop reason.
+pub fn conclude(
     events: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
@@ -100,7 +105,10 @@ pub(crate) fn conclude(
 }
 
 /// Classify one retained state using the protocol's synchronous failure-text selector.
-pub(crate) fn conclude_with(
+///
+/// # Errors
+/// Returns cancellation or the selected failure text for an unsuccessful stop reason.
+pub fn conclude_with(
     events: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,

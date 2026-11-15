@@ -1,6 +1,6 @@
 # `OpenAI` Completions
 
-`maestro-models` sends chat-completion requests directly and streams the answer as
+`maestro-providers` sends chat-completion requests directly and streams the answer as
 shared assistant updates. Two entry points start a call:
 
 - `stream_openai_completions(model, context, options)` takes the full
@@ -331,10 +331,8 @@ names instead; see [catalog feed acquisition](generation.md).
 use std::sync::Arc;
 
 use futures_util::stream;
-use maestro_models::{
-    AssistantMessageEvent, Context, HttpResponse, Model, OpenAICompletionsOptions, StreamOptions,
-    stream_openai_completions,
-};
+use maestro_models::{AssistantMessageEvent, Context, HttpResponse, Model, StreamOptions};
+use maestro_providers::{OpenAICompletionsOptions, stream_openai_completions};
 
 let model: Model = serde_json::from_value(serde_json::json!({
     "id": "controlled", "name": "Controlled", "api": "openai-completions",

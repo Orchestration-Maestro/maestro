@@ -1,9 +1,10 @@
 //! Native listener admission and owned shutdown.
 #[cfg(not(target_arch = "wasm32"))]
 use super::callback::{AuthorizationCode, CallbackResponse};
+use maestro_cancellation::Cancellation;
+use maestro_models::EventStream;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::OAuthError;
-use maestro_models::{Cancellation, EventStream};
 
 /// First outcome of the callback wait.
 pub(super) enum CallbackOutcome {

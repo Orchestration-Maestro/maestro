@@ -1,6 +1,6 @@
 # Google content generation
 
-`maestro_models::providers::google::conversion` converts a conversation, its tools
+`maestro_providers::providers::google::conversion` converts a conversation, its tools
 and finish reasons into the serializable content turns of the Gemini-style protocols.
 It sends nothing; requests and streams are built on top of it, and
 `process_google_stream` reduces the responses they receive. `GoogleThinkingLevel`
@@ -42,7 +42,7 @@ otherwise keeps the held one, even when it is empty.
 
 ```rust
 use maestro_models::Tool;
-use maestro_models::providers::google::conversion::convert_tools;
+use maestro_providers::providers::google::conversion::convert_tools;
 use serde_json::json;
 
 let tools = vec![Tool {
@@ -142,7 +142,7 @@ signature are read together; unknown members and later candidates are never deco
 
 ## Request preparation
 
-`build_params` in `maestro_models::providers::google::generative` prepares the parameters of a
+`build_params` in `maestro_providers::providers::google::generative` prepares the parameters of a
 content-generation request. It sends nothing, calls no hook and never reads a retained timeout,
 retry or transport setting; `GoogleOptions` is also exported at the crate root. Two operations compose:
 
@@ -151,7 +151,7 @@ retry or transport setting; `GoogleOptions` is also exported at the crate root. 
   [converted](#content-generation-conversion) context and raw options.
 
 ```rust
-use maestro_models::providers::google::generative::{build_params, build_simple_options};
+use maestro_providers::providers::google::generative::{build_params, build_simple_options};
 use maestro_models::{Context, Model, SimpleStreamOptions, StreamOptions, ThinkingLevel};
 use serde_json::json;
 
@@ -210,14 +210,14 @@ map the effort to a level and ignore custom budgets; other models use the select
 
 ## Request projection
 
-`maestro_models::providers::google::conversion::project_content_request` takes the JSON a
+`maestro_providers::providers::google::conversion::project_content_request` takes the JSON a
 payload hook returned and selects the model path and wire body of the public endpoint. It calls
 no hook, sends nothing and builds no URL or header: the endpoint, API version, HTTP options and
 cancellation stay with the transport caller, and a client-only member is never a body member.
 
 ```rust
 use maestro_models::compact_json;
-use maestro_models::providers::google::conversion::project_content_request;
+use maestro_providers::providers::google::conversion::project_content_request;
 use serde_json::{Value, json};
 
 let projected = project_content_request(json!({
@@ -284,7 +284,7 @@ Image output aliases form `imageOutputOptions`; an explicit object shallowly ove
 its members after the aliases. The public endpoint's policies remain unchanged.
 
 ```rust
-use maestro_models::providers::google::conversion::project_vertex_content_request;
+use maestro_providers::providers::google::conversion::project_vertex_content_request;
 use serde_json::json;
 
 let projected = project_vertex_content_request(json!({
@@ -300,9 +300,9 @@ assert_eq!(projected.body["generationConfig"]["modelConfig"]["preference"], "qua
 
 ## Request transport
 
-[`create_client`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/google/generative.rs)
+[`create_client`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-providers/src/providers/google/generative.rs)
 captures the supplied endpoint, key and headers without environment lookup or validation.
-[`ApiClient::prepare_request`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/google/conversion/api_client.rs)
+[`ApiClient::prepare_request`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-providers/src/providers/google/conversion/api_client.rs)
 consumes a projected body and borrows the selected HTTP options, returning a POST request
 and positive timeout milliseconds without sending or starting a timer. Cancellation is left
 unset for the invocation caller.
@@ -314,8 +314,8 @@ and emits no console diagnostics.
 
 ```rust
 use maestro_models::Model;
-use maestro_models::providers::google::generative::create_client;
-use maestro_models::providers::google::conversion::project_content_request;
+use maestro_providers::providers::google::generative::create_client;
+use maestro_providers::providers::google::conversion::project_content_request;
 use serde_json::{Value, json};
 
 let model: Model = serde_json::from_value(json!({
@@ -348,7 +348,7 @@ assert!(prepared.request.signal.is_none());
 Assistant output uses `google-generative-ai` even when the supplied model names another
 API; request processing and payload hooks still receive the original descriptor.
 
-[`stream_google`](../../crates/maestro-models/src/providers/google/generative.rs) takes
+[`stream_google`](../../crates/maestro-providers/src/providers/google/generative.rs) takes
 `GoogleOptions` and returns an independently produced event stream. Default native callers need a
 running Tokio runtime. Dropping the event reader does not cancel the producer; its retained
 result still observes completion. The module's `stream_simple_google` first selects
@@ -412,7 +412,7 @@ retain the effects preceding their failing conversion. Clean EOF uses the shared
 Assistant output uses `google-vertex` even when the supplied model names another API;
 request processing and payload hooks still receive the original descriptor.
 
-[`google_vertex`](../../crates/maestro-models/src/providers/google/managed/mod.rs)
+[`google_vertex`](../../crates/maestro-providers/src/providers/google/managed/mod.rs)
 exports `GoogleVertexOptions`, `stream_google_vertex`, `stream_simple_google_vertex`
 and their `_for` variants, also available at the crate root. Raw options add optional
 `project` and `location` to common controls, tool choice and the existing `GoogleThinking`.

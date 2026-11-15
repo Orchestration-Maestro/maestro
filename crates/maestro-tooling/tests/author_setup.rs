@@ -1459,7 +1459,7 @@ fn workspace(root: &Path) {
         "version = 4\n\n[[package]]\nname = \"maestro-app\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-extensions-guest\"\nversion = \"0.0.0\"\ndependencies = [\n \"shared\",\n]\n\n\
          [[package]]\nname = \"maestro-extensions-wasmtime\"\nversion = \"0.0.0\"\n\n\
-         [[package]]\nname = \"maestro-models\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"maestro-providers\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-test-process\"\nversion = \"0.0.0\"\n\n\
@@ -1480,7 +1480,7 @@ fn workspace(root: &Path) {
             "\n[dependencies]\nshared = { path = \"../shared\" }\n",
         ),
         ("maestro-extensions-wasmtime", ""),
-        ("maestro-models", ""),
+        ("maestro-providers", ""),
         ("maestro-subagents", ""),
         ("maestro-tooling", ""),
         ("maestro-test-process", ""),
@@ -1848,7 +1848,7 @@ fn prepared_cargo_checks_track_their_package_inputs() {
     prepare(root);
     let bundle = root.join("target/test-setup");
     for source in [
-        "crates/maestro-models/src/lib.rs",
+        "crates/maestro-providers/src/lib.rs",
         "crates/maestro-extensions-guest/src/lib.rs",
         "crates/shared/src/lib.rs",
         "crates/maestro-extensions-wasmtime/tests/fixtures/hello-extension/Cargo.toml.in",

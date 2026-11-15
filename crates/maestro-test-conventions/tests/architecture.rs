@@ -2743,6 +2743,7 @@ const DIRECTORY_CALLERS: &[&str] = &[
     "maestro-models-generator",
     "maestro-packages",
     "maestro-process",
+    "maestro-providers",
     "maestro-resources",
     "maestro-rpc",
     "maestro-session",
