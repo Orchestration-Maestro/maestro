@@ -278,7 +278,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-interchange",
             "maestro-lock",
             "maestro-cancellation",
-            "maestro-listeners",
             "maestro-models",
             "maestro-http",
             "maestro-brand",

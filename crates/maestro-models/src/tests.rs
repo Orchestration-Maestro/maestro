@@ -10,5 +10,5 @@ pub(crate) mod login_registry;
 #[path = "../tests/support/named_account.rs"]
 pub(crate) mod named_account;
 
-#[path = "../../maestro-models/tests/support/conclusions.rs"]
+#[path = "../tests/support/conclusions.rs"]
 pub(crate) mod conclusions;
