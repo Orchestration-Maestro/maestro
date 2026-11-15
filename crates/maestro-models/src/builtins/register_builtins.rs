@@ -1,14 +1,14 @@
 #![doc = include_str!("../../../../docs/models/module-linkage.md")]
 use super::raw_options;
 use crate::SharedHandle;
+use crate::providers::amazon_bedrock as bedrock;
+use crate::providers::anthropic_messages::endpoint as messages;
 use crate::providers::assistant_output::{fail, initial_message};
-use crate::providers::chat::endpoint as chat;
-use crate::providers::cloud::amazon_bedrock as bedrock;
-use crate::providers::content::{generative as content, managed as cloud_content};
-use crate::providers::messages::endpoint as messages;
-use crate::providers::reasoning::endpoint as conversation;
-use crate::providers::response_sessions::codex as sessions;
-use crate::providers::responses_api::{azure_transport as cloud, openai as responses};
+use crate::providers::google::{generative as content, managed as cloud_content};
+use crate::providers::mistral_conversations::endpoint as conversation;
+use crate::providers::openai_codex_responses::codex as sessions;
+use crate::providers::openai_completions::endpoint as chat;
+use crate::providers::openai_responses::{azure_transport as cloud, openai as responses};
 use crate::records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers,
     register_api_provider,

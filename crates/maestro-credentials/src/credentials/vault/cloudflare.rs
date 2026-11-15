@@ -2,7 +2,9 @@
 use super::{AuthCredential, AuthStorage};
 use maestro_models::{
     DiagnosticErrorInfo, Model,
-    providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url_with},
+    providers::openai_completions::cloudflare::{
+        is_cloudflare_provider, resolve_cloudflare_base_url_with,
+    },
 };
 
 impl AuthStorage {

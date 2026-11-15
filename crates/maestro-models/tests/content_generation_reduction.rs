@@ -23,7 +23,7 @@ use chat::{TestResult, model};
 #[cfg(not(target_arch = "wasm32"))]
 use json::{canonical, event_record};
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::content::google_shared::process_google_stream;
+use maestro_models::providers::google::conversion::process_google_stream;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, DiagnosticCode, DiagnosticErrorInfo,

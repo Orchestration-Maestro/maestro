@@ -70,11 +70,11 @@ These operations are not a second agent API inside the model library.
 
 Timeouts, retries, header layering, response hooks and cache preferences belong
 to the selected adapter. Empty common options do not select a universal policy.
-Read [Messages](../models/messages.md), [compatible chat](../models/chat-completions.md),
-[Responses](../models/responses.md), [response sessions](../models/response-sessions.md),
-[content generation](../models/content-generation.md),
-[cloud conversations](../models/cloud-conversations.md) or
-[native reasoning conversations](../models/reasoning-conversations.md) for the
+Read [Messages](../models/anthropic-messages.md), [compatible chat](../models/openai-completions.md),
+[Responses](../models/openai-responses.md), [response sessions](../models/openai-codex-responses.md),
+[content generation](../models/google.md),
+[cloud conversations](../models/amazon-bedrock.md) or
+[native reasoning conversations](../models/mistral-conversations.md) for the
 protocol being invoked. Typed retained hooks and clients are not JSON fields;
 see [record contracts](../records.md) and [raw extras](../models/module-linkage.md#raw-extras).
 

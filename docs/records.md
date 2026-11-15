@@ -28,11 +28,11 @@ inside their futures. Options, hooks and cancellation signals reach the adapter
 unchanged; adapters own payload policy, credentials, I/O and provider defaults.
 A payload hook receives `PayloadHookInput` and returns the selected record. Its `payload`
 field holds JSON parameters to keep, edit or replace; its optional `signal` field carries
-request cancellation for [content generation](models/content-generation.md#public-invocation).
+request cancellation for [content generation](models/google.md#public-invocation).
 Other bundled adapters supply no hook signal and ignore the returned signal.
 Response hooks receive status and headers under the owning adapter's policy:
-[content generation](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/content-generation.md)
-does not use the hook; [cloud conversations](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/cloud-conversations.md)
+[content generation](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/google.md)
+does not use the hook; [cloud conversations](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/amazon-bedrock.md)
 wait for the first known service event or successful end of stream, including
 empty or unknown-only streams. A failure before either prevents the hook from
 running. Other adapter policies are documented on their focused pages. Both hooks receive the invocation's model, shared and read-only.
@@ -55,25 +55,25 @@ copy common settings, adjust thinking budgets and classify context overflow.
 The [assistant-output guide](models/assistant-output.md) describes shared initialization
 and failure publication for provider and proxy streams.
 
-The [chat-completion guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md)
+The [chat-completion guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/openai-completions.md)
 covers direct streamed requests, header and cache policy, retries and the shared
 Cloudflare and Copilot helpers.
 
-The [response-event guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/responses.md)
+The [response-event guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/openai-responses.md)
 describes the internal history/tool converter and response-event reducer.
 
-The [response-session guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/response-sessions.md)
+The [response-session guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/openai-codex-responses.md)
 covers dedicated raw/simple invocation, automatic transport dispatch and session controls.
 
 The [OAuth authorization guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/oauth.md)
 covers data records, secure proof keys, escaped callback pages, device, subscription
 and response-account login and refresh.
 
-The [message-protocol guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/messages.md)
+The [message-protocol guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/anthropic-messages.md)
 covers direct streamed message requests with key authentication, their payload, cache and
 header policy, the event framing and repair, and replaceable clients.
 
-The [content-generation guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/content-generation.md)
+The [content-generation guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/google.md)
 covers the shared conversation, tool and finish-reason conversion of the Gemini-style protocols.
 
 See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
@@ -318,7 +318,7 @@ Model compatibility is one ordered open object, independent of the protocol iden
 `ModelCompat` retains mixed-family and custom members and allows ordinary map edits.
 The typed completion, response and message compatibility records convert into it with
 `From`, omitting absent optional fields. Request decisions belong to the
-[provider adapters](models/chat-completions.md), not shared-record decoding.
+[provider adapters](models/openai-completions.md), not shared-record decoding.
 
 `short_hash` mixes supplied UTF-16 units with wrapping unsigned arithmetic and
 emits two concatenated lower-case base-36 words. It is not a cryptographic hash.

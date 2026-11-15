@@ -1,7 +1,7 @@
 //! Whole-root replay observed in each protocol's outgoing HTTP request.
 #![cfg(test)]
 use crate::{chat, root_routes, transport};
-use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
+use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::*;
 use serde_json::{Value, json};
 

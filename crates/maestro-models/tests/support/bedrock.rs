@@ -174,7 +174,7 @@ pub fn credential_scope(authorization: &str) -> Option<(&str, &str)> {
     Some((key, region))
 }
 
-use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
+use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::{AssistantMessage, StreamOptions};
 use serde::Deserialize;
 

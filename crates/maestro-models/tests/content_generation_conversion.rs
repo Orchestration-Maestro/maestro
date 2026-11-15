@@ -1,6 +1,6 @@
 //! Recorded conversion cases for the shared content-generation helpers.
 
-use maestro_models::providers::content::google_shared::{
+use maestro_models::providers::google::conversion::{
     self, GoogleThinkingLevel as ModuleThinkingLevel, ThoughtMetadata,
 };
 use maestro_models::{Context, GoogleThinkingLevel, Model, Tool};
@@ -133,14 +133,14 @@ fn run(row: &Row) -> TestResult<Expected> {
     match row.operation.as_str() {
         "isThinkingPart" => {
             let given: ThoughtInput = input(row)?;
-            value(google_shared::is_thinking_part(&ThoughtMetadata {
+            value(conversion::is_thinking_part(&ThoughtMetadata {
                 thought: given.thought,
                 thought_signature: given.thought_signature,
             }))
         }
         "retainThoughtSignature" => {
             let given: RetainInput = input(row)?;
-            match google_shared::retain_thought_signature(
+            match conversion::retain_thought_signature(
                 given.existing.as_deref(),
                 given.incoming.as_deref(),
             ) {
@@ -148,27 +148,25 @@ fn run(row: &Row) -> TestResult<Expected> {
                 None => Ok(Expected::Absent(true)),
             }
         }
-        "requiresToolCallId" => value(google_shared::requires_tool_call_id(&input::<String>(row)?)),
-        "mapToolChoice" => value(google_shared::map_tool_choice(&input::<String>(row)?)),
-        "mapStopReason" => match google_shared::map_stop_reason(&input::<String>(row)?) {
+        "requiresToolCallId" => value(conversion::requires_tool_call_id(&input::<String>(row)?)),
+        "mapToolChoice" => value(conversion::map_tool_choice(&input::<String>(row)?)),
+        "mapStopReason" => match conversion::map_stop_reason(&input::<String>(row)?) {
             Ok(reason) => value(reason),
             Err(error) => Ok(Expected::Error(error.message)),
         },
-        "mapStopReasonString" => value(google_shared::map_stop_reason_string(&input::<String>(
-            row,
-        )?)),
+        "mapStopReasonString" => value(conversion::map_stop_reason_string(&input::<String>(row)?)),
         "thinkingLevel" => value(thinking_level(&input::<String>(row)?)?),
         "convertMessages" => {
             let given: MessagesInput = input(row)?;
             let before = given.context.clone();
-            let converted = google_shared::convert_messages(&given.model, &given.context);
+            let converted = conversion::convert_messages(&given.model, &given.context);
             assert_eq!(given.context, before, "input of case {}", row.id);
             value(converted)
         }
         "convertTools" => {
             let given: ToolsInput = input(row)?;
             let before = given.tools.clone();
-            let converted = google_shared::convert_tools(&given.tools, given.use_parameters);
+            let converted = conversion::convert_tools(&given.tools, given.use_parameters);
             assert_eq!(given.tools, before, "input of case {}", row.id);
             match converted {
                 Some(declarations) => value(declarations),

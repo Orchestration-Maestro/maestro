@@ -534,10 +534,10 @@ fn dedicated_simple(
     options: Option<SimpleStreamOptions>,
 ) -> TestResult<Result<AssistantMessageEventStream, DiagnosticErrorInfo>> {
     use maestro_models::providers::{
-        chat::endpoint as chat,
-        messages::endpoint as messages,
-        reasoning::endpoint as conversation,
-        responses_api::{azure_transport as cloud, openai},
+        anthropic_messages::endpoint as messages,
+        mistral_conversations::endpoint as conversation,
+        openai_completions::endpoint as chat,
+        openai_responses::{azure_transport as cloud, openai},
     };
     let (model, context) = (bundled::protocol_model(protocol)?, bundled::conversation()?);
     Ok(match protocol.api {
@@ -548,7 +548,7 @@ fn dedicated_simple(
             openai::stream_simple_openai_responses(model, context, options)
         }
         "azure-openai-responses" => cloud::stream_simple_azure_openai_responses(model, context, options),
-        "openai-codex-responses" => maestro_models::providers::response_sessions::codex::stream_simple_openai_codex_responses(model, context, options),
+        "openai-codex-responses" => maestro_models::providers::openai_codex_responses::codex::stream_simple_openai_codex_responses(model, context, options),
         _ => return Err("unknown protocol".into()),
     })
 }

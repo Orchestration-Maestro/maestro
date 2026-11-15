@@ -9,7 +9,7 @@ use crate::response_support::{
     observe, option, reasoning_summary, request, target as target_with_descriptor,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::responses_api::openai::{
+use maestro_models::providers::openai_responses::openai::{
     OpenAIResponsesServiceTier, stream_openai_responses, stream_simple_openai_responses,
 };
 #[cfg(not(target_arch = "wasm32"))]

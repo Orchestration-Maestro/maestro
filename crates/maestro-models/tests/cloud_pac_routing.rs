@@ -29,7 +29,7 @@ fn pac_bedrock_routes_reach_raw_and_simple_streams() -> TestResult {
 
 /// Consume the same script with a destination that selects DIRECT instead of the proxy.
 async fn direct_conversation() -> TestResult {
-    use maestro_models::providers::cloud::amazon_bedrock::{stream_bedrock, stream_simple_bedrock};
+    use maestro_models::providers::amazon_bedrock::{stream_bedrock, stream_simple_bedrock};
     let model = bedrock::model(&std::env::var("MAESTRO_DIRECT_ORIGIN")?)?;
     let context = bedrock::context("question")?;
     let stream = if std::env::var_os("MAESTRO_SIMPLE").is_some() {
@@ -302,7 +302,7 @@ fn routed_replies(
 
 /// Four sends over an FTP-held script, then a refused source that ends the send.
 async fn ftp_source_conversations() -> TestResult {
-    use maestro_models::providers::cloud::amazon_bedrock::stream_bedrock;
+    use maestro_models::providers::amazon_bedrock::stream_bedrock;
     let origin = std::env::var("MAESTRO_ORIGIN")?;
     for _ in 0..4 {
         let stream = stream_bedrock(

@@ -123,7 +123,7 @@ local estimates in USD per million tokens; update them for your deployment.
 
 Set `CONTENT_LAB_KEY` in the launching process without storing the secret in the
 file. `maestro --list-models content-lab` checks discovery without a paid call.
-Requests and thinking budgets are described in [content generation](content-generation.md).
+Requests and thinking budgets are described in [content generation](google.md).
 
 ## Reload and diagnose
 
@@ -147,10 +147,10 @@ These APIs cover the custom HTTP endpoints above:
 
 | `api` | Endpoint protocol | Request details |
 | --- | --- | --- |
-| `openai-completions` | Chat Completions | [Chat completions](chat-completions.md) |
-| `openai-responses` | Responses | [Responses](responses.md) |
-| `anthropic-messages` | Messages | [Messages](messages.md) |
-| `google-generative-ai` | Content generation | [Content generation](content-generation.md) |
+| `openai-completions` | Chat Completions | [Chat completions](openai-completions.md) |
+| `openai-responses` | Responses | [Responses](openai-responses.md) |
+| `anthropic-messages` | Messages | [Messages](anthropic-messages.md) |
+| `google-generative-ai` | Content generation | [Content generation](google.md) |
 
 `api` is an open protocol identifier, not a schema enum. Other built-in adapters
 and extension-registered APIs have their own requirements; see the
@@ -318,7 +318,7 @@ Two more fields default to `false`. `sendSessionAffinityHeaders` sends the
 session ID as `x-session-affinity` when caching is on and the request uses an API
 key; the header is skipped for an empty session ID, an account token and a
 subscription token. `allowEmptySignature` replays unsigned thinking with
-`signature: ""` instead of converting it to text. See [Messages requests](messages.md).
+`signature: ""` instead of converting it to text. See [Messages requests](anthropic-messages.md).
 
 ## Chat Completions compatibility
 
@@ -416,4 +416,4 @@ For `openai-responses`, `supportsDeveloperRole`, `sendSessionIdHeader` and
 `developer` on reasoning models, or as `system` when `false`; the second controls
 the session ID header; the third allows `prompt_cache_retention: "24h"` when long
 retention is requested. Use `false` for any capability a proxy rejects. Chat Completions reasoning-format and
-routing switches do not configure the Responses adapter. See [Responses](responses.md).
+routing switches do not configure the Responses adapter. See [Responses](openai-responses.md).

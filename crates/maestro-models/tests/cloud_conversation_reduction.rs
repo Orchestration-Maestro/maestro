@@ -133,7 +133,7 @@ async fn partial_arguments() -> TestResult {
             )?,
         ],
     );
-    let stream = maestro_models::providers::cloud::amazon_bedrock::stream_bedrock(
+    let stream = maestro_models::providers::amazon_bedrock::stream_bedrock(
         bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")?,
         bedrock::context("Hello")?,
         Some(bedrock::options(&pending.scripted)),
@@ -248,7 +248,7 @@ fn cloud_arguments_retain_roots_until_stop() -> TestResult {
             let mut options = bedrock::options(&bedrock::serve(vec![]));
             // Event framing may poll the exhausted body again.
             options.common.fetch = Some(crate::root_routes::body_fetch(Box::pin(body.fuse())));
-            let stream = maestro_models::providers::cloud::amazon_bedrock::stream_bedrock(
+            let stream = maestro_models::providers::amazon_bedrock::stream_bedrock(
                 bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")?,
                 bedrock::context("Hello")?,
                 Some(options),

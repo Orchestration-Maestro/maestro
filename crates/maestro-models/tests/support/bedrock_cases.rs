@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use maestro_models::StreamOptions;
-use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
+use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
 
 use crate::bedrock;
 use crate::chat::TestResult;

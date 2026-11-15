@@ -1,5 +1,5 @@
-use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
-use maestro_models::providers::response_sessions::codex::{
+use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
+use maestro_models::providers::openai_codex_responses::codex::{
     Nullable, OpenAICodexReasoningSummary, OpenAICodexTextVerbosity,
     close_openai_codex_web_socket_sessions, get_openai_codex_web_socket_debug_stats,
     reset_openai_codex_web_socket_debug_stats, stream_openai_codex_responses,

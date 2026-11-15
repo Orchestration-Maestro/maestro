@@ -4,7 +4,7 @@
 use crate::{bedrock, chat, loopback, socks, transport};
 
 use chat::TestResult;
-use maestro_models::providers::cloud::amazon_bedrock::{
+use maestro_models::providers::amazon_bedrock::{
     BedrockOptions, stream_bedrock, stream_simple_bedrock,
 };
 use maestro_models::{SimpleStreamOptions, StreamOptions};

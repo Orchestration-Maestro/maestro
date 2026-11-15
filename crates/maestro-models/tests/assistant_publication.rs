@@ -133,8 +133,12 @@ fn launch_native(
     common: maestro_models::StreamOptions,
 ) -> chat::TestResult<maestro_models::AssistantMessageEventStream> {
     use maestro_models::providers::{
-        chat::endpoint::*, messages::endpoint::*, response_sessions::codex::*,
-        responses_api::openai::*,
+        anthropic_messages::endpoint::{AnthropicOptions, stream_anthropic},
+        openai_codex_responses::codex::{
+            OpenAICodexResponsesOptions, stream_openai_codex_responses,
+        },
+        openai_completions::endpoint::{OpenAICompletionsOptions, stream_openai_completions},
+        openai_responses::openai::{OpenAIResponsesOptions, stream_openai_responses},
     };
     let model = chat::model(
         &serde_json::json!({"api": api, "provider":"fixture", "baseUrl":"https://fixture.invalid"}),
@@ -185,8 +189,12 @@ fn launch_other(
     common: maestro_models::StreamOptions,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::providers::{
-        cloud::amazon_bedrock::*, content::generative::*, reasoning::endpoint::*,
-        responses_api::azure_transport::*,
+        amazon_bedrock::{BedrockOptions, stream_bedrock},
+        google::generative::{GoogleOptions, stream_google},
+        mistral_conversations::endpoint::{MistralOptions, stream_mistral},
+        openai_responses::azure_transport::{
+            AzureOpenAIResponsesOptions, stream_azure_openai_responses,
+        },
     };
     match model.api.as_str() {
         "mistral-conversations" => stream_mistral(
@@ -397,9 +405,14 @@ fn identity_stream(
     common: maestro_models::StreamOptions,
 ) -> chat::TestResult<maestro_models::AssistantMessageEventStream> {
     use maestro_models::providers::{
-        cloud::amazon_bedrock::*,
-        content::{generative::*, managed::*},
-        responses_api::azure_transport::*,
+        amazon_bedrock::{BedrockOptions, stream_bedrock},
+        google::{
+            generative::{GoogleOptions, stream_google},
+            managed::{GoogleVertexOptions, stream_google_vertex},
+        },
+        openai_responses::azure_transport::{
+            AzureOpenAIResponsesOptions, stream_azure_openai_responses,
+        },
     };
     let context = chat::context(
         &serde_json::json!({"messages": [{"role":"user", "content":"question", "timestamp":1}]}),

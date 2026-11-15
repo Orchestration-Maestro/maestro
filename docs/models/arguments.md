@@ -25,7 +25,7 @@ strict JSON first, then changed literal repair. Native magnitude and lone-surrog
 errors retry raw projection: overwritten lone-surrogate members may be discarded
 when the surviving value is representable. If projection fails, the native error
 is retained; failure returns the last attempted strict reader's cause through
-`DiagnosticErrorInfo`. See the [whole-value conversion boundary](chat-completions.md#whole-value-conversion)
+`DiagnosticErrorInfo`. See the [whole-value conversion boundary](openai-completions.md#whole-value-conversion)
 for unrepresentable member names.
 
 `parse_streaming_json(Option<&str>)` returns a JSON value from the accumulated

@@ -220,7 +220,7 @@ It wins over the resource name. Standard roots normalize to `/openai/v1`.
 `AZURE_OPENAI_API_VERSION` defaults to `v1`. To map a catalog model ID to a
 separately named deployment, set `AZURE_OPENAI_DEPLOYMENT_NAME_MAP` to
 `model-id=deployment-name,other-model=other-deployment`. A match changes the sent
-model name, not its catalog identity or prices. See [Azure request configuration](models/responses.md#cloud-invocation)
+model name, not its catalog identity or prices. See [Azure request configuration](models/openai-responses.md#cloud-invocation)
 for SDK overrides and endpoint rules, and [Azure Responses setup](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/how-to/responses).
 
 ### Amazon Bedrock
@@ -247,7 +247,7 @@ Region selection uses an explicit SDK option, then `AWS_REGION`, then
 `AWS_DEFAULT_REGION`. Profiles may provide their own region; without a profile
 or configured region, a standard catalog endpoint supplies it. Custom endpoints
 without a profile or region fall back to `us-east-1`. See the full
-[region and credential chain](models/cloud-conversations.md#region-profile-and-endpoint)
+[region and credential chain](models/amazon-bedrock.md#region-profile-and-endpoint)
 before using an inference-profile ARN or proxy.
 
 For application inference profiles whose ID and name do not identify Claude,
@@ -330,7 +330,7 @@ valid contents and permissions are checked later when preparing a request.
 `GOOGLE_CLOUD_API_KEY` is the API-key alternative and takes precedence over
 application-default credentials. It is different from Gemini's `GEMINI_API_KEY`.
 Browser Vertex calls require a real API key; they cannot read your native ADC
-file. See [Vertex invocation and credentials](models/content-generation.md#cloud-invocation)
+file. See [Vertex invocation and credentials](models/google.md#cloud-invocation)
 and [Google ADC setup](https://cloud.google.com/docs/authentication/provide-credentials-adc).
 
 ## Custom endpoints and providers

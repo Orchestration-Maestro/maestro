@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use indexmap::IndexMap;
-use maestro_models::providers::cloud::amazon_bedrock::{stream_bedrock, stream_simple_bedrock};
+use maestro_models::providers::amazon_bedrock::{stream_bedrock, stream_simple_bedrock};
 use maestro_models::{
     AssistantMessage, AssistantMessageEventStream, BedrockOptions, BedrockThinkingDisplay,
     CacheRetention, DiagnosticErrorInfo, SimpleStreamOptions, StreamOptions, ThinkingBudgets,

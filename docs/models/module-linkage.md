@@ -19,7 +19,7 @@ The registry starts with these protocols, in this order:
 8. `google-vertex`
 9. `bedrock-converse-stream`
 
-The simulated provider is never registered implicitly, and no placeholder stands in
+The scripted provider is never registered implicitly, and no placeholder stands in
 for a protocol whose adapter this crate does not contain.
 
 | Operation | Effect |
@@ -41,10 +41,10 @@ an empty message with the
 descriptor's identity and zero usage, and the error stop reason even when the
 signal was already aborted. Every other failure follows the adapter's own stream
 path. Cloud content-generation simple functions return streams directly and also
-support native credentials; see the provider pages: [messages](messages.md),
-[chat completions](chat-completions.md),
-[reasoning conversations](reasoning-conversations.md), [responses](responses.md)
-[response sessions](response-sessions.md) and [content generation](content-generation.md#public-invocation).
+support native credentials; see the provider pages: [messages](anthropic-messages.md),
+[chat completions](openai-completions.md),
+[reasoning conversations](mistral-conversations.md), [responses](openai-responses.md)
+[response sessions](openai-codex-responses.md) and [content generation](google.md#public-invocation).
 
 `stream`, `stream_simple`, `complete` and `complete_simple` resolve the registry.
 An unregistered `api` returns `No API provider registered for api: {api}`. A
@@ -58,8 +58,8 @@ retain that family through the same protocol producer. `complete_for` and
 
 ## Cloud-conversation callback replacement
 
-[Cloud conversations](cloud-conversations.md) also support generic dispatch. Their typed
-stream functions remain in `maestro_models::providers::cloud::amazon_bedrock`;
+[Cloud conversations](amazon-bedrock.md) also support generic dispatch. Their typed
+stream functions remain in `maestro_models::providers::amazon_bedrock`;
 `BedrockOptions` and `BedrockThinkingDisplay` are exported at the crate root.
 
 `set_bedrock_provider_module` installs a `BedrockProviderModule` containing raw and simple
@@ -94,13 +94,13 @@ strings and a named function must be an object. Null handling is described below
 
 A `null` summary and a missing summary both reach the adapter as no summary. A
 `null` service tier reaches the adapter as an explicit null tier and a missing
-one as no tier; the [responses page](responses.md) describes the payload built
+one as no tier; the [responses page](openai-responses.md) describes the payload built
 from them, including what a payload hook may change. Cloud response summaries also
 accept null as no summary. Content-generation `toolChoice` and `thinking` accept null as
 omitted; its thinking budget and level reject null when present. Cloud content-generation scope accepts null as omitted. Other listed fields reject null. Within a cloud-conversation budget object, missing or null
 level slots use the adapter's existing budget defaults.
 
-See the [response-session guide](response-sessions.md) for adapter-owned request behavior.
+See the [response-session guide](openai-codex-responses.md) for adapter-owned request behavior.
 
 ## Objects that are not JSON
 

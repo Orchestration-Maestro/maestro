@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, HashSet};
 use std::sync::{Arc, Mutex};
 
-use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
+use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::{Fetch, ProviderResponse, StreamOptions, default_fetch};
 use serde::Deserialize;
 

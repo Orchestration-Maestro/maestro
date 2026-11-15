@@ -547,7 +547,7 @@ fn provider_projection_does_not_emit_schema_metadata() {
 #[track_caller]
 fn assert_projections(tool: &Tool) {
     for (use_parameters, field) in [(true, "parameters"), (false, "parametersJsonSchema")] {
-        let declarations = maestro_models::providers::content::google_shared::convert_tools(
+        let declarations = maestro_models::providers::google::conversion::convert_tools(
             std::slice::from_ref(tool),
             use_parameters,
         );

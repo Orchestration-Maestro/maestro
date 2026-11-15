@@ -6,12 +6,12 @@ use maestro_models::Message;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::Model;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::chat::cloudflare::{
+use maestro_models::providers::openai_completions::cloudflare::{
     CLOUDFLARE_AI_GATEWAY_ANTHROPIC_BASE_URL, CLOUDFLARE_AI_GATEWAY_COMPAT_BASE_URL,
     CLOUDFLARE_AI_GATEWAY_OPENAI_BASE_URL, CLOUDFLARE_WORKERS_AI_BASE_URL, is_cloudflare_provider,
     resolve_cloudflare_base_url,
 };
-use maestro_models::providers::chat::github_copilot_headers::{
+use maestro_models::providers::openai_completions::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input, infer_copilot_initiator,
 };
 use serde_json::json;

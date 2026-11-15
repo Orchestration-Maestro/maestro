@@ -171,7 +171,7 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | C11 | The terminal RPC client's checks live in maestro-packages (`examples/rpc_extension_ui.rs` and the [RPC guide](../rpc.md)); Maestro keeps the native peers they run against. |
 | C12 | `crates/maestro-tooling/tests/author_setup.rs:541-559,905-969,1052-1060`; `tests/fixtures/recipe_support.rs`; the `tooling-command` and `tooling-wrapper` families of `crates/maestro-test-process/tests/support/native`; browser/setup/recipe consumers. |
 | C13 | `crates/maestro-packages/tests/cache_support/native/mod.rs:11-28`; `tests/candidate_inspection_checks.rs:169-176`; `tests/capture_context_checks.rs:34-52`; `tests/git_staging_checks.rs:1042-1056`; native Git and package-manager unit consumers. |
-| C14 | `crates/maestro-models/src/providers/content/google_shared/node_auth/tests/adc.rs:423-434`; `tests/support/profile_files.rs:24-39,60` and every process-profile consumer. |
+| C14 | `crates/maestro-models/src/providers/google/conversion/node_auth/tests/adc.rs:423-434`; `tests/support/profile_files.rs:24-39,60` and every process-profile consumer. |
 | C15 | `crates/maestro-daemon/tests/desktop_notification.rs:20-26,72-74`; `tests/repository_discovery.rs:365-380`. |
 | C16 | `crates/maestro-test-conventions/tests/support/mod.rs:181-185,229-272`; `tests/architecture.rs:1164`; retained non-executed rejection input in `tests/config_scripts.rs:16-23`. |
 | C17 | `crates/maestro-process/src/children/tests.rs:184,315,604`; shell/PTY/capture modules; `crates/maestro-detection/tests/live_foreground.rs:13-48`; `crates/maestro-cli/tests/startup_stdout.rs:35-42`; `crates/maestro-credentials/src/credentials/tests.rs:183-217`; RPC native-signal cases. |

@@ -9,7 +9,7 @@ mod browser {
     };
 
     use futures_util::FutureExt;
-    use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
+    use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
     use maestro_models::{AssistantMessageEvent, SharedHandle, StopReason, StreamOptions};
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 

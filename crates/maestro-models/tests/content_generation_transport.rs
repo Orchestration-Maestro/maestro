@@ -10,11 +10,11 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 use indexmap::IndexMap;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::content::generative::create_client;
-#[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::content::google_shared::{
+use maestro_models::providers::google::conversion::{
     ApiClient, PreparedContentRequest, project_content_request,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use maestro_models::providers::google::generative::create_client;
 #[cfg(not(target_arch = "wasm32"))]
 use serde::Deserialize;
 #[cfg(not(target_arch = "wasm32"))]

@@ -3,7 +3,7 @@
 use std::collections::BTreeSet;
 
 use maestro_models::compact_json;
-use maestro_models::providers::content::google_shared::{
+use maestro_models::providers::google::conversion::{
     project_content_request, project_vertex_content_request,
 };
 use serde::Deserialize;

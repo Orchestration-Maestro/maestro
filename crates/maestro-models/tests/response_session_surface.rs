@@ -1,7 +1,7 @@
 //! External response-session records and operation paths.
 
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::response_sessions::codex::*;
+use maestro_models::providers::openai_codex_responses::codex::*;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Context, Model, OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats};
 
@@ -87,7 +87,7 @@ fn public_records() -> OpenAICodexResponsesOptions {
         assert!(serde_json::to_value(verbosity).unwrap().is_string());
     }
     let value = Nullable::Value(
-        maestro_models::providers::responses_api::openai::OpenAIResponsesServiceTier::Priority,
+        maestro_models::providers::openai_responses::openai::OpenAIResponsesServiceTier::Priority,
     );
     assert_eq!(serde_json::to_value(value).unwrap(), "priority");
     options

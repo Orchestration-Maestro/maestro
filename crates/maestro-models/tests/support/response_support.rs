@@ -2,7 +2,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use crate::chat::{TestResult, context, model, overlay};
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_models::providers::responses_api::openai::OpenAIResponsesReasoningSummary;
+use maestro_models::providers::openai_responses::openai::OpenAIResponsesReasoningSummary;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_models::{Cancellation, Fetch, FetchError, HttpRequest, HttpResponse, StreamOptions};
 #[cfg(not(target_arch = "wasm32"))]

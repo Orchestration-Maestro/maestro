@@ -42,24 +42,24 @@ pub use maestro_http::{
     Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch, fetch_optional_body,
     unit_random,
 };
-pub use providers::chat::endpoint::{
-    OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
-};
-pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
-pub use providers::content::generative::{GoogleOptions, stream_google, stream_google_for};
-pub use providers::content::google_shared::GoogleThinkingLevel;
-pub use providers::messages::endpoint::{
+pub use providers::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
+pub use providers::anthropic_messages::endpoint::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
     AnthropicThinkingDisplay, stream_anthropic, stream_anthropic_for,
 };
-pub use providers::reasoning::endpoint::{
+pub use providers::google::conversion::GoogleThinkingLevel;
+pub use providers::google::generative::{GoogleOptions, stream_google, stream_google_for};
+pub use providers::mistral_conversations::endpoint::{
     MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice, stream_mistral,
     stream_mistral_for,
 };
-pub use providers::responses_api::azure_transport::{
+pub use providers::openai_completions::endpoint::{
+    OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
+};
+pub use providers::openai_responses::azure_transport::{
     AzureOpenAIResponsesOptions, stream_azure_openai_responses, stream_azure_openai_responses_for,
 };
-pub use providers::responses_api::openai::{
+pub use providers::openai_responses::openai::{
     OpenAIResponsesOptions, stream_openai_responses, stream_openai_responses_for,
 };
 pub use records::api_registry::{
@@ -87,7 +87,13 @@ pub use records::string_enum::{EnumOptions, string_enum};
 pub use records::types::*;
 
 pub mod providers;
-pub use providers::scripted::*;
+pub use providers::faux::{
+    FauxAssistantContent, FauxAssistantMessageOptions, FauxContentBlock, FauxModelDefinition,
+    FauxProviderRegistration, FauxProviderState, FauxResponseCallback, FauxResponseFactory,
+    FauxResponseInput, FauxResponseOptions, FauxResponseStep, FauxTokenSize, FauxToolCallOptions,
+    RegisterFauxProviderOptions, faux_assistant_message, faux_text, faux_thinking, faux_tool_call,
+    register_faux_provider,
+};
 
 pub mod oauth;
 pub use oauth::proof_key::{Pkce, generate_pkce};
@@ -102,7 +108,7 @@ pub use oauth::{
     reset_oauth_providers, unregister_oauth_provider,
 };
 
-pub use providers::response_sessions::codex::{
+pub use providers::openai_codex_responses::codex::{
     OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats, stream_openai_codex_responses,
     stream_openai_codex_responses_for,
 };
@@ -125,7 +131,7 @@ pub use maestro_http::websocket::{
 };
 pub use maestro_interchange::tool_info::ToolInfo;
 
-pub use providers::content::managed::{
+pub use providers::google::managed::{
     GoogleVertexOptions, stream_google_vertex, stream_google_vertex_for,
     stream_simple_google_vertex, stream_simple_google_vertex_for,
 };

@@ -48,7 +48,7 @@ A session request without its own `timeout_ms` takes the provider retry setting,
 the `httpIdleTimeoutMs` setting, so every provider that reads the timeout honours it;
 see the [SDK guide](application/sdk.md). The Mistral transport applies the same timeout
 to the wait for each stream chunk, and rejects a negative or fractional value as the
-other providers do; see [reasoning conversations](models/reasoning-conversations.md).
+other providers do; see [reasoning conversations](models/mistral-conversations.md).
 
 ## Three context-overflow signals
 

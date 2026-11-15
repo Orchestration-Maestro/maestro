@@ -3,11 +3,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 use std::collections::BTreeMap;
 
-use maestro_models::providers::content::generative::{
-    GoogleOptions, GoogleThinking, build_params, build_simple_options,
-};
-use maestro_models::providers::content::google_shared::{
+use maestro_models::providers::google::conversion::{
     FunctionCallingConfigMode, GenerateContentParameters,
+};
+use maestro_models::providers::google::generative::{
+    GoogleOptions, GoogleThinking, build_params, build_simple_options,
 };
 use maestro_models::{
     Cancellation, Context, GoogleThinkingLevel, Model, SimpleStreamOptions, StreamOptions,

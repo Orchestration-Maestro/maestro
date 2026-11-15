@@ -1,7 +1,7 @@
 //! Real destination TLS exchanges observed after isolated provider calls finish.
 
 use crate::{TestResult, bedrock, loopback, tls, transport};
-use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
+use maestro_models::providers::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::{Context, Model, StreamOptions};
 use serde::Deserialize;
 use serde_json::Value;

@@ -9,7 +9,7 @@ separate features.
 
 `utils::attachments::load_attachment` accepts a literal URL, already-read
 file/blob bytes, or a bare byte buffer. Supply a
-[model Fetch transport](../models/chat-completions.md#transport). URL sources issue one GET through
+[model Fetch transport](../models/openai-completions.md#transport). URL sources issue one GET through
 that port and reject non-success status before consuming the body.
 Nonempty filename overrides win. Without one, file metadata supplies the name;
 URL input uses the last slash-separated segment of the original full string,

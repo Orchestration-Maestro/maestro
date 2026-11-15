@@ -63,7 +63,7 @@ Choose one credential route:
 - **API key:** enter `/login`, choose **Use an API key**, select a provider and
   paste its key. Alternatively, set that provider's environment variable before
   starting Maestro. For example, `OPENAI_API_KEY` supplies an OpenAI key; see
-  [request credentials](credentials.md) and [OpenAI requests](models/responses.md).
+  [request credentials](credentials.md) and [OpenAI requests](models/openai-responses.md).
   Do not put a real key in a shared terminal transcript or a command-line flag.
 
 Stored sign-ins go to `~/.maestro/agent/auth.json` by default. A nonempty

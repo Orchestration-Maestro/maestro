@@ -21,7 +21,7 @@ use catalog routing, including the responses API for `gpt-5.1`.
   are checked separately, including chunk usage and per-choice fallback.
 
 These checks qualify conversion and accounting, not a server's cache-hit policy
-or live billing. See [chat completions](chat-completions.md) for adapter rules and
+or live billing. See [chat completions](openai-completions.md) for adapter rules and
 [module linkage](module-linkage.md) for generic dispatch and option decoding.
 
 ## Run the cases
@@ -93,7 +93,7 @@ The message qualification injects finite, named message events ending in
 `message_stop`. Its 20 tests own 142 distinct inputs: 126 wire invocations,
 15 fixed selector inputs and one catalog expansion. These responses qualify
 local conversion, not remote acceptance, authentication validity, cache hits,
-billing or reasoning quality. See [message protocol](messages.md) for the
+billing or reasoning quality. See [message protocol](anthropic-messages.md) for the
 adapter's request and reduction rules.
 
 The cases exercise public `stream`, `stream_simple` and `complete` with real
@@ -204,8 +204,8 @@ images, interleaved reasoning and pre-cancelled or partially cancelled streams.
 Partial cancellation waits for a public text delta and a pending body read;
 terminal observations follow draining and body release. Ordered handoff histories
 keep the separate regional routes and tool occurrences, including missing results.
-See [response protocols](responses.md),
-[response sessions](response-sessions.md) and
+See [response protocols](openai-responses.md),
+[response sessions](openai-codex-responses.md) and
 [history projection](../conversation-projection.md) for the owning behavior.
 
 These controlled responses establish local request and decoding observations,
@@ -228,7 +228,7 @@ account-authenticated message cases.
 The cases compare native conversation reasoning controls and their omission when
 reasoning is absent, four shipped thinking-disable requests, and nested schema
 keywords in callback and wire payloads. See
-[reasoning conversations](reasoning-conversations.md) for the owning controls.
+[reasoning conversations](mistral-conversations.md) for the owning controls.
 Missing-result continuations use actual returned assistants, with separate
 next-tool, history-boundary and failed-assistant inputs. See
 [history projection](../conversation-projection.md) for repair behavior.
@@ -237,8 +237,8 @@ Text observations retain emoji tool results, multiline comments and distinct
 role text. Byte-body cases compare ordered stream events and terminal records
 for one-byte chunks and an invalid byte inside a text delta, including the
 response protocols' later authoritative text replacement. Raw-unit cases call
-the existing sanitizer. Decoder rules belong to [chat completions](chat-completions.md),
-[message protocol](messages.md) and [response protocols](responses.md).
+the existing sanitizer. Decoder rules belong to [chat completions](openai-completions.md),
+[message protocol](anthropic-messages.md) and [response protocols](openai-responses.md).
 These finite fixtures qualify local conversion, not remote reasoning quality,
 authentication validity or server schema acceptance.
 
@@ -257,15 +257,15 @@ The socket peer records the actual upgrade URI, application headers and
 
 The empty-content cases compare arrays, strings, whitespace, assistant blocks,
 system presence, tool outputs and stream termination against recorded requests
-and results. Decoder rules remain with [message protocol](messages.md) and
-[response protocols](responses.md), including their premature-EOF errors.
+and results. Decoder rules remain with [message protocol](anthropic-messages.md) and
+[response protocols](openai-responses.md), including their premature-EOF errors.
 
 Streaming cases compare ordered text, tool and thinking events, signatures,
 usage and final records. Continuations insert actual returned assistants and
 compute tool results from their arguments. Gated tool cases inspect the live
 arguments after each delta and await a pending body read before releasing the
 next fragment. Image cases compare the original image bytes in converted
-requests. See [response sessions](response-sessions.md) for socket behavior.
+requests. See [response sessions](openai-codex-responses.md) for socket behavior.
 These local observations do not establish live account validity or model quality.
 
 ```sh
@@ -296,8 +296,8 @@ process with exactly that environment.
 
 The recorded retry of a context-overflow rejection from the Codex adapter is not
 reproduced: that non-retryable rejection is sent once. These cases do not
-establish server cache hits, live authentication or image understanding. See [message protocol](messages.md),
-[chat completions](chat-completions.md) and [response protocols](responses.md) for
+establish server cache hits, live authentication or image understanding. See [message protocol](anthropic-messages.md),
+[chat completions](openai-completions.md) and [response protocols](openai-responses.md) for
 the adapter rules.
 
 ```sh

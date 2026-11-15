@@ -59,7 +59,7 @@ model through an existing protocol to a controlled endpoint. It inspects the URL
 headers, system-role selection, token-limit field and omitted compatibility
 fields. Copy the descriptor of the protocol you target: a different endpoint does
 not change the wire format. See [catalog lookup and thinking](catalog.md),
-[compatible chat endpoints](chat-completions.md) and
+[compatible chat endpoints](openai-completions.md) and
 [model generation](generation.md). Ordinary Cargo builds stay offline; only the
 explicit generation commands acquire feeds.
 
@@ -76,15 +76,15 @@ root forwarding functions and the provider-module simple functions differ; see
 
 | API | Owning module / options | Focused contract / runtime witness |
 |---|---|---|
-| `anthropic-messages` | `messages::endpoint` / `AnthropicOptions` | [Messages](messages.md); `bundled_dispatch::maestro_public_routes_reach_real_adapters` |
-| `openai-completions` | `chat::endpoint` / `OpenAICompletionsOptions` | [Chat completions](chat-completions.md); same dispatch witness |
-| `mistral-conversations` | `reasoning::endpoint` / `MistralOptions` | [Reasoning conversations](reasoning-conversations.md); same dispatch witness |
-| `openai-responses` | `responses_api::openai` / `OpenAIResponsesOptions` | [Responses](responses.md); same dispatch witness |
-| `azure-openai-responses` | `responses_api::azure_transport` / `AzureOpenAIResponsesOptions` | [Responses](responses.md); `bundled_options::maestro_azure_extras_select_target` |
-| `openai-codex-responses` | `response_sessions::codex` / `OpenAICodexResponsesOptions` | [Response sessions](response-sessions.md); `bundled_dispatch::maestro_response_session_cache_affinity_completes` |
-| `google-generative-ai` | `content::generative` / `GoogleOptions` | [Content generation](content-generation.md); `content_generation_invocation::raw_request_projects_the_selected_payload` |
-| `google-vertex` | `content::managed` / `GoogleVertexOptions` | [Cloud content generation](content-generation.md#cloud-invocation); `cloud_content_invocation::cloud_root_and_registry_entries_dispatch` |
-| `bedrock-converse-stream` | `cloud::amazon_bedrock` / `BedrockOptions` | [Cloud conversations](cloud-conversations.md); `cloud_conversation_streams::text_events_keep_shared_result_and_completion` |
+| `anthropic-messages` | `anthropic_messages::endpoint` / `AnthropicOptions` | [Messages](anthropic-messages.md); `bundled_dispatch::maestro_public_routes_reach_real_adapters` |
+| `openai-completions` | `openai_completions::endpoint` / `OpenAICompletionsOptions` | [Chat completions](openai-completions.md); same dispatch witness |
+| `mistral-conversations` | `mistral_conversations::endpoint` / `MistralOptions` | [Reasoning conversations](mistral-conversations.md); same dispatch witness |
+| `openai-responses` | `openai_responses::openai` / `OpenAIResponsesOptions` | [Responses](openai-responses.md); same dispatch witness |
+| `azure-openai-responses` | `openai_responses::azure_transport` / `AzureOpenAIResponsesOptions` | [Responses](openai-responses.md); `bundled_options::maestro_azure_extras_select_target` |
+| `openai-codex-responses` | `openai_codex_responses::codex` / `OpenAICodexResponsesOptions` | [Response sessions](openai-codex-responses.md); `bundled_dispatch::maestro_response_session_cache_affinity_completes` |
+| `google-generative-ai` | `google::generative` / `GoogleOptions` | [Content generation](google.md); `content_generation_invocation::raw_request_projects_the_selected_payload` |
+| `google-vertex` | `google::managed` / `GoogleVertexOptions` | [Cloud content generation](google.md#cloud-invocation); `cloud_content_invocation::cloud_root_and_registry_entries_dispatch` |
+| `bedrock-converse-stream` | `amazon_bedrock` / `BedrockOptions` | [Cloud conversations](amazon-bedrock.md); `cloud_conversation_streams::text_events_keep_shared_result_and_completion` |
 
 Each module exposes `stream_*` and `stream_simple_*` under its provider name.
 The cloud-conversation functions are `stream_bedrock` and
@@ -310,9 +310,9 @@ stream, including an empty stream or one with only unknown events; a failure
 before either point keeps the hook from running. Each adapter owns its other
 policies. No callback boundary is universal: read the
 [hook contracts](../records.md), the
-[content-generation exceptions](content-generation.md),
-[cloud SDK configuration](cloud-conversations.md) and the
-[response-session callback and retry policy](response-sessions.md).
+[content-generation exceptions](google.md),
+[cloud SDK configuration](amazon-bedrock.md) and the
+[response-session callback and retry policy](openai-codex-responses.md).
 
 `create_assistant_message_diagnostic` builds a diagnostic with the current
 timestamp. `append_assistant_message_diagnostic` adds the supplied details and
@@ -379,7 +379,7 @@ These fresh-child examples change nothing in the parent environment.
 Cache retention literals are `none`, `short` and `long`. Transport literals are
 `sse`, `websocket`, **`websocket-cached`** and `auto`. Selecting a value does not
 prove the adapter supports that transport or reuses a connection.
-[Response sessions](response-sessions.md) documents `auto` when a transport is
+[Response sessions](openai-codex-responses.md) documents `auto` when a transport is
 missing, fallback before the start, session affinity, cached-context reuse, idle
 cleanup, explicit close and debug counters, and names the native socket
 qualifications. `maestro_socket_completions_continue_with_actual_assistants` also

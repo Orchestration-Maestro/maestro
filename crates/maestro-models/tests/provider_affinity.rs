@@ -531,7 +531,7 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
     });
     let model = chat::model(&json!({}))?;
     let context = chat::context(&json!({"messages": []}))?;
-    let missing = maestro_models::providers::chat::endpoint::stream_simple_openai_completions_for::<
+    let missing = maestro_models::providers::openai_completions::endpoint::stream_simple_openai_completions_for::<
         Local,
     >(model.clone(), context.clone(), None, Rc::clone(&spawn));
     let Err(error) = missing else {
@@ -632,7 +632,7 @@ fn direct_cloud_stream<E: maestro_models::ProviderExecution>(
     common: StreamOptions<E>,
     spawn: maestro_models::ProviderSpawner<E>,
 ) -> maestro_models::AssistantMessageEventStream {
-    use maestro_models::providers::cloud::amazon_bedrock::{
+    use maestro_models::providers::amazon_bedrock::{
         stream_bedrock_for, stream_simple_bedrock_for,
     };
     use maestro_models::{BedrockOptions, SimpleStreamOptions};
