@@ -49,7 +49,7 @@ Application-owned modules may group named records and operations.
 
 Dependency descriptions here state domain edges, subject to the
 [native feature-unifier exception](specs/maestro-port.md#native-feature-unifier),
-including leaves and exact sets. The unifier itself has no workspace dependencies.
+including leaves and exact sets. The feature unifier itself has no workspace dependencies.
 
 The checker rejects workspace member names that differ only by extending the final
 hyphen-separated segment, such as `maestro-tool` and `maestro-tools`. Its error

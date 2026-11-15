@@ -669,17 +669,17 @@ builds never reach it. Never edit the marked section of its manifest by hand.
 
 To preserve [runtime library ownership](architecture.md#bounded-ownership-checks),
 `.config/hakari.toml` leaves `wasmtime` and `wasmtime-wasi` (the guest crate's test
-host) out of the traversal: the unifier lists none of them, and the test host may
+host) out of the traversal: the feature unifier lists none of them, and the test host may
 build its own copies of shared dependencies. Keep that exclusion; `verify`
 honours it.
 
 The same traversal exclusion also leaves egui out, so the web library's dev-only
-`default_fonts` feature cannot be promoted into production through the unifier.
+`default_fonts` feature cannot be promoted into production through the feature unifier.
 Production egui remains defaults-off; native attachment tests use genuine
 fallback fonts. See [browser libraries](libraries/browser-frontend.md).
 
 It leaves tokio out for the same reason: members request its `test-util` feature
-in their dev-dependencies only, and the unifier would otherwise carry the pausable
+in their dev-dependencies only, and the feature unifier would otherwise carry the pausable
 clock into every production build. Each member declares the tokio features it
 uses, and two conventions checks cover part of that. One runs
 `cargo tree --target all -e features,normal,build -i tokio` for the `maestro`
