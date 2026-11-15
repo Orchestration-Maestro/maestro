@@ -21,13 +21,13 @@ use catalog routing, including the responses API for `gpt-5.1`.
   are checked separately, including chunk usage and per-choice fallback.
 
 These checks qualify conversion and accounting, not a server's cache-hit policy
-or live billing. See [chat completions](chat-completions.md) for adapter rules and
+or live billing. See [chat completions](openai-completions.md) for adapter rules and
 [module linkage](module-linkage.md) for generic dispatch and option decoding.
 
 ## Run the cases
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   chat_empty_tools:: chat_response_identity:: chat_tool_choices:: routed_cache_write::
 ```
 
@@ -38,7 +38,7 @@ Each invocation checks its own request and result.
 ## Inject a controlled response
 
 This native Rust example uses the same catalog model and cache-write report as
-that controlled completion. It needs `maestro-models`, `serde_json`, `tokio` with
+that controlled completion. It needs `maestro-models`, `maestro-providers`, `serde_json`, `tokio` with
 `rt` and `time`, and `futures-util` with `std`. The synthetic credential is used
 only by the injected transport.
 
@@ -47,6 +47,7 @@ use maestro_models::{Context, Fetch, HttpResponse, SimpleStreamOptions, StreamOp
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    maestro_providers::install_built_in_api_providers();
     let fetch: Fetch = Arc::new(|_| {
         let wire = concat!(
             "data: {\"id\":\"controlled\",\"choices\":[{\"delta\":{\"content\":\"OK\"},",
@@ -93,7 +94,7 @@ The message qualification injects finite, named message events ending in
 `message_stop`. Its 20 tests own 142 distinct inputs: 126 wire invocations,
 15 fixed selector inputs and one catalog expansion. These responses qualify
 local conversion, not remote acceptance, authentication validity, cache hits,
-billing or reasoning quality. See [message protocol](messages.md) for the
+billing or reasoning quality. See [message protocol](anthropic-messages.md) for the
 adapter's request and reduction rules.
 
 The cases exercise public `stream`, `stream_simple` and `complete` with real
@@ -124,7 +125,7 @@ The message cases cover:
 Run these cases without provider credentials:
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   message_eager_input:: message_long_retention:: message_thinking_disabled:: message_adaptive_thinking:: account_tool_names:: account_message_routing::
 ```
 
@@ -139,6 +140,7 @@ use maestro_models::{Context, Fetch, HttpResponse, SimpleStreamOptions, StreamOp
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    maestro_providers::install_built_in_api_providers();
     let fetch: Fetch = Arc::new(|_| {
         let events = [
             serde_json::json!({"type":"message_start","message":{
@@ -204,15 +206,15 @@ images, interleaved reasoning and pre-cancelled or partially cancelled streams.
 Partial cancellation waits for a public text delta and a pending body read;
 terminal observations follow draining and body release. Ordered handoff histories
 keep the separate regional routes and tool occurrences, including missing results.
-See [response protocols](responses.md),
-[response sessions](response-sessions.md) and
+See [response protocols](openai-responses.md),
+[response sessions](openai-codex-responses.md) and
 [history projection](../conversation-projection.md) for the owning behavior.
 
 These controlled responses establish local request and decoding observations,
 not live authentication acceptance, cache hits or remote answer quality.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   response_identity:: response_reasoning_replay:: response_affinity:: response_session_affinity:: response_tool_images:: interleaved_reasoning:: invocation_cancellation:: history_handoffs:: handoff_tool_ids::
 ```
 
@@ -228,7 +230,7 @@ account-authenticated message cases.
 The cases compare native conversation reasoning controls and their omission when
 reasoning is absent, four shipped thinking-disable requests, and nested schema
 keywords in callback and wire payloads. See
-[reasoning conversations](reasoning-conversations.md) for the owning controls.
+[reasoning conversations](mistral-conversations.md) for the owning controls.
 Missing-result continuations use actual returned assistants, with separate
 next-tool, history-boundary and failed-assistant inputs. See
 [history projection](../conversation-projection.md) for repair behavior.
@@ -237,13 +239,13 @@ Text observations retain emoji tool results, multiline comments and distinct
 role text. Byte-body cases compare ordered stream events and terminal records
 for one-byte chunks and an invalid byte inside a text delta, including the
 response protocols' later authoritative text replacement. Raw-unit cases call
-the existing sanitizer. Decoder rules belong to [chat completions](chat-completions.md),
-[message protocol](messages.md) and [response protocols](responses.md).
+the existing sanitizer. Decoder rules belong to [chat completions](openai-completions.md),
+[message protocol](anthropic-messages.md) and [response protocols](openai-responses.md).
 These finite fixtures qualify local conversion, not remote reasoning quality,
 authentication validity or server schema acceptance.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   cloud_model_routes:: content_thinking_disabled:: conversation_reasoning:: conversation_tool_schema:: missing_tool_results:: provider_unicode::
 ```
 
@@ -257,21 +259,21 @@ The socket peer records the actual upgrade URI, application headers and
 
 The empty-content cases compare arrays, strings, whitespace, assistant blocks,
 system presence, tool outputs and stream termination against recorded requests
-and results. Decoder rules remain with [message protocol](messages.md) and
-[response protocols](responses.md), including their premature-EOF errors.
+and results. Decoder rules remain with [message protocol](anthropic-messages.md) and
+[response protocols](openai-responses.md), including their premature-EOF errors.
 
 Streaming cases compare ordered text, tool and thinking events, signatures,
 usage and final records. Continuations insert actual returned assistants and
 compute tool results from their arguments. Gated tool cases inspect the live
 arguments after each delta and await a pending body read before releasing the
 next fragment. Image cases compare the original image bytes in converted
-requests. See [response sessions](response-sessions.md) for socket behavior.
+requests. See [response sessions](openai-codex-responses.md) for socket behavior.
 These local observations do not establish live account validity or model quality.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   empty_content:: model_streaming::
-cargo llvm-cov -p maestro-models --locked --fail-under-lines 80
+cargo llvm-cov -p maestro-providers --locked --fail-under-lines 80
 ```
 
 ## Controlled cache, overflow and tool images
@@ -296,11 +298,11 @@ process with exactly that environment.
 
 The recorded retry of a context-overflow rejection from the Codex adapter is not
 reproduced: that non-retryable rejection is sent once. These cases do not
-establish server cache hits, live authentication or image understanding. See [message protocol](messages.md),
-[chat completions](chat-completions.md) and [response protocols](responses.md) for
+establish server cache hits, live authentication or image understanding. See [message protocol](anthropic-messages.md),
+[chat completions](openai-completions.md) and [response protocols](openai-responses.md) for
 the adapter rules.
 
 ```sh
-cargo test -p maestro-models --locked --test integration -- \
+cargo test -p maestro-providers --locked --test integration -- \
   cache_preferences:: provider_overflow:: tool_images::
 ```

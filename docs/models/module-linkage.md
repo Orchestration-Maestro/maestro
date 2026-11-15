@@ -1,13 +1,28 @@
 # Bundled protocol linkage
 
-`maestro-models` links its bundled protocols statically. The registry already holds
-them the first time anything reads it, so callers register nothing before invoking
-a bundled model. A supplied descriptor needs no catalog membership; the registry
-looks up only its `api` identifier.
+## Quick start
+
+Install the API protocols before dispatching through `maestro-models`:
+
+```rust
+maestro_providers::install_built_in_api_providers();
+assert_eq!(maestro_models::get_api_providers().len(), 9);
+```
+
+`maestro-models` owns the API registry, invocation records and generic dispatch.
+Its API registry starts empty. `maestro-providers` owns the built-in protocols,
+their typed options, native adapters and registration callbacks. A supplied
+descriptor needs no catalog membership; dispatch looks up only its `api`.
+
+Application and credential-store construction install both the API and login
+base layers with `maestro_providers::install_built_in_providers()`. Browser stream
+adapters and provider-key checks install only the API layer, without installing
+login providers. A key check works before a conversation starts. Direct SDK
+callers choose which layer to install.
 
 ## Registered protocols
 
-The registry starts with these protocols, in this order:
+API installation places these protocols first, in this order:
 
 1. `anthropic-messages`
 2. `openai-completions`
@@ -19,21 +34,22 @@ The registry starts with these protocols, in this order:
 8. `google-vertex`
 9. `bedrock-converse-stream`
 
-The simulated provider is never registered implicitly, and no placeholder stands in
+The scripted provider is never registered implicitly, and no placeholder stands in
 for a protocol whose adapter this crate does not contain.
 
 | Operation | Effect |
 |---|---|
-| `register_built_in_api_providers` | Replaces the entry of each bundled protocol in place, keeping its position and leaving it without a source owner. Custom entries are untouched. |
-| `reset_api_providers` | Removes every entry, then registers the bundled protocols. Retained handles to removed entries keep working. |
-| `clear_api_providers` | Leaves the registry empty. Neither a later lookup nor an invocation registers the bundled protocols again; typed root calls below do not use the registry. |
+| `maestro_providers::install_built_in_api_providers` | Installs the API base layer beneath live registrations. A custom registration shadows its matching built-in until removal; installing again preserves membership and order. |
+| `maestro_providers::register_built_in_api_providers` | Replaces the entry of each bundled protocol in place, keeping its position and leaving it without a source owner. Custom entries are untouched. |
+| `maestro_providers::reset_api_providers` | Removes every entry, then registers the bundled protocols. Retained handles to removed entries keep working. |
+| `maestro_models::clear_api_providers` | Leaves the registry empty. Neither a later lookup nor an invocation registers the bundled protocols again; typed root calls below do not use the registry. |
 
 ## Root entry points
 
 `stream_anthropic`, `stream_openai_completions`, `stream_mistral`,
 `stream_openai_responses`, `stream_azure_openai_responses` and
 `stream_openai_codex_responses` and `stream_google` and `stream_google_vertex` take their typed
-options and never consult the registry. Each `stream_simple_*` function of the
+options in `maestro-providers` and never consult the registry. Each `stream_simple_*` function of the
 same families takes `SimpleStreamOptions` and always returns a stream. For families
 whose provider-module simple function reports a missing key as `Err`, that error
 ends the root function's stream with an error update carrying the adapter's text,
@@ -41,12 +57,12 @@ an empty message with the
 descriptor's identity and zero usage, and the error stop reason even when the
 signal was already aborted. Every other failure follows the adapter's own stream
 path. Cloud content-generation simple functions return streams directly and also
-support native credentials; see the provider pages: [messages](messages.md),
-[chat completions](chat-completions.md),
-[reasoning conversations](reasoning-conversations.md), [responses](responses.md)
-[response sessions](response-sessions.md) and [content generation](content-generation.md#public-invocation).
+support native credentials; see the provider pages: [messages](anthropic-messages.md),
+[chat completions](openai-completions.md),
+[reasoning conversations](mistral-conversations.md), [responses](openai-responses.md)
+[response sessions](openai-codex-responses.md) and [content generation](google.md#public-invocation).
 
-`stream`, `stream_simple`, `complete` and `complete_simple` resolve the registry.
+`maestro_models::{stream, stream_simple, complete, complete_simple}` resolve the registry.
 An unregistered `api` returns `No API provider registered for api: {api}`. A
 registered custom callback keeps returning its own setup error immediately (inside
 the future for `complete`). A bundled simple callback also returns its adapter's
@@ -58,8 +74,8 @@ retain that family through the same protocol producer. `complete_for` and
 
 ## Cloud-conversation callback replacement
 
-[Cloud conversations](cloud-conversations.md) also support generic dispatch. Their typed
-stream functions remain in `maestro_models::providers::cloud::amazon_bedrock`;
+[Cloud conversations](amazon-bedrock.md) also support generic dispatch. Their typed
+stream functions remain in `maestro_providers::providers::amazon_bedrock`;
 `BedrockOptions` and `BedrockThinkingDisplay` are exported at the crate root.
 
 `set_bedrock_provider_module` installs a `BedrockProviderModule` containing raw and simple
@@ -67,7 +83,7 @@ callbacks. Each bundled invocation selects the current pair before calling it, w
 its slot lock. A retained registry handle selects the new pair on its next invocation; an
 already-started invocation keeps its selected stream. Registry clear, registration and reset
 do not clear the pair. The factory
-[`native::bedrock_provider_module`](../../crates/maestro-models/src/native.rs)
+[`native::bedrock_provider_module`](../../crates/maestro-providers/src/native.rs)
 returns the default adapter pair for restoring it. A replacement receives open options and
 typed objects unchanged; only the default pair decodes the extras below. Setup errors from
 either replacement callback settle into error streams, including under a pre-aborted signal.
@@ -94,13 +110,13 @@ strings and a named function must be an object. Null handling is described below
 
 A `null` summary and a missing summary both reach the adapter as no summary. A
 `null` service tier reaches the adapter as an explicit null tier and a missing
-one as no tier; the [responses page](responses.md) describes the payload built
+one as no tier; the [responses page](openai-responses.md) describes the payload built
 from them, including what a payload hook may change. Cloud response summaries also
 accept null as no summary. Content-generation `toolChoice` and `thinking` accept null as
 omitted; its thinking budget and level reject null when present. Cloud content-generation scope accepts null as omitted. Other listed fields reject null. Within a cloud-conversation budget object, missing or null
 level slots use the adapter's existing budget defaults.
 
-See the [response-session guide](response-sessions.md) for adapter-owned request behavior.
+See the [response-session guide](openai-codex-responses.md) for adapter-owned request behavior.
 
 ## Objects that are not JSON
 
@@ -110,13 +126,14 @@ concrete type. `insert` replaces the value of its type, `get` borrows it, and
 `anthropic-messages` callback takes an `AnthropicClient` from it, so a caller can supply its
 own transport through generic dispatch. Debug output shows only the entry count.
 
-## Example
+## Examples
 
 ```rust
 use maestro_models::{
     Context, Model, ProviderObjects, ProviderStreamOptions, StopReason, get_api_providers,
-    reset_api_providers, stream, stream_simple_openai_completions,
+    stream,
 };
+use maestro_providers::{reset_api_providers, stream_simple_openai_completions};
 use std::{future::Future, task::{Context as PollContext, Poll, Waker}};
 
 reset_api_providers();

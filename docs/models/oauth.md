@@ -324,7 +324,7 @@ is rejected. A nonempty supplied enterprise string is used verbatim and
 retained; an empty string selects the standard endpoint but remains in returned
 metadata. Login and refresh do not store credentials or start
 a callback listener. Requests use one selected Fetch without retries or an
-additional deadline; see the [transport guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/chat-completions.md#transport) for the shared adapter.
+additional deadline; see the [transport guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/openai-completions.md#transport) for the shared adapter.
 
 `get_github_copilot_base_url(token, enterprise_domain)` uses the first nonempty
 `proxy-ep=` substring in a token, replacing only its leading `proxy.` with

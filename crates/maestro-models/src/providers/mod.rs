@@ -1,18 +1,6 @@
-//! Model protocol adapters, the opt-in simulator and the names they import from the transport.
-
+//! Shared assistant publication, the scripted provider and transport imports.
 pub mod assistant_output;
-pub mod chat;
-pub mod cloud;
-pub mod content;
+pub(crate) mod faux;
 pub(crate) mod json_text;
-pub mod messages;
-pub(crate) mod model_compat;
-pub(crate) mod nullable;
-pub(crate) mod openai_prompt_cache;
-pub mod reasoning;
-pub mod responses_api;
-pub mod scripted;
-pub(crate) mod selected_fields;
+pub mod nullable;
 pub mod transport;
-
-pub mod response_sessions;

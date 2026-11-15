@@ -211,7 +211,7 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let mut smoke = Command::new(std::env::current_exe()?);
     smoke.arg("check-browser-smoke");
     let active = checkout
-        .join("crates/maestro-models/tests/support/browser_import_check.rs")
+        .join("crates/maestro-providers/tests/support/browser_import_check.rs")
         .is_file();
     pre_commit::run(
         checkout,

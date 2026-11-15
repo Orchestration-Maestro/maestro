@@ -43,7 +43,7 @@ From `docs/specs/maestro-port.md`.
 - **Model event:** An ordered update or terminal outcome emitted by a model stream, distinct from the agent event that wraps it.
 - **Content block:** An indexed text, thinking or tool-call part of one assistant response.
 - **Cancellation:** Stopping local request work or waiting with an aborted outcome, not undoing remote effects. The shared signal belongs to `maestro-cancellation`; only models and the terminal toolkit may depend on it, and it depends only on `maestro-listeners`, which keeps each signal's synchronous abort observers.
-- **Scripted simulator:** An opt-in protocol adapter with queued responses, builders, chunking, pacing, usage/cache simulation and request-observing factories.
+- **Scripted provider:** The deterministic test provider whose responses a test queues; its items keep the `Faux*` names. _Avoid:_ scripted simulator, scripted model, controlled provider, simulated provider.
 
 - **Requested thinking:** The application's supplied effort choice.
 - **Effective thinking:** The supported choice used for this request.

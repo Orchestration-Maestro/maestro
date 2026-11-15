@@ -31,7 +31,6 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
 
 /// Permitted development edges that only a native, non-optional declaration may use.
 pub(crate) const NATIVE_DEVELOPMENT: &[(&str, &str)] = &[
-    ("maestro-models-registry", "maestro-providers"),
     ("maestro-cli", "maestro-providers"),
     ("maestro-extensions-wasmtime", "maestro-models-registry"),
     ("maestro-extensions-wasmtime", "maestro-credentials"),
@@ -135,6 +134,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-models-generator",
     "maestro-packages",
     "maestro-process",
+    "maestro-providers",
     "maestro-resources",
     "maestro-rpc",
     "maestro-session",

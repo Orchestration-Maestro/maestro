@@ -5,8 +5,8 @@ use super::state::AuthStorage;
 use crate::{ConfigValueOperations, resolve_config_value};
 use maestro_models::{
     OAuthError, OAuthProviderHandle, find_env_keys, get_env_api_key, get_oauth_provider,
-    providers::chat::cloudflare::is_cloudflare_provider,
 };
+use maestro_providers::providers::openai_completions::cloudflare::is_cloudflare_provider;
 
 /// How the synchronous prefix of a key request ended.
 enum Selection {

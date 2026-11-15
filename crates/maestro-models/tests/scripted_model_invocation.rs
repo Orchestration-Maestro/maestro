@@ -78,7 +78,7 @@ mod tests {
     #[test]
     /// Exercise registration estimates usage through the public invocation boundary.
     fn maestro_registration_estimates_usage() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("answer")]);
         let message = crate::runtime::run(complete(
@@ -259,7 +259,7 @@ mod tests {
     #[test]
     /// Exercise registration defaults and overrides through the public invocation boundary.
     fn maestro_registration_defaults_and_overrides() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         for models in [None, Some(vec![])] {
             let registration = register_faux_provider(RegisterFauxProviderOptions {
                 models,
@@ -308,7 +308,7 @@ mod tests {
     #[test]
     /// Exercise identifier defaults are independent through the public invocation boundary.
     fn maestro_identifier_defaults_are_independent() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let first = register_faux_provider(RegisterFauxProviderOptions::default());
         let second = register_faux_provider(RegisterFauxProviderOptions::default());
         assert_ne!(first.api, second.api);
@@ -357,7 +357,7 @@ mod tests {
     #[test]
     /// Exercise responses keep invocation identity through the public invocation boundary.
     fn maestro_responses_keep_invocation_identity() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions {
             provider: Some("custom-provider".into()),
             models: Some(vec![FauxModelDefinition {
@@ -395,7 +395,7 @@ mod tests {
     #[test]
     /// Exercise queue exhaustion counts requests through the public invocation boundary.
     fn maestro_queue_exhaustion_counts_requests() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Exhaustion);
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("first"), scripted("second")]);
@@ -424,7 +424,7 @@ mod tests {
     #[test]
     /// Exercise queue replacement and append through the public invocation boundary.
     fn maestro_queue_replacement_and_append() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("discard")]);
         registration.set_responses(vec![scripted("first")]);
@@ -450,7 +450,7 @@ mod tests {
     #[test]
     /// Exercise caches do not cross sessions through the public invocation boundary.
     fn maestro_caches_do_not_cross_sessions() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let first = register_faux_provider(RegisterFauxProviderOptions::default());
         let second = register_faux_provider(RegisterFauxProviderOptions::default());
         for options in [
@@ -480,7 +480,7 @@ mod tests {
     #[test]
     /// Exercise session prefix cache reuses prompt through the public invocation boundary.
     fn maestro_session_prefix_cache_reuses_prompt() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         for (text, read, write) in [
             ("abc", 0.0, 2.0),
@@ -502,7 +502,7 @@ mod tests {
     #[test]
     /// Exercise disabled cache leaves no state through the public invocation boundary.
     fn maestro_disabled_cache_leaves_no_state() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         for (text, retention, read, write, input) in [
             ("abc", None, 0.0, 2.0, 0.0),
@@ -528,7 +528,7 @@ mod tests {
     #[test]
     /// Exercise cache totals count prompt once through the public invocation boundary.
     fn maestro_cache_totals_count_prompt_once() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         for (text, prompt, read) in [
             ("abc", 2.0, 0.0),
@@ -738,7 +738,7 @@ mod tests {
     #[test]
     /// Exercise mixed content streams argument chunks through the public invocation boundary.
     fn maestro_mixed_content_streams_argument_chunks() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let authored = mixed();
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(authored.clone()))]);
@@ -771,7 +771,7 @@ mod tests {
     #[test]
     /// Exercise fixed chunks have ordered events through the public invocation boundary.
     fn maestro_fixed_chunks_have_ordered_events() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         for reason in [StopReason::Stop, StopReason::Length, StopReason::ToolUse] {
             registration.set_responses(vec![FauxResponseStep::Message(Box::new(
@@ -815,7 +815,7 @@ mod tests {
     #[test]
     /// Exercise tool blocks keep distinct indices through the public invocation boundary.
     fn maestro_tool_blocks_keep_distinct_indices() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let blocks: Vec<_> = ["one", "two"]
             .into_iter()
@@ -860,7 +860,7 @@ mod tests {
     #[test]
     /// Exercise explicit error retains message through the public invocation boundary.
     fn maestro_explicit_error_retains_message() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let authored = faux_assistant_message(
             "fail",
@@ -898,7 +898,7 @@ mod tests {
     #[test]
     /// Exercise explicit abort retains message through the public invocation boundary.
     fn maestro_explicit_abort_retains_message() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message(
@@ -941,7 +941,7 @@ mod tests {
     #[test]
     /// Exercise paced text cancel keeps prefix through the public invocation boundary.
     fn maestro_paced_text_cancel_keeps_prefix() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         check_cancel(
             AssistantContent::Text(faux_text("abcdefghijkl")),
             "text_delta",
@@ -952,7 +952,7 @@ mod tests {
     #[test]
     /// Exercise paced thinking cancel keeps prefix through the public invocation boundary.
     fn maestro_paced_thinking_cancel_keeps_prefix() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         check_cancel(
             AssistantContent::Thinking(faux_thinking("abcdefghijkl")),
             "thinking_delta",
@@ -963,7 +963,7 @@ mod tests {
     #[test]
     /// Exercise paced tool cancel keeps empty arguments through the public invocation boundary.
     fn maestro_paced_tool_cancel_keeps_empty_arguments() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         check_cancel(
             AssistantContent::ToolCall(faux_tool_call(
                 "tool",
@@ -978,7 +978,7 @@ mod tests {
     #[test]
     /// Exercise partials retain block membership through the public invocation boundary.
     fn maestro_partials_retain_block_membership() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(mixed()))]);
         let observed = events(&registration, None);
@@ -1024,7 +1024,7 @@ mod tests {
     #[test]
     /// Exercise empty blocks still finish through the public invocation boundary.
     fn maestro_empty_blocks_still_finish() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message(Vec::new(), FauxAssistantMessageOptions::default()),
@@ -1075,7 +1075,7 @@ mod tests {
     #[test]
     /// Exercise scalar boundaries keep text valid through the public invocation boundary.
     fn maestro_scalar_boundaries_keep_text_valid() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let text = "abc😀e\u{301}\u{feff}\u{85}";
         registration.set_responses(vec![scripted(text)]);
@@ -1103,7 +1103,7 @@ mod tests {
     #[test]
     /// Exercise chunk bounds preserve unpaced delivery through the public invocation boundary.
     fn maestro_chunk_bounds_preserve_unpaced_delivery() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let text = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
         for (min, max, speed, lower, upper) in [
             (None, None, None, 12, 20),
@@ -1136,7 +1136,7 @@ mod tests {
     #[test]
     /// Exercise factories observe selected model through the public invocation boundary.
     fn maestro_factories_observe_selected_model() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions {
             models: Some(vec![
                 FauxModelDefinition {
@@ -1180,7 +1180,7 @@ mod tests {
     #[test]
     /// Exercise async factories observe live state through the public invocation boundary.
     fn maestro_async_factories_observe_live_state() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Live);
         let registration = fixed(None);
         let (entered_tx, entered_rx) = std::sync::mpsc::channel();
@@ -1395,7 +1395,7 @@ mod tests {
     #[test]
     /// Exercise factory failure is terminal through the public invocation boundary.
     fn maestro_factory_failure_is_terminal() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Failure);
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
@@ -1423,7 +1423,7 @@ mod tests {
     #[test]
     /// Exercise preaborted request consumes response through the public invocation boundary.
     fn maestro_preaborted_request_consumes_response() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let signal = Cancellation::new();
         signal.abort();
@@ -1480,7 +1480,7 @@ mod tests {
     #[test]
     /// Exercise unregister only removes owned source through the public invocation boundary.
     fn maestro_unregister_only_removes_owned_source() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let first = fixed(None);
         let api = first.api.clone();
         let selected = model(&first);
@@ -1528,7 +1528,7 @@ mod tests {
     /// Dropped observers leave production and the detached session cache intact.
     #[test]
     fn maestro_production_survives_dropped_observers() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let (step, entered, release) = gated_response(faux_assistant_message(
             "done",
@@ -1619,7 +1619,7 @@ mod tests {
     #[test]
     /// Exercise serialized context drives usage through the public invocation boundary.
     fn maestro_serialized_context_drives_usage() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let context = context_with_all_roles();
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(mixed()))]);
@@ -1659,7 +1659,7 @@ mod tests {
     #[test]
     /// A scripted call keeps every root kind through its streamed bytes and its final call.
     fn scripted_calls_retain_scalar_and_array_roots() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         for (arguments, encoded) in [
             (serde_json::json!(42), "42"),
@@ -1701,7 +1701,7 @@ mod tests {
     #[test]
     /// Estimated output usage counts the canonical argument text a scripted call streams.
     fn scripted_usage_counts_canonical_argument_text() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
             faux_assistant_message(
@@ -1761,7 +1761,7 @@ mod tests {
     #[test]
     /// Canonical streamed argument text keeps every supplied value.
     fn maestro_serialization_keeps_supplied_values() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let registration = fixed(None);
         let mut arguments = JsonObject::new();
         arguments.insert("10".into(), serde_json::json!(-0.0));
@@ -1826,7 +1826,7 @@ mod tests {
     #[test]
     /// Exercise raw and simple options reach factory through the public invocation boundary.
     fn maestro_raw_and_simple_options_reach_factory() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Options);
         let registration = fixed(None);
         let factory: FauxResponseFactory = std::sync::Arc::new(ForwardedOptionsFactory);
@@ -1942,7 +1942,7 @@ mod tests {
     #[test]
     /// Exercise response hook precedes factory through the public invocation boundary.
     fn maestro_response_hook_precedes_factory() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Order);
         let registration = fixed(None);
         let order = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -2024,7 +2024,7 @@ mod tests {
     #[test]
     /// Exercise pacing needs no caller timer through the public invocation boundary.
     fn maestro_pacing_needs_no_caller_timer() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         for caller_runtime in [false, true] {
             let registration = fixed(Some(50.0));
             registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
@@ -2197,7 +2197,7 @@ mod tests {
     #[test]
     /// Exercise documented flow runs offline through the public invocation boundary.
     fn maestro_documented_flow_runs_offline() {
-        let _serial = crate::bundled::registry();
+        let _serial = crate::registry::registry();
         let output = crate::runtime::run(documented_flow()).unwrap();
         assert_eq!(&output[output.len() - 3..], ["true", "0", "2"]);
         assert_eq!(output[0], "start");

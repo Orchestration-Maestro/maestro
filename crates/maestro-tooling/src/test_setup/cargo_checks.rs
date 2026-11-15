@@ -20,7 +20,7 @@ const GUIDE_COMPONENT: &str = "MAESTRO_GUIDE_COMPONENT";
 /// The build-check receipt within the existing preparation bundle.
 const RECEIPT: &str = "cargo-checks.json";
 /// The crate whose example is the browser import witness.
-const MODELS: &str = "maestro-models";
+const PROVIDERS: &str = "maestro-providers";
 /// The example that witnesses the browser import.
 const BROWSER_EXAMPLE: &str = "browser_import_check";
 /// The crate that supplies the guest SDK to the independent author's guide.
@@ -100,13 +100,13 @@ fn checks(
     target: &Path,
 ) -> io::Result<Vec<(&'static str, Command, &'static str)>> {
     let mut checks = Vec::new();
-    if workspace.member(MODELS).is_some() {
+    if workspace.member(PROVIDERS).is_some() {
         let mut browser = command(cargo, checkout, target);
         browser.args([
             "--target",
             "wasm32-unknown-unknown",
             "-p",
-            MODELS,
+            PROVIDERS,
             "--example",
             BROWSER_EXAMPLE,
             "--profile",
@@ -129,7 +129,7 @@ fn checks(
 
 /// Fingerprint the checked package closures and the independent guide's authored inputs.
 fn inputs(workspace: &Workspace) -> io::Result<Inputs> {
-    let named = workspace.holds(&[MODELS, GUEST]);
+    let named = workspace.holds(&[PROVIDERS, GUEST]);
     let mut paths = if named.is_empty() {
         BTreeSet::new()
     } else {

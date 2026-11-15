@@ -399,13 +399,13 @@ hosted requests independently of these preferences.
 
 | Additional environment group | Controls and runtime reference |
 | --- | --- |
-| Azure endpoint | `AZURE_OPENAI_BASE_URL` or `AZURE_OPENAI_RESOURCE_NAME`; `AZURE_OPENAI_API_VERSION` defaults to `v1`; `AZURE_OPENAI_DEPLOYMENT_NAME_MAP` maps model IDs to deployments; [Responses](models/responses.md) |
-| Cloudflare routing | `CLOUDFLARE_ACCOUNT_ID`, plus `CLOUDFLARE_GATEWAY_ID` for AI Gateway; [chat completions](models/chat-completions.md) |
-| Bedrock credentials | `AWS_PROFILE`, paired `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_BEARER_TOKEN_BEDROCK`, `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`, `AWS_CONTAINER_CREDENTIALS_FULL_URI`, `AWS_WEB_IDENTITY_TOKEN_FILE`; [cloud conversations](models/cloud-conversations.md) |
-| Bedrock policy | `AWS_REGION`, fallback `AWS_DEFAULT_REGION`; `AWS_BEDROCK_SKIP_AUTH`, `AWS_BEDROCK_FORCE_CACHE`, `AWS_BEDROCK_FORCE_HTTP1`; [cloud conversations](models/cloud-conversations.md) |
-| Google cloud scope | `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT` or `GCLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_CLOUD_QUOTA_PROJECT`; [content generation](models/content-generation.md) |
-| Google runtime | `GOOGLE_API_KEY`, `GOOGLE_GENAI_USE_ENTERPRISE`, `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_GEMINI_BASE_URL`, `GOOGLE_VERTEX_BASE_URL`, `GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES`, `GOOGLE_API_CERTIFICATE_CONFIG`, `CLOUDSDK_CONFIG`; [content generation](models/content-generation.md) |
-| Native networking | `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, `npm_config_http_proxy`, `npm_config_https_proxy`, `npm_config_proxy`, `npm_config_no_proxy` and case variants; selection varies by transport; [Bedrock proxy routing](models/cloud-conversations.md#proxy-routing), [HTTP connectors](libraries/provider-qualification.md) |
+| Azure endpoint | `AZURE_OPENAI_BASE_URL` or `AZURE_OPENAI_RESOURCE_NAME`; `AZURE_OPENAI_API_VERSION` defaults to `v1`; `AZURE_OPENAI_DEPLOYMENT_NAME_MAP` maps model IDs to deployments; [Responses](models/openai-responses.md) |
+| Cloudflare routing | `CLOUDFLARE_ACCOUNT_ID`, plus `CLOUDFLARE_GATEWAY_ID` for AI Gateway; [chat completions](models/openai-completions.md) |
+| Bedrock credentials | `AWS_PROFILE`, paired `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_BEARER_TOKEN_BEDROCK`, `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`, `AWS_CONTAINER_CREDENTIALS_FULL_URI`, `AWS_WEB_IDENTITY_TOKEN_FILE`; [cloud conversations](models/amazon-bedrock.md) |
+| Bedrock policy | `AWS_REGION`, fallback `AWS_DEFAULT_REGION`; `AWS_BEDROCK_SKIP_AUTH`, `AWS_BEDROCK_FORCE_CACHE`, `AWS_BEDROCK_FORCE_HTTP1`; [cloud conversations](models/amazon-bedrock.md) |
+| Google cloud scope | `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT` or `GCLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_CLOUD_QUOTA_PROJECT`; [content generation](models/google.md) |
+| Google runtime | `GOOGLE_API_KEY`, `GOOGLE_GENAI_USE_ENTERPRISE`, `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_GEMINI_BASE_URL`, `GOOGLE_VERTEX_BASE_URL`, `GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES`, `GOOGLE_API_CERTIFICATE_CONFIG`, `CLOUDSDK_CONFIG`; [content generation](models/google.md) |
+| Native networking | `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, `npm_config_http_proxy`, `npm_config_https_proxy`, `npm_config_proxy`, `npm_config_no_proxy` and case variants; selection varies by transport; [Bedrock proxy routing](models/amazon-bedrock.md#proxy-routing), [HTTP connectors](libraries/provider-qualification.md) |
 
 Environment credentials are not validated by listing models. Empty key variables
 are absent; whitespace values can still count as configured. Cloud ambient

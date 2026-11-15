@@ -94,7 +94,7 @@ Body decoding removes one leading UTF-8 BOM and replaces invalid UTF-8 sequences
 Named-field lookup and typed record decoding skip names that are not valid UTF-8,
 so unread lone-surrogate names do not hide representable fields. Full-value
 conversion instead retains every surviving member or fails; see the
-[whole-value conversion boundary](chat-completions.md#whole-value-conversion).
+[whole-value conversion boundary](openai-completions.md#whole-value-conversion).
 Object entry keys retain distinct UTF-16 units through duplicate resolution and
 ordering, so lone-surrogate keys cannot overwrite different keys. In surviving
 IDs and other decoded strings, each unpaired UTF-16 escape is spelled as one

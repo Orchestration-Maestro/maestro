@@ -5,7 +5,6 @@ use super::types::{
     StreamFunction, StreamOptionsFamily,
 };
 use crate::SharedHandle;
-use crate::builtins::built_in_providers;
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
@@ -33,7 +32,10 @@ struct Registration {
     source_id: Option<String>,
 }
 /// Live protocol registrations plus the predecessors their replacements displaced.
+#[derive(Default)]
 struct ApiRegistrations {
+    /// Installed protocol callbacks beneath live registrations, in base-layer order.
+    built_ins: IndexMap<String, Registration>,
     /// Checked providers keyed by protocol identity in registration order.
     entries: IndexMap<String, Registration>,
     /// Per protocol, the registrations each newer same-protocol registration replaced,
@@ -43,11 +45,11 @@ struct ApiRegistrations {
 #[cfg(not(target_arch = "wasm32"))]
 /// Process-wide ordered API registrations protected for native callers.
 static REGISTRY: std::sync::LazyLock<std::sync::Mutex<ApiRegistrations>> =
-    std::sync::LazyLock::new(|| std::sync::Mutex::new(seeded()));
+    std::sync::LazyLock::new(std::sync::Mutex::default);
 #[cfg(target_arch = "wasm32")]
 thread_local! {
 /// Browser-thread API registrations in insertion order.
-static REGISTRY: std::cell::RefCell<ApiRegistrations> = std::cell::RefCell::new(seeded()); }
+static REGISTRY: std::cell::RefCell<ApiRegistrations> = std::cell::RefCell::default(); }
 crate::records::platform_store_accessor!(
     /// Access the native shared or browser-local registration map.
     with_registry, REGISTRY, ApiRegistrations
@@ -98,16 +100,6 @@ fn registration(provider: ApiProvider, source_id: Option<String>) -> Registratio
         source_id,
     }
 }
-/// The bundled protocols, registered before the first lookup or change.
-fn seeded() -> ApiRegistrations {
-    ApiRegistrations {
-        entries: built_in_providers()
-            .into_iter()
-            .map(|provider| (provider.api.clone(), registration(provider, None)))
-            .collect(),
-        shadowed: HashMap::new(),
-    }
-}
 /// Insert checked callbacks, keeping an existing protocol's original position.
 /// A replaced registration stays recorded, so the replacing registrar's removal
 /// restores it instead of leaving the displaced owner registered with nothing.
@@ -135,20 +127,34 @@ pub fn get_api_provider(api: &str) -> Option<ApiProvider> {
         registry
             .entries
             .get(api)
+            .or_else(|| registry.built_ins.get(api))
             .map(|entry| entry.provider.clone())
     })
 }
 /// Retain the original simple callback for explicit protocol selection.
 pub(crate) fn get_api_stream_simple(api: &str) -> Option<ApiStreamSimpleFunction> {
-    with_registry(|registry| registry.entries.get(api).map(|entry| entry.simple.clone()))
+    with_registry(|registry| {
+        registry
+            .entries
+            .get(api)
+            .or_else(|| registry.built_ins.get(api))
+            .map(|entry| entry.simple.clone())
+    })
 }
 /// Retain checked providers in original registration order.
 #[must_use]
 pub fn get_api_providers() -> Vec<ApiProvider> {
     with_registry(|registry| {
-        registry
+        let base = registry
+            .built_ins
+            .iter()
+            .map(|(api, entry)| registry.entries.get(api).unwrap_or(entry));
+        let others = registry
             .entries
-            .values()
+            .iter()
+            .filter(|(api, _)| !registry.built_ins.contains_key(api.as_str()))
+            .map(|(_, entry)| entry);
+        base.chain(others)
             .map(|entry| entry.provider.clone())
             .collect()
     })
@@ -198,12 +204,22 @@ fn restore_or_remove(
         superseded.push(entry);
     }
 }
-/// Remove all registrations without invalidating retained handles.
+/// Places checked protocol callbacks beneath live registrations, in the supplied order.
+///
+/// Built-ins hold the first positions. Existing registrations shadow their matching
+/// built-ins until removal. Each call replaces the base layer without changing live
+/// registrations or their predecessors.
+pub fn install_built_in_api_providers(providers: impl IntoIterator<Item = ApiProvider>) {
+    let built_ins = providers
+        .into_iter()
+        .map(|provider| (provider.api.clone(), registration(provider, None)))
+        .collect();
+    let retired = with_registry(|registry| std::mem::replace(&mut registry.built_ins, built_ins));
+    drop(retired);
+}
+
+/// Remove all registrations and their base layer without invalidating retained handles.
 pub fn clear_api_providers() {
-    let retired = with_registry(|registry| {
-        let retired = std::mem::take(&mut registry.entries);
-        registry.shadowed.clear();
-        retired
-    });
+    let retired = with_registry(std::mem::take);
     drop(retired);
 }

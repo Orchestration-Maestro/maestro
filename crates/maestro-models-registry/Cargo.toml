@@ -7,6 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-providers = { path = "../maestro-providers" }
 maestro-interchange = { path = "../maestro-interchange" }
 maestro-json = { path = "../maestro-json" }
 maestro-text = { path = "../maestro-text", features = ["collation"] }
@@ -26,7 +27,6 @@ maestro-test-fixtures.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
-maestro-providers = { path = "../maestro-providers" }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

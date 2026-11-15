@@ -513,7 +513,7 @@ struct Interaction {
     /// Auth notification witness.
     auth: EventStream<(), ()>,
     /// Supplied signal whose cancellation is not this flow's policy.
-    signal: maestro_models::Cancellation,
+    signal: maestro_cancellation::Cancellation,
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl Interaction {
@@ -530,7 +530,7 @@ impl Interaction {
             prompt: prompt.into(),
             fail,
             auth: EventStream::new(|()| true, |()| ()),
-            signal: maestro_models::Cancellation::new(),
+            signal: maestro_cancellation::Cancellation::new(),
         })
     }
 }
@@ -587,7 +587,7 @@ impl maestro_models::OAuthLoginCallbacks for Interaction {
     ) -> Option<BoxFuture<Result<Option<String>, OAuthError>>> {
         panic!("selector is not called")
     }
-    fn signal(&self) -> Option<&maestro_models::Cancellation> {
+    fn signal(&self) -> Option<&maestro_cancellation::Cancellation> {
         Some(&self.signal)
     }
 }

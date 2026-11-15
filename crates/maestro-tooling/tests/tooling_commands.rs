@@ -2139,9 +2139,9 @@ fn maestro_tree_copy_keeps_modification_times() {
 fn write_browser_witnesses(root: &Path) {
     for source in [
         "crates/maestro-models-registry/tests/support/browser_catalog_check.rs",
-        "crates/maestro-models/tests/support/bedrock_browser.rs",
-        "crates/maestro-models/tests/support/browser_import_check.rs",
-        "crates/maestro-models/tests/support/cloud_content_browser.rs",
+        "crates/maestro-providers/tests/support/bedrock_browser.rs",
+        "crates/maestro-providers/tests/support/browser_import_check.rs",
+        "crates/maestro-providers/tests/support/cloud_content_browser.rs",
     ] {
         let path = root.join(source);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -2153,9 +2153,9 @@ fn write_browser_witnesses(root: &Path) {
 fn witness_invocations() -> Vec<String> {
     [
         ("maestro-models-registry", "browser_catalog_check"),
-        ("maestro-models", "bedrock_browser_witness"),
-        ("maestro-models", "browser_import_check"),
-        ("maestro-models", "cloud_content_browser_witness"),
+        ("maestro-providers", "bedrock_browser_witness"),
+        ("maestro-providers", "browser_import_check"),
+        ("maestro-providers", "cloud_content_browser_witness"),
     ]
     .into_iter()
     .map(|(package, example)| {
@@ -2501,7 +2501,7 @@ fn assert_hook_phase(phase: &str) {
         &[
             "Cargo.toml",
             "crates/maestro-test-conventions/src/lib.rs",
-            "crates/maestro-models/src/lib.rs",
+            "crates/maestro-providers/src/lib.rs",
         ],
     );
     let output = run_hook(&fixture, "maestro_hook_messages_follow_phase_results")
@@ -2511,7 +2511,7 @@ fn assert_hook_phase(phase: &str) {
         .unwrap();
     let text = stdout(&output);
     assert!(text.contains("Running formatting, linting, and type checking...\n"));
-    let selected = "Selected crates: maestro-test-conventions, maestro-models\n";
+    let selected = "Selected crates: maestro-test-conventions, maestro-providers\n";
     assert_eq!(
         text.contains(selected),
         phase != "format",
@@ -2602,11 +2602,11 @@ fn maestro_hook_messages_follow_phase_results() {
 fn maestro_hook_selects_extra_steps_from_original_paths() {
     drive();
     for (name, active, expected) in [
-        ("crates/maestro-models/src/lib.rs", true, "smoke\n"),
+        ("crates/maestro-providers/src/lib.rs", true, "smoke\n"),
         ("crates/shared/src/lib.rs", true, ""),
         ("Cargo.toml", true, ""),
         ("crates/alone/src/lib.rs", true, ""),
-        ("crates/maestro-models/src/lib.rs", false, ""),
+        ("crates/maestro-providers/src/lib.rs", false, ""),
         (
             "crates/maestro-test-conventions/src/lib.rs",
             true,
@@ -3068,7 +3068,7 @@ fn maestro_hook_scoped_failures_stop_later_phases() {
                 "Cargo.toml",
                 "a space.rs",
                 "crates/maestro-test-conventions/src/lib.rs",
-                "crates/maestro-models/src/lib.rs",
+                "crates/maestro-providers/src/lib.rs",
             ],
         );
         let output = run_hook(&fixture, "maestro_hook_scoped_failures_stop_later_phases")
@@ -3128,10 +3128,10 @@ fn maestro_hook_lints_the_staged_web_crate_through_the_check_recipe() {
             ["format|-p|maestro-web", "_check|-p|maestro-web"],
         ),
         (
-            "crates/maestro-models/src/lib.rs",
+            "crates/maestro-providers/src/lib.rs",
             [
-                "format|-p|maestro-models",
-                "clippy|-p|maestro-models|--all-targets|--locked|--|-D|warnings",
+                "format|-p|maestro-providers",
+                "clippy|-p|maestro-providers|--all-targets|--locked|--|-D|warnings",
             ],
         ),
     ] {
@@ -3159,12 +3159,12 @@ fn maestro_hook_lints_the_staged_web_crate_through_the_check_recipe() {
 fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
     drive();
     for (paths, active, expected) in [
-        (vec!["crates/maestro-models/src/lib.rs"], true, 1usize),
+        (vec!["crates/maestro-providers/src/lib.rs"], true, 1usize),
         (vec!["crates/maestro-models-registry/src/lib.rs"], true, 1),
         (vec!["crates/shared/src/lib.rs"], true, 0),
         (vec!["Cargo.toml"], true, 0),
         (vec!["crates/alone/src/lib.rs"], true, 0),
-        (vec!["crates/maestro-models/src/lib.rs"], false, 0),
+        (vec!["crates/maestro-providers/src/lib.rs"], false, 0),
     ] {
         let fixture = Fixture::new();
         git(fixture.root.path(), &["init", "--quiet"]);
@@ -3184,7 +3184,10 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
 
     let fixture = Fixture::new();
     git(fixture.root.path(), &["init", "--quiet"]);
-    stage_paths(fixture.root.path(), &["crates/maestro-models/src/lib.rs"]);
+    stage_paths(
+        fixture.root.path(),
+        &["crates/maestro-providers/src/lib.rs"],
+    );
     let output = run_hook(
         &fixture,
         "maestro_hook_browser_smoke_runs_once_for_reached_inputs",
@@ -3200,11 +3203,14 @@ fn maestro_hook_browser_smoke_runs_once_for_reached_inputs() {
 
 /// Assert the dispatcher schedules smoke only for a delivered browser entry.
 fn assert_dispatcher_routes_delivered_smoke() {
-    let entry = "crates/maestro-models/tests/support/browser_import_check.rs";
+    let entry = "crates/maestro-providers/tests/support/browser_import_check.rs";
     for delivered in [false, true] {
         let fixture = Fixture::new();
         git(fixture.root.path(), &["init", "--quiet"]);
-        stage_paths(fixture.root.path(), &["crates/maestro-models/src/lib.rs"]);
+        stage_paths(
+            fixture.root.path(),
+            &["crates/maestro-providers/src/lib.rs"],
+        );
         if delivered {
             stage_paths(fixture.root.path(), &[entry]);
         }
@@ -3296,7 +3302,7 @@ fn maestro_hook_missing_tool_announces_failed_step() {
             &[
                 "Cargo.toml",
                 "crates/maestro-test-conventions/src/lib.rs",
-                "crates/maestro-models/src/lib.rs",
+                "crates/maestro-providers/src/lib.rs",
             ],
         );
         let output = run_hook(&fixture, "maestro_hook_missing_tool_announces_failed_step")

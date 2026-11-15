@@ -49,12 +49,24 @@ fn created_sessions_find_the_built_in_login_providers_in_their_positions() -> Re
             .iter()
             .map(|provider| provider.id().to_owned())
             .collect();
-        Ok(json!(identifiers))
+        let mut apis: Vec<String> = maestro_models::get_api_providers()
+            .into_iter()
+            .map(|provider| provider.api)
+            .collect();
+        assert_eq!(apis.pop().as_deref(), Some(sample.provider.api.as_str()));
+        Ok(json!({"logins": identifiers, "apis": apis}))
     })?;
 
     assert_eq!(
         identifiers,
-        json!(["anthropic", "github-copilot", "openai-codex"])
+        json!({
+            "logins": ["anthropic", "github-copilot", "openai-codex"],
+            "apis": [
+                "anthropic-messages", "openai-completions", "mistral-conversations",
+                "openai-responses", "azure-openai-responses", "openai-codex-responses",
+                "google-generative-ai", "google-vertex", "bedrock-converse-stream"
+            ]
+        })
     );
     Ok(())
 }

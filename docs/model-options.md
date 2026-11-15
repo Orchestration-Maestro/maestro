@@ -1,7 +1,10 @@
 # Model option helpers
 
-`maestro-models` exports pure helpers without catalog lookup, environment
-credential resolution, provider invocation or hook execution.
+`maestro-models` exports invocation helpers without catalog lookup, provider
+invocation or hook execution. `resolve_api_key` keeps a nonempty supplied key,
+otherwise using the existing environment-key lookup. `resolve_cache_retention`
+uses an explicit value before the environment setting. Adapter implementations
+also use `thinking_budget` and `fit_thinking` to apply the same budget rules.
 
 - `build_base_options` copies the common invocation fields, retaining callback
   and cancellation handles. A missing token limit uses the positive model limit;
@@ -48,7 +51,7 @@ A session request without its own `timeout_ms` takes the provider retry setting,
 the `httpIdleTimeoutMs` setting, so every provider that reads the timeout honours it;
 see the [SDK guide](application/sdk.md). The Mistral transport applies the same timeout
 to the wait for each stream chunk, and rejects a negative or fractional value as the
-other providers do; see [reasoning conversations](models/reasoning-conversations.md).
+other providers do; see [reasoning conversations](models/mistral-conversations.md).
 
 ## Three context-overflow signals
 

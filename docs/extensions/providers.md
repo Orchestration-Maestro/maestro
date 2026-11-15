@@ -164,7 +164,7 @@ model `headers` are request sources, not descriptor metadata.
 For reasoning models, `thinkingLevelMap` maps `off`, `minimal`, `low`, `medium`,
 `high` and `xhigh` to protocol-specific strings; null marks an unsupported level.
 `compat` carries protocol-specific options. For Chat Completions, check
-[compatibility controls](../models/chat-completions.md) for developer/system role,
+[compatibility controls](../models/openai-completions.md) for developer/system role,
 reasoning effort, token-limit field, tool-result requirements, thinking format
 and cache-control behavior. Do not copy one server's quirks onto another.
 

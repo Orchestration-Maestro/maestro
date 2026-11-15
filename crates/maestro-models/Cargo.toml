@@ -22,24 +22,18 @@ serde_json = { workspace = true, features = ["raw_value"] }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 regex = "=1.13.1"
 rand = "=0.10.3"
-reqwest = { version = "=0.13.5", features = ["stream"] }
-futures-core = { version = "=0.3.34", default-features = false, features = ["std"] }
-futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
 
 num-traits = "=0.2.19"
 ryu-js = "=1.0.3"
-url = "=2.5.8"
-percent-encoding = "=2.3.2"
-chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 maestro-lock = { path = "../maestro-lock" }
 
 [features]
 test-support = ["maestro-interchange/test-support"]
 
 [dev-dependencies]
+futures-util.workspace = true
 maestro-http = { path = "../maestro-http", features = ["test-support"] }
 maestro-interchange = { path = "../maestro-interchange", features = ["test-support"] }
-httpdate = "=1.0.3"
 maestro-test-fixtures.workspace = true
 
 [lints]
@@ -53,49 +47,14 @@ getrandom = { version = "=0.4.3", features = ["wasm_js"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
-maestro-path = { path = "../maestro-path" }
-google-cloud-auth = "=1.17.0"
-uuid = { version = "=1.27.0", default-features = false }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "time", "net", "io-util", "macros"] }
-tokio-tungstenite.workspace = true
-aws-sdk-bedrockruntime = { version = "=1.148.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-config = { version = "=1.12.0", default-features = false, features = ["behavior-version-latest", "default-https-client", "rt-tokio", "credentials-process", "sso", "credentials-login"] }
-aws-sdk-signin = { version = "=1.22.0", default-features = false }
-aws-credential-types = { version = "=1.3.0", default-features = false }
-aws-smithy-runtime-api = { version = "=1.19.2", features = ["client", "http-1x"] }
-aws-smithy-types = { version = "=1.9.1", features = ["http-body-1-x"] }
 
-hyper = { version = "=1.11.1", default-features = false, features = ["client", "http1"] }
-rustls = { version = "=0.23.46", default-features = false, features = ["std", "tls12", "aws_lc_rs"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
-http-body-util = { version = "=0.1.5", default-features = false }
-aws-smithy-runtime-api = { version = "=1.19.2", features = ["test-util"] }
-icu_collator = "=2.3.1"
 tokio = { version = "=1.53.3", features = ["rt", "time", "test-util"] }
-
-[target.'cfg(unix)'.dependencies]
-rustix = { workspace = true, features = ["std", "system"] }
-
-[target.'cfg(windows)'.dependencies]
-windows-version = "=0.100.0"
 
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
-
-[[example]]
-name = "bedrock_browser_witness"
-path = "tests/support/bedrock_browser.rs"
-crate-type = ["cdylib"]
-
-[[example]]
-name = "cloud_content_browser_witness"
-path = "tests/support/cloud_content_browser.rs"
-crate-type = ["cdylib"]
-
-[[example]]
-name = "browser_import_check"
-path = "tests/support/browser_import_check.rs"

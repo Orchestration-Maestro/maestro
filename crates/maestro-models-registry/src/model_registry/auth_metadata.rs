@@ -2,7 +2,8 @@
 use super::{ModelRegistry, read_provider};
 use crate::CatalogError;
 use maestro_credentials::{AuthSource, AuthStatus};
-use maestro_models::{Model, SharedHandle, providers::chat::cloudflare::is_cloudflare_provider};
+use maestro_models::{Model, SharedHandle};
+use maestro_providers::providers::openai_completions::cloudflare::is_cloudflare_provider;
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Check credential presence, then freshly read the configured provider identity.

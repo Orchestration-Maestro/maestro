@@ -34,7 +34,7 @@ wasm_crates = [
     "maestro-watch",
     "maestro-web",
 ]
-wasm_examples = { "maestro-models-registry" = ["browser_catalog_check"], "maestro-models" = ["bedrock_browser_witness", "browser_import_check", "cloud_content_browser_witness"] }
+wasm_examples = { "maestro-models-registry" = ["browser_catalog_check"], "maestro-providers" = ["bedrock_browser_witness", "browser_import_check", "cloud_content_browser_witness"] }
 emscripten_crates = ["maestro-sandbox-runtime"]
 browser_test_crates = ["maestro-app", "maestro-web", "maestro-test-browser"]
 test_tools = true

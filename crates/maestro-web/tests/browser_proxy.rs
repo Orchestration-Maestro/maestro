@@ -324,6 +324,108 @@ fn proxy_stream_does_not_dispatch_after_setting_failure() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn stream_composition_installs_api_protocols_without_login_providers() {
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
+            "stream_composition_installs_api_protocols_without_login_providers",
+        )
+        .unwrap()
+        .env_clear()
+        .case("composition")
+        .output()
+        .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        return;
+    }
+    run(async {
+        let local = tokio::task::LocalSet::new();
+        local
+            .run_until(async {
+                maestro_models::clear_api_providers();
+                let threaded = maestro_web::utils::proxy::create_stream_fn(Arc::new(|| {
+                    Box::pin(std::future::ready(Ok(None)))
+                }));
+                assert_composed_protocol_dispatch::<maestro_models::Threaded>(threaded).await;
+
+                maestro_models::clear_api_providers();
+                let adapter = maestro_web::utils::proxy::create_local_stream_fn(
+                    Arc::new(|| Box::pin(async { Ok(None) })),
+                    std::rc::Rc::new(|future| {
+                        tokio::task::spawn_local(future);
+                    }),
+                );
+                assert_composed_protocol_dispatch::<maestro_models::Local>(adapter).await;
+            })
+            .await;
+        local.await;
+    });
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+/// Both browser constructors expose API protocols and dispatch without installing login providers.
+async fn assert_composed_protocol_dispatch<E: maestro_agent::AgentExecution>(
+    wrapper: maestro_agent::StreamFn<E>,
+) {
+    let apis: Vec<_> = maestro_models::get_api_providers()
+        .into_iter()
+        .map(|provider| provider.api)
+        .collect();
+    assert_eq!(
+        apis,
+        [
+            "anthropic-messages",
+            "openai-completions",
+            "mistral-conversations",
+            "openai-responses",
+            "azure-openai-responses",
+            "openai-codex-responses",
+            "google-generative-ai",
+            "google-vertex",
+            "bedrock-converse-stream",
+        ]
+    );
+    assert!(maestro_models::get_oauth_providers().is_empty());
+    let mut input = model();
+    input.api = "openai-completions".into();
+    input.base_url = "https://browser.invalid/v1".into();
+    input.provider = "browser-fixture".into();
+    let options = maestro_models::SimpleStreamOptions::<E> {
+        common: maestro_models::StreamOptions {
+            api_key: Some("fixture-key".into()),
+            fetch: Some(Arc::new(|request| {
+                assert!(request.url.ends_with("/chat/completions"));
+                Box::pin(async {
+                    Ok(maestro_models::HttpResponse {
+                            status: 200,
+                            status_text: String::new(),
+                            headers: std::collections::BTreeMap::new(),
+                            body: Box::pin(futures_util::stream::iter([Ok(b"data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"answer\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n".to_vec())])),
+                        })
+                })
+            })),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let stream = wrapper(input, context(), options, ProviderStreamOptions::default())
+        .await
+        .unwrap();
+    let mut labels = Vec::new();
+    while let Some(event) = stream.next().await {
+        labels.push(serde_json::to_value(event).unwrap()["type"].clone());
+    }
+    assert_eq!(
+        labels,
+        ["start", "text_start", "text_delta", "text_end", "done"]
+    );
+    let result = stream.result().await;
+    let message = serde_json::to_value(result.read().unwrap().clone()).unwrap();
+    assert_eq!(message["content"][0]["text"], "answer");
+    assert_eq!(message["stopReason"], "stop");
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 /// Retained invocation owner for the controlled provider.
 struct UnexpectedRaw;
 #[cfg(not(target_arch = "wasm32"))]

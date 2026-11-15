@@ -7,19 +7,20 @@ use crate::{
 };
 
 /// Output of a tool result whose conversion selects image-only text.
-pub(crate) const IMAGE_PLACEHOLDER: &str = "(see attached image)";
+pub const IMAGE_PLACEHOLDER: &str = "(see attached image)";
 
 /// Longest tool-call identifier a destination protocol accepts, in characters.
 const ID_LIMIT: usize = 64;
 
 /// Every character outside `[A-Za-z0-9_-]` becomes one `_` per UTF-16 unit, and the result is
 /// limited to 64 characters.
-pub(crate) fn normalize_tool_call_id(id: &str) -> String {
+#[must_use]
+pub fn normalize_tool_call_id(id: &str) -> String {
     tool_call_id_characters(id).take(ID_LIMIT).collect()
 }
 
 /// Preserve ASCII identifier characters and replace every other UTF-16 unit with `_`.
-pub(crate) fn tool_call_id_characters(id: &str) -> impl Iterator<Item = char> + '_ {
+pub fn tool_call_id_characters(id: &str) -> impl Iterator<Item = char> + '_ {
     id.chars().flat_map(|character| {
         let kept = character.is_ascii_alphanumeric() || matches!(character, '_' | '-');
         let units = if kept { 1 } else { character.len_utf16() };

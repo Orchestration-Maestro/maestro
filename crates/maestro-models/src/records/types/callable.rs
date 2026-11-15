@@ -74,7 +74,7 @@ pub enum ProviderInvocation<K: StreamOptionsFamily> {
 }
 impl<K: StreamOptionsFamily> ProviderInvocation<K> {
     /// Invoke only the selected family with the original inputs and admission.
-    pub(crate) fn dispatch<R>(
+    pub fn dispatch<R>(
         self,
         model: Model,
         context: Context,
