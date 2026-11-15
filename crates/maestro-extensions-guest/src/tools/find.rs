@@ -5,13 +5,8 @@ use crate::Presence;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 
-/// Original glob constraints supplied by the native finder.
-pub struct FindGlobOptions {
-    /// Ignore patterns in native order.
-    pub ignore: Vec<String>,
-    /// Effective result limit without narrowing the authored number.
-    pub limit: f64,
-}
+#[doc(inline)]
+pub use maestro_interchange::tool::types::FindGlobOptions;
 /// Replaceable existence and glob effects; path and output policy remain native.
 #[derive(Clone)]
 pub struct FindOperations {

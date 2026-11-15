@@ -7,6 +7,8 @@ use maestro_interchange::entry::session_manager::{
     SessionHeader, SessionInfoEntry, SessionMessageEntry, ThinkingLevelChangeEntry,
 };
 use maestro_interchange::presence::Presence;
+use maestro_interchange::tool::types::{ExecResult, TruncateLineResult};
+use maestro_interchange::tui::{ColumnSlice, ExtractedSegments, FuzzyMatch, OverlayAnchor};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
@@ -307,4 +309,87 @@ fn compaction_result_keeps_optional_details_and_member_order() {
             _ => panic!("detail presence differs"),
         }
     }
+}
+
+/// The recorded document of one case.
+fn recorded(id: &str) -> String {
+    rows().into_iter().find(|row| row.0 == id).unwrap().1
+}
+
+/// Encodes an independently built record to its recorded bytes and decodes them back.
+fn keeps_bytes<T: DeserializeOwned + Serialize>(id: &str, record: &T) {
+    let text = recorded(id);
+    assert_eq!(serde_json::to_string(record).unwrap(), text, "{id}");
+    let decoded: T = serde_json::from_str(&text).unwrap();
+    assert_eq!(
+        serde_json::to_string(&decoded).unwrap(),
+        text,
+        "{id} decoded"
+    );
+}
+
+#[test]
+fn column_slice_keeps_its_wire_members() {
+    let slice = ColumnSlice {
+        text: "ab".into(),
+        width: 2,
+    };
+    keeps_bytes("toolkit-column-slice", &slice);
+}
+
+#[test]
+fn extracted_segments_keep_camel_case_members() {
+    let segments = ExtractedSegments {
+        before: "a".into(),
+        before_width: 1,
+        after: "b".into(),
+        after_width: 1,
+    };
+    keeps_bytes("toolkit-extracted-segments", &segments);
+}
+
+#[test]
+fn fuzzy_match_keeps_its_wire_members() {
+    let matched = FuzzyMatch {
+        matches: true,
+        score: -1.5,
+    };
+    keeps_bytes("toolkit-fuzzy-match", &matched);
+}
+
+#[test]
+fn overlay_anchors_keep_kebab_case_names() {
+    let anchors = vec![
+        OverlayAnchor::Center,
+        OverlayAnchor::TopLeft,
+        OverlayAnchor::TopRight,
+        OverlayAnchor::BottomLeft,
+        OverlayAnchor::BottomRight,
+        OverlayAnchor::TopCenter,
+        OverlayAnchor::BottomCenter,
+        OverlayAnchor::LeftCenter,
+        OverlayAnchor::RightCenter,
+    ];
+    keeps_bytes("toolkit-overlay-anchors", &anchors);
+}
+
+#[test]
+fn truncate_line_result_keeps_camel_case_members() {
+    let line = TruncateLineResult {
+        text: "line".into(),
+        was_truncated: true,
+    };
+    keeps_bytes("tool-truncate-line-result", &line);
+}
+
+#[test]
+fn exec_result_decodes_its_wire_members() {
+    let result: ExecResult = serde_json::from_str(&recorded("tool-exec-result")).unwrap();
+    let expected = ExecResult {
+        stdout: "out".into(),
+        stderr: "err".into(),
+        code: 0,
+        killed: false,
+    };
+    assert_eq!(result, expected);
 }

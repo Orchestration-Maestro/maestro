@@ -33,14 +33,9 @@ pub struct AutocompleteItem {
     pub description: Option<String>,
 }
 
-/// Candidates together with the text they replace.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AutocompleteSuggestions {
-    /// Candidates; an empty list differs from having no suggestions at all.
-    pub items: Vec<AutocompleteItem>,
-    /// The text being matched, such as `/` or `src/`.
-    pub prefix: String,
-}
+/// Toolkit completion candidates together with the text they replace.
+pub type AutocompleteSuggestions =
+    maestro_interchange::tui::AutocompleteSuggestions<AutocompleteItem>;
 
 /// What a request for suggestions carries besides the text and cursor.
 pub struct CompletionOptions<'a, S: ?Sized> {

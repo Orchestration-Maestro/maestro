@@ -22,16 +22,9 @@ pub type CompactionComplete =
 /// A synchronous error notification with callback-scoped emission.
 pub type CompactionError =
     Rc<dyn for<'a> Fn(String, crate::CallbackEmitter<'a>) -> ExtensionResult<()>>;
-/// A fire-and-return compaction request.
-#[derive(Default)]
-pub struct CompactOptions {
-    /// Optional literal instructions forwarded to the host.
-    pub custom_instructions: Option<String>,
-    /// Optional completion callback supplied to the host.
-    pub on_complete: Option<CompactionComplete>,
-    /// Optional error callback supplied to the host.
-    pub on_error: Option<CompactionError>,
-}
+/// A fire-and-return compaction request with callback-scoped notifications.
+pub type CompactOptions =
+    maestro_interchange::extension_context::CompactOptions<CompactionComplete, CompactionError>;
 pub use crate::bindings::maestro::extension::host::{
     ContextUsage, ExtensionWidgetOptions, NotificationType, TerminalInputResult, WidgetPlacement,
     WorkingIndicatorOptions,
@@ -535,10 +528,7 @@ pub struct ForkOptions {
     /// One-shot continuation bound by the host to this operation.
     pub with_session: Option<WithSession>,
 }
-#[derive(Default)]
-/// Optional continuation of a session switch.
-pub struct SwitchSessionOptions {
-    /// One-shot continuation bound by the host to this operation.
-    pub with_session: Option<WithSession>,
-}
+/// Optional one-shot continuation of a session switch.
+pub type SwitchSessionOptions =
+    maestro_interchange::extension_context::SwitchSessionOptions<WithSession>;
 pub use maestro_interchange::entry::session_manager::NavigateTreeOptions;

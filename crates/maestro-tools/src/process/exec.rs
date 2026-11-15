@@ -23,18 +23,8 @@ pub struct ExecOptions<'a> {
     pub timeout: Option<Duration>,
 }
 
-/// What one execution produced.
-pub struct ExecResult {
-    /// The stdout bytes collected by the wait, decoded lossily.
-    pub stdout: String,
-    /// The stderr bytes collected by the wait, decoded lossily.
-    pub stderr: String,
-    /// The exit code; 0 when a signal ended the command, 1 when it did not start or
-    /// waiting failed.
-    pub code: i32,
-    /// Whether the abort or the timeout requested termination.
-    pub killed: bool,
-}
+#[doc(inline)]
+pub use maestro_interchange::tool::types::ExecResult;
 
 /// Runs `command` with `args` in `cwd`, without a shell and with stdin closed.
 ///

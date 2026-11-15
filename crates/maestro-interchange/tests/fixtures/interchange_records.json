@@ -118,5 +118,29 @@
   {
     "id": "result-details-string",
     "text": "{\"summary\":\"authored\",\"firstKeptEntryId\":\"kept\",\"tokensBefore\":12.25,\"details\":\"opaque\"}"
+  },
+  {
+    "id": "toolkit-column-slice",
+    "text": "{\"text\":\"ab\",\"width\":2}"
+  },
+  {
+    "id": "toolkit-extracted-segments",
+    "text": "{\"before\":\"a\",\"beforeWidth\":1,\"after\":\"b\",\"afterWidth\":1}"
+  },
+  {
+    "id": "toolkit-fuzzy-match",
+    "text": "{\"matches\":true,\"score\":-1.5}"
+  },
+  {
+    "id": "toolkit-overlay-anchors",
+    "text": "[\"center\",\"top-left\",\"top-right\",\"bottom-left\",\"bottom-right\",\"top-center\",\"bottom-center\",\"left-center\",\"right-center\"]"
+  },
+  {
+    "id": "tool-truncate-line-result",
+    "text": "{\"text\":\"line\",\"wasTruncated\":true}"
+  },
+  {
+    "id": "tool-exec-result",
+    "text": "{\"stdout\":\"out\",\"stderr\":\"err\",\"code\":0,\"killed\":false}"
   }
 ]

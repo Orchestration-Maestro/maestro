@@ -2,28 +2,8 @@
 
 use std::rc::Rc;
 
-/// Point of the viewport an overlay is anchored to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum OverlayAnchor {
-    /// Centred in both directions.
-    Center,
-    /// Top-left corner.
-    TopLeft,
-    /// Top-right corner.
-    TopRight,
-    /// Bottom-left corner.
-    BottomLeft,
-    /// Bottom-right corner.
-    BottomRight,
-    /// Centred along the top edge.
-    TopCenter,
-    /// Centred along the bottom edge.
-    BottomCenter,
-    /// Centred along the left edge.
-    LeftCenter,
-    /// Centred along the right edge.
-    RightCenter,
-}
+#[doc(inline)]
+pub use maestro_interchange::tui::OverlayAnchor;
 
 /// Margin per viewport edge; absent and negative sides resolve to zero.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
