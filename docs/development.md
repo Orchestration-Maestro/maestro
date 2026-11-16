@@ -951,6 +951,30 @@ function as a test even at a library root. Diagnostics give the file, line and
 function name. Helpers without a test attribute are not checked. Run the guard
 with `just test-conventions`.
 
+### Test environment variables
+
+Name test-only switches with `MAESTRO_TEST_`, such as `MAESTRO_TEST_CAPTURE`.
+Keep a user setting's name when a test reads or sets it. Run the naming guard with:
+
+```sh
+just test-conventions
+```
+
+The `test_environment` check gathers environment-name spellings from Rust string
+literals and identifiers across the workspace. A name used only by test-owned
+code must have the prefix. Diagnostics list the name and every source location.
+Test-owned code includes `tests/`, `tests.rs`, test-attributed or test-gated items,
+`maestro-test-*` crates, `test_support` modules and items requiring the
+`test-support` feature. External modules inherit their declaration's test gate.
+Production occurrences keep their names, including names documented beside a
+reader that builds its key at run time. Ordinary comments do not count. The scan
+reads written tokens; it does not expand macros or evaluate computed names.
+
+Update both sides of a test switch: the parent that sets it and the child that
+reads it. Keep fixture records, component markers and documented test commands
+on the same spelling. For example, a child using `MAESTRO_TEST_CAPTURE` must be
+launched with that key, not a second name for the same switch.
+
 ### Shared test support
 
 Keep one owner for a reusable fixture inside its crate. When unit and integration

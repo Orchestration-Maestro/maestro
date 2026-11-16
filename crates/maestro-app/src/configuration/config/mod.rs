@@ -30,7 +30,7 @@ pub const SERVICE_ORIGIN: &str = "";
 /// The application-derived agent-directory environment key.
 pub static ENV_AGENT_DIR: LazyLock<String> =
     LazyLock::new(|| format!("{}_CODING_AGENT_DIR", APP_NAME.to_uppercase()));
-/// The application-derived session-directory environment key.
+/// The application-derived `MAESTRO_CODING_AGENT_SESSION_DIR` environment key.
 pub static ENV_SESSION_DIR: LazyLock<String> =
     LazyLock::new(|| format!("{}_CODING_AGENT_SESSION_DIR", APP_NAME.to_uppercase()));
 
