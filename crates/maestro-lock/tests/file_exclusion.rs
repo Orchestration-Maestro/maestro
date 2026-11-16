@@ -73,7 +73,7 @@ fn unopenable_lock_file_fails_in_every_form() {
 
 #[test]
 fn acquisition_never_reads_home() {
-    if let Some(target) = std::env::var_os("MAESTRO_LOCK_TARGET") {
+    if let Some(target) = std::env::var_os("MAESTRO_TEST_LOCK_TARGET") {
         maestro_lock::replace(
             std::path::Path::new(&target),
             b"saved",
@@ -95,7 +95,7 @@ fn acquisition_never_reads_home() {
         let target = root.path().join("session");
         let mut child = maestro_test_harness::TestProcess::current("acquisition_never_reads_home")
             .unwrap()
-            .env("MAESTRO_LOCK_TARGET", &target)
+            .env("MAESTRO_TEST_LOCK_TARGET", &target)
             .env_remove("HOME")
             .env_remove("USERPROFILE");
         if let Some(home) = &home {

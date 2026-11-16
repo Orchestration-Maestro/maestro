@@ -55,7 +55,7 @@ const INVENTORY: &str =
     include_str!("../../../maestro-web/tests/sandbox_loading_support/exports.json");
 
 /// The setup variable holding the digest of the prepared bundle, hashed once for the whole run.
-const DIGEST_VARIABLE: &str = "MAESTRO_BROWSER_EXPORTS_DIGEST";
+const DIGEST_VARIABLE: &str = "MAESTRO_TEST_BROWSER_EXPORTS_DIGEST";
 
 /// One CDP connection, owning the fresh pages it creates and its ordered diagnostics.
 struct Driver {
@@ -250,10 +250,10 @@ pub fn prepare(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<(
         .target_directory
         .into_std_path_buf();
     let root = package::build(checkout, cargo, &target, &package::directory(&target)?)?;
-    setup_variable("MAESTRO_BROWSER_EXPORTS", &root)?;
+    setup_variable("MAESTRO_TEST_BROWSER_EXPORTS", &root)?;
     setup_variable(DIGEST_VARIABLE, resources::digest(&root)?)?;
     setup_variable(
-        "MAESTRO_BROWSER_ASSETS",
+        "MAESTRO_TEST_BROWSER_ASSETS",
         target.join("browser-analysis-assets"),
     )
 }

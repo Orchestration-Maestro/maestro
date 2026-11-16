@@ -168,7 +168,7 @@ fn child_fixture(test: &str, component: Option<&Path>) -> Option<Scratch> {
         .case("*")
         .env("MAESTRO_BIN_PATH", &program)
         .env("TMPDIR", root.path().join("tmp"))
-        .envs(component.map(|path| ("MAESTRO_NATIVE_IO_COMPONENT", path)))
+        .envs(component.map(|path| ("MAESTRO_TEST_NATIVE_IO_COMPONENT", path)))
         .nocapture()
         .status()
         .unwrap();

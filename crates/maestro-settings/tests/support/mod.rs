@@ -286,7 +286,7 @@ pub fn report(value: &Value) {
 pub use maestro_test_harness::Scratch;
 
 /// Environment variable naming the file a lock child works on.
-const CHILD_PATH: &str = "MAESTRO_SETTINGS_TEST_PATH";
+const CHILD_PATH: &str = "MAESTRO_TEST_SETTINGS_PATH";
 
 /// Child side of the lock helpers; returns `true` when this process was a lock child.
 pub fn run_lock_child() -> bool {

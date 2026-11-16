@@ -188,7 +188,7 @@ mod model_protocol_routes;
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        if std::env::var_os("MAESTRO_HOST_OPERATIONS_REQUEST").is_some() {
+        if std::env::var_os("MAESTRO_TEST_HOST_OPERATIONS_REQUEST").is_some() {
             return host_operations::observe(&api).await;
         }
         check_start(&api)?;

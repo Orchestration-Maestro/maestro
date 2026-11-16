@@ -498,9 +498,10 @@ fn query(
 
 /// Append `directory`, the invoked name and every operand, then answer the command.
 fn package(operands: &[OsString]) -> io::Result<()> {
-    let log =
-        variable("MAESTRO_COMMAND_LOG").map_err(|error| io::Error::other(error.to_string()))?;
-    let root = variable("MAESTRO_NPM_ROOT").map_err(|error| io::Error::other(error.to_string()))?;
+    let log = variable("MAESTRO_TEST_COMMAND_LOG")
+        .map_err(|error| io::Error::other(error.to_string()))?;
+    let root =
+        variable("MAESTRO_TEST_NPM_ROOT").map_err(|error| io::Error::other(error.to_string()))?;
     let mut line = std::env::current_dir()?
         .into_os_string()
         .into_encoded_bytes();

@@ -66,10 +66,10 @@ fn explicit_command_directories_do_not_search_other_directories() {
 #[test]
 #[cfg(windows)]
 fn verbatim_shell_commands_keep_environment_operands() {
-    let output = super::windows_shell_launch("echo \"%MAESTRO_LITERAL_FILE%\"", None)
+    let output = super::windows_shell_launch("echo \"%MAESTRO_TEST_LITERAL_FILE%\"", None)
         .with_context(
             [(
-                "MAESTRO_LITERAL_FILE",
+                "MAESTRO_TEST_LITERAL_FILE",
                 "directory with spaces & literal.txt",
             )],
             None,
@@ -158,7 +158,7 @@ fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
     record.push(".fixture");
     std::fs::write(
         record,
-        "editor\n{\"result\":\"MAESTRO_EDITOR_RESULT\",\"code\":7}",
+        "editor\n{\"result\":\"MAESTRO_TEST_EDITOR_RESULT\",\"code\":7}",
     )
     .unwrap();
     for editor in [None, Some(""), Some("vi --custom")] {
@@ -181,7 +181,7 @@ fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
         command
             .args(&argv[1..])
             .env("PATH", format!("{}:/usr/bin:/bin", dir.display()))
-            .env("MAESTRO_EDITOR_RESULT", dir.join("result"));
+            .env("MAESTRO_TEST_EDITOR_RESULT", dir.join("result"));
         if let Some(editor) = editor {
             command.env("EDITOR", editor);
         } else {
@@ -247,7 +247,7 @@ fn pane_custom_commands_keep_the_plain_command_flag() {
 
 /// Variable carrying the scratch directory a child fixture works in.
 #[cfg(windows)]
-const LAUNCH_PATH_ROOT: &str = "MAESTRO_LAUNCH_PATH_ROOT";
+const LAUNCH_PATH_ROOT: &str = "MAESTRO_TEST_LAUNCH_PATH_ROOT";
 
 #[test]
 #[cfg(windows)]

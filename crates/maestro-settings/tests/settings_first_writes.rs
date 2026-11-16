@@ -179,16 +179,19 @@ impl SettingsStorage for ProcessObserver {
     }
 }
 fn child_scope() -> SettingsScope {
-    match std::env::var("MAESTRO_FIRST_WRITE_SCOPE").unwrap().as_str() {
+    match std::env::var("MAESTRO_TEST_FIRST_WRITE_SCOPE")
+        .unwrap()
+        .as_str()
+    {
         "global" => SettingsScope::Global,
         "project" => SettingsScope::Project,
         _ => panic!("unknown scope"),
     }
 }
 fn write_child(kind: &str) {
-    let root = std::path::PathBuf::from(std::env::var_os("MAESTRO_FIRST_WRITE_ROOT").unwrap());
+    let root = std::path::PathBuf::from(std::env::var_os("MAESTRO_TEST_FIRST_WRITE_ROOT").unwrap());
     let scope = child_scope();
-    let key = std::env::var("MAESTRO_FIRST_WRITE_KEY").unwrap();
+    let key = std::env::var("MAESTRO_TEST_FIRST_WRITE_KEY").unwrap();
     let storage = Arc::new(ProcessObserver {
         storage: file_storage(&root),
         file: support::settings_file(&root, scope),
@@ -236,10 +239,10 @@ fn two_processes(test: &str, scope: SettingsScope, kind: &str) {
     let mut children = Vec::new();
     for key in ["first", "second"] {
         let mut child = support::child_command(test, "write")
-            .env("MAESTRO_FIRST_WRITE_ROOT", root.path())
-            .env("MAESTRO_FIRST_WRITE_KEY", key)
+            .env("MAESTRO_TEST_FIRST_WRITE_ROOT", root.path())
+            .env("MAESTRO_TEST_FIRST_WRITE_KEY", key)
             .env(
-                "MAESTRO_FIRST_WRITE_SCOPE",
+                "MAESTRO_TEST_FIRST_WRITE_SCOPE",
                 if scope == SettingsScope::Global {
                     "global"
                 } else {

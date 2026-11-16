@@ -1,5 +1,5 @@
 //! A fixture component whose file watch sends external triggers to the conversation.
-// maestro-component: MAESTRO_FILE_TRIGGER_COMPONENT
+// maestro-component: MAESTRO_TEST_FILE_TRIGGER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

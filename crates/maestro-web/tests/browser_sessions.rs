@@ -742,7 +742,7 @@ fn session_operations_require_a_bound_backend() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn latest_session_uses_host_locale_instead_of_lexical_order() {
-    if let Ok(locale) = std::env::var("MAESTRO_SESSION_LOCALE") {
+    if let Ok(locale) = std::env::var("MAESTRO_TEST_SESSION_LOCALE") {
         run_io(async {
             let row = session_rows("latest_session_uses_host_locale_instead_of_lexical_order")
                 .into_iter()
@@ -768,7 +768,7 @@ fn latest_session_uses_host_locale_instead_of_lexical_order() {
         )
         .unwrap()
         .nocapture()
-        .env("MAESTRO_SESSION_LOCALE", locale)
+        .env("MAESTRO_TEST_SESSION_LOCALE", locale)
         .env("LC_ALL", locale)
         .env("LC_MESSAGES", locale)
         .env("LANG", locale)

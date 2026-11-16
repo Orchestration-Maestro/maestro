@@ -138,7 +138,7 @@ fn source_configuration(variable: &str, scope: &[&str]) -> PathBuf {
 
 /// Whether this process is the child of [`rerun_without_shared_cargo_home`].
 pub fn without_shared_cargo_home() -> bool {
-    std::env::var_os("MAESTRO_SHARED_CARGO_HOME_UNUSABLE").is_some()
+    std::env::var_os("MAESTRO_TEST_SHARED_CARGO_HOME_UNUSABLE").is_some()
 }
 
 /// Rerun the named test in a child whose shared Cargo home cannot be locked.
@@ -151,7 +151,7 @@ pub fn rerun_without_shared_cargo_home(test: &str, sources: &[(&str, PathBuf)]) 
     fs::create_dir_all(home.join(".package-cache")).unwrap();
     let output = maestro_test_harness::TestProcess::current(test)
         .unwrap()
-        .env("MAESTRO_SHARED_CARGO_HOME_UNUSABLE", "1")
+        .env("MAESTRO_TEST_SHARED_CARGO_HOME_UNUSABLE", "1")
         .env("MAESTRO_TEST_CARGO_SOURCES", prepared_sources())
         .envs(sources.iter().map(|(name, path)| (*name, path)))
         .env("CARGO_HOME", home)
@@ -260,7 +260,7 @@ impl Workspace {
         command
             .arg(recipe)
             .env("MAESTRO_LOG", self.path().join("log"))
-            .env("MAESTRO_CWD", self.path().join("cwd"))
+            .env("MAESTRO_TEST_CWD", self.path().join("cwd"))
             .env("PATH", {
                 // The fixture tools come first, joined with the host's list separator.
                 let inherited = std::env::var_os("PATH").unwrap();

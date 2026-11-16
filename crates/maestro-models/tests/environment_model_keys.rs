@@ -333,10 +333,16 @@ fn assert_vertex_paths(directory: &Directory, credential: &std::path::Path) -> T
 fn assert_vertex_cache(directory: &Directory) -> TestResult {
     let path = directory.path().join("cached");
     let mut variables = vertex_variables(&path);
-    variables.push(("MAESTRO_ENV_CREATE".into(), path.as_os_str().to_owned()));
+    variables.push((
+        "MAESTRO_TEST_ENV_CREATE".into(),
+        path.as_os_str().to_owned(),
+    ));
     vertex_run(directory, &variables, None)?;
     let mut variables = vertex_variables(&path);
-    variables.push(("MAESTRO_ENV_REMOVE".into(), path.as_os_str().to_owned()));
+    variables.push((
+        "MAESTRO_TEST_ENV_REMOVE".into(),
+        path.as_os_str().to_owned(),
+    ));
     vertex_run(directory, &variables, Some("<authenticated>"))?;
     Ok(())
 }
@@ -518,9 +524,9 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
         .nocapture()
         .case("outer")
         .current_dir(root.path())
-        .env("MAESTRO_PROFILE_ROOT", root.path())
+        .env("MAESTRO_TEST_PROFILE_ROOT", root.path())
         .env("LLVM_PROFILE_FILE", PROFILE)
-        .env("MAESTRO_NATIVE_SENTINEL", "ambient")
+        .env("MAESTRO_TEST_NATIVE_SENTINEL", "ambient")
         .output()?;
     assert!(
         output.status.success(),
@@ -534,7 +540,7 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
 /// Launch both cleared stages from the outer child and check it left its environment alone.
 fn outer_environment_stage(name: &str, profile: &str, overriding: &str) -> TestResult {
     assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, profile);
-    let root = std::env::var_os("MAESTRO_PROFILE_ROOT").ok_or("missing profile root")?;
+    let root = std::env::var_os("MAESTRO_TEST_PROFILE_ROOT").ok_or("missing profile root")?;
     assert_eq!(
         std::env::current_dir()?,
         std::path::Path::new(&root),
@@ -543,13 +549,13 @@ fn outer_environment_stage(name: &str, profile: &str, overriding: &str) -> TestR
     let directory = Directory::new()?;
     let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
     for (stage, explicit) in [("inherited", None), ("override", Some(overriding))] {
-        let mut variables = vars(&[("MAESTRO_NATIVE_EMPTY", "")]);
+        let mut variables = vars(&[("MAESTRO_TEST_NATIVE_EMPTY", "")]);
         variables.extend(explicit.map(|value| ("LLVM_PROFILE_FILE".into(), value.into())));
         #[cfg(unix)]
         {
             use std::os::unix::ffi::OsStringExt as _;
             variables.push((
-                "MAESTRO_NATIVE_BYTES".into(),
+                "MAESTRO_TEST_NATIVE_BYTES".into(),
                 std::ffi::OsString::from_vec(vec![b'a', 0xff]),
             ));
         }
@@ -578,20 +584,23 @@ fn native_environment_observations(profile: &str) -> TestResult {
         Some(cwd.as_os_str())
     );
     assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, profile);
-    assert!(std::env::var_os("MAESTRO_NATIVE_SENTINEL").is_none());
-    assert_eq!(std::env::var_os("MAESTRO_NATIVE_EMPTY"), Some("".into()));
+    assert!(std::env::var_os("MAESTRO_TEST_NATIVE_SENTINEL").is_none());
+    assert_eq!(
+        std::env::var_os("MAESTRO_TEST_NATIVE_EMPTY"),
+        Some("".into())
+    );
     #[cfg(unix)]
     {
         use std::os::unix::ffi::OsStrExt as _;
         assert_eq!(
-            std::env::var_os("MAESTRO_NATIVE_BYTES")
+            std::env::var_os("MAESTRO_TEST_NATIVE_BYTES")
                 .ok_or("missing native bytes")?
                 .as_bytes(),
             &[b'a', 0xff]
         );
     }
     assert_eq!(
-        std::env::var("MAESTRO_ENV_EXPECTATION")?,
+        std::env::var("MAESTRO_TEST_ENV_EXPECTATION")?,
         "[\"unknown-native-provider\",null,null]"
     );
     assert!(child()?);

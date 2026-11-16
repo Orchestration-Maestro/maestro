@@ -467,7 +467,7 @@ pub fn directory_read_error() -> std::io::Error {
 }
 
 /// Names the scratch base a standard-error child works in.
-const CHILD_BASE: &str = "MAESTRO_RESOURCE_TEST_BASE";
+const CHILD_BASE: &str = "MAESTRO_TEST_RESOURCE_BASE";
 
 /// Runs `body` with a scratch base in a child whose home is `<base>/home`; in the parent,
 /// returns the base and the child's standard error once the child passed.

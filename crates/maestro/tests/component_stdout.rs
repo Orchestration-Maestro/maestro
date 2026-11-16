@@ -34,7 +34,7 @@ fn component_output_stays_between_complete_host_frames() {
     for generation in ["p2", "p3"] {
         if !selected.is_child() {
             let output = TestProcess::current("component_output_stays_between_complete_host_frames").unwrap().case(generation).nocapture()
-                .env("MAESTRO_WASI_STARTUP_OUTPUT", json!({"op":"output","generation":generation,"bytes":b"\x1b[36mguest\0\xff\x1b[0m"}).to_string()).output().unwrap();
+                .env("MAESTRO_TEST_WASI_STARTUP_OUTPUT", json!({"op":"output","generation":generation,"bytes":b"\x1b[36mguest\0\xff\x1b[0m"}).to_string()).output().unwrap();
             assert!(
                 output.status.success(),
                 "{generation}: {} {}",
@@ -61,7 +61,7 @@ fn compose_frames() {
         terminal.write(&first).unwrap();
         until(|| terminal.pending_output_bytes() < first.len()).await;
         assert!(terminal.pending_output_bytes() > 0);
-        let path = std::env::var("MAESTRO_WASI_COMPONENT").unwrap();
+        let path = std::env::var("MAESTRO_TEST_WASI_COMPONENT").unwrap();
         let factory = artifact_factory_with_stdout(
             path,
             crate::support::widgets(),
@@ -117,7 +117,7 @@ fn component_output_without_newline_is_flushed_before_terminal_start() {
             .case(generation)
             .nocapture()
             .env(
-                "MAESTRO_WASI_STARTUP_OUTPUT",
+                "MAESTRO_TEST_WASI_STARTUP_OUTPUT",
                 json!({"op":"output","generation":generation,"bytes":b"guest-without-newline"})
                     .to_string(),
             )
@@ -134,7 +134,7 @@ fn component_output_without_newline_is_flushed_before_terminal_start() {
             let terminal = ProcessTerminal::new(rig.local());
             rig.run(async {
                 let factory = artifact_factory_with_stdout(
-                    std::env::var("MAESTRO_WASI_COMPONENT").unwrap(),
+                    std::env::var("MAESTRO_TEST_WASI_COMPONENT").unwrap(),
                     crate::support::widgets(),
                     maestro_extensions_wasmtime::Installation {
                         version: maestro_app::configuration::config::VERSION.into(),

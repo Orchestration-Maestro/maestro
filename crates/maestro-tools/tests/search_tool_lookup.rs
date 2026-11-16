@@ -45,14 +45,14 @@ fn child(test: &str, mode: &str, root: &Path, offline: &str) -> bool {
         &[
             ("PATH", Some(root.as_os_str())),
             ("MAESTRO_OFFLINE", Some(std::ffi::OsStr::new(offline))),
-            ("MAESTRO_SEARCH_ROOT", Some(root.as_os_str())),
+            ("MAESTRO_TEST_SEARCH_ROOT", Some(root.as_os_str())),
         ],
     )
 }
 
 /// The native aliases directory captured by the parent.
 fn child_root() -> std::path::PathBuf {
-    std::env::var_os("MAESTRO_SEARCH_ROOT").unwrap().into()
+    std::env::var_os("MAESTRO_TEST_SEARCH_ROOT").unwrap().into()
 }
 
 #[test]

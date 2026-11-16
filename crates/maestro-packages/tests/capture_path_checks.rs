@@ -5,7 +5,7 @@
 use maestro_packages::{CommandCaptureOptions, NativePackageOperations, PackageOperations};
 
 /// Variable carrying the scratch directory a child fixture works in.
-const PATH_ROOT: &str = "MAESTRO_CAPTURE_PATH_ROOT";
+const PATH_ROOT: &str = "MAESTRO_TEST_CAPTURE_PATH_ROOT";
 
 #[test]
 fn capture_resolves_override_path_before_parent_decoys() {

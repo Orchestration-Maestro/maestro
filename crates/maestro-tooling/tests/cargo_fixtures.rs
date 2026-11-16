@@ -116,9 +116,9 @@ fn recipe_stand_ins_accept_no_operands_without_a_requested_failure() {
     let workspace = Workspace::new();
     let output = Command::new(workspace.path().join("bin/prek"))
         .env("MAESTRO_LOG", workspace.path().join("empty.log"))
-        .env_remove("MAESTRO_FAIL")
-        .env_remove("MAESTRO_FAIL_ARG")
-        .env_remove("MAESTRO_REAL_CARGO")
+        .env_remove("MAESTRO_TEST_FAIL")
+        .env_remove("MAESTRO_TEST_FAIL_ARG")
+        .env_remove("MAESTRO_TEST_REAL_CARGO")
         .output()
         .unwrap();
     assert!(output.status.success(), "{}", output.status);
@@ -139,9 +139,9 @@ fn recording_wrapper_preserves_cargo_home_for_its_child() {
         .arg("check")
         .env("CARGO_HOME", &home)
         .env("MAESTRO_LOG", tools.path().join("compiler.log"))
-        .env_remove("MAESTRO_REAL_CARGO")
-        .env_remove("MAESTRO_FAIL")
-        .env_remove("MAESTRO_FAIL_ARG")
+        .env_remove("MAESTRO_TEST_REAL_CARGO")
+        .env_remove("MAESTRO_TEST_FAIL")
+        .env_remove("MAESTRO_TEST_FAIL_ARG")
         .output()
         .unwrap();
     assert!(
@@ -157,7 +157,7 @@ fn recording_wrapper_preserves_cargo_home_for_its_child() {
 
 /// The environment variable through which the parent test hands the fixture root to its child.
 #[cfg(unix)]
-const WRAPPER_ROOT: &str = "MAESTRO_FIXTURE_WRAPPER_ROOT";
+const WRAPPER_ROOT: &str = "MAESTRO_TEST_FIXTURE_WRAPPER_ROOT";
 
 /// Build an empty library in `root` through `fixture_command`, into the `CARGO_TARGET_DIR` the
 /// parent set.
@@ -270,7 +270,7 @@ fn fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper() {
 fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
     use maestro_test_harness::TestProcess;
 
-    const REPORT: &str = "MAESTRO_FIXTURE_WRAPPER_REPORT";
+    const REPORT: &str = "MAESTRO_TEST_FIXTURE_WRAPPER_REPORT";
     const COVERAGE: &str = "__CARGO_LLVM_COV_RUSTC_WRAPPER";
     const NAME: &str = "fixture_command_wraps_only_a_wrapper_the_command_keeps";
     if std::env::var_os(REPORT).is_some() {
@@ -285,7 +285,7 @@ fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
         };
         let wrapped =
             env("RUSTC_WRAPPER").is_some_and(|wrapper| wrapper.ends_with("rustc-wrapper"));
-        println!("{wrapped} {:?}", env("MAESTRO_FIXTURE_RUSTC_WRAPPER"));
+        println!("{wrapped} {:?}", env("MAESTRO_TEST_FIXTURE_RUSTC_WRAPPER"));
         return;
     }
     let report = |configure: &dyn Fn(TestProcess) -> TestProcess| {

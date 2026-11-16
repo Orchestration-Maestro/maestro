@@ -97,7 +97,7 @@ fn expected_native_path() -> String {
 
 /// Hook replacement observed through the local operation's real environment.
 fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
-    let initial_hook_value = std::env::var_os("MAESTRO_HOOK_ONLY");
+    let initial_hook_value = std::env::var_os("MAESTRO_TEST_HOOK_ONLY");
     let expected_path = expected_native_path();
     Arc::new(move |mut context: BashSpawnContext| {
         assert_eq!(
@@ -105,7 +105,9 @@ fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
             "printf original-prefix\nprintf original-command"
         );
         assert_eq!(
-            context.env.get(std::ffi::OsStr::new("MAESTRO_HOOK_ONLY")),
+            context
+                .env
+                .get(std::ffi::OsStr::new("MAESTRO_TEST_HOOK_ONLY")),
             initial_hook_value.as_ref().map(|_| &initial_hook_value)
         );
         assert_eq!(
@@ -120,9 +122,9 @@ fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
         context.env.clear();
         context
             .env
-            .insert("MAESTRO_HOOK_ONLY".into(), Some("hook env".into()));
+            .insert("MAESTRO_TEST_HOOK_ONLY".into(), Some("hook env".into()));
         context.cwd.clone_from(&cwd);
-        context.command = "printf '%s' \"$MAESTRO_HOOK_ONLY\"".into();
+        context.command = "printf '%s' \"$MAESTRO_TEST_HOOK_ONLY\"".into();
         Ok(context)
     })
 }

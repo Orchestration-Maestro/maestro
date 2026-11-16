@@ -1,5 +1,5 @@
 //! A component tool exposing standard filesystem observations to an embedding session.
-// maestro-component: MAESTRO_SDK_STANDARD_COMPONENT
+// maestro-component: MAESTRO_TEST_SDK_STANDARD_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

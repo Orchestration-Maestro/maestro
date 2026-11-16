@@ -1356,13 +1356,16 @@ fn captured_subprocess_preserves_descriptors_and_environment_order() {
         std::io::stdin().read_to_end(&mut input).unwrap();
         assert!(input.is_empty());
         assert!(!selection.runs_case("outer"));
-        assert_eq!(std::env::var("MAESTRO_CAPTURE_VALUE").unwrap(), "supplied");
-        assert!(std::env::var_os("MAESTRO_CAPTURE_REMOVE").is_none());
+        assert_eq!(
+            std::env::var("MAESTRO_TEST_CAPTURE_VALUE").unwrap(),
+            "supplied"
+        );
+        assert!(std::env::var_os("MAESTRO_TEST_CAPTURE_REMOVE").is_none());
         println!("INNER-CAPTURE-STDOUT");
         eprintln!("INNER-CAPTURE-STDERR");
     } else if selection.is_child() && selection.runs_case("outer") {
         assert_eq!(
-            std::env::var("MAESTRO_CAPTURE_REMOVE").unwrap(),
+            std::env::var("MAESTRO_TEST_CAPTURE_REMOVE").unwrap(),
             "inherited"
         );
         crate::subprocess::run_child(
@@ -1370,8 +1373,8 @@ fn captured_subprocess_preserves_descriptors_and_environment_order() {
                 .unwrap()
                 .case("inner"),
             &[
-                ("MAESTRO_CAPTURE_VALUE", Some("supplied")),
-                ("MAESTRO_CAPTURE_REMOVE", None),
+                ("MAESTRO_TEST_CAPTURE_VALUE", Some("supplied")),
+                ("MAESTRO_TEST_CAPTURE_REMOVE", None),
             ],
         )
         .unwrap();
@@ -1382,7 +1385,7 @@ fn captured_subprocess_preserves_descriptors_and_environment_order() {
             .unwrap()
             .nocapture()
             .case("outer")
-            .env("MAESTRO_CAPTURE_REMOVE", "inherited")
+            .env("MAESTRO_TEST_CAPTURE_REMOVE", "inherited")
             .stdin(std::fs::File::open(input.path()).unwrap())
             .output()
             .unwrap();

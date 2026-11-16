@@ -173,7 +173,7 @@ fn observe_compilation() {
     let start = std::time::Instant::now();
     Component::from_file(
         &engine,
-        std::env::var_os("MAESTRO_CACHE_COMPONENT").unwrap(),
+        std::env::var_os("MAESTRO_TEST_CACHE_COMPONENT").unwrap(),
     )
     .unwrap();
     println!(
@@ -237,7 +237,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
             .env("SETUP", &setup)
             .env("PROFILE", &profile)
             .env("NEXTEST_ENV", &environment)
-            .env("MAESTRO_CACHE_COMPONENT", &component)
+            .env("MAESTRO_TEST_CACHE_COMPONENT", &component)
             .env(
                 "NEXTEST_LD_LIBRARY_PATH",
                 scratch.path().join("target/debug"),
@@ -359,7 +359,7 @@ fn archived_setup_shares_compiled_bytes_with_outdated_executables() {
 
 #[test]
 fn component_setup_warms_exported_examples() {
-    let path = std::env::var("MAESTRO_LOCATION_COMPONENT").unwrap();
+    let path = std::env::var("MAESTRO_TEST_LOCATION_COMPONENT").unwrap();
     assert!(
         cached_compile(Path::new(&path)) > 0,
         "setup did not warm the exported example for the consuming executable"

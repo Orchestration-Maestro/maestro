@@ -258,7 +258,7 @@ fn deep_trees_build_and_drop_without_recursive_stack_growth() {
 #[test]
 fn tree_local_dates_use_the_native_local_zone() {
     let name = "tree_local_dates_use_the_native_local_zone";
-    let zone = std::env::var("MAESTRO_TREE_ZONE");
+    let zone = std::env::var("MAESTRO_TEST_TREE_ZONE");
     if cfg!(windows) || zone.is_ok() {
         let scratch = Scratch::new().unwrap();
         let path = history_file(
@@ -298,7 +298,7 @@ fn tree_local_dates_use_the_native_local_zone() {
             .unwrap()
             .nocapture()
             .env("TZ", zone)
-            .env("MAESTRO_TREE_ZONE", zone)
+            .env("MAESTRO_TEST_TREE_ZONE", zone)
             .output()
             .unwrap();
         assert!(

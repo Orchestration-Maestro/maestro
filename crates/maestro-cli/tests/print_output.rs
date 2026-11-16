@@ -15,7 +15,7 @@ use std::rc::Rc;
 
 /// The shutdown report the signalled child writes the events it delivered to.
 #[cfg(unix)]
-const SHUTDOWN_REPORT: &str = "MAESTRO_SHUTDOWN_REPORT";
+const SHUTDOWN_REPORT: &str = "MAESTRO_TEST_SHUTDOWN_REPORT";
 
 /// The line the child writes once its request waits on the scripted stream.
 #[cfg(unix)]

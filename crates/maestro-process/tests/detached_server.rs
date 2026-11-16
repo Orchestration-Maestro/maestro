@@ -7,7 +7,7 @@ use maestro_test_harness::TestProcess;
 use std::process::Output;
 
 /// Marks the child run that reports its own observations.
-const PROBE: &str = "MAESTRO_DETACHED_PROBE";
+const PROBE: &str = "MAESTRO_TEST_DETACHED_PROBE";
 
 #[test]
 fn detached_capability_matches_the_native_session() {

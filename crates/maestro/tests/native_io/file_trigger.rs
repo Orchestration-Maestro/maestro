@@ -16,7 +16,7 @@ fn file_trigger_component_starts_a_turn_from_a_real_file_change() {
     let root = Root::new();
     let provider = Provider::new();
     root.models(&provider.base);
-    let component = std::env::var("MAESTRO_FILE_TRIGGER_COMPONENT")
+    let component = std::env::var("MAESTRO_TEST_FILE_TRIGGER_COMPONENT")
         .expect("nextest author-component setup builds file_trigger");
     let mut rpc = Rpc::command(&mut root.command(&[
         "--mode",

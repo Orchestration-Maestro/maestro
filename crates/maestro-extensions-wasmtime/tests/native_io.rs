@@ -19,7 +19,7 @@ async fn loaded() -> ExtensionRunner<Local> {
         Rc::new(|_| panic!("no errors")),
     );
     let runtime = create_extension_runtime::<Local>();
-    let path = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
+    let path = std::env::var("MAESTRO_TEST_NATIVE_IO_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
         maestro_extensions_wasmtime::artifact_factory(
             path.clone(),

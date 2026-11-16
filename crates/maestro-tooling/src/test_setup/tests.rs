@@ -18,9 +18,9 @@ use super::*;
 fn inherited_components_follow_the_discovery_rule() {
     let names = [
         "MAESTRO_AUTHOR_COMPONENT",
-        "MAESTRO_COMPONENT",
-        "MAESTRO__COMPONENT",
-        "MAESTRO_HOME",
+        "MAESTRO_TEST_COMPONENT",
+        "MAESTRO_TEST__COMPONENT",
+        "MAESTRO_TEST_HOME",
         "MAESTRO_lower_COMPONENT",
         "PATH",
     ]
@@ -29,8 +29,8 @@ fn inherited_components_follow_the_discovery_rule() {
         inherited_components(names.into_iter()),
         [
             "MAESTRO_AUTHOR_COMPONENT",
-            "MAESTRO_COMPONENT",
-            "MAESTRO__COMPONENT"
+            "MAESTRO_TEST_COMPONENT",
+            "MAESTRO_TEST__COMPONENT"
         ]
         .map(OsString::from)
     );
@@ -167,7 +167,7 @@ fn consuming_workspace(root: &Path) -> Workspace {
     std::fs::write(component.join("src/lib.rs"), "").unwrap();
     std::fs::write(
         component.join("examples/one.rs"),
-        "// maestro-component: MAESTRO_ONE_COMPONENT\n",
+        "// maestro-component: MAESTRO_TEST_ONE_COMPONENT\n",
     )
     .unwrap();
     std::fs::write(
@@ -292,7 +292,7 @@ fn closure_workspace(root: &Path) {
             std::fs::write(
                 path,
                 if file == "examples/one.rs" {
-                    "// maestro-component: MAESTRO_ONE_COMPONENT\n"
+                    "// maestro-component: MAESTRO_TEST_ONE_COMPONENT\n"
                 } else {
                     "// before\n"
                 },

@@ -42,7 +42,7 @@ fn wrap(mut command: PtyCommand, harness: &[String]) -> io::Result<PtyCommand> {
 
 #[test]
 fn setup_entry() {
-    if std::env::var_os("MAESTRO_PTY_DUP_FAILURE").is_some() {
+    if std::env::var_os("MAESTRO_TEST_PTY_DUP_FAILURE").is_some() {
         let original = rustix::process::getrlimit(rustix::process::Resource::Nofile);
         let mut limit = original;
         limit.current = Some(3);
@@ -269,22 +269,22 @@ fn assert_launch_policies() {
         let environment = match mode {
             "inherit" => {
                 if let Some(path) = std::env::var_os("PATH") {
-                    edits.push(("MAESTRO_PTY_EXPECTED_PATH".into(), Some(path)));
+                    edits.push(("MAESTRO_TEST_PTY_EXPECTED_PATH".into(), Some(path)));
                 } else {
-                    edits.push(("MAESTRO_PTY_EXPECTED_PATH".into(), None));
+                    edits.push(("MAESTRO_TEST_PTY_EXPECTED_PATH".into(), None));
                 }
                 PtyEnvironment::Inherit(edits)
             }
             "edited" => {
                 edits.extend([
                     ("PATH".into(), None),
-                    ("MAESTRO_PTY_VALUE".into(), Some("supplied".into())),
+                    ("MAESTRO_TEST_PTY_VALUE".into(), Some("supplied".into())),
                 ]);
                 PtyEnvironment::Inherit(edits)
             }
             "clear" => PtyEnvironment::Replace(vec![]),
             "replace" => {
-                PtyEnvironment::Replace(vec![("MAESTRO_PTY_VALUE".into(), "supplied".into())])
+                PtyEnvironment::Replace(vec![("MAESTRO_TEST_PTY_VALUE".into(), "supplied".into())])
             }
             _ => PtyEnvironment::Inherit(edits),
         };
@@ -343,8 +343,10 @@ fn assert_failure_text(harness: &[String]) -> io::Result<Output> {
     }
     let before = descriptor_count();
     let mut command = maestro_process::commands::pane_custom_command_pty_builder("exit 0");
-    command.environment =
-        PtyEnvironment::Inherit(vec![("MAESTRO_PTY_DUP_FAILURE".into(), Some("1".into()))]);
+    command.environment = PtyEnvironment::Inherit(vec![(
+        "MAESTRO_TEST_PTY_DUP_FAILURE".into(),
+        Some("1".into()),
+    )]);
     let error = terminal::spawn(size(), command, |command| wrap(command, harness)).unwrap_err();
     assert_eq!(
         error.to_string(),
@@ -369,15 +371,15 @@ fn assert_environment(mode: &str) {
     match mode {
         "inherit" => assert_eq!(
             std::env::var_os("PATH"),
-            std::env::var_os("MAESTRO_PTY_EXPECTED_PATH")
+            std::env::var_os("MAESTRO_TEST_PTY_EXPECTED_PATH")
         ),
         "clear" => {
             assert!(std::env::var_os("PATH").is_none());
-            assert!(std::env::var_os("MAESTRO_PTY_VALUE").is_none());
+            assert!(std::env::var_os("MAESTRO_TEST_PTY_VALUE").is_none());
         }
         "replace" | "edited" => {
             assert!(std::env::var_os("PATH").is_none());
-            assert_eq!(std::env::var("MAESTRO_PTY_VALUE").unwrap(), "supplied");
+            assert_eq!(std::env::var("MAESTRO_TEST_PTY_VALUE").unwrap(), "supplied");
         }
         "signals" => {
             let mask = [1, 2, 3, 14, 15, 17]

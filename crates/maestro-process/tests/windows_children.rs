@@ -11,9 +11,9 @@ use std::{
 /// The single checked helper body both parent and grandchild invocations select.
 const HELPER: &str = "windows_children::windows_direct_kill_helper";
 /// The helper's explicitly supplied role.
-const ROLE: &str = "MAESTRO_CHILD_KILL_HELPER";
+const ROLE: &str = "MAESTRO_TEST_CHILD_KILL_HELPER";
 /// The private socket shared only with this helper tree.
-const PORT: &str = "MAESTRO_CHILD_KILL_PORT";
+const PORT: &str = "MAESTRO_TEST_CHILD_KILL_PORT";
 
 /// Announces this exact native process and its selected helper role.
 fn announce(role: u8) -> TcpStream {

@@ -233,7 +233,7 @@ fn inherited_launch_keeps_descriptors_operands_and_status() {
         .unwrap()
         .nocapture()
         .case(CHILD)
-        .env("MAESTRO_EXIT", code)
+        .env("MAESTRO_TEST_EXIT", code)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -264,7 +264,7 @@ fn inherited_launch_keeps_descriptors_operands_and_status() {
 /// Run the inherited launch inside the isolated descriptor owner.
 fn inherited_child() {
     use std::os::unix::process::ExitStatusExt;
-    let code = std::env::var("MAESTRO_EXIT").unwrap();
+    let code = std::env::var("MAESTRO_TEST_EXIT").unwrap();
     let owned = maestro_test_harness::Scratch::new().unwrap();
     let directory = owned.path();
     let mut command = async_command(
@@ -274,8 +274,8 @@ fn inherited_child() {
     command
         .args(["literal $HOME;|", "", "repeat", "repeat"])
         .current_dir(directory)
-        .env("MAESTRO_DIRECTORY", directory)
-        .env("MAESTRO_OPERAND", "chosen");
+        .env("MAESTRO_TEST_DIRECTORY", directory)
+        .env("MAESTRO_TEST_OPERAND", "chosen");
     let output = spawn_sync(&mut command, SpawnSyncOptions::Inherit).unwrap();
     assert!(output.stdout.is_empty());
     assert!(output.stderr.is_empty());

@@ -119,7 +119,7 @@ fn entries(record: &Record, environment: &Path) -> io::Result<()> {
     let mut file = std::fs::File::create(environment)?;
     for variable in variables
         .into_iter()
-        .chain(supplied.then_some("MAESTRO_COMPONENT"))
+        .chain(supplied.then_some("MAESTRO_TEST_COMPONENT"))
     {
         let value = supplied.then(|| std::env::var_os(variable)).flatten();
         let path = value
@@ -186,8 +186,8 @@ fn marked(environment: &Path) -> io::Result<()> {
         "MAESTRO_AUTHOR_COMPONENT",
         "MAESTRO_CONTEXT_COMPONENT",
         "MAESTRO_SUBAGENT_COMPONENT",
-        "MAESTRO_ALPHA_COMPONENT",
-        "MAESTRO_BETA_COMPONENT",
+        "MAESTRO_TEST_ALPHA_COMPONENT",
+        "MAESTRO_TEST_BETA_COMPONENT",
     ] {
         let supplied = std::env::var_os(variable).filter(|value| !value.is_empty());
         let path = if let Some(value) = supplied {
@@ -198,8 +198,8 @@ fn marked(environment: &Path) -> io::Result<()> {
             std::fs::copy(root.join("component.wasm"), &path)?;
             let mut sources = vec![library.clone()];
             if let Some(name) = match variable {
-                "MAESTRO_ALPHA_COMPONENT" => Some("alpha"),
-                "MAESTRO_BETA_COMPONENT" => Some("beta"),
+                "MAESTRO_TEST_ALPHA_COMPONENT" => Some("alpha"),
+                "MAESTRO_TEST_BETA_COMPONENT" => Some("beta"),
                 _ => None,
             } {
                 sources.push(root.join(format!("examples/extensions/{name}.rs")));

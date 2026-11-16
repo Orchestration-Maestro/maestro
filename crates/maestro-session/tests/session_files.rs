@@ -901,7 +901,7 @@ fn removed_cwd_child(name: &str) -> bool {
         .unwrap()
         .nocapture()
         .case("*")
-        .env("MAESTRO_REMOVED_CWD_PARENT", directory.text())
+        .env("MAESTRO_TEST_REMOVED_CWD_PARENT", directory.text())
         .output()
         .unwrap();
     assert!(

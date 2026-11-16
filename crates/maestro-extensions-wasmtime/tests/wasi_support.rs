@@ -15,7 +15,7 @@ use serde_json::Value;
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
 
 /// Setup's real compiled component.
-pub const COMPONENT: &str = "MAESTRO_WASI_COMPONENT";
+pub const COMPONENT: &str = "MAESTRO_TEST_WASI_COMPONENT";
 
 /// Runs on the caller's local executor with actual native I/O and timer drivers.
 pub use super::example_process::run;

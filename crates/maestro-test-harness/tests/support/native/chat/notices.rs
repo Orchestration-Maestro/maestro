@@ -60,7 +60,7 @@ fn observation(operands: &[OsString]) -> io::Result<Vec<u8>> {
         .iter()
         .map(|operand| operand.to_string_lossy())
         .collect();
-    let inherited = std::env::var("MAESTRO_NOTICE_INHERITED").ok();
+    let inherited = std::env::var("MAESTRO_TEST_NOTICE_INHERITED").ok();
     serde_json::to_vec(&serde_json::json!({
         "argv": argv,
         "cwd": std::env::current_dir()?,

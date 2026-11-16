@@ -17,7 +17,7 @@ fn install_notify_send(directory: &Path, record: &serde_json::Value) {
 
 #[test]
 fn daemon_desktop_notification_separates_option_like_titles() {
-    if let Some(path) = std::env::var_os("MAESTRO_NOTIFICATION_ARGS") {
+    if let Some(path) = std::env::var_os("MAESTRO_TEST_NOTIFICATION_ARGS") {
         assert!(show_desktop_notification("-danger", Some("body")).unwrap());
         assert_eq!(
             std::fs::read_to_string(path).unwrap(),
@@ -38,7 +38,7 @@ fn daemon_desktop_notification_separates_option_like_titles() {
         .env("DISPLAY", ":0")
         .env_remove("WAYLAND_DISPLAY")
         .env("PATH", &bin)
-        .env("MAESTRO_NOTIFICATION_ARGS", &args)
+        .env("MAESTRO_TEST_NOTIFICATION_ARGS", &args)
         .status()
         .unwrap()
         .success()
@@ -47,7 +47,7 @@ fn daemon_desktop_notification_separates_option_like_titles() {
 
 #[test]
 fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
-    if std::env::var_os("MAESTRO_NOTIFICATION_UNAVAILABLE").is_some() {
+    if std::env::var_os("MAESTRO_TEST_NOTIFICATION_UNAVAILABLE").is_some() {
         assert!(!show_desktop_notification("title", Some("")).unwrap());
         return;
     }
@@ -58,7 +58,7 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
     assert!(
         maestro_test_harness::TestProcess::current(name)
             .unwrap()
-            .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
+            .env("MAESTRO_TEST_NOTIFICATION_UNAVAILABLE", "1")
             .env_remove("DISPLAY")
             .env_remove("WAYLAND_DISPLAY")
             .env("PATH", &bin)
@@ -69,7 +69,7 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
     assert!(
         maestro_test_harness::TestProcess::current(name)
             .unwrap()
-            .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
+            .env("MAESTRO_TEST_NOTIFICATION_UNAVAILABLE", "1")
             .env("DISPLAY", ":0")
             .env("PATH", &bin)
             .status()
@@ -80,7 +80,7 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
     assert!(
         maestro_test_harness::TestProcess::current(name)
             .unwrap()
-            .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
+            .env("MAESTRO_TEST_NOTIFICATION_UNAVAILABLE", "1")
             .env("DISPLAY", ":0")
             .env("PATH", &bin)
             .status()

@@ -238,12 +238,12 @@ const INHERITED_PATH: &str = "/usr/bin:/bin:/maestro-inherited";
 fn capture_inherits_environment_and_applies_scoped_overrides() {
     use std::io::Write;
     const NAME: &str = "capture_inherits_environment_and_applies_scoped_overrides";
-    if std::env::var_os("MAESTRO_CAPTURE_REEXEC").is_none() {
+    if std::env::var_os("MAESTRO_TEST_CAPTURE_REEXEC").is_none() {
         let mut child = maestro_test_harness::TestProcess::current(NAME)
             .unwrap()
             .single_threaded()
-            .env("MAESTRO_CAPTURE_REEXEC", "1")
-            .env("MAESTRO_INHERITED", "parent")
+            .env("MAESTRO_TEST_CAPTURE_REEXEC", "1")
+            .env("MAESTRO_TEST_INHERITED", "parent")
             .env("PATH", INHERITED_PATH)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
@@ -265,8 +265,8 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
         "scenario": "report",
         "fields": [
             {"variable": "PATH"},
-            {"variable": "MAESTRO_INHERITED"},
-            {"variable": "MAESTRO_CAPTURE_VALUE"},
+            {"variable": "MAESTRO_TEST_INHERITED"},
+            {"variable": "MAESTRO_TEST_CAPTURE_VALUE"},
             "working-directory",
             {"operand": 0},
             "input",
@@ -283,7 +283,7 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
             CommandCaptureOptions {
                 cwd: Some(&cwd),
                 timeout: None,
-                env: &[("MAESTRO_CAPTURE_VALUE", "chosen")],
+                env: &[("MAESTRO_TEST_CAPTURE_VALUE", "chosen")],
             },
         ))
         .unwrap();

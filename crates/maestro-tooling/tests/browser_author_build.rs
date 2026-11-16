@@ -9,7 +9,7 @@ use recipe_support::Workspace;
 /// Failed setup commands retain Cargo diagnostics in both output destinations.
 #[test]
 fn browser_setup_errors_reach_stderr_and_transcript() {
-    if let Ok(stage) = std::env::var("MAESTRO_SETUP_FAILURE") {
+    if let Ok(stage) = std::env::var("MAESTRO_TEST_SETUP_FAILURE") {
         fail_setup(&stage);
         panic!("setup must fail");
     }
@@ -25,7 +25,7 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
         )
         .unwrap()
         .nocapture()
-        .env("MAESTRO_SETUP_FAILURE", stage)
+        .env("MAESTRO_TEST_SETUP_FAILURE", stage)
         .env("MAESTRO_TEST_DIAGNOSTICS_DIR", &directory);
         let child = if stage == "recipe" {
             child.env("RUSTC", directory.join("missing-setup-rustc"))
@@ -152,7 +152,7 @@ fn browser_resolution_prepares_sources_outside_nextest() {
     .unwrap()
     .env_remove("MAESTRO_TEST_CARGO_SOURCES")
     .env_remove("MAESTRO_TEST_WORKSPACE_CARGO_SOURCES")
-    .env_remove("MAESTRO_SHARED_CARGO_HOME_UNUSABLE")
+    .env_remove("MAESTRO_TEST_SHARED_CARGO_HOME_UNUSABLE")
     .env_remove("NEXTEST_ENV")
     .output()
     .unwrap();
@@ -732,9 +732,9 @@ fn browser_library_build_rejects_a_failing_optimizer() {
     let browser = browser_with_earlier_distribution();
     let mut command = browser.command("browser-library-build");
     browser_support::native_tool(&browser, &mut command, "wasm-opt");
-    command.env("MAESTRO_NATIVE_FAIL", "1");
+    command.env("MAESTRO_TEST_NATIVE_FAIL", "1");
     assert!(!command.output().unwrap().status.success());
-    command.env_remove("MAESTRO_NATIVE_FAIL");
+    command.env_remove("MAESTRO_TEST_NATIVE_FAIL");
     success(&command.output().unwrap());
 }
 
@@ -1070,7 +1070,7 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
     assert!(
         !workspace
             .command("browser-build")
-            .env("MAESTRO_FAIL_ARG", "library-build")
+            .env("MAESTRO_TEST_FAIL_ARG", "library-build")
             .output()
             .unwrap()
             .status
@@ -1170,13 +1170,13 @@ fn check_command_failures(workspace: &Workspace) {
         let mut command = workspace.command(recipe);
         if recipe == "browser-example-preview" {
             command.env(
-                "MAESTRO_FAIL",
+                "MAESTRO_TEST_FAIL",
                 workspace.path().join("target/maestro-browser/example"),
             );
         } else if recipe.ends_with("clean") {
-            command.env("MAESTRO_FAIL", phase);
+            command.env("MAESTRO_TEST_FAIL", phase);
         } else {
-            command.env("MAESTRO_FAIL_ARG", phase);
+            command.env("MAESTRO_TEST_FAIL_ARG", phase);
         }
         let output = command.output().unwrap();
         assert_eq!(
@@ -1479,8 +1479,8 @@ fn browser_author_native_hook_preserves_overrides_environment_and_failure() {
     for status in ["0", "17"] {
         let output = browser
             .command("browser-debug-build")
-            .env("MAESTRO_HOOK_INHERITED", "inherited-value")
-            .env("MAESTRO_HOOK_STATUS", status)
+            .env("MAESTRO_TEST_HOOK_INHERITED", "inherited-value")
+            .env("MAESTRO_TEST_HOOK_STATUS", status)
             .output()
             .unwrap();
         if status == "0" {

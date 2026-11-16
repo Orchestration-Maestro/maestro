@@ -111,7 +111,7 @@ pub(super) fn label(index: usize) -> String {
 impl Harness {
     /// Loads the pool concurrently, each instance on its own Store.
     pub(super) async fn load() -> Self {
-        let path = std::env::var("MAESTRO_HOOK_COMPONENT").unwrap();
+        let path = std::env::var("MAESTRO_TEST_HOOK_COMPONENT").unwrap();
         let runtime = create_extension_runtime::<Local>();
         let bus = TracedBus::new();
         let loads = (0..POOL).map(|index| {

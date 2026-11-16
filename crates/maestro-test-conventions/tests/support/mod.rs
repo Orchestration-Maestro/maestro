@@ -347,7 +347,7 @@ impl Workspace {
         let matrix = if dev { "dev" } else { "production" };
         run_probe(
             self.probe_command(&cargo, &rustc)
-                .env("MAESTRO_CONVENTIONS_POLICY_MATRIX", matrix),
+                .env("MAESTRO_TEST_CONVENTIONS_POLICY_MATRIX", matrix),
         );
     }
 
@@ -375,7 +375,7 @@ impl Workspace {
     pub fn probe(&self, cargo: &std::path::Path, rustc: &std::path::Path, expectation: &str) {
         run_probe(
             self.probe_command(cargo, rustc)
-                .env("MAESTRO_CONVENTIONS_EXPECT", expectation),
+                .env("MAESTRO_TEST_CONVENTIONS_EXPECT", expectation),
         );
     }
 
@@ -390,7 +390,7 @@ impl Workspace {
         )
         .unwrap()
         .nocapture()
-        .env("MAESTRO_CONVENTIONS_PROBE_ROOT", self.root.path())
+        .env("MAESTRO_TEST_CONVENTIONS_PROBE_ROOT", self.root.path())
         .env("CARGO", cargo)
         .env("RUSTC", rustc)
     }

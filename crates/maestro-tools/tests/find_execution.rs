@@ -572,7 +572,7 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
                 "probe",
                 &[
                     ("PATH", Some(root.path().as_os_str())),
-                    ("MAESTRO_FIND_PROBE", Some(root.path().as_os_str())),
+                    ("MAESTRO_TEST_FIND_PROBE", Some(root.path().as_os_str())),
                 ],
             ),
         );
@@ -612,7 +612,7 @@ fn assert_silent_child(test: &str, output: std::process::Output) {
 async fn abort_discovery() {
     use tokio::io::AsyncReadExt;
 
-    let probes = std::env::var("MAESTRO_FIND_PROBE").unwrap();
+    let probes = std::env::var("MAESTRO_TEST_FIND_PROBE").unwrap();
     let listener =
         tokio::net::UnixListener::bind(std::path::Path::new(&probes).join("probe.sock")).unwrap();
     let signal = maestro_models::Cancellation::new();

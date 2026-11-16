@@ -74,7 +74,7 @@ pub(super) enum Record {
         names: Vec<String>,
     },
     /// Append the operands to the `cargo-log` beside the directory holding this alias, refuse the
-    /// phase `MAESTRO_FAIL_PHASE` names, skip the phases that need no build, and run the real
+    /// phase `MAESTRO_TEST_FAIL_PHASE` names, skip the phases that need no build, and run the real
     /// Cargo for the rest.
     ConsumerCargo {
         /// The real Cargo.
@@ -155,7 +155,7 @@ pub(super) fn vendor(args: &[OsString]) -> io::Result<()> {
     write_stdout(SOURCES)
 }
 
-/// Copy the stylesheet, report the hook's operand and environment, end with `MAESTRO_HOOK_STATUS`.
+/// Copy the stylesheet, report the hook's operand and environment, end with `MAESTRO_TEST_HOOK_STATUS`.
 fn trunk_hook(args: &[OsString]) -> io::Result<()> {
     std::fs::copy("assets/app.css", "hook.css")?;
     let mut lines = vec![
@@ -171,12 +171,12 @@ fn trunk_hook(args: &[OsString]) -> io::Result<()> {
         "TRUNK_DIST_DIR",
         "TRUNK_PUBLIC_URL",
         "TRUNK_STAGING_DIR",
-        "MAESTRO_HOOK_INHERITED",
+        "MAESTRO_TEST_HOOK_INHERITED",
     ] {
         lines.push(required(name)?);
     }
     std::fs::write("hook-environment", lines.join("\n") + "\n")?;
-    let status = required("MAESTRO_HOOK_STATUS")?
+    let status = required("MAESTRO_TEST_HOOK_STATUS")?
         .parse::<u8>()
         .map_err(io::Error::other)?;
     leave(i32::from(status))
@@ -233,7 +233,7 @@ fn consumer_cargo(cargo: &Path, args: &[OsString]) -> io::Result<()> {
         .join("cargo-log");
     append(log, &operands(args))?;
     let phase = args.first().map(|first| first.to_string_lossy());
-    if std::env::var("MAESTRO_FAIL_PHASE")
+    if std::env::var("MAESTRO_TEST_FAIL_PHASE")
         .is_ok_and(|fail| !fail.is_empty() && phase.as_deref() == Some(fail.as_str()))
     {
         leave(17);

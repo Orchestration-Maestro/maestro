@@ -271,7 +271,8 @@ pub fn resources(root: &Root) -> std::path::PathBuf {
     let base = root.path("project/extensions");
     std::fs::create_dir_all(&base).unwrap();
     std::fs::copy(
-        std::env::var_os("MAESTRO_RESOURCE_COMPONENT").expect("nextest author-component setup"),
+        std::env::var_os("MAESTRO_TEST_RESOURCE_COMPONENT")
+            .expect("nextest author-component setup"),
         base.join("index.wasm"),
     )
     .unwrap();

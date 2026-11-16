@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 
 /// Reports raw settings or package results before any command context or runner exists.
 pub async fn observe(api: &ExtensionAPI) -> ExtensionResult<()> {
-    let request = std::env::var("MAESTRO_HOST_OPERATIONS_REQUEST");
+    let request = std::env::var("MAESTRO_TEST_HOST_OPERATIONS_REQUEST");
     let observed = if request.as_deref() == Ok("packages") {
         packages(api).await
     } else {

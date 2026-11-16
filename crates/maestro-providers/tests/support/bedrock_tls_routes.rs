@@ -242,7 +242,7 @@ fn child(common: Common, row: &Row) -> TestResult {
         ..BedrockOptions::default()
     };
     let mut model = common.model;
-    model.base_url = std::env::var("MAESTRO_ORIGIN")?;
+    model.base_url = std::env::var("MAESTRO_TEST_ORIGIN")?;
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -370,7 +370,7 @@ fn environment(row: &Row, endpoint: &str, proxy: &str, decoy: &str) -> BTreeMap<
         };
     }
     variables.extend([
-        ("MAESTRO_ORIGIN".into(), endpoint.into()),
+        ("MAESTRO_TEST_ORIGIN".into(), endpoint.into()),
         ("AWS_REGION".into(), "us-east-1".into()),
         ("AWS_MAX_ATTEMPTS".into(), "1".into()),
         ("AWS_EC2_METADATA_DISABLED".into(), "true".into()),

@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 /// Data identifying the disposable launch operand that selects the checked child.
 pub(super) const MARKER: &[u8] = b"maestro-controlled-subagent";
 /// The untouched product arguments passed to the checked child.
-const ARGUMENTS: &str = "MAESTRO_SUBAGENT_ARGUMENTS";
+const ARGUMENTS: &str = "MAESTRO_TEST_SUBAGENT_ARGUMENTS";
 
 /// Loads the real component with checked-child selection at its native process boundary.
 pub(super) async fn session(

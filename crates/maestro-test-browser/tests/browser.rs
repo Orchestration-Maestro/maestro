@@ -1130,7 +1130,7 @@ fn tool_report_paints_from_its_verified_assets() {
     run(browser_driver::tool_report(
         &checkout,
         &support::chromium(),
-        &support::prepared("MAESTRO_BROWSER_ASSETS"),
+        &support::prepared("MAESTRO_TEST_BROWSER_ASSETS"),
         work.path(),
     ))
     .unwrap();
@@ -1149,7 +1149,7 @@ mod exports {
         run(browser_driver::run_export(
             &chromium(),
             profile.path(),
-            &prepared("MAESTRO_BROWSER_EXPORTS"),
+            &prepared("MAESTRO_TEST_BROWSER_EXPORTS"),
             family,
             name,
         ))
@@ -1165,7 +1165,7 @@ mod exports {
         run(browser_driver::check_inventory(
             &chromium(),
             profile.path(),
-            &prepared("MAESTRO_BROWSER_EXPORTS"),
+            &prepared("MAESTRO_TEST_BROWSER_EXPORTS"),
         ))
         .unwrap();
     }

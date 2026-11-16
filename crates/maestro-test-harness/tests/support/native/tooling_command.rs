@@ -38,19 +38,19 @@ pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
 
 /// Answer a recipe command from the recorded environment, running what the recipe really needs.
 fn stand_in(operands: &[OsString]) -> io::Result<()> {
-    if std::env::var_os("MAESTRO_COMMAND_OUTPUT").is_some() {
+    if std::env::var_os("MAESTRO_TEST_COMMAND_OUTPUT").is_some() {
         write_stdout(b"controlled command stdout\n")?;
         write_stderr(b"controlled command stderr\n")?;
     }
-    let development = std::env::var_os("MAESTRO_DEVELOPMENT");
+    let development = std::env::var_os("MAESTRO_TEST_DEVELOPMENT");
     let started = development_operands(operands);
-    if std::env::var_os("MAESTRO_REAL_CARGO").is_some()
+    if std::env::var_os("MAESTRO_TEST_REAL_CARGO").is_some()
         && let (Some(binary), Some(arguments)) = (&development, started)
     {
         return run_development(binary, arguments);
     }
     if invoked() == OsStr::new("watchexec")
-        && let Some(watcher) = std::env::var_os("MAESTRO_REAL_WATCHEXEC")
+        && let Some(watcher) = std::env::var_os("MAESTRO_TEST_REAL_WATCHEXEC")
     {
         return run_program(
             Command::new(watcher)
@@ -58,11 +58,11 @@ fn stand_in(operands: &[OsString]) -> io::Result<()> {
                 .args(operands),
         );
     }
-    if let Some(cargo) = std::env::var_os("MAESTRO_REAL_CARGO") {
+    if let Some(cargo) = std::env::var_os("MAESTRO_TEST_REAL_CARGO") {
         return run_cargo(Path::new(&cargo), operands);
     }
     log(operands)?;
-    if std::env::var("MAESTRO_FAIL_ARG")
+    if std::env::var("MAESTRO_TEST_FAIL_ARG")
         .is_ok_and(|value| operands.iter().any(|operand| operand == OsStr::new(&value)))
     {
         leave(17);
@@ -70,7 +70,7 @@ fn stand_in(operands: &[OsString]) -> io::Result<()> {
     if let (Some(binary), Some(arguments)) = (&development, started) {
         return run_development(binary, arguments);
     }
-    if let (Ok(requested), Some(first)) = (std::env::var("MAESTRO_FAIL"), operands.first())
+    if let (Ok(requested), Some(first)) = (std::env::var("MAESTRO_TEST_FAIL"), operands.first())
         && first == OsStr::new(&requested)
     {
         leave(17);
@@ -80,8 +80,8 @@ fn stand_in(operands: &[OsString]) -> io::Result<()> {
 
 /// Record the invocation, refuse it on request, then run the real program.
 fn forwarded(operands: &[OsString]) -> io::Result<()> {
-    let log = std::env::var_os("MAESTRO_NATIVE_LOG")
-        .ok_or_else(|| io::Error::other("MAESTRO_NATIVE_LOG is unset"))?;
+    let log = std::env::var_os("MAESTRO_TEST_NATIVE_LOG")
+        .ok_or_else(|| io::Error::other("MAESTRO_TEST_NATIVE_LOG is unset"))?;
     let line: Vec<_> = operands
         .iter()
         .map(|operand| operand.to_string_lossy())
@@ -94,12 +94,12 @@ fn forwarded(operands: &[OsString]) -> io::Result<()> {
     let version = operands
         .first()
         .is_some_and(|first| first == OsStr::new("--version"));
-    if std::env::var("MAESTRO_NATIVE_FAIL").as_deref() == Ok("1") && !version {
+    if std::env::var("MAESTRO_TEST_NATIVE_FAIL").as_deref() == Ok("1") && !version {
         write_stderr(b"controlled native tool failure\n")?;
         leave(17);
     }
-    let tool = std::env::var_os("MAESTRO_NATIVE_TOOL")
-        .ok_or_else(|| io::Error::other("MAESTRO_NATIVE_TOOL is unset"))?;
+    let tool = std::env::var_os("MAESTRO_TEST_NATIVE_TOOL")
+        .ok_or_else(|| io::Error::other("MAESTRO_TEST_NATIVE_TOOL is unset"))?;
     run_program(Command::new(tool).args(operands))
 }
 
@@ -159,7 +159,7 @@ fn run_staged(binary: &str, arguments: &[&str]) -> io::Result<()> {
 
 /// Record the invocation, its working directory and the requested environment observations.
 fn log(operands: &[OsString]) -> io::Result<()> {
-    if let Some(path) = std::env::var_os("MAESTRO_CWD") {
+    if let Some(path) = std::env::var_os("MAESTRO_TEST_CWD") {
         std::fs::write(
             path,
             std::env::current_dir()?
@@ -180,15 +180,15 @@ fn log(operands: &[OsString]) -> io::Result<()> {
         invoked().to_string_lossy(),
         operands.join("|")
     )?;
-    if let Some(path) = std::env::var_os("MAESTRO_BRAND_RESULT") {
+    if let Some(path) = std::env::var_os("MAESTRO_TEST_BRAND_RESULT") {
         let value = format!(
             "{}\n{}",
-            std::env::var("MAESTRO_BRAND_PACK").unwrap_or_default(),
-            std::env::var("MAESTRO_BRAND_MODE").unwrap_or_default()
+            std::env::var("MAESTRO_TEST_BRAND_PACK").unwrap_or_default(),
+            std::env::var("MAESTRO_TEST_BRAND_MODE").unwrap_or_default()
         );
         std::fs::write(path, value)?;
     }
-    if let Some(path) = std::env::var_os("MAESTRO_ENV_RESULT") {
+    if let Some(path) = std::env::var_os("MAESTRO_TEST_ENV_RESULT") {
         let home = std::env::var_os("HOME").ok_or_else(|| io::Error::other("HOME is unset"))?;
         let auth = Path::new(&home).join(".maestro/agent/auth.json");
         std::fs::write(

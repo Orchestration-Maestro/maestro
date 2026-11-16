@@ -312,7 +312,7 @@ fn creation_mode_is_private_before_publication() {
     let target = dir.path().join("private");
     let control = dir.path().join("control");
     fs::write(&control, b"control").unwrap();
-    let restrictive = std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077";
+    let restrictive = std::env::var("MAESTRO_TEST_REPLACE_UMASK").unwrap() == "077";
     assert_eq!(
         fs::metadata(control).unwrap().permissions().mode() & 0o777,
         if restrictive { 0o600 } else { 0o666 }
@@ -381,12 +381,12 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
 #[cfg(unix)]
 fn launch_umask_cases(test: &str) -> Option<maestro_test_harness::SetupGuard> {
     use maestro_test_harness::{IsolatedSetup, TestProcess};
-    if std::env::var_os("MAESTRO_REPLACE_UMASK").is_none() {
+    if std::env::var_os("MAESTRO_TEST_REPLACE_UMASK").is_none() {
         for (mask, bits) in [("000", 0o000), ("077", 0o077)] {
             let output = TestProcess::current(test)
                 .unwrap()
                 .setup(IsolatedSetup::new().umask(bits))
-                .env("MAESTRO_REPLACE_UMASK", mask)
+                .env("MAESTRO_TEST_REPLACE_UMASK", mask)
                 .single_threaded()
                 .output()
                 .unwrap();
@@ -676,9 +676,9 @@ fn append_waits_at_target_sync_until_publication_finishes() {
         io::{Read, Write},
         net::{TcpListener, TcpStream},
     };
-    if let Ok(path) = std::env::var("MAESTRO_SYNC_APPEND") {
+    if let Ok(path) = std::env::var("MAESTRO_TEST_SYNC_APPEND") {
         let mut stream =
-            TcpStream::connect(std::env::var("MAESTRO_SYNC_ADDRESS").unwrap()).unwrap();
+            TcpStream::connect(std::env::var("MAESTRO_TEST_SYNC_ADDRESS").unwrap()).unwrap();
         stream.write_all(&std::process::id().to_be_bytes()).unwrap();
         let holder = crate::acquire_write(Path::new(&path), true).unwrap();
         holder.append(b"after").unwrap();
@@ -693,9 +693,9 @@ fn append_waits_at_target_sync_until_publication_finishes() {
         "append_waits_at_target_sync_until_publication_finishes",
     )
     .unwrap()
-    .env("MAESTRO_SYNC_APPEND", &target)
+    .env("MAESTRO_TEST_SYNC_APPEND", &target)
     .env(
-        "MAESTRO_SYNC_ADDRESS",
+        "MAESTRO_TEST_SYNC_ADDRESS",
         listener.local_addr().unwrap().to_string(),
     );
     let (sender, receiver) = std::sync::mpsc::channel();
@@ -907,7 +907,7 @@ fn atomic_publication_replaces_a_read_only_target_with_the_default_mode() {
     else {
         return;
     };
-    let restrictive = std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077";
+    let restrictive = std::env::var("MAESTRO_TEST_REPLACE_UMASK").unwrap() == "077";
     let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     fs::write(&target, b"previous").unwrap();
@@ -948,9 +948,9 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
         net::{TcpListener, TcpStream},
     };
     let test = "atomic_fixed_writers_wait_before_opening_temporary";
-    if let Ok(path) = std::env::var("MAESTRO_ATOMIC_TARGET") {
+    if let Ok(path) = std::env::var("MAESTRO_TEST_ATOMIC_TARGET") {
         let mut stream =
-            TcpStream::connect(std::env::var("MAESTRO_SYNC_ADDRESS").unwrap()).unwrap();
+            TcpStream::connect(std::env::var("MAESTRO_TEST_SYNC_ADDRESS").unwrap()).unwrap();
         stream.write_all(&std::process::id().to_be_bytes()).unwrap();
         crate::atomic_replace(
             Path::new(&path),
@@ -968,9 +968,9 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let child = maestro_test_harness::TestProcess::current(test)
         .unwrap()
-        .env("MAESTRO_ATOMIC_TARGET", &target)
+        .env("MAESTRO_TEST_ATOMIC_TARGET", &target)
         .env(
-            "MAESTRO_SYNC_ADDRESS",
+            "MAESTRO_TEST_SYNC_ADDRESS",
             listener.local_addr().unwrap().to_string(),
         );
     let (sender, receiver) = std::sync::mpsc::channel();

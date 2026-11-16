@@ -31,7 +31,7 @@ impl Record {
 pub(super) fn run(record: &Record, operands: &[OsString]) -> io::Result<()> {
     match record {
         Record::HideHome => {
-            let wrapper = std::env::var_os("MAESTRO_FIXTURE_RUSTC_WRAPPER")
+            let wrapper = std::env::var_os("MAESTRO_TEST_FIXTURE_RUSTC_WRAPPER")
                 .ok_or_else(|| io::Error::other("the replaced wrapper is unset"))?;
             forward(
                 Command::new(wrapper)

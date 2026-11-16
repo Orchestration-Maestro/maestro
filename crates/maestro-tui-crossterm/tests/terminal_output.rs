@@ -22,7 +22,7 @@ use rustix::stdio::stdout;
 #[cfg(target_os = "linux")]
 #[test]
 fn native_terminal_descriptors_do_not_survive_exec() {
-    const PROBE: &str = "MAESTRO_TERMINAL_DESCRIPTOR_PROBE";
+    const PROBE: &str = "MAESTRO_TEST_TERMINAL_DESCRIPTOR_PROBE";
     if let Ok(targets) = std::env::var(PROBE) {
         let targets: Vec<_> = targets.lines().map(PathBuf::from).collect();
         for entry in fs::read_dir("/proc/self/fd").unwrap() {

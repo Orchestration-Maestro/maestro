@@ -220,8 +220,8 @@ pub fn inherited_launch_target() {
     let arguments: Vec<String> = std::env::args().collect();
     let operands = &arguments[arguments.len() - 4..];
     assert_eq!(operands, ["literal $HOME;|", "", "repeat", "repeat"]);
-    assert_eq!(variable("MAESTRO_OPERAND").unwrap(), "chosen");
-    let directory = std::fs::canonicalize(variable("MAESTRO_DIRECTORY").unwrap()).unwrap();
+    assert_eq!(variable("MAESTRO_TEST_OPERAND").unwrap(), "chosen");
+    let directory = std::fs::canonicalize(variable("MAESTRO_TEST_DIRECTORY").unwrap()).unwrap();
     assert_eq!(std::env::current_dir().unwrap(), directory);
     write_stdout(b"inherited-out\0\xff").unwrap();
     write_stderr(b"inherited-err").unwrap();
@@ -472,7 +472,7 @@ pub fn capture_probe() {
     let flag = |null| if null { "True" } else { "False" };
     let mut fields = arguments[arguments.len() - 3..].to_vec();
     fields.extend([
-        variable("MAESTRO_CAPTURE").unwrap(),
+        variable("MAESTRO_TEST_CAPTURE").unwrap(),
         std::env::current_dir().unwrap().display().to_string(),
         flag(is_null("/dev/stdin").unwrap()).to_owned(),
         flag(is_null("/dev/stderr").unwrap()).to_owned(),

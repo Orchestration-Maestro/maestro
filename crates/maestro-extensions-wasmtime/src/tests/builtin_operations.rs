@@ -2486,7 +2486,7 @@ fn assert_builtin_spawn_outcome(observed: &serde_json::Value, request: &serde_js
     } else if request["supplied"] == true {
         let (command, value) = if mode == "edit" {
             (
-                "printf '%s:%s' \"$MAESTRO_BUILTIN_HOOK\" \"${UNSET_BY_HOOK-unset}\"",
+                "printf '%s:%s' \"$MAESTRO_TEST_BUILTIN_HOOK\" \"${UNSET_BY_HOOK-unset}\"",
                 "edited",
             )
         } else {

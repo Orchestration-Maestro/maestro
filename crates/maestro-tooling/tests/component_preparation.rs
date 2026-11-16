@@ -108,7 +108,7 @@ fn component_build_reuses_the_prepared_example() {
         fs::create_dir_all(scratch.path().join("examples/extensions")).unwrap();
         fs::write(
             directory.join("tests/support/fixture.rs"),
-            "// maestro-component: MAESTRO_PREPARED_FIXTURE_COMPONENT\n",
+            "// maestro-component: MAESTRO_TEST_PREPARED_FIXTURE_COMPONENT\n",
         )
         .unwrap();
         let component = scratch.path().join("fixture.wasm");
@@ -117,8 +117,8 @@ fn component_build_reuses_the_prepared_example() {
             .unwrap()
             .case("prepared")
             .nocapture()
-            .env("MAESTRO_PREPARED_FIXTURE_COMPONENT", component)
-            .env("MAESTRO_COMPONENT_FIXTURE_ROOT", directory)
+            .env("MAESTRO_TEST_PREPARED_FIXTURE_COMPONENT", component)
+            .env("MAESTRO_TEST_COMPONENT_FIXTURE_ROOT", directory)
             .env("CARGO", scratch.path().join("missing-cargo"))
             .output()
             .unwrap();
@@ -130,13 +130,15 @@ fn component_build_reuses_the_prepared_example() {
         );
         return;
     }
-    let directory = std::env::var_os("MAESTRO_COMPONENT_FIXTURE_ROOT").unwrap();
+    let directory = std::env::var_os("MAESTRO_TEST_COMPONENT_FIXTURE_ROOT").unwrap();
     let component =
         component_build::component(Path::new(&directory), &["--example", "fixture"], "fixture")
             .expect("prepared example must not invoke Cargo");
     assert_eq!(
         component,
-        std::path::PathBuf::from(std::env::var_os("MAESTRO_PREPARED_FIXTURE_COMPONENT").unwrap())
+        std::path::PathBuf::from(
+            std::env::var_os("MAESTRO_TEST_PREPARED_FIXTURE_COMPONENT").unwrap()
+        )
     );
 }
 
@@ -162,7 +164,7 @@ fn component_build_compiles_unprepared_examples_in_one_cargo_run() {
                 .nocapture()
                 .env("CARGO", cargo)
                 .env("CARGO_CALLS", &calls)
-                .env("MAESTRO_COMPONENT_FIXTURE_ROOT", directory)
+                .env("MAESTRO_TEST_COMPONENT_FIXTURE_ROOT", directory)
                 .output()
                 .unwrap();
         assert!(
@@ -176,7 +178,7 @@ fn component_build_compiles_unprepared_examples_in_one_cargo_run() {
         assert!(calls.contains("--example alpha --example beta"), "{calls}");
         return;
     }
-    let directory = std::env::var_os("MAESTRO_COMPONENT_FIXTURE_ROOT").unwrap();
+    let directory = std::env::var_os("MAESTRO_TEST_COMPONENT_FIXTURE_ROOT").unwrap();
     let components =
         component_build::example_components(Path::new(&directory), "author", &["alpha", "beta"])
             .unwrap();

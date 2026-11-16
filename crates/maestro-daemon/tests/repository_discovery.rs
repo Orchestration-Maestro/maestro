@@ -341,7 +341,7 @@ fn repository_native_links_keep_unicode_trim_and_climb_past_missing_head() {
 #[test]
 fn repository_reftable_queries_use_native_process_owner() {
     const NAME: &str = "repository_reftable_queries_use_native_process_owner";
-    if let Some(root) = std::env::var_os("MAESTRO_REFTABLE_PROBE") {
+    if let Some(root) = std::env::var_os("MAESTRO_TEST_REFTABLE_PROBE") {
         let root = PathBuf::from(root);
         assert_eq!(git_branch(&root).as_deref(), Some("topic"));
         assert_eq!(
@@ -372,7 +372,7 @@ fn repository_reftable_queries_use_native_process_owner() {
     maestro_test_harness::install_executable(Path::new(&artifact), &bin.join("git")).unwrap();
     let output = maestro_test_harness::TestProcess::current(NAME)
         .unwrap()
-        .env("MAESTRO_REFTABLE_PROBE", &root)
+        .env("MAESTRO_TEST_REFTABLE_PROBE", &root)
         .env("PATH", &bin)
         .output()
         .unwrap();

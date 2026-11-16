@@ -14,9 +14,9 @@ use std::sync::Arc;
 pub(super) async fn conversation(
     common: StreamOptions,
 ) -> TestResult<(Vec<String>, maestro_models::AssistantMessage)> {
-    let model = bedrock::model(&std::env::var("MAESTRO_ORIGIN")?)?;
+    let model = bedrock::model(&std::env::var("MAESTRO_TEST_ORIGIN")?)?;
     let context = bedrock::context("question")?;
-    let stream = if std::env::var_os("MAESTRO_SIMPLE").is_some() {
+    let stream = if std::env::var_os("MAESTRO_TEST_SIMPLE").is_some() {
         stream_simple_bedrock(
             model,
             context,
@@ -128,13 +128,13 @@ fn routed_conversation(scheme: &str, identity: &str, simple: bool) -> TestResult
     };
     let mut vars = vec![
         ("HTTP_PROXY", proxy.as_str()),
-        ("MAESTRO_ORIGIN", origin),
+        ("MAESTRO_TEST_ORIGIN", origin),
         ("AWS_REGION", "us-east-1"),
         ("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer"),
         ("AWS_MAX_ATTEMPTS", "1"),
     ];
     if simple {
-        vars.push(("MAESTRO_SIMPLE", "1"));
+        vars.push(("MAESTRO_TEST_SIMPLE", "1"));
     }
     let result = maestro_test_harness::TestProcess::current(
         "bedrock_socks_routes_reach_conversation_stream",
@@ -193,7 +193,7 @@ async fn cancel_conversation() -> TestResult {
         reqwest::Client::builder()
             .no_proxy()
             .build()?
-            .get(std::env::var("MAESTRO_GATE")?)
+            .get(std::env::var("MAESTRO_TEST_GATE")?)
             .send()
             .await?;
         signal.abort();
@@ -288,8 +288,8 @@ fn cancellation_case(scheme: &str, identity: Option<&str>, after_request: bool) 
     );
     let vars = [
         ("HTTP_PROXY", proxy.as_str()),
-        ("MAESTRO_ORIGIN", "http://destination.invalid"),
-        ("MAESTRO_GATE", gate_server.url.as_str()),
+        ("MAESTRO_TEST_ORIGIN", "http://destination.invalid"),
+        ("MAESTRO_TEST_GATE", gate_server.url.as_str()),
         ("AWS_REGION", "us-east-1"),
         ("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer"),
         ("AWS_MAX_ATTEMPTS", "1"),
@@ -387,7 +387,7 @@ fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
             let proxy = format!("{scheme}://bad%ZZ@unresolvable.invalid");
             let mut vars = vec![
                 ("HTTP_PROXY", proxy.as_str()),
-                ("MAESTRO_ORIGIN", origin.url.as_str()),
+                ("MAESTRO_TEST_ORIGIN", origin.url.as_str()),
                 ("AWS_REGION", "us-east-1"),
                 ("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer"),
                 ("AWS_MAX_ATTEMPTS", "1"),

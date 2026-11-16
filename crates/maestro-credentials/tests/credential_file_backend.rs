@@ -36,11 +36,11 @@ mod tests {
             let cwd = std::env::current_dir().unwrap();
             assert_eq!(
                 cwd,
-                std::path::Path::new(&std::env::var("MAESTRO_PROFILE_CWD").unwrap())
+                std::path::Path::new(&std::env::var("MAESTRO_TEST_PROFILE_CWD").unwrap())
             );
             if stage != "outer" {
                 assert!(is_child());
-                assert!(std::env::var_os("MAESTRO_PROFILE_SENTINEL").is_none());
+                assert!(std::env::var_os("MAESTRO_TEST_PROFILE_SENTINEL").is_none());
                 assert_eq!(
                     std::env::var("LLVM_PROFILE_FILE").unwrap(),
                     if stage == "inherited" {
@@ -53,13 +53,13 @@ mod tests {
             }
             assert_eq!(std::env::var("LLVM_PROFILE_FILE").unwrap(), PROFILE);
             assert_eq!(
-                std::env::var("MAESTRO_PROFILE_SENTINEL").unwrap(),
+                std::env::var("MAESTRO_TEST_PROFILE_SENTINEL").unwrap(),
                 "ambient"
             );
             let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
             for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
                 let cwd_text = cwd.to_str().unwrap();
-                let mut envs = vec![("MAESTRO_PROFILE_CWD", cwd_text)];
+                let mut envs = vec![("MAESTRO_TEST_PROFILE_CWD", cwd_text)];
                 envs.extend(profile.map(|value| ("LLVM_PROFILE_FILE", value)));
                 let process = TestProcess::named(NAME).unwrap().env_clear().case(stage);
                 run_child(process, &cwd, &envs);
@@ -74,9 +74,9 @@ mod tests {
             TestProcess::named(NAME).unwrap().env_clear().case("outer"),
             dir.root(),
             &[
-                ("MAESTRO_PROFILE_CWD", dir.root().to_str().unwrap()),
+                ("MAESTRO_TEST_PROFILE_CWD", dir.root().to_str().unwrap()),
                 ("LLVM_PROFILE_FILE", PROFILE),
-                ("MAESTRO_PROFILE_SENTINEL", "ambient"),
+                ("MAESTRO_TEST_PROFILE_SENTINEL", "ambient"),
             ],
         );
     }

@@ -18,7 +18,7 @@ use maestro_tooling as tooling;
 /// Exercise Rustup selection with an incomplete default and an installed pin.
 #[test]
 fn child_toolchain_uses_declared_pin() {
-    if std::env::var_os("MAESTRO_TOOLCHAIN_CONTROL").is_none() {
+    if std::env::var_os("MAESTRO_TEST_TOOLCHAIN_CONTROL").is_none() {
         let owner = Fixture::new();
         let home = owner.root.path().join("rustup");
         let sysroot = prepare_incomplete_toolchain(&home);
@@ -26,8 +26,8 @@ fn child_toolchain_uses_declared_pin() {
             let mut command = TestProcess::current("child_toolchain_uses_declared_pin")
                 .unwrap()
                 .nocapture()
-                .env("MAESTRO_TOOLCHAIN_CONTROL", "1")
-                .env("MAESTRO_EXPECTED_SYSROOT", &sysroot)
+                .env("MAESTRO_TEST_TOOLCHAIN_CONTROL", "1")
+                .env("MAESTRO_TEST_EXPECTED_SYSROOT", &sysroot)
                 .env("RUSTUP_HOME", &home)
                 .env_remove("RUSTUP_TOOLCHAIN")
                 .env("RUSTUP_AUTO_INSTALL", "0");
@@ -134,13 +134,13 @@ fn check_declared_children(fixture: &Fixture) {
         "{}",
         String::from_utf8_lossy(&sysroot.stderr)
     );
-    let expected = std::env::var_os("MAESTRO_EXPECTED_SYSROOT").unwrap();
+    let expected = std::env::var_os("MAESTRO_TEST_EXPECTED_SYSROOT").unwrap();
     assert_eq!(
         fs::canonicalize(std::str::from_utf8(&sysroot.stdout).unwrap().trim()).unwrap(),
         fs::canonicalize(expected).unwrap()
     );
     let run = Command::new(&fixture.child)
-        .env("MAESTRO_RECEIPT", fixture.root.path().join("receipt"))
+        .env("MAESTRO_TEST_RECEIPT", fixture.root.path().join("receipt"))
         .env("HOME", fixture.root.path())
         .status()
         .unwrap();
@@ -199,7 +199,7 @@ fn check_declared_metadata(fixture: &Fixture) {
 #[cfg(unix)]
 #[test]
 fn child_toolchain_preserves_parent_profile_destination() {
-    const PROBE: &str = "MAESTRO_TOOLCHAIN_ENV_PROBE";
+    const PROBE: &str = "MAESTRO_TEST_TOOLCHAIN_ENV_PROBE";
     if std::env::var_os(PROBE).is_some() {
         let before: Vec<_> = std::env::vars_os().collect();
         let mut child = compiler::command("sh");
@@ -264,7 +264,7 @@ fn child_toolchain_keeps_parent_counters_while_building_wasm() {
     let parent = Command::new(&binary)
         .current_dir(fixture.root.path())
         .env("CARGO_HOME", &home)
-        .env("MAESTRO_PROBE_CARGO", env!("CARGO"))
+        .env("MAESTRO_TEST_PROBE_CARGO", env!("CARGO"))
         .env("CARGO_TARGET_DIR", fixture.root.path().join("target"))
         .env("RUSTFLAGS", "-C instrument-coverage")
         .env("CARGO_ENCODED_RUSTFLAGS", "-Cinstrument-coverage")
@@ -344,12 +344,12 @@ fn assert_profile_counters(profile: &Path) {
 
 /// Controlled tool recording its arguments, environment and phases.
 ///
-/// `MAESTRO_FAIL_PHASE` lists `phase` or `phase=status` entries: each listed phase the tool
+/// `MAESTRO_TEST_FAIL_PHASE` lists `phase` or `phase=status` entries: each listed phase the tool
 /// reaches exits with its status, or 17.
 const FIXTURE_CHILD: &str = r#"
 use std::{env, fs, io::Write, path::PathBuf};
 fn main() {
-    let root = PathBuf::from(env::var_os("MAESTRO_RECEIPT").unwrap());
+    let root = PathBuf::from(env::var_os("MAESTRO_TEST_RECEIPT").unwrap());
     fs::create_dir_all(root.join("args")).unwrap();
     for (i, arg) in env::args_os().skip(1).enumerate() {
         fs::write(root.join("args").join(i.to_string()), arg.as_encoded_bytes()).unwrap();
@@ -364,12 +364,12 @@ fn main() {
         fs::write(recorded.join(key), value.as_encoded_bytes()).unwrap();
     }
     if env::args().nth(1).as_deref() == Some("metadata") {
-        if let Some(path) = env::var_os("MAESTRO_METADATA") {
-            match env::var("MAESTRO_METADATA_MODE").as_deref() {
+        if let Some(path) = env::var_os("MAESTRO_TEST_METADATA") {
+            match env::var("MAESTRO_TEST_METADATA_MODE").as_deref() {
                 Ok("garbage") => println!("not metadata"),
                 _ => println!("{}", fs::read_to_string(path).unwrap()),
             }
-            if let Ok(code) = env::var("MAESTRO_METADATA_EXIT") {
+            if let Ok(code) = env::var("MAESTRO_TEST_METADATA_EXIT") {
                 std::process::exit(code.parse().unwrap());
             }
             std::process::exit(0);
@@ -382,7 +382,7 @@ fn main() {
         use std::io::Write;
         let mut log = fs::OpenOptions::new().create(true).append(true).open(root.join("phases")).unwrap();
         writeln!(log, "{phase}").unwrap();
-        if let Ok(failures) = env::var("MAESTRO_FAIL_PHASE") {
+        if let Ok(failures) = env::var("MAESTRO_TEST_FAIL_PHASE") {
             let failed = failures.split(',').find_map(|entry| {
                 let (name, code) = entry.split_once('=').unwrap_or((entry, "17"));
                 (name == phase).then_some(code)
@@ -391,7 +391,7 @@ fn main() {
         }
     }
     if env::args().nth(1).as_deref() == Some("clippy") {
-        if let Some(root) = env::var_os("MAESTRO_CHECK_INDEX") {
+        if let Some(root) = env::var_os("MAESTRO_TEST_CHECK_INDEX") {
             for name in ["a space.rs", "line\nbreak.rs", "-dash.rs"].iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
                 let output = std::process::Command::new("git").current_dir(&root).args(["show", &format!(":{name}")]).output().unwrap();
                 assert!(output.status.success());
@@ -399,14 +399,14 @@ fn main() {
             }
         }
     }
-    if let Some(format) = env::var_os("MAESTRO_FORMAT_ROOT") {
+    if let Some(format) = env::var_os("MAESTRO_TEST_FORMAT_ROOT") {
         for name in ["a space.rs", "line\nbreak.rs", "-dash.rs", "unrelated.rs"].iter().filter(|name| !(cfg!(windows) && name.contains('\n'))) {
             fs::write(PathBuf::from(&format).join(name), "formatted").unwrap();
         }
     }
-    if let Some(path) = env::var_os("MAESTRO_BLOCK_RESTORE") { fs::create_dir_all(PathBuf::from(path).join("auth.json.bak")).unwrap(); }
-    if let Ok(message) = env::var("MAESTRO_DIAGNOSTIC") { eprint!("{message}"); }
-    std::process::exit(env::var("MAESTRO_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
+    if let Some(path) = env::var_os("MAESTRO_TEST_BLOCK_RESTORE") { fs::create_dir_all(PathBuf::from(path).join("auth.json.bak")).unwrap(); }
+    if let Ok(message) = env::var("MAESTRO_TEST_DIAGNOSTIC") { eprint!("{message}"); }
+    std::process::exit(env::var("MAESTRO_TEST_CHILD_EXIT").unwrap_or_default().parse().unwrap_or(0));
 }
 "#;
 
@@ -450,10 +450,10 @@ impl Fixture {
                     .into_iter()
                     .filter_map(|name| std::env::var_os(name).map(|value| (name, value))),
             )
-            .env("MAESTRO_DRIVER", operation)
-            .env("MAESTRO_FIXTURE_CARGO", &self.child)
-            .env("MAESTRO_FIXTURE_ROOT", self.root.path())
-            .env("MAESTRO_RECEIPT", self.root.path().join("receipt"))
+            .env("MAESTRO_TEST_DRIVER", operation)
+            .env("MAESTRO_TEST_FIXTURE_CARGO", &self.child)
+            .env("MAESTRO_TEST_FIXTURE_ROOT", self.root.path())
+            .env("MAESTRO_TEST_RECEIPT", self.root.path().join("receipt"))
             .env("HOME", self.root.path())
             .env("PATH", self.root.path())
             .current_dir(self.root.path());
@@ -461,7 +461,7 @@ impl Fixture {
             command = command.env("RUSTUP_TOOLCHAIN", channel);
         }
         for (index, arg) in args.iter().enumerate() {
-            command = command.env(format!("MAESTRO_ARG_{index}"), arg);
+            command = command.env(format!("MAESTRO_TEST_ARG_{index}"), arg);
         }
         command
     }
@@ -541,13 +541,13 @@ fn isolated(mut command: Command) -> Command {
 }
 
 fn drive() {
-    let Some(operation) = std::env::var_os("MAESTRO_DRIVER") else {
+    let Some(operation) = std::env::var_os("MAESTRO_TEST_DRIVER") else {
         return;
     };
     let mut args = vec![operation];
-    args.extend((0..).map_while(|index| std::env::var_os(format!("MAESTRO_ARG_{index}"))));
-    let cargo = std::env::var_os("MAESTRO_FIXTURE_CARGO").unwrap();
-    let root = std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap();
+    args.extend((0..).map_while(|index| std::env::var_os(format!("MAESTRO_TEST_ARG_{index}"))));
+    let cargo = std::env::var_os("MAESTRO_TEST_FIXTURE_CARGO").unwrap();
+    let root = std::env::var_os("MAESTRO_TEST_FIXTURE_ROOT").unwrap();
     let result = if args[0] == "hook" {
         let mut format = isolated(Command::new(&cargo));
         format.arg("format");
@@ -555,13 +555,13 @@ fn drive() {
         conventions.arg("conventions");
         let mut smoke = isolated(Command::new(&cargo));
         smoke.arg("smoke");
-        match std::env::var("MAESTRO_MISSING_PHASE").as_deref() {
+        match std::env::var("MAESTRO_TEST_MISSING_PHASE").as_deref() {
             Ok("format") => format = Command::new("missing-tool"),
             Ok("conventions") => conventions = Command::new("missing-tool"),
             Ok("smoke") => smoke = Command::new("missing-tool"),
             _ => {}
         }
-        let tool = if std::env::var_os("MAESTRO_MISSING_METADATA_TOOL").is_some() {
+        let tool = if std::env::var_os("MAESTRO_TEST_MISSING_METADATA_TOOL").is_some() {
             Path::new("missing-tool")
         } else {
             Path::new(&cargo)
@@ -571,7 +571,8 @@ fn drive() {
             tool,
             &mut format,
             &mut conventions,
-            (std::env::var("MAESTRO_ACTIVE_SMOKE").as_deref() == Ok("true")).then_some(&mut smoke),
+            (std::env::var("MAESTRO_TEST_ACTIVE_SMOKE").as_deref() == Ok("true"))
+                .then_some(&mut smoke),
         )
     } else {
         tooling::run(&args, Path::new(&cargo), Path::new(&root))
@@ -652,10 +653,10 @@ fn offline_removes_only_listed_credentials() {
         }
         for key in [
             "AZURE_OPENAI_API_KEY",
-            "MAESTRO_CANARY",
+            "MAESTRO_TEST_CANARY",
             "TMPDIR",
             "XDG_CONFIG_HOME",
-            "MAESTRO_AGENT_DIR",
+            "MAESTRO_TEST_AGENT_DIR",
         ] {
             command = command.env(key, "kept");
         }
@@ -670,10 +671,10 @@ fn offline_removes_only_listed_credentials() {
         }
         for key in [
             "AZURE_OPENAI_API_KEY",
-            "MAESTRO_CANARY",
+            "MAESTRO_TEST_CANARY",
             "TMPDIR",
             "XDG_CONFIG_HOME",
-            "MAESTRO_AGENT_DIR",
+            "MAESTRO_TEST_AGENT_DIR",
         ] {
             assert_eq!(
                 fs::read(recorded_environment(&fixture).join(key)).unwrap(),
@@ -703,7 +704,7 @@ fn source_reports_missing_tool_and_child_failure() {
             "run-source",
             &[],
         )
-        .env("MAESTRO_FIXTURE_CARGO", &missing)
+        .env("MAESTRO_TEST_FIXTURE_CARGO", &missing)
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
@@ -720,7 +721,7 @@ fn source_reports_missing_tool_and_child_failure() {
             "run-source",
             &[],
         )
-        .env("MAESTRO_CHILD_EXIT", "17")
+        .env("MAESTRO_TEST_CHILD_EXIT", "17")
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(17));
@@ -738,7 +739,7 @@ fn offline_restores_auth_after_child_results() {
                 "test-offline",
                 &[],
             )
-            .env("MAESTRO_CHILD_EXIT", exit)
+            .env("MAESTRO_TEST_CHILD_EXIT", exit)
             .output()
             .unwrap();
         assert_eq!(output.status.code(), Some(exit.parse().unwrap()));
@@ -823,7 +824,7 @@ fn assert_auth_move_errors() {
             "test-offline",
             &[],
         )
-        .env("MAESTRO_BLOCK_RESTORE", fixture.auth())
+        .env("MAESTRO_TEST_BLOCK_RESTORE", fixture.auth())
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
@@ -964,7 +965,7 @@ fn browser_test_builds_the_runtime_script_then_runs_every_case_in_one_nextest_ru
                 "browser-test",
                 &[],
             )
-            .env("MAESTRO_FAIL_PHASE", failing)
+            .env("MAESTRO_TEST_FAIL_PHASE", failing)
             .output()
             .unwrap();
         assert_eq!(output.status.code(), Some(code), "{failing}");
@@ -1025,7 +1026,7 @@ fn browser_test_stops_when_the_runtime_script_cannot_be_built() {
             "browser-test",
             &[],
         )
-        .env("MAESTRO_FAIL_PHASE", "run=19")
+        .env("MAESTRO_TEST_FAIL_PHASE", "run=19")
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(19));
@@ -1058,7 +1059,7 @@ fn source_launchers_clear_the_same_credentials() {
             }
             command = command
                 .env("MAESTRO_NO_LOCAL_LLM", "kept")
-                .env("MAESTRO_CANARY", "kept");
+                .env("MAESTRO_TEST_CANARY", "kept");
             let output = command.output().unwrap();
             assert!(output.status.success());
             for key in OFFLINE_KEYS
@@ -1084,7 +1085,7 @@ fn source_launchers_clear_the_same_credentials() {
                 b"kept"
             );
             assert_eq!(
-                fs::read(recorded_environment(&fixture).join("MAESTRO_CANARY")).unwrap(),
+                fs::read(recorded_environment(&fixture).join("MAESTRO_TEST_CANARY")).unwrap(),
                 b"kept"
             );
             assert_eq!(
@@ -2195,8 +2196,11 @@ fn browser_build_records_diagnostics_without_noise() {
     write_browser_witnesses(fixture.root.path());
     let log = fixture.root.path().join("maestro-browser-smoke-errors.log");
     let output = run_browser_smoke(&fixture, test)
-        .env("MAESTRO_CHILD_EXIT", "17")
-        .env("MAESTRO_DIAGNOSTIC", "fixture.rs:4: compilation failed\n")
+        .env("MAESTRO_TEST_CHILD_EXIT", "17")
+        .env(
+            "MAESTRO_TEST_DIAGNOSTIC",
+            "fixture.rs:4: compilation failed\n",
+        )
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
@@ -2296,7 +2300,7 @@ fn run_driver(fixture: &Fixture, test: &str, operation: &str) -> TestProcess {
     let metadata = compact_metadata(&fixture.root.path().join("metadata.json"));
     fixture
         .invoke(test, operation, &[])
-        .env("MAESTRO_METADATA", metadata)
+        .env("MAESTRO_TEST_METADATA", metadata)
         .env("PATH", fixture_path(fixture))
 }
 
@@ -2381,7 +2385,7 @@ fn hook_restages_only_captured_paths() {
 
 #[test]
 fn hook_fixtures_exclude_ambient_credentials() {
-    if std::env::var_os("MAESTRO_DRIVER").is_none() {
+    if std::env::var_os("MAESTRO_TEST_DRIVER").is_none() {
         let fixture = Fixture::new();
         let output = fixture
             .invoke(
@@ -2458,9 +2462,9 @@ fn assert_hook_restages_only_captured_paths(driver: &str) {
     git(fixture.root.path(), &add);
     stage_paths(fixture.root.path(), &["crates/a/src/lib.rs"]);
     let output = run_hook(&fixture, driver)
-        .env("MAESTRO_ACTIVE_SMOKE", "true")
-        .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
-        .env("MAESTRO_CHECK_INDEX", fixture.root.path())
+        .env("MAESTRO_TEST_ACTIVE_SMOKE", "true")
+        .env("MAESTRO_TEST_FORMAT_ROOT", fixture.root.path())
+        .env("MAESTRO_TEST_CHECK_INDEX", fixture.root.path())
         .output()
         .unwrap();
     assert!(
@@ -2506,8 +2510,8 @@ fn assert_hook_phase(phase: &str) {
         ],
     );
     let output = run_hook(&fixture, "hook_messages_follow_phase_results")
-        .env("MAESTRO_FAIL_PHASE", phase)
-        .env("MAESTRO_ACTIVE_SMOKE", "true")
+        .env("MAESTRO_TEST_FAIL_PHASE", phase)
+        .env("MAESTRO_TEST_ACTIVE_SMOKE", "true")
         .output()
         .unwrap();
     let text = stdout(&output);
@@ -2628,7 +2632,7 @@ fn hook_selects_extra_steps_from_original_paths() {
         git(fixture.root.path(), &["add", "--", name]);
         fs::remove_file(&path).unwrap();
         let output = run_hook(&fixture, "hook_selects_extra_steps_from_original_paths")
-            .env("MAESTRO_ACTIVE_SMOKE", active.to_string())
+            .env("MAESTRO_TEST_ACTIVE_SMOKE", active.to_string())
             .output()
             .unwrap();
         assert!(output.status.success(), "{name}");
@@ -2831,7 +2835,7 @@ fn hook_workspace_inputs_do_not_run_crate_checks() {
         git(fixture.root.path(), &["init", "--quiet"]);
         stage_paths(fixture.root.path(), &[path]);
         let output = run_hook(&fixture, "hook_workspace_inputs_do_not_run_crate_checks")
-            .env("MAESTRO_ACTIVE_SMOKE", "true")
+            .env("MAESTRO_TEST_ACTIVE_SMOKE", "true")
             .output()
             .unwrap();
         assert!(
@@ -2917,9 +2921,9 @@ fn hook_renames_check_both_previous_and_new_owners() {
 fn hook_reports_metadata_errors_before_running_checks() {
     drive();
     for (case, environment) in [
-        ("garbage", vec![("MAESTRO_METADATA_MODE", "garbage")]),
-        ("status", vec![("MAESTRO_METADATA_EXIT", "17")]),
-        ("launch", vec![("MAESTRO_MISSING_METADATA_TOOL", "1")]),
+        ("garbage", vec![("MAESTRO_TEST_METADATA_MODE", "garbage")]),
+        ("status", vec![("MAESTRO_TEST_METADATA_EXIT", "17")]),
+        ("launch", vec![("MAESTRO_TEST_MISSING_METADATA_TOOL", "1")]),
     ] {
         let fixture = Fixture::new();
         git(fixture.root.path(), &["init", "--quiet"]);
@@ -2959,7 +2963,7 @@ fn hook_reports_metadata_errors_before_running_checks() {
         &fixture,
         "hook_reports_metadata_errors_before_running_checks",
     )
-    .env("MAESTRO_FAIL_PHASE", "format")
+    .env("MAESTRO_TEST_FAIL_PHASE", "format")
     .output()
     .unwrap();
     assert_eq!(output.status.code(), Some(1));
@@ -3016,7 +3020,7 @@ fn assert_recipe_phase_failure(phase: &str, expected: &[&str]) {
     .unwrap();
     git(&workspace, &["add", "--", "leaf/src/lib.rs"]);
     let output = consumer_hook_command("hook_scoped_failures_stop_later_phases", &workspace)
-        .env("MAESTRO_FAIL_PHASE", phase)
+        .env("MAESTRO_TEST_FAIL_PHASE", phase)
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1), "{phase}");
@@ -3060,9 +3064,9 @@ fn hook_scoped_failures_stop_later_phases() {
             ],
         );
         let output = run_hook(&fixture, "hook_scoped_failures_stop_later_phases")
-            .env("MAESTRO_FAIL_PHASE", phase)
-            .env("MAESTRO_ACTIVE_SMOKE", "true")
-            .env("MAESTRO_FORMAT_ROOT", fixture.root.path())
+            .env("MAESTRO_TEST_FAIL_PHASE", phase)
+            .env("MAESTRO_TEST_ACTIVE_SMOKE", "true")
+            .env("MAESTRO_TEST_FORMAT_ROOT", fixture.root.path())
             .output()
             .unwrap();
         assert_eq!(output.status.code(), Some(1), "{phase}");
@@ -3130,7 +3134,7 @@ fn hook_lints_the_staged_web_crate_through_the_check_recipe() {
             &fixture,
             "hook_lints_the_staged_web_crate_through_the_check_recipe",
         )
-        .env("MAESTRO_ACTIVE_SMOKE", "false")
+        .env("MAESTRO_TEST_ACTIVE_SMOKE", "false")
         .output()
         .unwrap();
         assert!(output.status.success(), "{path}");
@@ -3158,7 +3162,7 @@ fn hook_browser_smoke_runs_once_for_reached_inputs() {
         git(fixture.root.path(), &["init", "--quiet"]);
         stage_paths(fixture.root.path(), &paths);
         let output = run_hook(&fixture, "hook_browser_smoke_runs_once_for_reached_inputs")
-            .env("MAESTRO_ACTIVE_SMOKE", active.to_string())
+            .env("MAESTRO_TEST_ACTIVE_SMOKE", active.to_string())
             .output()
             .unwrap();
         assert!(output.status.success(), "{paths:?}");
@@ -3174,8 +3178,8 @@ fn hook_browser_smoke_runs_once_for_reached_inputs() {
         &["crates/maestro-providers/src/lib.rs"],
     );
     let output = run_hook(&fixture, "hook_browser_smoke_runs_once_for_reached_inputs")
-        .env("MAESTRO_ACTIVE_SMOKE", "true")
-        .env("MAESTRO_FAIL_PHASE", "smoke")
+        .env("MAESTRO_TEST_ACTIVE_SMOKE", "true")
+        .env("MAESTRO_TEST_FAIL_PHASE", "smoke")
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
@@ -3281,8 +3285,8 @@ fn hook_missing_tool_announces_failed_step() {
             ],
         );
         let output = run_hook(&fixture, "hook_missing_tool_announces_failed_step")
-            .env("MAESTRO_MISSING_PHASE", phase)
-            .env("MAESTRO_ACTIVE_SMOKE", "true")
+            .env("MAESTRO_TEST_MISSING_PHASE", phase)
+            .env("MAESTRO_TEST_ACTIVE_SMOKE", "true")
             .output()
             .unwrap();
         assert_eq!(output.status.code(), Some(1), "{phase}");
@@ -3415,10 +3419,10 @@ fn consumer_hook_command(test: &str, workspace: &Path) -> TestProcess {
         .unwrap()
         .nocapture()
         .current_dir(workspace)
-        .env("MAESTRO_DRIVER", "pre-commit")
-        .env("MAESTRO_FIXTURE_ROOT", workspace)
-        .env("MAESTRO_FIXTURE_CARGO", workspace.join("bin/cargo"))
-        .env("MAESTRO_RECEIPT", workspace.join("receipt"))
+        .env("MAESTRO_TEST_DRIVER", "pre-commit")
+        .env("MAESTRO_TEST_FIXTURE_ROOT", workspace)
+        .env("MAESTRO_TEST_FIXTURE_CARGO", workspace.join("bin/cargo"))
+        .env("MAESTRO_TEST_RECEIPT", workspace.join("receipt"))
         .env("CARGO_TARGET_DIR", workspace.join("target"))
         .env("CARGO_HOME", compiler::home(workspace.parent().unwrap()))
         .env(
@@ -4273,7 +4277,7 @@ fn example_index_renders_targets() {
     let marker = "// maestro-component:";
     fs::write(
         folder.join("zebra.rs"),
-        format!("//! Zebra.\n{marker} MAESTRO_ZEBRA_COMPONENT\n"),
+        format!("//! Zebra.\n{marker} MAESTRO_TEST_ZEBRA_COMPONENT\n"),
     )
     .unwrap();
     fs::write(folder.join("zebra/view.rs"), "//! Zebra view.\n").unwrap();
@@ -4281,7 +4285,7 @@ fn example_index_renders_targets() {
     fs::write(folder.join("alpha.md"), "# Alpha usage\n").unwrap();
     fs::write(
         folder.join("with-deps/main.rs"),
-        format!("//! Dependencies.\n{marker} MAESTRO_DEPS_COMPONENT\n"),
+        format!("//! Dependencies.\n{marker} MAESTRO_TEST_DEPS_COMPONENT\n"),
     )
     .unwrap();
     fs::write(
@@ -4451,7 +4455,7 @@ fn example_components_discover_source_only_additions() {
     assert_eq!(prepare(), (Vec::new(), String::new()));
     fs::write(
         root.path().join("fixture_example.rs"),
-        "//! Fixture.\n// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+        "//! Fixture.\n// maestro-component: MAESTRO_TEST_FIXTURE_COMPONENT\n",
     )
     .unwrap();
     assert_eq!(
@@ -4459,9 +4463,9 @@ fn example_components_discover_source_only_additions() {
         (
             vec![(
                 "fixture_example".to_owned(),
-                "MAESTRO_FIXTURE_COMPONENT".to_owned()
+                "MAESTRO_TEST_FIXTURE_COMPONENT".to_owned()
             )],
-            "MAESTRO_FIXTURE_COMPONENT=/components/fixture_example.wasm\n".to_owned()
+            "MAESTRO_TEST_FIXTURE_COMPONENT=/components/fixture_example.wasm\n".to_owned()
         )
     );
     let config: toml::Value =
@@ -4479,10 +4483,10 @@ fn example_components_reject_invalid_markers() {
     let root = maestro_test_harness::Scratch::new().unwrap();
     for variable in [
         "OTHER_FIXTURE_COMPONENT",
-        "MAESTRO_FIXTURE",
+        "MAESTRO_TEST_FIXTURE",
         "MAESTRO_fixture_COMPONENT",
-        "MAESTRO_FIXTURE=VALUE_COMPONENT",
-        "MAESTRO_FIXTURE COMPONENT",
+        "MAESTRO_TEST_FIXTURE=VALUE_COMPONENT",
+        "MAESTRO_TEST_FIXTURE COMPONENT",
     ] {
         fs::write(
             root.path().join("fixture.rs"),
@@ -4514,7 +4518,7 @@ fn example_components_reject_duplicate_markers() {
     for name in ["first", "second"] {
         fs::write(
             root.path().join(format!("{name}.rs")),
-            "// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+            "// maestro-component: MAESTRO_TEST_FIXTURE_COMPONENT\n",
         )
         .unwrap();
     }
@@ -4530,11 +4534,14 @@ fn example_components_reject_duplicate_markers() {
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
+        "duplicate component variable: MAESTRO_TEST_FIXTURE_COMPONENT"
     );
     assert_eq!(
         builds,
-        [("first".to_owned(), "MAESTRO_FIXTURE_COMPONENT".to_owned())]
+        [(
+            "first".to_owned(),
+            "MAESTRO_TEST_FIXTURE_COMPONENT".to_owned()
+        )]
     );
 }
 
@@ -4543,9 +4550,9 @@ fn example_components_reject_duplicate_markers() {
 fn example_components_propagate_builder_failure() {
     let root = maestro_test_harness::Scratch::new().unwrap();
     for (name, variable) in [
-        ("first", "MAESTRO_FIRST_COMPONENT"),
-        ("second", "MAESTRO_SECOND_COMPONENT"),
-        ("third", "MAESTRO_THIRD_COMPONENT"),
+        ("first", "MAESTRO_TEST_FIRST_COMPONENT"),
+        ("second", "MAESTRO_TEST_SECOND_COMPONENT"),
+        ("third", "MAESTRO_TEST_THIRD_COMPONENT"),
     ] {
         fs::write(
             root.path().join(format!("{name}.rs")),
@@ -4575,8 +4582,14 @@ fn example_components_propagate_builder_failure() {
     assert_eq!(
         builds,
         [
-            ("first".to_owned(), "MAESTRO_FIRST_COMPONENT".to_owned()),
-            ("second".to_owned(), "MAESTRO_SECOND_COMPONENT".to_owned()),
+            (
+                "first".to_owned(),
+                "MAESTRO_TEST_FIRST_COMPONENT".to_owned()
+            ),
+            (
+                "second".to_owned(),
+                "MAESTRO_TEST_SECOND_COMPONENT".to_owned()
+            ),
         ]
     );
 }
@@ -4613,7 +4626,7 @@ fn example_components_reject_cross_root_duplicates() {
         fs::create_dir(folder).unwrap();
         fs::write(
             folder.join("fixture.rs"),
-            "// maestro-component: MAESTRO_FIXTURE_COMPONENT\n",
+            "// maestro-component: MAESTRO_TEST_FIXTURE_COMPONENT\n",
         )
         .unwrap();
     }
@@ -4629,7 +4642,7 @@ fn example_components_reject_cross_root_duplicates() {
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "duplicate component variable: MAESTRO_FIXTURE_COMPONENT"
+        "duplicate component variable: MAESTRO_TEST_FIXTURE_COMPONENT"
     );
     assert_eq!(builds, 1);
 }
@@ -4641,7 +4654,7 @@ fn example_components_prepare_directory_targets() {
     fs::create_dir(root.path().join("with-deps")).unwrap();
     fs::write(
         root.path().join("with-deps/main.rs"),
-        "// maestro-component: MAESTRO_DIRECTORY_COMPONENT\n",
+        "// maestro-component: MAESTRO_TEST_DIRECTORY_COMPONENT\n",
     )
     .unwrap();
     let entries = tooling::example_files::prepare(
@@ -4649,14 +4662,14 @@ fn example_components_prepare_directory_targets() {
         &tooling::example_files::FIXED_COMPONENTS,
         |name, variable| {
             assert_eq!(name, "with_deps");
-            assert_eq!(variable, "MAESTRO_DIRECTORY_COMPONENT");
+            assert_eq!(variable, "MAESTRO_TEST_DIRECTORY_COMPONENT");
             Ok(PathBuf::from(format!("/components/{name}.wasm")))
         },
     )
     .unwrap();
     assert_eq!(
         entries,
-        "MAESTRO_DIRECTORY_COMPONENT=/components/with_deps.wasm\n"
+        "MAESTRO_TEST_DIRECTORY_COMPONENT=/components/with_deps.wasm\n"
     );
 }
 
@@ -4666,7 +4679,7 @@ fn example_components_prepare_top_level_main() {
     let root = maestro_test_harness::Scratch::new().unwrap();
     fs::write(
         root.path().join("main.rs"),
-        "// maestro-component: MAESTRO_MAIN_COMPONENT\n",
+        "// maestro-component: MAESTRO_TEST_MAIN_COMPONENT\n",
     )
     .unwrap();
     let entries = tooling::example_files::prepare(
@@ -4678,5 +4691,8 @@ fn example_components_prepare_top_level_main() {
         },
     )
     .unwrap();
-    assert_eq!(entries, "MAESTRO_MAIN_COMPONENT=/components/main.wasm\n");
+    assert_eq!(
+        entries,
+        "MAESTRO_TEST_MAIN_COMPONENT=/components/main.wasm\n"
+    );
 }

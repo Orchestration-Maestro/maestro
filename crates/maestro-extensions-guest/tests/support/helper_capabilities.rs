@@ -1,5 +1,5 @@
 //! An author fixture that observes helpers through the installed host.
-// maestro-component: MAESTRO_HELPER_COMPONENT
+// maestro-component: MAESTRO_TEST_HELPER_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

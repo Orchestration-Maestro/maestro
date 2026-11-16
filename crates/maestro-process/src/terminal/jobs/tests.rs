@@ -444,7 +444,7 @@ fn assert_native_process_values() {
     let authored = tree.path().join("alias");
     std::os::unix::fs::symlink(&target, &authored).unwrap();
     let mut child = children::command(children::ready_then_drain, &[])
-        .env("MAESTRO_PROCESS_VALUE", "")
+        .env("MAESTRO_TEST_PROCESS_VALUE", "")
         .current_dir(authored)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -455,7 +455,7 @@ fn assert_native_process_values() {
     assert_eq!(&ready[HARNESS_START.len()..], b"READY");
     assert_eq!(process_cwd(child.id()), Some(target));
     assert_eq!(
-        process_environment_value(child.id(), "MAESTRO_PROCESS_VALUE").as_deref(),
+        process_environment_value(child.id(), "MAESTRO_TEST_PROCESS_VALUE").as_deref(),
         Some("")
     );
     child.stdin.take().unwrap().write_all(b"go\n").unwrap();

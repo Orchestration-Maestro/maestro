@@ -10,7 +10,7 @@ use serde_json::json;
 use std::{collections::BTreeMap, path::Path};
 
 /// An explicitly controlled, nonsecret environment variable.
-const SENTINEL: &str = "MAESTRO_WASI_SENTINEL";
+const SENTINEL: &str = "MAESTRO_TEST_WASI_SENTINEL";
 
 #[test]
 fn component_environment_keeps_inherited_values() {
@@ -124,7 +124,7 @@ fn component_environment_keeps_native_string_conversion() {
                     Some(OsString::from_vec(vec![255, 65, 195, 40])),
                 ),
                 (
-                    OsString::from("MAESTRO_WASI_NEIGHBOR"),
+                    OsString::from("MAESTRO_TEST_WASI_NEIGHBOR"),
                     Some(OsString::from("valid Ω")),
                 ),
             ])

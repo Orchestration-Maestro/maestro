@@ -16,7 +16,7 @@ fn compiled_factory_reads_raw_settings_and_reloads() {
         let output = TestProcess::current("compiled_factory_reads_raw_settings_and_reloads")
             .unwrap()
             .case("raw")
-            .env("MAESTRO_HOST_OPERATIONS_REQUEST", "raw")
+            .env("MAESTRO_TEST_HOST_OPERATIONS_REQUEST", "raw")
             .output()
             .unwrap();
         assert!(
@@ -59,7 +59,7 @@ fn compiled_factory_resolves_acquires_and_restores_packages() {
             TestProcess::current("compiled_factory_resolves_acquires_and_restores_packages")
                 .unwrap()
                 .case("packages")
-                .env("MAESTRO_HOST_OPERATIONS_REQUEST", "packages")
+                .env("MAESTRO_TEST_HOST_OPERATIONS_REQUEST", "packages")
                 .output()
                 .unwrap();
         assert!(
@@ -211,7 +211,7 @@ fn sdk_component_reads_original_settings_on_creation_and_reload() {
             TestProcess::current("sdk_component_reads_original_settings_on_creation_and_reload")
                 .unwrap()
                 .case("sdk")
-                .env("MAESTRO_HOST_OPERATIONS_REQUEST", "sdk")
+                .env("MAESTRO_TEST_HOST_OPERATIONS_REQUEST", "sdk")
                 .output()
                 .unwrap();
         assert!(

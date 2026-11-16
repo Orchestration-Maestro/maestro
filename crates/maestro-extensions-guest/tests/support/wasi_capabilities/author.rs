@@ -26,12 +26,12 @@ use std::io::Write;
 /// Installs the ordinary callback and reports its observations through the existing event bus.
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
-        if let Ok(request) = std::env::var("MAESTRO_WASI_STARTUP_OUTPUT") {
+        if let Ok(request) = std::env::var("MAESTRO_TEST_WASI_STARTUP_OUTPUT") {
             let request: Value =
                 serde_json::from_str(&request).map_err(|error| error.to_string())?;
             stdio::output(&request).await?;
         }
-        if let Ok(endpoint) = std::env::var("MAESTRO_WASI_ROOT_OUTPUT") {
+        if let Ok(endpoint) = std::env::var("MAESTRO_TEST_WASI_ROOT_OUTPUT") {
             return root_output(&api, endpoint);
         }
         let reporter = api.clone();
@@ -105,7 +105,7 @@ fn resources(
 
 /// Reads only explicitly named fixture variables, never the ambient credential set.
 fn observe() -> Value {
-    let keys = ["MAESTRO_WASI_SENTINEL", "MAESTRO_EXTENSION_PATH"];
+    let keys = ["MAESTRO_TEST_WASI_SENTINEL", "MAESTRO_EXTENSION_PATH"];
     let ordinary: Vec<_> = keys.iter().map(|key| std::env::var(key).ok()).collect();
     let environment = wasi::cli::environment::get_environment();
     let asynchronous: Vec<Vec<_>> = keys
@@ -118,7 +118,7 @@ fn observe() -> Value {
                 .collect()
         })
         .collect();
-    json!({"p2": ordinary, "p3": asynchronous, "neighbor": std::env::var("MAESTRO_WASI_NEIGHBOR").ok()})
+    json!({"p2": ordinary, "p3": asynchronous, "neighbor": std::env::var("MAESTRO_TEST_WASI_NEIGHBOR").ok()})
 }
 
 /// Standard-library operations complete while another callback awaits native I/O.
@@ -176,7 +176,8 @@ fn root_output(api: &ExtensionAPI, endpoint: String) -> Result<(), String> {
 
 /// Captures native exec streams and spawns a checked child to acknowledge the combined reply.
 async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Result<(), String> {
-    let command = std::env::var("MAESTRO_WASI_ROOT_COMMAND").map_err(|error| error.to_string())?;
+    let command =
+        std::env::var("MAESTRO_TEST_WASI_ROOT_COMMAND").map_err(|error| error.to_string())?;
     let command: Value = serde_json::from_str(&command).map_err(|error| error.to_string())?;
     let program = command["command"]
         .as_str()
@@ -196,8 +197,8 @@ async fn acknowledge(api: &ExtensionAPI, endpoint: String, reply: Value) -> Resu
             args,
             SpawnOptions {
                 env: Some(vec![
-                    ("MAESTRO_STDOUT_ENDPOINT".into(), endpoint),
-                    ("MAESTRO_STDOUT_REPLY".into(), reply.to_string()),
+                    ("MAESTRO_TEST_STDOUT_ENDPOINT".into(), endpoint),
+                    ("MAESTRO_TEST_STDOUT_REPLY".into(), reply.to_string()),
                 ]),
                 stdio: [Stdio::Ignore, Stdio::Pipe, Stdio::Ignore],
                 ..Default::default()

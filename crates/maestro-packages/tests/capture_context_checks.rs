@@ -24,7 +24,7 @@ fn capture_honors_current_directory_search_policy() {
 }
 
 /// Variable carrying the scratch directory a child fixture works in.
-const CONTEXT_ROOT: &str = "MAESTRO_PACKAGE_CONTEXT_ROOT";
+const CONTEXT_ROOT: &str = "MAESTRO_TEST_PACKAGE_CONTEXT_ROOT";
 
 /// Runs either operation witness with the same native wrapper fixtures.
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {

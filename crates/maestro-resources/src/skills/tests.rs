@@ -566,13 +566,13 @@ fn real_path_continues_from_the_drive_directory() {
             .nocapture()
             .case("*")
             .env(format!("={letter}:"), &plain)
-            .env("MAESTRO_DRIVE_TEST_DIRECTORY", &plain)
+            .env("MAESTRO_TEST_DRIVE_DIRECTORY", &plain)
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
         return;
     }
-    let directory = PathBuf::from(std::env::var("MAESTRO_DRIVE_TEST_DIRECTORY").unwrap());
+    let directory = PathBuf::from(std::env::var("MAESTRO_TEST_DRIVE_DIRECTORY").unwrap());
     fs::write(directory.join("item.md"), "item").unwrap();
     let (letter, _) = drive_and_plain_spelling(&directory);
     let resolved = real_path(Path::new(&format!("{letter}:item.md"))).unwrap();
