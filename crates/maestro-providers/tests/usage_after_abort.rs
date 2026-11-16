@@ -8,24 +8,24 @@ use crate::usage_cases as cases;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn abort_retains_reported_usage() -> chat::TestResult {
-    cases::assert_rows("abort_retains_reported_usage")
+fn maestro_abort_retains_reported_usage() -> chat::TestResult {
+    cases::assert_rows("maestro_abort_retains_reported_usage")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn abort_before_usage_keeps_zero_counters() -> chat::TestResult {
-    cases::assert_rows("abort_before_usage_keeps_zero_counters")
+fn maestro_abort_before_usage_keeps_zero_counters() -> chat::TestResult {
+    cases::assert_rows("maestro_abort_before_usage_keeps_zero_counters")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn abort_keeps_each_reported_category() -> chat::TestResult {
-    cases::assert_rows("abort_keeps_each_reported_category")
+fn maestro_abort_keeps_each_reported_category() -> chat::TestResult {
+    cases::assert_rows("maestro_abort_keeps_each_reported_category")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn final_only_usage_is_not_fabricated() -> chat::TestResult {
-    cases::assert_rows("final_only_usage_is_not_fabricated")
+fn maestro_final_only_usage_is_not_fabricated() -> chat::TestResult {
+    cases::assert_rows("maestro_final_only_usage_is_not_fabricated")
 }

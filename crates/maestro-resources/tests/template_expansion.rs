@@ -289,7 +289,7 @@ const MAESTRO_PROMPT_ARGUMENTS_ARE_INSERTED_LITERALLY_CASES: &[(&str, &[&str], &
 
 /// Exercise original inputs through the public template seam.
 #[test]
-fn prompt_arguments_are_inserted_literally() {
+fn maestro_prompt_arguments_are_inserted_literally() {
     for (text, arguments, expected) in MAESTRO_PROMPT_ARGUMENTS_ARE_INSERTED_LITERALLY_CASES {
         let args: Vec<String> = arguments.iter().map(|s| (*s).into()).collect();
         assert_eq!(substitute_args(text, &args), *expected);
@@ -1173,7 +1173,7 @@ const MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES: &[ExpansionCase
 
 /// Exercise original inputs through the public template seam.
 #[test]
-fn prompt_template_expands_first_matching_name() {
+fn maestro_prompt_template_expands_first_matching_name() {
     for (text, templates, expected) in MAESTRO_PROMPT_TEMPLATE_EXPANDS_FIRST_MATCHING_NAME_CASES {
         let templates: Vec<_> = templates
             .iter()
@@ -2485,9 +2485,9 @@ const MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES: &[LoadCase<'_>] = &[L
 /// Exercise supplied template observations through the public loader.
 #[cfg(unix)]
 #[test]
-fn prompt_loader_retains_duplicate_paths() {
+fn maestro_prompt_loader_retains_duplicate_paths() {
     run_cases(
-        "prompt_loader_retains_duplicate_paths",
+        "maestro_prompt_loader_retains_duplicate_paths",
         MAESTRO_PROMPT_LOADER_RETAINS_DUPLICATE_PATHS_CASES,
     );
 }

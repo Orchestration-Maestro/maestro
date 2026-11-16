@@ -13,7 +13,7 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Default, explicit and environment retention reach every protocol request.
 #[test]
-fn cache_preferences_reach_each_protocol() -> TestResult {
+fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
     let rows: Vec<serde_json::Value> = serde_json::from_str(include_str!(
         "../../maestro-models/tests/fixtures/provider_local_rules.json"
     ))?;
@@ -30,9 +30,9 @@ fn cache_preferences_reach_each_protocol() -> TestResult {
         {
             return assert_retention_row(row);
         }
-        return assert_rows("cache_preferences_reach_each_protocol");
+        return assert_rows("maestro_cache_preferences_reach_each_protocol");
     }
-    assert_rows("cache_preferences_reach_each_protocol")?;
+    assert_rows("maestro_cache_preferences_reach_each_protocol")?;
     for (index, row) in rows.iter().enumerate() {
         let variables: Vec<_> = row["input"]["environment"]
             .as_str()
@@ -41,7 +41,7 @@ fn cache_preferences_reach_each_protocol() -> TestResult {
             .collect();
         {
             let output = maestro_test_harness::TestProcess::current(
-                "cache_preferences_reach_each_protocol",
+                "maestro_cache_preferences_reach_each_protocol",
             )?
             .nocapture()
             .env_clear()
@@ -57,15 +57,15 @@ fn cache_preferences_reach_each_protocol() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 /// Retention none removes cache markers and the affinity key.
 #[test]
-fn cache_none_omits_affinity_key() -> TestResult {
-    assert_rows("cache_none_omits_affinity_key")
+fn maestro_cache_none_omits_affinity_key() -> TestResult {
+    assert_rows("maestro_cache_none_omits_affinity_key")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Long-retention support and marker format are independent.
 #[test]
-fn cache_flags_keep_independent_markers() -> TestResult {
-    assert_rows("cache_flags_keep_independent_markers")
+fn maestro_cache_flags_keep_independent_markers() -> TestResult {
+    assert_rows("maestro_cache_flags_keep_independent_markers")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -187,7 +187,7 @@ fn request_body(api: &str, base_url: &str, session: &str) -> TestResult<serde_js
 #[cfg(not(target_arch = "wasm32"))]
 /// A session-derived cache key keeps its first 64 Unicode scalars in every OpenAI-style protocol.
 #[test]
-fn prompt_cache_keys_stop_at_64_characters() -> TestResult {
+fn maestro_prompt_cache_keys_stop_at_64_characters() -> TestResult {
     let _registry = crate::bundled::registry();
     let sixty_three = "a".repeat(63);
     let sessions = [
@@ -218,7 +218,7 @@ fn prompt_cache_keys_stop_at_64_characters() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 /// Azure Responses asks the service not to keep the response.
 #[test]
-fn azure_responses_payload_disables_storage() -> TestResult {
+fn maestro_azure_responses_payload_disables_storage() -> TestResult {
     let _registry = crate::bundled::registry();
     let body = request_body(AZURE, AZURE_BASE_URL, "session")?;
     assert_eq!(body["store"], serde_json::json!(false));

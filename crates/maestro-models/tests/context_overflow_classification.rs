@@ -13,7 +13,7 @@ mod tests {
     }
 
     #[test]
-    fn overflow_distinguishes_provider_errors() {
+    fn maestro_overflow_distinguishes_provider_errors() {
         for text in [
             "prompt is too long: 213462 tokens > 200000 maximum",
             "413 {\"error\":{\"type\":\"request_too_large\",\"message\":\"Request exceeds the maximum size\"}}",
@@ -58,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    fn overflow_recognizes_together_and_litellm_wording() {
+    fn maestro_overflow_recognizes_together_and_litellm_wording() {
         for text in [
             "The input (140000 tokens) is longer than the model's context length (131072 tokens).",
             "Requested token count exceeds the model's maximum context length of 131072 tokens",
@@ -68,7 +68,7 @@ mod tests {
     }
 
     #[test]
-    fn throttling_prefixes_override_token_patterns() {
+    fn maestro_throttling_prefixes_override_token_patterns() {
         for text in [
             "Throttling error: Too many tokens, please wait before trying again.",
             "ThrottlingException: Too many tokens, please wait before trying again.",
@@ -87,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn overflow_requires_error_stop_for_diagnostics() {
+    fn maestro_overflow_requires_error_stop_for_diagnostics() {
         for text in [None, Some(""), Some("unknown failure")] {
             let mut response = message(text);
             response.usage.input = 1000.0;
@@ -110,7 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn overflow_counts_only_context_input() {
+    fn maestro_overflow_counts_only_context_input() {
         let mut response = message(None);
         response.stop_reason = StopReason::Stop;
         response.usage.cache_read = 10.0;
@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn overflow_preserves_authored_text_boundaries() {
+    fn maestro_overflow_preserves_authored_text_boundaries() {
         for text in [
             "PROMPT IS TOO LONG",
             "MAXIMUM CONTEXT LENGTH IS 123 TOKENS",
@@ -210,7 +210,7 @@ mod tests {
     }
 
     #[test]
-    fn overflow_keeps_recorded_whitespace_decisions() {
+    fn maestro_overflow_keeps_recorded_whitespace_decisions() {
         let rows: Vec<Recorded> =
             serde_json::from_str(include_str!("fixtures/overflow_whitespace.json")).unwrap();
         for (index, row) in rows.iter().enumerate() {

@@ -18,7 +18,7 @@ use crate::graph::packages::{self, Exports};
 use crate::{
     bucket_modules, child_tests, duplicates, fixture_includes, generated, git_commands,
     integration_tests, poison, quality, real_paths, repetition, standard_error, temp_directories,
-    test_input_routes, test_names, time_limits, tokio_macros,
+    test_input_routes, time_limits, tokio_macros,
 };
 
 /// Every check's findings for one parsed source.
@@ -73,8 +73,6 @@ pub(crate) struct Walk {
     pub(crate) poison: Vec<usize>,
     /// Bucket-named module declarations, each with its line and its path below the file's module.
     pub(crate) bucket_modules: Vec<(usize, String)>,
-    /// Attributed tests with forbidden names, each with its declaration line.
-    pub(crate) test_names: Vec<(usize, String)>,
 }
 
 /// Walk a member's parsed source once and gather every check's findings.
@@ -167,8 +165,6 @@ struct Walker<'a> {
     poison: poison::Definitions,
     /// Bucket-named module declarations.
     buckets: bucket_modules::Declarations,
-    /// Attributed tests with forbidden names.
-    test_names: Vec<(usize, String)>,
 }
 
 impl<'a> Walker<'a> {
@@ -207,7 +203,6 @@ impl<'a> Walker<'a> {
             exports: Exports::new(source, scope != Scope::Production),
             poison: poison::Definitions::default(),
             buckets: bucket_modules::Declarations::default(),
-            test_names: Vec::new(),
         }
     }
 
@@ -308,7 +303,6 @@ impl<'a> Walker<'a> {
             exports: self.exports.map_or(0, Exports::finish),
             poison: self.poison.finish(),
             bucket_modules: self.buckets.found,
-            test_names: self.test_names,
         }
     }
 }
@@ -374,7 +368,6 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_item_fn(&mut self, function: &'a syn::ItemFn) {
         self.declaring(&function.sig.ident);
         self.ignored.item_fn(function);
-        test_names::record(function, &mut self.test_names);
         self.bodies.function(&function.sig, &function.block);
         if !self.testing() {
             self.poison.body(&function.block);

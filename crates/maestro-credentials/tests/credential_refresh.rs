@@ -421,12 +421,12 @@ mod tests {
     }
 
     #[test]
-    fn refresh_failure_blocks_ambient_fallback() {
+    fn maestro_refresh_failure_blocks_ambient_fallback() {
         if is_child() {
             return block_on(refresh_failures_block_ambient_sources());
         }
         run_isolated(
-            "credential_refresh::tests::refresh_failure_blocks_ambient_fallback",
+            "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
             "*",
             &[("OPENAI_API_KEY", "env-key")],
         );

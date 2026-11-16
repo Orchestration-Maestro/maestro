@@ -133,87 +133,87 @@ enum MarkerKind {
 /// Exact owner names and row cardinalities; prevents silently unowned fixture inputs.
 const OWNERS: [(&str, usize); 21] = [
     (
-        "crates/maestro-providers/tests/chat_empty_tools.rs::chat_omits_unused_tool_declarations",
+        "crates/maestro-providers/tests/chat_empty_tools.rs::maestro_chat_omits_unused_tool_declarations",
         2,
     ),
     (
-        "crates/maestro-providers/tests/chat_empty_tools.rs::chat_retains_history_required_tools",
+        "crates/maestro-providers/tests/chat_empty_tools.rs::maestro_chat_retains_history_required_tools",
         8,
     ),
     (
-        "crates/maestro-providers/tests/chat_empty_tools.rs::gateway_uses_conservative_chat_fields",
+        "crates/maestro-providers/tests/chat_empty_tools.rs::maestro_gateway_uses_conservative_chat_fields",
         1,
     ),
     (
-        "crates/maestro-providers/tests/chat_empty_tools.rs::gateway_preserves_upstream_credentials",
+        "crates/maestro-providers/tests/chat_empty_tools.rs::maestro_gateway_preserves_upstream_credentials",
         1,
     ),
     (
-        "crates/maestro-providers/tests/chat_empty_tools.rs::gateway_sends_session_affinity",
+        "crates/maestro-providers/tests/chat_empty_tools.rs::maestro_gateway_sends_session_affinity",
         2,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::chat_public_choices_reach_wire",
+        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::maestro_chat_public_choices_reach_wire",
         10,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::chat_omits_disabled_strictness",
+        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::maestro_chat_omits_disabled_strictness",
         2,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::chat_uses_catalog_reasoning_maps",
+        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::maestro_chat_uses_catalog_reasoning_maps",
         12,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::chat_tool_stream_follows_catalog_and_overrides",
+        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::maestro_chat_tool_stream_follows_catalog_and_overrides",
         9,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::router_uses_nested_reasoning",
+        "crates/maestro-providers/tests/chat_tool_choices/payload.rs::maestro_router_uses_nested_reasoning",
         2,
     ),
     (
-        "crates/maestro-providers/tests/chat_response_identity.rs::chat_retains_routed_model_identity",
+        "crates/maestro-providers/tests/chat_response_identity.rs::maestro_chat_retains_routed_model_identity",
         8,
     ),
     (
-        "crates/maestro-providers/tests/chat_response_identity.rs::chat_preserves_provider_finish_outcomes",
+        "crates/maestro-providers/tests/chat_response_identity.rs::maestro_chat_preserves_provider_finish_outcomes",
         11,
     ),
     (
-        "crates/maestro-providers/tests/chat_response_identity.rs::chat_ignores_null_wire_chunks",
+        "crates/maestro-providers/tests/chat_response_identity.rs::maestro_chat_ignores_null_wire_chunks",
         1,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/interleaved.rs::public_chat_keeps_stable_tool_indices",
+        "crates/maestro-providers/tests/chat_tool_choices/interleaved.rs::maestro_public_chat_keeps_stable_tool_indices",
         1,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/interleaved.rs::public_chat_keeps_parallel_tool_deltas_independent",
+        "crates/maestro-providers/tests/chat_tool_choices/interleaved.rs::maestro_public_chat_keeps_parallel_tool_deltas_independent",
         1,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/interleaved.rs::chat_selects_first_nonempty_reasoning_field",
+        "crates/maestro-providers/tests/chat_tool_choices/interleaved.rs::maestro_chat_selects_first_nonempty_reasoning_field",
         4,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/usage.rs::chat_counts_reasoning_once",
+        "crates/maestro-providers/tests/chat_tool_choices/usage.rs::maestro_chat_counts_reasoning_once",
         1,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/usage.rs::chat_keeps_both_cache_usage_locations",
+        "crates/maestro-providers/tests/chat_tool_choices/usage.rs::maestro_chat_keeps_both_cache_usage_locations",
         2,
     ),
     (
-        "crates/maestro-providers/tests/chat_tool_choices/usage.rs::chat_normalizes_cache_accounting",
+        "crates/maestro-providers/tests/chat_tool_choices/usage.rs::maestro_chat_normalizes_cache_accounting",
         7,
     ),
     (
-        "crates/maestro-providers/tests/routed_cache_write.rs::cache_marker_selects_last_user_text",
+        "crates/maestro-providers/tests/routed_cache_write.rs::maestro_cache_marker_selects_last_user_text",
         7,
     ),
     (
-        "crates/maestro-providers/tests/routed_cache_write.rs::routed_chat_retains_cache_writes",
+        "crates/maestro-providers/tests/routed_cache_write.rs::maestro_routed_chat_retains_cache_writes",
         2,
     ),
 ];
@@ -262,7 +262,7 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
     if !maestro_test_harness::selection().is_child() {
-        let variables = if test.starts_with("gateway_") {
+        let variables = if test.starts_with("maestro_gateway_") {
             vec![
                 ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
                 ("CLOUDFLARE_GATEWAY_ID", "gateway-id"),

@@ -46,7 +46,7 @@ async fn preparation_execution(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn tool_preparation_execution_and_progress_keep_values() -> Result<(), String> {
+fn maestro_tool_preparation_execution_and_progress_keep_values() -> Result<(), String> {
     on_both_adapters!(preparation_execution)
 }
 
@@ -84,7 +84,7 @@ async fn mutation_error(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn handler_mutation_survives_returned_error() -> Result<(), String> {
+fn maestro_handler_mutation_survives_returned_error() -> Result<(), String> {
     on_both_adapters!(mutation_error)
 }
 
@@ -128,7 +128,7 @@ async fn registration(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn tool_registration_retains_metadata_and_releases_callbacks() -> Result<(), String> {
+fn maestro_tool_registration_retains_metadata_and_releases_callbacks() -> Result<(), String> {
     on_both_adapters!(registration)
 }
 
@@ -169,7 +169,7 @@ async fn retained_execution(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn tool_execution_suspends_and_retains_signal_and_progress() -> Result<(), String> {
+fn maestro_tool_execution_suspends_and_retains_signal_and_progress() -> Result<(), String> {
     on_both_adapters!(retained_execution)
 }
 

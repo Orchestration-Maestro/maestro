@@ -14,43 +14,43 @@ pub(super) fn assert_rows(test: &str) -> TestResult {
         .expect("recorded fixture"),
         &[
             (
-                "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
+                "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
                 19,
             ),
             (
-                "crates/maestro-providers/tests/usage_after_abort.rs::abort_before_usage_keeps_zero_counters",
+                "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_before_usage_keeps_zero_counters",
                 6,
             ),
             (
-                "crates/maestro-providers/tests/usage_after_abort.rs::abort_keeps_each_reported_category",
+                "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_keeps_each_reported_category",
                 3,
             ),
             (
-                "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
+                "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
                 8,
             ),
             (
-                "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
+                "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
                 56,
             ),
             (
-                "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
+                "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
                 9,
             ),
             (
-                "crates/maestro-providers/tests/usage_totals.rs::chat_usage_prefers_top_level_then_choice",
+                "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_prefers_top_level_then_choice",
                 4,
             ),
             (
-                "crates/maestro-providers/tests/usage_totals.rs::message_usage_updates_only_reported_categories",
+                "crates/maestro-providers/tests/usage_totals.rs::maestro_message_usage_updates_only_reported_categories",
                 4,
             ),
             (
-                "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
+                "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
                 15,
             ),
             (
-                "crates/maestro-providers/tests/usage_totals.rs::conversation_usage_uses_total_or_fallback",
+                "crates/maestro-providers/tests/usage_totals.rs::maestro_conversation_usage_uses_total_or_fallback",
                 4,
             ),
         ],

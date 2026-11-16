@@ -29,7 +29,7 @@ mod tests {
     }
 
     #[test]
-    fn simple_options_preserve_explicit_values() {
+    fn maestro_simple_options_preserve_explicit_values() {
         let calls = Arc::new(AtomicUsize::new(0));
         let payload_calls = Arc::clone(&calls);
         let on_payload: OnPayload = SharedHandle::new(move |value, _| {
@@ -113,7 +113,7 @@ mod tests {
     }
 
     #[test]
-    fn base_options_apply_only_missing_token_and_key_defaults() {
+    fn maestro_base_options_apply_only_missing_token_and_key_defaults() {
         for (limit, expected) in [
             (12.0, Some(12.0)),
             (32000.0, Some(32000.0)),
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn reasoning_clamp_preserves_supported_levels() {
+    fn maestro_reasoning_clamp_preserves_supported_levels() {
         use maestro_models::{ThinkingLevel, clamp_reasoning};
         assert_eq!(clamp_reasoning(None), None);
         for level in [
@@ -194,7 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn thinking_budget_reduces_only_when_constrained() {
+    fn maestro_thinking_budget_reduces_only_when_constrained() {
         use maestro_models::{ThinkingLevel, adjust_max_tokens_for_thinking};
         for (level, total, budget) in [
             (ThinkingLevel::Minimal, 2024.0, 1024.0),

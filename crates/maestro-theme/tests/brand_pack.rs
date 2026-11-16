@@ -139,7 +139,7 @@ fn brand_pack_projects_both_builtin_themes() {
 }
 
 #[test]
-fn identity_override_reaches_all_style_outputs() {
+fn maestro_identity_override_reaches_all_style_outputs() {
     let before = custom_prefixes();
     assert_eq!(before[0], "\x1b[38;2;18;52;86mx\x1b[39m");
     let forge_pack = forge();

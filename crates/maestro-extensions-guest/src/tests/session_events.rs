@@ -11,7 +11,7 @@ async fn compact(driver: &mut impl Driver) -> Result<(), String> {
     super::session_corpus::run(driver, &["compact-origin"]).await
 }
 #[test]
-fn compact_event_exposes_persisted_entry() -> Result<(), String> {
+fn maestro_compact_event_exposes_persisted_entry() -> Result<(), String> {
     on_both_adapters!(compact)
 }
 
@@ -24,7 +24,7 @@ async fn trees(driver: &mut impl Driver) -> Result<(), String> {
     .await
 }
 #[test]
-fn tree_events_keep_nullable_ids_and_summary() -> Result<(), String> {
+fn maestro_tree_events_keep_nullable_ids_and_summary() -> Result<(), String> {
     on_both_adapters!(trees)
 }
 
@@ -37,7 +37,7 @@ async fn tree_results(driver: &mut impl Driver) -> Result<(), String> {
     .await
 }
 #[test]
-fn tree_results_keep_each_optional_override() -> Result<(), String> {
+fn maestro_tree_results_keep_each_optional_override() -> Result<(), String> {
     on_both_adapters!(tree_results)
 }
 
@@ -99,7 +99,7 @@ async fn numbers(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn session_numbers_keep_finite_values_and_reject_nonfinite_edits() -> Result<(), String> {
+fn maestro_session_numbers_keep_finite_values_and_reject_nonfinite_edits() -> Result<(), String> {
     on_both_adapters!(numbers)
 }
 
@@ -141,7 +141,7 @@ async fn edits(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn session_edits_survive_errors_and_kind_changes() -> Result<(), String> {
+fn maestro_session_edits_survive_errors_and_kind_changes() -> Result<(), String> {
     on_both_adapters!(edits)
 }
 
@@ -203,7 +203,7 @@ async fn signals(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn tree_signals_keep_identity_and_release_owners() -> Result<(), String> {
+fn maestro_tree_signals_keep_identity_and_release_owners() -> Result<(), String> {
     on_both_adapters!(signals)
 }
 

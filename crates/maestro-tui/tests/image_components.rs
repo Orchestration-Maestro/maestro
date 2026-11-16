@@ -219,16 +219,16 @@ fn recognized_component(name: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn images_recognizes_rendered_image_components() {
-    recognized_component("images_recognizes_rendered_image_components").unwrap();
+fn maestro_images_recognizes_rendered_image_components() {
+    recognized_component("maestro_images_recognizes_rendered_image_components").unwrap();
 }
 #[test]
-fn images_recognizes_images_in_tool_output() {
-    recognized_component("images_recognizes_images_in_tool_output").unwrap();
+fn maestro_images_recognizes_images_in_tool_output() {
+    recognized_component("maestro_images_recognizes_images_in_tool_output").unwrap();
 }
 
 #[test]
-fn images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image() {
+fn maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image() {
     let terminal = TerminalImage::new(|_| None, || 2_147_483_648);
     terminal.set_capabilities(TerminalCapabilities {
         images: Some(ImageProtocol::Kitty),
@@ -317,9 +317,9 @@ fn zero_geometry_falls_back_without_allocating() {
 
 /// Replays the helper operations reached during component cursor placement.
 fn replay_cursor_operations(terminal: &TerminalImage) -> Result<(), Box<dyn std::error::Error>> {
-    for case in
-        image_support::cases("images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image")
-    {
+    for case in image_support::cases(
+        "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    ) {
         let args = &case["args"];
         match case["symbol"].as_str().ok_or("missing operation input")? {
             "setCapabilities" => terminal.set_capabilities(TerminalCapabilities {

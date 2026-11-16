@@ -21,7 +21,7 @@ fn rejected(value: impl Serialize) {
 }
 
 #[test]
-fn nonfinite_optional_numbers_cannot_silently_become_none() {
+fn maestro_nonfinite_optional_numbers_cannot_silently_become_none() {
     for number in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
         rejected(RoutingThreshold::Percentiles {
             p50: Some(number),
@@ -48,7 +48,7 @@ fn nonfinite_optional_numbers_cannot_silently_become_none() {
 }
 
 #[test]
-fn plain_json_null_and_number_like_text_remain_valid() {
+fn maestro_plain_json_null_and_number_like_text_remain_valid() {
     for value in [
         None,
         Some(RoutingPrice::Text("Infinity".into())),

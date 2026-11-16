@@ -22,7 +22,7 @@ struct EventCase {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_normalize_terminal_events() {
+fn maestro_response_sessions_normalize_terminal_events() {
     crate::tests::runtime::run(async {
         let rows: Vec<EventCase> =
             super::fixture_rows(include_str!("fixtures/events.json"), &["events"]).unwrap();
@@ -50,7 +50,7 @@ struct StatusCase {
 }
 
 #[test]
-fn response_sessions_normalize_terminal_status() {
+fn maestro_response_sessions_normalize_terminal_status() {
     let rows: Vec<StatusCase> =
         super::fixture_rows(include_str!("fixtures/statuses.json"), &["status"]).unwrap();
     for row in rows {
@@ -83,7 +83,7 @@ struct ApiCase {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_preserve_api_error_identity() {
+fn maestro_response_sessions_preserve_api_error_identity() {
     crate::tests::runtime::run(async {
         let rows: Vec<ApiCase> =
             super::fixture_rows(include_str!("fixtures/api-errors.json"), &["events"]).unwrap();
@@ -128,7 +128,7 @@ async fn assert_api_case(row: ApiCase) {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_run_http_lifecycle() {
+fn maestro_response_sessions_run_http_lifecycle() {
     crate::tests::runtime::run_paused(async {
         let rows: Vec<LifecycleCase> =
             super::fixture_rows(include_str!("fixtures/lifecycle.json"), &["scenario"]).unwrap();
@@ -140,7 +140,7 @@ fn response_sessions_run_http_lifecycle() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_bound_setup_retries() {
+fn maestro_response_sessions_bound_setup_retries() {
     crate::tests::runtime::run_paused(async {
         for status in [400, 401, 408, 429, 500, 502, 503, 504, 505] {
             assert_retry_sequence(status, "plain failure").await;
@@ -229,7 +229,7 @@ fn assert_retry_outcome(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_price_requested_tier_over_echoed_default() {
+fn maestro_response_sessions_price_requested_tier_over_echoed_default() {
     use crate::providers::openai_responses::openai::OpenAIResponsesServiceTier as Tier;
     use maestro_models::providers::nullable::Nullable::Value;
     crate::tests::runtime::run(async {
@@ -321,7 +321,7 @@ async fn finite_body(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_require_terminal_events() {
+fn maestro_response_sessions_require_terminal_events() {
     crate::tests::runtime::run(async {
         let partial = event_bytes(&[
             serde_json::json!({"type":"response.output_item.added","item":{"type":"message","content":[{"type":"output_text"}]}}),
@@ -403,19 +403,19 @@ async fn assert_frames(text: &str) {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_frame_legal_line_endings() {
+fn maestro_response_sessions_frame_legal_line_endings() {
     crate::tests::runtime::run(assert_frames(include_str!("fixtures/framing.json")));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_filter_sse_data() {
+fn maestro_response_sessions_filter_sse_data() {
     crate::tests::runtime::run(assert_frames(include_str!("fixtures/data.json")));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_keep_hook_and_abort_order() {
+fn maestro_response_sessions_keep_hook_and_abort_order() {
     crate::tests::runtime::run_paused(async {
         for stage in [
             "preaborted",
@@ -472,7 +472,7 @@ async fn assert_exhausted_retries() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_reject_bodyless_success() {
+fn maestro_response_sessions_reject_bodyless_success() {
     crate::tests::runtime::run(async {
         for status in [204, 205, 200] {
             assert_empty_success(status).await;
@@ -569,7 +569,7 @@ impl Drop for TerminalBody {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_finish_before_body_eof() {
+fn maestro_response_sessions_finish_before_body_eof() {
     crate::tests::runtime::run(async {
         for kind in ["response.done", "response.completed", "response.incomplete"] {
             for status in [
@@ -679,7 +679,7 @@ impl Drop for PausedBody {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_cancel_body_reads() {
+fn maestro_response_sessions_cancel_body_reads() {
     crate::tests::runtime::run(async {
         assert_cancelled_read().await;
         for error in [
@@ -786,7 +786,7 @@ async fn invoke_body(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_release_retry_waits() {
+fn maestro_response_sessions_release_retry_waits() {
     crate::tests::runtime::run_paused(async {
         assert_cancelled_retry_wait().await;
         let signal = maestro_cancellation::Cancellation::new();
@@ -858,7 +858,7 @@ async fn assert_cancelled_retry_wait() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_reduce_shared_content() {
+fn maestro_response_sessions_reduce_shared_content() {
     crate::tests::runtime::run(async {
         let bytes = event_bytes(&[
             serde_json::json!({"type":"response.output_item.added","item":{"type":"reasoning","summary":[]}}),
@@ -945,7 +945,7 @@ fn partial_event(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_use_native_http() {
+fn maestro_response_sessions_use_native_http() {
     use std::sync::Arc;
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();
@@ -1420,7 +1420,7 @@ fn select_preparation_stage(
 }
 
 #[test]
-fn response_sessions_fixtures_read_every_field() {
+fn maestro_response_sessions_fixtures_read_every_field() {
     super::requests::audit_fixture_inputs().unwrap();
     #[cfg(not(target_arch = "wasm32"))]
     super::fixture_rows::<EventCase>(include_str!("fixtures/events.json"), &["events"]).unwrap();

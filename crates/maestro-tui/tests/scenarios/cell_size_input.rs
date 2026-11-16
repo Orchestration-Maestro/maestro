@@ -38,7 +38,7 @@ fn focused_scene(images: TerminalImage) -> Scene {
 }
 
 #[test]
-fn frames_forwards_bare_escape_even_when_a_cell_size_query_was_sent_at_startup() {
+fn maestro_frames_forwards_bare_escape_even_when_a_cell_size_query_was_sent_at_startup() {
     let _input = crate::input_support::globals();
     let scene = focused_scene(ghostty());
     succeeds(scene.tui.start());
@@ -49,7 +49,7 @@ fn frames_forwards_bare_escape_even_when_a_cell_size_query_was_sent_at_startup()
 }
 
 #[test]
-fn frames_consumes_cell_size_responses_and_still_forwards_later_user_input() {
+fn maestro_frames_consumes_cell_size_responses_and_still_forwards_later_user_input() {
     let _input = crate::input_support::globals();
     let images = ghostty();
     let scene = focused_scene(images.clone());

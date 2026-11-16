@@ -284,7 +284,7 @@ fn theme_light_check_uses_only_the_supplied_name() {
 }
 
 #[test]
-fn theme_exports_resolved_alias_colors() {
+fn maestro_theme_exports_resolved_alias_colors() {
     let mut json = custom_json("export-vars", "#010203").unwrap();
     json["vars"]["pageBgVar"] = "#112233".into();
     json["vars"]["pageBgAlias"] = "pageBgVar".into();

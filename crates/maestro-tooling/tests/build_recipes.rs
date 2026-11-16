@@ -17,7 +17,7 @@ const DOC_TEST: &str =
     "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|doc-test";
 
 #[test]
-fn workspace_recipes_keep_phase_order() {
+fn maestro_workspace_recipes_keep_phase_order() {
     let workspace = Workspace::new();
     let result = workspace.run("prepublish");
     assert!(
@@ -27,7 +27,7 @@ fn workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models-generator|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo clippy|--workspace|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|browser-clippy|--workspace\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::locked_resolution_keeps_checkout_clean\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models-generator|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|example-index|--check\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo clippy|--workspace|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|browser-clippy|--workspace\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -69,7 +69,7 @@ fn workspace_recipes_keep_phase_order() {
 }
 
 #[test]
-fn scoped_check_consumes_package_selection() {
+fn maestro_scoped_check_consumes_package_selection() {
     let workspace = Workspace::new();
     let result = workspace
         .command("_check")
@@ -83,7 +83,7 @@ fn scoped_check_consumes_package_selection() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|browser-clippy|-p|maestro-models|-p|maestro-agent\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::locked_resolution_keeps_checkout_clean\n"
+        "cargo hakari|verify\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--|-D|warnings\ncargo clippy|-p|maestro-models|-p|maestro-agent|--all-targets|--locked|--target|x86_64-pc-windows-gnu|--|-D|warnings\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|browser-clippy|-p|maestro-models|-p|maestro-agent\ncargo doc|-p|maestro-models|-p|maestro-agent|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
@@ -101,7 +101,7 @@ fn scoped_check_consumes_package_selection() {
 
 /// A foreign-target failure must stop the check before documentation or conventions.
 #[test]
-fn scoped_check_stops_on_windows_failure() {
+fn maestro_scoped_check_stops_on_windows_failure() {
     let workspace = Workspace::new();
     let result = workspace
         .command("_check")
@@ -119,7 +119,7 @@ fn scoped_check_stops_on_windows_failure() {
 
 /// A browser-lint failure must stop the check before documentation or conventions.
 #[test]
-fn scoped_check_stops_on_browser_lint_failure() {
+fn maestro_scoped_check_stops_on_browser_lint_failure() {
     let workspace = Workspace::new();
     let result = workspace
         .command("_check")
@@ -161,7 +161,7 @@ fn assert_test_phase_failures(workspace: &Workspace) {
 }
 
 #[test]
-fn package_recipes_select_their_owners() {
+fn maestro_package_recipes_select_their_owners() {
     for (prefix, owner) in [
         ("models", "maestro-models"),
         ("agent", "maestro-agent"),
@@ -187,7 +187,7 @@ fn package_recipes_select_their_owners() {
 }
 
 #[test]
-fn nextest_recipe_installs_the_setup_tool_before_nextest() {
+fn maestro_test_recipe_installs_the_setup_tool_before_nextest() {
     let workspace = Workspace::new();
     fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
 
@@ -205,7 +205,7 @@ fn nextest_recipe_installs_the_setup_tool_before_nextest() {
 }
 
 #[test]
-fn package_test_recipe_selects_only_the_packages_the_caller_names() {
+fn maestro_test_recipe_selects_only_the_packages_the_caller_names() {
     for arguments in [
         &["-p", "maestro-web"][..],
         &["--package", "maestro-web"][..],
@@ -236,7 +236,7 @@ fn package_test_recipe_selects_only_the_packages_the_caller_names() {
 
 /// The recipe that docs name before a hand-run nextest stages the setup tool and nothing else.
 #[test]
-fn prepare_tests_recipe_stages_only_the_setup_tool() {
+fn maestro_prepare_tests_recipe_stages_only_the_setup_tool() {
     let workspace = Workspace::new();
     fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
 
@@ -255,7 +255,7 @@ fn prepare_tests_recipe_stages_only_the_setup_tool() {
 
 /// The conventions recipe stages the setup tool before nextest runs the checker's own suite.
 #[test]
-fn conventions_recipe_stages_the_setup_tool_before_nextest() {
+fn maestro_test_conventions_recipe_stages_the_setup_tool_before_nextest() {
     let workspace = Workspace::new();
     fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
 
@@ -274,7 +274,7 @@ fn conventions_recipe_stages_the_setup_tool_before_nextest() {
 
 /// The check recipe stages the setup tool before its other steps.
 #[test]
-fn check_recipe_stages_the_setup_tool_first() {
+fn maestro_check_recipe_stages_the_setup_tool_first() {
     let workspace = Workspace::new();
     fs::create_dir_all(workspace.path().join("crates/maestro-tooling")).unwrap();
 
@@ -297,7 +297,7 @@ fn check_recipe_stages_the_setup_tool_first() {
 /// Every recipe that compiles the web crate builds the runtime script it embeds before any
 /// compilation starts.
 #[test]
-fn recipes_that_compile_the_web_crate_build_the_runtime_script_first() {
+fn maestro_recipes_that_compile_the_web_crate_build_the_runtime_script_first() {
     let step =
         "cargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|sandbox-runtime\n";
     for (recipe, arguments, next) in [
@@ -325,7 +325,7 @@ fn recipes_that_compile_the_web_crate_build_the_runtime_script_first() {
 }
 
 #[test]
-fn package_test_recipes_forward_literal_arguments() {
+fn maestro_test_recipes_forward_literal_arguments() {
     for (recipe, selection, doctests) in [
         ("test", "--workspace|--locked", true),
         ("models-test", "-p|maestro-models|--locked", true),
@@ -359,7 +359,7 @@ fn package_test_recipes_forward_literal_arguments() {
 }
 
 #[test]
-fn forwarded_arguments_stay_out_of_recipe_echo() {
+fn maestro_forwarded_arguments_stay_out_of_recipe_echo() {
     for recipe in ["models-test", "run-source"] {
         let workspace = Workspace::new();
         let output = workspace
@@ -478,7 +478,7 @@ fn native_workspace(workspace: &Workspace) {
 }
 
 #[test]
-fn clean_keeps_sources_and_sibling_outputs() {
+fn maestro_clean_keeps_sources_and_sibling_outputs() {
     let workspace = Workspace::new();
     native_workspace(&workspace);
     fs::create_dir_all(workspace.path().join(".cargo")).unwrap();
@@ -662,25 +662,25 @@ fn create_prepared_assets(workspace: &Workspace) {
 
 #[cfg(unix)]
 #[test]
-fn watch_rebuilds_source_and_retains_output() {
+fn maestro_watch_rebuilds_source_and_retains_output() {
     assert_watch_rebuild("dev", "crates/maestro-models/src/lib.rs");
 }
 
 #[cfg(unix)]
 #[test]
-fn selected_watch_rebuilds_sibling_dependencies() {
+fn maestro_selected_watch_rebuilds_sibling_dependencies() {
     assert_watch_rebuild("models-dev", "crates/maestro-agent/src/lib.rs");
 }
 
 #[cfg(unix)]
 #[test]
-fn selected_watch_rebuilds_cargo_configuration() {
+fn maestro_selected_watch_rebuilds_cargo_configuration() {
     assert_watch_rebuild("models-dev", ".cargo/config.toml");
 }
 
 #[cfg(unix)]
 #[test]
-fn watch_survives_rebuilding_its_development_binary() {
+fn maestro_watch_survives_rebuilding_its_development_binary() {
     assert_watch_rebuild("dev", "crates/maestro-tooling/src/bin/development.rs");
 }
 
@@ -723,7 +723,7 @@ fn start_watch(
 /// Completion follows retained stdout and stderr from the same command.
 #[cfg(unix)]
 #[test]
-fn watch_completion_retains_both_output_streams() {
+fn maestro_watch_completion_retains_both_output_streams() {
     use std::io::Write;
     let workspace = Workspace::new();
     writeln!(
@@ -754,7 +754,7 @@ fn watch_completion_retains_both_output_streams() {
 /// Panic cleanup closes every descendant's output pipe, not just the recipe leader's.
 #[cfg(unix)]
 #[test]
-fn watch_stops_its_children_on_panic() {
+fn maestro_watch_stops_its_children_on_panic() {
     let workspace = Workspace::new();
     prepare_watch_workspace(&workspace);
     let (child, receive, threads) = start_watch(
@@ -779,7 +779,7 @@ fn watch_stops_its_children_on_panic() {
 /// Real instrumented descendants write outside merge inputs, even with literal checkout paths.
 #[cfg(unix)]
 #[test]
-fn watch_profiles_are_isolated_before_group_start() {
+fn maestro_watch_profiles_are_isolated_before_group_start() {
     let mut workspace = Workspace::new();
     let literal = workspace.path().with_extension("space ' checkout");
     workspace.rename(literal.file_name().unwrap()).unwrap();
@@ -837,7 +837,7 @@ fn watch_profiles_are_isolated_before_group_start() {
 /// Unwinding stops the instrumented group without adding profiles to merge inputs.
 #[cfg(unix)]
 #[test]
-fn watch_profile_isolation_survives_panic_cleanup() {
+fn maestro_watch_profile_isolation_survives_panic_cleanup() {
     let workspace = Workspace::new();
     let binary = prepare_profile_writer(&workspace);
     let merge = workspace.path().join("merge-profiles");
@@ -1188,7 +1188,7 @@ fn wait_for_marker(
 
 /// Unrelated successful builds cannot witness a changed input.
 #[test]
-fn watch_rebuild_requires_its_mutation_marker() {
+fn maestro_watch_rebuild_requires_its_mutation_marker() {
     let unrelated = "Finished `dev` profile\n[Command was successful]\n";
     assert!(!has_rebuild_marker(unrelated, "maestro-rebuild-source-1"));
     let observed = format!("{unrelated}maestro-rebuild-source-1\n");
@@ -1258,7 +1258,7 @@ fn wait_for_build(
 }
 
 #[test]
-fn dev_compile_excludes_generation_and_other_owners() {
+fn maestro_dev_compile_excludes_generation_and_other_owners() {
     let workspace = Workspace::new();
     for recipe in [
         "dev-compile",
@@ -1299,7 +1299,7 @@ fn dev_compile_excludes_generation_and_other_owners() {
 }
 
 #[test]
-fn native_tests_keep_filters_and_ignored_cases() {
+fn maestro_native_tests_keep_filters_and_ignored_cases() {
     let workspace = Workspace::new();
     native_workspace(&workspace);
     assert_model_test_selection(&workspace);
@@ -1510,7 +1510,7 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
 }
 
 #[test]
-fn source_recipes_preserve_invocation_directory() {
+fn maestro_source_recipes_preserve_invocation_directory() {
     let workspace = Workspace::new();
     let outside = workspace.path().join("outside");
     fs::create_dir(&outside).unwrap();
@@ -1573,7 +1573,7 @@ fn library_workspace(workspace: &Workspace) {
 }
 
 #[test]
-fn offline_recipe_is_explicit_only() {
+fn maestro_offline_recipe_is_explicit_only() {
     let workspace = Workspace::new();
     let home = workspace.path().join("home");
     fs::create_dir_all(home.join(".maestro/agent")).unwrap();
@@ -1666,7 +1666,7 @@ fn commit_message(workspace: &Workspace, message: &str) -> Output {
 }
 
 #[test]
-fn commit_subject_limit_counts_the_whole_line() {
+fn maestro_commit_subject_limit_counts_the_whole_line() {
     let workspace = Workspace::new();
     hooks(&workspace);
     for prefix in ["feat: ", "fix(core): ", "feat!: ", "fix(core)!: "] {
@@ -1699,7 +1699,7 @@ fn commit_subject_limit_counts_the_whole_line() {
 }
 
 #[test]
-fn setup_keeps_pins_and_existing_hooks() {
+fn maestro_setup_keeps_pins_and_existing_hooks() {
     let workspace = Workspace::new();
     assert!(workspace.run("setup").status.success());
     assert_eq!(
@@ -1778,7 +1778,7 @@ fn assert_pinned_tools() {
 }
 
 #[test]
-fn recipes_quote_apostrophes_in_checkout_paths() {
+fn maestro_recipes_quote_apostrophes_in_checkout_paths() {
     let mut workspace = Workspace::new();
     let renamed = workspace.path().with_file_name(format!(
         "Maestro's-{}",
@@ -1972,7 +1972,7 @@ fn assert_killed_transcript(directory: Option<&Path>) {
 }
 
 #[test]
-fn codeql_scans_only_main_and_weekly() {
+fn maestro_codeql_scans_only_main_and_weekly() {
     let workflow = fs::read_to_string(
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows/codeql.yml"),
     )

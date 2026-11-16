@@ -3,7 +3,7 @@
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn device_login_preserves_enterprise_endpoints() {
+fn maestro_device_login_preserves_enterprise_endpoints() {
     use maestro_providers::normalize_domain;
     for (input, expected) in [
         ("", None),
@@ -383,7 +383,7 @@ async fn device_refresh_selects_surviving_fields_scenario() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn device_login_waits_before_polling() {
+fn maestro_device_login_waits_before_polling() {
     crate::runtime::run_paused_after_start(maestro_device_login_waits_before_polling_scenario());
 }
 
@@ -1016,7 +1016,7 @@ fn catalog_policy_fetch(started: tokio::sync::mpsc::UnboundedSender<HeldPolicy>)
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn device_tokens_enable_catalog_models() {
+fn maestro_device_tokens_enable_catalog_models() {
     crate::runtime::run_paused_after_start(maestro_device_tokens_enable_catalog_models_scenario());
 }
 
@@ -1123,7 +1123,7 @@ async fn device_cancel_does_not_race_fetch_scenario() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn device_login_cancels_scoped_waits() {
+fn maestro_device_login_cancels_scoped_waits() {
     crate::runtime::run_paused_after_start(maestro_device_login_cancels_scoped_waits_scenario());
 }
 

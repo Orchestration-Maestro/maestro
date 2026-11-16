@@ -51,7 +51,7 @@ async fn resources(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn resource_events_keep_paths_and_reasons() -> Result<(), String> {
+fn maestro_resource_events_keep_paths_and_reasons() -> Result<(), String> {
     on_both_adapters!(resources)
 }
 
@@ -117,7 +117,7 @@ async fn sessions(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn session_events_keep_reasons_and_optional_paths() -> Result<(), String> {
+fn maestro_session_events_keep_reasons_and_optional_paths() -> Result<(), String> {
     on_both_adapters!(sessions)
 }
 
@@ -167,7 +167,7 @@ async fn inputs(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn input_transforms_keep_source_and_image_presence() -> Result<(), String> {
+fn maestro_input_transforms_keep_source_and_image_presence() -> Result<(), String> {
     on_both_adapters!(inputs)
 }
 
@@ -196,7 +196,7 @@ async fn provider_requests(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn provider_replacements_keep_absent_and_falsy_json() -> Result<(), String> {
+fn maestro_provider_replacements_keep_absent_and_falsy_json() -> Result<(), String> {
     on_both_adapters!(provider_requests)
 }
 
@@ -247,7 +247,7 @@ async fn responses(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn response_events_keep_status_and_header_order() -> Result<(), String> {
+fn maestro_response_events_keep_status_and_header_order() -> Result<(), String> {
     on_both_adapters!(responses)
 }
 
@@ -345,7 +345,7 @@ async fn opaque_and_compaction(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn opaque_event_json_keeps_authored_bytes() -> Result<(), String> {
+fn maestro_opaque_event_json_keeps_authored_bytes() -> Result<(), String> {
     on_both_adapters!(opaque_and_compaction)
 }
 
@@ -445,6 +445,6 @@ async fn numbers(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn event_numbers_keep_bits_across_adapters() -> Result<(), String> {
+fn maestro_event_numbers_keep_bits_across_adapters() -> Result<(), String> {
     on_both_adapters!(numbers)
 }

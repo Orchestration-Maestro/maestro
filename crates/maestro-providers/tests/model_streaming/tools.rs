@@ -7,18 +7,18 @@ use crate::model_streaming::chat::TestResult;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn stream_keeps_tool_argument_progress() -> TestResult {
-    assert_rows("stream_keeps_tool_argument_progress")
+fn maestro_stream_keeps_tool_argument_progress() -> TestResult {
+    assert_rows("maestro_stream_keeps_tool_argument_progress")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn stream_blocks_keep_independent_indices() -> TestResult {
-    assert_rows("stream_blocks_keep_independent_indices")
+fn maestro_stream_blocks_keep_independent_indices() -> TestResult {
+    assert_rows("maestro_stream_blocks_keep_independent_indices")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn partial_arguments_advance_before_completion() -> TestResult {
-    assert_rows("partial_arguments_advance_before_completion")
+fn maestro_partial_arguments_advance_before_completion() -> TestResult {
+    assert_rows("maestro_partial_arguments_advance_before_completion")
 }

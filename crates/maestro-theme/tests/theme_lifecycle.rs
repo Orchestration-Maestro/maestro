@@ -555,7 +555,7 @@ fn theme_reload_waits_for_the_full_debounce() {
 }
 
 #[test]
-fn theme_keeps_last_good_file_on_reload_error() {
+fn maestro_theme_keeps_last_good_file_on_reload_error() {
     let scratch = Scratch::new();
     let state = state(&scratch);
     let fake = Fake::new();

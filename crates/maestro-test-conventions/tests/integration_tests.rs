@@ -125,7 +125,7 @@ fn nonexecuting_test_target_is_rejected() {
 }
 
 #[test]
-fn integration_test_module_decoys_are_rejected() {
+fn test_module_decoys_are_rejected() {
     for contents in [
         "// mod case;",
         "const TEXT: &str = \"mod case;\";",

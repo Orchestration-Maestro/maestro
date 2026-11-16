@@ -186,7 +186,7 @@ pub(super) async fn until_released(
 }
 
 #[test]
-fn response_sessions_send_authenticated_native_handshake() {
+fn maestro_response_sessions_send_authenticated_native_handshake() {
     run(async {
         let (url, peer) = raw_peer(closing("")[1..].to_vec());
         let ready = setup(&url, |options| {
@@ -225,7 +225,7 @@ fn response_sessions_send_authenticated_native_handshake() {
 }
 
 #[test]
-fn response_sessions_start_only_after_mapped_event() {
+fn maestro_response_sessions_start_only_after_mapped_event() {
     run(async {
         let (listener, url) = listen().await;
         let ready = setup(&url, |_| {}).await;
@@ -272,7 +272,7 @@ fn response_sessions_start_only_after_mapped_event() {
 }
 
 #[test]
-fn response_sessions_finish_socket_before_peer_close() {
+fn maestro_response_sessions_finish_socket_before_peer_close() {
     run(async {
         let (listener, url) = listen().await;
         let ready = setup(&url, |_| {}).await;
@@ -313,7 +313,7 @@ async fn send_fragmented(socket: &mut WebSocketStream<TcpStream>, text: &str, ki
 }
 
 #[test]
-fn response_sessions_retain_socket_receive_order() {
+fn maestro_response_sessions_retain_socket_receive_order() {
     run(async {
         let (listener, url) = listen().await;
         let ready = setup(&url, |_| {}).await;
@@ -452,7 +452,7 @@ fn raw_peer(events: Vec<String>) -> (String, RawPeer) {
 }
 
 #[test]
-fn response_sessions_receive_immediate_socket_response() {
+fn maestro_response_sessions_receive_immediate_socket_response() {
     run(async {
         let events = opening("now").into_iter().chain(closing("now")).collect();
         let (url, peer) = raw_peer(events);
@@ -465,7 +465,7 @@ fn response_sessions_receive_immediate_socket_response() {
 }
 
 #[test]
-fn response_sessions_cancel_socket_connect() {
+fn maestro_response_sessions_cancel_socket_connect() {
     run(async {
         let (listener, url) = listen().await;
         let mut ready = setup(&url, |_| {}).await;
@@ -517,7 +517,7 @@ fn response_sessions_cancel_socket_connect() {
 }
 
 #[test]
-fn response_sessions_cancel_socket_read() {
+fn maestro_response_sessions_cancel_socket_read() {
     run(async {
         let (listener, url) = listen().await;
         let mut ready = setup(&url, |_| {}).await;
@@ -602,7 +602,7 @@ fn reuse_session_socket_until_failure() {
 }
 
 #[test]
-fn response_sessions_close_uncached_socket() {
+fn maestro_response_sessions_close_uncached_socket() {
     let _isolated = super::exclusive();
     reuse_session_socket_until_failure();
     run(async {
@@ -637,7 +637,7 @@ fn response_sessions_close_uncached_socket() {
 }
 
 #[test]
-fn response_sessions_release_socket_on_future_drop() {
+fn maestro_response_sessions_release_socket_on_future_drop() {
     run(async {
         let (listener, url) = listen().await;
         let ready = setup(&url, |_| {}).await;
@@ -685,7 +685,7 @@ fn first_bytes_peer() -> (String, mpsc::Receiver<Vec<u8>>, std::thread::JoinHand
 }
 
 #[test]
-fn response_sessions_use_secure_socket_transport() {
+fn maestro_response_sessions_use_secure_socket_transport() {
     run(async {
         let (addr, first, worker) = first_bytes_peer();
         let ready = setup(&format!("https://{addr}"), |_| {}).await;
@@ -776,7 +776,7 @@ async fn assert_invalid_initial_header_stops(url: &str, listener: &TcpListener) 
 }
 
 #[test]
-fn response_sessions_keep_socket_hooks_single_use() {
+fn maestro_response_sessions_keep_socket_hooks_single_use() {
     run(async {
         let (listener, url) = listen().await;
         let counts = Arc::new(HookCounts::default());
@@ -840,7 +840,7 @@ async fn refused_attempts(listener: &TcpListener, done: oneshot::Receiver<()>) -
 }
 
 #[test]
-fn response_sessions_reject_failed_socket_handshake() {
+fn maestro_response_sessions_reject_failed_socket_handshake() {
     run(async {
         let (listener, url) = listen().await;
         let ready = setup(&url, |_| {}).await;
@@ -864,7 +864,7 @@ fn response_sessions_reject_failed_socket_handshake() {
 }
 
 #[test]
-fn response_sessions_attempt_socket_upgrade_once() {
+fn maestro_response_sessions_attempt_socket_upgrade_once() {
     run(async {
         let (listener, url) = listen().await;
         let ready = setup(&url, |options| {
@@ -886,7 +886,7 @@ fn response_sessions_attempt_socket_upgrade_once() {
 }
 
 #[test]
-fn response_sessions_ignore_common_socket_timeout() {
+fn maestro_response_sessions_ignore_common_socket_timeout() {
     run_paused(async {
         let (listener, url) = listen().await;
         let ready = setup(&url, |options| options.common.timeout_ms = Some(1.0)).await;
@@ -939,7 +939,7 @@ async fn admission_failure(base_url: &str) -> maestro_models::DiagnosticErrorInf
 }
 
 #[test]
-fn response_sessions_reject_unconnectable_socket_urls() {
+fn maestro_response_sessions_reject_unconnectable_socket_urls() {
     run(async {
         let (listener, url) = listen().await;
         let port = url.rsplit(':').next().unwrap();
@@ -962,7 +962,7 @@ fn response_sessions_reject_unconnectable_socket_urls() {
 }
 
 #[test]
-fn response_sessions_keep_encoded_hash_in_socket_path() {
+fn maestro_response_sessions_keep_encoded_hash_in_socket_path() {
     run(async {
         let (url, peer) = raw_peer(closing("")[1..].to_vec());
         let ready = setup(&format!("{url}/a%23b"), |_| {}).await;
@@ -987,7 +987,7 @@ enum Ending {
 }
 
 #[test]
-fn response_sessions_report_native_close_endings() {
+fn maestro_response_sessions_report_native_close_endings() {
     run(async {
         for (ending, code) in [(Ending::NoStatus, 1005), (Ending::Vanish, 1006)] {
             let (listener, url) = listen().await;

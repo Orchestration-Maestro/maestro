@@ -24,7 +24,7 @@ fn identity() -> Identity {
 }
 
 #[test]
-fn response_sessions_closed_state_is_not_busy() {
+fn maestro_response_sessions_closed_state_is_not_busy() {
     let _isolated = exclusive();
     run(async {
         let (socket, mut peer) = pair().await;
@@ -39,7 +39,7 @@ fn response_sessions_closed_state_is_not_busy() {
 }
 
 #[test]
-fn response_sessions_retired_idle_poll_cannot_expire_new_owner() {
+fn maestro_response_sessions_retired_idle_poll_cannot_expire_new_owner() {
     let _isolated = exclusive();
     run(async {
         let (socket, mut peer) = pair().await;
@@ -62,7 +62,7 @@ fn response_sessions_retired_idle_poll_cannot_expire_new_owner() {
 }
 
 #[test]
-fn response_sessions_claim_drains_ready_idle_close() {
+fn maestro_response_sessions_claim_drains_ready_idle_close() {
     let _isolated = exclusive();
     run(async {
         let (socket, mut peer) = pair().await;
@@ -106,7 +106,7 @@ fn response_sessions_claim_drains_ready_idle_close() {
 
 #[cfg(target_os = "linux")]
 #[test]
-fn response_sessions_keep_registers_observer_inside_publication_lock() {
+fn maestro_response_sessions_keep_registers_observer_inside_publication_lock() {
     let _isolated = exclusive();
     run(async {
         let (socket, _peer) = pair().await;

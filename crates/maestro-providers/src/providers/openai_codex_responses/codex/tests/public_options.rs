@@ -207,7 +207,7 @@ async fn assert_case(row: Case, simple: bool) {
 }
 
 #[test]
-fn response_sessions_simple_reasoning() {
+fn maestro_response_sessions_simple_reasoning() {
     run(maestro_response_sessions_simple_reasoning_scenario());
 }
 
@@ -249,7 +249,7 @@ struct VariantCase {
 }
 
 #[test]
-fn response_sessions_raw_options_and_nulls() {
+fn maestro_response_sessions_raw_options_and_nulls() {
     run(maestro_response_sessions_raw_options_and_nulls_scenario());
 }
 
@@ -311,7 +311,7 @@ async fn maestro_response_sessions_raw_options_and_nulls_scenario() {
 }
 
 #[test]
-fn response_sessions_simple_common_options() {
+fn maestro_response_sessions_simple_common_options() {
     run(maestro_response_sessions_simple_common_options_scenario());
 }
 
@@ -371,7 +371,7 @@ async fn maestro_response_sessions_simple_common_options_scenario() {
 }
 
 #[test]
-fn response_sessions_simple_signal_reaches_execution() {
+fn maestro_response_sessions_simple_signal_reaches_execution() {
     run(async {
         let (model, context, mut options) = corpus_setup();
         let signal = maestro_cancellation::Cancellation::new();
@@ -403,7 +403,7 @@ fn response_sessions_simple_signal_reaches_execution() {
 }
 
 #[test]
-fn response_sessions_preparation_order() {
+fn maestro_response_sessions_preparation_order() {
     run(maestro_response_sessions_preparation_order_scenario());
 }
 
@@ -448,7 +448,7 @@ struct AffinityCase {
 }
 
 #[test]
-fn response_sessions_forward_session_affinity() {
+fn maestro_response_sessions_forward_session_affinity() {
     run(maestro_response_sessions_forward_session_affinity_scenario());
 }
 
@@ -505,7 +505,7 @@ fn strict_fixture<T: serde::de::DeserializeOwned>(text: &str) -> usize {
 }
 
 #[test]
-fn response_sessions_dispatch_fixtures_are_consumed() {
+fn maestro_response_sessions_dispatch_fixtures_are_consumed() {
     let mut count = 0;
     for text in [
         include_str!("fixtures/public-simple.json"),

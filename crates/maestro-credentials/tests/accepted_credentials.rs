@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn credential_listing_preserves_record_order() {
+    fn maestro_credential_listing_preserves_record_order() {
         let dir = TempDir::new("listing");
         let path = dir.path("auth.json");
         write_file(

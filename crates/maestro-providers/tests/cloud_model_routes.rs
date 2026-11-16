@@ -12,6 +12,6 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Compare the complete recorded public observations.
 #[test]
-fn cloud_catalog_keeps_configured_order() -> TestResult {
-    qualification::assert_rows("cloud_catalog_keeps_configured_order")
+fn maestro_cloud_catalog_keeps_configured_order() -> TestResult {
+    qualification::assert_rows("maestro_cloud_catalog_keeps_configured_order")
 }

@@ -99,7 +99,7 @@ fn guest_crate_cannot_omit_its_qualified_lint_table() {
 }
 
 #[test]
-fn authored_test_files_and_trailing_modules_do_not_count() {
+fn test_files_and_trailing_test_modules_do_not_count() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.library_test_target("tui", true);
@@ -183,7 +183,7 @@ fn lint_inheritance_uses_the_manifest_table() {
 }
 
 #[test]
-fn attributed_test_modules_with_extra_attributes_do_not_count_as_production() {
+fn test_modules_with_extra_attributes_do_not_count_as_production() {
     let workspace = Workspace::new();
     workspace.member("tui", "maestro-tui", "");
     workspace.library_test_target("tui", true);

@@ -482,83 +482,83 @@ fn request_record(request: &bundled::Seen) -> Value {
 /// Exact corpus ownership and cardinalities.
 const OWNERS: [(&str, usize); 20] = [
     (
-        "crates/maestro-providers/tests/message_eager_input.rs::message_expands_catalog_candidates",
+        "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_expands_catalog_candidates",
         1,
     ),
     (
-        "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
+        "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
         15,
     ),
     (
-        "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
+        "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
         9,
     ),
     (
-        "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
+        "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
         9,
     ),
     (
-        "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
+        "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
         9,
     ),
     (
-        "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
+        "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
         9,
     ),
     (
-        "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
+        "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
         13,
     ),
     (
-        "crates/maestro-providers/tests/message_long_retention.rs::message_keeps_compatibility_policies_independent",
+        "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_keeps_compatibility_policies_independent",
         4,
     ),
     (
-        "crates/maestro-providers/tests/message_thinking_disabled.rs::message_disables_budget_thinking",
+        "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_disables_budget_thinking",
         1,
     ),
     (
-        "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
+        "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
         9,
     ),
     (
-        "crates/maestro-providers/tests/message_thinking_disabled.rs::message_disables_adaptive_thinking",
+        "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_disables_adaptive_thinking",
         2,
     ),
     (
-        "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
+        "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
         12,
     ),
     (
-        "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_streams_signed_arithmetic",
+        "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_streams_signed_arithmetic",
         3,
     ),
     (
-        "crates/maestro-providers/tests/message_thinking_disabled.rs::message_off_stream_contains_only_text",
+        "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_off_stream_contains_only_text",
         2,
     ),
     (
-        "crates/maestro-providers/tests/account_tool_names.rs::account_restores_original_tool_names",
+        "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_restores_original_tool_names",
         6,
     ),
     (
-        "crates/maestro-providers/tests/account_tool_names.rs::account_keeps_unrelated_tool_names",
+        "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_keeps_unrelated_tool_names",
         5,
     ),
     (
-        "crates/maestro-providers/tests/account_tool_names.rs::account_projects_names_without_mutating_callers",
+        "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_projects_names_without_mutating_callers",
         2,
     ),
     (
-        "crates/maestro-providers/tests/account_tool_names.rs::account_leaves_key_authenticated_names_plain",
+        "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_leaves_key_authenticated_names_plain",
         3,
     ),
     (
-        "crates/maestro-providers/tests/account_message_routing.rs::account_routes_message_authentication",
+        "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_routes_message_authentication",
         3,
     ),
     (
-        "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
+        "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
         13,
     ),
 ];

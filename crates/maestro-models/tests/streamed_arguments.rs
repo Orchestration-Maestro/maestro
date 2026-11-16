@@ -3,7 +3,7 @@ mod tests {
     use maestro_models::sanitize_surrogates;
 
     #[test]
-    fn sanitizes_encoded_provider_text() {
+    fn maestro_sanitizes_encoded_provider_text() {
         assert_eq!(
             sanitize_surrogates(&[0xd800, 65, 0xdc00, 0xd83d, 0xde00, 0xd83d, 0xde01]),
             "A😀😁"
@@ -27,7 +27,7 @@ mod tests {
     }
 
     #[test]
-    fn repairs_only_json_string_literals() {
+    fn maestro_repairs_only_json_string_literals() {
         use maestro_models::repair_json;
         assert_eq!(repair_json(r#"{"x":"é\\\""}"#), r#"{"x":"é\\\""}"#);
         assert_eq!(repair_json("5"), "5");
@@ -40,7 +40,7 @@ mod tests {
     }
 
     #[test]
-    fn keeps_escape_and_unicode_boundaries() {
+    fn maestro_keeps_escape_and_unicode_boundaries() {
         use maestro_models::repair_json;
         for input in [r#""\"\\\/\b\f\n\r\t\u1234""#, r#""\u12""#, r#""é""#] {
             assert_eq!(repair_json(input), input);
@@ -50,7 +50,7 @@ mod tests {
     }
 
     #[test]
-    fn reports_last_strict_parse_error() {
+    fn maestro_reports_last_strict_parse_error() {
         use maestro_models::{parse_json_with_repair, repair_json};
         let deep = format!("{}0{}", "[".repeat(128), "]".repeat(128));
         for input in [
@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn accepts_representable_discarded_surrogate_duplicates() {
+    fn maestro_accepts_representable_discarded_surrogate_duplicates() {
         use maestro_models::parse_json_with_repair;
         for (input, expected) in [
             (r#"{"s":"\uD800","s":"ok"}"#, serde_json::json!({"s":"ok"})),
@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_decimal_arguments_exactly() {
+    fn maestro_parses_decimal_arguments_exactly() {
         use maestro_models::{parse_json_with_repair, parse_streaming_json};
         let ratio = 51.248_178_375_505_404_f64;
         let complete = parse_json_with_repair(r#"{"ratio":51.248178375505404}"#).unwrap();
@@ -153,7 +153,7 @@ mod tests {
     }
 
     #[test]
-    fn streamed_arguments_keep_partial_values() {
+    fn maestro_streamed_arguments_keep_partial_values() {
         use maestro_models::parse_streaming_json;
         use serde_json::json;
         for (input, expected) in [
@@ -175,7 +175,7 @@ mod tests {
     }
 
     #[test]
-    fn drops_unfinished_members_before_returning_prefix() {
+    fn maestro_drops_unfinished_members_before_returning_prefix() {
         use maestro_models::parse_streaming_json;
         use serde_json::json;
         for (input, expected) in [
@@ -188,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn keeps_completed_values_before_trailing_input() {
+    fn maestro_keeps_completed_values_before_trailing_input() {
         use maestro_models::parse_streaming_json;
         use serde_json::json;
         for (input, expected) in [
@@ -205,7 +205,7 @@ mod tests {
     }
 
     #[test]
-    fn truncates_incomplete_escape_at_its_start() {
+    fn maestro_truncates_incomplete_escape_at_its_start() {
         use maestro_models::parse_streaming_json;
         for input in [r#"{"a":"x\H"#, r#"{"a":"x\u12"#, r#"{"a":"x\"#] {
             assert_eq!(
@@ -221,7 +221,7 @@ mod tests {
     }
 
     #[test]
-    fn preserves_scalar_parse_results_and_blank_fallbacks() {
+    fn maestro_preserves_scalar_parse_results_and_blank_fallbacks() {
         use maestro_models::parse_streaming_json;
         use serde_json::json;
         for input in [None, Some(""), Some(" \t\r\n\u{feff}\u{a0}")] {
@@ -242,7 +242,7 @@ mod tests {
 }
 
 #[test]
-fn preserves_delimiters_inside_incomplete_strings() {
+fn maestro_preserves_delimiters_inside_incomplete_strings() {
     assert_eq!(
         maestro_models::parse_streaming_json(Some("[\"hello]")),
         serde_json::json!(["hello]"])
@@ -250,7 +250,7 @@ fn preserves_delimiters_inside_incomplete_strings() {
 }
 
 #[test]
-fn keeps_completed_escapes_in_incomplete_strings() {
+fn maestro_keeps_completed_escapes_in_incomplete_strings() {
     assert_eq!(
         maestro_models::parse_streaming_json(Some("[\"x\\n")),
         serde_json::json!(["x\n"])
@@ -258,7 +258,7 @@ fn keeps_completed_escapes_in_incomplete_strings() {
 }
 
 #[test]
-fn rejects_invalid_leading_json_grammar() {
+fn maestro_rejects_invalid_leading_json_grammar() {
     for input in ["1ee", "1..", "1e2."] {
         assert_eq!(
             maestro_models::parse_streaming_json(Some(input)),
@@ -277,7 +277,7 @@ fn rejects_invalid_leading_json_grammar() {
 }
 
 #[test]
-fn completes_literals_and_numeric_suffixes_consistently() {
+fn maestro_completes_literals_and_numeric_suffixes_consistently() {
     assert_eq!(
         maestro_models::parse_streaming_json(Some("9007199254740993e")),
         serde_json::json!(9_007_199_254_740_992_u64)
@@ -293,7 +293,7 @@ fn completes_literals_and_numeric_suffixes_consistently() {
 }
 
 #[test]
-fn recovers_before_invalid_container_separators() {
+fn maestro_recovers_before_invalid_container_separators() {
     assert_eq!(
         maestro_models::parse_streaming_json(Some("[true false]")),
         serde_json::json!([true])
@@ -309,7 +309,7 @@ fn recovers_before_invalid_container_separators() {
 }
 
 #[test]
-fn completes_streamed_argument_corpus() {
+fn maestro_completes_streamed_argument_corpus() {
     let rows: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/streamed_arguments.json")).unwrap();
     for row in rows.as_array().unwrap() {
@@ -321,7 +321,7 @@ fn completes_streamed_argument_corpus() {
 }
 
 #[test]
-fn completes_every_proper_literal_prefix() {
+fn maestro_completes_every_proper_literal_prefix() {
     use maestro_models::parse_streaming_json;
     use serde_json::json;
     for (literal, root, array) in [
@@ -416,7 +416,7 @@ fn number_corpus() -> Result<NumberCorpus, serde_json::Error> {
 }
 
 #[test]
-fn projects_strict_argument_numbers() {
+fn maestro_projects_strict_argument_numbers() {
     for row in number_corpus().unwrap().strict {
         let actual = maestro_models::parse_json_with_repair(&row.input)
             .unwrap_or_else(|error| panic!("{}: {}", row.input, error.message));
@@ -425,7 +425,7 @@ fn projects_strict_argument_numbers() {
 }
 
 #[test]
-fn projects_partial_argument_numbers() {
+fn maestro_projects_partial_argument_numbers() {
     for row in number_corpus().unwrap().streaming {
         let actual = maestro_models::parse_streaming_json(Some(&row.input));
         assert_number_row(&row, &actual);
@@ -471,7 +471,7 @@ fn argument_leaf(mut value: &serde_json::Value, depth: usize) -> Option<&serde_j
 }
 
 #[test]
-fn bounds_materialized_arguments() {
+fn maestro_bounds_materialized_arguments() {
     use maestro_models::{parse_json_with_repair, parse_streaming_json};
     let cases = ["array", "object", "mixed"].into_iter().flat_map(|kind| {
         [127, 128].into_iter().flat_map(move |depth| {
@@ -504,15 +504,16 @@ fn bounds_materialized_arguments() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn drops_extreme_argument_depth_safely() -> crate::chat::TestResult {
+fn maestro_drops_extreme_argument_depth_safely() -> crate::chat::TestResult {
     if !maestro_test_harness::selection().is_child() {
         return {
-            let output =
-                maestro_test_harness::TestProcess::current("drops_extreme_argument_depth_safely")?
-                    .nocapture()
-                    .env_clear()
-                    .case("depth")
-                    .output()?;
+            let output = maestro_test_harness::TestProcess::current(
+                "maestro_drops_extreme_argument_depth_safely",
+            )?
+            .nocapture()
+            .env_clear()
+            .case("depth")
+            .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
         };
@@ -532,7 +533,7 @@ fn drops_extreme_argument_depth_safely() -> crate::chat::TestResult {
 }
 
 #[test]
-fn counts_only_consumed_argument_containers() {
+fn maestro_counts_only_consumed_argument_containers() {
     use maestro_models::parse_streaming_json;
     use serde_json::json;
     let brackets = "[".repeat(128);
@@ -551,7 +552,7 @@ fn counts_only_consumed_argument_containers() {
 }
 
 #[test]
-fn rejects_unrepresentable_argument_member_names() {
+fn maestro_rejects_unrepresentable_argument_member_names() {
     for input in [
         r#"{"\ud800":7,"keep":1}"#,
         r#"{"nested":{"\udc00":7,"keep":1}}"#,

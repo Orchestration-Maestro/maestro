@@ -6,7 +6,7 @@ use maestro_cancellation::Cancellation;
 use maestro_models::{AssistantMessageEvent, ErrorReason, SimpleStreamOptions, StopReason};
 
 #[test]
-fn response_sessions_raw_and_simple_key_boundaries() {
+fn maestro_response_sessions_raw_and_simple_key_boundaries() {
     run(maestro_response_sessions_raw_and_simple_key_boundaries_scenario());
 }
 
@@ -32,7 +32,7 @@ pub(super) fn response() -> maestro_models::HttpResponse {
 }
 
 #[test]
-fn response_sessions_stream_public_sse() {
+fn maestro_response_sessions_stream_public_sse() {
     run(maestro_response_sessions_stream_public_sse_scenario());
 }
 
@@ -104,7 +104,7 @@ fn usage_response() -> maestro_models::HttpResponse {
 }
 
 #[test]
-fn response_sessions_require_runtime() {
+fn maestro_response_sessions_require_runtime() {
     let (model, context, options) = super::invocation();
     let events = stream_openai_codex_responses((*model).clone(), context, Some(options));
     let result = futures_util::FutureExt::now_or_never(events.result()).unwrap();
@@ -141,7 +141,7 @@ pub(super) struct PriceCase {
 }
 
 #[test]
-fn response_sessions_price_public_tiers() {
+fn maestro_response_sessions_price_public_tiers() {
     run(maestro_response_sessions_price_public_tiers_scenario());
 }
 
@@ -222,7 +222,7 @@ async fn open_body_result(bytes: Vec<u8>, abort: bool) -> maestro_models::Shared
 }
 
 #[test]
-fn response_sessions_finish_open_bodies() {
+fn maestro_response_sessions_finish_open_bodies() {
     run(maestro_response_sessions_finish_open_bodies_scenario());
 }
 
@@ -256,7 +256,7 @@ async fn maestro_response_sessions_finish_open_bodies_scenario() {
 }
 
 #[test]
-fn response_sessions_terminal_abort_wins() {
+fn maestro_response_sessions_terminal_abort_wins() {
     run(maestro_response_sessions_terminal_abort_wins_scenario());
 }
 
@@ -311,7 +311,7 @@ fn gated_options(
 }
 
 #[test]
-fn response_sessions_retain_shared_output_until_finalization() {
+fn maestro_response_sessions_retain_shared_output_until_finalization() {
     run(maestro_response_sessions_retain_shared_output_until_finalization_scenario());
 }
 
@@ -351,7 +351,7 @@ async fn maestro_response_sessions_retain_shared_output_until_finalization_scena
 }
 
 #[test]
-fn response_sessions_finalize_partial_tool_on_error_and_abort() {
+fn maestro_response_sessions_finalize_partial_tool_on_error_and_abort() {
     run(maestro_response_sessions_finalize_partial_tool_on_error_and_abort_scenario());
 }
 
@@ -420,7 +420,7 @@ async fn partial_tool_case(aborted: bool) {
 }
 
 #[test]
-fn response_sessions_detached_invocations_finish() {
+fn maestro_response_sessions_detached_invocations_finish() {
     run(maestro_response_sessions_detached_invocations_finish_scenario());
 }
 

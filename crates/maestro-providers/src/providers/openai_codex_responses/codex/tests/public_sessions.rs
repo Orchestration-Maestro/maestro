@@ -115,7 +115,7 @@ async fn closed(peer: &mut WebSocketStream<tokio::net::TcpStream>) {
 }
 
 #[test]
-fn response_sessions_sticky_fallback_reset_and_close() {
+fn maestro_response_sessions_sticky_fallback_reset_and_close() {
     let _guard = super::exclusive();
     crate::tests::runtime::run(
         maestro_response_sessions_sticky_fallback_reset_and_close_scenario(),
@@ -174,7 +174,7 @@ async fn maestro_response_sessions_sticky_fallback_reset_and_close_scenario() {
 }
 
 #[test]
-fn response_sessions_failure_creates_sticky_fallback() {
+fn maestro_response_sessions_failure_creates_sticky_fallback() {
     let _guard = super::exclusive();
     crate::tests::runtime::run(async {
         reset_openai_codex_web_socket_debug_stats(None);
@@ -209,7 +209,7 @@ fn response_sessions_failure_creates_sticky_fallback() {
 }
 
 #[test]
-fn response_sessions_scope_fallback_by_socket_history() {
+fn maestro_response_sessions_scope_fallback_by_socket_history() {
     let _guard = super::exclusive();
     crate::tests::runtime::run(
         maestro_response_sessions_scope_fallback_by_socket_history_scenario(),
@@ -292,7 +292,7 @@ async fn unserved_socket() {
 }
 
 #[test]
-fn response_sessions_cleanup_registered_sockets() {
+fn maestro_response_sessions_cleanup_registered_sockets() {
     let _guard = super::exclusive();
     crate::tests::runtime::run(maestro_response_sessions_cleanup_registered_sockets_scenario());
 }
@@ -331,7 +331,7 @@ async fn maestro_response_sessions_cleanup_registered_sockets_scenario() {
 }
 
 #[test]
-fn response_sessions_empty_sessions_stay_uncached() {
+fn maestro_response_sessions_empty_sessions_stay_uncached() {
     let _guard = super::exclusive();
     crate::tests::runtime::run(maestro_response_sessions_empty_sessions_stay_uncached_scenario());
 }

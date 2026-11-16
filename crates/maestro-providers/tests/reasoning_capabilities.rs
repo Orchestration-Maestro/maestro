@@ -78,7 +78,7 @@ fn catalog(provider: &str, id: &str) -> TestResult<Model> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn raw_xhigh_returns_thinking() -> TestResult {
+fn maestro_raw_xhigh_returns_thinking() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     let (fetch, bodies) = answering(200, thinking_body());
@@ -105,7 +105,7 @@ fn raw_xhigh_returns_thinking() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn raw_xhigh_preserves_server_rejection() -> TestResult {
+fn maestro_raw_xhigh_preserves_server_rejection() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     let rejection =

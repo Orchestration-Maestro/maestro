@@ -13,18 +13,18 @@ fn compact_selects_history_or_split_branches() {
 }
 
 #[test]
-fn reasoning_summary_receives_selected_level() {
-    support::generation::group("reasoning_summary_receives_selected_level");
+fn maestro_reasoning_summary_receives_selected_level() {
+    support::generation::group("maestro_reasoning_summary_receives_selected_level");
 }
 
 #[test]
-fn off_summary_omits_reasoning() {
-    support::generation::group("off_summary_omits_reasoning");
+fn maestro_off_summary_omits_reasoning() {
+    support::generation::group("maestro_off_summary_omits_reasoning");
 }
 
 #[test]
-fn nonreasoning_model_omits_reasoning() {
-    support::generation::group("nonreasoning_model_omits_reasoning");
+fn maestro_nonreasoning_model_omits_reasoning() {
+    support::generation::group("maestro_nonreasoning_model_omits_reasoning");
 }
 
 #[test]
@@ -118,11 +118,11 @@ fn split_failure_returns_before_live_sibling_settles() {
 }
 
 #[test]
-fn large_history_generates_compaction_result() {
+fn maestro_large_history_generates_compaction_result() {
     support::generation::large_history(false);
 }
 
 #[test]
-fn applied_summary_rebuilds_smaller_valid_context() {
+fn maestro_applied_summary_rebuilds_smaller_valid_context() {
     support::generation::large_history(true);
 }

@@ -57,7 +57,7 @@ async fn forwarding(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn setup_writer_forwards_every_operation() -> Result<(), String> {
+fn maestro_setup_writer_forwards_every_operation() -> Result<(), String> {
     on_both_adapters!(forwarding)
 }
 /// Seventeen routes reject without an effect and recover on the same retained writer.
@@ -139,7 +139,7 @@ async fn operation_identity(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn setup_and_continuation_stay_with_their_operation() -> Result<(), String> {
+fn maestro_setup_and_continuation_stay_with_their_operation() -> Result<(), String> {
     on_both_adapters!(operation_identity)
 }
 /// Normal, cancelled, uninvoked and rejected callbacks release their operation owners.
@@ -181,7 +181,7 @@ async fn ownership(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn setup_callbacks_release_once_on_every_exit() -> Result<(), String> {
+fn maestro_setup_callbacks_release_once_on_every_exit() -> Result<(), String> {
     on_both_adapters!(ownership)
 }
 /// Raw host context and its independently measured native outcome.
@@ -229,7 +229,7 @@ async fn decoders(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn setup_context_decodes_host_records_without_extra_policy() -> Result<(), String> {
+fn maestro_setup_context_decodes_host_records_without_extra_policy() -> Result<(), String> {
     on_both_adapters!(decoders)
 }
 
@@ -784,6 +784,6 @@ async fn opaque_children(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn setup_children_roundtrip_arbitrary_entry_payloads() -> Result<(), String> {
+fn maestro_setup_children_roundtrip_arbitrary_entry_payloads() -> Result<(), String> {
     on_both_adapters!(opaque_children)
 }

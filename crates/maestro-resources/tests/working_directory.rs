@@ -10,13 +10,13 @@ use support::text;
 
 /// Only a path no operand anchors needs the working directory, which this test removes.
 #[test]
-fn paths_resolve_absolute_paths_without_a_working_directory() {
+fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
     // Removing the process working directory would leave every other test in this
     // executable without one, so this test runs alone in a child process.
     if !maestro_test_harness::selection().is_child() {
         {
             let output = maestro_test_harness::TestProcess::current(
-                "paths_resolve_absolute_paths_without_a_working_directory",
+                "maestro_paths_resolve_absolute_paths_without_a_working_directory",
             )
             .unwrap()
             .nocapture()

@@ -346,7 +346,7 @@ fn copied_test_helper_fails_until_callers_delegate() {
 }
 
 #[test]
-fn authored_test_bodies_compare_across_workspace_packages() {
+fn test_bodies_compare_across_workspace_packages() {
     let body = "let _ = 1;".repeat(6);
     let error = check(&[
         member(
@@ -384,7 +384,7 @@ fn authored_test_bodies_compare_across_workspace_packages() {
 }
 
 #[test]
-fn authored_test_and_production_bodies_share_one_identity_index() {
+fn test_and_production_bodies_share_one_identity_index() {
     production_beside_test_file();
     production_beside_inline_test_code();
     support_beside_another_package_test();
@@ -497,7 +497,7 @@ fn parsed_test_scopes_are_checked_without_hiding_neighbours() {
 }
 
 #[test]
-fn source_test_layout_and_file_attributes_are_checked() {
+fn test_layout_and_file_attributes_are_checked() {
     let body = copied(&";".repeat(30));
     for path in ["src/tests.rs", "src/tests/case.rs", "tests/case.rs"] {
         let result = check(&[member("maestro-settings", &[(path, body.clone())])]);

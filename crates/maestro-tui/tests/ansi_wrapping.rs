@@ -376,7 +376,7 @@ fn escapes_do_not_cross_literal_newlines() {
 }
 
 #[test]
-fn wrap_discards_style_only_overflow() {
+fn maestro_wrap_discards_style_only_overflow() {
     let cases: &[(&str, usize, &[&str])] = &[
         ("a\x1b[31m \x1b[39mb", 0, &["a", "\x1b[31m\x1b[39mb"]),
         ("a\x1b[31m \x1b[39mb", 1, &["a", "\x1b[31m\x1b[39mb"]),

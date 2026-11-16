@@ -9,21 +9,21 @@ fn default_definitions_keep_every_key_and_description() {
 
 use crate::binding_support;
 #[test]
-fn keys_rebinding_submit_keeps_selector_confirm() {
+fn maestro_keys_rebinding_submit_keeps_selector_confirm() {
     let _globals = crate::input_support::globals();
-    binding_support::run("keys_rebinding_submit_keeps_selector_confirm");
+    binding_support::run("maestro_keys_rebinding_submit_keeps_selector_confirm");
 }
 
 #[test]
-fn keys_a_shared_key_keeps_the_cursor_bindings() {
+fn maestro_keys_a_shared_key_keeps_the_cursor_bindings() {
     let _globals = crate::input_support::globals();
-    binding_support::run("keys_a_shared_key_keeps_the_cursor_bindings");
+    binding_support::run("maestro_keys_a_shared_key_keeps_the_cursor_bindings");
 }
 
 #[test]
-fn keys_direct_conflicts_are_reported_and_defaults_stay() {
+fn maestro_keys_direct_conflicts_are_reported_and_defaults_stay() {
     let _globals = crate::input_support::globals();
-    binding_support::run("keys_direct_conflicts_are_reported_and_defaults_stay");
+    binding_support::run("maestro_keys_direct_conflicts_are_reported_and_defaults_stay");
 }
 
 #[test]

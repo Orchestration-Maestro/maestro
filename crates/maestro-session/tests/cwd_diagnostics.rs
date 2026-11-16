@@ -23,7 +23,7 @@ fn stored_history(scratch: &Scratch, cwd: &str) -> String {
 }
 
 #[test]
-fn persisted_session_reports_missing_cwd() {
+fn maestro_persisted_session_reports_missing_cwd() {
     let scratch = Scratch::new().unwrap();
     let missing = scratch.path().join("gone");
     let file = stored_history(&scratch, missing.to_str().unwrap());
@@ -39,7 +39,7 @@ fn persisted_session_reports_missing_cwd() {
 }
 
 #[test]
-fn open_cwd_override_preserves_header() {
+fn maestro_open_cwd_override_preserves_header() {
     let scratch = Scratch::new().unwrap();
     let missing = scratch.path().join("gone");
     let file = stored_history(&scratch, missing.to_str().unwrap());

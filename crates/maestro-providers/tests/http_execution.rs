@@ -72,7 +72,7 @@ fn abort_after(options: &mut StreamOptions, after: Duration) {
 #[cfg(not(target_arch = "wasm32"))]
 /// Each recorded status and `x-should-retry` value retries exactly when the table says so.
 async fn statuses_follow_the_retry_table() -> TestResult {
-    for row in rows(FIXTURE, "http_retries_transient_failures")? {
+    for row in rows(FIXTURE, "maestro_http_retries_transient_failures")? {
         let status = u16::try_from(row["status"].as_u64().ok_or("status")?)?;
         let hint: Vec<(&str, &str)> = row["override"]
             .as_str()
@@ -133,7 +133,7 @@ async fn connection_failures_are_retried() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_retries_transient_failures() -> TestResult {
+fn maestro_http_retries_transient_failures() -> TestResult {
     crate::runtime::run_paused(async {
         statuses_follow_the_retry_table().await?;
         connection_failures_are_retried().await?;
@@ -216,7 +216,7 @@ fn hint_cases<'a>(future: &'a str, past: &'a str) -> Vec<(Vec<(&'a str, &'a str)
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_honors_retry_headers() -> TestResult {
+fn maestro_http_honors_retry_headers() -> TestResult {
     crate::runtime::run_paused(async {
         let (future, past) = (http_date(90), http_date(-60));
         let ms = Duration::from_millis;
@@ -255,7 +255,7 @@ fn assert_backoff_schedule(gaps: &[Duration]) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_bounds_retry_backoff() -> TestResult {
+fn maestro_http_bounds_retry_backoff() -> TestResult {
     crate::runtime::run_paused(async {
         let target = transport(vec![Attempt::status(503, &[])]);
         run(&target, |options| options.max_retries = Some(7.0)).await?;
@@ -288,9 +288,9 @@ fn timeout_value(value: &Value) -> TestResult<f64> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_preserves_setup_timeout() -> TestResult {
+fn maestro_http_preserves_setup_timeout() -> TestResult {
     crate::runtime::run_paused(async {
-        for row in rows(FIXTURE, "http_preserves_setup_timeout")? {
+        for row in rows(FIXTURE, "maestro_http_preserves_setup_timeout")? {
             let target = transport(vec![Attempt::success()]);
             let timeout = timeout_value(&row["timeout"])?;
             let outcome = run(&target, |options| options.timeout_ms = Some(timeout)).await?;
@@ -337,7 +337,7 @@ fn http_preserves_setup_timeout() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_stops_retries_on_abort() -> TestResult {
+fn maestro_http_stops_retries_on_abort() -> TestResult {
     crate::runtime::run_paused(async {
         let target = transport(vec![Attempt::success()]);
         let signal = Cancellation::new();
@@ -395,7 +395,7 @@ fn http_stops_retries_on_abort() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_rejects_unbounded_retry_counts() -> TestResult {
+fn maestro_http_rejects_unbounded_retry_counts() -> TestResult {
     crate::runtime::run_paused(async {
         for (retries, message) in [
             (-1.0, "maxRetries must be a positive integer"),
@@ -423,7 +423,7 @@ fn http_rejects_unbounded_retry_counts() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 /// Failures a scripted transport reports, with the text each produces.
 async fn scripted_failures() -> TestResult {
-    for row in rows(FIXTURE, "http_reports_fetch_failures")? {
+    for row in rows(FIXTURE, "maestro_http_reports_fetch_failures")? {
         let input = &row["input"];
         let body = match (input.get("error"), input["message"].as_str()) {
             (Some(error), _) => json!({"error": error}).to_string(),
@@ -509,17 +509,18 @@ async fn production_client_failures() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_reports_fetch_failures() -> TestResult {
+fn maestro_http_reports_fetch_failures() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         return crate::runtime::run(production_client_failures());
     }
     crate::runtime::run_paused(scripted_failures())?;
     {
-        let output = maestro_test_harness::TestProcess::current("http_reports_fetch_failures")?
-            .nocapture()
-            .env_clear()
-            .case("production")
-            .output()?;
+        let output =
+            maestro_test_harness::TestProcess::current("maestro_http_reports_fetch_failures")?
+                .nocapture()
+                .env_clear()
+                .case("production")
+                .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
     }
@@ -559,17 +560,18 @@ async fn default_fetch_exchange() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_default_fetch_sends_requests() -> TestResult {
+fn maestro_http_default_fetch_sends_requests() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         return crate::runtime::run(default_fetch_exchange());
     }
     {
-        let output =
-            maestro_test_harness::TestProcess::current("http_default_fetch_sends_requests")?
-                .nocapture()
-                .env_clear()
-                .case("default")
-                .output()?;
+        let output = maestro_test_harness::TestProcess::current(
+            "maestro_http_default_fetch_sends_requests",
+        )?
+        .nocapture()
+        .env_clear()
+        .case("default")
+        .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
     }
@@ -649,7 +651,7 @@ async fn wide_header_values_are_not_sent() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_preserves_header_octets() -> TestResult {
+fn maestro_http_preserves_header_octets() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         return crate::runtime::run(async {
             header_values_are_octets().await?;
@@ -657,11 +659,12 @@ fn http_preserves_header_octets() -> TestResult {
         });
     }
     {
-        let output = maestro_test_harness::TestProcess::current("http_preserves_header_octets")?
-            .nocapture()
-            .env_clear()
-            .case("default")
-            .output()?;
+        let output =
+            maestro_test_harness::TestProcess::current("maestro_http_preserves_header_octets")?
+                .nocapture()
+                .env_clear()
+                .case("default")
+                .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
     }
@@ -669,9 +672,9 @@ fn http_preserves_header_octets() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_joins_endpoint_urls() -> TestResult {
+fn maestro_http_joins_endpoint_urls() -> TestResult {
     crate::runtime::run_paused(async {
-        for row in rows(FIXTURE, "http_joins_endpoint_urls")? {
+        for row in rows(FIXTURE, "maestro_http_joins_endpoint_urls")? {
             let target = transport(vec![Attempt::success()]);
             let (mut model, context, options) = call_inputs(&target)?;
             model.base_url = row["base"].as_str().ok_or("base")?.to_owned();
@@ -740,17 +743,18 @@ async fn native_header_rejections_are_connection_failures() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_retries_native_header_rejections() -> TestResult {
+fn maestro_http_retries_native_header_rejections() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         return crate::runtime::run_paused(native_header_rejections_are_connection_failures());
     }
     {
-        let output =
-            maestro_test_harness::TestProcess::current("http_retries_native_header_rejections")?
-                .nocapture()
-                .env_clear()
-                .case("native")
-                .output()?;
+        let output = maestro_test_harness::TestProcess::current(
+            "maestro_http_retries_native_header_rejections",
+        )?
+        .nocapture()
+        .env_clear()
+        .case("native")
+        .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
     }
@@ -758,7 +762,7 @@ fn http_retries_native_header_rejections() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn http_reports_unrepresentable_failure_details() -> TestResult {
+fn maestro_http_reports_unrepresentable_failure_details() -> TestResult {
     crate::runtime::run_paused(async {
         for error in [
             r#"{"\ud800":7,"keep":1}"#,

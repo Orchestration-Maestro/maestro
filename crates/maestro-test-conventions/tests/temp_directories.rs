@@ -62,7 +62,7 @@ fn inline_test_module_in_production_file_is_rejected() {
 }
 
 #[test]
-fn cfg_test_gated_impl_helper_is_rejected() {
+fn test_gated_impl_helper_is_rejected() {
     check(
         "maestro-session",
         "src/session_manager/mod.rs",
@@ -250,7 +250,7 @@ fn app_canonicalizes_the_platform_directory() {
 }
 
 #[test]
-fn checked_process_builder_method_call_is_accepted() {
+fn test_process_builder_method_call_is_accepted() {
     check(
         "maestro-app",
         "tests/support/session_harness.rs",

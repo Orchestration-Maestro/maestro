@@ -11,13 +11,13 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Returned identity remains attached to the requested route.
 #[test]
-fn public_routes_retain_response_ids() -> TestResult {
-    qualification::assert_rows("public_routes_retain_response_ids")
+fn maestro_public_routes_retain_response_ids() -> TestResult {
+    qualification::assert_rows("maestro_public_routes_retain_response_ids")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Recorded public observations for failed responses keep partial identity.
 #[test]
-fn failed_responses_keep_partial_identity() -> TestResult {
-    qualification::assert_rows("failed_responses_keep_partial_identity")
+fn maestro_failed_responses_keep_partial_identity() -> TestResult {
+    qualification::assert_rows("maestro_failed_responses_keep_partial_identity")
 }

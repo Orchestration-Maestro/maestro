@@ -19,7 +19,7 @@ mod tests {
     }
 
     #[test]
-    fn diagnostics_preserve_name_without_message() {
+    fn maestro_diagnostics_preserve_name_without_message() {
         use maestro_interchange::diagnostics::{
             DiagnosticCode, DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
             format_thrown_value,
@@ -56,7 +56,7 @@ mod tests {
     }
 
     #[test]
-    fn whole_messages_round_trip_by_role() {
+    fn maestro_whole_messages_round_trip_by_role() {
         use maestro_interchange::types::{
             AssistantMessage, Message, ToolResultMessage, UserMessage,
         };
@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn records_keep_wire_contracts() {
+    fn maestro_records_keep_wire_contracts() {
         use maestro_interchange::types::*;
         option_and_reason_contracts();
         compatibility_contracts();

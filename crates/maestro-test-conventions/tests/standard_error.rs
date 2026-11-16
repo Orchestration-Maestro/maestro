@@ -67,7 +67,7 @@ pub fn nested() {
 }
 
 #[test]
-fn stderr_in_test_code_tooling_and_fallible_writes_is_accepted() {
+fn test_code_tooling_and_fallible_writes_are_accepted() {
     check(
         "maestro-tools",
         r#"//! Tools.
