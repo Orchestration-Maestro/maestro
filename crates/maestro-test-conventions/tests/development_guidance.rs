@@ -8,7 +8,7 @@ use std::path::Path;
 use support::{Workspace, git};
 
 #[test]
-fn maestro_local_caches_keep_ignore_files_trackable() {
+fn local_caches_keep_ignore_files_trackable() {
     let workspace = Workspace::new();
     let shipped = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()

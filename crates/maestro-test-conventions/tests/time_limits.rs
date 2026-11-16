@@ -249,7 +249,7 @@ fn qualified_and_imported_standard_waits_are_rejected() {
 }
 
 #[test]
-fn test_source_layouts_activate_the_check() {
+fn source_test_layouts_activate_the_check() {
     check(
         "maestro-tui",
         &[(
@@ -285,7 +285,7 @@ fn test_source_layouts_activate_the_check() {
 }
 
 #[test]
-fn test_support_members_are_checked() {
+fn dedicated_test_support_members_are_checked() {
     check(
         "maestro-test-conventions",
         &[(

@@ -1606,7 +1606,7 @@ fn invalid_metadata_identities(workspace: &Workspace, valid: &serde_json::Value)
 }
 
 #[test]
-fn test_dependency_cycles_are_rejected() {
+fn development_dependency_cycles_are_rejected() {
     support_edges_keep_cycle_checks(FIXTURES, "maestro-interchange");
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-agent", "maestro-models"]);
@@ -1629,7 +1629,7 @@ fn test_dependency_cycles_are_rejected() {
 }
 
 #[test]
-fn maestro_conventions_rejects_foreign_target_reverse_edges() {
+fn conventions_rejects_foreign_target_reverse_edges() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-agent", "maestro-session"]);
     for (kind, extra) in [
@@ -2333,12 +2333,12 @@ fn owner_entry(extra: &str) -> String {
 }
 
 #[test]
-fn test_process_edges_are_native_development_only() {
+fn harness_edges_are_native_development_only() {
     support_declarations_match_owner(OWNER, &owner_callers());
 }
 
 #[test]
-fn test_process_owner_depends_only_on_the_real_path_owner() {
+fn harness_owner_depends_only_on_the_real_path_owner() {
     let targets = ["maestro-text", "maestro-tooling"];
     let workspace = Workspace::new();
     workspace.foundation(&[OWNER, REALPATH, targets[0], targets[1], UNIFIER]);
@@ -2375,17 +2375,17 @@ fn test_process_owner_depends_only_on_the_real_path_owner() {
 }
 
 #[test]
-fn test_process_permission_is_not_a_name_pattern() {
+fn harness_permission_is_not_a_name_pattern() {
     support_permissions_are_exact(OWNER, &owner_callers());
 }
 
 #[test]
-fn test_process_edges_keep_cycle_checks() {
+fn harness_edges_keep_cycle_checks() {
     support_edges_keep_cycle_checks(OWNER, "maestro-agent");
 }
 
 #[test]
-fn test_process_policy_keeps_existing_domain_edges() {
+fn harness_policy_keeps_existing_domain_edges() {
     let workspace = Workspace::new();
     workspace.foundation(&[
         "maestro-tui-crossterm",
@@ -2417,7 +2417,7 @@ fn test_process_policy_keeps_existing_domain_edges() {
 }
 
 #[test]
-fn test_process_inventory_matches_foundation_contract() {
+fn harness_inventory_matches_foundation_contract() {
     assert!(owner_callers().contains(&"maestro-lock"));
     support_inventory_matches_contract(
         OWNER,
@@ -3621,7 +3621,7 @@ fn product_dependencies_cannot_enable_test_support() {
 }
 
 #[test]
-fn test_support_self_activation_keeps_default_tests_available() {
+fn support_feature_self_activation_keeps_default_tests_available() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-tui"]);
     workspace.member(
@@ -3633,7 +3633,7 @@ fn test_support_self_activation_keeps_default_tests_available() {
 }
 
 #[test]
-fn test_support_forwarding_stays_opt_in_and_one_hop() {
+fn support_feature_forwarding_stays_opt_in_and_one_hop() {
     for feature in ["default", "runtime", "test-support"] {
         let workspace = Workspace::new();
         workspace.foundation(&["maestro-tools", "maestro-tui"]);
