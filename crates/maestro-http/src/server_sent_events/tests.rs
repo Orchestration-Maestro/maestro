@@ -90,7 +90,7 @@ fn data_event(data: &str) -> ServerSentEvent {
 }
 
 #[test]
-fn maestro_http_dispatches_carriage_terminated_events() {
+fn http_dispatches_carriage_terminated_events() {
     let endings = ["\n", "\r\n", "\r"];
     for line in endings {
         for blank in endings {
