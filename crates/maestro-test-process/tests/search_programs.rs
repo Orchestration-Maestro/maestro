@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::{TestProcess, install_search_program, selection};
 
 /// Missing exports and sources fail; a successful install keeps bytes and executable mode.

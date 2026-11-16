@@ -32,7 +32,7 @@ fn failed_prompt_releases_its_collection_registration() {
 #[cfg(unix)]
 #[test]
 fn failed_launch_publishes_nothing_and_leaves_no_child() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let entry = scratch.path().join("peer");
     maestro_test_process::rpc_peer::install(
         &entry,

@@ -7,10 +7,10 @@ use maestro_app::presentation_data::status_line::{
 use std::{path::PathBuf, rc::Rc, time::Duration};
 
 /// One owned repository stand-in: its disposable root and the repository inside it.
-struct Repository(maestro_test_directory::Scratch, PathBuf);
+struct Repository(maestro_test_process::Scratch, PathBuf);
 
 fn directory(content: &str) -> Repository {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path().to_path_buf();
     std::fs::create_dir_all(root.join("refs")).unwrap();
     std::fs::write(root.join("refs/table"), content).unwrap();

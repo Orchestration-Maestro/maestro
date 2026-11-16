@@ -150,7 +150,7 @@ fn footer_watch_selection_tracks_common_metadata() {
 /// premise cannot be exercised there.
 fn keeps_stars() -> bool {
     let name = std::ffi::OsStr::new("storage [one]*");
-    let kept = maestro_test_directory::Scratch::new()
+    let kept = maestro_test_process::Scratch::new()
         .unwrap()
         .keeps_distinct(&[name])
         .unwrap();
@@ -869,7 +869,7 @@ fn footer_native_poll_detects_change_time() {
 #[cfg(windows)]
 #[test]
 fn footer_native_poll_detects_a_replaced_table_on_windows() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let (path, staged) = (
         root.path().join("tables.list"),
         root.path().join("tables.new"),

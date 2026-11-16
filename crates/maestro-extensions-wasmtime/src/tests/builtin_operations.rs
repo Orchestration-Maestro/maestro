@@ -50,7 +50,7 @@ fn builtin_defaults_preserve_individual_corrections() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap();
         let (runner, _) = super::builtin_author::loaded_with_tool_services(maestro_extensions::ToolConstruction {
             tools_manager: std::sync::Arc::new(maestro_extensions::ToolsManager::new(cwd.into(), None).with_offline(Some(true))),
@@ -172,7 +172,7 @@ fn builtin_owned_tool_survives_factory_and_callback_return() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let path = scratch.path().join("read.txt");
         std::fs::write(&path, "native\0é😀\n").unwrap();
         let runner = super::builtin_author::loaded().await;
@@ -415,7 +415,7 @@ fn builtin_read_executable_keeps_native_metadata_without_context() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let path = scratch.path().join("executable.txt");
         std::fs::write(&path, "four arguments 雪\0\n").unwrap();
         let native = maestro_extensions::local::wrap_tool_definition(
@@ -991,7 +991,7 @@ async fn other_search_errors(
 
 /// A real grep consumes its original directory/read callbacks through success and both failures.
 async fn grep_errors(executable: bool) {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let file = scratch.path().join("雪.txt");
     std::fs::write(&file, "before\nneedle\nafter\n").unwrap();
     let manager = std::sync::Arc::new(
@@ -1552,7 +1552,7 @@ fn builtin_grep_callbacks_preserve_native_search_and_context() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let file = scratch.path().join("雪.txt");
         std::fs::write(&file, "before\nneedle\nafter\n").unwrap();
         let manager = std::sync::Arc::new(
@@ -1698,7 +1698,7 @@ fn builtin_grep_uses_application_tool_services() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime,async {
-        let scratch=maestro_test_directory::Scratch::new().unwrap();
+        let scratch=maestro_test_process::Scratch::new().unwrap();
         let bin=scratch.path().join("app-bin");
         std::fs::create_dir(&bin).unwrap();
         let binary=format!("rg{}",std::env::consts::EXE_SUFFIX);
@@ -1955,7 +1955,7 @@ fn builtin_queue_returns_nonserializable_author_values() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let runner = super::builtin_author::loaded().await;
         let command = runner.get_command("bridge-observe").unwrap().command;
         let result = (command.handler)(
@@ -1982,7 +1982,7 @@ fn builtin_mutation_admission_cancellation_has_no_late_effect() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let path = scratch
             .path()
             .join("cancelled")
@@ -2028,7 +2028,7 @@ fn builtin_mutations_keep_distinct_files_independent() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let runner = super::builtin_author::loaded().await;
         let command = runner.get_command("bridge-observe").unwrap().command;
         let (started, release) = read_gate(&runner);
@@ -2072,7 +2072,7 @@ fn builtin_mutations_release_after_error_and_alias_paths() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let existing = scratch.path().join("existing");
         std::fs::write(&existing, "unchanged").unwrap();
         let missing = scratch.path().join("missing");
@@ -2189,7 +2189,7 @@ fn builtin_mutations_share_native_file_ordering() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let path = scratch
             .path()
             .join("mutations")
@@ -2329,7 +2329,7 @@ fn builtin_bash_options_reach_the_nested_local_backend() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap();
         let runner = super::builtin_author::loaded().await;
         let command = runner.get_command("bridge-observe").unwrap().command;
@@ -2422,7 +2422,7 @@ fn builtin_spawn_hook_changes_are_used_after_prefixing() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap();
         let (runner, events) = super::builtin_author::loaded_with_events().await;
         let emitted = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
@@ -2569,7 +2569,7 @@ fn builtin_bash_initial_progress_failure_prevents_exec() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let marker = scratch.path().join("started");
         let command = format!("printf started > '{}'", marker.display());
         let errors = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
@@ -2628,7 +2628,7 @@ fn builtin_bash_bytes_and_progress_survive_guest_wrapping() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let runner = super::builtin_author::loaded().await;
         for executable in [false, true] {
             let cases = [
@@ -3096,7 +3096,7 @@ fn builtin_custom_operations_work_through_registered_extension_tool() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         for aggregate in [false, true] {
             let (runner, events) = super::builtin_author::loaded_with_events().await;
             let runner = std::rc::Rc::new(runner);

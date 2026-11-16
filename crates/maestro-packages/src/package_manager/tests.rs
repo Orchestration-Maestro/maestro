@@ -59,7 +59,7 @@ fn native_empty_environment_recovery_reads_procfs() {
             result.get("MAESTRO_ENV_SENTINEL").map(String::as_str),
             Some("a=b")
         );
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let alias = scratch.path().join("sentinel");
         maestro_test_process::install_command(
             &alias,
@@ -113,7 +113,7 @@ fn native_manager(
 ) -> super::DefaultPackageManager<super::NativePackageOperations> {
     super::DefaultPackageManager::new(
         super::PackageManagerOptions {
-            cwd: maestro_test_directory::temporary_root()
+            cwd: maestro_test_process::temporary_root()
                 .to_string_lossy()
                 .into_owned(),
             agent_dir: "/unused".into(),
@@ -137,7 +137,7 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
         ("\u{85}\"2\"".as_bytes().to_vec(), None),
         (b"bad".to_vec(), None),
     ] {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let manager = native_manager(answering(&scratch, &output));
         let result = runtime::run(manager.latest_npm_version("x"));
         if let Some(expected) = expected {
@@ -151,7 +151,7 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
             assert!(result.is_err());
         }
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let manager = native_manager(answering(&scratch, b"\xef\xbb\xbf"));
     assert_eq!(
         runtime::run(manager.latest_npm_version("example"))
@@ -163,10 +163,7 @@ fn latest_version_rejects_empty_capture_with_authored_message() {
 
 /// Settings whose package command prints `stdout` and succeeds.
 #[cfg(unix)]
-fn answering(
-    scratch: &maestro_test_directory::Scratch,
-    stdout: &[u8],
-) -> maestro_settings::Settings {
+fn answering(scratch: &maestro_test_process::Scratch, stdout: &[u8]) -> maestro_settings::Settings {
     let alias = scratch.path().join("npm");
     maestro_test_process::install_command(
         &alias,
@@ -190,7 +187,7 @@ fn answering(
 #[test]
 #[cfg(unix)]
 fn remote_head_rejects_unmatched_head_with_authored_message() {
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_process::Scratch::new().expect("test directory should be created");
     let path = scratch.path();
     for args in [
         vec!["init"],

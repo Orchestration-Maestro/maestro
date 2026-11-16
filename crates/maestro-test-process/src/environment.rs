@@ -96,7 +96,7 @@ where
     let mut child = TestProcess::named(name)?
         .nocapture()
         .env_clear()
-        .temp_dir(maestro_test_directory::temporary_root());
+        .temp_dir(crate::temporary_root());
     for (key, value) in edits {
         child = match value {
             Some(value) => child.env(key, value),

@@ -162,7 +162,7 @@ fn scope_hint_names_the_configured_cycle_key_and_is_absent_when_unbound() {
                 ),
                 ("[]", "Model scope: captured\n"),
             ] {
-                let scratch = maestro_test_directory::Scratch::new().unwrap();
+                let scratch = maestro_test_process::Scratch::new().unwrap();
                 std::fs::write(
                     scratch.path().join("keybindings.json"),
                     format!("{{\"app.model.cycleForward\": {binding}}}"),
@@ -478,7 +478,7 @@ fn print_dispatch_uses_real_modes_and_returns_status() {
         run(name, print_child);
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     for case in ["text-ok", "text-error", "json-ok", "json-error"] {
         let output = crate::support::missing_cwd::command(name, case, root.path())
             .quiet()
@@ -664,7 +664,7 @@ fn print_failure_does_not_restore_or_close_outer_owners() {
     if run_alone(name).unwrap() {
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let mut child = crate::support::missing_cwd::command(name, "broken-pipe", root.path())
         .quiet()
         .nocapture()

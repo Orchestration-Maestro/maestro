@@ -304,8 +304,8 @@ pub fn check_rows(test: &str) -> TestResult {
         return crate::runtime::run(converse(row));
     }
     // A privileged run writes a read-only cache anyway, so such a row has nothing to check.
-    let probe = maestro_test_directory::Scratch::new()?;
-    let denials = maestro_test_directory::deny(probe.path(), 0o555)?.is_some();
+    let probe = maestro_test_process::Scratch::new()?;
+    let denials = maestro_test_process::deny(probe.path(), 0o555)?.is_some();
     owned
         .iter()
         .filter(|row| denials || row.input.read_only.is_none())

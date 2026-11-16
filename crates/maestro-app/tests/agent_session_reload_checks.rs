@@ -12,7 +12,7 @@ use maestro_models::{
 };
 use maestro_models_registry::{ProviderCallbacks, ProviderConfigInput};
 use maestro_settings::MessageDeliveryMode;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::json;
 use std::{rc::Rc, sync::RwLock};
 

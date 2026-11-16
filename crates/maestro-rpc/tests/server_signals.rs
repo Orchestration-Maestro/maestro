@@ -4,7 +4,7 @@
 use crate::support::{Child, Served, serve};
 use maestro_extensions::{ExtensionFactory, types::events::SessionShutdownEvent};
 use maestro_models::Local;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::{CASE, TestProcess, selection};
 use std::convert::Infallible;
 use std::fs::File;

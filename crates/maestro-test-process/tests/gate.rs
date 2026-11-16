@@ -4,7 +4,7 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::gate::Gate;
 use maestro_test_process::install_family;
 

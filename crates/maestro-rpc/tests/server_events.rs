@@ -7,7 +7,7 @@ use maestro_app::test_support::{
 };
 use maestro_extensions::{ExtensionFactory, SessionStartEvent};
 use maestro_models::{AssistantMessage, Local, StopReason, TextContent, UserBlock};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::BTreeSet, rc::Rc};
 

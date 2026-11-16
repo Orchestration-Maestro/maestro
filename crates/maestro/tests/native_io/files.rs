@@ -177,7 +177,7 @@ fn native_files_precommit_failures_and_real_denial_preserve_content() {
         std::fs::metadata(&file).unwrap().permissions().mode(),
         before
     );
-    let Some(_restore) = maestro_test_directory::deny(&parent, 0o500).unwrap() else {
+    let Some(_restore) = maestro_test_process::deny(&parent, 0o500).unwrap() else {
         eprintln!("privileged host: native permission denial cannot be exercised");
         rpc.finish();
         return;

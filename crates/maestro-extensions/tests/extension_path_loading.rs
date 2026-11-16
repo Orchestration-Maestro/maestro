@@ -39,7 +39,7 @@ fn module_loading_normalizes_only_the_module_argument() {
     use maestro_models::Local;
     use std::{cell::RefCell, rc::Rc};
 
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path().to_str().unwrap();
     std::fs::create_dir(scratch.path().join("work")).unwrap();
     std::os::unix::fs::symlink(scratch.path(), scratch.path().join("link")).unwrap();
@@ -112,7 +112,7 @@ fn loaded_paths_share_the_bus_and_runtime_of_one_call() {
 /// so each loaded path received its own bus identity.
 #[test]
 fn each_loaded_path_has_its_own_bus_identity() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     std::fs::write(format!("{root}/relay.ts"), "relay:a>b").unwrap();
     std::fs::write(format!("{root}/sink.ts"), "listen:b").unwrap();
@@ -144,7 +144,7 @@ fn default_family_loads_through_a_thread_safe_loader() {
         load_extensions, types::RegisteredCommandOptions,
     };
     use std::sync::Arc;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     let factory: ExtensionFactory = Arc::new(|api| {
         Box::pin(async move {
@@ -260,7 +260,7 @@ fn leading_home_paths_load_without_a_working_directory() {
     use crate::local_support::{LocalBus, local};
     use maestro_extensions::{ModuleLoader, load_extensions};
     use maestro_models::Local;
-    use maestro_test_directory::Scratch;
+    use maestro_test_process::Scratch;
     use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
     let test = "leading_home_paths_load_without_a_working_directory";

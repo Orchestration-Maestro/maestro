@@ -428,7 +428,7 @@ fn messages_adaptive_metadata_merges_only_matching_case_sensitive_families() {
             compat(result, "supportsCacheControlOnTools"),
             Some(&json!(false))
         );
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         super::super::emit::write_catalog(&catalog, scratch.path()).unwrap();
         let source =
             std::fs::read_to_string(scratch.path().join("provider_vercel-ai-gateway.rs")).unwrap();

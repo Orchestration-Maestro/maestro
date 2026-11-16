@@ -8,7 +8,7 @@ use maestro_app::presentation_data::input_selectors::{
     ConfigSelectorFactory, ConfigSelectorOptions,
 };
 use maestro_cli::input::configuration::ConfigPresentation;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_theme::ThemeState;
 use serde_json::json;
 use std::cell::RefCell;

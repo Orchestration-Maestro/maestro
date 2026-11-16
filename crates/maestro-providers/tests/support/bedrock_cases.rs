@@ -69,7 +69,7 @@ impl Case {
 }
 
 /// Shared-config and credentials files holding two distinguishable synthetic profiles.
-pub struct AwsFiles(maestro_test_directory::Scratch);
+pub struct AwsFiles(maestro_test_process::Scratch);
 
 impl AwsFiles {
     pub fn create(test: &str) -> TestResult<Self> {
@@ -83,7 +83,7 @@ impl AwsFiles {
 
     /// Create exclusively owned configuration files for a synthetic profile.
     pub fn create_with(_test: &str, config: &str, credentials: &str) -> TestResult<Self> {
-        let files = Self(maestro_test_directory::Scratch::new()?);
+        let files = Self(maestro_test_process::Scratch::new()?);
         std::fs::write(files.0.path().join("config"), config)?;
         std::fs::write(files.0.path().join("credentials"), credentials)?;
         Ok(files)

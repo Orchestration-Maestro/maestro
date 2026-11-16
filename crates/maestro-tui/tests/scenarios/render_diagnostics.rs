@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 #[cfg(unix)]
 use maestro_tui::TuiRuntime as _;
 use maestro_tui::{TUI, TerminalImage};

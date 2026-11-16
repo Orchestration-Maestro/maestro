@@ -46,7 +46,7 @@ pub fn with_environment_without(
         None
     } else {
         Some(
-            maestro_test_directory::Scratch::new()
+            crate::Scratch::new()
                 .map_err(|error| failure("the scratch base is not creatable").caused_by(error))?,
         )
     };

@@ -4,10 +4,10 @@ use maestro_lock::{Replace, replace};
 use std::{fs, path::PathBuf};
 
 /// Isolated directory removed after each native transaction.
-struct Directory(maestro_test_directory::Scratch);
+struct Directory(maestro_test_process::Scratch);
 impl Directory {
     fn new() -> Self {
-        Self(maestro_test_directory::Scratch::new().unwrap())
+        Self(maestro_test_process::Scratch::new().unwrap())
     }
     /// The directory this test owns.
     fn path(&self) -> &std::path::Path {
@@ -124,7 +124,7 @@ fn replacement_refuses_a_read_only_target_and_leaves_it_whole() {
     let dir = Directory::new();
     let target = dir.path().join("target");
     fs::write(&target, b"old").unwrap();
-    let Some(_restored) = maestro_test_directory::deny(&target, 0o400).unwrap() else {
+    let Some(_restored) = maestro_test_process::deny(&target, 0o400).unwrap() else {
         return;
     };
 
@@ -276,7 +276,7 @@ fn replacement_rejects_cycles_without_touching_disk() {
 
 #[test]
 fn replacement_accepts_a_full_length_target_leaf() {
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_process::Scratch::new().unwrap();
     let target = dir.path().join("x".repeat(255));
     if let Err(error) = fs::write(&target, b"old") {
         assert!(fs::write(dir.path().join("control"), b"control").is_ok());
@@ -295,7 +295,7 @@ fn replacement_accepts_a_full_length_target_leaf() {
 #[test]
 fn rewrite_preserves_hard_links_and_access_mode() {
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let path = root.path().join("session");
     let alias = root.path().join("alias");
     fs::write(&path, b"before").unwrap();
@@ -314,10 +314,10 @@ fn rewrite_preserves_hard_links_and_access_mode() {
 #[cfg(unix)]
 #[test]
 fn rewrite_refuses_an_existing_read_only_target() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let path = root.path().join("session");
     fs::write(&path, b"before").unwrap();
-    let Some(_restore) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+    let Some(_restore) = maestro_test_process::deny(&path, 0o400).unwrap() else {
         return;
     };
     assert_eq!(
@@ -336,7 +336,7 @@ fn requested_publication_accepts_full_length_native_leaves() {
     #[cfg(not(windows))]
     let unicode = "é".repeat(127) + "x";
     for leaf in ["x".repeat(255), unicode] {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let target = scratch.path().join(leaf);
         fs::write(&target, b"native control").unwrap();
         for bytes in [b"rewritten".as_slice(), b"\0\xffcreated"] {
@@ -361,7 +361,7 @@ fn requested_publication_accepts_full_length_native_leaves() {
 fn requested_mode_follows_existing_and_dangling_final_links() {
     use std::os::unix::fs::{PermissionsExt, symlink};
     for existing in [false, true] {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let target = scratch.path().join("target");
         let link = scratch.path().join("link");
         if existing {

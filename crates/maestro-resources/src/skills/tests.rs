@@ -9,7 +9,7 @@ use super::{LoadSkillsOptions, LoadSkillsResult, load_skills};
 use crate::paths::resolve;
 #[cfg(not(windows))]
 use crate::{DiagnosticType, SourceOrigin, SourceScope};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -37,7 +37,7 @@ enum Cwd {
 struct Fixture {
     /// Restores read permission before the tree is removed.
     #[cfg(unix)]
-    _restore: Option<maestro_test_directory::Restore>,
+    _restore: Option<maestro_test_process::Restore>,
     /// Owner of the tree.
     _scratch: Scratch,
     /// Root for anchored paths.

@@ -9,7 +9,7 @@ use maestro_cli::startup::entrypoint::bootstrap::{
     validate_fork_flags,
 };
 use maestro_settings::SettingsManager;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_theme::Theme;
 use serde_json::json;
 

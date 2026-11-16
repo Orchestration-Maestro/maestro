@@ -95,10 +95,10 @@ fn child_group_selection_uses_the_largest_live_group() {
 }
 
 /// Owns a separate procfs fixture tree for one test transaction.
-struct ProcTree(maestro_test_directory::Scratch);
+struct ProcTree(maestro_test_process::Scratch);
 impl ProcTree {
     fn new() -> Self {
-        Self(maestro_test_directory::Scratch::new().unwrap())
+        Self(maestro_test_process::Scratch::new().unwrap())
     }
     fn path(&self) -> &std::path::Path {
         self.0.path()

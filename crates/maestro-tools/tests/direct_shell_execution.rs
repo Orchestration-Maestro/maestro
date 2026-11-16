@@ -226,7 +226,7 @@ fn observe_error(
         marker
     ));
     assert!(case.expected.result.is_none());
-    let paths: Vec<_> = std::fs::read_dir(maestro_test_directory::temporary_root())
+    let paths: Vec<_> = std::fs::read_dir(maestro_test_process::temporary_root())
         .unwrap()
         .map(|entry| entry.unwrap().path())
         .collect();

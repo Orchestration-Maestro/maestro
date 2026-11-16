@@ -8,12 +8,12 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 
 /// Own a newly created test directory until its socket handles have dropped.
-struct Directory(maestro_test_directory::Scratch);
+struct Directory(maestro_test_process::Scratch);
 
 impl Directory {
     /// Create a unique directory without replacing an existing entry.
     fn new() -> Self {
-        Self(maestro_test_directory::Scratch::new_socket().unwrap())
+        Self(maestro_test_process::Scratch::new_socket().unwrap())
     }
 
     /// The directory this test owns.
@@ -335,7 +335,7 @@ fn socket_prepare_preserves_unclassified_failures() {
     let denied = directory.path().join("denied");
     fs::create_dir(&denied).unwrap();
     let before = fs::symlink_metadata(&denied).unwrap();
-    let Some(guard) = maestro_test_directory::deny(&denied, 0).unwrap() else {
+    let Some(guard) = maestro_test_process::deny(&denied, 0).unwrap() else {
         return;
     };
     let child = denied.join("new/child");

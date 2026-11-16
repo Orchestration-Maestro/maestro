@@ -159,7 +159,7 @@ fn sound_unsupported_extension_reports_fallback() {
 
 #[test]
 fn sound_file_diagnostics_distinguish_missing_and_directory() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path();
     std::fs::create_dir(root.join("directory.mp3")).unwrap();
     std::fs::write(root.join("valid.MP3"), b"controlled sound bytes").unwrap();

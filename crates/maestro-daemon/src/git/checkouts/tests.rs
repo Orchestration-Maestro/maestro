@@ -1,6 +1,6 @@
 //! Git failure classification, launch sources and defensive recovery.
 use super::*;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::{error::Error, path::Path};
 
 /// A completed Git failure with supplied diagnostic streams.

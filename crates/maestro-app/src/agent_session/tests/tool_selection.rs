@@ -6,7 +6,7 @@ use crate::tests::session_harness::{Harness, case, sdk_definition, sdk_tools};
 use maestro_app::test_support::{HarnessOptions, harness, on_task_set, tool_definition};
 use maestro_models::system_prompt::BuildSystemPromptOptions;
 use maestro_session::Presence;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 
 /// The prompt the recorded options and this session's directory build.

@@ -20,7 +20,7 @@ use maestro_protocol::{
         ErrorBody, LayoutDescription, LayoutNode, LayoutPane, ResponseResult, SplitDirection,
     },
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_workspace::tiling::PaneId;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};

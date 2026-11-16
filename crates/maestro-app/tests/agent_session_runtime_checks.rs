@@ -11,7 +11,7 @@ use maestro_extensions::{
     types::{ForkOptions, SwitchSessionOptions},
 };
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 
 /// Forks at the complete branch's leaf and records storage and ordered messages.

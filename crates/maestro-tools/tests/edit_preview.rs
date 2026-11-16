@@ -116,7 +116,7 @@ fn access_error(path: &std::path::Path, code: &str) -> io::Error {
 #[cfg(unix)]
 fn denial_ignored(root: &Scratch, case: &Case) -> bool {
     matches!(case.setup.as_deref(), Some("readonly" | "unreadable"))
-        && maestro_test_directory::deny(root.text(), 0o0)
+        && maestro_test_process::deny(root.text(), 0o0)
             .unwrap()
             .is_none()
 }
@@ -401,7 +401,7 @@ fn preview_reads_ambient_cwd_only_when_required() {
     }
     let saved = std::env::current_dir().unwrap();
     let original = Scratch::new().unwrap();
-    let removed = maestro_test_directory::Scratch::new().unwrap();
+    let removed = maestro_test_process::Scratch::new().unwrap();
     let target = original.file("target.txt", b"left\nright\n");
     removed.enter_removed("removed").unwrap();
     for single in [false, true] {

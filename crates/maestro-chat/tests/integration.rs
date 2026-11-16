@@ -35,7 +35,7 @@ mod resource_configuration;
 use maestro_tui::test_support::runtime_spy;
 mod scoped_model_selection;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_directory as scratch;
+use maestro_test_process as scratch;
 #[path = "support/selector.rs"]
 mod selector;
 mod selector_failure_support;

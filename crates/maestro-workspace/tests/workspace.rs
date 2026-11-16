@@ -133,7 +133,7 @@ fn rejected_move_returns_original_pane() {
 #[test]
 fn display_label_uses_admitted_identity_cache() {
     let mut owner = workspace();
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let directory = scratch.path().to_path_buf();
     let ws = &mut owner.workspaces[0];
     ws.identity_cwd = directory.clone();

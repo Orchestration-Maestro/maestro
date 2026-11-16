@@ -585,14 +585,14 @@ fn daemon_construction_initializes_supplied_manifest_summaries() {
 #[cfg(unix)]
 fn isolated_home(
     test: &str,
-    prepare: impl FnOnce(&maestro_test_directory::Scratch) -> Option<std::path::PathBuf>,
+    prepare: impl FnOnce(&maestro_test_process::Scratch) -> Option<std::path::PathBuf>,
 ) -> Option<std::path::PathBuf> {
     /// The case that repeats this test with a prepared home directory.
     const CHILD: &str = "prepared-home";
     if maestro_test_process::selection().case() == Some(CHILD) {
         return std::env::var_os("HOME").map(std::path::PathBuf::from);
     }
-    let owner = maestro_test_directory::Scratch::new().unwrap();
+    let owner = maestro_test_process::Scratch::new().unwrap();
     let home = prepare(&owner)?;
     let output = maestro_test_process::TestProcess::current(test)
         .unwrap()
@@ -612,7 +612,7 @@ fn isolated_home(
 /// directory; `None` where the host does not store that name, so the native-home
 /// behaviour cannot run there.
 #[cfg(unix)]
-fn unspellable_home(root: &maestro_test_directory::Scratch) -> Option<std::path::PathBuf> {
+fn unspellable_home(root: &maestro_test_process::Scratch) -> Option<std::path::PathBuf> {
     use std::os::unix::ffi::OsStrExt;
     let name = <std::ffi::OsStr as OsStrExt>::from_bytes(b"home-\xff");
     if !root.keeps_distinct(&[name]).unwrap() {

@@ -5,7 +5,7 @@
 use crate::support;
 use maestro_interchange::presence::Presence;
 use maestro_session::{SessionInfo, SessionManager, parse_session_entries};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::io;
 use std::path::Path;
@@ -555,7 +555,7 @@ fn all_projects_skips_unreadable_children() {
     std::fs::write(sessions.join("good/bad.jsonl"), "{broken").unwrap();
     let locked = sessions.join("locked");
     // A privileged run reads the locked project anyway, so there is nothing to check.
-    let Some(restore) = maestro_test_directory::deny(&locked, 0o000).unwrap() else {
+    let Some(restore) = maestro_test_process::deny(&locked, 0o000).unwrap() else {
         return;
     };
     let mut seen = Vec::new();

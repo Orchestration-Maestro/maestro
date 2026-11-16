@@ -1,6 +1,6 @@
 //! Public directory ownership qualification.
 #![cfg(not(target_arch = "wasm32"))]
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::fs;
 
 #[test]
@@ -209,7 +209,7 @@ fn denials_match_what_this_process_is_refused() {
         let allowed = allowed();
         fs::set_permissions(path, earlier).unwrap();
         let _ = fs::remove_dir(&created);
-        let guard = maestro_test_directory::deny(path, denied_mode).unwrap();
+        let guard = maestro_test_process::deny(path, denied_mode).unwrap();
         assert_eq!(
             guard.is_some(),
             !allowed,

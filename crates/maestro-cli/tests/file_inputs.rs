@@ -6,7 +6,7 @@ use maestro_cli::input::file_processor::{
     ProcessedFiles, process_file_arguments,
 };
 use maestro_models::ImageContent;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_tools::utils::ResizedImage;
 use std::cell::RefCell;
 use std::io;

@@ -32,7 +32,7 @@ fn assert_queue_case(h: &Harness, t: &Transcript, case: &Value) {
 
 /// A session over the recorded skills and the `plan` template.
 async fn expanding_session() -> (Harness, Transcript) {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let options = HarnessOptions {
         skills: recorded_skills(&scratch),
         prompts: vec![template("plan", "Plan $1")],

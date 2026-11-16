@@ -205,11 +205,11 @@ pub fn page_data(page: &str) -> serde_json::Value {
 }
 
 /// A fresh disposable directory.
-pub fn scratch() -> maestro_test_directory::Scratch {
-    maestro_test_directory::Scratch::new().expect("a scratch directory is creatable")
+pub fn scratch() -> maestro_test_process::Scratch {
+    maestro_test_process::Scratch::new().expect("a scratch directory is creatable")
 }
 
 /// The directory text of `scratch`.
-pub fn root(scratch: &maestro_test_directory::Scratch) -> String {
+pub fn root(scratch: &maestro_test_process::Scratch) -> String {
     scratch.path().display().to_string()
 }

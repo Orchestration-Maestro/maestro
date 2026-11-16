@@ -5,7 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::install_family;
 
 /// The body the refused write carries, past every pipe buffer.

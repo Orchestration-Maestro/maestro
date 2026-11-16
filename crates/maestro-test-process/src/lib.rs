@@ -1,4 +1,7 @@
-//! Controlled native child processes for tests.
+//! Isolate native tests from process-wide state.
+//!
+//! [`Scratch`] owns disposable directory trees. [`trace_capture`] runs scoped tracing
+//! subscribers without losing events when another thread reaches a callsite first.
 //!
 //! A test that re-runs itself, or a named sibling, in a fresh process starts it through
 //! [`TestProcess`]. The owner resolves one exact libtest identity, confirms the test is
@@ -45,6 +48,7 @@ pub mod child;
 #[cfg(windows)]
 mod console;
 pub mod credentials;
+mod directory;
 mod environment;
 mod error;
 mod executable;
@@ -60,12 +64,16 @@ mod selection;
 #[cfg(unix)]
 mod setup;
 mod test_process;
+pub mod trace_capture;
 
 pub use agent_directory::{AGENT_DIRECTORY, link_files, run_agent_directory};
 pub use alone::run_alone;
 pub use broken_stderr::{run_with_broken_stderr, wait_for_broken_stderr};
 #[cfg(windows)]
 pub use console::on_console;
+#[cfg(unix)]
+pub use directory::{Restore, deny};
+pub use directory::{Scratch, temporary_root};
 pub use environment::{CASE, CaseSelection, local_zone_follows_tz, run_per_environment, selection};
 pub use error::TestProcessError;
 pub use executable::{install_command, install_executable, install_family, install_search_program};

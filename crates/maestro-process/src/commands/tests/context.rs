@@ -32,7 +32,7 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
         run(Path::new(&std::env::var_os(LAUNCH_CONTEXT_ROOT).unwrap()));
         return;
     }
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_process::Scratch::new().unwrap();
     let root = owned.path();
     for (directory, text) in [("parent", "parent"), ("chosen", "chosen")] {
         let tools = root.join(directory).join("tools");
@@ -323,7 +323,7 @@ fn run_wrapper(program: &Path, cwd: &Path, environment: &[(&str, &str)]) -> Stri
 
 #[test]
 fn launch_rejects_missing_files_and_directories() {
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_process::Scratch::new().unwrap();
     let root = owned.path();
     std::fs::create_dir(root.join("nonfile.CMD")).unwrap();
     for program in ["./missing", "./nonfile.CMD"] {

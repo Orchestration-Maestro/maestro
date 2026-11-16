@@ -28,11 +28,8 @@ pub struct Rows {
 #[cfg(not(target_arch = "wasm32"))]
 pub fn registry(
     names: &[String],
-) -> (
-    maestro_test_directory::Scratch,
-    Rc<maestro_theme::ThemeState>,
-) {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+) -> (maestro_test_process::Scratch, Rc<maestro_theme::ThemeState>) {
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     for name in names
         .iter()
         .filter(|name| !matches!(name.as_str(), "dark" | "light"))

@@ -761,8 +761,7 @@ fn package_entry_links_preserve_admission_and_failure_fallback() {
         )
         .unwrap();
     }
-    let Some(_locked) = maestro_test_directory::deny(dir.path().join("locked"), 0o0).unwrap()
-    else {
+    let Some(_locked) = maestro_test_process::deny(dir.path().join("locked"), 0o0).unwrap() else {
         return;
     };
     let [extensions, skills, prompts, themes] = resolved_relative(&root);
@@ -818,7 +817,7 @@ fn package_skill_root_links_follow_the_target_kind() {
         }
         symlink(&target, &entry).unwrap();
         let locked = (name == "denied")
-            .then(|| maestro_test_directory::deny(dir.path().join("locked"), 0o0).unwrap());
+            .then(|| maestro_test_process::deny(dir.path().join("locked"), 0o0).unwrap());
         if matches!(locked, Some(None)) {
             continue;
         }

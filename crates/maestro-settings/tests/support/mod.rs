@@ -283,7 +283,7 @@ pub fn report(value: &Value) {
     println!("REPORT:{value}");
 }
 
-pub use maestro_test_directory::Scratch;
+pub use maestro_test_process::Scratch;
 
 /// Environment variable naming the file a lock child works on.
 const CHILD_PATH: &str = "MAESTRO_SETTINGS_TEST_PATH";

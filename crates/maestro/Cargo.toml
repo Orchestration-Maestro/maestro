@@ -40,7 +40,6 @@ maestro-json = { path = "../maestro-json" }
 maestro-session = { path = "../maestro-session" }
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 serde_json.workspace = true
-maestro-test-directory.workspace = true
 maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["test-util"] }
 

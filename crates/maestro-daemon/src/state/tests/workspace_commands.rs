@@ -337,7 +337,7 @@ fn workspace_creation_follows_the_focused_pane_directory() {
     with_live_daemon(
         "workspace_commands::workspace_creation_follows_the_focused_pane_directory",
         async |app| {
-            let root = maestro_test_directory::Scratch::new().unwrap();
+            let root = maestro_test_process::Scratch::new().unwrap();
             let (first, focused) = (root.path().join("root"), root.path().join("focused"));
             std::fs::create_dir(&first).unwrap();
             std::fs::create_dir(&focused).unwrap();
@@ -366,10 +366,10 @@ fn workspace_creation_preserves_explicit_cwd_and_focus_policy() {
     with_live_daemon(
         "workspace_commands::workspace_creation_preserves_explicit_cwd_and_focus_policy",
         async |app| {
-            let root = maestro_test_directory::Scratch::new().unwrap();
+            let root = maestro_test_process::Scratch::new().unwrap();
             let explicit = root.path().join("explicit");
             std::fs::create_dir(&explicit).unwrap();
-            let policy = maestro_test_directory::temporary_root();
+            let policy = maestro_test_process::temporary_root();
             let create = json!({"type": "workspace.create", "cwd": explicit, "focus": true});
             let (workspace, ..) = created(answer(app, create).await);
             assert_eq!(app.state.topology.workspaces[0].identity_cwd, explicit);

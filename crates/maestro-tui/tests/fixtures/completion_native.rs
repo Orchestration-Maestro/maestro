@@ -3,14 +3,14 @@
 use std::path::Path;
 
 /// A disposable directory owned by one test.
-pub struct Tree(maestro_test_directory::Scratch);
+pub struct Tree(maestro_test_process::Scratch);
 impl Tree {
     /// Create an empty directory without modifying the runner environment.
     ///
     /// # Errors
     /// Returns a directory creation error.
     pub fn new() -> std::io::Result<Self> {
-        maestro_test_directory::Scratch::new().map(Self)
+        maestro_test_process::Scratch::new().map(Self)
     }
     /// The directory this test owns.
     #[must_use]

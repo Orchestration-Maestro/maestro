@@ -63,7 +63,7 @@ fn write(directory: &str, files: &[(&str, String)]) {
 }
 
 /// Run the report over `sessions` and read back the page it wrote.
-fn report(scratch: &maestro_test_directory::Scratch, sessions: &str) -> (Run, String) {
+fn report(scratch: &maestro_test_process::Scratch, sessions: &str) -> (Run, String) {
     let output = maestro_path::join(&[&root(scratch), "report.html"]);
     let run = run_tools(&["--sessions-dir", sessions, "--output", &output])
         .expect("the report reads its directory");

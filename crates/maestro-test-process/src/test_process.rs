@@ -281,7 +281,7 @@ impl TestProcess {
     ///
     /// ```
     /// # #[cfg(unix)] {
-    /// use maestro_test_process::{IsolatedSetup, TestProcess};
+    /// use crate::{IsolatedSetup, TestProcess};
     ///
     /// let child = TestProcess::named("permissions::created_file")?
     ///     .setup(IsolatedSetup::new().umask(0o022));

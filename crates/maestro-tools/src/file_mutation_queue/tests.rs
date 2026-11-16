@@ -27,7 +27,7 @@ fn finish<T>(mut future: BoxFuture<T>) -> T {
 
 #[test]
 fn mutation_queue_releases_waiter_ownership_when_empty() {
-    let owned = maestro_test_directory::temporary_root()
+    let owned = maestro_test_process::temporary_root()
         .join(format!("maestro-queue-unit-{}", std::process::id()));
     let path = owned.to_string_lossy().into_owned();
     let state = Arc::new(());
@@ -69,7 +69,7 @@ fn mutation_queue_releases_waiter_ownership_when_empty() {
 
 #[test]
 fn cancelled_file_work_holds_the_queue_until_it_settles() {
-    let owned = maestro_test_directory::temporary_root()
+    let owned = maestro_test_process::temporary_root()
         .join(format!("maestro-queue-hold-{}", std::process::id()));
     let path = owned.to_string_lossy().into_owned();
     let journal = std::sync::Arc::new(std::sync::Mutex::new(Vec::<&'static str>::new()));

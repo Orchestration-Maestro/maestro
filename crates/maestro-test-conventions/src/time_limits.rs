@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use syn::{ext::IdentExt, parse::Parser, parse::discouraged::Speculative, spanned::Spanned};
 
-use crate::source::Member;
+use crate::source::{Member, Source};
 
 /// Reject recognized optional polling macros, timer calls and scoped tracing captures in
 /// test-owned parsed sources; only the test tracing owner may capture directly.
@@ -29,7 +29,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 match api {
                     Diagnostic::Timer(api) => format!("{file}:{line}: test-owned time limit: {api}; wait for completion instead"),
                     Diagnostic::OptionalPoll => format!("{file}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())"),
-                    Diagnostic::Capture(api) => format!("{file}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead"),
+                    Diagnostic::Capture(api) => format!("{file}:{line}: scoped tracing capture outside maestro-test-process::trace_capture: {api}; call maestro_test_process::trace_capture::with_default or with_subscriber instead"),
                 }
             })
             .collect::<Vec<_>>()
@@ -180,10 +180,11 @@ fn resolve<'a>(
 
 impl<'a> Calls<'a> {
     /// Start the time-limit check of one member's source.
-    pub(crate) fn new(member: &Member) -> Self {
+    pub(crate) fn new(member: &Member, source: &Source) -> Self {
         Self {
             uses: Vec::new(),
-            tracing_owner: member.name == crate::graph::TEST_TRACING,
+            tracing_owner: member.name == crate::graph::policy::TEST_PROCESS
+                && source.path == member.directory.join("src/trace_capture.rs"),
             pending: Vec::new(),
         }
     }

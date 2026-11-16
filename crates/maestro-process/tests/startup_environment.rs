@@ -41,7 +41,7 @@ fn output(launch: Launch, environment: &[(&str, &str)], cwd: Option<&Path>) -> S
 
 #[test]
 fn startup_child_default_keeps_explicit_marker_overlay() {
-    let tree = maestro_test_directory::Scratch::new().unwrap();
+    let tree = maestro_test_process::Scratch::new().unwrap();
     let observed = output(
         probe(),
         &[

@@ -58,7 +58,7 @@ fn builtin_local_shell_retains_exit_timeout_and_abort_outcomes() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let (runner, errors) = loaded().await;
         for timeout in [None, Some(0.0), Some(-1.0)] {
             for status in [0, 7] {

@@ -19,7 +19,7 @@ pub(crate) static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Disposable directory removed when dropped.
 pub struct TempDir(
-    maestro_test_directory::Scratch,
+    maestro_test_process::Scratch,
     Option<RwLockReadGuard<'static, ()>>,
 );
 
@@ -27,7 +27,7 @@ impl TempDir {
     /// Create an empty directory with the supplied creation-error context.
     pub fn new(name: &str) -> Self {
         Self(
-            maestro_test_directory::Scratch::new()
+            maestro_test_process::Scratch::new()
                 .unwrap_or_else(|error| panic!("create {name} fixture: {error}")),
             None,
         )

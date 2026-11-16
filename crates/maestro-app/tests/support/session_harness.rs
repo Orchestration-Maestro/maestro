@@ -21,7 +21,7 @@ use maestro_session::{
     CompactionResult, Presence, SessionManager,
     message_records::{CustomAgentMessages, CustomMessageInput},
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -96,7 +96,7 @@ pub fn recorded(file: &str, name: &str) -> Value {
 }
 
 /// A session and the owners the tests observe, over its own disposable root.
-pub type Harness = maestro_app::test_support::Harness<maestro_test_directory::Scratch>;
+pub type Harness = maestro_app::test_support::Harness<maestro_test_process::Scratch>;
 
 /// What the application's own tests read from a harness beside its fields.
 pub trait HarnessExt {
@@ -695,7 +695,7 @@ pub fn assert_transcript(h: &Harness, t: &Transcript, case: &Value) {
 
 /// The recorded project files: the `review` skill with frontmatter and a padded body, and
 /// a `gone` skill whose file is missing.
-pub fn recorded_skills(scratch: &maestro_test_directory::Scratch) -> Vec<maestro_resources::Skill> {
+pub fn recorded_skills(scratch: &maestro_test_process::Scratch) -> Vec<maestro_resources::Skill> {
     let dir = scratch.path().join("project/skills/review");
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("SKILL.md");
@@ -783,7 +783,7 @@ pub fn run_native_tool_child(test: &str) -> bool {
     if maestro_test_process::selection().is_child() {
         return false;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let mut child = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .case("*")

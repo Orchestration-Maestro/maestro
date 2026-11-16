@@ -16,7 +16,7 @@ use maestro_session::{
     Presence, SessionManager,
     session_manager::{NavigateTreeOptions, ReadonlySessionManager},
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -194,7 +194,7 @@ fn navigate(name: &str, scenario: Scenario) -> Value {
         let (manager, names) = shared.as_ref().unwrap();
         event_view(&manager.borrow(), names, kind, event)
     });
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
         let session_manager = scenario.file.then(|| {

@@ -7,7 +7,7 @@ use maestro_credentials::{AuthStorage, AuthStorageData};
 use maestro_models::{
     FauxProviderRegistration, Local, RegisterFauxProviderOptions, register_faux_provider,
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, future::Future, rc::Rc, sync::Arc, sync::RwLock};
 use tokio::task::LocalSet;

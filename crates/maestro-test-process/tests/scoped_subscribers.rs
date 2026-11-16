@@ -44,14 +44,14 @@ fn reach_after_another_thread() {
 #[test]
 fn events_arrive_when_another_thread_reached_the_callsite_first() {
     let count = Count::default();
-    maestro_test_tracing::with_default(count.clone(), reach_after_another_thread);
+    maestro_test_process::trace_capture::with_default(count.clone(), reach_after_another_thread);
     assert_eq!(count.0.load(Ordering::SeqCst), 1);
 }
 
 #[test]
 fn future_events_arrive_when_another_thread_reached_the_callsite_first() {
     let count = Count::default();
-    let future = maestro_test_tracing::with_subscriber(
+    let future = maestro_test_process::trace_capture::with_subscriber(
         async { reach_after_another_thread() },
         count.clone(),
     );

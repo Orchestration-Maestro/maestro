@@ -5,7 +5,7 @@ use maestro_daemon::git::checkouts::{
     self, ExistingWorktree, WorktreeError, branch_to_path_slug, checkout_has_dirty_files,
     default_checkout_path, generated_branch_slug, local_branch_exists, worktrees_root,
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::path::{Path, PathBuf};
 
 /// A repository named `repo` on branch `main` with one committed file.

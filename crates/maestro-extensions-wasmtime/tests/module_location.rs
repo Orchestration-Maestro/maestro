@@ -10,7 +10,7 @@ use maestro_extensions::{
     ExtensionRunner, LoadExtensionsResult, Local, ResourcesDiscoverReason, create_event_bus_for,
     execution::ResourcePath, load_extensions, types::FlagValue,
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},

@@ -133,7 +133,7 @@ fn a_termination_signal_disposes_the_run_and_reports_quit() {
         signalling_child();
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
     let (mut child, mut diagnostics) =
         signalling_case(name, SignallingCase::Termination, root.path(), &report);
@@ -160,7 +160,7 @@ fn a_hangup_after_a_termination_ends_the_run_and_reports_quit_once() {
         signalling_child();
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
     let (mut child, mut diagnostics) =
         signalling_case(name, SignallingCase::Hangup, root.path(), &report);
@@ -189,7 +189,7 @@ fn a_rejected_disposal_ends_the_run_and_reports_quit() {
         signalling_child();
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
     let (mut child, mut diagnostics) =
         signalling_case(name, SignallingCase::Rejected, root.path(), &report);

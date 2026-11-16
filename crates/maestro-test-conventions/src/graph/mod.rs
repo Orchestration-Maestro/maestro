@@ -15,8 +15,8 @@ pub(crate) mod policy;
 /// Opt-in helper activation boundaries.
 mod test_support;
 use metadata::{canonical, check_kind, members};
+pub(crate) use policy::UNIFIER;
 use policy::{TEST_FIXTURES, UTILITY, rule, test_support_callers, uses_utility};
-pub(crate) use policy::{TEST_TRACING, UNIFIER};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -239,16 +239,6 @@ fn check_native_declaration(
             "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
         ));
     }
-    if member.is_some_and(|member| policy::directory_observation(owner, member)) {
-        return if native_declared(dependency, kind, &Kind::Normal) {
-            Ok(())
-        } else {
-            Err(format!(
-                "{owner}: {} must be a native, non-optional normal dependency",
-                policy::TEST_DIRECTORY
-            ))
-        };
-    }
     if let Some(member) =
         member.filter(|name| *name != TEST_FIXTURES && test_support_callers(name).is_some())
         && !native_declared(dependency, kind, &Kind::Development)
@@ -353,19 +343,6 @@ fn validate_edge(edge: &Edge, packages: &BTreeSet<String>) -> Result<(), String>
     let to = rule(&edge.to).ok_or("unknown scoped target")?;
     if edge.to == UNIFIER {
         return Ok(());
-    }
-    if policy::directory_observation(&edge.from, &edge.to) {
-        return if edge.kind == Kind::Normal {
-            Ok(())
-        } else {
-            Err(format!(
-                "{} must be a normal dependency of {}: {} -> {}",
-                policy::TEST_DIRECTORY,
-                policy::TEST_PROCESS,
-                edge.from,
-                edge.to
-            ))
-        };
     }
     if let Some(callers) = test_support_callers(&edge.to) {
         return test_support_edge(&edge.to, callers, edge);

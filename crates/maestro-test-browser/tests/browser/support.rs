@@ -5,7 +5,7 @@ use maestro_test_browser::{
     browser_driver::{Browser, Page, Server, cleanup},
     test_support,
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::json;
 use std::{fs, future::Future, io, path::PathBuf};
 

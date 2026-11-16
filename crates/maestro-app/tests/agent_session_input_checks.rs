@@ -7,7 +7,7 @@ use maestro_app::PromptOptions;
 use maestro_app::test_support::{HarnessOptions, Scripted, harness, input_extension, on_task_set};
 use maestro_session::Presence;
 use maestro_session::message_records::UserMessageDelivery;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::Notify;

@@ -64,7 +64,7 @@ fn space_cache_key_keeps_a_non_utf8_checkout_path() {
         discovery::git_space_metadata, status::git_status_cache_key_for_space,
     };
     use std::os::unix::ffi::OsStringExt;
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory
         .path()
         .join(std::ffi::OsString::from_vec(b"repo\x80".to_vec()));
@@ -79,7 +79,7 @@ fn space_cache_key_keeps_a_non_utf8_checkout_path() {
 
 #[test]
 fn cache_key_is_absent_below_an_invalid_git_marker() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let cwd = directory.path().join("workspace");
     let valid = directory.path().join("valid");
     std::fs::create_dir_all(directory.path().join(".git")).unwrap();
@@ -95,7 +95,7 @@ fn cache_key_is_absent_below_an_invalid_git_marker() {
 
 #[test]
 fn cache_keys_differ_per_linked_checkout() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let common = directory.path().join("repo/.git");
     let mut keys = Vec::new();
     for name in ["one", "two"] {
@@ -118,7 +118,7 @@ fn cache_keys_differ_per_linked_checkout() {
 
 #[test]
 fn cached_non_repository_result_is_reused_until_its_retry_time() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let cwd = directory.path().join("deep/nested");
     std::fs::create_dir_all(&cwd).unwrap();
     let (initial, entry) = snapshot(&cwd, None);
@@ -138,7 +138,7 @@ fn cached_non_repository_result_is_reused_until_its_retry_time() {
 
 #[test]
 fn expired_non_repository_result_finds_a_repository_created_in_place() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let (_, entry) = snapshot(&root, None);
     let mut entry = entry.unwrap();
@@ -153,7 +153,7 @@ fn expired_non_repository_result_finds_a_repository_created_in_place() {
 
 #[test]
 fn repository_identity_clears_when_head_disappears() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     let (before, cached) = snapshot(&root, None);
@@ -167,7 +167,7 @@ fn repository_identity_clears_when_head_disappears() {
 
 #[test]
 fn branch_only_demand_skips_ahead_behind() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
 
@@ -189,7 +189,7 @@ fn branch_only_demand_skips_ahead_behind() {
 
 #[test]
 fn matching_fingerprint_reuses_cached_ahead_behind() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     let (_, entry) = snapshot(&root, None);
@@ -205,7 +205,7 @@ fn matching_fingerprint_reuses_cached_ahead_behind() {
 
 #[test]
 fn switching_branch_discards_cached_ahead_behind() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     let (_, entry) = snapshot(&root, None);
@@ -231,7 +231,7 @@ fn switching_branch_discards_cached_ahead_behind() {
 
 #[test]
 fn unsetting_upstream_clears_ahead_behind() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     let (_, entry) = snapshot(&root, None);
@@ -247,7 +247,7 @@ fn unsetting_upstream_clears_ahead_behind() {
 
 #[test]
 fn new_include_file_changes_the_upstream_remote() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     std::fs::write(
@@ -270,7 +270,7 @@ fn new_include_file_changes_the_upstream_remote() {
 
 #[test]
 fn unchanged_configuration_files_are_not_read_again() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     let config = root.join(".git/config");
@@ -296,7 +296,7 @@ fn unchanged_configuration_files_are_not_read_again() {
 
 #[test]
 fn upstream_oid_comes_from_packed_refs() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     std::fs::remove_file(root.join(".git/refs/remotes/origin/main")).unwrap();
@@ -318,7 +318,7 @@ fn upstream_oid_comes_from_packed_refs() {
 
 #[test]
 fn packed_refs_search_skips_a_line_it_cannot_read() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     std::fs::remove_file(root.join(".git/refs/remotes/origin/main")).unwrap();
@@ -339,7 +339,7 @@ fn packed_refs_search_skips_a_line_it_cannot_read() {
 
 #[test]
 fn retargeting_the_checkout_marker_reads_the_new_repository_tracking() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let checkout = directory.path().join("checkout");
     let (first, second) = (
         directory.path().join("first.git"),
@@ -365,7 +365,7 @@ fn retargeting_the_checkout_marker_reads_the_new_repository_tracking() {
 
 #[test]
 fn detached_head_identity_is_the_commit() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     write_tracked_repository(&root);
     std::fs::write(root.join(".git/HEAD"), format!("{}\n", "3".repeat(40))).unwrap();
@@ -383,7 +383,7 @@ fn detached_head_identity_is_the_commit() {
 
 #[test]
 fn linked_checkout_label_names_the_checkout() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let repo = directory.path().join("maestro");
     let checkout = directory.path().join("linked");
     init_repo_with_commit(&repo);
@@ -407,7 +407,7 @@ fn linked_checkout_label_names_the_checkout() {
 
 #[test]
 fn reftable_head_identity_is_read_through_git() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let reftable = maestro_test_process::git_command::command()
         .args(["init", "--ref-format=reftable", "-b", "main"])
@@ -445,7 +445,7 @@ fn reftable_head_identity_is_read_through_git() {
 
 #[test]
 fn new_commit_recomputes_ahead_behind() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let remote = directory.path().join("remote.git");
     let repo = directory.path().join("repo");
     std::fs::create_dir_all(&repo).unwrap();

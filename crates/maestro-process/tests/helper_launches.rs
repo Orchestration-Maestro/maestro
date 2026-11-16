@@ -181,12 +181,12 @@ fn detached_input_closure_does_not_prevent_reaping() {
 #[test]
 fn detached_spawn_errors_return_without_a_handle() {
     use std::io::ErrorKind;
-    let missing = maestro_test_directory::temporary_root()
+    let missing = maestro_test_process::temporary_root()
         .join(format!("maestro-missing-detached-{}", std::process::id()));
     for (path, kind) in [
         (&missing, ErrorKind::NotFound),
         (
-            &maestro_test_directory::temporary_root(),
+            &maestro_test_process::temporary_root(),
             ErrorKind::PermissionDenied,
         ),
     ] {
@@ -265,7 +265,7 @@ fn inherited_launch_keeps_descriptors_operands_and_status() {
 fn inherited_child() {
     use std::os::unix::process::ExitStatusExt;
     let code = std::env::var("MAESTRO_EXIT").unwrap();
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_process::Scratch::new().unwrap();
     let directory = owned.path();
     let mut command = async_command(
         child_programs::inherited_launch_target,

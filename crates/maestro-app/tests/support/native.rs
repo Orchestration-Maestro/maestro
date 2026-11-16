@@ -43,8 +43,8 @@ pub fn clipboard_alias(root: &Scratch, name: &str, record: &str) -> std::path::P
 #[cfg(unix)]
 /// Whether this process is refused access that a mode takes away; a privileged run is not.
 pub fn denials() -> bool {
-    let probe = maestro_test_directory::Scratch::new().unwrap();
-    maestro_test_directory::deny(probe.path(), 0o0)
+    let probe = maestro_test_process::Scratch::new().unwrap();
+    maestro_test_process::deny(probe.path(), 0o0)
         .unwrap()
         .is_some()
 }

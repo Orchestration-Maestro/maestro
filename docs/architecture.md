@@ -103,7 +103,7 @@ these permissions for normal, build, optional and foreign-target declarations.
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
 The binary composition root, conventions checker,
-checked test-process owner, disposable test-directory owner, test tracing owner,
+native test harness owner,
 portable fixture owner, repository tooling and the feature unifier
 (`maestro-feature-unifier`) are `dedicated`; all product libraries and adapters are `core`.
 Browser qualification (`maestro-test-browser`) is dedicated, unpublished and
@@ -145,20 +145,16 @@ adapter, the native-only `maestro-extensions-guest` to `maestro-listeners`
 development edge for the controlled guest bus, the native-only `maestro` to
 `maestro-lock` development edge that serializes the executable's file-trigger
 test on the shared host fixture, and the native development edges from the
-thirty declared callers to the
+thirty-six declared callers to the
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
 not satisfy the adapter's required toolkit/text dependencies. The extension edge
 permits no normal/build credentials dependency. The test-process
-owner is reachable only through those native development edges, has no outgoing
-domain edge and is never admitted by a `maestro-test-*` name pattern.
-The directory owner follows the same native-only declaration checks, with the
-exact caller list of its
-[directory contract](specs/maestro-port.md#test-directory-owner) and one outgoing
-edge, to `maestro-path` for the real path of its roots. The tracing owner
-follows the same checks with its own five callers; see the
-[tracing contract](specs/maestro-port.md#test-tracing-owner). The portable fixture
+owner is reachable only through those native development edges and is never admitted by a `maestro-test-*` name pattern.
+The harness owns disposable directories and scoped tracing capture alongside
+checked children. Its one domain edge is `maestro-path`, which resolves its roots.
+The portable fixture
 owner has six exact
 development callers, listed in its
 [fixture contract](specs/maestro-port.md#test-fixture-owner). Its declarations may
@@ -527,11 +523,11 @@ checked, and a declaration's own `temp_dir` name is accepted the same way with
 its body and arguments staying checked. The check follows no bindings or data
 flow. Tests that observe the
 platform directory, name an uncreated socket path under it or pass it as the
-owner's parent read it through `maestro_test_directory::temporary_root`, and
+owner's parent read it through `maestro_test_process::temporary_root`, and
 directory creation and removal go through `Scratch`. The check covers every
-member, so a new crate is checked on arrival; `maestro-test-directory` alone is
-outside it, because its `temporary_root` accessor is the one place that reads the
-platform directory. The diagnostic names `TEST_DIRECTORY_CALLERS`, where a crate
+member, so a new crate is checked on arrival. Only the harness's
+`src/directory.rs` is exempt: its `temporary_root` accessor is the one place that
+reads the platform directory. The diagnostic names `TEST_PROCESS_CALLERS`, where a crate
 asks for the owner.
 
 Conventions reject real-path resolution in production code outside

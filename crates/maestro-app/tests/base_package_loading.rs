@@ -8,7 +8,7 @@ use maestro_app::{
 };
 use maestro_extensions::ModuleLoader;
 use maestro_models::Local;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 

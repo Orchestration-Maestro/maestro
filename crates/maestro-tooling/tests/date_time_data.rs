@@ -1,7 +1,7 @@
 //! Offline locale data generation through the development command.
 #![cfg(test)]
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::{ffi::OsString, fs, path::Path};
 
 /// The five generated assets consumed by native date-time formatting.

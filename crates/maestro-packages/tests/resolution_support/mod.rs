@@ -34,14 +34,14 @@ pub fn manager(
 pub fn unreadable_cwd(
     test: &str,
 ) -> Option<(
-    maestro_test_directory::Scratch,
-    maestro_test_directory::Restore,
+    maestro_test_process::Scratch,
+    maestro_test_process::Restore,
     std::path::PathBuf,
 )> {
     if maestro_test_process::run_alone(test).unwrap() {
         return None;
     }
-    let tree = maestro_test_directory::Scratch::new().unwrap();
+    let tree = maestro_test_process::Scratch::new().unwrap();
     let (process, restore) = tree.enter_unreadable("process").unwrap()?;
     Some((tree, restore, process))
 }

@@ -9,7 +9,7 @@ mod render;
 mod trust;
 use maestro_app::AgentSession;
 #[cfg(unix)]
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{path::Path, rc::Rc, sync::OnceLock};
 

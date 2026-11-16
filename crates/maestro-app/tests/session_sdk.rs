@@ -23,7 +23,7 @@ use maestro_models::{
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_settings::SettingsManager;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,

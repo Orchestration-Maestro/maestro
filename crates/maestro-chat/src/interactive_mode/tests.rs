@@ -117,7 +117,7 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
         maestro_test_process::executor::run(body(Path::new(&directory), Path::new(&package)));
         return Vec::new();
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let scratch = maestro_test_process::Scratch::new().expect("scratch directory is new");
     let directory = scratch.path();
     let package = directory.join("package");
     std::fs::create_dir(&package).unwrap();
@@ -146,7 +146,7 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
 #[test]
 fn a_child_without_its_own_search_programs_reaches_the_guard_not_the_host() {
     const TEST: &str = "a_child_without_its_own_search_programs_reaches_the_guard_not_the_host";
-    let host = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let host = maestro_test_process::Scratch::new().expect("scratch directory is new");
     controlled_search_programs(host.path());
     let path = format!(
         "{}:{}",
@@ -1829,7 +1829,7 @@ fn fatal_runtime_error_ends_the_process_with_failure_status() {
         }
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let scratch = maestro_test_process::Scratch::new().expect("scratch directory is new");
     let output = TestProcess::current(test)
         .unwrap()
         .case("fatal")

@@ -25,7 +25,7 @@ fn daemon_desktop_notification_separates_option_like_titles() {
         );
         return;
     }
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let bin = directory.path().join("bin");
     let args = directory.path().join("args");
     std::fs::create_dir(&bin).unwrap();
@@ -52,7 +52,7 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
         return;
     }
     let name = "desktop_notification_does_not_claim_unavailable_or_failed_delivery";
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let bin = directory.path().join("bin");
     std::fs::create_dir(&bin).unwrap();
     assert!(

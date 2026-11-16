@@ -50,7 +50,7 @@ fn active(directory: &Path) -> Option<String> {
 mod tests {
     use super::*;
 
-    use maestro_test_directory::Scratch;
+    use maestro_test_process::Scratch;
     use maestro_test_process::TestProcess;
 
     /// Write a crate named `name` whose library returns one.

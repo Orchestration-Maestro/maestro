@@ -32,7 +32,7 @@ pub fn manager(global: &Value, project: &Value) -> (SettingsManager, Arc<InMemor
 
 /// Capture warning message and error fields around one synchronous operation.
 pub fn capture<T>(action: impl FnOnce() -> T) -> (T, String) {
-    let output = maestro_test_tracing::Output::default();
+    let output = maestro_test_process::trace_capture::Output::default();
     let writer = output.clone();
     let subscriber = tracing_subscriber::fmt()
         .without_time()
@@ -40,6 +40,6 @@ pub fn capture<T>(action: impl FnOnce() -> T) -> (T, String) {
         .with_max_level(tracing::Level::WARN)
         .with_writer(move || writer.clone())
         .finish();
-    let result = maestro_test_tracing::with_default(subscriber, action);
+    let result = maestro_test_process::trace_capture::with_default(subscriber, action);
     (result, output.text())
 }

@@ -1,6 +1,6 @@
 //! The pinned search program resolver accepts only the supplied directories' exact programs.
 use super::*;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::ffi::OsStr;
 use std::path::Path;
 

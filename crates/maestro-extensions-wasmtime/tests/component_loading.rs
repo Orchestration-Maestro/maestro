@@ -11,7 +11,7 @@ use maestro_extensions::{
     discover_and_load_extensions, load_extensions,
     types::{ExtensionFactory, ExtensionHandle, FlagValue},
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
 

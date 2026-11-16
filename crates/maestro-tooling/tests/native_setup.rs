@@ -3,7 +3,7 @@
 use std::fs;
 use std::process::Command;
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 
 /// A staged development command keeps its native suffix and can stage itself again.
 #[test]

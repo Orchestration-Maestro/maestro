@@ -9,7 +9,7 @@
 use super::components::{files_below, load_empty_component};
 use super::example_process::record;
 use maestro_extensions_wasmtime::{component_cache, component_engine};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::{
     AGENT_DIRECTORY, CheckedChild, TestProcess, run_agent_directory, selection,
 };

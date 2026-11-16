@@ -56,9 +56,7 @@ pub(crate) fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut App)) {
             let mut config = Config::default();
             config.terminal.default_shell = "/bin/sh".into();
             config.terminal.new_cwd = NewTerminalCwdConfig::Path(
-                maestro_test_directory::temporary_root()
-                    .display()
-                    .to_string(),
+                maestro_test_process::temporary_root().display().to_string(),
             );
             let (launch, receiver) = launch_inputs(args, manifest_cache().unwrap()).unwrap();
             let mut app = App::new(&config, || 0, launch, receiver, EventHub::default());

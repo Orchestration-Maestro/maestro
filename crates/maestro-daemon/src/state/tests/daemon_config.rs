@@ -411,7 +411,7 @@ fn no_session_reload_does_not_admit_reenabled_background_checks() {
 #[test]
 fn accepted_history_disable_joins_captured_writer_before_clearing_with_supplied_paths() {
     let (mut app, mut manager, storage) = fixture();
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let paths = crate::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
     app.config.experimental.pane_history.0 = true;
@@ -461,7 +461,7 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
         let (mut app, mut manager, storage) = fixture();
         put(&*storage, r#"{"daemon":{"paneHistory":true}}"#);
         block_on(app.reload_config(&mut manager, Path::new(".")));
-        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let directory = maestro_test_process::Scratch::new().unwrap();
         let root = directory.path().to_path_buf();
         let paths = crate::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "retained history").unwrap();
@@ -502,7 +502,7 @@ fn rejected_history_setting_and_accepted_enable_preserve_separate_history_and_sn
 fn accepted_history_disable_clears_without_enabling_session_saves_or_changing_snapshot() {
     for route in ["observed", "run", "shutdown"] {
         let (mut app, mut manager, storage) = fixture();
-        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let directory = maestro_test_process::Scratch::new().unwrap();
         let root = directory.path().to_path_buf();
         let paths = crate::locations::DaemonPaths::new(root.to_str().unwrap(), None).unwrap();
         std::fs::write(paths.history_path(), "old history").unwrap();

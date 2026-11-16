@@ -166,7 +166,7 @@ pub(super) fn install(
 mod tests {
     use super::*;
 
-    use maestro_test_directory::Scratch;
+    use maestro_test_process::Scratch;
 
     /// A workspace with the crates `names` names, and the lock its dependencies come from.
     fn workspace_at(root: &Path, names: &[&str], lock: &str) -> Workspace {

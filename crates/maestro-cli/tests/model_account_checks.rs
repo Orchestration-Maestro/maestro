@@ -804,7 +804,7 @@ fn run_cases(test: &str, names: &[&str]) {
 /// Run `body` in a fresh working directory, then return to the one it started in.
 fn in_case_directory(body: impl FnOnce()) {
     let origin = std::env::current_dir().expect("origin directory");
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory");
+    let scratch = maestro_test_process::Scratch::new().expect("scratch directory");
     std::env::set_current_dir(scratch.path()).expect("case directory");
     body();
     std::env::set_current_dir(&origin).expect("restored directory");
@@ -817,7 +817,7 @@ fn in_child(test: &str, body: impl FnOnce()) {
         body();
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory");
+    let scratch = maestro_test_process::Scratch::new().expect("scratch directory");
     let output = maestro_test_process::TestProcess::current(test)
         .expect("running test")
         .case("rows")

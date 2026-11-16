@@ -1,7 +1,7 @@
 //! A prepared native child serving finite application RPC scenarios.
 
 use maestro_rpc::{RpcClient, RpcClientOptions};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 pub use maestro_test_process::rpc_peer::Scenario;
 use serde_json::Value;
 use std::{

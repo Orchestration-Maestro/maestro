@@ -46,7 +46,7 @@ fn failed_save_keeps_the_record_another_process_appends_meanwhile() {
     if appended_as_child() {
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let directory = root.path().join("sessions");
     let mut manager =
         super::super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
@@ -94,7 +94,7 @@ fn contention(alias: bool, test: &str) {
     if appended_as_child() {
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let target = root.path().join("target.jsonl");
     fs::write(&target, b"before\n").unwrap();
     let path = if alias {

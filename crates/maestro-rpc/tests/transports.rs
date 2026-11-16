@@ -7,7 +7,7 @@ use maestro_models::Local;
 use maestro_protocol::schema::{ErrorBody, EventData, ResponseResult};
 use maestro_rpc::connection_runner::{JsonlLineReader, RpcLine, RpcOutput};
 use maestro_rpc::{RpcConnectionOutcome, run_rpc_connection};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 use tokio::task::LocalSet;

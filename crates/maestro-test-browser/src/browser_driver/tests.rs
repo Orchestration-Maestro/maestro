@@ -1,7 +1,7 @@
 //! Browser-independent inputs, routes and host-integrity observations.
 
 use super::*;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

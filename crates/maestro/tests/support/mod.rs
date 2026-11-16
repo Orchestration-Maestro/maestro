@@ -1,5 +1,5 @@
 //! Disposable configuration, a cleared executable environment and the shipped theme.
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::{SearchGuard, install_stub_search_programs};
 use std::{
     path::Path,

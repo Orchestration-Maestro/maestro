@@ -151,10 +151,10 @@ mod tracked_sizes;
 /// Test code in every member may not name the platform temporary directory
 /// itself: not as a call, a value or a macro argument inside test-owned code, and
 /// not as an import anywhere in the crate, whatever the alias. Diagnostics name
-/// `TEST_DIRECTORY_CALLERS`; the owner's `temporary_root` accessor, the owner
+/// `TEST_PROCESS_CALLERS`; the owner's `temporary_root` accessor, the owner
 /// parent, an uncreated socket path and a declaration's own `temp_dir` name remain
-/// accepted. `maestro-test-directory` is the only member outside the check: its
-/// accessor is the one place that reads the platform directory itself.
+/// accepted. Only the harness's `src/directory.rs` is outside the check: its accessor
+/// is the one place that reads the platform directory itself.
 ///
 /// A test that starts the development setup tool clears the prepared bundle its run inherits:
 /// every test-owned source spelling `nextest-setup` in a string literal applies

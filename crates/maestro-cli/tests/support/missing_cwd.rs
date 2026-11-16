@@ -6,7 +6,7 @@ use maestro_app::presentation_data::input_selectors::{
 use maestro_cli::startup::entrypoint::feedback::MissingSessionCwdPresentation;
 use maestro_session::cwd::SessionCwdIssue;
 use maestro_settings::SettingsManager;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use std::{cell::RefCell, rc::Rc};
 

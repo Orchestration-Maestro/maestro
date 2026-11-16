@@ -40,7 +40,7 @@ pub fn cases<F: Future<Output = ()>>(
         return;
     }
     for (case, variables) in cases {
-        let root = maestro_test_directory::Scratch::new().unwrap();
+        let root = maestro_test_process::Scratch::new().unwrap();
         let mut command: TestProcess = super::missing_cwd::command(name, case, root.path());
         for (key, value) in *variables {
             command = command.env(key, value);

@@ -249,7 +249,7 @@ fn find_resolution_observes_cwd_only_when_required() {
     ) {
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     root.enter_removed("removed").unwrap();
     assert!(std::env::current_dir().is_err());
     find_support::check_custom("find_resolution_observes_cwd_only_when_required");

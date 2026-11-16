@@ -269,7 +269,11 @@ including leaves and exact sets. The feature unifier has no workspace dependenci
 - **Text:** The core leaf `maestro-text` below layer 0, owning the whitespace scalar set, UTF-16 lexical order, one-pass markup escaping, CSS string serialization, POSIX shell operand serialization, terminal escape stripping and binary-output filtering, raw CR/LF byte-line framing, BOM-aware lossy UTF-8 decoding and, behind its `collation` and `number-format` features, locale comparator and number-formatter preparation through one locale selector; it depends on no workspace crate and its callers keep their own trimming, stable sorting and comparator lifetime. See [text](docs/text.md).
 - **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing); it depends on no workspace crate and its callers keep their own preprocessing, defaults, duplicate-member policy and error wording. See [JSON boundary](docs/json.md).
 - **Process:** The declared core owner `maestro-process` below layer 0, owning native child-process lifecycles (captured spawn, raw pipes, exit and EOF observation, termination and reaping, Linux pane terminals and their shared retained-front byte queue, and native termination-signal delivery with its prepared default action) for packages, credentials, detection, the application, the terminal toolkit, the terminal adapter, the daemon and tools; it depends only on `maestro-text` for POSIX shell operand serialization. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) defines synchronous capture's timeout handling and leaves cancellation, termination and settlement choices with callers.
-- **Test process:** The `maestro-test-process` crate, a dedicated, unpublished, native test-support leaf for checked libtest reruns, direct native fixtures and the caller-owned local executor its witnesses drive native futures on. Checked-output operations prove the selected test started; argument-only invocation leaves startup proof with the caller. The prepared harness-free fixture receives literal native operands and raw streams through installed aliases. Each isolated child applies typed native setup at its entry — a file creation umask, a process-count limit, nonterminating file-size handling and a new session — while the runner keeps its own modes, limits, session and environment. This owner is distinct from product process execution (**Process**) and is reached only through its declared callers' native development dependencies. See the [contract](docs/specs/maestro-port.md#test-process-owner).
+- **Test harness:** The `maestro-test-process` crate, a dedicated, unpublished, native owner of test isolation: disposable directory trees, scoped tracing capture, checked libtest reruns, direct native fixtures and the caller-owned local executor its witnesses drive native futures on. Checked-output operations prove the selected test started; argument-only invocation leaves startup proof with the caller. The prepared harness-free fixture receives literal native operands and raw streams through installed aliases. Each isolated child applies typed native setup at its entry — a file creation umask, a process-count limit, nonterminating file-size handling and a new session — while the runner keeps its own modes, limits, session and environment. This owner is distinct from product process execution (**Process**) and is reached only through its declared callers' native development dependencies. See the [contract](docs/specs/maestro-port.md#test-process-owner).
+  Automatically chosen scratch roots retain their real path; supplied parents
+  keep native path-join spelling. Unix helpers enter removed or unreadable working
+  directories only in tests that run alone. `trace_capture` keeps scoped events
+  visible regardless of which thread first reaches a callsite.
 - **maestro-path:** The path library, below every delivery layer: lexical path operations, native component normalization, home and directory selection from caller-supplied observations, the native environment-plus-account home reader, and the file-system module `maestro_path::fs`, which resolves a path against the process working directory and on native targets lists a directory in name order and resolves real paths; native crates may depend on it optionally, except those the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) excludes, and it depends on no other workspace crate.
 - **Examples tree:** The `examples/` folder of the maestro-packages repository, which holds every example Maestro ships. A source checkout fetches it with `just setup`, which runs `development examples [<ref>]`; git ignores the fetched copy, and an installation carries the same folder in its package directory. See the [contract](docs/specs/maestro-port.md#examples-repository).
 - **Directory listing:** One directory's entries sorted by file name on every platform, from `maestro_path::fs::read_dir`; callers list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
@@ -351,24 +355,11 @@ From `docs/specs/tool-additions.md`.
 
 - **Output backlog:** Bytes the native terminal has queued and not yet written.
 
-- **Test directory:** The dedicated, unpublished, native `maestro-test-directory`
-  leaf that owns exclusive disposable-root allocation and cleanup. Automatically
-  chosen roots are canonical; supplied parents retain native joining semantics.
-  On Unix it also enters removed or unreadable working directories for tests that
-  run alone. Only the callers its [contract](docs/specs/maestro-port.md#test-directory-owner)
-  declares may use it, through native development edges.
-
 - **Test fixtures:** The dedicated, unpublished, portable `maestro-test-fixtures`
   leaf for shared fixture records, wire-literal round trips and single-color
   theme construction. Its six callers use development edges only;
   it has no product or `maestro-path` dependency. See the
   [contract](docs/specs/maestro-port.md#test-fixture-owner).
-- **Test tracing:** The dedicated, unpublished, native `maestro-test-tracing`
-  leaf that runs a test action under a scoped tracing subscriber that sees
-  every callsite, whichever thread reaches the callsite first. Only daemon,
-  models, process, terminal and workspace may use it through native development
-  edges, and tests capture only through it.
-  See the [contract](docs/specs/maestro-port.md#test-tracing-owner).
 
 The parameter-schema owner also owns the component metadata transport in
 `maestro-interchange::parameter_schema::transport`, re-exported through models and native extensions

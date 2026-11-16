@@ -4,7 +4,7 @@ use std::ffi::{OsStr, OsString};
 use std::path::Path;
 use std::process::Command;
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::{SearchGuard, install_stub_search_programs};
 
 /// The command path naming `first` and then `second`.

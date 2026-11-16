@@ -7,7 +7,7 @@ use crate::{Route, configured_fetch};
 fn pac_file_sources_validate_urls_and_keep_io_failures() {
     crate::tests::runtime::run(async {
         let scratch =
-            maestro_test_directory::Scratch::new().expect("test directory should be created");
+            maestro_test_process::Scratch::new().expect("test directory should be created");
         let path = scratch.path();
         let file = path.join("space 雪.pac");
         std::fs::write(&file, b"script").unwrap();
@@ -57,7 +57,7 @@ fn pac_file_sources_validate_urls_and_keep_io_failures() {
 #[cfg(unix)]
 async fn permission_failure(path: &std::path::Path, uri: &url::Url, fetch: &crate::Fetch) {
     // A privileged run reads the file anyway, so there is no failure to check.
-    let Some(restore) = maestro_test_directory::deny(path, 0o0).unwrap() else {
+    let Some(restore) = maestro_test_process::deny(path, 0o0).unwrap() else {
         return;
     };
     let result = pac_sources::load(uri, None, fetch).await;
@@ -73,7 +73,7 @@ async fn permission_failure(path: &std::path::Path, uri: &url::Url, fetch: &crat
 #[test]
 fn pac_source_errors_keep_not_found_distinct() {
     crate::tests::runtime::run(async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let path = scratch.path().join("missing.pac");
         assert!(!path.exists());
         let file = url::Url::from_file_path(&path).unwrap();

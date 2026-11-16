@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 
 use crate::recipe_support::{installed, write_input};
 

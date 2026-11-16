@@ -108,7 +108,7 @@ fn git(directory: &Path, args: &[&str]) {
 
 #[test]
 fn workspaces_in_one_repository_share_one_refresh_job() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let repo = directory.path().to_path_buf();
     let nested = repo.join("nested");
     let other = repo.join("other");
@@ -240,7 +240,7 @@ fn periodic_discovery_ignores_cached_keys() {
 #[test]
 fn directory_report_refreshes_once_without_git_tokens() {
     crate::tests::block_on(async {
-        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let directory = maestro_test_process::Scratch::new().unwrap();
         let mut app = app_with_rows(vec![vec![SpaceSidebarToken::Workspace]]);
         add_workspace(&mut app, directory.path());
         let now = Instant::now();
@@ -261,7 +261,7 @@ fn directory_report_refreshes_once_without_git_tokens() {
 #[test]
 fn due_refresh_does_not_start_without_a_sidebar_consumer() {
     crate::tests::block_on(async {
-        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let directory = maestro_test_process::Scratch::new().unwrap();
         let now = Instant::now();
         let mut app = app_with_rows(vec![vec![SpaceSidebarToken::Workspace]]);
         add_workspace(&mut app, directory.path());
@@ -354,7 +354,7 @@ fn loop_deadline_includes_the_due_refresh() {
 #[test]
 fn scheduled_tasks_start_the_due_refresh() {
     crate::tests::block_on(async {
-        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let directory = maestro_test_process::Scratch::new().unwrap();
         let paths =
             crate::locations::DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
         let mut app = app_with_rows(vec![vec![SpaceSidebarToken::Branch]]);
@@ -371,7 +371,7 @@ fn scheduled_tasks_start_the_due_refresh() {
 
 #[test]
 fn explicit_refresh_discards_cached_non_repository_results() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let repository = directory.path().join("repository");
     let outside = directory.path().join("outside");
     std::fs::create_dir_all(&repository).unwrap();

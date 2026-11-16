@@ -141,7 +141,7 @@ async fn release_gates(selection: (Option<bool>, Option<bool>)) -> (usize, usize
 
 #[test]
 fn startup_selection_skips_all_release_entrypoints() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let home = scratch.path().display().to_string();
     let selected = maestro_test_process::run_per_environment(
         "startup_selection_skips_all_release_entrypoints",

@@ -11,7 +11,7 @@ use maestro_app::{
 };
 use maestro_packages::test_support::component_support;
 use maestro_packages::{NativePackageOperations, PackageManagerOptions};
-use maestro_test_directory as scratch;
+use maestro_test_process as scratch;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, fs, path::Path, rc::Rc};

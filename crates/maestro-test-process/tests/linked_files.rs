@@ -1,6 +1,6 @@
 //! Files linked from the run's directory appear in a directory the test owns.
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::link_files;
 
 #[test]

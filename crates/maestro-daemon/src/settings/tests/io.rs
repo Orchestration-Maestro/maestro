@@ -181,7 +181,7 @@ fn theme_name_warning_survives_reload() {
 
 #[test]
 fn unreadable_settings_report_startup_and_reload_impact() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path();
     std::fs::create_dir_all(root.join("settings.json")).unwrap();
     let root_text = root.to_str().unwrap();

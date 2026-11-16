@@ -196,7 +196,7 @@ fn in_work_directory(test: &str, removed: bool) -> Option<String> {
     let case = if removed { "removed-work" } else { "work" };
     let selection = maestro_test_process::selection();
     if !selection.is_child() {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         let work = scratch.path().join("work");
         std::fs::create_dir(&work).unwrap();
         let output = maestro_test_process::TestProcess::current(test)

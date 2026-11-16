@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_resources::package_manifest::{read_maestro_manifest_file, resolve_extension_entries};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 
 /// Non-object branding members are absent, so extension directories keep their index fallback.
 #[test]

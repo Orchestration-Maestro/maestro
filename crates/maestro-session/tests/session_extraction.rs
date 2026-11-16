@@ -6,7 +6,7 @@ use crate::support;
 use maestro_interchange::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, parse_session_entries};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::fs;
 use support::native::{below, below_keeping_dots, broken_history, uncanonicalized_scratch};

@@ -9,7 +9,7 @@ use maestro_session::cwd::{
     get_missing_session_cwd_issue,
 };
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 
 /// Write a one-record history whose header holds the given working directory.
 fn stored_history(scratch: &Scratch, cwd: &str) -> String {

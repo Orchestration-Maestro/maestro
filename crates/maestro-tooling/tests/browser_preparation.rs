@@ -7,7 +7,7 @@ use std::{
     process::Command,
 };
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::{TestProcess, selection};
 use maestro_tooling as tooling;
 

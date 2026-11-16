@@ -238,7 +238,7 @@ mod tests {
         assert_ne!(first, second);
         assert_eq!(
             first.parent(),
-            Some(maestro_test_directory::temporary_root().as_path())
+            Some(maestro_test_process::temporary_root().as_path())
         );
         assert!(
             first

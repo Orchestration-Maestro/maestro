@@ -3,7 +3,7 @@
 use std::fs::OpenOptions;
 use std::process::Command;
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::TestProcess;
 
 /// Variable naming the lock file the wrapper holds while its child runs.

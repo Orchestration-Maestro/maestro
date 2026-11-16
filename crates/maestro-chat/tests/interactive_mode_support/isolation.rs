@@ -89,7 +89,7 @@ pub(crate) fn guarded_output(
         }
         return None;
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let scratch = maestro_test_process::Scratch::new().expect("scratch directory is new");
     let root = scratch.path();
     for name in ["bin", "tmp"] {
         std::fs::create_dir(root.join(name)).unwrap();

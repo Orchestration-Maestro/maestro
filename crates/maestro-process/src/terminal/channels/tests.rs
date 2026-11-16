@@ -320,7 +320,7 @@ fn handoff_pauses_reads_and_input_until_rollback() {
 #[test]
 fn actor_exit_and_errors_preserve_their_single_delivery() {
     let events = Events::default();
-    maestro_test_tracing::with_default(events.clone(), || {
+    maestro_test_process::trace_capture::with_default(events.clone(), || {
         crate::children::runtime().unwrap().block_on(async {
             if maestro_test_process::run_alone(
                 "actor_exit_and_errors_preserve_their_single_delivery",

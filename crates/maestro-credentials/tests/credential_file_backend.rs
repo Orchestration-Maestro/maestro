@@ -425,7 +425,7 @@ mod tests {
         let dir = TempDir::without_forks("read-only");
         let path = dir.path("auth.json");
         std::fs::write(&path, pretty(&[("a", "1")])).unwrap();
-        let Some(_restored) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+        let Some(_restored) = maestro_test_process::deny(&path, 0o400).unwrap() else {
             return;
         };
 
@@ -450,7 +450,7 @@ mod tests {
         let initial = pretty(&[("a", "1")]);
         std::fs::write(&path, &initial).unwrap();
         let storage = AuthStorage::create(&path);
-        let Some(_restored) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
+        let Some(_restored) = maestro_test_process::deny(&path, 0o400).unwrap() else {
             return;
         };
 

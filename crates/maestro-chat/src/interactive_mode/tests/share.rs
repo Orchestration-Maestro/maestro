@@ -177,7 +177,7 @@ fn run(
         }
         return None;
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let scratch = maestro_test_process::Scratch::new().expect("scratch directory is new");
     let root = scratch.path().to_path_buf();
     let package = root.join("package");
     let programs = root.join("programs");
@@ -667,7 +667,7 @@ fn assert_kept_artifact(test: &str) {
         .first()
         .cloned()
         .expect("the artifact whose removal was refused is kept");
-    let restoring = maestro_test_directory::deny(&artifact, 0o500)
+    let restoring = maestro_test_process::deny(&artifact, 0o500)
         .unwrap()
         .expect("the artifact's removal stays refused");
     assert!(
@@ -684,8 +684,8 @@ fn assert_kept_artifact(test: &str) {
 /// Whether a removal in this process's identity is refused, as it is for the controlled child
 /// that removes the artifact; a privileged host refuses nothing.
 fn removal_is_refused() -> bool {
-    let scratch = maestro_test_directory::Scratch::new().expect("a scratch directory");
-    maestro_test_directory::deny(scratch.path(), 0o500)
+    let scratch = maestro_test_process::Scratch::new().expect("a scratch directory");
+    maestro_test_process::deny(scratch.path(), 0o500)
         .unwrap()
         .is_some()
 }
@@ -1015,7 +1015,7 @@ async fn partly_written_document(directory: &Path, keep: &Path) {
 /// Asserts a temporary directory that refuses the operation's own directory is reported at the
 /// same export step; a privileged run has nothing to check here.
 async fn refused_temp_directory(directory: &Path) {
-    let Ok(Some(_restored)) = maestro_test_directory::deny(temp_root(), 0o500) else {
+    let Ok(Some(_restored)) = maestro_test_process::deny(temp_root(), 0o500) else {
         return;
     };
     forget_arguments();

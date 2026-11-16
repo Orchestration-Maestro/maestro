@@ -192,7 +192,7 @@ fn literal_query() {
             .skip("argument with spaces")
             .skip("literal & | ; $HOME %PATH% ^ < >")
     };
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let directory = scratch.path().join("maestro query");
     std::fs::create_dir(&directory).unwrap();
     let executable = directory.join(format!("npm{}", std::env::consts::EXE_SUFFIX));

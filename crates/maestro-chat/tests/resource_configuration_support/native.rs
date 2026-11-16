@@ -77,7 +77,7 @@ fn child() {
     std::env::set_current_dir(&root).unwrap();
     let failed = native(&target, "", &scopes());
     let before = failed.frame(80);
-    let removed = maestro_test_directory::Scratch::new_in(&root).unwrap();
+    let removed = maestro_test_process::Scratch::new_in(&root).unwrap();
     removed.enter_removed("gone").unwrap();
     failures(&failed, &before);
     no_directory_needed(&target, &a);

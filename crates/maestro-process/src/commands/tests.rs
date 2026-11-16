@@ -148,7 +148,7 @@ fn detached_custom_commands_keep_the_login_flag() {
 #[test]
 #[cfg(target_os = "linux")]
 fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_process::Scratch::new().unwrap();
     let dir = owned.path();
     let artifact =
         std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
@@ -259,7 +259,7 @@ fn launch_resolves_effective_child_path_and_extensions() {
         assert_launch_environment(Path::new(&directory));
         return;
     }
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_process::Scratch::new().unwrap();
     let directory = owned.path();
     let parent = directory.join("parent");
     let chosen = directory.join("chosen");

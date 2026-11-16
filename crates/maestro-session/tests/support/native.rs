@@ -1,7 +1,7 @@
 //! Disposable native histories, including one whose next publication really fails.
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_directory::{Scratch, temporary_root};
+use maestro_test_process::{Scratch, temporary_root};
 use serde_json::json;
 
 /// `name` joined below `root` as the stored string spelling.

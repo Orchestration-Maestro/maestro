@@ -13,7 +13,7 @@ use crate::{
     state::App,
 };
 use maestro_detection::agents::{Agent, AgentState};
-use maestro_test_directory::temporary_root;
+use maestro_test_process::temporary_root;
 use maestro_test_process::{TestProcess, run_alone};
 use maestro_workspace::tiling::PaneId;
 
@@ -122,8 +122,8 @@ fn assert_delayed_context(app: &mut App) {
 }
 
 /// Creates distinct admitted repositories for the original and observed directories.
-fn context_directories() -> maestro_test_directory::Scratch {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+fn context_directories() -> maestro_test_process::Scratch {
+    let root = maestro_test_process::Scratch::new().unwrap();
     for name in ["__maestro_original__", "__maestro_projects__"] {
         let path = root.path().join(name);
         std::fs::create_dir_all(&path).unwrap();
@@ -359,7 +359,7 @@ fn daemon_overlay_exit_preserves_same_tab_focus_changed_before_exit() {
 #[test]
 fn daemon_overlay_exit_restores_previous_focus_when_overlay_still_focused() {
     let (mut app, pane, previous_focus) = overlay_app(false);
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_process::Scratch::new().unwrap();
     let temporary_file = directory.path().join("overlay-owned");
     std::fs::write(&temporary_file, "overlay-owned").unwrap();
     app.overlay_panes

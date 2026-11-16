@@ -277,7 +277,7 @@ fn native_path_host_lookups_are_lazy() {
     let test = "native_path_host_lookups_are_lazy";
     #[cfg(unix)]
     if isolated(test, "cwd", &[]) {
-        let parent = maestro_test_directory::Scratch::new().unwrap();
+        let parent = maestro_test_process::Scratch::new().unwrap();
         parent.enter_removed("gone").unwrap();
         assert!(std::env::current_dir().is_err());
         assert_eq!(

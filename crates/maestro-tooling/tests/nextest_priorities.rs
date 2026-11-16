@@ -7,7 +7,7 @@ use crate::compiler;
 /// Measured slow tests start first without changing partition membership or hiding failures.
 #[test]
 fn measured_priorities_order_tests_without_changing_shards() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     fs::write(
         root.path().join("Cargo.toml"),
         "[package]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[workspace]\n",

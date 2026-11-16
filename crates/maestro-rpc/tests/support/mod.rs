@@ -8,4 +8,4 @@ mod served;
 pub use served::{Child, Served, on_local, options, runtime, serve};
 
 /// The application's scripted session with the owner of its disposable root.
-pub type Harness = maestro_app::test_support::Harness<maestro_test_directory::Scratch>;
+pub type Harness = maestro_app::test_support::Harness<maestro_test_process::Scratch>;

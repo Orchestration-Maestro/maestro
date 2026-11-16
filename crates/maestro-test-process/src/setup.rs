@@ -105,7 +105,7 @@ impl IsolatedSetup {
     /// Run this at the start of the isolated child's body and retain the guard until exit.
     ///
     /// ```no_run
-    /// use maestro_test_process::IsolatedSetup;
+    /// use crate::IsolatedSetup;
     ///
     /// let _setup = IsolatedSetup::apply_requested()?;
     /// // The child's operations run here while `_setup` remains in scope.

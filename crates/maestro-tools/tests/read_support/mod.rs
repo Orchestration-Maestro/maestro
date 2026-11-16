@@ -17,7 +17,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
 };
 
-pub use maestro_test_directory::Scratch;
+pub use maestro_test_process::Scratch;
 
 /// Transport counting acquisition attempts, which never succeeds.
 ///

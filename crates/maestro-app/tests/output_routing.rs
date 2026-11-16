@@ -374,7 +374,7 @@ fn observe_flushed(process: &mut CheckedChild, stdout: &mut impl Read, stderr: &
 fn package_probe() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     use std::rc::Rc;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let command = crate::native::command(
         scratch.path(),
         "package-child",

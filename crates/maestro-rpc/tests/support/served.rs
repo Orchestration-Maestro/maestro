@@ -193,7 +193,7 @@ pub fn on_local<T>(body: impl AsyncFnOnce(Rc<LocalSet>) -> T) -> T {
 pub fn serve(served: Served) -> ! {
     eprintln!("{}", std::process::id());
     let failure = on_local(async move |local| {
-        let agent_dir = maestro_test_directory::Scratch::new().unwrap();
+        let agent_dir = maestro_test_process::Scratch::new().unwrap();
         let runtime = runtime(&local, agent_dir.path(), served.factories).await;
         let runtime = Rc::new(runtime);
         let running = Rc::clone(&local);

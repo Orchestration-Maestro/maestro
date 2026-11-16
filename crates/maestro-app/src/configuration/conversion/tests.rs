@@ -40,7 +40,7 @@ fn publish_link(
 #[test]
 fn directory_link_publication_retires_source() {
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_process::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     let referent = root.join("original");
     fs::create_dir(&referent).unwrap();
@@ -58,7 +58,7 @@ fn directory_link_publication_retires_source() {
 #[test]
 fn failed_directory_link_publication_cleans_staging_and_retries() {
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_process::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     let referent = root.join("original");
     fs::create_dir(&referent).unwrap();
@@ -86,7 +86,7 @@ fn directory_link_collision_removes_only_source_entry() {
         return;
     }
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_process::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     fs::create_dir(root.join("tools")).unwrap();
     fs::create_dir(root.join("bin")).unwrap();
@@ -130,7 +130,7 @@ fn check_absolute_batch(alias: &str, referent: &str, obstruction: &str) {
     use super::{PreparedMove, relocate};
     use std::{fs, os::unix::fs::symlink};
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_process::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     let source = root.join("source");
     let target = root.join("target");

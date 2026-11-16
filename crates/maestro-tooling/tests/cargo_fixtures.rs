@@ -3,7 +3,7 @@
 use crate::compiler;
 use crate::recipe_support::{self, Workspace};
 use crate::tooling_closure::{dependency_entries, tooling_local_dependencies};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::fs;
 use std::path::Path;
 use std::process::Command;

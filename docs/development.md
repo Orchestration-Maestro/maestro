@@ -1868,6 +1868,19 @@ clean runtime directory and invokes its greeting tool. Neither test body starts
 a compiler. Re-run preparation when the bundle is stale; do not add a fallback
 build to a test body.
 
+### Native test isolation
+
+Use `maestro_test_process::Scratch::new()?` for a disposable directory. Read the
+platform temporary parent through `maestro_test_process::temporary_root()`; never
+name it through `std::env::temp_dir` in test code. The directory is removed when
+its owner drops; keep the owner alive while a child uses its files.
+
+Capture events through `maestro_test_process::trace_capture::with_default`, or
+`trace_capture::with_subscriber` for a future. A formatting subscriber writes into
+`trace_capture::Output`. These helpers receive events even when another test
+thread reaches the callsite first. Only the harness's `src/trace_capture.rs` may
+call scoped subscriber APIs directly; its other files stay checked.
+
 ### Child-process tests
 
 Stage the setup tool before a filtered native-fixture run:
@@ -1994,7 +2007,7 @@ Use `install_command(alias, record)` to copy the artifact and write its sibling
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let alias = directory.path().join("npm");
     maestro_test_process::install_command(
         &alias,
@@ -2095,7 +2108,7 @@ test for one grant on the control connection by sending `R` and waits for any re
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let shell = directory.path().join("shell");
     maestro_test_process::install_executable(std::path::Path::new(&artifact), &shell)?;
     let gate = std::os::unix::net::UnixListener::bind(directory.path().join("job-release"))?;
@@ -2137,7 +2150,7 @@ each command then runs as the last operand of that program, which the `exec` fam
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let program = directory.path().join("arguments");
     maestro_test_process::install_executable(std::path::Path::new(&artifact), &program)?;
     let mut record = program.clone().into_os_string();
@@ -2161,7 +2174,7 @@ recipe:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let bin = directory.path().join("bin");
     std::fs::create_dir_all(&bin)?;
     for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
@@ -2343,7 +2356,7 @@ Install both aliases in one disposable binary directory:
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let bin = directory.path().join("bin");
     std::fs::create_dir(&bin)?;
     maestro_test_process::git_command::install(
@@ -2377,7 +2390,7 @@ one NUL-terminated path:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let record = serde_json::json!({
         "scenario": "response",
         "args": directory.path().join("args.json"),
@@ -2443,7 +2456,7 @@ after one release byte:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let record = serde_json::json!({"scenario": "holder", "port": 9099});
     std::fs::write(directory.path().join("child.fixture"), format!("exec\n{record}"))?;
     maestro_test_process::install_executable(
@@ -2510,7 +2523,7 @@ A controlled child that reports a prefix before its caller releases it:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let alias = directory.path().join("child");
     maestro_test_process::install_executable(
         std::path::Path::new(&artifact), &alias,
@@ -2566,7 +2579,7 @@ runs the alias the way the product would:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let alias = directory.path().join("wl-paste");
     maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
     std::fs::write(
@@ -2593,7 +2606,7 @@ alias and writes that record.
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let editor = directory.path().join("ed");
     let record = serde_json::json!({
         "argv": directory.path().join("argv"),
@@ -2642,7 +2655,7 @@ run to state how often the backend started the program.
 ```rust,no_run
 fn main() -> std::io::Result<()> {
     use maestro_test_process::credentials::{Scenario, install};
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let process = directory
         .path()
         .join(format!("process{}", std::env::consts::EXE_SUFFIX));
@@ -2682,7 +2695,7 @@ A failing notifier records nothing:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let record = serde_json::json!({ "args": null, "code": 1 });
     std::fs::write(
         directory.path().join("notify-send.fixture"),
@@ -2718,7 +2731,7 @@ so pass the destination first. A launch left with no destination ends with statu
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_process::Scratch::new()?;
     let session = directory.path().join("session");
     std::fs::create_dir(&session)?;
     let record = serde_json::json!({
@@ -2823,7 +2836,7 @@ environment)`. It groups the cases by the edits `environment` returns and
 reruns the test once per group, in a child that applies exactly those edits
 after `env_clear()`, plus the agent directory the run's setup exports
 and the parent's temporary directory, unless the case sets one. That directory
-comes from `maestro-test-directory::temporary_root`. A value of
+comes from `maestro-test-process::temporary_root`. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept
 variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
@@ -2876,7 +2889,7 @@ once. A quoted `MAESTRO_*_CHILD` or `MAESTRO_*_CASE` name anywhere else under
 `const`, fails the owner's own guard and names every site it found.
 
 A test that denies access through mode bits calls
-`maestro_test_directory::deny(path, mode)` and skips the denial when it returns
+`maestro_test_process::deny(path, mode)` and skips the denial when it returns
 `None`: a privileged run, such as root in a container, is not refused. Package
 tests that reach the offline flag run in the package suite's `case_in_child`,
 which starts every case online and gives it its own temporary directory, so the

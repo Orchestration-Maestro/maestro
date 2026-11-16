@@ -9,7 +9,7 @@ use maestro_protocol::{
     envelopes::{Request, RpcCommand, RpcResponse},
     schema::{ErrorBody, PingParams, ResponseResult, ServerCapabilities},
 };
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::os::unix::net::UnixListener;
 use std::{
     io::{BufRead, BufReader, Write},
@@ -566,7 +566,7 @@ fn status_failures_keep_their_diagnostics(root: &Path) {
     }
     let denied = root.join("denied.sock");
     let _listener = UnixListener::bind(&denied).unwrap();
-    if let Some(_restore) = maestro_test_directory::deny(&denied, 0).unwrap() {
+    if let Some(_restore) = maestro_test_process::deny(&denied, 0).unwrap() {
         let error = read_runtime_status_at(&denied, TIMEOUT).unwrap_err();
         let inner = error
             .get_ref()
@@ -586,7 +586,7 @@ fn status_preserves_inaccessible_parent_errors() {
     std::fs::create_dir(&parent).unwrap();
     let socket = parent.join("api.sock");
     let _listener = UnixListener::bind(&socket).unwrap();
-    let Some(_restore) = maestro_test_directory::deny(&parent, 0).unwrap() else {
+    let Some(_restore) = maestro_test_process::deny(&parent, 0).unwrap() else {
         return;
     };
     let native = socket.try_exists().unwrap_err();

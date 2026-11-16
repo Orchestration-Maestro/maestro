@@ -245,7 +245,7 @@ mod tests {
     /// The shipped extension folder, beside the workspace manifest.
     const SHIPPED: &str = "examples/extensions";
 
-    use maestro_test_directory::Scratch;
+    use maestro_test_process::Scratch;
 
     /// Write a manifest and the source file its package needs.
     fn crate_at(root: &Path, relative: &str, manifest: &str) {

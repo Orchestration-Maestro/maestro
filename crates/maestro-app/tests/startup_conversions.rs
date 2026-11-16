@@ -161,7 +161,7 @@ fn windows_basename() {
         migrate_sessions_from_agent_root().unwrap();
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path().to_path_buf();
     let source = root.join("one.jsonl");
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\nopaque";

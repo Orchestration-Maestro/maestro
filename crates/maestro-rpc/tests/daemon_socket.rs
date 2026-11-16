@@ -28,7 +28,7 @@ use maestro_rpc::connection_runner::{
 use maestro_rpc::daemon::run_server;
 use maestro_rpc::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_settings::SettingsManager;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::TestProcess;
 use serde_json::json;
 use std::io::{self, BufRead, BufReader, Read, Write};
@@ -675,7 +675,7 @@ fn socket_lifecycle_logs_keep_typed_outcomes() {
         let rename = br#"{"id":"r","type":"workspace.rename","workspace_id":"w","label":"l"}"#;
         first_reply(&socket, &[rename.as_slice(), b"\n"].concat());
         exchange(&socket, &vec![b'a'; LIMIT + 1], false);
-        maestro_test_directory::deny(&root, 0o500).unwrap()
+        maestro_test_process::deny(&root, 0o500).unwrap()
     });
     let removal_refused = restore.is_some();
     drop(restore);
@@ -776,11 +776,8 @@ fn live_daemon(socket: &Path, args: &[String]) -> App {
     let mut app = daemon(socket);
     app.launch.setup_entry.args = args.iter().map(Into::into).collect();
     app.config.terminal.default_shell = "/bin/sh".into();
-    app.config.terminal.new_cwd = NewTerminalCwdConfig::Path(
-        maestro_test_directory::temporary_root()
-            .display()
-            .to_string(),
-    );
+    app.config.terminal.new_cwd =
+        NewTerminalCwdConfig::Path(maestro_test_process::temporary_root().display().to_string());
     app
 }
 

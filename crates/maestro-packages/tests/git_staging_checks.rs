@@ -388,7 +388,7 @@ fn git_staging_collision_and_publication_failures_keep_owned_paths() {
         let fixture = Fixture::new(&json!({}));
         let parent = fixture.agent("git/example.test/team");
         std::fs::create_dir_all(&parent).unwrap();
-        if let Some(restore) = maestro_test_directory::deny(&parent, 0o555).unwrap() {
+        if let Some(restore) = maestro_test_process::deny(&parent, 0o555).unwrap() {
             let result = block_on(
                 fixture
                     .manager
@@ -791,7 +791,7 @@ fn git_recovery_io_failure_reports_original_kind_without_persisting() {
         .hooks
         .borrow_mut()
         .push_back(Box::new(move |_| {
-            let restore = maestro_test_directory::deny(&locked, 0o555).unwrap();
+            let restore = maestro_test_process::deny(&locked, 0o555).unwrap();
             *held.borrow_mut() = Some(restore);
         }));
     staged

@@ -7,7 +7,7 @@ use maestro_interchange::presence::Presence;
 use maestro_models::UserContent;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::io;
 use support::native::broken_history;

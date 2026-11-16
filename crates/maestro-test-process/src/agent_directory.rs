@@ -69,7 +69,7 @@ fn source_is_gone(source: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::link_entry;
-    use maestro_test_directory::Scratch;
+    use crate::Scratch;
 
     /// A source that a concurrent writer removed before the step is skipped.
     #[test]

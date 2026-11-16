@@ -77,7 +77,7 @@ fn credential_backend_keeps_borrowed_updates_pending_on_original_pump() {
 
 #[test]
 fn provider_boundary_rejections_leave_other_resources_usable() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let path = scratch.path().join("not-created.json");
     let runtime = maestro_extensions::create_extension_runtime::<maestro_extensions::Local>();
     let (_owner, api) = super::api::api(runtime.clone());

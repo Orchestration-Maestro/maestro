@@ -42,7 +42,7 @@ pub fn launch() {
         child(mode);
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     for program in ["open", "explorer.exe", "xdg-open", "missing"] {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();

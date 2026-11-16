@@ -75,7 +75,7 @@ pub(super) fn with_search_tools(test: &str) -> bool {
     if maestro_test_process::selection().is_child() {
         return true;
     }
-    let bin = maestro_test_directory::Scratch::new().unwrap();
+    let bin = maestro_test_process::Scratch::new().unwrap();
     for name in ["rg", "fd"] {
         maestro_test_process::install_search_program(name, bin.path()).unwrap();
     }

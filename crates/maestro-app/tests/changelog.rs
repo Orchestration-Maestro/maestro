@@ -7,7 +7,7 @@ use crate::resource_fixtures::{
     child_stderr, child_with_closed_stderr, directory_read_error, warnings,
 };
 use maestro_app::{ChangelogEntry, compare_versions, parse_changelog};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde::Deserialize;
 use std::path::Path;
 

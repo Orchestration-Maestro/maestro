@@ -5,7 +5,7 @@ use std::{cell::Cell, rc::Rc, task::Context};
 #[test]
 fn native_save_preserves_existing_identity_and_hard_links() {
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let path = scratch.path().join("saved");
     let alias = scratch.path().join("alias");
     std::fs::write(&path, b"previous").unwrap();
@@ -50,7 +50,7 @@ fn native_save_waits_for_blocking_pool_without_blocking_local_work() {
         .build()
         .unwrap();
     let local = Rc::new(tokio::task::LocalSet::new());
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let path = scratch.path().join("saved");
     let (release, wait_for_release) = tokio::sync::oneshot::channel::<()>();
     let (started, ready) = tokio::sync::oneshot::channel();

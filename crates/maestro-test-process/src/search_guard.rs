@@ -9,7 +9,7 @@ use std::ffi::{OsStr, OsString};
 use std::io;
 use std::path::Path;
 
-use maestro_test_directory::Scratch;
+use crate::Scratch;
 use serde_json::json;
 
 use crate::install_command;

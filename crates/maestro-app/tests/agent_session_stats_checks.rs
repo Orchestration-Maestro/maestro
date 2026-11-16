@@ -8,7 +8,7 @@ use maestro_app::test_support::{
 };
 use maestro_extensions::ContextUsage;
 use maestro_session::session_manager::CompactionOptions;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 
 /// The window every case replaces the scripted model's with.

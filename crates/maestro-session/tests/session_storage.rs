@@ -6,7 +6,7 @@ use std::fs;
 
 #[test]
 fn conditional_rewrite_returns_concurrent_append_without_overwriting_it() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let path = root.path().join("session.jsonl");
     let original = b"{\"type\":\"session\",\"id\":\"kept\",\"version\":3}\n";
     let appended = [
@@ -37,7 +37,7 @@ fn conditional_rewrite_returns_concurrent_append_without_overwriting_it() {
 
 #[test]
 fn conditional_rewrite_accepts_a_full_length_session_leaf() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let path = root.path().join(format!("{}.jsonl", "x".repeat(249)));
     fs::write(&path, b"before").unwrap();
     assert_eq!(
@@ -56,7 +56,7 @@ fn conditional_rewrite_accepts_a_full_length_session_leaf() {
 #[test]
 fn append_to_existing_session_needs_no_directory_write_permission() {
     use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let path = root.path().join("session.jsonl");
     fs::write(
         &path,
@@ -64,7 +64,7 @@ fn append_to_existing_session_needs_no_directory_write_permission() {
     )
     .unwrap();
     let mut manager = SessionManager::open(path.to_str().unwrap(), None, Some("/work")).unwrap();
-    let Some(_restore) = maestro_test_directory::deny(root.path(), 0o555).unwrap() else {
+    let Some(_restore) = maestro_test_process::deny(root.path(), 0o555).unwrap() else {
         return;
     };
     manager
@@ -78,7 +78,7 @@ fn append_to_existing_session_needs_no_directory_write_permission() {
 fn writable_loaders_replay_interrupted_history_before_selecting_parent() {
     use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
     for loader in ["open", "switch", "fork"] {
-        let root = maestro_test_directory::Scratch::new().unwrap();
+        let root = maestro_test_process::Scratch::new().unwrap();
         let path = root.path().join("session.jsonl");
         let prefix = b"{\"type\":\"session\",\"id\":\"kept\",\"version\":3,\"cwd\":\"/work\"}\n";
         let complete = [prefix.as_slice(), b"{\"type\":\"message\",\"id\":\"last\",\"parentId\":null,\"timestamp\":\"2026-01-01T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"kept\"}}\n"].concat();
@@ -139,7 +139,7 @@ fn stage_interrupted_history(path: &std::path::Path, bytes: &[u8]) -> std::path:
 #[test]
 fn opening_missing_nested_history_retains_unpublished_session() {
     use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let path = root.path().join("new").join("nested").join("session.jsonl");
     let mut manager = SessionManager::open(path.to_str().unwrap(), None, Some("/work")).unwrap();
     assert!(path.parent().unwrap().is_dir());
@@ -154,7 +154,7 @@ fn opening_missing_nested_history_retains_unpublished_session() {
 #[test]
 fn nonpersisting_selection_leaves_target_and_recovery_unchanged() {
     use maestro_session::SessionManager;
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let path = root.path().join("session.jsonl");
     let prefix = b"{\"type\":\"session\",\"id\":\"kept\",\"version\":3,\"cwd\":\"/work\"}\n";
     fs::write(&path, prefix).unwrap();
@@ -177,14 +177,14 @@ fn nonpersisting_selection_leaves_target_and_recovery_unchanged() {
 #[test]
 fn forking_from_a_read_only_directory_reads_the_source() {
     use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let source = root.path().join("source");
     let destination = root.path().join("destination");
     fs::create_dir(&source).unwrap();
     let path = source.join("session.jsonl");
     let bytes = b"{\"type\":\"session\",\"id\":\"kept\",\"version\":3,\"cwd\":\"/work\"}\n{\"type\":\"message\",\"id\":\"last\",\"parentId\":null,\"timestamp\":\"2026-01-01T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"kept\"}}\n";
     fs::write(&path, bytes).unwrap();
-    let Some(_restore) = maestro_test_directory::deny(&source, 0o555).unwrap() else {
+    let Some(_restore) = maestro_test_process::deny(&source, 0o555).unwrap() else {
         return;
     };
     let manager = SessionManager::fork_from(

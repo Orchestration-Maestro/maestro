@@ -8,7 +8,7 @@ use maestro_models::Local;
 use maestro_models_registry::ModelResolverOutput;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use maestro_settings::SettingsManager;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 #[cfg(unix)]
 use std::path::{Path, PathBuf};

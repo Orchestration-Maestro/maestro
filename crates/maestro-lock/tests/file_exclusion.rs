@@ -4,7 +4,7 @@ use std::fs::{self, OpenOptions, TryLockError};
 
 #[test]
 fn write_lock_sits_beside_its_target_and_is_removed_on_release() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let target = root.path().join("settings.json");
     let sidecar = root.path().join("settings.json.lock");
     fs::write(&sidecar, b"left by an exited holder").unwrap();
@@ -27,7 +27,7 @@ fn write_lock_sits_beside_its_target_and_is_removed_on_release() {
 
 #[test]
 fn write_lock_names_its_target_as_the_caller_spells_the_directory() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let existing = root.path().join("settings.json");
     let missing = root.path().join("new.json");
     fs::write(&existing, b"{}").unwrap();
@@ -41,7 +41,7 @@ fn write_lock_names_its_target_as_the_caller_spells_the_directory() {
 
 #[test]
 fn bounded_acquisition_reports_contention_after_ten_attempts() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let target = root.path().join("settings.json");
     let _holder = maestro_lock::acquire_write(&target, true).unwrap();
     assert!(matches!(
@@ -52,7 +52,7 @@ fn bounded_acquisition_reports_contention_after_ten_attempts() {
 
 #[test]
 fn try_acquisition_reports_contention_at_once() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let target = root.path().join("settings.json");
     let _holder = maestro_lock::acquire_write(&target, true).unwrap();
     assert!(matches!(
@@ -63,7 +63,7 @@ fn try_acquisition_reports_contention_at_once() {
 
 #[test]
 fn unopenable_lock_file_fails_in_every_form() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let target = root.path().join("settings.json");
     fs::create_dir(root.path().join("settings.json.lock")).unwrap();
     assert!(maestro_lock::try_acquire_write(&target, true).is_err());
@@ -82,11 +82,11 @@ fn acquisition_never_reads_home() {
         .unwrap();
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let readonly = root.path().join("readonly-home");
     fs::create_dir(&readonly).unwrap();
     #[cfg(unix)]
-    let _restore = maestro_test_directory::deny(&readonly, 0o555).unwrap();
+    let _restore = maestro_test_process::deny(&readonly, 0o555).unwrap();
     for home in [
         None,
         Some(root.path().join("missing-home")),
@@ -112,7 +112,7 @@ fn acquisition_never_reads_home() {
 #[cfg(any(unix, windows))]
 #[test]
 fn symbolic_link_lock_path_is_refused_without_touching_its_target() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let target = root.path().join("settings.json");
     let victim = root.path().join("victim");
     let sidecar = root.path().join("settings.json.lock");
@@ -153,7 +153,7 @@ fn symbolic_link_lock_path_is_refused_without_touching_its_target() {
 
 #[test]
 fn exclusion_leaves_a_pending_publication_for_the_next_writer() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let target = root.path().join("settings.json");
     let record = root.path().join("settings.json.recovery");
     fs::write(&target, b"original").unwrap();

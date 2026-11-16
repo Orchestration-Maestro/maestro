@@ -1,6 +1,6 @@
 //! Native fixture setup isolates Git launched by production code during tests.
 
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use maestro_test_process::git_command;
 use std::{fs, process::Command};
 

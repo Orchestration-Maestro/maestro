@@ -114,7 +114,7 @@ async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChi
 
 #[test]
 fn captured_process_keeps_native_command_and_raw_streams() {
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_process::Scratch::new().unwrap();
     let dir = owned.path();
     for (mode, stderr) in [
         (OutputMode::Capture, Some(300_006)),

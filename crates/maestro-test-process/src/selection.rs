@@ -163,7 +163,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn the_harness_is_listed_once_per_executable() {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = crate::Scratch::new().unwrap();
         let alias = scratch.path().join("test-binary");
         std::os::unix::fs::symlink(std::env::current_exe().unwrap(), &alias).unwrap();
         let test = super::test_name(the_harness_is_listed_once_per_executable).unwrap();

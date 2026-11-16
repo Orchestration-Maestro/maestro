@@ -112,7 +112,7 @@ fn daemon_home_without_readable_cwd_uses_root() {
     .unwrap() else {
         return;
     };
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     scratch.enter_removed("cwd").unwrap();
     for policy in [NewTerminalCwdConfig::Home, NewTerminalCwdConfig::Follow] {
         assert_eq!(new_workspace_directory(policy), PathBuf::from("/"));

@@ -98,7 +98,7 @@ fn selected(config: &Value) -> Result<BTreeSet<&str>, String> {
 mod tests {
     use super::*;
     use cargo_metadata::{Metadata, MetadataCommand};
-    use maestro_test_directory::Scratch;
+    use maestro_test_process::Scratch;
 
     /// A complete native-fixture rule built from the declared caller policy.
     fn config() -> String {

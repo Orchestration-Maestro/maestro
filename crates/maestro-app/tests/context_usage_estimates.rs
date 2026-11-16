@@ -3,7 +3,7 @@
 use crate::support::session_harness::user;
 use maestro_app::test_support::{HarnessOptions, assistant, harness, on_task_set, usage};
 use maestro_extensions::NativeAgentMessage;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 
 /// The estimated context tokens of a session whose agent holds `messages`.

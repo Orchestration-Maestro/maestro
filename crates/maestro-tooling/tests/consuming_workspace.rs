@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use crate::recipe_support::{executable, installed};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 
 use tooling::workspace::{REGION_END, REGION_START};
 

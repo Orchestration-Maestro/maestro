@@ -8,7 +8,7 @@ use std::{
 };
 
 pub struct Workspace {
-    parent: maestro_test_directory::Scratch,
+    parent: maestro_test_process::Scratch,
     name: OsString,
     sources: std::sync::OnceLock<PathBuf>,
 }
@@ -146,7 +146,7 @@ pub fn without_shared_cargo_home() -> bool {
 /// A fixture that still reaches the shared home fails at once, instead of waiting for whichever
 /// test holds the lock; the child keeps the run's prepared sources and any additional source sets.
 pub fn rerun_without_shared_cargo_home(test: &str, sources: &[(&str, PathBuf)]) {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let home = root.path().join("unusable-cargo-home");
     fs::create_dir_all(home.join(".package-cache")).unwrap();
     let output = maestro_test_process::TestProcess::current(test)
@@ -169,7 +169,7 @@ impl Workspace {
     pub fn new() -> Self {
         record("phase: workspace setup");
         let workspace = Self {
-            parent: maestro_test_directory::Scratch::new().unwrap(),
+            parent: maestro_test_process::Scratch::new().unwrap(),
             name: OsString::from("checkout"),
             sources: std::sync::OnceLock::new(),
         };

@@ -137,7 +137,7 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         assert_eq!(case.operation, "native_cwd");
         let original = std::env::current_dir().unwrap();
-        let removed = maestro_test_directory::Scratch::new().unwrap();
+        let removed = maestro_test_process::Scratch::new().unwrap();
         removed.enter_removed("removed").unwrap();
         let explicit = maestro_session::SessionManager::in_memory(Some("")).unwrap();
         let native = std::env::current_dir().unwrap_err();

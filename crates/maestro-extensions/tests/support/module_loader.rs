@@ -11,7 +11,7 @@ use maestro_extensions::{
     },
 };
 use maestro_models::Local;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::BTreeMap, fs, os::unix::fs::PermissionsExt, rc::Rc};

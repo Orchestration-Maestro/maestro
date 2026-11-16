@@ -143,7 +143,7 @@ fn default_prompt_documentation_paths_exist_in_the_installation() {
 #[test]
 fn custom_prompt_never_reads_documentation_paths() {
     if selection().is_child() {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_process::Scratch::new().unwrap();
         scratch.enter_removed("cwd").unwrap();
         let options = |custom: Value| {
             let options = serde_json::json!({"customPrompt": custom, "cwd": "/work"});

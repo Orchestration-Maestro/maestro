@@ -6,9 +6,9 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output, Stdio};
 
-use maestro_test_directory::Scratch;
 #[cfg(unix)]
 use maestro_test_process::IsolatedSetup;
+use maestro_test_process::Scratch;
 use maestro_test_process::{TestProcess, run_alone, test_name};
 
 /// The harness bytes that open a one-test run.

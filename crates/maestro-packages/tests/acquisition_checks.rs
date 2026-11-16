@@ -500,7 +500,7 @@ fn git_project_paths_preserve_parent_and_ignore_files() {
 #[cfg(unix)]
 fn locked<T>(path: &str, operation: impl FnOnce() -> T) -> Option<T> {
     std::fs::create_dir_all(path).unwrap();
-    let _restore = maestro_test_directory::deny(path, 0o555).unwrap()?;
+    let _restore = maestro_test_process::deny(path, 0o555).unwrap()?;
     Some(operation())
 }
 
@@ -745,7 +745,7 @@ fn git_pruning_distinguishes_read_and_remove_failures() {
     let fixture = build();
     let parent = fixture.agent("git/github.com/user");
     // Write and search permission without read: the checkout goes, the listing fails.
-    let Some(restore) = maestro_test_directory::deny(&parent, 0o300).unwrap() else {
+    let Some(restore) = maestro_test_process::deny(&parent, 0o300).unwrap() else {
         return;
     };
     let result = block_on(fixture.manager.remove(source, None));

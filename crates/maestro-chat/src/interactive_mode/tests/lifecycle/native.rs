@@ -175,7 +175,7 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
         }
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let directory = scratch.path();
     let gate = install_tracked(directory);
     super::super::controlled_search_programs(directory);

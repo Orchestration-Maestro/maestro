@@ -698,8 +698,8 @@ fn calls(port: &Effects, expected: Vec<RecordedCall>, (from, to): (&str, &str)) 
 /// A real session file named like the recorded `name`, created unless it should be
 /// absent, with the tree that owns it.
 #[cfg(not(target_arch = "wasm32"))]
-fn session_file(name: &str, present: bool) -> (maestro_test_directory::Scratch, String) {
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+fn session_file(name: &str, present: bool) -> (maestro_test_process::Scratch, String) {
+    let dir = maestro_test_process::Scratch::new().unwrap();
     let path = dir.path().join(name);
     if present {
         std::fs::write(&path, "").unwrap();
@@ -1385,7 +1385,7 @@ fn native_launch(test: &str) {
         "leading-dash",
         "unlink-error",
     ] {
-        let dir = maestro_test_directory::Scratch::new().unwrap();
+        let dir = maestro_test_process::Scratch::new().unwrap();
         std::fs::create_dir(dir.path().join("bin")).unwrap();
         let name = if mode == "leading-dash" {
             "-session.jsonl"

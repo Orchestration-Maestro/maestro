@@ -9,7 +9,7 @@ use maestro_app::test_support::{
 use maestro_extensions::{ExtensionFactory, types::RegisteredCommandOptions};
 use maestro_models::Local;
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 

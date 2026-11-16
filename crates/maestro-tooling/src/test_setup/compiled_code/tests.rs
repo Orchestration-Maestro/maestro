@@ -1,6 +1,6 @@
 //! Compiled bundles follow the engine's reported cache directory on each host.
 use super::*;
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use std::time::Duration;
 
 #[test]

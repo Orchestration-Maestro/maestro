@@ -50,7 +50,7 @@ fn protocol_help(name: &str, args: &'static [&'static str]) {
     if selection().is_child() {
         let local = Rc::new(tokio::task::LocalSet::new());
         let runtime = crate::support::startup::runtime();
-        let directory = maestro_test_directory::Scratch::new().unwrap();
+        let directory = maestro_test_process::Scratch::new().unwrap();
         let npm = package_command(directory.path(), Path::new(&artifact));
         runtime.block_on(local.run_until(async {
             let mut e = Entry::new();
@@ -70,7 +70,7 @@ fn protocol_help(name: &str, args: &'static [&'static str]) {
         }));
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_process::Scratch::new().unwrap();
     let output = crate::support::missing_cwd::command(name, "protocol", root.path())
         .env("MAESTRO_NATIVE_FIXTURE", artifact)
         .quiet()

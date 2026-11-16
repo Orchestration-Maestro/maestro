@@ -1,7 +1,7 @@
 //! Real commands through the runtime's public process and terminal owners.
 use super::*;
 use crate::panes::launch::PaneLaunchEnv;
-use maestro_test_directory::temporary_root;
+use maestro_test_process::temporary_root;
 use maestro_test_process::{TestProcess, run_alone};
 use std::{ffi::OsString, io};
 
@@ -168,7 +168,7 @@ fn runtime_cwd_returns_accepted_report_without_rechecking_filesystem() {
     if run_alone(name).unwrap() {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let path = scratch.path().join("cwd");
     std::fs::create_dir(&path).unwrap();
     let script = format!(
@@ -232,7 +232,7 @@ fn runtime_process_cwd_does_not_require_traversing_the_directory_path() {
     if run_alone(name).unwrap() {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let base = scratch.path();
     let path = base.join("cwd");
     std::fs::create_dir_all(&path).unwrap();
@@ -1156,7 +1156,7 @@ fn with_manifest_app(
         .nocapture()
         .single_threaded()
         .invoke_with(|args| {
-            let directory = maestro_test_directory::Scratch::new().unwrap();
+            let directory = maestro_test_process::Scratch::new().unwrap();
             let paths =
                 crate::locations::DaemonPaths::new(directory.path().to_str().unwrap(), None)
                     .unwrap();

@@ -25,7 +25,7 @@ use maestro_session::Presence;
 use maestro_session::SessionManager;
 use maestro_session::message_records::CustomAgentMessages;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
-use maestro_test_directory::Scratch;
+use maestro_test_process::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
@@ -1652,7 +1652,7 @@ fn editing_preparation(tokens_before: f64) -> ExtensionFactory<Local> {
 
 #[test]
 fn automatic_storage_failures_end_the_compaction() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     let sessions = format!("{root}/sessions");
     on_paused_task_set(|_| async {

@@ -132,7 +132,7 @@ fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
     {
         session_picker::session_picker_scopes::default_manager();
     } else {
-        let dir = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+        let dir = maestro_test_process::Scratch::new().expect("scratch directory is new");
         std::fs::write(
             dir.path().join("keybindings.json"),
             "{\"app.session.toggleNamedFilter\":\"ctrl+x\"}",

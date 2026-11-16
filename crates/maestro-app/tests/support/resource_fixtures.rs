@@ -485,7 +485,7 @@ pub fn child_stderr_with(
         body(&std::env::var(CHILD_BASE).unwrap());
         return None;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let base = scratch.path().display().to_string();
     let output = scratch_child(test, &base)
         .env_remove("FORCE_COLOR")
@@ -511,7 +511,7 @@ pub fn child_with_closed_stderr(test: &str, body: impl FnOnce(&str)) {
     if maestro_test_process::run_alone(test).unwrap() {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_process::Scratch::new().unwrap();
     let base = scratch.path().display().to_string();
     let status = maestro_test_process::run_with_broken_stderr(scratch_child(test, &base)).unwrap();
     assert!(status.success(), "the child failed: {status}");
