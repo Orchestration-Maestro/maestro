@@ -926,7 +926,7 @@ behavior; development commands do not create a replacement logger.
 ```sh
 just test
 just test-offline
-just test -p maestro-tooling maestro_source_without_switch_preserves_environment
+just test -p maestro-tooling source_without_switch_preserves_environment
 ```
 
 The broad test recipes run cargo-nextest, then Cargo doctests only after success.
