@@ -5,7 +5,8 @@ use syn::{ext::IdentExt, parse::Parser, parse::discouraged::Speculative, spanned
 use crate::source::{Member, Source};
 
 /// Reject recognized optional polling macros, timer calls and scoped tracing captures in
-/// test-owned parsed sources; only the test tracing owner may capture directly.
+/// test-owned parsed sources; only `maestro-test-harness`'s `src/trace_capture.rs` may
+/// capture directly.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = Vec::new();
     for member in members {
@@ -49,7 +50,7 @@ pub(crate) enum Diagnostic {
     Timer(String),
     /// Single polling requires an optional dependency feature.
     OptionalPoll,
-    /// Canonical scoped subscriber identity that bypasses the test tracing owner.
+    /// Canonical scoped subscriber identity that bypasses the harness's `src/trace_capture.rs`.
     Capture(String),
 }
 
@@ -69,7 +70,7 @@ enum Pending<'a> {
 pub(crate) struct Calls<'a> {
     /// Use trees of the whole file, read only when an occurrence needs them.
     uses: Vec<&'a syn::UseTree>,
-    /// Whether the source belongs to the test tracing owner, which may capture directly.
+    /// Whether the source is the harness's `src/trace_capture.rs`, which may capture directly.
     tracing_owner: bool,
     /// Occurrences in source order.
     pending: Vec<Pending<'a>>,
@@ -139,7 +140,7 @@ const TIMERS: &[&str] = &[
 /// Canonical optional single-poll macro identity.
 const OPTIONAL_POLL: &[&str] = &["futures_util::poll"];
 
-/// Canonical scoped subscriber functions the test tracing owner wraps.
+/// Canonical scoped subscriber functions the harness's `src/trace_capture.rs` wraps.
 const CAPTURES: &[&str] = &[
     "tracing::subscriber::with_default",
     "tracing::subscriber::set_default",

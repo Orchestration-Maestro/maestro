@@ -1,4 +1,4 @@
-//! Child probes and the interface matrix of the checked test process.
+//! Native test support: fixture isolation, checked children and their interface matrix.
 #![cfg(test)]
 
 mod agent_dir;

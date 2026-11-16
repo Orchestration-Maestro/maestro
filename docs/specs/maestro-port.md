@@ -963,11 +963,12 @@ from `maestro`,
 `maestro-tooling`, `maestro-tools`, `maestro-tui`, `maestro-tui-crossterm`,
 `maestro-watch`, `maestro-web`, `maestro-workspace`; a
 caller declares it only when it uses it. Normal, build, optional, unqualified and
-non-native declarations are rejected, as are all other consumers. The only admitted
-`maestro-test-*` consumers are `maestro-test-browser` and
-`maestro-test-conventions`. The edge is checked in declared metadata (native placement) and in
-host-resolved metadata, before the dependency-free and core-to-dedicated rules, and
-remains subject to both cycle checks. A live pipe-closure transaction first uses
+non-native declarations are rejected, as are all other consumers. Aliases follow the
+same rules, browser declarations included. The only admitted `maestro-test-*`
+consumers are `maestro-test-browser` and `maestro-test-conventions`. The edge is
+checked in declared metadata (native placement) and in host-resolved metadata, before
+the dependency-free and core-to-dedicated rules, and both dependency graphs remain
+acyclic; no crate-name pattern grants access. A live pipe-closure transaction first uses
 `run_alone` to run in a fresh single-test process, avoiding sibling forks that
 could inherit its pipe ends. File-backed proof accepts only an empty file with
 its cursor at zero, so earlier bytes cannot prove that the selected test started.

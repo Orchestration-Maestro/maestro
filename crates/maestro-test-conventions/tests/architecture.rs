@@ -2783,7 +2783,7 @@ fn support_declarations_match_owner(owner: &str, callers: &[&str]) {
 }
 
 #[test]
-fn directory_support_owner_has_no_domain_dependencies() {
+fn fixture_owner_has_no_domain_dependencies() {
     support_owner_has_no_domain_dependencies(FIXTURES);
 }
 
@@ -2826,7 +2826,7 @@ fn support_owner_has_no_domain_dependencies(owner: &str) {
 }
 
 #[test]
-fn directory_support_permissions_are_exact() {
+fn fixture_owner_is_reachable_only_from_declared_callers() {
     support_permissions_are_exact(FIXTURES, FIXTURE_CALLERS);
 }
 
@@ -2861,7 +2861,7 @@ fn support_permissions_are_exact(owner: &str, callers: &[&str]) {
 }
 
 #[test]
-fn directory_support_edges_keep_cycle_checks() {
+fn product_test_edge_cycle_is_reported() {
     let (owner, helper) = ("maestro-models", "maestro-agent");
     let workspace = Workspace::new();
     workspace.foundation(&[owner, helper]);
@@ -2900,7 +2900,7 @@ fn support_edges_keep_cycle_checks(owner: &str, caller: &str) {
 }
 
 #[test]
-fn directory_support_inventory_matches_contract() {
+fn fixture_owner_is_dedicated_and_listed() {
     assert_eq!(
         FIXTURE_CALLERS,
         support::policy::test_support_callers(FIXTURES).unwrap()
@@ -2938,7 +2938,7 @@ fn support_inventory_matches_contract(owner: &str, callers: &[&str], documented:
 }
 
 #[test]
-fn directory_support_preserves_process_and_domain_policies() {
+fn forbidden_production_dependency_beside_the_fixture_owner_is_rejected() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-models", "maestro-app", OWNER]);
     assert_eq!(
