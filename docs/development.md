@@ -989,6 +989,12 @@ hide a program from `PATH` must keep the other programs and their interpreters
 reachable. Preview tests prepend rejecting author-tool stubs to the normal path;
 they also record those calls so an ignored tool failure cannot pass the test.
 
+An empty runner home cannot expose a missing home-isolation fixture. The planned
+[hostile-runner CI check](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/502)
+seeds a decoy home skill, Git signing settings and a wrapper tool on `PATH` in the
+existing native test jobs. Until that check lands, verify isolation fixes against
+those conditions locally; a passing run on a clean home does not prove isolation.
+
 Keep a crate's `examples/` directory for examples written for users. Put a program
 that exists for tests, checks or test preparation (a native test child, a fixture
 component, a browser compile witness, a terminal debugging program) in
