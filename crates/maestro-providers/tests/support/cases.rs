@@ -303,7 +303,6 @@ pub fn assert_observed(row: &Value, observed: &Observed) {
 /// Rows without an `env` object join the empty-environment group.
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
-    assert!(!owned.is_empty(), "{test} has fixture rows");
     for row in
         crate::environment_rows::selected(test, &owned, crate::environment_rows::json_environment)?
     {

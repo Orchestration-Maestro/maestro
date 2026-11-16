@@ -969,6 +969,11 @@ stay in their existing integration-test support modules.
 Use the shared fixture without changing the caller's assertions or adding a
 production feature for test access.
 
+Provider protocol tests select recorded rows with `chat::rows(fixture, key)`.
+Each key must match at least one row's `test` field. A missing match returns an
+error naming the key, so a typo or rename cannot leave a test checking no rows.
+Callers propagate that error with `?`.
+
 Run the native suite through nextest so its setup scripts apply. The existing
 `native-fixture` setup writes a test-owned Git configuration and exports it to
 every selected test process. This also isolates Git launched by production code
