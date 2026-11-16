@@ -37,7 +37,7 @@ fn check_object(schema: Value, arguments: Value) -> Result<Value, String> {
 }
 
 #[test]
-fn maestro_validates_scalar_constraints_and_numeric_multiples() {
+fn validates_scalar_constraints_and_numeric_multiples() {
     for (schema, valid, invalid, message) in [
         (json!({"maximum":2}), json!(2), json!(3), "must be <= 2"),
         (json!({"minimum":2}), json!(2), json!(1), "must be >= 2"),
@@ -92,7 +92,7 @@ fn maestro_validates_scalar_constraints_and_numeric_multiples() {
 }
 
 #[test]
-fn maestro_validates_collection_keywords_without_extra_coercion() {
+fn validates_collection_keywords_without_extra_coercion() {
     for (schema, accepted, rejected, message) in object_cases().into_iter().chain(array_cases()) {
         assert_eq!(check(schema.clone(), accepted.clone()).unwrap(), accepted);
         assert_eq!(
@@ -115,7 +115,7 @@ fn maestro_validates_collection_keywords_without_extra_coercion() {
 }
 
 #[test]
-fn maestro_merges_evaluated_locations_across_schema_branches() {
+fn merges_evaluated_locations_across_schema_branches() {
     let schema = json!({"anyOf":[{"properties":{"a":true}},{"properties":{"b":true}}],"unevaluatedProperties":false});
     assert!(check(schema.clone(), json!({"a":1,"b":2})).is_ok());
     assert!(check(schema, json!({"a":1,"c":2})).is_err());
@@ -212,7 +212,7 @@ fn array_cases() -> Vec<(Value, Value, Value, &'static str)> {
 }
 
 #[test]
-fn maestro_preserves_reference_format_acceptance() {
+fn preserves_reference_format_acceptance() {
     for (format, accepted, rejected) in FORMAT_CASES {
         for text in accepted {
             assert_eq!(
@@ -330,7 +330,7 @@ const FORMAT_CASES: &[FormatCase] = &[
 ];
 
 #[test]
-fn maestro_rejects_ipv6_with_a_trailing_single_colon() {
+fn rejects_ipv6_with_a_trailing_single_colon() {
     {
         let text = "1:2:3:4:5:6:7:8";
         assert_eq!(
@@ -351,7 +351,7 @@ fn maestro_rejects_ipv6_with_a_trailing_single_colon() {
 }
 
 #[test]
-fn maestro_rejects_invalid_local_leap_second_times() {
+fn rejects_invalid_local_leap_second_times() {
     for text in ["24:59:60+01:00", "23:60:60Z"] {
         assert_eq!(
             check(json!({"format":"time"}), json!(text)),
@@ -364,7 +364,7 @@ fn maestro_rejects_invalid_local_leap_second_times() {
 }
 
 #[test]
-fn maestro_rejects_invalid_internationalized_host_labels() {
+fn rejects_invalid_internationalized_host_labels() {
     for text in ["münchen.example", "xn--mnchen-3ya.example"] {
         assert_eq!(
             check(json!({"format":"idn-hostname"}), json!(text)),
@@ -383,7 +383,7 @@ fn maestro_rejects_invalid_internationalized_host_labels() {
 }
 
 #[test]
-fn maestro_validates_bracketed_uri_literals() {
+fn validates_bracketed_uri_literals() {
     for text in ["http://[::1]/", "http://[v1.ab:cd]/"] {
         assert_eq!(check(json!({"format":"uri"}), json!(text)), Ok(json!(text)));
     }
@@ -400,7 +400,7 @@ fn maestro_validates_bracketed_uri_literals() {
 }
 
 #[test]
-fn maestro_reports_actual_contains_bounds() {
+fn reports_actual_contains_bounds() {
     for (schema, input, message) in [
         (
             json!({"contains":true,"minContains":2}),
@@ -424,7 +424,7 @@ fn maestro_reports_actual_contains_bounds() {
 }
 
 #[test]
-fn maestro_keeps_schema_resource_origins_distinct() {
+fn keeps_schema_resource_origins_distinct() {
     for (reference, valid) in [
         ("https://one.example/schema", true),
         ("https://two.example/schema", false),
@@ -454,7 +454,7 @@ fn maestro_keeps_schema_resource_origins_distinct() {
 }
 
 #[test]
-fn maestro_rejects_nonprogressing_reference_cycles() {
+fn rejects_nonprogressing_reference_cycles() {
     for schema in [
         json!({"$id":"https://cycles.example/","$ref":"#"}),
         json!({"$id":"https://cycles.example/","$defs":{"a":{"$ref":"#/$defs/b"},"b":{"$ref":"#/$defs/a"}},"$ref":"#/$defs/a"}),
@@ -474,7 +474,7 @@ fn maestro_rejects_nonprogressing_reference_cycles() {
 }
 
 #[test]
-fn maestro_resolves_pointer_references_from_the_enclosing_resource() {
+fn resolves_pointer_references_from_the_enclosing_resource() {
     let schema = json!({
         "$defs": {"S": {"type": "number"}},
         "properties": {"value": {"$defs": {"S": {"type": "string"}}, "$ref": "#/$defs/S"}}
@@ -487,7 +487,7 @@ fn maestro_resolves_pointer_references_from_the_enclosing_resource() {
 }
 
 #[test]
-fn maestro_resolves_schema_ids_anchors_and_recursive_references() {
+fn resolves_schema_ids_anchors_and_recursive_references() {
     let arguments = JsonObject::from_iter([("example".into(), json!(1))]);
     assert_eq!(
         check_object(
@@ -617,7 +617,7 @@ fn format_edges() -> Vec<(&'static str, Value, bool)> {
 }
 
 #[test]
-fn maestro_checks_fractional_multiples_independently_of_sign() {
+fn checks_fractional_multiples_independently_of_sign() {
     for (divisor, valid_values) in [
         (0.1, &[-0.3, 0.300_000_000_05, -0.300_000_000_05][..]),
         (-0.1, &[0.3, -0.3, 0.300_000_000_05, -0.300_000_000_05][..]),
@@ -635,7 +635,7 @@ fn maestro_checks_fractional_multiples_independently_of_sign() {
 }
 
 #[test]
-fn maestro_resolves_nonfragment_recursive_refs_from_active_resource() {
+fn resolves_nonfragment_recursive_refs_from_active_resource() {
     let schema = json!({
         "$id":"https://schemas.example/root/",
         "$defs":{"node":{"$id":"https://schemas.example/node/", "$recursiveRef":"leaf", "$defs":{"leaf":{"$id":"leaf", "type":"number"}}}},
@@ -650,7 +650,7 @@ fn maestro_resolves_nonfragment_recursive_refs_from_active_resource() {
 }
 
 #[test]
-fn maestro_never_dynamically_overrides_encoded_pointer_fragments() {
+fn never_dynamically_overrides_encoded_pointer_fragments() {
     let schema = json!({
         "$id":"https://schemas.example/root", "$dynamicAnchor":"kind", "type":"number",
         "$defs":{"nested":{"$id":"https://schemas.example/nested", "$dynamicRef":"#%2F$defs%2Fstring", "$defs":{"string":{"$dynamicAnchor":"kind", "type":"string"}}}},
@@ -664,7 +664,7 @@ fn maestro_never_dynamically_overrides_encoded_pointer_fragments() {
 }
 
 #[test]
-fn maestro_reports_all_declared_dependency_names() {
+fn reports_all_declared_dependency_names() {
     for keyword in ["dependencies", "dependentRequired"] {
         let schema = json!({keyword:{"a":["b","c"]}});
         let input = JsonObject::from_iter([("a".into(), json!(1)), ("b".into(), json!(2))]);
@@ -676,7 +676,7 @@ fn maestro_reports_all_declared_dependency_names() {
 }
 
 #[test]
-fn maestro_preserves_literal_missing_property_names() {
+fn preserves_literal_missing_property_names() {
     for (schema, input, path) in [
         (json!({"required":["a/b"]}), json!({}), "a/b"),
         (
@@ -696,7 +696,7 @@ fn maestro_preserves_literal_missing_property_names() {
 }
 
 #[test]
-fn maestro_preserves_inherited_uris_for_relative_schema_resources() {
+fn preserves_inherited_uris_for_relative_schema_resources() {
     let schema = json!({
         "$id":"https://schemas.example/root/",
         "$defs":{"nested":{"$id":"nested", "$ref":"#/$defs/string", "$defs":{"string":{"type":"string"}}}},
@@ -711,7 +711,7 @@ fn maestro_preserves_inherited_uris_for_relative_schema_resources() {
 }
 
 #[test]
-fn maestro_validates_lookaround_backreferences_and_astral_patterns() {
+fn validates_lookaround_backreferences_and_astral_patterns() {
     for (pattern, valid, invalid) in [
         (r"^a(?=b)b$", "ab", "ac"),
         (r"(?<=a)b$", "ab", "cb"),
@@ -740,7 +740,7 @@ fn maestro_validates_lookaround_backreferences_and_astral_patterns() {
 }
 
 #[test]
-fn maestro_checks_whole_hostname_lengths_and_valid_joiner_context() {
+fn checks_whole_hostname_lengths_and_valid_joiner_context() {
     for format in ["hostname", "idn-hostname"] {
         let valid = [
             "a".repeat(63),
@@ -768,7 +768,7 @@ fn maestro_checks_whole_hostname_lengths_and_valid_joiner_context() {
 }
 
 #[test]
-fn maestro_uses_ordinary_paths_for_empty_required_names() {
+fn uses_ordinary_paths_for_empty_required_names() {
     for (schema, input, path) in [
         (json!({"required":[""]}), json!({}), "root"),
         (
@@ -788,7 +788,7 @@ fn maestro_uses_ordinary_paths_for_empty_required_names() {
 }
 
 #[test]
-fn maestro_resolves_fragment_id_aliases_for_every_reference_kind() {
+fn resolves_fragment_id_aliases_for_every_reference_kind() {
     for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
         let schema = json!({"$defs":{"n":{"$id":"#num","type":"number"}},"properties":{"n":{keyword:"#num"}}});
         assert_eq!(
@@ -820,7 +820,7 @@ fn assert_outcomes(
 }
 
 #[test]
-fn maestro_checks_schema_valued_additional_and_unevaluated_members() {
+fn checks_schema_valued_additional_and_unevaluated_members() {
     for (schema, accepted, rejected, diagnostics) in [
         (
             json!({"items":[true],"additionalItems":{"type":"number"}}),
@@ -852,7 +852,7 @@ fn maestro_checks_schema_valued_additional_and_unevaluated_members() {
 }
 
 #[test]
-fn maestro_accepts_dependent_schemas_and_active_contains_maximum() {
+fn accepts_dependent_schemas_and_active_contains_maximum() {
     assert_outcomes(
         json!({"dependentSchemas":{"a":{"required":["b"]}}}),
         json!({"a":1,"b":2}),
@@ -870,7 +870,7 @@ fn maestro_accepts_dependent_schemas_and_active_contains_maximum() {
 }
 
 #[test]
-fn maestro_resolves_pointers_inside_fragment_id_scopes() {
+fn resolves_pointers_inside_fragment_id_scopes() {
     for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
         let schema = json!({"$defs":{"n":{"$id":"#num","$defs":{"v":{"type":"number"}},keyword:"#/$defs/v"}},"properties":{"n":{"$ref":"#num"}}});
         let accepted = json!({"n":1});
@@ -883,7 +883,7 @@ fn maestro_resolves_pointers_inside_fragment_id_scopes() {
 }
 
 #[test]
-fn maestro_requires_exact_array_pointer_indexes() {
+fn requires_exact_array_pointer_indexes() {
     for keyword in ["$ref", "$recursiveRef", "$dynamicRef"] {
         for (index, tuple) in [
             ("0", json!([{"type":"number"}, false])),
@@ -904,7 +904,7 @@ fn maestro_requires_exact_array_pointer_indexes() {
 }
 
 #[test]
-fn maestro_limits_ordered_diagnostics_to_eight_distinct_messages() {
+fn limits_ordered_diagnostics_to_eight_distinct_messages() {
     let schema = json!({"properties":{
         "a":{"type":"number"},"b":{"type":"number"},"c":{"type":"number"},
         "d":{"type":"number"},"e":{"type":"number"},"f":{"type":"number"},
@@ -921,7 +921,7 @@ fn maestro_limits_ordered_diagnostics_to_eight_distinct_messages() {
 }
 
 #[test]
-fn maestro_reports_missing_dependencies_once_per_distinct_message() {
+fn reports_missing_dependencies_once_per_distinct_message() {
     // The reference prints the same missing-b,c line twice; Maestro prints it once.
     let schema = json!({"dependentRequired":{"a":["b","c"]}});
     let arguments = json!({"a":1});
@@ -936,7 +936,7 @@ fn maestro_reports_missing_dependencies_once_per_distinct_message() {
 }
 
 #[test]
-fn maestro_resolves_relative_references_against_the_enclosing_id() {
+fn resolves_relative_references_against_the_enclosing_id() {
     for keyword in ["$ref", "$dynamicRef"] {
         let schema = json!({
             "$id":"https://e.example/root/",
@@ -1188,32 +1188,32 @@ fn expect_chains(forms: &[char], leaves: bool) -> Checked {
 }
 
 #[test]
-fn maestro_shares_one_resource_for_pointer_chains_of_every_keyword() {
+fn shares_one_resource_for_pointer_chains_of_every_keyword() {
     expect_chains(&['P'], false).unwrap();
 }
 
 #[test]
-fn maestro_follows_fragment_relative_and_absolute_ids_across_resources() {
+fn follows_fragment_relative_and_absolute_ids_across_resources() {
     expect_chains(&['F', 'L', 'U'], false).unwrap();
 }
 
 #[test]
-fn maestro_confines_recursive_references_to_their_active_resource() {
+fn confines_recursive_references_to_their_active_resource() {
     expect_chains(&['F', 'L', 'U'], true).unwrap();
 }
 
 #[test]
-fn maestro_resolves_directory_ids_against_each_lexical_parent() {
+fn resolves_directory_ids_against_each_lexical_parent() {
     expect_chains(&['D'], false).unwrap();
 }
 
 #[test]
-fn maestro_confines_recursive_search_for_directory_ids() {
+fn confines_recursive_search_for_directory_ids() {
     expect_chains(&['D'], true).unwrap();
 }
 
 #[test]
-fn maestro_resolves_every_reference_kind_without_a_root_id() {
+fn resolves_every_reference_kind_without_a_root_id() {
     for keyword in KEYWORDS {
         for (target, reference) in [
             (json!({"type":"string"}), "#/$defs/child"),
@@ -1233,7 +1233,7 @@ fn maestro_resolves_every_reference_kind_without_a_root_id() {
 }
 
 #[test]
-fn maestro_resolves_each_hop_against_its_target_resource() {
+fn resolves_each_hop_against_its_target_resource() {
     for outer in KEYWORDS {
         for inner in KEYWORDS {
             let schema = json!({
@@ -1254,7 +1254,7 @@ fn maestro_resolves_each_hop_against_its_target_resource() {
 }
 
 #[test]
-fn maestro_keeps_the_inherited_uri_for_every_target_return_route() {
+fn keeps_the_inherited_uri_for_every_target_return_route() {
     for outer in KEYWORDS {
         for (marks, reference) in [
             (json!({"$id":"entry"}), format!("{ROOT}sub/entry")),
@@ -1279,7 +1279,7 @@ fn maestro_keeps_the_inherited_uri_for_every_target_return_route() {
 }
 
 #[test]
-fn maestro_keeps_local_pointers_valid_across_mixed_identifier_hops() {
+fn keeps_local_pointers_valid_across_mixed_identifier_hops() {
     for outer in KEYWORDS {
         for inner in KEYWORDS {
             let schema = json!({
@@ -1296,7 +1296,7 @@ fn maestro_keeps_local_pointers_valid_across_mixed_identifier_hops() {
 }
 
 #[test]
-fn maestro_does_not_treat_every_hash_bearing_id_as_an_alias() {
+fn does_not_treat_every_hash_bearing_id_as_an_alias() {
     for id in ["path#alias", "https://e.example/path#alias"] {
         let schema = json!({
             "$defs":{"target":{"$id":id,"type":"string"}},
@@ -1307,7 +1307,7 @@ fn maestro_does_not_treat_every_hash_bearing_id_as_an_alias() {
 }
 
 #[test]
-fn maestro_selects_the_identified_resource_for_an_empty_fragment() {
+fn selects_the_identified_resource_for_an_empty_fragment() {
     for keyword in KEYWORDS {
         let target = json!({"$id":"leaf","type":"string"});
         let schema = json!({"$defs":{"target":target},"properties":{"n":{keyword:"leaf#"}}});
@@ -1320,7 +1320,7 @@ fn maestro_selects_the_identified_resource_for_an_empty_fragment() {
 }
 
 #[test]
-fn maestro_overrides_dynamic_anchors_only_for_anchor_references() {
+fn overrides_dynamic_anchors_only_for_anchor_references() {
     for (target, reference, number) in [
         (
             json!({"$dynamicAnchor":"kind","type":"string"}),
@@ -1385,7 +1385,7 @@ fn hidden_dynamic_schema(route: &str, outer: &str, via: bool) -> Value {
 }
 
 #[test]
-fn maestro_activates_the_target_resource_chain_for_dynamic_anchors() {
+fn activates_the_target_resource_chain_for_dynamic_anchors() {
     for route in ["pointer", "anchor", "tuple"] {
         for outer in KEYWORDS {
             for via in [false, true] {
@@ -1396,7 +1396,7 @@ fn maestro_activates_the_target_resource_chain_for_dynamic_anchors() {
 }
 
 #[test]
-fn maestro_finds_dynamic_anchors_declared_in_tuple_schemas() {
+fn finds_dynamic_anchors_declared_in_tuple_schemas() {
     let schema = json!({
         "$id":ROOT,
         "$defs":{"box":{
@@ -1413,7 +1413,7 @@ fn maestro_finds_dynamic_anchors_declared_in_tuple_schemas() {
 }
 
 #[test]
-fn maestro_isolates_dynamic_bindings_between_sibling_references() {
+fn isolates_dynamic_bindings_between_sibling_references() {
     let mut schema = hidden_dynamic_schema("pointer", "$ref", false);
     schema["properties"] = json!({
         "a":{"$ref":"https://e.example/box/#/$defs/entry"},
@@ -1430,7 +1430,7 @@ fn maestro_isolates_dynamic_bindings_between_sibling_references() {
 }
 
 #[test]
-fn maestro_binds_recursive_anchors_of_the_entered_resource() {
+fn binds_recursive_anchors_of_the_entered_resource() {
     for keyword in KEYWORDS {
         let schema = json!({
             "$id":ROOT,
@@ -1457,7 +1457,7 @@ fn tagged_resource(name: &str, next: &Value, extra: Value) -> Value {
 }
 
 #[test]
-fn maestro_selects_outermost_recursive_and_dynamic_bindings_by_instance_depth() {
+fn selects_outermost_recursive_and_dynamic_bindings_by_instance_depth() {
     let recursive = json!({"$recursiveRef":"#"});
     let dynamic = json!({"$dynamicRef":"#node"});
     for (outer_extra, inner_extra, next, accepted, rejected) in [
@@ -1509,7 +1509,7 @@ fn maestro_selects_outermost_recursive_and_dynamic_bindings_by_instance_depth() 
 }
 
 #[test]
-fn maestro_rejects_reference_rings_of_every_keyword_mix() {
+fn rejects_reference_rings_of_every_keyword_mix() {
     for size in 1..=3 {
         for keywords in keyword_words(size) {
             let mut schema = json!({"properties":{"n":{keywords[0]:"#/$defs/s0"}}});
@@ -1537,7 +1537,7 @@ const REQUIRED_X: &str = "  - n.x: must have required properties x";
 const REQUIRED_Y: &str = "  - n.y: must have required properties y";
 
 #[test]
-fn maestro_exports_no_marks_from_negation() {
+fn exports_no_marks_from_negation() {
     expect_at_n(vec![
         (
             json!({"not":{"properties":{"a":true},"minProperties":2},"unevaluatedProperties":false}),
@@ -1568,7 +1568,7 @@ fn maestro_exports_no_marks_from_negation() {
 }
 
 #[test]
-fn maestro_exports_conditional_marks_only_from_the_successful_branch() {
+fn exports_conditional_marks_only_from_the_successful_branch() {
     expect_at_n(vec![
         (
             json!({"if":{"properties":{"a":true},"required":["a"]},"then":{"properties":{"b":true}},"else":{"properties":{"c":true}},"unevaluatedProperties":false}),
@@ -1599,7 +1599,7 @@ fn maestro_exports_conditional_marks_only_from_the_successful_branch() {
 }
 
 #[test]
-fn maestro_exports_marks_only_from_passing_combinator_branches() {
+fn exports_marks_only_from_passing_combinator_branches() {
     expect_at_n(vec![
         (
             json!({"allOf":[{"properties":{"a":true}},{"required":["b"],"properties":{"b":true}}],"unevaluatedProperties":false}),
@@ -1642,7 +1642,7 @@ fn maestro_exports_marks_only_from_passing_combinator_branches() {
 }
 
 #[test]
-fn maestro_marks_object_members_only_when_they_succeed() {
+fn marks_object_members_only_when_they_succeed() {
     expect_at_n(vec![
         (
             json!({"properties":{"a":{"type":"number"}},"unevaluatedProperties":false}),
@@ -1686,7 +1686,7 @@ fn maestro_marks_object_members_only_when_they_succeed() {
 }
 
 #[test]
-fn maestro_marks_array_items_only_when_they_succeed() {
+fn marks_array_items_only_when_they_succeed() {
     expect_at_n(vec![
         (
             json!({"items":{"type":"number"},"unevaluatedItems":false}),
@@ -1720,7 +1720,7 @@ fn maestro_marks_array_items_only_when_they_succeed() {
 }
 
 #[test]
-fn maestro_isolates_contains_item_marks_from_the_containing_array() {
+fn isolates_contains_item_marks_from_the_containing_array() {
     expect_at_n(vec![
         (
             json!({"contains":{"type":"number"},"unevaluatedItems":false}),
@@ -1755,7 +1755,7 @@ fn maestro_isolates_contains_item_marks_from_the_containing_array() {
 }
 
 #[test]
-fn maestro_carries_only_successful_reference_marks_for_every_keyword() {
+fn carries_only_successful_reference_marks_for_every_keyword() {
     for keyword in KEYWORDS {
         for (unevaluated, members, rows) in [
             (
@@ -1835,32 +1835,32 @@ fn expect_outer_recursive_binding(route: &str) -> Checked {
 }
 
 #[test]
-fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_properties() {
+fn binds_the_recursive_anchor_of_a_child_entered_through_properties() {
     expect_outer_recursive_binding("properties").unwrap();
 }
 
 #[test]
-fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_items() {
+fn binds_the_recursive_anchor_of_a_child_entered_through_items() {
     expect_outer_recursive_binding("items").unwrap();
 }
 
 #[test]
-fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_all_of() {
+fn binds_the_recursive_anchor_of_a_child_entered_through_all_of() {
     expect_outer_recursive_binding("allOf").unwrap();
 }
 
 #[test]
-fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_ref() {
+fn binds_the_recursive_anchor_of_a_child_entered_through_ref() {
     expect_outer_recursive_binding("$ref").unwrap();
 }
 
 #[test]
-fn maestro_binds_the_recursive_anchor_of_a_child_entered_through_dynamic_ref() {
+fn binds_the_recursive_anchor_of_a_child_entered_through_dynamic_ref() {
     expect_outer_recursive_binding("$dynamicRef").unwrap();
 }
 
 #[test]
-fn maestro_selects_an_entered_child_anchor_over_a_nested_resource_anchor() {
+fn selects_an_entered_child_anchor_over_a_nested_resource_anchor() {
     let schema = json!({
         "$id":"https://e.example/root",
         "$defs":{"inner":{
@@ -1883,7 +1883,7 @@ fn maestro_selects_an_entered_child_anchor_over_a_nested_resource_anchor() {
 }
 
 #[test]
-fn maestro_prebinds_dynamic_anchors_only_for_schemas_with_an_identifier() {
+fn prebinds_dynamic_anchors_only_for_schemas_with_an_identifier() {
     let target = |id: Option<&str>| {
         let mut schema = json!({
             "$dynamicRef":"#A",
@@ -2103,7 +2103,7 @@ fn assert_placed(
 }
 
 #[test]
-fn maestro_rejects_malformed_patterns_in_every_schema_the_checker_builds() {
+fn rejects_malformed_patterns_in_every_schema_the_checker_builds() {
     let argument_sets = [json!({}), json!({"p": "text", "q": 3})];
     let native = native("[");
     for (placement, place) in BUILT_PLACEMENTS {
@@ -2116,7 +2116,7 @@ fn maestro_rejects_malformed_patterns_in_every_schema_the_checker_builds() {
 }
 
 #[test]
-fn maestro_ignores_malformed_patterns_in_schemas_the_checker_never_builds() {
+fn ignores_malformed_patterns_in_schemas_the_checker_never_builds() {
     let empty = [json!({})];
     for (placement, place) in UNBUILT_PLACEMENTS {
         for fragment in malformed("[") {
@@ -2146,7 +2146,7 @@ fn maestro_ignores_malformed_patterns_in_schemas_the_checker_never_builds() {
 }
 
 #[test]
-fn maestro_reports_a_malformed_pattern_before_any_argument_is_checked() {
+fn reports_a_malformed_pattern_before_any_argument_is_checked() {
     let schema = json!({
         "type":"object", "required":["name"],
         "properties":{"name":{"type":"string","pattern":"["}}
@@ -2230,7 +2230,7 @@ const BUILD_ORDER: &[(&str, &str, &str)] = &[
 ];
 
 #[test]
-fn maestro_reports_the_first_malformed_pattern_in_build_order() {
+fn reports_the_first_malformed_pattern_in_build_order() {
     assert_ne!(native("["), native("("));
     for (row, schema, first) in BUILD_ORDER {
         let schema: Value = serde_json::from_str(schema).unwrap();
@@ -2239,7 +2239,7 @@ fn maestro_reports_the_first_malformed_pattern_in_build_order() {
 }
 
 #[test]
-fn maestro_skips_conversion_alternatives_whose_expressions_do_not_compile() {
+fn skips_conversion_alternatives_whose_expressions_do_not_compile() {
     for keyword in ["anyOf", "oneOf"] {
         for (source, converted) in [("^a", json!(5.0)), ("[", json!("5"))] {
             for mut alternative in malformed(source) {
@@ -2257,7 +2257,7 @@ fn maestro_skips_conversion_alternatives_whose_expressions_do_not_compile() {
 }
 
 #[test]
-fn maestro_ignores_keyword_maps_written_as_arrays() {
+fn ignores_keyword_maps_written_as_arrays() {
     for (row, schema, arguments) in [
         (
             "properties, malformed pattern",
@@ -2326,7 +2326,7 @@ fn shared_dynamic_reference(static_pattern: &str) -> Value {
 }
 
 #[test]
-fn maestro_prepares_a_shared_reference_target_in_every_scope_that_reaches_it() -> Checked {
+fn prepares_a_shared_reference_target_in_every_scope_that_reaches_it() -> Checked {
     let schema = shared_dynamic_reference("^b");
     expect(&schema, json!({"a":{"inner":"a1"}}), &[])?;
     expect(&schema, json!({"b":{"inner":"b1"}}), &[])?;
@@ -2343,7 +2343,7 @@ fn maestro_prepares_a_shared_reference_target_in_every_scope_that_reaches_it() -
 }
 
 #[test]
-fn maestro_reports_a_malformed_pattern_that_only_a_later_scope_reaches() {
+fn reports_a_malformed_pattern_that_only_a_later_scope_reaches() {
     assert_eq!(
         check_object(shared_dynamic_reference("["), json!({})),
         Err(native("["))
@@ -2351,7 +2351,7 @@ fn maestro_reports_a_malformed_pattern_that_only_a_later_scope_reaches() {
 }
 
 #[test]
-fn maestro_lists_every_invalid_property_name_in_traversal_order() {
+fn lists_every_invalid_property_name_in_traversal_order() {
     let schema = json!({"propertyNames":{"pattern":"^[a-z]+$"}});
     let input = json!({"b!":1,"ok":2,"2":3,"fine":4,"A":5});
     assert_eq!(
