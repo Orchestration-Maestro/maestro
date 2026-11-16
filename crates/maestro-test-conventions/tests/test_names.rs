@@ -3,6 +3,15 @@
 
 use crate::support::{Workspace, source};
 use maestro_test_conventions::check_workspace;
+use std::path::Path;
+
+/// Renders one located diagnostic for a rejected test name.
+fn diagnostic(path: &Path, line: usize, name: &str) -> String {
+    format!(
+        "{}:{line}: test `{name}` must describe behaviour without a maestro_, test_ or numbered issue_ label",
+        path.display()
+    )
+}
 
 #[test]
 fn behaviour_names_without_numbered_labels_are_accepted() {
@@ -44,8 +53,10 @@ fn prefixed_test_names_are_rejected_with_their_locations() {
     ] {
         let workspace = Workspace::with_text_member();
         let path = source(&workspace, "text", "src/lib.rs", contents);
-        let expected = lines.into_iter().zip(["maestro_parses_x", "test_parses_y", "maestro_parses_z"])
-            .map(|(line, name)| format!("{}:{line}: test `{name}` must describe behaviour without a maestro_, test_ or numbered issue_ label", path.display()))
+        let expected = lines
+            .into_iter()
+            .zip(["maestro_parses_x", "test_parses_y", "maestro_parses_z"])
+            .map(|(line, name)| diagnostic(&path, line, name))
             .collect::<Vec<_>>()
             .join("\n");
 
@@ -66,7 +77,7 @@ fn raw_identifiers_cannot_hide_redundant_prefixes() {
     assert_eq!(
         check_workspace(workspace.root.path()),
         Err([(4, "maestro_parses_raw"), (6, "test_parses_raw")]
-            .map(|(line, name)| format!("{}:{line}: test `{name}` must describe behaviour without a maestro_, test_ or numbered issue_ label", path.display()))
+            .map(|(line, name)| diagnostic(&path, line, name))
             .join("\n"))
     );
 }
@@ -88,9 +99,13 @@ fn numbered_labels_are_rejected_in_every_test_layout() {
         if relative == "tests/cases.rs" {
             workspace.integration("text");
         }
-        let expected = [(3, "reads_issue_42_data"), (5, "reads_issue_9x"), (7, "issue_0")]
-            .map(|(line, name)| format!("{}:{line}: test `{name}` must describe behaviour without a maestro_, test_ or numbered issue_ label", path.display()))
-            .join("\n");
+        let expected = [
+            (3, "reads_issue_42_data"),
+            (5, "reads_issue_9x"),
+            (7, "issue_0"),
+        ]
+        .map(|(line, name)| diagnostic(&path, line, name))
+        .join("\n");
 
         assert_eq!(check_workspace(workspace.root.path()), Err(expected));
     }

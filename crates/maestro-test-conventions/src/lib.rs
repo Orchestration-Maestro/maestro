@@ -115,7 +115,7 @@ mod tracked_sizes;
 /// Native fixture setup selection must match the declared test-harness callers plus their owner.
 ///
 /// A test attribute marks its function as test-owned code, including at a library root:
-/// their names may not start with `maestro_` or `test_`, or contain `issue_` followed by a digit.
+/// its name may not start with `maestro_` or `test_`, or contain `issue_` followed by a digit.
 /// Raw identifiers follow the same rule; unattributed helpers retain their names. Each violation
 /// names the source file, declaration line and function. The shared syntax walk reads test
 /// attributes ending in `test` without expanding macros.
