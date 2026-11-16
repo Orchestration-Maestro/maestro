@@ -5,8 +5,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode, Output};
 
-use maestro_test_directory::Scratch;
-use maestro_test_process::{TestProcess, selection};
+use maestro_test_harness::Scratch;
+use maestro_test_harness::{TestProcess, selection};
 
 /// Search setup tests work when their runner cannot discover either search program.
 #[test]
@@ -34,7 +34,7 @@ fn with_search_programs(test: &str) -> bool {
     }
     let bin = Scratch::new().unwrap();
     for name in ["rg", "fd"] {
-        maestro_test_process::install_search_program(name, bin.path()).unwrap();
+        maestro_test_harness::install_search_program(name, bin.path()).unwrap();
     }
     let (_tools, without_search) = path_without_search_programs();
     let path = std::env::join_paths(
@@ -1439,7 +1439,7 @@ fn fixture_with(root: &Path, example: &str) {
     .unwrap();
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("nextest native-fixture setup supplies the artifact");
-    maestro_test_process::install_executable(Path::new(&artifact), &root.join("cargo")).unwrap();
+    maestro_test_harness::install_executable(Path::new(&artifact), &root.join("cargo")).unwrap();
     fs::write(
         root.join("cargo.fixture"),
         format!(
@@ -1451,7 +1451,7 @@ fn fixture_with(root: &Path, example: &str) {
     .unwrap();
     for args in [["init", "-q"].as_slice(), ["add", "."].as_slice()] {
         assert_success(
-            &maestro_test_process::git_command::command()
+            &maestro_test_harness::git_command::command()
                 .args(args)
                 .current_dir(root)
                 .output()
@@ -1476,7 +1476,7 @@ fn workspace(root: &Path) {
          [[package]]\nname = \"maestro-providers\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-subagents\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-tooling\"\nversion = \"0.0.0\"\n\n\
-         [[package]]\nname = \"maestro-test-process\"\nversion = \"0.0.0\"\n\n\
+         [[package]]\nname = \"maestro-test-harness\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"maestro-web\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"shared\"\nversion = \"0.0.0\"\n\n\
          [[package]]\nname = \"unrelated\"\nversion = \"0.0.0\"\n",
@@ -1497,7 +1497,7 @@ fn workspace(root: &Path) {
         ("maestro-providers", ""),
         ("maestro-subagents", ""),
         ("maestro-tooling", ""),
-        ("maestro-test-process", ""),
+        ("maestro-test-harness", ""),
         ("maestro-web", ""),
         ("shared", ""),
         ("unrelated", ""),
@@ -1577,7 +1577,7 @@ fn export_command(root: &Path, prepared: &Path, archived: bool) -> Command {
 
 /// `command` in the environment of a shard that runs from the fixture checkout.
 fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: bool) -> Command {
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
     }
@@ -1592,10 +1592,7 @@ fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: b
             "NEXTEST_DYLD_FALLBACK_LIBRARY_PATH",
             root.join("target/debug"),
         )
-        .env(
-            maestro_test_process::AGENT_DIRECTORY,
-            root.join("shared-agent"),
-        );
+        .env(maestro_test_harness::AGENT_DIR, root.join("shared-agent"));
     command
 }
 
@@ -1696,7 +1693,7 @@ fn browser_command(root: &Path, archived: bool) -> Command {
 fn setup_command() -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command.args(["nextest-setup", "author-component"]);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     command
 }
 
@@ -1739,7 +1736,7 @@ fn native_fixture_setup_reuses_one_build_after_archive_relocation() {
             .unwrap(),
     );
     let alias = root.join("installed");
-    maestro_test_process::install_executable(artifact, &alias).unwrap();
+    maestro_test_harness::install_executable(artifact, &alias).unwrap();
     assert_eq!(fs::read(alias).unwrap(), fs::read(artifact).unwrap());
     assert_eq!(
         fs::read_to_string(root.join("native-builds")).unwrap(),
@@ -1763,7 +1760,7 @@ fn native_setup(root: &Path, environment: &Path) -> Command {
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
         .env("NEXTEST_ENV", environment);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     command
 }
 
@@ -1776,7 +1773,7 @@ fn builds(root: &Path, example: &str) -> usize {
 }
 
 /// An edit to the application crate rebuilds the startup conversion child alone, and an edit to
-/// the test-process crate rebuilds the native fixture and the probe but not the child.
+/// the test-harness crate rebuilds the native fixture and the probe but not the child.
 #[test]
 fn native_fixture_setup_rebuilds_only_the_children_whose_inputs_changed() {
     let scratch = Scratch::new().unwrap();
@@ -1791,7 +1788,7 @@ fn native_fixture_setup_rebuilds_only_the_children_whose_inputs_changed() {
         [1, 1, 2]
     );
     fs::write(
-        root.join("crates/maestro-test-process/src/lib.rs"),
+        root.join("crates/maestro-test-harness/src/lib.rs"),
         "edited process",
     )
     .unwrap();
@@ -1832,7 +1829,7 @@ fn prepared_cargo_checks_relocate_without_a_build_toolchain() {
     command
         .args(["nextest-setup", "cargo-checks"])
         .current_dir(root);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     let output = command
         .env("CARGO", root.join("missing-cargo"))
         .env("TEST_ARCHIVE", "1")
@@ -1879,7 +1876,7 @@ fn prepared_cargo_checks_track_their_package_inputs() {
         command
             .args(["nextest-setup", "cargo-checks"])
             .current_dir(root);
-        maestro_test_process::without_prepared_bundles(&mut command);
+        maestro_test_harness::without_prepared_bundles(&mut command);
         let output = command
             .env("CARGO", root.join("missing-cargo"))
             .env("TEST_ARCHIVE", "1")
@@ -1916,7 +1913,7 @@ fn prepared_cargo_checks_ignore_packages_outside_their_closure() {
     command
         .args(["nextest-setup", "cargo-checks"])
         .current_dir(root);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     let output = command
         .env("CARGO", root.join("missing-cargo"))
         .env("TEST_ARCHIVE", "1")
@@ -1975,7 +1972,7 @@ fn prepared_cargo_checks_refuse_stale_inputs_and_artifacts() {
         command
             .args(["nextest-setup", "cargo-checks"])
             .current_dir(root);
-        maestro_test_process::without_prepared_bundles(&mut command);
+        maestro_test_harness::without_prepared_bundles(&mut command);
         let output = command
             .env("CARGO", root.join("missing-cargo"))
             .env("TEST_ARCHIVE", "1")
@@ -2005,7 +2002,7 @@ fn native_fixture_archive_refuses_missing_stale_and_incompatible_artifacts() {
     let original = fs::read(&artifact).unwrap();
     let receipt = bundle.join("native-fixture.json");
     let record = fs::read(&receipt).unwrap();
-    let source = root.join("crates/maestro-test-process/src/lib.rs");
+    let source = root.join("crates/maestro-test-harness/src/lib.rs");
     for change in ["missing", "bytes", "host", "source", "receipt"] {
         match change {
             "missing" => fs::remove_file(&artifact).unwrap(),
@@ -2024,7 +2021,7 @@ fn native_fixture_archive_refuses_missing_stale_and_incompatible_artifacts() {
         command
             .args(["nextest-setup", "native-fixture"])
             .current_dir(root);
-        maestro_test_process::without_prepared_bundles(&mut command);
+        maestro_test_harness::without_prepared_bundles(&mut command);
         let output = command
             .env("CARGO", root.join("missing-cargo"))
             .env("NEXTEST_ENV", &environment)

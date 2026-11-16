@@ -6,7 +6,7 @@ use tokio::{sync::mpsc::unbounded_channel, task::LocalSet};
 
 #[test]
 fn native_notifications_report_writes_and_atomic_replacement() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path();
     let directory = root.join("watched");
     fs::create_dir(&directory).unwrap();

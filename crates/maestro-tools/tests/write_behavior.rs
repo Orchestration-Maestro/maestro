@@ -523,7 +523,7 @@ fn write_path_capture_avoids_unneeded_ambient_reads() {
     let test = "write_path_capture_avoids_unneeded_ambient_reads";
     #[cfg(unix)]
     if isolated(test, "no-cwd", &[]) {
-        let parent = maestro_test_directory::Scratch::new().unwrap();
+        let parent = maestro_test_harness::Scratch::new().unwrap();
         parent.enter_removed("gone").unwrap();
         assert!(std::env::current_dir().is_err());
         let ops = Arc::new(ScriptedWrite::new(&Journal::default()));

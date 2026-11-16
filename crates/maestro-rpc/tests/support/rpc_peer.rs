@@ -1,8 +1,8 @@
 //! A prepared native child serving finite application RPC scenarios.
 
 use maestro_rpc::{RpcClient, RpcClientOptions};
-use maestro_test_directory::Scratch;
-pub use maestro_test_process::rpc_peer::Scenario;
+use maestro_test_harness::Scratch;
+pub use maestro_test_harness::rpc_peer::Scenario;
 use serde_json::Value;
 use std::{
     io::Write,
@@ -27,7 +27,7 @@ impl Peer {
     pub fn new() -> Self {
         let scratch = Scratch::new().unwrap();
         let entry = scratch.path().join("peer").to_string_lossy().into_owned();
-        maestro_test_process::rpc_peer::install(Path::new(&entry), Scenario::Serve).unwrap();
+        maestro_test_harness::rpc_peer::install(Path::new(&entry), Scenario::Serve).unwrap();
         Self {
             scratch,
             entry,
@@ -47,7 +47,7 @@ impl Peer {
     /// Options that launch one compiled scenario on the actual client transport.
     pub fn options(&self, scenario: Scenario) -> RpcClientOptions {
         if scenario == Scenario::Descendant {
-            maestro_test_process::rpc_peer::install(
+            maestro_test_harness::rpc_peer::install(
                 Path::new(&self.join("holder")),
                 Scenario::PipeHolder,
             )

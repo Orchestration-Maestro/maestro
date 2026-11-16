@@ -29,9 +29,9 @@ enum Entry {
 #[test]
 fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "bundled_registered_requests_keep_local_payload_hooks",
             )?
             .nocapture()
@@ -271,9 +271,9 @@ fn protocol_test_policies_cover_the_registry() {
 #[test]
 fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "default_submission_preserves_protocol_runtime_policy",
             )?
             .nocapture()

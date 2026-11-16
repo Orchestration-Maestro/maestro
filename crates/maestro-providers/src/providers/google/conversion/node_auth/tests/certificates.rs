@@ -279,7 +279,7 @@ fn default_layout(files: &super::Files, location: &str, name: &str) -> (String, 
 #[test]
 fn certificate_configuration_uses_explicit_environment_then_default() {
     const TEST: &str = "certificate_configuration_uses_explicit_environment_then_default";
-    let case = maestro_test_process::selection();
+    let case = maestro_test_harness::selection();
     if case.is_child() {
         let source: serde_json::Value =
             serde_json::from_str(&std::env::var("SOURCE").unwrap()).unwrap();
@@ -342,7 +342,7 @@ fn check_configuration_precedence(test: &str) {
     ] {
         variables.push(("SOURCE", source.as_str()));
         {
-            let output = maestro_test_process::TestProcess::current(test)
+            let output = maestro_test_harness::TestProcess::current(test)
                 .unwrap()
                 .nocapture()
                 .env_clear()

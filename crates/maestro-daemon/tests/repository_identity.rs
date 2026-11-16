@@ -11,7 +11,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 #[test]
 fn daemon_linked_worktree_auto_label_uses_checkout_name_not_repo_name() {
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_harness::Scratch::new().unwrap();
     let scratch = directory.path().to_path_buf();
     let repo = scratch.join("maestro");
     let checkout = scratch.join("testr56");

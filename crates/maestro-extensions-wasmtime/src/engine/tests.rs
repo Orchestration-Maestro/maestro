@@ -60,7 +60,7 @@ fn process_engine_reuses_one_engine() {
 /// The cache sits in `component-cache` below the agent directory, which it creates.
 #[test]
 fn component_cache_sits_below_the_agent_directory() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let agent = scratch.path().join("agent");
     let cache = component_cache(agent.to_str().unwrap()).unwrap();
     assert_eq!(
@@ -72,7 +72,7 @@ fn component_cache_sits_below_the_agent_directory() {
 /// A directory the engine cannot use leaves the engine without a cache.
 #[test]
 fn component_cache_is_absent_without_a_usable_agent_directory() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let file = scratch.path().join("file");
     std::fs::write(&file, "not a directory").unwrap();
     for agent in ["", file.to_str().unwrap()] {
@@ -94,7 +94,7 @@ impl Drop for RestoringDirectory {
 /// the agent directory does, instead of leaving the engine without a cache.
 #[test]
 fn component_cache_resolves_a_relative_agent_directory_against_the_working_directory() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let _restored = RestoringDirectory(std::env::current_dir().unwrap());
     std::env::set_current_dir(scratch.path()).unwrap();
     let cache = component_cache("relative-agent").unwrap();

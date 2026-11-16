@@ -161,12 +161,12 @@ fn windows_basename() {
         migrate_sessions_from_agent_root().unwrap();
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path().to_path_buf();
     let source = root.join("one.jsonl");
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\nopaque";
     fs::write(&source, body).unwrap();
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "session_destinations_reuse_the_session_directory_owner",
     )
     .unwrap()

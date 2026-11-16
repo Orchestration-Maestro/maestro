@@ -12,7 +12,7 @@ use maestro_session::{
     SessionManager,
     session_manager::{CompactionOptions, ReadonlySessionManager},
 };
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -391,7 +391,7 @@ fn owner_view(h: &Harness) -> Value {
 
 #[test]
 fn session_getters_read_the_supplied_owners() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
         let memory = harness(Scratch::new().unwrap(), HarnessOptions::default()).await.unwrap();

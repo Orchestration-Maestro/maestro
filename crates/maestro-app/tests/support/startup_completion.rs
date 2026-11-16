@@ -254,7 +254,7 @@ fn replay(name: &str, case: Case<Input, Expected>) {
     assert_eq!(case.expected.calls.len(), 2);
     for expected in case.expected.calls {
         let lines = child::probe(
-            maestro_test_process::TestProcess::current(name)
+            maestro_test_harness::TestProcess::current(name)
                 .unwrap()
                 .case("*"),
             scratch.0.path(),

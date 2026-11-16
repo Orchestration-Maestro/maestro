@@ -46,7 +46,7 @@ pub async fn cases(names: &[&str]) {
         let Some(_denied) = case
             .denied
             .iter()
-            .map(|path| maestro_test_directory::deny(dir.path().join(path), 0o0).unwrap())
+            .map(|path| maestro_test_harness::deny(dir.path().join(path), 0o0).unwrap())
             .collect::<Option<Vec<_>>>()
         else {
             continue;

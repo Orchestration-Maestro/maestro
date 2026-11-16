@@ -14,7 +14,7 @@ use maestro_extensions::{
     },
 };
 use maestro_models::{Local, UserContent};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},

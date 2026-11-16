@@ -166,9 +166,9 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 /// Run only this test's closed set in an environment-isolated process.
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_process::TestProcess::current(test)?
+            let output = maestro_test_harness::TestProcess::current(test)?
                 .nocapture()
                 .env_clear()
                 .envs(

@@ -1247,7 +1247,7 @@ async fn proxy_borrowed_result_and_final_usage_keep_identity_case() {
     assert!(weak.upgrade().is_none());
 }
 
-use maestro_test_process::loopback;
+use maestro_test_harness::loopback;
 
 /// How a proxy request reaches its server.
 #[derive(Clone, Copy, Debug)]
@@ -1479,8 +1479,8 @@ fn proxy_unknown_event_warns_and_continues() {
 /// Drive the scenario of `proxy_unknown_event_warns_and_continues` on the test runtime.
 async fn proxy_unknown_event_warns_and_continues_case() {
     const TEST: &str = "proxy_unknown_event_warns_and_continues";
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(TEST)
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(TEST)
             .unwrap()
             .nocapture()
             .env_clear()
@@ -1506,12 +1506,12 @@ fn proxy_unknown_event_with_closed_standard_error_continues() {
 /// Drive the scenario of `proxy_unknown_event_with_closed_standard_error_continues`.
 async fn proxy_unknown_event_with_closed_standard_error_continues_case() {
     const TEST: &str = "proxy_unknown_event_with_closed_standard_error_continues";
-    if !maestro_test_process::selection().is_child() {
-        if maestro_test_process::run_alone(TEST).unwrap() {
+    if !maestro_test_harness::selection().is_child() {
+        if maestro_test_harness::run_alone(TEST).unwrap() {
             return;
         }
-        let status = maestro_test_process::run_with_broken_stderr(
-            maestro_test_process::TestProcess::current(TEST)
+        let status = maestro_test_harness::run_with_broken_stderr(
+            maestro_test_harness::TestProcess::current(TEST)
                 .unwrap()
                 .env_clear()
                 .case("*"),
@@ -1520,7 +1520,7 @@ async fn proxy_unknown_event_with_closed_standard_error_continues_case() {
         assert!(status.success(), "the stream failed: {status}");
         return;
     }
-    maestro_test_process::wait_for_broken_stderr();
+    maestro_test_harness::wait_for_broken_stderr();
     run_with_skipped_events().await;
 }
 

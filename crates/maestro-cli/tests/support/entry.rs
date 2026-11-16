@@ -12,7 +12,7 @@ use maestro_cli::input::file_processor::NativeFileArgumentOperations;
 use maestro_cli::input::session_picker::SessionPresentation;
 use maestro_cli::startup::entrypoint::feedback::MissingSessionCwdPresentation;
 use maestro_cli::startup::entrypoint::{MainExport, MainHost, MainOptions, main};
-use maestro_test_process::{TestProcess, selection};
+use maestro_test_harness::{TestProcess, selection};
 use maestro_theme::ThemeState;
 use serde_json::{Value, json};
 use std::cell::{Cell, RefCell};
@@ -40,7 +40,7 @@ pub fn cases<F: Future<Output = ()>>(
         return;
     }
     for (case, variables) in cases {
-        let root = maestro_test_directory::Scratch::new().unwrap();
+        let root = maestro_test_harness::Scratch::new().unwrap();
         let mut command: TestProcess = super::missing_cwd::command(name, case, root.path());
         for (key, value) in *variables {
             command = command.env(key, value);

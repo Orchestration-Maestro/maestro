@@ -1217,7 +1217,7 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
     let failing = workspace.command("failing-wrapper", &output(b"", b"", 2));
     let missing = workspace.root.path().join("missing-wrapper");
     for wrapper in [None, Some(failing), Some(missing)] {
-        let mut command = maestro_test_process::TestProcess::current(
+        let mut command = maestro_test_harness::TestProcess::current(
             "metadata_queries_leave_compiler_wrappers_to_builds",
         )
         .unwrap()
@@ -2292,10 +2292,10 @@ fn feature_unifier_preserves_required_domain_edges() {
     }
 }
 
-const OWNER: &str = "maestro-test-process";
+const OWNER: &str = "maestro-test-harness";
 const NATIVE_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
 
-/// Callers the specification lets declare the test-process owner, in its order.
+/// Callers the specification lets declare the test-harness owner, in its order.
 fn owner_callers() -> Vec<&'static str> {
     std::iter::once("maestro")
         .chain(specification_names(
@@ -2338,8 +2338,40 @@ fn test_process_edges_are_native_development_only() {
 }
 
 #[test]
-fn test_process_owner_stays_dependency_free() {
-    support_owner_has_no_domain_dependencies(OWNER);
+fn test_process_owner_depends_only_on_the_real_path_owner() {
+    let targets = ["maestro-text", "maestro-tooling"];
+    let workspace = Workspace::new();
+    workspace.foundation(&[OWNER, REALPATH, targets[0], targets[1], UNIFIER]);
+    for target in targets {
+        for (table, refusal) in [
+            ("dependencies", "forbidden production dependency"),
+            ("build-dependencies", "forbidden production dependency"),
+            (
+                "dev-dependencies",
+                "internal dev dependency requires declared dependency-free test support",
+            ),
+        ] {
+            workspace.member(
+                OWNER,
+                OWNER,
+                &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
+            );
+            assert_eq!(
+                check_workspace(workspace.root.path()),
+                Err(format!("{refusal}: {OWNER} -> {target}")),
+                "{table}"
+            );
+        }
+    }
+    workspace.member(
+        OWNER,
+        OWNER,
+        &format!(
+            "{}{REALPATH} = {{ path = \"../{REALPATH}\" }}\n",
+            unifier_declaration(&[], NATIVE, "unified", "")
+        ),
+    );
+    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 #[test]
@@ -2708,106 +2740,6 @@ const FIXTURE_CALLERS: &[&str] = &[
     "maestro-export",
 ];
 
-/// The disposable-directory owner.
-const DIRECTORY: &str = "maestro-test-directory";
-
-/// The scoped test tracing owner.
-const TRACING: &str = "maestro-test-tracing";
-
-/// Independently declared native tracing consumers.
-const TRACING_CALLERS: &[&str] = &[
-    "maestro-daemon",
-    "maestro-http",
-    "maestro-process",
-    "maestro-terminal-emulator",
-    "maestro-workspace",
-];
-
-/// Independently declared native directory consumers.
-const DIRECTORY_CALLERS: &[&str] = &[
-    "maestro",
-    "maestro-app",
-    "maestro-models-registry",
-    "maestro-chat",
-    "maestro-cli",
-    "maestro-credentials",
-    "maestro-daemon",
-    "maestro-detection",
-    "maestro-export",
-    "maestro-extensions",
-    "maestro-extensions-guest",
-    "maestro-extensions-wasmtime",
-    "maestro-http",
-    "maestro-lock",
-    "maestro-models",
-    "maestro-models-generator",
-    "maestro-packages",
-    "maestro-process",
-    "maestro-providers",
-    "maestro-resources",
-    "maestro-rpc",
-    "maestro-session",
-    "maestro-session-reports",
-    "maestro-settings",
-    "maestro-terminal-emulator",
-    "maestro-test-browser",
-    "maestro-test-conventions",
-    "maestro-test-process",
-    "maestro-theme",
-    "maestro-tooling",
-    "maestro-tools",
-    "maestro-tui",
-    "maestro-tui-crossterm",
-    "maestro-watch",
-    "maestro-workspace",
-];
-
-#[test]
-fn directory_support_edges_are_native_development_only() {
-    let without_launcher = DIRECTORY_CALLERS
-        .iter()
-        .copied()
-        .filter(|name| *name != "maestro-test-process")
-        .collect::<Vec<_>>();
-    support_declarations_match_owner(DIRECTORY, &without_launcher);
-}
-
-#[test]
-fn child_launcher_reaches_the_directory_owner_normally() {
-    let workspace = Workspace::new();
-    workspace.foundation(&["maestro-test-process", DIRECTORY]);
-    let normal_table = "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies";
-    let wrong = "maestro-test-process: maestro-test-directory must be a native, non-optional normal dependency";
-    for (kind, extra, failure) in [
-        (normal_table, "", None),
-        ("dependencies", "", Some(wrong)),
-        ("dependencies", ", optional = true", Some(wrong)),
-        (NATIVE_DEV, "", Some(wrong)),
-        ("dev-dependencies", "", Some(wrong)),
-        ("build-dependencies", "", Some(wrong)),
-        (
-            "target.'cfg(target_os = \"none\")'.dependencies",
-            "",
-            Some(wrong),
-        ),
-    ] {
-        let declaration = format!(
-            "[{kind}]\ndirectory = {{ package = {DIRECTORY:?}, path = \"../{DIRECTORY}\"{extra} }}\n"
-        );
-        let expected = failure.map_or(Ok(()), |wrong| Err(wrong.to_owned()));
-        assert_eq!(
-            caller_declares(&workspace, "maestro-test-process", &declaration),
-            expected,
-            "{kind}{extra}"
-        );
-    }
-}
-
-#[test]
-fn tracing_support_edges_are_native_development_only() {
-    support_declarations_match_owner(TRACING, TRACING_CALLERS);
-}
-
 /// Check the permitted declaration forms for each support owner and its callers.
 fn support_declarations_match_owner(owner: &str, callers: &[&str]) {
     for &caller in callers {
@@ -2851,56 +2783,12 @@ fn support_declarations_match_owner(owner: &str, callers: &[&str]) {
 }
 
 #[test]
-fn directory_support_owner_has_no_domain_dependencies() {
+fn fixture_owner_has_no_domain_dependencies() {
     support_owner_has_no_domain_dependencies(FIXTURES);
-}
-
-/// The directory owner resolves its roots through the real-path owner and depends on no
-/// other workspace crate.
-#[test]
-fn directory_support_owner_depends_only_on_the_real_path_owner() {
-    let targets = ["maestro-text", "maestro-tooling"];
-    let workspace = Workspace::new();
-    workspace.foundation(&[DIRECTORY, REALPATH, targets[0], targets[1], UNIFIER]);
-    for target in targets {
-        for (table, refusal) in [
-            ("dependencies", "forbidden production dependency"),
-            ("build-dependencies", "forbidden production dependency"),
-            (
-                "dev-dependencies",
-                "internal dev dependency requires declared dependency-free test support",
-            ),
-        ] {
-            workspace.member(
-                DIRECTORY,
-                DIRECTORY,
-                &format!("[{table}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
-            );
-            assert_eq!(
-                check_workspace(workspace.root.path()),
-                Err(format!("{refusal}: {DIRECTORY} -> {target}")),
-                "{table}"
-            );
-        }
-    }
-    workspace.member(
-        DIRECTORY,
-        DIRECTORY,
-        &format!(
-            "{}{REALPATH} = {{ path = \"../{REALPATH}\" }}\n",
-            unifier_declaration(&[], NATIVE, "unified", "")
-        ),
-    );
-    assert_eq!(check_workspace(workspace.root.path()), Ok(()));
 }
 
 /// Owner of native real-path resolution.
 const REALPATH: &str = "maestro-path";
-
-#[test]
-fn tracing_support_owner_has_no_domain_dependencies() {
-    support_owner_has_no_domain_dependencies(TRACING);
-}
 
 /// `owner` rejects the text, path and tooling crates in every dependency table and accepts
 /// the dependency unifier.
@@ -2938,14 +2826,8 @@ fn support_owner_has_no_domain_dependencies(owner: &str) {
 }
 
 #[test]
-fn directory_support_permissions_are_exact() {
+fn fixture_owner_is_reachable_only_from_declared_callers() {
     support_permissions_are_exact(FIXTURES, FIXTURE_CALLERS);
-    support_permissions_are_exact(DIRECTORY, DIRECTORY_CALLERS);
-}
-
-#[test]
-fn tracing_support_permissions_are_exact() {
-    support_permissions_are_exact(TRACING, TRACING_CALLERS);
 }
 
 /// Only `owner`'s declared callers may declare it; no crate-name pattern grants access.
@@ -2979,8 +2861,7 @@ fn support_permissions_are_exact(owner: &str, callers: &[&str]) {
 }
 
 #[test]
-fn directory_support_edges_keep_cycle_checks() {
-    support_edges_keep_cycle_checks(DIRECTORY, "maestro-models");
+fn product_test_edge_cycle_is_reported() {
     let (owner, helper) = ("maestro-models", "maestro-agent");
     let workspace = Workspace::new();
     workspace.foundation(&[owner, helper]);
@@ -2997,11 +2878,6 @@ fn directory_support_edges_keep_cycle_checks() {
             "test dependency cycle: {helper} -> {owner} -> {helper}"
         ))
     );
-}
-
-#[test]
-fn tracing_support_edges_keep_cycle_checks() {
-    support_edges_keep_cycle_checks(TRACING, "maestro-daemon");
 }
 
 /// A native development edge from `caller` to `owner` still meets the test-graph cycle check.
@@ -3024,33 +2900,13 @@ fn support_edges_keep_cycle_checks(owner: &str, caller: &str) {
 }
 
 #[test]
-fn directory_support_inventory_matches_contract() {
+fn fixture_owner_is_dedicated_and_listed() {
     assert_eq!(
         FIXTURE_CALLERS,
         support::policy::test_support_callers(FIXTURES).unwrap()
     );
     let documented = specification_names("Fixture development callers are", "; declarations");
     support_inventory_matches_contract(FIXTURES, FIXTURE_CALLERS, &documented);
-    assert_eq!(DIRECTORY_CALLERS, support::policy::TEST_DIRECTORY_CALLERS);
-    let documented = std::iter::once("maestro")
-        .chain(specification_names(
-            "`cfg(not(target_arch = \"wasm32\"))` from `maestro`,",
-            "; a caller\ndeclares it only",
-        ))
-        .collect::<Vec<_>>();
-    support_inventory_matches_contract(DIRECTORY, DIRECTORY_CALLERS, &documented);
-}
-
-#[test]
-fn tracing_support_inventory_matches_contract() {
-    assert_eq!(TRACING_CALLERS, support::policy::TEST_TRACING_CALLERS);
-    let documented = std::iter::once("maestro-daemon")
-        .chain(specification_names(
-            "from\n`maestro-daemon`",
-            "; a caller\ndeclares it only when it uses it",
-        ))
-        .collect::<Vec<_>>();
-    support_inventory_matches_contract(TRACING, TRACING_CALLERS, &documented);
 }
 
 /// `owner` is dedicated, outside the utility permission, listed, and documented with `callers`.
@@ -3082,22 +2938,9 @@ fn support_inventory_matches_contract(owner: &str, callers: &[&str], documented:
 }
 
 #[test]
-fn directory_support_preserves_process_and_domain_policies() {
-    for caller in owner_callers() {
-        let workspace = Workspace::new();
-        workspace.foundation(&[caller, OWNER, DIRECTORY]);
-        assert_eq!(
-            caller_declares(
-                &workspace,
-                caller,
-                &format!("[{NATIVE_DEV}]\n{}", owner_entry(""))
-            ),
-            Ok(())
-        );
-    }
-    test_process_policy_keeps_existing_domain_edges();
+fn forbidden_production_dependency_beside_the_fixture_owner_is_rejected() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-models", "maestro-app", DIRECTORY]);
+    workspace.foundation(&["maestro-models", "maestro-app", OWNER]);
     assert_eq!(
         caller_declares(
             &workspace,
@@ -3233,7 +3076,7 @@ fn argument_spelling(expression: &syn::Expr) -> Option<String> {
 /// Every tracked file is enumerated and the Rust sources are read, since only a parsed function
 /// body can delegate.
 fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
-    let listed = maestro_test_process::git_command::command()
+    let listed = maestro_test_harness::git_command::command()
         .args(["ls-files", "-z"])
         .current_dir(root)
         .output()

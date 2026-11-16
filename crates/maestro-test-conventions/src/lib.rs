@@ -24,7 +24,7 @@ mod documented_commands;
 mod duplicates;
 /// Fixture size limits for test code that compiles its input.
 mod fixture_includes;
-/// Native fixture setup selection for declared test-process callers.
+/// Native fixture setup selection for declared test-harness callers.
 mod fixture_selection;
 /// Binding manifest lint exceptions and generated extension source checks.
 mod generated;
@@ -110,7 +110,7 @@ mod tracked_sizes;
 /// Issue references are checked offline; reviewers verify that each issue is open.
 /// Periods use positive whole seconds (`"Ns"`).
 ///
-/// Native fixture setup selection must match the declared test-process callers plus their owner.
+/// Native fixture setup selection must match the declared test-harness callers plus their owner.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Sources load, and the source checks run, on
@@ -151,14 +151,14 @@ mod tracked_sizes;
 /// Test code in every member may not name the platform temporary directory
 /// itself: not as a call, a value or a macro argument inside test-owned code, and
 /// not as an import anywhere in the crate, whatever the alias. Diagnostics name
-/// `TEST_DIRECTORY_CALLERS`; the owner's `temporary_root` accessor, the owner
+/// `TEST_PROCESS_CALLERS`; the owner's `temporary_root` accessor, the owner
 /// parent, an uncreated socket path and a declaration's own `temp_dir` name remain
-/// accepted. `maestro-test-directory` is the only member outside the check: its
-/// accessor is the one place that reads the platform directory itself.
+/// accepted. Only the harness's `src/directory.rs` is outside the check: its accessor
+/// is the one place that reads the platform directory itself.
 ///
 /// A test that starts the development setup tool clears the prepared bundle its run inherits:
 /// every test-owned source spelling `nextest-setup` in a string literal applies
-/// `maestro_test_process::without_prepared_bundles` to that command, directly or through a
+/// `maestro_test_harness::without_prepared_bundles` to that command, directly or through a
 /// function of the same source that does. The check reads the written syntax, so it does not
 /// expand macros or follow an entry named by a constant declared outside a function.
 ///

@@ -587,7 +587,7 @@ pub async fn assert_rows(test: &str) -> TestResult {
     }
     let owned: Vec<_> = rows.iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty());
-    let group = maestro_test_process::run_per_environment(test, owned, |row| {
+    let group = maestro_test_harness::run_per_environment(test, owned, |row| {
         row.input
             .env
             .iter()

@@ -89,7 +89,7 @@ fn run_with_collision(
     fault: Option<(&'static str, io::ErrorKind)>,
     collision: bool,
 ) -> Observation {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let dir = scratch.path();
     let target = dir.join("snapshot");
     fs::write(&target, b"old").unwrap();
@@ -196,7 +196,7 @@ fn replacement_errors_before_commit_keep_old_bytes() {
     assert_eq!(observed.bytes, b"old");
     assert_eq!(observed.entries, 2);
     assert_eq!(observed.temporary_bytes, [b"competitor".to_vec()]);
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let dir = scratch.path();
     let target = dir.join("existing");
     fs::create_dir(&target).unwrap();
@@ -258,7 +258,7 @@ fn unsupported_directory_sync_is_tolerated() {
 #[cfg(unix)]
 #[test]
 fn root_link_resolution_reaches_final_target() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let dir = scratch.path();
     for i in 0..17 {
         let next = if i == 16 {
@@ -286,7 +286,7 @@ fn replacement_preserves_existing_permissions_before_publication() {
 #[test]
 fn narrowing_a_looser_target_keeps_its_bytes_and_a_missing_one_stays_absent() {
     use std::os::unix::fs::PermissionsExt;
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let existing = dir.path().join("loose");
     fs::write(&existing, b"secret").unwrap();
     fs::set_permissions(&existing, fs::Permissions::from_mode(0o644)).unwrap();
@@ -308,7 +308,7 @@ fn creation_mode_is_private_before_publication() {
     let Some(_setup) = launch_umask_cases("creation_mode_is_private_before_publication") else {
         return;
     };
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let target = dir.path().join("private");
     let control = dir.path().join("control");
     fs::write(&control, b"control").unwrap();
@@ -379,8 +379,8 @@ fn assert_failed_creation_cleans_up(parent: &Path, target: &Path) {
 /// Runs permission observations in checked children with the caller-selected umasks, and
 /// returns the child's retained setup; `None` once the parent's children passed.
 #[cfg(unix)]
-fn launch_umask_cases(test: &str) -> Option<maestro_test_process::SetupGuard> {
-    use maestro_test_process::{IsolatedSetup, TestProcess};
+fn launch_umask_cases(test: &str) -> Option<maestro_test_harness::SetupGuard> {
+    use maestro_test_harness::{IsolatedSetup, TestProcess};
     if std::env::var_os("MAESTRO_REPLACE_UMASK").is_none() {
         for (mask, bits) in [("000", 0o000), ("077", 0o077)] {
             let output = TestProcess::current(test)
@@ -405,7 +405,7 @@ fn launch_umask_cases(test: &str) -> Option<maestro_test_process::SetupGuard> {
 #[cfg(windows)]
 #[test]
 fn creation_mode_maps_only_owner_write_to_windows_readonly() {
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let target = dir.path().join("created");
     for mode in [0o600, 0o400] {
         EFFECTS.set(Effects::default());
@@ -455,7 +455,7 @@ fn creation_mode_maps_only_owner_write_to_windows_readonly() {
 
 #[test]
 fn interrupted_publication_is_replayed_before_the_next_write() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let target = root.path().join("session");
     fs::write(&target, b"before").unwrap();
     EFFECTS.set(Effects {
@@ -480,7 +480,7 @@ fn interrupted_publication_is_replayed_before_the_next_write() {
 
 #[test]
 fn recovery_refuses_a_record_with_an_unknown_mode_flag() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
     EFFECTS.set(Effects {
@@ -500,7 +500,7 @@ fn recovery_refuses_a_record_with_an_unknown_mode_flag() {
 
 #[test]
 fn recovery_completes_a_target_interrupted_before_sync() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
     EFFECTS.set(Effects {
@@ -521,7 +521,7 @@ fn recovery_completes_a_target_interrupted_before_sync() {
 
 #[test]
 fn target_parent_sync_failure_keeps_the_recovery_copy() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
     EFFECTS.set(Effects {
@@ -569,7 +569,7 @@ fn new_target_and_replay_keep_umask_default_permissions() {
 #[cfg(unix)]
 fn new_target_mode(mode: Option<u32>, interrupted: bool) {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let control = scratch.path().join("control");
     fs::write(&control, b"").unwrap();
@@ -605,7 +605,7 @@ fn new_target_mode(mode: Option<u32>, interrupted: bool) {
 #[test]
 fn writes_sync_recovery_before_touching_the_target() {
     for append in [false, true] {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let target = scratch.path().join("session");
         fs::write(&target, b"before").unwrap();
         let holder = crate::acquire_write(&target, true).unwrap();
@@ -631,7 +631,7 @@ fn writes_sync_recovery_before_touching_the_target() {
 #[test]
 fn completed_readonly_creation_recovers_after_parent_sync_failure() {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     EFFECTS.set(Effects {
         fault: Some(("parent_open", io::ErrorKind::Other)),
@@ -664,7 +664,7 @@ fn completed_readonly_creation_recovers_after_parent_sync_failure() {
         0o400
     );
     assert!(!scratch.path().join("session.recovery").exists());
-    if let Some(_restore) = maestro_test_directory::deny(&target, 0o400).unwrap() {
+    if let Some(_restore) = maestro_test_harness::deny(&target, 0o400).unwrap() {
         assert!(replace(&target, b"different", Replace::default()).is_err());
     }
 }
@@ -685,11 +685,11 @@ fn append_waits_at_target_sync_until_publication_finishes() {
         stream.write_all(b"done").unwrap();
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let child = maestro_test_process::TestProcess::current(
+    let child = maestro_test_harness::TestProcess::current(
         "append_waits_at_target_sync_until_publication_finishes",
     )
     .unwrap()
@@ -744,7 +744,7 @@ fn sync_waiter(pid: u32, stream: &std::net::TcpStream) -> bool {
 #[cfg(unix)]
 #[test]
 fn writable_creation_replays_even_when_unsynced_bytes_and_mode_match() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     EFFECTS.set(Effects {
         fault: Some(("target_sync", io::ErrorKind::Interrupted)),
@@ -771,7 +771,7 @@ fn writable_creation_replays_even_when_unsynced_bytes_and_mode_match() {
 
 #[test]
 fn readonly_replay_syncs_mode_before_removing_recovery() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     EFFECTS.set(Effects {
         fault: Some(("mode_sync", io::ErrorKind::Other)),
@@ -816,7 +816,7 @@ fn readonly_replay_syncs_mode_before_removing_recovery() {
 #[test]
 fn atomic_publication_failures_remove_temporary_and_keep_previous_bytes() {
     for phase in ["write_all", "file_sync", "rename"] {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let target = scratch.path().join("session.json");
         fs::write(&target, b"previous").unwrap();
         EFFECTS.set(Effects {
@@ -840,7 +840,7 @@ fn atomic_publication_failures_remove_temporary_and_keep_previous_bytes() {
 
 #[test]
 fn atomic_linked_temporary_failure_keeps_previous_bytes() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     let temporary = target.with_extension("json.tmp");
     fs::write(&target, b"previous").unwrap();
@@ -870,7 +870,7 @@ fn atomic_temporary_is_private_at_creation() {
     let Some(_setup) = launch_umask_cases("atomic_temporary_is_private_at_creation") else {
         return;
     };
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     fs::write(&target, b"previous").unwrap();
     fs::set_permissions(&target, fs::Permissions::from_mode(0o600)).unwrap();
@@ -908,7 +908,7 @@ fn atomic_publication_replaces_a_read_only_target_with_the_default_mode() {
         return;
     };
     let restrictive = std::env::var("MAESTRO_REPLACE_UMASK").unwrap() == "077";
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     fs::write(&target, b"previous").unwrap();
     fs::set_permissions(&target, fs::Permissions::from_mode(0o444)).unwrap();
@@ -962,11 +962,11 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
         stream.write_all(b"done").unwrap();
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     fs::write(&target, b"previous").unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let child = maestro_test_process::TestProcess::current(test)
+    let child = maestro_test_harness::TestProcess::current(test)
         .unwrap()
         .env("MAESTRO_ATOMIC_TARGET", &target)
         .env(
@@ -1003,7 +1003,7 @@ fn atomic_fixed_writers_wait_before_opening_temporary() {
 
 #[test]
 fn atomic_creation_collision_keeps_competing_bytes() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     fs::write(&target, b"previous").unwrap();
     EFFECTS.set(Effects {
@@ -1029,7 +1029,7 @@ fn atomic_creation_collision_keeps_competing_bytes() {
 
 #[test]
 fn atomic_temporary_cannot_name_the_target() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session.json");
     fs::write(&target, b"previous").unwrap();
 
@@ -1052,7 +1052,7 @@ fn long_leaf_rewrite_and_replay_use_shortened_names() {
     #[cfg(not(windows))]
     let unicode = "é".repeat(127) + "x";
     for leaf in ["x".repeat(255), unicode] {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let target = scratch.path().join(&leaf);
         fs::write(&target, b"before").unwrap();
         let holder = crate::acquire_write(&target, true).unwrap();
@@ -1083,7 +1083,7 @@ fn long_leaf_rewrite_and_replay_use_shortened_names() {
 
 #[test]
 fn recovery_record_moved_with_its_directory_is_replayed() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let old = scratch.path().join("old");
     let moved = scratch.path().join("moved");
     fs::create_dir(&old).unwrap();
@@ -1103,7 +1103,7 @@ fn recovery_record_moved_with_its_directory_is_replayed() {
 
 #[test]
 fn released_lock_file_is_never_locked_twice() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let first = crate::acquire_write(&target, true).unwrap();
     let (opened, observed) = std::sync::mpsc::channel();
@@ -1154,7 +1154,7 @@ fn released_lock_file_is_never_locked_twice() {
 
 #[test]
 fn waiting_writer_outlasts_a_long_holder() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let first = crate::acquire_write(&target, true).unwrap();
     let (opened, observed) = std::sync::mpsc::channel();
@@ -1194,7 +1194,7 @@ fn waiting_writer_outlasts_a_long_holder() {
 
 #[test]
 fn recovery_refuses_an_incomplete_header() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
     for length in 0..5 {
@@ -1209,7 +1209,7 @@ fn recovery_refuses_an_incomplete_header() {
 
 #[test]
 fn read_only_guard_does_not_sync_recovery_absence() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
     EFFECTS.set(Effects {
@@ -1224,7 +1224,7 @@ fn read_only_guard_does_not_sync_recovery_absence() {
 
 #[test]
 fn append_syncs_recovery_absence_once_before_writing() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"before").unwrap();
     let holder = crate::acquire_write(&target, true).unwrap();
@@ -1247,7 +1247,7 @@ fn requested_creation_mode_is_private_before_bytes() {
     let Some(_setup) = launch_umask_cases("requested_creation_mode_is_private_before_bytes") else {
         return;
     };
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     for mode in [0o600, 0o640, 0o400] {
         for bytes in [b"".as_slice(), b"\0\xffprivate"] {
             let target = scratch.path().join("private");
@@ -1295,7 +1295,7 @@ fn requested_creation_mode_is_private_before_bytes() {
 #[test]
 fn requested_rewrite_retains_existing_mode_before_bytes() {
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let alias = scratch.path().join("alias");
     fs::write(&target, b"previous").unwrap();
@@ -1340,7 +1340,7 @@ fn default_creation_retains_umask_permissions() {
     let Some(_setup) = launch_umask_cases("default_creation_retains_umask_permissions") else {
         return;
     };
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let control = scratch.path().join("control");
     fs::write(&control, b"").unwrap();
@@ -1367,7 +1367,7 @@ fn default_creation_retains_umask_permissions() {
 
 #[test]
 fn in_place_readers_observe_truncation_and_recovery() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let alias = scratch.path().join("alias");
     fs::write(&target, b"previous").unwrap();
@@ -1413,7 +1413,7 @@ fn requested_mode_failures_preserve_state_or_replay() {
             "target_truncated",
             "target_sync",
         ] {
-            let scratch = maestro_test_directory::Scratch::new().unwrap();
+            let scratch = maestro_test_harness::Scratch::new().unwrap();
             let target = scratch.path().join("session");
             if existing {
                 fs::write(&target, b"previous").unwrap();
@@ -1464,7 +1464,7 @@ fn requested_mode_failures_preserve_state_or_replay() {
 #[test]
 fn requested_parent_sync_failure_reports_committed_bytes() {
     for &phase in sync_phases() {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let target = scratch.path().join("session");
         EFFECTS.set(Effects {
             fault: Some((phase, io::ErrorKind::Interrupted)),
@@ -1498,7 +1498,7 @@ fn requested_parent_sync_failure_reports_committed_bytes() {
 #[test]
 fn readonly_creation_interrupted_after_truncation_replays_full_bytes() {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     EFFECTS.set(Effects {
         fault: Some(("target_truncated", io::ErrorKind::Interrupted)),
@@ -1534,9 +1534,9 @@ fn readonly_creation_interrupted_after_truncation_replays_full_bytes() {
 #[cfg(unix)]
 fn interrupted_unreadable_creation(
     mode: crate::CreationMode,
-) -> (maestro_test_directory::Scratch, PathBuf) {
+) -> (maestro_test_harness::Scratch, PathBuf) {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let phase = match mode {
         crate::CreationMode::AtCreation(_) => "target_truncated",
@@ -1572,7 +1572,7 @@ fn unreadable_creation_interruption_replays_recorded_bytes() {
         crate::CreationMode::AfterSync(0),
     ] {
         let (scratch, target) = interrupted_unreadable_creation(mode);
-        let Some(_restore) = maestro_test_directory::deny(&target, 0).unwrap() else {
+        let Some(_restore) = maestro_test_harness::deny(&target, 0).unwrap() else {
             return;
         };
 
@@ -1597,7 +1597,7 @@ fn unreadable_creation_replay_retries_chmod_and_write_interruptions() {
         crate::CreationMode::AfterSync(0),
     ] {
         let (scratch, target) = interrupted_unreadable_creation(mode);
-        let Some(_restore) = maestro_test_directory::deny(&target, 0).unwrap() else {
+        let Some(_restore) = maestro_test_harness::deny(&target, 0).unwrap() else {
             return;
         };
         for phase in ["replay_chmod", "replay_widened"] {
@@ -1631,9 +1631,9 @@ fn unreadable_creation_replay_retries_chmod_and_write_interruptions() {
 
 /// Creates an interrupted native read-only save with an open-time mode record.
 #[cfg(unix)]
-fn interrupted_readonly_creation() -> (maestro_test_directory::Scratch, PathBuf) {
+fn interrupted_readonly_creation() -> (maestro_test_harness::Scratch, PathBuf) {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     fs::write(&target, b"partial").unwrap();
     fs::set_permissions(&target, fs::Permissions::from_mode(0o400)).unwrap();
@@ -1665,7 +1665,7 @@ fn readonly_creation_replay_restores_observed_mode() {
 #[test]
 fn readonly_creation_is_never_widened_during_normal_save() {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join("session");
     let observed = target.clone();
     EFFECTS.set(Effects {
@@ -1765,7 +1765,7 @@ fn existing_recovery_records_retain_default_and_exact_modes() {
         return;
     };
     for tag in [0, 1] {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let target = scratch.path().join("session");
         let mut record = vec![tag];
         record.extend_from_slice(&0o640_u32.to_le_bytes());

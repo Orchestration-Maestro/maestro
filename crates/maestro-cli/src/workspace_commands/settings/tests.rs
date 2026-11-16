@@ -62,7 +62,7 @@ fn outcome_presentation_propagates_stdout_and_warning_writer_failures() {
 
 #[test]
 fn usage_and_application_errors_propagate_stderr_failures() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path().to_str().unwrap();
     let mut stdout = Vec::new();
     let error = run_reset_keys(&["extra".into()], root, 42, &mut stdout, &mut Refused).unwrap_err();

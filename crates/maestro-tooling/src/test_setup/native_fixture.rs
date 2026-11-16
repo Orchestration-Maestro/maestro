@@ -20,7 +20,7 @@ pub(crate) const PROBE_VARIABLE: &str = "MAESTRO_CHILD_TOOLCHAIN_PROBE";
 /// The one harness-free example target.
 const EXAMPLE: &str = "native_fixture";
 /// The package that owns the fixture.
-const PACKAGE: &str = "maestro-test-process";
+const PACKAGE: &str = "maestro-test-harness";
 /// The example target that builds a wasm child from an instrumented parent.
 const PROBE_EXAMPLE: &str = "child_toolchain_probe";
 /// The package that owns the probe.

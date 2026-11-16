@@ -1,4 +1,4 @@
-//! Exact test selection belongs to the checked test-process owner.
+//! Exact test selection belongs to the checked test-harness owner.
 
 use ra_ap_rustc_lexer::{LiteralKind, TokenKind};
 
@@ -10,11 +10,11 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members {
         for source in &member.sources {
             ignore_ownership(member, source)?;
-            if member.name != "maestro-test-process"
+            if member.name != "maestro-test-harness"
                 && let Some(offset) = exact_offset(source)
             {
                 return Err(format!(
-                    "{}:{}: exact test selection belongs to maestro-test-process",
+                    "{}:{}: exact test selection belongs to maestro-test-harness",
                     source.path.display(),
                     line(&source.contents, offset)
                 ));

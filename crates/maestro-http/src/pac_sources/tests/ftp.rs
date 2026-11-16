@@ -1612,14 +1612,16 @@ fn ftp_credential_never_reaches_a_captured_trace() {
     // The control: the same capture sees a DEBUG event that carries this value, so the silence
     // asserted below means nothing logged it rather than nothing was watched.
     let control = Captured::default();
-    maestro_test_tracing::with_default(control.clone(), || super::probe_credential(sentinel));
+    maestro_test_harness::trace_capture::with_default(control.clone(), || {
+        super::probe_credential(sentinel);
+    });
     assert!(
         control.text().contains(sentinel),
         "the capture sees a DEBUG event carrying the sentinel"
     );
 
     let traces = Captured::default();
-    let loaded = maestro_test_tracing::with_default(traces.clone(), || {
+    let loaded = maestro_test_harness::trace_capture::with_default(traces.clone(), || {
         crate::tests::runtime::run(async {
             let peer = ftp_server::serve(vec![Scenario::default()]).unwrap();
             let loaded = load(

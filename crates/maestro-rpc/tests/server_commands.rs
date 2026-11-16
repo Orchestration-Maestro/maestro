@@ -21,7 +21,7 @@ use maestro_models::Local;
 use maestro_rpc::RpcConnectionOutcome;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},

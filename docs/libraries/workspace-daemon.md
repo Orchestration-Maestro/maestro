@@ -40,7 +40,7 @@ branches of this closure. `linux-raw-sys` and `errno` are the two backends of
 `rustix`, and a target builds one of them. Exact 0BSD permissions for
 doctest-file and recvmsg are recorded in the shared-CI configuration. The leaf
 adds no production dependency on another domain crate. Native tests use the
-existing checked test-process owner; the native feature-unifier dependency remains
+existing checked test-harness owner; the native feature-unifier dependency remains
 API-free.
 
 See [workspace sockets](../workspace-daemon.md#sockets) for the public operations.

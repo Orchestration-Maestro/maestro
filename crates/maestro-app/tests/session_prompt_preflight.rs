@@ -22,7 +22,7 @@ use maestro_session::Presence;
 use maestro_session::message_records::{
     CustomMessageInput, SendMessageOptions, UserMessageDelivery,
 };
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 
@@ -79,7 +79,7 @@ async fn single_prompt_case(name: &str, resources: (Scratch, HarnessOptions), te
 
 /// Options over the recorded skills and templates in a fresh project.
 fn with_resources() -> (Scratch, HarnessOptions) {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let options = HarnessOptions {
         skills: recorded_skills(&scratch),
         prompts: vec![template("plan", "Plan for $1 with $2")],

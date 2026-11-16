@@ -202,7 +202,7 @@ fn reread_waits_for_the_holder_on_the_scheduled_acquisition() {
     use std::time::Duration;
 
     for reader in 0..3 {
-        let dir = maestro_test_directory::Scratch::new().unwrap();
+        let dir = maestro_test_harness::Scratch::new().unwrap();
         let path = dir.path().join("auth.json").to_str().unwrap().to_owned();
         let backend = FileAuthStorageBackend::new(&path)
             .with_draw(|| 0.75)
@@ -237,7 +237,7 @@ fn reread_keeps_accepted_records_after_the_last_scheduled_wait() {
     use super::backend::FileAuthStorageBackend;
     use std::time::Duration;
 
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let path = dir.path().join("auth.json").to_str().unwrap().to_owned();
     let backend = FileAuthStorageBackend::new(&path)
         .with_draw(|| 0.75)
@@ -284,7 +284,7 @@ fn api_key(key: &str) -> AuthCredential {
 fn repeated_reads_of_an_unchanged_file_take_no_lock() {
     use super::backend::FileAuthStorageBackend;
 
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let path = dir.path().join("auth.json").to_str().unwrap().to_owned();
     let backend = FileAuthStorageBackend::new(&path)
         .with_draw(|| 0.75)
@@ -305,7 +305,7 @@ fn repeated_reads_of_an_unchanged_file_take_no_lock() {
 
 #[test]
 fn reread_follows_another_storage_and_in_place_edits() {
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let path = dir.path().join("auth.json").to_str().unwrap().to_owned();
     let other = AuthStorage::create(&path);
     other.set("p", api_key("old-1"));
@@ -383,7 +383,7 @@ async fn acquire_after_release(path: &str, release_before: usize) {
 #[test]
 fn scheduled_acquisition_lengthens_each_wait_before_the_cap() {
     runtime::runtime(true).block_on(async {
-        let dir = maestro_test_directory::Scratch::new().unwrap();
+        let dir = maestro_test_harness::Scratch::new().unwrap();
         let path = dir.path().join("auth.json").to_str().unwrap().to_owned();
         for release_before in 0..=10 {
             acquire_after_release(&path, release_before).await;

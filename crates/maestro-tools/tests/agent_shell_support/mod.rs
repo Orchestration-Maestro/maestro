@@ -585,8 +585,8 @@ pub fn environment_sequence() {
         .into_iter()
         .find(|value| value["id"] == "fresh_spawn_context_per_call")
         .unwrap();
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(SEQUENCE_TEST)
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(SEQUENCE_TEST)
             .unwrap()
             .nocapture()
             .case("*")

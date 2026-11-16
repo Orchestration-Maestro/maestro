@@ -1,6 +1,6 @@
 //! Disposable configuration, a cleared executable environment and the shipped theme.
-use maestro_test_directory::Scratch;
-use maestro_test_process::{SearchGuard, install_stub_search_programs};
+use maestro_test_harness::Scratch;
+use maestro_test_harness::{SearchGuard, install_stub_search_programs};
 use std::{
     path::Path,
     process::{Command, Output},
@@ -92,8 +92,8 @@ impl Drop for Root {
 /// `agent`, so an executable that uses `agent` loads the components the run prepared instead of
 /// compiling them again. Does nothing when the run exported no agent directory.
 pub fn share_component_cache(agent: &Path) {
-    if let Some(run) = maestro_test_process::run_agent_directory() {
-        maestro_test_process::link_files(
+    if let Some(run) = maestro_test_harness::run_agent_dir() {
+        maestro_test_harness::link_files(
             &maestro_extensions_wasmtime::component_cache_directory(run),
             &maestro_extensions_wasmtime::component_cache_directory(agent),
         )
@@ -136,19 +136,16 @@ fn child_guard_reaps_during_unwind() {
 fn root_agent_reuses_the_component_cache_the_run_prepared() {
     let run = Scratch::new().unwrap();
     let text = run.path().to_str().unwrap().to_owned();
-    let selected = maestro_test_process::run_per_environment(
+    let selected = maestro_test_harness::run_per_environment(
         "root_agent_reuses_the_component_cache_the_run_prepared",
         [text],
         |run| {
-            std::collections::BTreeMap::from([(
-                maestro_test_process::AGENT_DIRECTORY,
-                Some(run.clone()),
-            )])
+            std::collections::BTreeMap::from([(maestro_test_harness::AGENT_DIR, Some(run.clone()))])
         },
     )
     .unwrap();
     if selected.is_some() {
-        let run = maestro_test_process::run_agent_directory().unwrap();
+        let run = maestro_test_harness::run_agent_dir().unwrap();
         let prepared =
             maestro_extensions_wasmtime::component_cache_directory(&run).join("modules/namespace");
         std::fs::create_dir_all(&prepared).unwrap();

@@ -11,7 +11,7 @@ use maestro_export::NativeExportOperations;
 use maestro_extensions::ExtensionFactory;
 use maestro_models::Local;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-use maestro_test_process::IsolatedSetup;
+use maestro_test_harness::IsolatedSetup;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeDirectories, ThemeOptions};
 use maestro_tools::ToolRenderEnvironment;
 use maestro_tui::Component;

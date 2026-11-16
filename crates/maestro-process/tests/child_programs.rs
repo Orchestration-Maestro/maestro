@@ -3,10 +3,10 @@
 //! Each program is an ignored test that only a parent test selects. It reads its arguments
 //! from variables and its trailing operands, and ends through `std::process::exit` so no
 //! harness epilogue follows its output. The harness writes the start bytes to standard output
-//! before the program runs; parents compare output through `maestro_test_process::child`.
+//! before the program runs; parents compare output through `maestro_test_harness::child`.
 #![cfg(test)]
 #![cfg(unix)]
-use maestro_test_process::child::{
+use maestro_test_harness::child::{
     Stream, announce, close_streams, connect, hex_variable, is_null, leave, port, read_input,
     receive, test_child_command, variable, write_stderr, write_stdout,
 };

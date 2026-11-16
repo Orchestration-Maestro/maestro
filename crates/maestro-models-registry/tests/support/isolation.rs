@@ -5,11 +5,11 @@
 #[cfg(not(target_arch = "wasm32"))]
 #[must_use]
 pub fn isolated(name: &str) -> bool {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return false;
     }
     subprocess::run_child(
-        maestro_test_process::TestProcess::current(name)
+        maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .case("*"),
         &[],

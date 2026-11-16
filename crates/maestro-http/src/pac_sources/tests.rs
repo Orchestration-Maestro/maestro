@@ -61,7 +61,7 @@ fn pac_data_decoding_matches_escaped_and_base64_inputs() {
 fn pac_file_sources_compare_opened_file_modification_time() {
     crate::tests::runtime::run(async {
         let scratch =
-            maestro_test_directory::Scratch::new().expect("test directory should be created");
+            maestro_test_harness::Scratch::new().expect("test directory should be created");
         let path = scratch.path().join("maestro-pac-file");
         std::fs::write(&path, b"first script").unwrap();
         let uri = url::Url::from_file_path(&path).unwrap();

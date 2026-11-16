@@ -44,7 +44,7 @@ pub(crate) async fn wait_for_line(app: &App, terminal: &TerminalId, marker: &str
 /// `/bin/sh` shells in the temporary root, then stops every pane it started.
 pub(crate) fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut App)) {
     use crate::settings::model::NewTerminalCwdConfig;
-    use maestro_test_process::{TestProcess, run_alone};
+    use maestro_test_harness::{TestProcess, run_alone};
     if run_alone(test).unwrap() {
         return;
     }
@@ -56,9 +56,7 @@ pub(crate) fn with_live_daemon(test: &str, body: impl AsyncFnOnce(&mut App)) {
             let mut config = Config::default();
             config.terminal.default_shell = "/bin/sh".into();
             config.terminal.new_cwd = NewTerminalCwdConfig::Path(
-                maestro_test_directory::temporary_root()
-                    .display()
-                    .to_string(),
+                maestro_test_harness::temporary_root().display().to_string(),
             );
             let (launch, receiver) = launch_inputs(args, manifest_cache().unwrap()).unwrap();
             let mut app = App::new(&config, || 0, launch, receiver, EventHub::default());

@@ -9,7 +9,7 @@ use serde_json::json;
 
 /// Writes through the root export and checks both the result and native file bytes.
 fn check_write(name: &str, path: &str, content: &str) {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let file = root.path().join(path);
     let tool = maestro_app::create_write_tool(
         root.path().display().to_string(),

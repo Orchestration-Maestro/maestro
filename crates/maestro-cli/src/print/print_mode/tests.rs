@@ -1331,12 +1331,12 @@ fn raw_output_uses_application_guard() {
 /// The native diagnostic effect writes the line and its newline to standard error.
 #[test]
 fn native_stderr_line_ends_with_a_newline() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         (PrintEffects::native().write_stderr_line)("diagnostic");
         return;
     }
     let output =
-        maestro_test_process::TestProcess::current("native_stderr_line_ends_with_a_newline")
+        maestro_test_harness::TestProcess::current("native_stderr_line_ends_with_a_newline")
             .unwrap()
             .case("*")
             .nocapture()

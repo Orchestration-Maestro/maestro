@@ -10,7 +10,7 @@ use maestro_app::test_support::{
     HarnessOptions, ScriptedShell, assistant, harness, hold_first_answer, on_task_set,
 };
 use maestro_session::SessionManager;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -194,7 +194,7 @@ fn running_shell_state_spans_the_command() {
 fn configured_shell_path_runs_the_command() {
     on_task_set(|_| async {
         let expected = expected("a configured shell path runs the command");
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let project = scratch.path().join("project");
         std::fs::create_dir_all(&project).unwrap();
         let shell = crate::native::command(
@@ -379,7 +379,7 @@ fn shell_commands(h: &Harness) -> Vec<Value> {
 #[test]
 fn failed_flush_keeps_the_unwritten_shell_results() {
     on_task_set(|_| async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let root = scratch.path().display().to_string();
         let sessions = format!("{root}/sessions");
         let manager =

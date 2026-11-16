@@ -13,7 +13,7 @@ pub fn init_repo_with_commit(repo: &Path) {
 }
 
 pub fn run_git(cwd: &Path, args: &[&str]) {
-    let output = maestro_test_process::git_command::command()
+    let output = maestro_test_harness::git_command::command()
         .arg("-C")
         .arg(cwd)
         .args(args)

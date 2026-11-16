@@ -174,7 +174,7 @@ fn check(name: &str) {
         return;
     }
     let scratch = path_fixture();
-    if name.starts_with("helper_key") && maestro_test_process::run_alone(name).unwrap() {
+    if name.starts_with("helper_key") && maestro_test_harness::run_alone(name).unwrap() {
         return;
     }
     let original = maestro_tui::is_kitty_protocol_active();
@@ -205,7 +205,7 @@ fn check(name: &str) {
                 &mut row,
                 scratch.path().to_str().unwrap(),
                 &std::env::var("HOME").unwrap_or_default(),
-                &maestro_test_process::run_agent_directory().unwrap_or_default(),
+                &maestro_test_harness::run_agent_dir().unwrap_or_default(),
             );
             let result = handler(row.to_string(), runner.create_command_context())
                 .await
@@ -232,7 +232,7 @@ fn check(name: &str) {
 /// The fixture stores some names decomposed. A host that folds canonically equivalent names
 /// finds them under the precomposed spelling a row authors, so a row that reaches a decomposed
 /// name from a spelling without the combining mark states that premise instead.
-fn runnable_rows(name: &str, scratch: &maestro_test_directory::Scratch) -> Vec<Value> {
+fn runnable_rows(name: &str, scratch: &maestro_test_harness::Scratch) -> Vec<Value> {
     let rows: Vec<Value> =
         serde_json::from_str(include_str!("fixtures/helper_corpus.json")).unwrap();
     let pair = ["\u{e9}", "e\u{301}"].map(std::ffi::OsStr::new);
@@ -252,18 +252,18 @@ fn runnable_rows(name: &str, scratch: &maestro_test_directory::Scratch) -> Vec<V
 
 /// Runs directory observations under a supplied host home, absent from the guest environment.
 fn isolate_paths(name: &str) -> bool {
-    let home = maestro_test_directory::Scratch::new().unwrap();
+    let home = maestro_test_harness::Scratch::new().unwrap();
     let component = std::env::var("MAESTRO_HELPER_COMPONENT").unwrap();
     let home_text = home.path().to_str().unwrap().to_owned();
-    maestro_test_process::run_per_environment(name, [home_text], |home| {
+    maestro_test_harness::run_per_environment(name, [home_text], |home| {
         let mut variables = std::collections::BTreeMap::from([
             ("HOME", Some(home.clone())),
             ("USERPROFILE", Some(home.clone())),
             ("MAESTRO_HELPER_COMPONENT", Some(component.clone())),
         ]);
         variables.extend(
-            maestro_test_process::run_agent_directory()
-                .map(|path| (maestro_test_process::AGENT_DIRECTORY, Some(path))),
+            maestro_test_harness::run_agent_dir()
+                .map(|path| (maestro_test_harness::AGENT_DIR, Some(path))),
         );
         variables
     })
@@ -297,8 +297,8 @@ fn expand(value: &mut Value, root: &str, home: &str, agent: &str) {
 }
 
 /// Existing spelling candidates live only in this exclusive disposable root.
-fn path_fixture() -> maestro_test_directory::Scratch {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+fn path_fixture() -> maestro_test_harness::Scratch {
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     for name in [
         "g’e\u{301}",
         "café.txt",

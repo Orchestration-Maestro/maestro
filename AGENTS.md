@@ -104,8 +104,8 @@ argument or an import under any alias; a method named `temp_dir` is the
 receiver's own API and is accepted, while its arguments stay checked, and a
 declaration's own `temp_dir` name is accepted the same way with its body and
 arguments staying checked. Tests that
-observe it use `maestro-test-directory::temporary_root`, and the diagnostic names
-`TEST_DIRECTORY_CALLERS`, where a new crate asks for that owner.
+observe it use `maestro_test_harness::temporary_root`, and the diagnostic names
+`TEST_PROCESS_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or
 `invoke_callback` identifiers in chat production syntax, whatever the import form:
@@ -321,8 +321,7 @@ extraction issues.
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
-conventions checker, checked test-process owner,
-disposable test-directory owner, test tracing owner, portable fixture owner,
+conventions checker, native test harness owner, portable fixture owner,
 repository tooling and the feature unifier (`maestro-feature-unifier`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional `maestro-path` edge and the feature unifier. Sparse workspaces need
@@ -355,22 +354,19 @@ controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
 executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
-of the thirty declared callers on `maestro-test-process`, the owner of
-checked child tests (see
-[the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
+of the thirty-six declared callers on `maestro-test-harness`, the owner of
+native test isolation (see
+[the spec](docs/specs/maestro-port.md#test-harness-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
 the required toolkit/text set.
 
-The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
-creation and cleanup. Its only internal edges are the native feature unifier and
-`maestro-path`, which its table row names because the general `maestro-path`
-permission excludes it. Only the
-crates its [directory
-contract](docs/specs/maestro-port.md#test-directory-owner) names may declare it,
-as a non-optional native development dependency when used; the checked child
-launcher declares it instead, and alone, as a native normal dependency, whose
-launch route reads `temporary_root` for its cleared children. `Scratch::new`
+The dedicated `maestro-test-harness` native crate isolates tests from process-wide
+state. Its only internal production edges are the native feature unifier and
+`maestro-path`, which its table row names because the general path permission
+excludes it. Only the callers in its [contract](docs/specs/maestro-port.md#test-harness-owner)
+may declare it, as a non-optional native development dependency when used.
+`Scratch::new`
 resolves its chosen root through `maestro_path::fs`, in the ordinary Windows
 form; `Scratch::new_in` keeps native supplied-parent spelling. On Unix, `enter_removed`
 and `enter_unreadable` put a test process in a removed or unreadable working
@@ -390,14 +386,11 @@ has no product or `maestro-path` edge, only the native feature-unifier exception
 apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
-The dedicated `maestro-test-tracing` native leaf runs a test action under a
-scoped tracing subscriber that sees every callsite. Only daemon, http, process,
-terminal and workspace may declare it, under the directory owner's rules. Tests
-capture through its `with_default` or, for a future, its `with_subscriber`. A
-conventions check rejects `tracing`'s scoped subscriber functions and the
-`with_subscriber` method in other test sources. Formatting subscribers write into
-its `Output` sink. See the
-[tracing contract](docs/specs/maestro-port.md#test-tracing-owner).
+Tests capture tracing through `maestro_test_harness::trace_capture::with_default`
+or, for a future, `with_subscriber`. Formatting subscribers write into the same
+module's `Output` sink. The conventions check exempts only `src/trace_capture.rs`
+from the scoped-capture check and only `src/directory.rs` from the platform
+temporary-directory check; every other harness source stays checked.
 
 The guest may declare `ToolDefinition` and `ToolRenderContext`
 only in `src/types/tools.rs`, in addition to their domain owner. Native extensions may

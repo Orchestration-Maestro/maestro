@@ -1,7 +1,7 @@
 //! Recorded assembly and metadata behavior.
 use indexmap::IndexMap;
 use maestro_interchange::types::Model;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde::Deserialize;
 /// A unique controlled query.
 #[derive(Deserialize)]

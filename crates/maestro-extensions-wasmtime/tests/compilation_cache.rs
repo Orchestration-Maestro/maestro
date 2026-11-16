@@ -9,10 +9,8 @@
 use super::components::{files_below, load_empty_component};
 use super::example_process::record;
 use maestro_extensions_wasmtime::{component_cache, component_engine};
-use maestro_test_directory::Scratch;
-use maestro_test_process::{
-    AGENT_DIRECTORY, CheckedChild, TestProcess, run_agent_directory, selection,
-};
+use maestro_test_harness::Scratch;
+use maestro_test_harness::{AGENT_DIR, CheckedChild, TestProcess, run_agent_dir, selection};
 use std::{
     collections::HashSet,
     path::Path,
@@ -22,7 +20,7 @@ use wasmtime::{Cache, component::Component};
 
 /// The compiled-code cache below the run's agent directory.
 fn run_cache() -> Cache {
-    component_cache(&run_agent_directory().unwrap()).unwrap()
+    component_cache(&run_agent_dir().unwrap()).unwrap()
 }
 
 /// Runs this test in a separate process with an agent directory, and so a cache, of its own.
@@ -34,7 +32,7 @@ fn isolated(test: &str) -> bool {
     let output = TestProcess::current(test)
         .unwrap()
         .case("isolated")
-        .env(AGENT_DIRECTORY, scratch.path().join("agent"))
+        .env(AGENT_DIR, scratch.path().join("agent"))
         .output()
         .unwrap();
     assert!(
@@ -121,7 +119,7 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     let example = profile.join("examples/prepare_author_component");
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");
-    maestro_test_process::install_executable(Path::new(&artifact), &example).unwrap();
+    maestro_test_harness::install_executable(Path::new(&artifact), &example).unwrap();
     let built = if archived { 5 } else { 1 };
     std::fs::File::options()
         .write(true)
@@ -199,7 +197,7 @@ fn observe_compilation() {
 /// The agent directory the tests inherit from the setup: the entry the setup wrote to
 /// `environment`, else the scratch root's `agent` directory when it exports none.
 fn exported_agent(environment: &Path, scratch: &Scratch) -> std::path::PathBuf {
-    let prefix = format!("{AGENT_DIRECTORY}=");
+    let prefix = format!("{AGENT_DIR}=");
     std::fs::read_to_string(environment)
         .unwrap()
         .lines()
@@ -244,7 +242,7 @@ fn share_compiled_bytes(test: &str, archived: bool) {
                 "NEXTEST_LD_LIBRARY_PATH",
                 scratch.path().join("target/debug"),
             )
-            .env(AGENT_DIRECTORY, exported_agent(&environment, &scratch))
+            .env(AGENT_DIR, exported_agent(&environment, &scratch))
             .env_remove("TEST_PREPARE_OUTPUT")
             .command()
             .unwrap();
@@ -290,7 +288,7 @@ fn started(configured: &Command, binary: &Path) -> Command {
 /// test's own bundle variables and archive signal reach the command.
 fn prepared_setup(configured: &Command, binary: &Path) -> Command {
     let mut command = Command::new(binary);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     copied_into(&mut command, configured);
     command
 }
@@ -415,7 +413,7 @@ fn component_load_survives_an_unavailable_component_cache() {
     if isolated("component_load_survives_an_unavailable_component_cache") {
         return;
     }
-    let agent = run_agent_directory().unwrap();
+    let agent = run_agent_dir().unwrap();
     std::fs::write(&agent, "not a directory").unwrap();
     assert!(component_cache(&agent).is_none());
     let (_, errors) = load_empty_component(&Scratch::new().unwrap());

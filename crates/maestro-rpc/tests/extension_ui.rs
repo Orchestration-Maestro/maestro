@@ -16,7 +16,7 @@ use maestro_extensions::types::{
 use maestro_extensions::{Extension, ExtensionAPI};
 use maestro_models::{Cancellation, Local};
 use maestro_resources::{SourceInfo, SourceOrigin, SourceScope};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use maestro_theme::{Theme, ThemeState};
 use serde_json::{Value, json};
 use std::{

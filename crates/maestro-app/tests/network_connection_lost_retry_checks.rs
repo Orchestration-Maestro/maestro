@@ -5,7 +5,7 @@ use crate::support::session_harness::{
     delivered_events, get_assistant_texts, retry_order, start_prompt,
 };
 use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 
 #[test]

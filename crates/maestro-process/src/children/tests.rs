@@ -6,8 +6,8 @@ use super::{
 };
 use super::{OutputMode, SpawnSyncOptions};
 use children::async_command;
-use maestro_test_process::HARNESS_START;
-use maestro_test_process::child::{collect_output, harness};
+use maestro_test_harness::HARNESS_START;
+use maestro_test_harness::child::{collect_output, harness};
 use std::io::Read;
 use std::{
     cell::Cell,
@@ -171,7 +171,7 @@ fn end_process(pid: &str) -> io::Result<()> {
 /// A fresh named pipe in the temporary directory.
 fn fifo(label: &str) -> PathBuf {
     static NEXT: AtomicU32 = AtomicU32::new(0);
-    let path = maestro_test_directory::temporary_root().join(format!(
+    let path = maestro_test_harness::temporary_root().join(format!(
         "maestro-{label}-{}-{}",
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
@@ -752,8 +752,8 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
     use std::{error::Error, io::Write};
     const CASE: &str =
         "children::tests::capture_timeout_closes_inherited_stdout_after_direct_child_exit";
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(CASE)
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(CASE)
             .unwrap()
             .nocapture()
             .case("*")
@@ -1026,7 +1026,7 @@ fn signal_lists_share_native_signal_validation() {
         os::unix::process::ExitStatusExt,
         process::Stdio,
     };
-    if maestro_test_process::run_alone("signal_lists_share_native_signal_validation").unwrap() {
+    if maestro_test_harness::run_alone("signal_lists_share_native_signal_validation").unwrap() {
         return;
     }
     assert!(!process_exists(0));

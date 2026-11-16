@@ -326,8 +326,8 @@ fn proxy_stream_does_not_dispatch_after_setting_failure() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn stream_composition_installs_api_protocols_without_login_providers() {
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(
             "stream_composition_installs_api_protocols_without_login_providers",
         )
         .unwrap()

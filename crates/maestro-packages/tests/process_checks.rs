@@ -8,7 +8,7 @@ use maestro_packages::{
     PackageOperations,
 };
 use maestro_settings::{Settings, SettingsManager};
-use maestro_test_process::TestProcess;
+use maestro_test_harness::TestProcess;
 use scratch::Scratch;
 use serde_json::json;
 use std::{
@@ -188,7 +188,7 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
 
 /// Drives the same native stream routes through either admission constructor.
 fn stdio_scenario(test: &str, supplied: bool) {
-    if maestro_test_process::selection().case() == Some(CHILD) {
+    if maestro_test_harness::selection().case() == Some(CHILD) {
         stdio_launches(Path::new(&std::env::var_os(STDIO_ROOT).unwrap()), supplied);
         return;
     }
@@ -254,7 +254,7 @@ const REPOSITORY_SOURCE: &str = "https://example.test/team/repo@v1";
 
 /// Runs a Git command in `directory` with a fixed identity.
 fn git(directory: &str, args: &[&str]) {
-    let status = maestro_test_process::git_command::command()
+    let status = maestro_test_harness::git_command::command()
         .args([
             "-c",
             "user.name=t",
@@ -297,11 +297,11 @@ fn repository_scenario(root: &Path) {
         std::fs::read_to_string(scratch("agent/git/.gitignore")).unwrap(),
         "*\n!.gitignore\n"
     );
-    let head = maestro_test_process::git_command::command()
+    let head = maestro_test_harness::git_command::command()
         .args(["-C", &target, "rev-parse", "HEAD"])
         .output()
         .unwrap();
-    let tag = maestro_test_process::git_command::command()
+    let tag = maestro_test_harness::git_command::command()
         .args(["-C", &target, "rev-parse", "v1^{commit}"])
         .output()
         .unwrap();
@@ -315,7 +315,7 @@ fn repository_scenario(root: &Path) {
 
 #[test]
 fn native_local_repository_installs_checks_out_and_removes() {
-    if maestro_test_process::selection().case() == Some(CHILD) {
+    if maestro_test_harness::selection().case() == Some(CHILD) {
         repository_scenario(Path::new(&std::env::var_os(REPOSITORY_ROOT).unwrap()));
         return;
     }
@@ -331,7 +331,7 @@ fn native_local_repository_installs_checks_out_and_removes() {
             git(&repository, &["tag", "v1"]);
         }
     }
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "native_local_repository_installs_checks_out_and_removes",
     )
     .unwrap()

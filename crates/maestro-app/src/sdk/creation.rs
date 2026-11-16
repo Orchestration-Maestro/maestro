@@ -96,7 +96,7 @@ struct Recorded {
 /// }
 ///
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let root = maestro_test_directory::Scratch::new()?;
+///     let root = maestro_test_harness::Scratch::new()?;
 ///     let cwd = root.path().join("project");
 ///     let agent_dir = root.path().join("agent");
 ///     std::fs::create_dir_all(&cwd)?;

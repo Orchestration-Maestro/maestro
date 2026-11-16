@@ -11,13 +11,13 @@ use maestro_app::test_support::{
 };
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_session::{CompactionResult, SessionManager};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// Opens the literal synthetic branch through the existing session-file reader.
 fn literal_history_options(expected: &Value) -> (Scratch, HarnessOptions) {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let path = scratch.path().join("history.jsonl");
     let input = include_str!("fixtures/before-compaction.jsonl");
     assert_eq!(json!(input.lines().count()), expected["input"]["rows"]);
@@ -267,7 +267,7 @@ fn compacted_session_accepts_the_next_prompt() {
 
 #[test]
 fn compaction_survives_reopening_the_history_file() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     let manager = SessionManager::create(&root, Some(&format!("{root}/sessions")), &root).unwrap();
     on_task_set(|_| async {

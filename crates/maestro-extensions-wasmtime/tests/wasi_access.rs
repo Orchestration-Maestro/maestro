@@ -23,7 +23,7 @@ fn component_environment_keeps_inherited_values() {
         Some("\u{feff}"),
         Some("\u{85}"),
     ];
-    let selected = maestro_test_process::run_per_environment(
+    let selected = maestro_test_harness::run_per_environment(
         "component_environment_keeps_inherited_values",
         cases,
         |value| {
@@ -58,7 +58,7 @@ fn component_host_location_wins_over_inherited_environment() {
     } else {
         "MAESTRO_EXTENSION_PATH"
     };
-    let selected = maestro_test_process::run_per_environment(
+    let selected = maestro_test_harness::run_per_environment(
         "component_host_location_wins_over_inherited_environment",
         [None, Some(""), Some("/wrong/index.wasm")],
         |supplied| {
@@ -74,7 +74,7 @@ fn component_host_location_wins_over_inherited_environment() {
     )
     .unwrap();
     for supplied in selected.into_iter().flatten() {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let paths = ["first # Ω.wasm", "second.wasm", "relocated.wasm"]
             .map(|name| scratch.path().join(name));
         for path in &paths[..2] {
@@ -113,7 +113,7 @@ fn component_host_location_wins_over_inherited_environment() {
 fn component_environment_keeps_native_string_conversion() {
     use std::{ffi::OsString, os::unix::ffi::OsStringExt};
     let component = std::env::var_os(COMPONENT).unwrap();
-    let selected = maestro_test_process::run_per_environment(
+    let selected = maestro_test_harness::run_per_environment(
         "component_environment_keeps_native_string_conversion",
         [()],
         |()| {
@@ -145,7 +145,7 @@ fn component_environment_keeps_native_string_conversion() {
 #[cfg(unix)]
 #[test]
 fn component_standard_basics_work_beside_pending_native_io() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         run(mixed_host());
     } else {
         mixed_parent();
@@ -155,7 +155,7 @@ fn component_standard_basics_work_beside_pending_native_io() {
 /// Captures guest stdout before allowing the pending native peer to complete.
 #[cfg(unix)]
 fn mixed_parent() {
-    use maestro_test_process::TestProcess;
+    use maestro_test_harness::TestProcess;
     use std::{
         io::{Read, Write},
         process::Stdio,
@@ -200,7 +200,7 @@ async fn mixed_host() {
     use futures_util::future::{Either, select};
     use std::io::Read;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let path = scratch.path().join("mixed file Ω");
     std::fs::write(&path, b"original\0\xfe").unwrap();
     let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
@@ -256,7 +256,7 @@ async fn assert_mixed_basics(host: &Harness, path: &Path) {
 
 #[test]
 fn component_inherits_separate_standard_streams() {
-    let selected = maestro_test_process::selection();
+    let selected = maestro_test_harness::selection();
     for generation in ["p2", "p3"] {
         for (index, input) in [b"".as_slice(), b"input\0\xff\x1b\xce\xa9".as_slice()]
             .into_iter()
@@ -274,7 +274,7 @@ fn component_inherits_separate_standard_streams() {
 
 /// Checks actual captured pipes, including binary input and EOF, independently of notifications.
 fn stdio_parent(case: &str, input: &[u8]) {
-    use maestro_test_process::TestProcess;
+    use maestro_test_harness::TestProcess;
     use std::{io::Write, process::Stdio};
     let mut child = TestProcess::current("component_inherits_separate_standard_streams")
         .unwrap()
@@ -319,11 +319,11 @@ async fn stdio_host(generation: &str, input: &[u8]) {
 #[cfg(unix)]
 #[test]
 fn component_root_access_reaches_sibling_paths() {
-    if maestro_test_process::run_alone("component_root_access_reaches_sibling_paths").unwrap() {
+    if maestro_test_harness::run_alone("component_root_access_reaches_sibling_paths").unwrap() {
         return;
     }
     let original = std::env::current_dir().unwrap();
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     std::fs::create_dir(scratch.path().join("cwd")).unwrap();
     std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
     std::os::unix::fs::symlink(
@@ -372,20 +372,20 @@ async fn root_paths(paths: &[std::path::PathBuf], target: &Path) {
 #[cfg(unix)]
 #[test]
 fn component_root_reaches_below_a_directory_it_may_search_but_not_list() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "component_root_reaches_below_a_directory_it_may_search_but_not_list",
     )
     .unwrap()
     {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let searchable = scratch.path().join("searchable Ω");
     std::fs::create_dir(&searchable).unwrap();
     let target = searchable.join("file Ω name");
     std::fs::write(&target, b"").unwrap();
     // A privileged run lists every directory, so it has no unlistable parent to reach through.
-    let Some(restore) = maestro_test_directory::deny(&searchable, 0o311).unwrap() else {
+    let Some(restore) = maestro_test_harness::deny(&searchable, 0o311).unwrap() else {
         eprintln!("skipped: this process may list every directory");
         return;
     };
@@ -403,7 +403,7 @@ fn component_root_reaches_below_a_directory_it_may_search_but_not_list() {
         &target,
     ));
     drop(restore);
-    let _restore = maestro_test_directory::deny(&searchable, 0o200)
+    let _restore = maestro_test_harness::deny(&searchable, 0o200)
         .unwrap()
         .expect("the unprivileged process cannot search the parent");
     assert_eq!(
@@ -425,11 +425,11 @@ fn plain(path: &Path) -> String {
 #[cfg(windows)]
 #[test]
 fn component_windows_roots_reach_drive_spellings() {
-    if maestro_test_process::run_alone("component_windows_roots_reach_drive_spellings").unwrap() {
+    if maestro_test_harness::run_alone("component_windows_roots_reach_drive_spellings").unwrap() {
         return;
     }
     let original = std::env::current_dir().unwrap();
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     std::fs::create_dir(scratch.path().join("cwd")).unwrap();
     std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
     std::env::set_current_dir(scratch.path().join("cwd")).unwrap();
@@ -458,13 +458,13 @@ fn component_windows_roots_reach_drive_spellings() {
 #[cfg(windows)]
 #[test]
 fn component_windows_roots_reach_a_second_volume() {
-    let first = maestro_test_directory::Scratch::new().unwrap();
+    let first = maestro_test_harness::Scratch::new().unwrap();
     let drive = plain(first.path())[..1].to_ascii_uppercase();
     // A host with one writable volume has no second root to reach.
     let Some(scratch) = ('A'..='Z')
         .filter(|letter| letter.to_string() != drive)
         .find_map(|letter| {
-            maestro_test_directory::Scratch::new_in(Path::new(&format!(r"{letter}:\"))).ok()
+            maestro_test_harness::Scratch::new_in(Path::new(&format!(r"{letter}:\"))).ok()
         })
     else {
         eprintln!("skipped: no writable volume besides {drive}:");
@@ -481,13 +481,13 @@ fn component_windows_roots_reach_a_second_volume() {
 #[cfg(windows)]
 #[test]
 fn component_windows_roots_reach_a_share_working_directory() {
-    if maestro_test_process::run_alone("component_windows_roots_reach_a_share_working_directory")
+    if maestro_test_harness::run_alone("component_windows_roots_reach_a_share_working_directory")
         .unwrap()
     {
         return;
     }
     let original = std::env::current_dir().unwrap();
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     std::fs::create_dir(scratch.path().join("cwd")).unwrap();
     std::fs::create_dir(scratch.path().join("sibling Ω space")).unwrap();
     let local = plain(scratch.path());
@@ -517,14 +517,14 @@ fn component_windows_roots_reach_a_share_working_directory() {
 #[test]
 fn component_windows_root_reaches_later_drives_other_shares_and_links() {
     use std::process::Command;
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "component_windows_root_reaches_later_drives_other_shares_and_links",
     )
     .unwrap()
     {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     std::fs::create_dir(scratch.path().join("inner")).unwrap();
     let target = scratch.path().join(r"inner\file Ω name");
     std::fs::write(&target, b"").unwrap();
@@ -607,17 +607,17 @@ impl Drop for Subst {
 #[cfg(unix)]
 #[test]
 fn component_filesystem_failures_remain_os_failures() {
-    if maestro_test_process::run_alone("component_filesystem_failures_remain_os_failures").unwrap()
+    if maestro_test_harness::run_alone("component_filesystem_failures_remain_os_failures").unwrap()
     {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let healthy = scratch.path().join("healthy");
     let denied = scratch.path().join("denied");
     std::fs::write(&healthy, b"healthy\0\xff").unwrap();
     std::fs::write(&denied, b"denied bytes").unwrap();
     std::os::unix::fs::symlink("missing", scratch.path().join("dangling")).unwrap();
-    let permission = maestro_test_directory::deny(&denied, 0).unwrap();
+    let permission = maestro_test_harness::deny(&denied, 0).unwrap();
     let mut cases = vec![
         (scratch.path().join("missing"), "not-found"),
         (scratch.path().join("dangling"), "not-found"),
@@ -644,11 +644,11 @@ fn component_filesystem_failures_remain_os_failures() {
 #[test]
 fn component_non_unicode_cwd_keeps_absolute_access() {
     use std::{ffi::OsString, os::unix::ffi::OsStringExt};
-    if maestro_test_process::run_alone("component_non_unicode_cwd_keeps_absolute_access").unwrap() {
+    if maestro_test_harness::run_alone("component_non_unicode_cwd_keeps_absolute_access").unwrap() {
         return;
     }
     let original = std::env::current_dir().unwrap();
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let name = OsString::from_vec(vec![b'c', 255]);
     if !scratch.keeps_distinct(&[name.as_os_str()]).unwrap() {
         eprintln!("the working directory needs a host that stores the name bytes {name:?}");
@@ -704,7 +704,7 @@ async fn file_failures(cases: &[(std::path::PathBuf, &str)], healthy: &Path) {
 
 /// The host cannot observe cwd, but an otherwise accessible absolute artifact still loads.
 #[cfg(unix)]
-fn unavailable_cwd(scratch: &maestro_test_directory::Scratch, healthy: &Path, kind: &str) {
+fn unavailable_cwd(scratch: &maestro_test_harness::Scratch, healthy: &Path, kind: &str) {
     let original = std::env::current_dir().unwrap();
     let permission = if kind == "removed" {
         scratch.enter_removed("removed").unwrap();
@@ -743,11 +743,11 @@ fn unavailable_cwd(scratch: &maestro_test_directory::Scratch, healthy: &Path, ki
 #[cfg(unix)]
 #[test]
 fn component_absolute_links_reach_native_targets() {
-    if maestro_test_process::run_alone("component_absolute_links_reach_native_targets").unwrap() {
+    if maestro_test_harness::run_alone("component_absolute_links_reach_native_targets").unwrap() {
         return;
     }
     let original = std::env::current_dir().unwrap();
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let cwd = scratch.path().join("cwd");
     let outside = scratch.path().join("outside Ω");
     std::fs::create_dir(&cwd).unwrap();
@@ -760,7 +760,7 @@ fn component_absolute_links_reach_native_targets() {
     std::os::unix::fs::symlink(outside.join("missing"), cwd.join("dangling")).unwrap();
     let denied = outside.join("denied");
     std::fs::write(&denied, b"private").unwrap();
-    let permission = maestro_test_directory::deny(&denied, 0).unwrap();
+    let permission = maestro_test_harness::deny(&denied, 0).unwrap();
     std::env::set_current_dir(&cwd).unwrap();
     if permission.is_some() {
         assert_eq!(
@@ -844,10 +844,10 @@ async fn link_failures(host: &Harness, generation: &str, denied: Option<&Path>) 
 
 #[test]
 fn component_creates_and_reads_link_targets() {
-    if maestro_test_process::run_alone("component_creates_and_reads_link_targets").unwrap() {
+    if maestro_test_harness::run_alone("component_creates_and_reads_link_targets").unwrap() {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     std::fs::create_dir(scratch.path().join("outside Ω")).unwrap();
     let target = scratch.path().join("outside Ω").join("bytes");
     #[cfg(windows)]
@@ -895,7 +895,7 @@ fn assert_link(observed: &serde_json::Value, target: &Path, case: &str) {
 /// A terminal dot must not turn a rejected path into an operation on its preceding file.
 #[test]
 fn component_file_operations_preserve_terminal_dot() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     run(async {
         let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
         for generation in ["p2", "p3"] {
@@ -921,7 +921,7 @@ fn component_file_operations_preserve_terminal_dot() {
 #[cfg(unix)]
 #[test]
 fn component_exclusive_creation_rejects_dangling_link() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     run(async {
         let host = Harness::load(Path::new(&std::env::var(COMPONENT).unwrap())).await;
         for generation in ["p2", "p3"] {
@@ -948,7 +948,7 @@ fn component_exclusive_creation_rejects_dangling_link() {
 #[test]
 fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target = scratch.path().join(OsStr::from_bytes(b"raw\xff"));
     let neighbor = scratch.path().join("raw�");
     std::fs::write(&neighbor, b"neighbor").unwrap();
@@ -982,7 +982,7 @@ fn component_non_unicode_link_target_never_modifies_lossy_sibling() {
 #[cfg(unix)]
 #[test]
 fn component_link_cycles_keep_loop_errors() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let link = scratch.path().join("loop");
     std::os::unix::fs::symlink("loop", &link).unwrap();
     assert!(std::fs::read(&link).is_err());

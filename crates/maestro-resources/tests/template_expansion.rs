@@ -122,7 +122,7 @@ struct LoadCase<'a> {
 /// moves the process directory.
 #[cfg(unix)]
 fn run_cases(test: &str, cases: &[LoadCase<'_>]) {
-    if maestro_test_process::run_alone(test).unwrap() {
+    if maestro_test_harness::run_alone(test).unwrap() {
         return;
     }
     for case in cases {
@@ -3316,7 +3316,7 @@ fn absent_prompt_roots_yield_an_empty_list() {
 /// a fixture root there, and `None` in the caller once that run passed.
 #[cfg(unix)]
 fn without_working_directory(test: &str) -> Option<(support::Directory, String)> {
-    if maestro_test_process::run_alone(test).unwrap() {
+    if maestro_test_harness::run_alone(test).unwrap() {
         return None;
     }
     let dir = support::Directory::new();

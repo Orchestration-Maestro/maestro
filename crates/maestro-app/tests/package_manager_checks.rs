@@ -11,7 +11,7 @@ use maestro_app::{
 };
 use maestro_packages::test_support::component_support;
 use maestro_packages::{NativePackageOperations, PackageManagerOptions};
-use maestro_test_directory as scratch;
+use maestro_test_harness as scratch;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, fs, path::Path, rc::Rc};
@@ -120,10 +120,10 @@ fn check_settings(expected: (&Value, &Value), root: &str, cwd: &str, agent: &str
 #[test]
 fn selected_configuration_roots_feed_package_resolution_and_persistence() {
     let cases = fixtures::cases::<RootInput, Roots>("root-");
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let case = cases
             .iter()
-            .find(|c| maestro_test_process::selection().runs_case(&c.id))
+            .find(|c| maestro_test_harness::selection().runs_case(&c.id))
             .unwrap();
         root_case(case);
         return;
@@ -146,7 +146,7 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
         envs.push(("HOME", &home));
         assert!(
             probe::probe(
-                maestro_test_process::TestProcess::current(
+                maestro_test_harness::TestProcess::current(
                     "selected_configuration_roots_feed_package_resolution_and_persistence"
                 )
                 .unwrap()
@@ -239,10 +239,10 @@ struct Updated {
 #[test]
 fn selected_package_roots_keep_update_pins_and_progress() {
     let cases = fixtures::cases::<UpdateInput, Updated>("update-");
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let case = cases
             .iter()
-            .find(|c| maestro_test_process::selection().runs_case(&c.id))
+            .find(|c| maestro_test_harness::selection().runs_case(&c.id))
             .unwrap();
         update_case(case);
         return;
@@ -262,7 +262,7 @@ fn selected_package_roots_keep_update_pins_and_progress() {
         let npm = format!("{root}/global/node_modules");
         assert!(
             probe::probe(
-                maestro_test_process::TestProcess::current(
+                maestro_test_harness::TestProcess::current(
                     "selected_package_roots_keep_update_pins_and_progress"
                 )
                 .unwrap()

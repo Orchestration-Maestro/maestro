@@ -344,7 +344,7 @@ fn fork_cases() -> [(&'static str, Value, bool); 7] {
 fn setup_writer_uses_real_session_persistence() {
     local(async {
         use maestro_session::session_manager::ReadonlySessionManager;
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let directory = scratch.path().to_string_lossy().into_owned();
         let persisted = Rc::new(RefCell::new(
             maestro_session::SessionManager::create("/persisted-cwd", Some(&directory), &directory)

@@ -143,11 +143,11 @@ fn wayland_detection_uses_nonempty_display_or_exact_session_type() {
 #[test]
 fn undecodable_remote_marker_still_emits_the_terminal_frame() {
     use std::os::unix::ffi::OsStringExt as _;
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         controlled::run_undecodable_remote_marker();
         return;
     }
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "undecodable_remote_marker_still_emits_the_terminal_frame",
     )
     .unwrap()
@@ -172,11 +172,11 @@ fn undecodable_remote_marker_still_emits_the_terminal_frame() {
 #[test]
 fn native_adapter_forwards_launches_without_clipboard_access() {
     use maestro_app::copy_to_clipboard;
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         crate::support::run_io(copy_to_clipboard("a\0é🙂")).unwrap();
         return;
     }
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "native_adapter_forwards_launches_without_clipboard_access",
     )
     .unwrap()
@@ -271,7 +271,7 @@ fn native_launches() {
 #[test]
 fn aliases_install_without_a_system_installer() {
     let name = "aliases_install_without_a_system_installer";
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let empty = crate::native::Scratch::new();
         std::fs::create_dir(empty.join("empty")).unwrap();
         let environment = std::collections::BTreeMap::from([
@@ -284,7 +284,7 @@ fn aliases_install_without_a_system_installer() {
                 ),
             ),
         ]);
-        maestro_test_process::run_per_environment(name, [()], |()| environment.clone()).unwrap();
+        maestro_test_harness::run_per_environment(name, [()], |()| environment.clone()).unwrap();
         return;
     }
     let root = crate::native::Scratch::new();

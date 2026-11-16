@@ -2,7 +2,7 @@
 #![cfg(test)]
 use super::{ReadonlySessionManager, generate_id};
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_directory::{Scratch, temporary_root};
+use maestro_test_harness::{Scratch, temporary_root};
 use serde::Deserialize;
 use serde_json::Value;
 use uuid::Uuid;

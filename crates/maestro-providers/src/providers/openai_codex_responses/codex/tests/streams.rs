@@ -1060,7 +1060,7 @@ fn assert_native_body_closed(peer: &mut std::net::TcpStream) {
 fn assert_body_closed(outcome: std::io::Result<usize>) {
     match outcome {
         Ok(0) => {}
-        Err(error) if maestro_test_process::loopback::client_closed(&error) => {}
+        Err(error) if maestro_test_harness::loopback::client_closed(&error) => {}
         outcome => panic!("client did not close terminal body: {outcome:?}"),
     }
 }

@@ -102,7 +102,7 @@ impl ChildProcess for GuestControls {
 
 #[test]
 fn detached_native_child_survives_reload_and_is_reaped() {
-    if maestro_test_process::run_alone("detached_native_child_survives_reload_and_is_reaped")
+    if maestro_test_harness::run_alone("detached_native_child_survives_reload_and_is_reaped")
         .unwrap()
     {
         return;

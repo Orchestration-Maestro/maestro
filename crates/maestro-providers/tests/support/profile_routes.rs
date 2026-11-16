@@ -309,7 +309,7 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
     } else {
         &row.test
     };
-    let result = maestro_test_process::TestProcess::current(test).and_then(|process| {
+    let result = maestro_test_harness::TestProcess::current(test).and_then(|process| {
         process
             .nocapture()
             .env_clear()
@@ -556,7 +556,7 @@ pub fn check(test: &str) -> TestResult {
         })
         .collect();
     assert!(!owned.is_empty(), "test owns no credential route rows");
-    let case = maestro_test_process::selection();
+    let case = maestro_test_harness::selection();
     if case.is_child() {
         let row = owned
             .into_iter()

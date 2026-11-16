@@ -36,5 +36,5 @@ mod saved_model_owner;
 mod scopes;
 mod selection;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_process::subprocess;
+use maestro_test_harness::subprocess;
 mod support;

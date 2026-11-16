@@ -272,7 +272,7 @@ fn child_case(name: &str, group: Group, index: usize) {
     let refs: Vec<_> = envs.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
     assert_eq!(
         child::probe(
-            maestro_test_process::TestProcess::current(name)
+            maestro_test_harness::TestProcess::current(name)
                 .unwrap()
                 .case(index.to_string()),
             scratch.0.path(),
@@ -285,15 +285,15 @@ fn child_case(name: &str, group: Group, index: usize) {
 }
 /// Exercise removal from an outer child with competing environment overrides.
 fn qualify(name: &str, group: Group) {
-    if maestro_test_process::selection().is_child()
-        && !maestro_test_process::selection().runs_case("outer")
+    if maestro_test_harness::selection().is_child()
+        && !maestro_test_harness::selection().runs_case("outer")
     {
         let root = std::env::var("MAESTRO_DEFAULT_ROOT").unwrap();
         let rows = fixture::cases::<Value, Value>(group);
         let row = rows
             .iter()
             .enumerate()
-            .find(|(index, _)| maestro_test_process::selection().runs_case(&index.to_string()))
+            .find(|(index, _)| maestro_test_harness::selection().runs_case(&index.to_string()))
             .map(|(_, row)| row)
             .expect("selected route row");
         if group == Group::PackageAndBinaryPathsReachRealFiles {
@@ -315,7 +315,7 @@ fn qualify(name: &str, group: Group) {
         let scratch = child::Scratch::new();
         assert_eq!(
             child::probe(
-                maestro_test_process::TestProcess::current(name)
+                maestro_test_harness::TestProcess::current(name)
                     .unwrap()
                     .case("outer"),
                 scratch.0.path(),

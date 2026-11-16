@@ -47,7 +47,7 @@ fn native_terminal_descriptors_do_not_survive_exec() {
             ["/proc/self/fd/0", "/proc/self/fd/1"].map(|path| fs::read_link(path).unwrap());
         rig.run(async {
             let mut terminal = queued_terminal(&rig, &output).await;
-            let child = maestro_test_process::TestProcess::current(
+            let child = maestro_test_harness::TestProcess::current(
                 "native_terminal_descriptors_do_not_survive_exec",
             )
             .unwrap()
@@ -347,8 +347,8 @@ impl LogCase {
 }
 
 /// A fresh empty directory for one scenario, made by the parent only.
-fn scratch() -> (maestro_test_directory::Scratch, PathBuf) {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+fn scratch() -> (maestro_test_harness::Scratch, PathBuf) {
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let dir = scratch.path().to_path_buf();
     (scratch, dir)
 }
@@ -687,7 +687,7 @@ fn native_output_regular_destinations_remain_synchronous() {
             use std::fs::File;
             let rig = Rig::paused();
             let _input = pipe_input();
-            let path = maestro_test_directory::temporary_root()
+            let path = maestro_test_harness::temporary_root()
                 .join(format!("maestro-output-{}", std::process::id()));
             let file = if case == 0 {
                 File::options()
@@ -967,7 +967,7 @@ fn native_output_writer_keeps_synchronous_destinations() {
         assert!(terminal.output_writer().is_none());
         terminal.write("stopped").unwrap();
         assert_eq!(output.take(), "stopped");
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let path = scratch.path().join("regular");
         let file = fs::File::create(&path).unwrap();
         rustix::stdio::dup2_stdout(&file).unwrap();
@@ -1072,7 +1072,7 @@ fn standard_output_to_regular_file() {
     use std::io::Write;
     let rig = Rig::paused();
     let _input = pipe_input();
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let path = scratch.path().join("regular");
     let file = fs::File::create(&path).unwrap();
     rustix::stdio::dup2_stdout(&file).unwrap();

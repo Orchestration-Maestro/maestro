@@ -6,11 +6,11 @@ This contract describes checked reruns, direct native fixtures and the typed nat
 
 Controlled test programs still require Python or generated shell programs. Tests that reach a native executable through `PATH` cannot use an ordinary libtest rerun: literal native operands are not harness arguments, and harness output changes byte protocols. Tests need one Rust owner for both routes without changing the product operations they exercise.
 
-Confidence: **proven in source**. Evidence: #3768; `crates/maestro-test-process/src/lib.rs`, `src/proof.rs` and `src/test_process.rs`; the [test-process contract](maestro-port.md#test-process-owner). Runtime and platform qualification of the replacement remain **unknown** until its acceptance checks pass.
+Confidence: **proven in source**. Evidence: #3768; `crates/maestro-test-harness/src/lib.rs`, `src/proof.rs` and `src/checked_child.rs`; the [test-harness contract](maestro-port.md#test-harness-owner). Runtime and platform qualification of the replacement remain **unknown** until its acceptance checks pass.
 
 ## Solution
 
-Keep checked test reruns and raw native fixtures in `maestro-test-process`. Use checked reruns when the test owns the invocation and framing. Use one prepared harness-free Rust executable when product code must receive native operands or raw streams. Replace interpreted fixture setup with typed native effects at the beginning of the isolated Rust child. Repository preparation remains in `maestro-tooling`.
+Keep checked test reruns and raw native fixtures in `maestro-test-harness`. Use checked reruns when the test owns the invocation and framing. Use one prepared harness-free Rust executable when product code must receive native operands or raw streams. Replace interpreted fixture setup with typed native effects at the beginning of the isolated Rust child. Repository preparation remains in `maestro-tooling`.
 
 Confidence: **proven requirement**, authorized by #3768. The native fixture, `install_executable(artifact, destination)`, artifact preparation and typed native setup are implemented and tested. No product startup, search, shell, RPC or cancellation behavior changes.
 
@@ -18,7 +18,7 @@ Confidence: **proven requirement**, authorized by #3768. The native fixture, `in
 
 ### Launch and observations
 
-1. As a test author, I want an exact named-test rerun, so that a missing test cannot pass without running. **Proven existing contract:** [test process owner](maestro-port.md#test-process-owner).
+1. As a test author, I want an exact named-test rerun, so that a missing test cannot pass without running. **Proven existing contract:** [test process owner](maestro-port.md#test-harness-owner).
 2. As a native-backend test author, I want an executable found by its real program name, so that literal arguments reach the backend without an extra product hook. **Proven requirement:** #3768.
 3. As a protocol test author, I want binary streams without harness output, so that framing and malformed-input assertions remain meaningful. **Proven source behavior:** application RPC, component exec and executable I/O tests.
 4. As a lifecycle test author, I want the actual child PID and real descendants, so that exit, EOF, signals and group cleanup retain their separate meanings. **Proven source behavior:** process, tools, executable I/O and completion tests.
@@ -32,7 +32,7 @@ Confidence: **proven requirement**, authorized by #3768. The native fixture, `in
 
 ## Implementation decisions
 
-### S01: one test-process owner
+### S01: one test-harness owner
 
 **Confidence: proven requirement. Evidence: C01-C02.**
 
@@ -42,7 +42,7 @@ Eligibility reads one executable's harness listing once, on the first launch tha
 
 One selection scheme carries a test's child role. `TestProcess::case` writes the role into the child, and `selection()` reads the role and the identifier back; fixture data a stage needs travels in its own variable. The owner spells that variable once, and its guard rejects any other quoted `MAESTRO_*_CHILD` or `MAESTRO_*_CASE` name under `crates/`, in a file of any type, listing every site it found.
 
-No new crate, product resolver, alternate launcher, relay supervisor, runtime compiler or script evaluator is introduced. The fixture target has no dependency back into product owners. Host-side tooling stages an artifact; it does not gain a normal library dependency on test-process.
+No new crate, product resolver, alternate launcher, relay supervisor, runtime compiler or script evaluator is introduced. The fixture target has no dependency back into product owners. Host-side tooling stages an artifact; it does not gain a normal library dependency on test-harness.
 
 ### S02: direct native execution
 
@@ -111,7 +111,7 @@ Each row is an acceptance gate, not a claim of an executed result. Requirements 
 
 | ID | Acceptance criterion | Test seam | Evidence |
 | --- | --- | --- | --- |
-| A01 | Named-test eligibility, one-test startup proof, ordered environment edits and reaping still discriminate failures. | Existing test-process integration cases and controlled invoker/output seams. | C02 |
+| A01 | Named-test eligibility, one-test startup proof, ordered environment edits and reaping still discriminate failures. | Existing test-harness integration cases and controlled invoker/output seams. | C02 |
 | A02 | PATH aliases receive exact native operands and binary streams without harness bytes; reported PID equals native child handle. | Existing native backend invocation plus the prepared fixture. | C01, C08-C10 |
 | A03 | Concurrent installation succeeds without inherited writable executable handles; invalid selectors and missing/stale artifacts fail before effects. | Installer and preparation public operations, observing files/process results. | C01-C03 |
 | A04 | Prepared, filtered and archive-remapped runs, including spaces/Unicode paths, use the explicit artifact with one build per preparation. | Existing tooling setup, archive and nextest environment operations. | C03 |
@@ -140,7 +140,7 @@ No useful qualification capability is omitted or deferred without its existing o
 
 **Confidence: proven documentation requirement. Evidence: `AGENTS.md:104-120`, `CONTEXT.md:267` and C02-C03.**
 
-Update the foundation test-process contract and crate row, the development child-process guide, architecture ownership and the process-library record. Document the new installer and native setup with line rustdoc, errors and executable examples where useful. Explain quick start, choosing checked versus raw children, artifact preparation, typed setup, platform premises and troubleshooting missing preparation.
+Update the foundation test-harness contract and crate row, the development child-process guide, architecture ownership and the process-library record. Document the new installer and native setup with line rustdoc, errors and executable examples where useful. Explain quick start, choosing checked versus raw children, artifact preparation, typed setup, platform premises and troubleshooting missing preparation.
 
 Extend the existing **Test process** definition in `CONTEXT.md` to include checked reruns, direct native fixtures and isolated native setup. Remove its stale std-only claim. Add no glossary synonym. Review `AGENTS.md`; no frozen rule change is requested. Any necessary local instruction change follows the existing authority rather than rewriting rules. Humanize every edited document in Maestro's voice.
 
@@ -148,7 +148,7 @@ Extend the existing **Test process** definition in `CONTEXT.md` to include check
 
 **Confidence: unknown until qualified.**
 
-1. Typed native setup is exported as `maestro_test_process::IsolatedSetup`, with `TestProcess::setup` carrying the request and `apply_requested` applying it in the child. The installer is `maestro_test_process::install_executable(artifact, destination)`.
+1. Typed native setup is exported as `maestro_test_harness::IsolatedSetup`, with `TestProcess::setup` carrying the request and `apply_requested` applying it in the child. The installer is `maestro_test_harness::install_executable(artifact, destination)`.
 2. Native copying, archive path remapping, platform executable suffixes, signal handling and current-child file-size errors require actual platform evidence. A failed premise or library mismatch stops the affected delivery for a decision; it never authorizes an interpreter fallback or weaker assertion.
 3. Completion requires a sweep of then-current main and every open pull request. No static inventory or source graph is assumed complete across generated code and platform configurations.
 
@@ -159,9 +159,9 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | ID | Source or requirement |
 | --- | --- |
 | C01 | #3768: Rust controlled children, one existing owner, native PATH operands, unchanged startup and loaded qualification. #3868 retains browser-driver ownership. |
-| C02 | `crates/maestro-test-process/src/proof.rs:8-35`; `src/test_process.rs:80-110,268-280,419-493`; [existing owner contract](maestro-port.md#test-process-owner). |
+| C02 | `crates/maestro-test-harness/src/proof.rs:8-35`; `src/checked_child.rs:80-110,268-280,419-493`; [existing owner contract](maestro-port.md#test-harness-owner). |
 | C03 | `crates/maestro-tooling/src/test_setup.rs:1-16,45-100`; `src/test_setup/plan.rs:1-73`; `src/nextest_setup.rs`; `.config/nextest.toml`. |
-| C04 | The owner's own setup cases in `crates/maestro-test-process/tests/checked_runs.rs`; `crates/maestro-app/tests/session_account_file.rs`; `tests/support/startup.rs`; `crates/maestro-chat/src/interactive_mode/tests.rs`; `crates/maestro-lock/src/replace/tests.rs`; `crates/maestro-settings/tests/settings_reload.rs`; component `tests/compilation_cache.rs`. |
+| C04 | The owner's own setup cases in `crates/maestro-test-harness/tests/checked_runs.rs`; `crates/maestro-app/tests/session_account_file.rs`; `tests/support/startup.rs`; `crates/maestro-chat/src/interactive_mode/tests.rs`; `crates/maestro-lock/src/replace/tests.rs`; `crates/maestro-settings/tests/settings_reload.rs`; component `tests/compilation_cache.rs`. |
 | C05 | `crates/maestro-rpc/tests/support/rpc_peer.rs:11-78`; `tests/rpc_client_lifecycle.rs:162-219`; complete lifecycle/events/transport modules and `src/rpc_client/tests.rs:42-68`. |
 | C06 | `crates/maestro-app/tests/clipboard_copy.rs:218-259`; `tests/support/clipboard_image_effects.rs:219-231`; `tests/footer_metadata.rs:195-225`; `tests/footer_watch.rs:970-1005,1196-1235`; `tests/session_bash.rs:188-208`; `tests/package_command_execution.rs:31-125`; `tests/support/native.rs:29-39`. |
 | C07 | `crates/maestro-chat/tests/login_support/native.rs:11-75`; `tests/extension_editor.rs:289-292,565-567,1137-1145`; `tests/support/session_picker/mutations.rs:1409`; `src/interactive_mode/tests.rs:1398-1404` and its actions/authentication/autocomplete/models/notices/share/lifecycle/suspend modules. |
@@ -169,7 +169,7 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | C09 | `crates/maestro-extensions-guest/tests/support/context_bridge/exec.rs:183-205`; `crates/maestro-extensions-wasmtime/tests/exec_io.rs:80-90,199-205,278-301,446-493`; hook/cache/minimal-mode consumers. |
 | C10 | `crates/maestro/tests/native_io.rs:86-591`; `tests/native_io/faults.rs:214`; `tests/native_io/reload.rs:112-113`; `tests/entry_routes.rs:260-306`. |
 | C11 | The terminal RPC client's checks live in maestro-packages (`examples/rpc_extension_ui.rs` and the [RPC guide](../rpc.md)); Maestro keeps the native peers they run against. |
-| C12 | `crates/maestro-tooling/tests/author_setup.rs:541-559,905-969,1052-1060`; `tests/fixtures/recipe_support.rs`; the `tooling-command` and `tooling-wrapper` families of `crates/maestro-test-process/tests/support/native`; browser/setup/recipe consumers. |
+| C12 | `crates/maestro-tooling/tests/author_setup.rs:541-559,905-969,1052-1060`; `tests/fixtures/recipe_support.rs`; the `tooling-command` and `tooling-wrapper` families of `crates/maestro-test-harness/tests/support/native`; browser/setup/recipe consumers. |
 | C13 | `crates/maestro-packages/tests/cache_support/native/mod.rs:11-28`; `tests/candidate_inspection_checks.rs:169-176`; `tests/capture_context_checks.rs:34-52`; `tests/git_staging_checks.rs:1042-1056`; native Git and package-manager unit consumers. |
 | C14 | `crates/maestro-providers/src/providers/google/conversion/node_auth/tests/adc.rs:423-434`; `tests/support/profile_files.rs:24-39,60` and every process-profile consumer. |
 | C15 | `crates/maestro-daemon/tests/desktop_notification.rs:20-26,72-74`; `tests/repository_discovery.rs:365-380`. |

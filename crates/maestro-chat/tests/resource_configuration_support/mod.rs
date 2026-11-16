@@ -14,7 +14,7 @@ pub fn group(name: &str) {
     // belongs to the whole process.
     #[cfg(unix)]
     {
-        if maestro_test_process::run_alone(name).unwrap() {
+        if maestro_test_harness::run_alone(name).unwrap() {
             return;
         }
         std::env::set_current_dir("/tmp").unwrap();

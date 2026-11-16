@@ -1,7 +1,7 @@
 //! Single-test child processes over a disposable agent directory, shared by the tests
 //! inside the library and the tests that drive the interactive mode from outside.
 use maestro_app::configuration::config::ENV_AGENT_DIR;
-use maestro_test_process::{IsolatedSetup, SearchGuard, TestProcess};
+use maestro_test_harness::{IsolatedSetup, SearchGuard, TestProcess};
 use std::{ffi::OsStr, path::Path};
 
 /// Runs `body` in a fresh offline single-test child whose agent directory is a disposable
@@ -18,7 +18,7 @@ pub(crate) fn isolated(test: &str, body: impl AsyncFnOnce(&Path)) {
 /// Installs stub `fd` and `rg`, which answer at once with nothing, in the binary directory,
 /// which is searched before the command path.
 pub(crate) fn controlled_search_programs(directory: &Path) {
-    maestro_test_process::install_stub_search_programs(&directory.join("bin"))
+    maestro_test_harness::install_stub_search_programs(&directory.join("bin"))
         .expect("the stub search programs install");
 }
 
@@ -80,16 +80,16 @@ pub(crate) fn guarded_output(
     setup: IsolatedSetup,
     body: impl AsyncFnOnce(&Path),
 ) -> Option<(std::process::Output, SearchGuard)> {
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     if selection.is_child() {
         let _setup = IsolatedSetup::apply_requested().expect("the child applies its request");
         if selection.runs_case(case) {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
-            maestro_test_process::executor::run(body(Path::new(&directory)));
+            maestro_test_harness::executor::run(body(Path::new(&directory)));
         }
         return None;
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let scratch = maestro_test_harness::Scratch::new().expect("scratch directory is new");
     let root = scratch.path();
     for name in ["bin", "tmp"] {
         std::fs::create_dir(root.join(name)).unwrap();

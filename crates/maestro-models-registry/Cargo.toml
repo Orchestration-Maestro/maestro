@@ -25,8 +25,7 @@ maestro-credentials = { path = "../maestro-credentials", features = ["test-suppo
 maestro-test-fixtures.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-directory.workspace = true
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

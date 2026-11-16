@@ -7,7 +7,7 @@
 )]
 use super::wasi_support::{COMPONENT, Harness, run};
 use maestro_extensions_wasmtime::artifact_factory_with_stdout;
-use maestro_test_process::{TestProcess, selection};
+use maestro_test_harness::{TestProcess, selection};
 use serde_json::json;
 use std::{
     io::{self, Write},
@@ -134,7 +134,7 @@ async fn output_host(case: &str, captured: &Capture) -> Harness {
             super::support::widgets(),
             maestro_extensions_wasmtime::Installation {
                 version: "installed-component-host".into(),
-                agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
+                agent_dir: maestro_test_harness::run_agent_dir().unwrap_or_default(),
             },
             writer,
             case == "terminal",

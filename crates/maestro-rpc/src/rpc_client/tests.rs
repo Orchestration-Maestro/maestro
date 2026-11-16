@@ -2,7 +2,7 @@
 #[cfg(unix)]
 use super::process;
 use super::{RpcClient, RpcClientError, RpcClientOptions};
-use maestro_test_process::executor::run;
+use maestro_test_harness::executor::run;
 #[cfg(unix)]
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -32,11 +32,11 @@ fn failed_prompt_releases_its_collection_registration() {
 #[cfg(unix)]
 #[test]
 fn failed_launch_publishes_nothing_and_leaves_no_child() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let entry = scratch.path().join("peer");
-    maestro_test_process::rpc_peer::install(
+    maestro_test_harness::rpc_peer::install(
         &entry,
-        maestro_test_process::rpc_peer::Scenario::Launch,
+        maestro_test_harness::rpc_peer::Scenario::Launch,
     )
     .unwrap();
     let mut options = RpcClientOptions {

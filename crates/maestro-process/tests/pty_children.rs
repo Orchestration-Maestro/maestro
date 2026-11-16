@@ -3,7 +3,7 @@
 #![cfg(target_os = "linux")]
 use crate::child_programs;
 use maestro_process::terminal::{self, PtyCommand, PtyEnvironment, PtySize};
-use maestro_test_process::{TestProcess, run_alone};
+use maestro_test_harness::{TestProcess, run_alone};
 use std::{
     ffi::OsString,
     io::{self, Read, Write},

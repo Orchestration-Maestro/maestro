@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 #[test]
 fn cloudflare_availability_requires_ids_without_resolving_key() {
-    let Some(_) = maestro_test_process::run_per_environment(
+    let Some(_) = maestro_test_harness::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
         |()| std::collections::BTreeMap::<String, Option<String>>::new(),
@@ -56,7 +56,7 @@ fn cloudflare_availability_requires_ids_without_resolving_key() {
 /// A stored account without its gateway is rejected before compatibility invocation.
 #[test]
 fn cloudflare_request_auth_names_missing_gateway() {
-    let Some(_) = maestro_test_process::run_per_environment(
+    let Some(_) = maestro_test_harness::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
         |()| std::collections::BTreeMap::<String, Option<String>>::new(),
@@ -90,7 +90,7 @@ fn cloudflare_request_auth_names_missing_gateway() {
 /// Stored account values materialize built-in and custom descriptors without mutating them.
 #[test]
 fn cloudflare_auth_materializes_descriptor_without_mutation() {
-    let Some(_) = maestro_test_process::run_per_environment(
+    let Some(_) = maestro_test_harness::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
         |()| {
@@ -132,7 +132,7 @@ fn cloudflare_auth_materializes_descriptor_without_mutation() {
 /// Complete account values cannot make an empty stored key available.
 #[test]
 fn cloudflare_availability_requires_nonempty_key() {
-    let Some(_) = maestro_test_process::run_per_environment(
+    let Some(_) = maestro_test_harness::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
         |()| std::collections::BTreeMap::<String, Option<String>>::new(),
@@ -187,7 +187,7 @@ fn check_materialized_auth(
 /// Registered OAuth credentials stay available without account lookup or token refresh.
 #[test]
 fn cloudflare_oauth_availability_defers_ids_and_refresh_until_request() {
-    let Some(cases) = maestro_test_process::run_per_environment(
+    let Some(cases) = maestro_test_harness::run_per_environment(
         std::thread::current().name().unwrap(),
         [false, true],
         |&complete| {

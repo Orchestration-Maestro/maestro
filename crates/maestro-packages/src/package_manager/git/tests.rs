@@ -5,7 +5,7 @@ use std::path::Path;
 /// Allocation skips an existing candidate name and keeps its contents.
 #[test]
 fn staging_allocation_skips_collisions() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let parent = scratch.path().to_str().unwrap();
     let first = create_temp_dir(parent).unwrap();
     let name = Path::new(&first).file_name().unwrap().to_str().unwrap();

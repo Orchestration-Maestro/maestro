@@ -20,7 +20,7 @@ use maestro_models::{Local, TextContent, UserBlock};
 use maestro_session::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::session_manager::SessionManager;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
@@ -464,7 +464,7 @@ fn reports_extension_handler_failures_without_stopping_the_queue() {
 #[test]
 fn reports_a_failed_save_once_and_keeps_the_conversation_going() {
     on_task_set(|_| async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let sessions = scratch.path().join("sessions");
         let manager = SessionManager::create(
             &maestro_path::join(&[scratch.path().to_str().unwrap(), "project"]),

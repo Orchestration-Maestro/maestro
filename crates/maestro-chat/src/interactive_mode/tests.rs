@@ -72,7 +72,7 @@ use maestro_resources::{
     SourceScope,
 };
 use maestro_settings::SettingsManager;
-use maestro_test_process::{IsolatedSetup, TestProcess};
+use maestro_test_harness::{IsolatedSetup, TestProcess};
 use maestro_theme::{
     Theme, ThemeColor, ThemeReloadTimer, ThemeState, ThemeWatchOperations, ThemeWatcher,
 };
@@ -111,13 +111,13 @@ pub(super) const FIXTURES: &str = include_str!("../../tests/fixtures/interactive
 /// requests it makes depend only on its own settings. Its binary directory supplies both
 /// search programs, and a [`SearchGuard`] fails the run if the child ran a host copy.
 pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path)) -> Vec<u8> {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
         let package = std::env::var(&*ENV_PACKAGE_DIR).unwrap();
-        maestro_test_process::executor::run(body(Path::new(&directory), Path::new(&package)));
+        maestro_test_harness::executor::run(body(Path::new(&directory), Path::new(&package)));
         return Vec::new();
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let scratch = maestro_test_harness::Scratch::new().expect("scratch directory is new");
     let directory = scratch.path();
     let package = directory.join("package");
     std::fs::create_dir(&package).unwrap();
@@ -146,7 +146,7 @@ pub(super) fn isolated_package(test: &str, body: impl AsyncFnOnce(&Path, &Path))
 #[test]
 fn a_child_without_its_own_search_programs_reaches_the_guard_not_the_host() {
     const TEST: &str = "a_child_without_its_own_search_programs_reaches_the_guard_not_the_host";
-    let host = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let host = maestro_test_harness::Scratch::new().expect("scratch directory is new");
     controlled_search_programs(host.path());
     let path = format!(
         "{}:{}",
@@ -1390,7 +1390,7 @@ pub(super) fn install(
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     std::fs::create_dir_all(directory).unwrap();
     let path = directory.join(name);
-    maestro_test_process::install_executable(Path::new(&artifact), &path)
+    maestro_test_harness::install_executable(Path::new(&artifact), &path)
         .expect("the fixture installs");
     record(&path, family, scenario);
     path
@@ -1817,7 +1817,7 @@ fn fatal_runtime_error_writes_its_notice_before_stopping_the_terminal() {
 #[test]
 fn fatal_runtime_error_ends_the_process_with_failure_status() {
     let test = "fatal_runtime_error_ends_the_process_with_failure_status";
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     if selection.is_child() {
         if selection.runs_case("fatal") {
             let directory = std::env::var(&*ENV_AGENT_DIR).unwrap();
@@ -1829,7 +1829,7 @@ fn fatal_runtime_error_ends_the_process_with_failure_status() {
         }
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().expect("scratch directory is new");
+    let scratch = maestro_test_harness::Scratch::new().expect("scratch directory is new");
     let output = TestProcess::current(test)
         .unwrap()
         .case("fatal")

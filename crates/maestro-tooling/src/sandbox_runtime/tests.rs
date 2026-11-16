@@ -97,7 +97,7 @@ fn dependency_sources_are_recorded_without_the_cargo_home() {
 
 #[test]
 fn a_missing_tool_is_named_with_its_release() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let absent = scratch.path().join("emcc");
     let name = absent.to_str().unwrap();
     let refusal = tool(name, "6.0.10").unwrap_err().to_string();
@@ -107,7 +107,7 @@ fn a_missing_tool_is_named_with_its_release() {
 
 #[test]
 fn the_script_is_written_only_when_its_bytes_change() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let asset = scratch.path().join(ASSET);
     publish(&asset, b"one").unwrap();
     let old = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
@@ -130,7 +130,7 @@ fn the_script_is_written_only_when_its_bytes_change() {
 fn web_build_script(scratch: &Path) -> String {
     let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-web/build.rs");
     let program = scratch.join("web-build-script");
-    let compiled = maestro_test_process::compiler::command("rustc")
+    let compiled = maestro_test_harness::compiler::command("rustc")
         .arg("--edition=2024")
         .arg(source)
         .arg("-o")
@@ -152,7 +152,7 @@ fn web_build_script(scratch: &Path) -> String {
 /// message that names it.
 #[test]
 fn the_web_build_script_embeds_the_written_script_or_names_this_step() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let asset = scratch.path().join(ASSET);
 
     let missing = web_build_script(scratch.path());

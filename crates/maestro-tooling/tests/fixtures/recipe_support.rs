@@ -8,7 +8,7 @@ use std::{
 };
 
 pub struct Workspace {
-    parent: maestro_test_directory::Scratch,
+    parent: maestro_test_harness::Scratch,
     name: OsString,
     sources: std::sync::OnceLock<PathBuf>,
 }
@@ -35,7 +35,7 @@ pub fn printer(directory: &Path, name: &str, text: &str) -> PathBuf {
 /// Copies an executable through a child process on Unix to avoid writable descriptors across forks.
 pub fn install_executable(source: &Path, target: &Path) {
     #[cfg(unix)]
-    maestro_test_process::native::install_executable(source, target).unwrap();
+    maestro_test_harness::native::install_executable(source, target).unwrap();
     // Windows has no fork, so a copy leaves no executable descriptor another launch could fail on.
     #[cfg(not(unix))]
     fs::copy(source, target).unwrap();
@@ -81,7 +81,7 @@ pub fn installed(directory: &Path, name: &str, contents: &str) -> PathBuf {
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     fs::create_dir_all(directory).unwrap();
     let path = directory.join(executable(name));
-    maestro_test_process::install_executable(Path::new(&artifact), &path).unwrap();
+    maestro_test_harness::install_executable(Path::new(&artifact), &path).unwrap();
     let mut record = path.as_os_str().to_owned();
     record.push(".fixture");
     fs::write(record, contents).unwrap();
@@ -126,7 +126,7 @@ fn source_configuration(variable: &str, scope: &[&str]) -> PathBuf {
                 .canonicalize()
                 .unwrap(),
         );
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     let output = command.output().unwrap();
     assert!(
         output.status.success(),
@@ -146,10 +146,10 @@ pub fn without_shared_cargo_home() -> bool {
 /// A fixture that still reaches the shared home fails at once, instead of waiting for whichever
 /// test holds the lock; the child keeps the run's prepared sources and any additional source sets.
 pub fn rerun_without_shared_cargo_home(test: &str, sources: &[(&str, PathBuf)]) {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let home = root.path().join("unusable-cargo-home");
     fs::create_dir_all(home.join(".package-cache")).unwrap();
-    let output = maestro_test_process::TestProcess::current(test)
+    let output = maestro_test_harness::TestProcess::current(test)
         .unwrap()
         .env("MAESTRO_SHARED_CARGO_HOME_UNUSABLE", "1")
         .env("MAESTRO_TEST_CARGO_SOURCES", prepared_sources())
@@ -169,7 +169,7 @@ impl Workspace {
     pub fn new() -> Self {
         record("phase: workspace setup");
         let workspace = Self {
-            parent: maestro_test_directory::Scratch::new().unwrap(),
+            parent: maestro_test_harness::Scratch::new().unwrap(),
             name: OsString::from("checkout"),
             sources: std::sync::OnceLock::new(),
         };
@@ -367,7 +367,7 @@ pub fn normalize_cache(profile: &Path) -> Output {
     command
         .args(["nextest-setup", "normalize-component-cache"])
         .arg(profile);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     command.output().unwrap()
 }
 

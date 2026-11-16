@@ -88,7 +88,7 @@ fn find_custom_route_never_probes_native_programs() {
     let root = read_support::Scratch::new().unwrap();
     let marker = root.path().join("probed");
     let test = "find_custom_route_never_probes_native_programs";
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         for name in ["fd", "fdfind"] {
             find_support::alias(
                 root.path(),
@@ -249,7 +249,7 @@ fn find_resolution_observes_cwd_only_when_required() {
     ) {
         return;
     }
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     root.enter_removed("removed").unwrap();
     assert!(std::env::current_dir().is_err());
     find_support::check_custom("find_resolution_observes_cwd_only_when_required");
@@ -545,7 +545,7 @@ fn find_native_abort_terminates_child_without_waiting_for_exit() {
 fn find_acquisition_is_silent_and_abort_prevents_launch() {
     let test = "find_acquisition_is_silent_and_abort_prevents_launch";
     let root = read_support::Scratch::new().unwrap();
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         assert_silent_child(
             test,
             read_support::isolated_os_output(
@@ -579,7 +579,7 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
         return;
     }
     runtime::run(async {
-        if maestro_test_process::selection().runs_case("probe") {
+        if maestro_test_harness::selection().runs_case("probe") {
             abort_discovery().await;
         } else {
             unavailable_and_pre_abort(&root).await;
@@ -592,7 +592,7 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
 fn assert_silent_child(test: &str, output: std::process::Output) {
     let success = format!(
         "test {} ... ok",
-        maestro_test_process::TestProcess::current(test)
+        maestro_test_harness::TestProcess::current(test)
             .unwrap()
             .name()
     );

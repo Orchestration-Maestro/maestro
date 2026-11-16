@@ -84,7 +84,7 @@ const TEST: &str = "maestro_cloudflare_resolves_account_urls";
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_cloudflare_resolves_account_urls() -> TestResult {
-    let case = maestro_test_process::selection();
+    let case = maestro_test_harness::selection();
     if case.is_child() {
         let index = (0..SUBSTITUTIONS.len())
             .find(|index| case.runs_case(&index.to_string()))
@@ -118,7 +118,7 @@ fn maestro_cloudflare_resolves_account_urls() -> TestResult {
     }
     for (index, (_, variables, _)) in SUBSTITUTIONS.iter().enumerate() {
         {
-            let output = maestro_test_process::TestProcess::current(TEST)?
+            let output = maestro_test_harness::TestProcess::current(TEST)?
                 .nocapture()
                 .env_clear()
                 .envs(variables.iter().copied())

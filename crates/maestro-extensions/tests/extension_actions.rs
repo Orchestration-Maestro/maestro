@@ -156,7 +156,7 @@ fn local_actions(log: &Rc<RefCell<Vec<String>>>) -> ExtensionActions<Local> {
 
 #[test]
 fn loading_actions_fail_recoverably_but_tool_refresh_is_inert() {
-    if maestro_test_process::run_alone("loading_actions_fail_recoverably_but_tool_refresh_is_inert")
+    if maestro_test_harness::run_alone("loading_actions_fail_recoverably_but_tool_refresh_is_inert")
         .unwrap()
     {
         return;
@@ -168,7 +168,7 @@ fn loading_actions_fail_recoverably_but_tool_refresh_is_inert() {
 
 #[test]
 fn action_families_keep_local_captures_and_native_thread_safety() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "action_families_keep_local_captures_and_native_thread_safety",
     )
     .unwrap()
@@ -264,7 +264,7 @@ fn queued_provider_override_preserves_oauth_message_and_stack() {
 
 #[test]
 fn provider_queue_keeps_order_attribution_and_partial_success() {
-    if maestro_test_process::run_alone("provider_queue_keeps_order_attribution_and_partial_success")
+    if maestro_test_harness::run_alone("provider_queue_keeps_order_attribution_and_partial_success")
         .unwrap()
     {
         return;
@@ -319,7 +319,7 @@ fn provider_queue_keeps_order_attribution_and_partial_success() {
 
 #[test]
 fn bound_provider_actions_and_catalog_fallback_take_effect_immediately() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "bound_provider_actions_and_catalog_fallback_take_effect_immediately",
     )
     .unwrap()
@@ -332,12 +332,12 @@ fn bound_provider_actions_and_catalog_fallback_take_effect_immediately() {
 #[test]
 #[cfg(unix)]
 fn exec_runs_in_the_extension_directory_unless_overridden() {
-    if maestro_test_process::run_alone("exec_runs_in_the_extension_directory_unless_overridden")
+    if maestro_test_harness::run_alone("exec_runs_in_the_extension_directory_unless_overridden")
         .unwrap()
     {
         return;
     }
-    let directory = maestro_test_directory::Scratch::new().unwrap();
+    let directory = maestro_test_harness::Scratch::new().unwrap();
     let dir = directory.path();
     let runtime = create_extension_runtime::<Local>();
     let (_owner, api) = local_api(runtime, &dir.display().to_string());
@@ -367,7 +367,7 @@ fn exec_runs_in_the_extension_directory_unless_overridden() {
 
 #[test]
 fn tool_metadata_keeps_native_schemas_and_guest_schema_text() {
-    if maestro_test_process::run_alone("tool_metadata_keeps_native_schemas_and_guest_schema_text")
+    if maestro_test_harness::run_alone("tool_metadata_keeps_native_schemas_and_guest_schema_text")
         .unwrap()
     {
         return;
@@ -405,7 +405,7 @@ fn tool_metadata_keeps_native_schemas_and_guest_schema_text() {
 
 #[test]
 fn failed_error_delivery_keeps_only_failed_and_unattempted_registrations() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "failed_error_delivery_keeps_only_failed_and_unattempted_registrations",
     )
     .unwrap()
@@ -466,7 +466,7 @@ fn failed_error_delivery_keeps_only_failed_and_unattempted_registrations() {
 }
 #[test]
 fn queued_provider_callbacks_edit_the_live_pending_work() {
-    if maestro_test_process::run_alone("queued_provider_callbacks_edit_the_live_pending_work")
+    if maestro_test_harness::run_alone("queued_provider_callbacks_edit_the_live_pending_work")
         .unwrap()
     {
         return;
@@ -498,14 +498,14 @@ fn queued_provider_callbacks_edit_the_live_pending_work() {
 }
 #[test]
 fn actions_are_bound_before_queued_providers_flush() {
-    if maestro_test_process::run_alone("actions_are_bound_before_queued_providers_flush").unwrap() {
+    if maestro_test_harness::run_alone("actions_are_bound_before_queued_providers_flush").unwrap() {
         return;
     }
     action_checks::binding_order();
 }
 #[test]
 fn retained_facades_follow_the_live_owner_and_release_it() {
-    if maestro_test_process::run_alone("retained_facades_follow_the_live_owner_and_release_it")
+    if maestro_test_harness::run_alone("retained_facades_follow_the_live_owner_and_release_it")
         .unwrap()
     {
         return;
@@ -563,7 +563,7 @@ fn pending_names(runtime: &ExtensionRuntime<Local>) -> Vec<String> {
 
 #[test]
 fn catalog_getter_and_constructor_share_one_direct_owner() {
-    if maestro_test_process::run_alone("catalog_getter_and_constructor_share_one_direct_owner")
+    if maestro_test_harness::run_alone("catalog_getter_and_constructor_share_one_direct_owner")
         .unwrap()
     {
         return;
@@ -608,7 +608,7 @@ mod action_checks;
 
 #[test]
 fn prebind_unregister_removes_every_matching_provider() {
-    if maestro_test_process::run_alone("prebind_unregister_removes_every_matching_provider")
+    if maestro_test_harness::run_alone("prebind_unregister_removes_every_matching_provider")
         .unwrap()
     {
         return;
@@ -618,7 +618,7 @@ fn prebind_unregister_removes_every_matching_provider() {
 
 #[test]
 fn action_callbacks_preserve_all_arguments_and_return_values() {
-    if maestro_test_process::run_alone("action_callbacks_preserve_all_arguments_and_return_values")
+    if maestro_test_harness::run_alone("action_callbacks_preserve_all_arguments_and_return_values")
         .unwrap()
     {
         return;
@@ -628,7 +628,7 @@ fn action_callbacks_preserve_all_arguments_and_return_values() {
 
 #[test]
 fn stale_actions_fail_before_reaching_bound_operations() {
-    if maestro_test_process::run_alone("stale_actions_fail_before_reaching_bound_operations")
+    if maestro_test_harness::run_alone("stale_actions_fail_before_reaching_bound_operations")
         .unwrap()
     {
         return;
@@ -638,7 +638,7 @@ fn stale_actions_fail_before_reaching_bound_operations() {
 
 #[test]
 fn action_errors_keep_their_original_identity() {
-    if maestro_test_process::run_alone("action_errors_keep_their_original_identity").unwrap() {
+    if maestro_test_harness::run_alone("action_errors_keep_their_original_identity").unwrap() {
         return;
     }
     action_checks::errors();
@@ -646,7 +646,7 @@ fn action_errors_keep_their_original_identity() {
 
 #[test]
 fn error_listeners_follow_registration_order_and_unsubscribe() {
-    if maestro_test_process::run_alone("error_listeners_follow_registration_order_and_unsubscribe")
+    if maestro_test_harness::run_alone("error_listeners_follow_registration_order_and_unsubscribe")
         .unwrap()
     {
         return;
@@ -656,7 +656,7 @@ fn error_listeners_follow_registration_order_and_unsubscribe() {
 
 #[test]
 fn rebinding_updates_actions_without_retargeting_started_model_selection() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "rebinding_updates_actions_without_retargeting_started_model_selection",
     )
     .unwrap()
@@ -668,7 +668,7 @@ fn rebinding_updates_actions_without_retargeting_started_model_selection() {
 
 #[test]
 fn catalog_callbacks_can_read_and_register_during_a_bound_registration() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "catalog_callbacks_can_read_and_register_during_a_bound_registration",
     )
     .unwrap()
@@ -680,7 +680,7 @@ fn catalog_callbacks_can_read_and_register_during_a_bound_registration() {
 
 #[test]
 fn bound_provider_configuration_reaches_stream_oauth_and_request_consumers() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "bound_provider_configuration_reaches_stream_oauth_and_request_consumers",
     )
     .unwrap()

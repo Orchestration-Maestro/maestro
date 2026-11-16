@@ -236,7 +236,7 @@ fn ls_resolution_reads_host_cwd_only_when_needed() {
     if !isolated(test, "removed", &[]) {
         return;
     }
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     scratch.enter_removed("removed").unwrap();
     assert!(std::env::current_dir().is_err());
     for case in cases(test) {

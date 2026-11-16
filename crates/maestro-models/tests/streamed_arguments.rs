@@ -505,9 +505,9 @@ fn maestro_bounds_materialized_arguments() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_drops_extreme_argument_depth_safely() -> crate::chat::TestResult {
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "maestro_drops_extreme_argument_depth_safely",
             )?
             .nocapture()

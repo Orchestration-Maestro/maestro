@@ -967,7 +967,7 @@ settings are excluded; commits and tags are unsigned. Tests that supply their
 own Git environment keep those explicit overrides.
 
 For native Git fixtures, start with
-`maestro_test_process::git_command::command()` instead of constructing a Git
+`maestro_test_harness::git_command::command()` instead of constructing a Git
 process directly. It ignores inherited repository and author variables, global
 and system configuration, signing settings, and user-level ignore files and
 attributes. Fixture repositories keep their own hooks. The fixture identity is
@@ -976,13 +976,13 @@ another identity or configuration. Repository-local settings remain
 available except where the fixture defaults override them.
 
 When a test-owned child launches Git itself, apply
-`maestro_test_process::git_command::isolate(&mut command)` to that child's
+`maestro_test_harness::git_command::isolate(&mut command)` to that child's
 command so its descendants receive the same configuration. The conventions check
 rejects direct Git constructors in test code, including constructors inside macro
 arguments. It does not expand macros or inspect programs stored in strings.
 
 Tests that discover default resources run inside
-`maestro_test_process::with_isolated_home(test_name, |base| { ... })`. Its child
+`maestro_test_harness::with_isolated_home(test_name, |base| { ... })`. Its child
 uses a disposable home under `base`, not the developer's installed skills or
 settings. Keep the existing resource assertions inside that closure. A
 `maestro-packages` case that already runs through `case_in_child` gets a private
@@ -1377,7 +1377,7 @@ names. Cargo's `--example prepare_author_component` target name stays the same o
 
 A test that starts a setup child which reads a prepared-bundle input the test does not supply
 clears it (`TEST_PREPARE_BASE`, `TEST_PREPARE_OUTPUT` and `TEST_ARCHIVE`) through
-`maestro_test_process::without_prepared_bundles` from the test-support owner, so a bundle a
+`maestro_test_harness::without_prepared_bundles` from the test-support owner, so a bundle a
 machine exports for CI cannot change what the test reads, in this crate or in any other. The
 conventions check reads every test source that spells `nextest-setup`, so a setup child added
 without that helper fails the conventions run. The check follows the helper directly or through
@@ -1554,7 +1554,7 @@ Four things it needs are the workspace's own:
   holds their packages. A workspace that holds them only as git dependencies
   installs them once per preparation instead, with
   `cargo install --locked --git <source> --rev <locked commit>` for
-  `maestro-test-process --example native_fixture`,
+  `maestro-test-harness --example native_fixture`,
   `maestro-extensions-guest --example prepare_author_component` and
   `maestro --bin maestro`. The tool reads the repository and commit from
   `Cargo.lock`, so a pin move installs again.
@@ -1579,7 +1579,7 @@ searching `PATH`; archived tests need neither program on `PATH`. A local run
 without a prepared bundle still resolves the pins from `PATH`. A workspace that
 pins neither program exports neither variable.
 
-Native search tests call `maestro_test_process::install_search_program("fd", bin.path())`
+Native search tests call `maestro_test_harness::install_search_program("fd", bin.path())`
 (or `"rg"`) to copy the exported program into their own directory. The helper keeps
 the program's permissions and returns its installed path. The caller retains the
 directory guard and controls its manager, child `PATH` or child variables.
@@ -1594,7 +1594,7 @@ test that receives the exports: add a test to it when the test calls
 `install_search_program`.
 
 Test children get stub `fd` and `rg` programs in their binary directory, from one
-helper in `maestro-test-process`: `install_stub_search_programs`. The chat crate's
+helper in `maestro-test-harness`: `install_stub_search_programs`. The chat crate's
 isolated children and the executable crate's `Root::command` children use it. A child
 that starts the interactive mode then neither downloads a search program nor runs one
 found on `PATH`. A test that supplies the child's `PATH` skips the stubs and installs
@@ -1868,13 +1868,26 @@ clean runtime directory and invokes its greeting tool. Neither test body starts
 a compiler. Re-run preparation when the bundle is stale; do not add a fallback
 build to a test body.
 
+### Native test isolation
+
+Use `maestro_test_harness::Scratch::new()?` for a disposable directory. Read the
+platform temporary parent through `maestro_test_harness::temporary_root()`; never
+name it through `std::env::temp_dir` in test code. Dropping the owner attempts to
+remove the directory. Keep it alive while a child uses its files.
+
+Capture events through `maestro_test_harness::trace_capture::with_default`, or
+`trace_capture::with_subscriber` for a future. A formatting subscriber writes into
+`trace_capture::Output`. These helpers receive events even when another test
+thread reaches the callsite first. Only the harness's `src/trace_capture.rs` may
+call scoped subscriber APIs directly; its other files stay checked.
+
 ### Child-process tests
 
 Stage the setup tool before a filtered native-fixture run:
 
 ```sh
 just prepare-tests
-cargo nextest run --locked -p maestro-test-process -p maestro-process
+cargo nextest run --locked -p maestro-test-harness -p maestro-process
 ```
 
 Use checked reruns when the test owns the invocation and harness framing. Use the
@@ -1891,7 +1904,7 @@ recreating or republishing the history for each form.
 #### Direct native fixtures
 
 Nextest's `native-fixture` setup exports `MAESTRO_NATIVE_FIXTURE` to
-`maestro-test-process` and every crate the crate graph allows to depend on it, and
+`maestro-test-harness` and every crate the crate graph allows to depend on it, and
 the instrumented parent `MAESTRO_CHILD_TOOLCHAIN_PROBE` to `maestro-tooling`.
 `maestro-app` also reads the startup conversion child, `MAESTRO_STARTUP_CONVERSION`.
 That child is the `startup_conversion` example of `maestro-app`: it runs one conversion, `auth`
@@ -1904,7 +1917,7 @@ directory, and passes `IsolatedSetup::environment` for effects such as continuin
 file-size limit. Preparation builds the child once, like the other fixtures. It keeps its own
 record, keyed on the crates `maestro-app` builds on, so an edit to one of them rebuilds the
 child alone and an edit to the native fixture's crates leaves it staged.
-To declare a new caller in the [crate graph](specs/maestro-port.md#test-process-owner),
+To declare a new caller in the [crate graph](specs/maestro-port.md#test-harness-owner),
 add it to `TEST_PROCESS_CALLERS` and add its own `package(=name)` line to
 `.config/nextest.toml`. Adding fixture tests inside a declared caller needs no
 shared selection or docs edit. The conventions check rejects missing or extra
@@ -1994,9 +2007,9 @@ Use `install_command(alias, record)` to copy the artifact and write its sibling
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let alias = directory.path().join("npm");
-    maestro_test_process::install_command(
+    maestro_test_harness::install_command(
         &alias,
         "{\"scenario\":\"npm\",\"view\":\"\\\"2\\\"\",\"root\":\"/package/root\"}",
     )?;
@@ -2095,9 +2108,9 @@ test for one grant on the control connection by sending `R` and waits for any re
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let shell = directory.path().join("shell");
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &shell)?;
+    maestro_test_harness::install_executable(std::path::Path::new(&artifact), &shell)?;
     let gate = std::os::unix::net::UnixListener::bind(directory.path().join("job-release"))?;
     let steps = r#"[{"mark": {"command": "-started"}}, {"hold": {"command": "-release"}},
         {"print-command": {"before": "", "after": " output\n"}}]"#;
@@ -2137,9 +2150,9 @@ each command then runs as the last operand of that program, which the `exec` fam
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let program = directory.path().join("arguments");
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &program)?;
+    maestro_test_harness::install_executable(std::path::Path::new(&artifact), &program)?;
     let mut record = program.clone().into_os_string();
     record.push(".fixture");
     std::fs::write(record, "child\n{\"scenario\":\"arguments\"}")?;
@@ -2161,12 +2174,12 @@ recipe:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let bin = directory.path().join("bin");
     std::fs::create_dir_all(&bin)?;
     for name in ["cargo", "mise", "prek", "watchexec", "trunk", "miniserve"] {
         let alias = bin.join(name);
-        maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+        maestro_test_harness::install_executable(std::path::Path::new(&artifact), &alias)?;
         let mut record = alias.clone().into_os_string();
         record.push(".fixture");
         std::fs::write(record, "tooling-command\n{\"scenario\":\"stand-in\"}")?;
@@ -2259,8 +2272,8 @@ just prepare-tests
 cargo nextest run --locked -p maestro-rpc -E 'test(/rpc_client/)'
 ```
 
-On Unix, `maestro_test_process::rpc_peer::Scenario` selects a compiled peer
-behavior. Call `maestro_test_process::rpc_peer::install(entry, scenario)` to copy
+On Unix, `maestro_test_harness::rpc_peer::Scenario` selects a compiled peer
+behavior. Call `maestro_test_harness::rpc_peer::install(entry, scenario)` to copy
 the prepared artifact and write its sibling `<alias>.fixture` record, then launch
 the alias through the existing `RpcClient`. The record contains `rpc-peer` and
 `scenario.name()` on separate lines. For example, `rpc-peer\nServe\n` captures
@@ -2318,8 +2331,8 @@ just prepare-tests
 cargo nextest run --locked -p maestro-app -E 'test(/footer_/)'
 ```
 
-On Unix, `maestro_test_process::git_command::Scenario` selects a compiled stand-in
-behavior. Call `maestro_test_process::git_command::install(entry, scenario)` to copy
+On Unix, `maestro_test_harness::git_command::Scenario` selects a compiled stand-in
+behavior. Call `maestro_test_harness::git_command::install(entry, scenario)` to copy
 the prepared artifact and write its sibling `<alias>.fixture` record, which holds
 `git` and `scenario.name()` on separate lines. Install the alias in a disposable
 binary directory and put that directory first on the `PATH` of the test child that
@@ -2343,16 +2356,16 @@ Install both aliases in one disposable binary directory:
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let bin = directory.path().join("bin");
     std::fs::create_dir(&bin)?;
-    maestro_test_process::git_command::install(
+    maestro_test_harness::git_command::install(
         &bin.join("git"),
-        maestro_test_process::git_command::Scenario::Exiting,
+        maestro_test_harness::git_command::Scenario::Exiting,
     )?;
-    maestro_test_process::git_command::install(
+    maestro_test_harness::git_command::install(
         &bin.join("git-holder"),
-        maestro_test_process::git_command::Scenario::Retaining,
+        maestro_test_harness::git_command::Scenario::Retaining,
     )?;
     Ok(())
 }
@@ -2377,7 +2390,7 @@ one NUL-terminated path:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let record = serde_json::json!({
         "scenario": "response",
         "args": directory.path().join("args.json"),
@@ -2387,7 +2400,7 @@ fn main() -> std::io::Result<()> {
         "signal": null
     });
     std::fs::write(directory.path().join("fd.fixture"), format!("search\n{record}"))?;
-    maestro_test_process::install_executable(
+    maestro_test_harness::install_executable(
         std::path::Path::new(&artifact), &directory.path().join("fd"),
     )?;
     Ok(())
@@ -2443,10 +2456,10 @@ after one release byte:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let record = serde_json::json!({"scenario": "holder", "port": 9099});
     std::fs::write(directory.path().join("child.fixture"), format!("exec\n{record}"))?;
-    maestro_test_process::install_executable(
+    maestro_test_harness::install_executable(
         std::path::Path::new(&artifact), &directory.path().join("child"),
     )?;
     Ok(())
@@ -2510,9 +2523,9 @@ A controlled child that reports a prefix before its caller releases it:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let alias = directory.path().join("child");
-    maestro_test_process::install_executable(
+    maestro_test_harness::install_executable(
         std::path::Path::new(&artifact), &alias,
     )?;
     let record = serde_json::json!({"scenario": "announce", "port": 5091,
@@ -2566,9 +2579,9 @@ runs the alias the way the product would:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let alias = directory.path().join("wl-paste");
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &alias)?;
+    maestro_test_harness::install_executable(std::path::Path::new(&artifact), &alias)?;
     std::fs::write(
         directory.path().join("wl-paste.fixture"),
         "clipboard\n{\"scenario\":\"fill\",\"byte\":7,\"count\":52428801}",
@@ -2588,19 +2601,19 @@ Install the same artifact as `open`, `xdg-open`, `explorer.exe`, an editor name
 or `trash` when a test observes a desktop viewer launch, an edit or a session
 deletion. Write the family on the first line of `<alias>.fixture`, followed by a
 JSON object that the fixture parses before any effect; unknown fields and
-malformed values fail at once. `maestro_test_process::install_family` installs the
+malformed values fail at once. `maestro_test_harness::install_family` installs the
 alias and writes that record.
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let editor = directory.path().join("ed");
     let record = serde_json::json!({
         "argv": directory.path().join("argv"),
         "before": directory.path().join("before"),
         "content": b"edited\n",
     });
-    maestro_test_process::install_family(&editor, "editor", &record.to_string())?;
+    maestro_test_harness::install_family(&editor, "editor", &record.to_string())?;
     Ok(())
 }
 ```
@@ -2633,7 +2646,7 @@ or writes output, so an unknown record fails with no document.
 | `AwsProcess` | Counts the run in `process-count` beside the alias, then answers as its single operand says. No operand and `ok` print a complete credential document. `fail` ends with status 7 and no output; `once` fails the first run only; `invalid_json` prints unusable text; `wrong_version`, `missing_key` and `expired` print a document the reader must refuse. |
 | `GoogleExecutable` | Prints one success document naming a subject token and takes no operand. |
 
-Call `maestro_test_process::credentials::install(entry, scenario)` from the
+Call `maestro_test_harness::credentials::install(entry, scenario)` from the
 parent test, which holds `MAESTRO_NATIVE_FIXTURE`. The alias path is anything the
 backend can launch; an AWS profile field names it with one variant, such as
 `credential_process = /scratch/process once`. Read `process-count` back after the
@@ -2641,8 +2654,8 @@ run to state how often the backend started the program.
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    use maestro_test_process::credentials::{Scenario, install};
-    let directory = maestro_test_directory::Scratch::new()?;
+    use maestro_test_harness::credentials::{Scenario, install};
+    let directory = maestro_test_harness::Scratch::new()?;
     let process = directory
         .path()
         .join(format!("process{}", std::env::consts::EXE_SUFFIX));
@@ -2682,13 +2695,13 @@ A failing notifier records nothing:
 fn main() -> std::io::Result<()> {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .ok_or_else(|| std::io::Error::other("run preparation with nextest first"))?;
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let record = serde_json::json!({ "args": null, "code": 1 });
     std::fs::write(
         directory.path().join("notify-send.fixture"),
         format!("notify-send\n{record}"),
     )?;
-    maestro_test_process::install_executable(
+    maestro_test_harness::install_executable(
         std::path::Path::new(&artifact), &directory.path().join("notify-send"),
     )?;
     Ok(())
@@ -2718,7 +2731,7 @@ so pass the destination first. A launch left with no destination ends with statu
 
 ```rust,no_run
 fn main() -> std::io::Result<()> {
-    let directory = maestro_test_directory::Scratch::new()?;
+    let directory = maestro_test_harness::Scratch::new()?;
     let session = directory.path().join("session");
     std::fs::create_dir(&session)?;
     let record = serde_json::json!({
@@ -2726,7 +2739,7 @@ fn main() -> std::io::Result<()> {
         "write": {"command": "early-write.txt", "code": 38, "stderr": "refused\n"},
         "directory": session,
     });
-    maestro_test_process::install_family(
+    maestro_test_harness::install_family(
         &directory.path().join("ssh"),
         "ssh",
         &record.to_string(),
@@ -2739,7 +2752,7 @@ fn main() -> std::io::Result<()> {
 #### Checked reruns
 
 A test that re-runs one test in a fresh process starts it through
-`maestro-test-process`, a native dev-dependency, instead of building a `Command`
+`maestro-test-harness`, a native dev-dependency, instead of building a `Command`
 for the test executable. `TestProcess::current(leaf)` resolves the running test's
 full name, `TestProcess::named(identity)` selects a sibling by its complete name
 (derive it from the function item with `test_name`), and the consuming
@@ -2823,7 +2836,7 @@ environment)`. It groups the cases by the edits `environment` returns and
 reruns the test once per group, in a child that applies exactly those edits
 after `env_clear()`, plus the agent directory the run's setup exports
 and the parent's temporary directory, unless the case sets one. That directory
-comes from `maestro-test-directory::temporary_root`. A value of
+comes from `maestro_test_harness::temporary_root`. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept
 variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
@@ -2847,22 +2860,22 @@ same when the case adds or clears named variables. Use
 `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
-and loads a prepared component passes `run_agent_directory()` as
+and loads a prepared component passes `run_agent_dir()` as
 `MAESTRO_CODING_AGENT_DIR`, so it reuses the setup's compiled code instead of
 compiling the component again. A test that gives an executable its own agent
 directory links the run's cache into it first with
-`maestro_test_process::link_files`, as the root-command harness in
+`maestro_test_harness::link_files`, as the root-command harness in
 `crates/maestro/tests/support/mod.rs` and the tool-override example tests do. An entry that
 a writer renames away during the link is left out, and the test that needs that component
 compiles it.
 Test code that proves a diagnostic path survives a closed standard error uses
-`maestro_test_process::run_with_broken_stderr`, which runs the case in a child whose
-standard error is a pipe with no reader, and `maestro_test_process::wait_for_broken_stderr`,
+`maestro_test_harness::run_with_broken_stderr`, which runs the case in a child whose
+standard error is a pipe with no reader, and `maestro_test_harness::wait_for_broken_stderr`,
 which the child calls first so no write beats the pipe's closing. The parent calls
-`maestro_test_process::run_alone` before either, so no sibling test forks while the
+`maestro_test_harness::run_alone` before either, so no sibling test forks while the
 pipe's reading end is open. The [diagnostics guide](diagnostics.md#testing-a-diagnostic-path)
 shows the three together.
-Read child roles through `maestro_test_process::selection()`, not environment
+Read child roles through `maestro_test_harness::selection()`, not environment
 variables. `selection.is_child()` distinguishes the parent from a child.
 `selection.runs_case(id)` accepts the parent, wildcard children and the child
 selected for that id. `selection.runs_group(test)` accepts the parent, wildcard
@@ -2876,7 +2889,7 @@ once. A quoted `MAESTRO_*_CHILD` or `MAESTRO_*_CASE` name anywhere else under
 `const`, fails the owner's own guard and names every site it found.
 
 A test that denies access through mode bits calls
-`maestro_test_directory::deny(path, mode)` and skips the denial when it returns
+`maestro_test_harness::deny(path, mode)` and skips the denial when it returns
 `None`: a privileged run, such as root in a container, is not refused. Package
 tests that reach the offline flag run in the package suite's `case_in_child`,
 which starts every case online and gives it its own temporary directory, so the
@@ -3112,7 +3125,7 @@ and the release receipts its host witnesses await. The application's `test_suppo
 module owns the scripted session harness, the session runtimes over it, the export
 fixtures and the task-set runners. Native loopback servers, child
 probes, toolchain selection and the caller-owned local executor live in
-`maestro-test-process`. Fallible helpers return their errors to the test caller;
+`maestro-test-harness`. Fallible helpers return their errors to the test caller;
 fixed-output callbacks retain immediate assertions.
 
 Coverage probes reuse the prepared native target, workspace lock and build

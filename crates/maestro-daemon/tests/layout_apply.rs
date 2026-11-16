@@ -3,7 +3,7 @@
 #![cfg(target_os = "linux")]
 use maestro_daemon::state::test_support::layout_apply::relay_hangup;
 use maestro_daemon::state::test_support::run;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use std::io::{self};
 use std::os::unix::net::UnixStream;
 /// A peer that closes before announcing returns its I/O error to the layout operation.

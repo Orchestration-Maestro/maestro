@@ -67,14 +67,14 @@ fn draw_then_overflow(agent_dir: &Path) {
 
 #[test]
 fn crash_report_honours_the_agent_directory() {
-    let parent = (!maestro_test_process::selection().is_child())
-        .then(|| maestro_test_directory::Scratch::new().unwrap());
+    let parent = (!maestro_test_harness::selection().is_child())
+        .then(|| maestro_test_harness::Scratch::new().unwrap());
     let base = parent.as_ref().map_or_else(
         || std::env::var(BASE).expect("the child carries the scratch base"),
         |scratch| scratch.path().display().to_string(),
     );
     let cases = [true, false];
-    let ran = maestro_test_process::run_per_environment(
+    let ran = maestro_test_harness::run_per_environment(
         "crash_report_honours_the_agent_directory",
         cases,
         |configured| {

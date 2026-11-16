@@ -383,7 +383,7 @@ mod tests {
     /// Invokes the real entry point with isolated absent and empty key observations.
     #[test]
     fn token_measurement_requires_an_environment_key() {
-        if maestro_test_process::selection().is_child() {
+        if maestro_test_harness::selection().is_child() {
             std::process::exit(i32::from(main().unwrap() == ExitCode::FAILURE));
         }
         for name in ["missing_key", "empty_key"] {
@@ -393,7 +393,7 @@ mod tests {
             assert!(case.output.stdout.is_empty());
             assert!(case.output.requests.is_none());
             assert!(case.output.phases.is_none());
-            let mut command = maestro_test_process::TestProcess::current(
+            let mut command = maestro_test_harness::TestProcess::current(
                 "token_measurement_requires_an_environment_key",
             )
             .unwrap();
@@ -597,8 +597,8 @@ mod tests {
     fn native_child_completed() -> bool {
         /// The case that repeats the witness as a child with supplied observations.
         const CHILD: &str = "native";
-        if maestro_test_process::selection().case() != Some(CHILD) {
-            let mut command = maestro_test_process::TestProcess::current(
+        if maestro_test_harness::selection().case() != Some(CHILD) {
+            let mut command = maestro_test_harness::TestProcess::current(
                 "token_measurement_sends_five_current_descriptions_in_order",
             )
             .unwrap();

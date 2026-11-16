@@ -216,7 +216,7 @@ fn assert_missing_and_unreadable(dir: &Directory, attempt: &impl Fn(&Path) -> bo
 #[test]
 fn saving_preserves_snapshot_target_permissions() {
     use std::os::unix::fs::PermissionsExt;
-    let dir = maestro_test_directory::Scratch::new().unwrap();
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let target = dir.path().join("session.json");
     let link = dir.path().join("link.json");
     fs::write(&target, b"old").unwrap();

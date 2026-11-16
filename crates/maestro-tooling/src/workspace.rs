@@ -245,7 +245,7 @@ mod tests {
     /// The shipped extension folder, beside the workspace manifest.
     const SHIPPED: &str = "examples/extensions";
 
-    use maestro_test_directory::Scratch;
+    use maestro_test_harness::Scratch;
 
     /// Write a manifest and the source file its package needs.
     fn crate_at(root: &Path, relative: &str, manifest: &str) {
@@ -387,7 +387,7 @@ mod tests {
         let root = scratch.path();
         std::fs::create_dir_all(root.join(SHIPPED)).unwrap();
         assert!(
-            maestro_test_process::git_command::command()
+            maestro_test_harness::git_command::command()
                 .args(["init", "-q"])
                 .current_dir(root)
                 .status()

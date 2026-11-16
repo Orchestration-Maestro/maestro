@@ -1,7 +1,7 @@
 //! Native adapter: notification projection and error delivery.
 use super::native::{NativeWatchOperations, entry_names};
 use super::{FsWatcher, WatchOperations};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use notify::event::{
     AccessKind, CreateKind, DataChange, MetadataKind, ModifyKind, RemoveKind, RenameMode,
 };

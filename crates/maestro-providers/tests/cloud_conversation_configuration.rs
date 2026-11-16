@@ -103,17 +103,17 @@ fn bearer_and_skip_auth_use_the_selected_authentication() -> TestResult {
             )
         },
     ];
-    let is_case = maestro_test_process::selection().is_child()
+    let is_case = maestro_test_harness::selection().is_child()
         && cases
             .iter()
-            .any(|case| maestro_test_process::selection().runs_case(case.id));
+            .any(|case| maestro_test_harness::selection().runs_case(case.id));
     if is_case {
         return run_cases(TEST, &cases);
     }
-    if maestro_test_process::selection().runs_group(TEST) {
+    if maestro_test_harness::selection().runs_group(TEST) {
         check_rows(TEST)?;
     }
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         run_cases(TEST, &cases)?;
     }
     Ok(())

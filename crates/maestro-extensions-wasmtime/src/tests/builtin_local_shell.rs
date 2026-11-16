@@ -29,7 +29,7 @@ async fn loaded() -> (ExtensionRunner<Local>, Rc<RefCell<Vec<String>>>) {
             crate::tests::support::widgets(),
             crate::Installation {
                 version: "local-shell-test".into(),
-                agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
+                agent_dir: maestro_test_harness::run_agent_dir().unwrap_or_default(),
             },
         ),
         "/".into(),
@@ -58,7 +58,7 @@ fn builtin_local_shell_retains_exit_timeout_and_abort_outcomes() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let (runner, errors) = loaded().await;
         for timeout in [None, Some(0.0), Some(-1.0)] {
             for status in [0, 7] {

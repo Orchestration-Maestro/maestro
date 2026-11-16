@@ -3,14 +3,14 @@
 #![cfg(unix)]
 use crate::child_programs::{self, async_command};
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
-use maestro_test_process::HARNESS_START;
-use maestro_test_process::child::harness;
+use maestro_test_harness::HARNESS_START;
+use maestro_test_harness::child::harness;
 use std::{os::unix::process::ExitStatusExt, time::Duration};
 use tokio::process::Command;
 
 #[test]
 fn sync_capture_keeps_raw_stdout_status_and_closed_input() {
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_harness::Scratch::new().unwrap();
     let directory = owned.path();
     for code in [0, 7] {
         let mut command = async_command(
@@ -103,12 +103,12 @@ fn sync_capture_is_callable_inside_a_running_runtime() {
 fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
     use maestro_process::SpawnSyncError;
     use std::{error::Error, io};
-    let missing = maestro_test_directory::temporary_root()
+    let missing = maestro_test_harness::temporary_root()
         .join(format!("maestro-missing-{}", std::process::id()));
     for (path, kind) in [
         (missing, io::ErrorKind::NotFound),
         (
-            maestro_test_directory::temporary_root(),
+            maestro_test_harness::temporary_root(),
             io::ErrorKind::PermissionDenied,
         ),
     ] {

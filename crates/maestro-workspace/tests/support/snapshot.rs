@@ -7,10 +7,10 @@ use std::{
 };
 
 /// Isolated native fixture directory.
-pub struct Directory(maestro_test_directory::Scratch);
+pub struct Directory(maestro_test_harness::Scratch);
 impl Directory {
     pub fn new() -> Self {
-        Self(maestro_test_directory::Scratch::new().unwrap())
+        Self(maestro_test_harness::Scratch::new().unwrap())
     }
     /// The directory this test owns.
     pub fn path(&self) -> &Path {
@@ -71,7 +71,7 @@ impl tracing::field::Visit for Visitor {
 
 pub fn capture<T>(action: impl FnOnce() -> T) -> (T, Vec<Event>) {
     let collector = Collector(std::sync::Arc::default());
-    let result = maestro_test_tracing::with_default(collector.clone(), action);
+    let result = maestro_test_harness::trace_capture::with_default(collector.clone(), action);
     let events = std::mem::take(&mut *collector.0.lock().unwrap());
     (result, events)
 }

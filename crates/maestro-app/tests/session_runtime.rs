@@ -18,7 +18,7 @@ use maestro_extensions::{
 use maestro_models::{Local, StopReason};
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::{Presence, SessionManager};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 
@@ -86,7 +86,7 @@ fn creates_the_first_runtime_after_the_working_directory_check() {
 #[test]
 fn refuses_a_first_runtime_whose_stored_directory_is_gone() {
     on_task_set(|_| async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let root = scratch.path().display().to_string();
         let cwd = format!("{root}/missing-cwd");
         std::fs::create_dir_all(&cwd).unwrap();

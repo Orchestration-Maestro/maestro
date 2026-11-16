@@ -46,7 +46,7 @@ fn discover(base: &str, case: &ContextCase) -> Value {
 fn check(name: &str) {
     let case = context_case(name);
     assert!(case.stderr.is_empty());
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     assert_eq!(
         discover(&scratch.path().display().to_string(), &case),
         case.expected
@@ -57,7 +57,7 @@ fn check(name: &str) {
 /// recorded cases that author an upper-case candidate assume it does; a case-folding host
 /// finds the first candidate under either spelling, so those cases state their premise.
 fn candidates_kept_apart(test: &str) -> bool {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let names = ["AGENTS.md", "AGENTS.MD"].map(std::ffi::OsStr::new);
     let kept = scratch.keeps_distinct(&names).unwrap();
     if !kept {

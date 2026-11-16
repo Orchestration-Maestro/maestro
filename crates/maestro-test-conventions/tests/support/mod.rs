@@ -136,7 +136,7 @@ impl Workspace {
         .unwrap();
     }
 
-    /// Writes the crate list, overwriting nextest config when it includes the test-process owner.
+    /// Writes the crate list, overwriting nextest config when it includes the test-harness owner.
     pub fn list(&self, entries: &[(&str, &str)]) {
         let entries: serde_json::Map<String, serde_json::Value> = entries
             .iter()
@@ -180,7 +180,7 @@ pub mod policy;
 /// A test hook exports `GIT_DIR` and `GIT_INDEX_FILE`, so a fixture must clear them or
 /// its commands reach the repository that runs the suite.
 pub fn git(root: &Path) -> Command {
-    let mut command = maestro_test_process::git_command::command();
+    let mut command = maestro_test_harness::git_command::command();
     command.current_dir(root).env("LC_ALL", "C");
     command
 }
@@ -311,7 +311,7 @@ impl Workspace {
         let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
             .expect("run just prepare-tests, then run these tests with cargo nextest");
         let path = self.root.path().join(name);
-        maestro_test_process::install_executable(std::path::Path::new(&artifact), &path).unwrap();
+        maestro_test_harness::install_executable(std::path::Path::new(&artifact), &path).unwrap();
         fs::write(record_path(&path), format!("command\n{record}")).unwrap();
         path
     }
@@ -384,8 +384,8 @@ impl Workspace {
         &self,
         cargo: &std::path::Path,
         rustc: &std::path::Path,
-    ) -> maestro_test_process::TestProcess {
-        maestro_test_process::TestProcess::named(
+    ) -> maestro_test_harness::TestProcess {
+        maestro_test_harness::TestProcess::named(
             "architecture::metadata_graph_failures_cross_the_public_interface",
         )
         .unwrap()
@@ -398,7 +398,7 @@ impl Workspace {
 
 /// Run a probe child and require that it ran its one probe test successfully.
 #[cfg(unix)]
-fn run_probe(command: maestro_test_process::TestProcess) {
+fn run_probe(command: maestro_test_harness::TestProcess) {
     let output = command.output().unwrap();
     assert!(
         output.status.success(),

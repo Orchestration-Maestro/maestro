@@ -289,7 +289,7 @@ fn extension_widget_host_lends_application_keybindings_hints_and_editor_styles()
 /// The supplied managers retain their own file, overrides and effective snapshots.
 fn assert_application_keybindings(host: &dyn maestro_extensions::ExtensionWidgets) {
     use maestro_tui::KeybindingKeys;
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let dir = scratch.path().to_str().unwrap().to_owned();
     let user = vec![(
         "tui.select.up".to_owned(),

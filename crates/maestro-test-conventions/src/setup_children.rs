@@ -54,7 +54,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         .into_iter()
         .map(|(file, line)| {
             format!(
-                "{file}:{line}: a setup child inherits the run's prepared bundle; apply maestro_test_process::{CLEARS_PREPARED_BUNDLES} to its command"
+                "{file}:{line}: a setup child inherits the run's prepared bundle; apply maestro_test_harness::{CLEARS_PREPARED_BUNDLES} to its command"
             )
         })
         .collect::<Vec<_>>()

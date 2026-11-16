@@ -40,7 +40,7 @@ fn publish_link(
 #[test]
 fn directory_link_publication_retires_source() {
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_harness::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     let referent = root.join("original");
     fs::create_dir(&referent).unwrap();
@@ -58,7 +58,7 @@ fn directory_link_publication_retires_source() {
 #[test]
 fn failed_directory_link_publication_cleans_staging_and_retries() {
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_harness::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     let referent = root.join("original");
     fs::create_dir(&referent).unwrap();
@@ -81,12 +81,12 @@ fn failed_directory_link_publication_cleans_staging_and_retries() {
 #[cfg(windows)]
 #[test]
 fn directory_link_collision_removes_only_source_entry() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         migrate_tools_to_bin(&mut |_, _| panic!("collision is not a move")).unwrap();
         return;
     }
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_harness::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     fs::create_dir(root.join("tools")).unwrap();
     fs::create_dir(root.join("bin")).unwrap();
@@ -95,7 +95,7 @@ fn directory_link_collision_removes_only_source_entry() {
     // Windows resolves a relative link target only when it uses its own separator.
     symlink_dir(r"..\original", root.join("tools/fd")).unwrap();
     fs::write(root.join("bin/fd"), b"destination").unwrap();
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "directory_link_collision_removes_only_source_entry",
     )
     .unwrap()
@@ -130,7 +130,7 @@ fn check_absolute_batch(alias: &str, referent: &str, obstruction: &str) {
     use super::{PreparedMove, relocate};
     use std::{fs, os::unix::fs::symlink};
     // Settlement compares canonical identities, so inputs use the canonical spelling.
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_harness::Scratch::new().expect("test directory should be created");
     let root = scratch.path();
     let source = root.join("source");
     let target = root.join("target");

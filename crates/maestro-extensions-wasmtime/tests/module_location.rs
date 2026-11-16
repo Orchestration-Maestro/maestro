@@ -10,7 +10,7 @@ use maestro_extensions::{
     ExtensionRunner, LoadExtensionsResult, Local, ResourcesDiscoverReason, create_event_bus_for,
     execution::ResourcePath, load_extensions, types::FlagValue,
 };
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},
@@ -166,7 +166,7 @@ fn component_location_tracks_the_loaded_artifact() {
 fn component_location_is_isolated_and_reserved() {
     let component = std::env::var(COMPONENT).unwrap();
     let cases = [None, Some(""), Some("/wrong/index.wasm")];
-    let selected = maestro_test_process::run_per_environment(
+    let selected = maestro_test_harness::run_per_environment(
         "component_location_is_isolated_and_reserved",
         cases,
         |supplied| {

@@ -6,7 +6,7 @@ use std::path::Path;
 use std::process::{Command, ExitCode};
 
 use cargo_metadata::{Metadata, MetadataCommand};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 
 use super::{package_names, run, runs_doctests};
 

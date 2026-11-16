@@ -14,8 +14,7 @@ sha2 = { version = "=0.11.0", default-features = false }
 maestro-feature-unifier.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-directory.workspace = true
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 
 [target.'cfg(unix)'.dev-dependencies]
 rustix = { workspace = true, features = ["std", "process", "fs"] }

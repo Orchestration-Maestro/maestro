@@ -6,7 +6,7 @@ use std::path::Path;
 
 /// Run `git` in the fixture root and require success.
 fn git(root: &Path, args: &[&str]) {
-    let status = maestro_test_process::git_command::command()
+    let status = maestro_test_harness::git_command::command()
         .args(args)
         .current_dir(root)
         .status()

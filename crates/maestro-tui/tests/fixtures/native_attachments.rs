@@ -12,15 +12,15 @@ use std::future::Future;
 /// Each child receives a copied pinned program separately from PATH, so host tools cannot
 /// satisfy a missing fixture or change completion results. Only the child runs the body.
 pub(crate) fn isolated(body: impl Future<Output = ()>) {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         runtime().block_on(body);
         return;
     }
     let bin = Tree::new().unwrap();
-    let fd = maestro_test_process::install_search_program("fd", bin.path()).unwrap();
+    let fd = maestro_test_harness::install_search_program("fd", bin.path()).unwrap();
     let ambient = Tree::new().unwrap();
     for name in ["fd", "rg"] {
-        maestro_test_process::install_command(
+        maestro_test_harness::install_command(
             &ambient
                 .path()
                 .join(format!("{name}{}", std::env::consts::EXE_SUFFIX)),
@@ -30,7 +30,7 @@ pub(crate) fn isolated(body: impl Future<Output = ()>) {
     }
     for path in [std::ffi::OsStr::new(""), ambient.path().as_os_str()] {
         let output =
-            maestro_test_process::TestProcess::current(std::thread::current().name().unwrap())
+            maestro_test_harness::TestProcess::current(std::thread::current().name().unwrap())
                 .unwrap()
                 .case("search-path")
                 .nocapture()
@@ -203,7 +203,7 @@ pub(crate) fn child(tree: &Tree, name: &str, record: &serde_json::Value) -> Stri
     let mut sibling = path.as_os_str().to_owned();
     sibling.push(".fixture");
     std::fs::write(sibling, format!("search\n{record}")).unwrap();
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &path).unwrap();
+    maestro_test_harness::install_executable(std::path::Path::new(&artifact), &path).unwrap();
     path.to_str().unwrap().into()
 }
 

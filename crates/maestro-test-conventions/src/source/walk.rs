@@ -184,9 +184,9 @@ impl<'a> Walker<'a> {
             ignored: child_tests::Ignored::new(member, source),
             guard: message_renderers::Guard::new(member, source),
             layout: repetition::TestLayout::new(member, source),
-            calls: time_limits::Calls::new(member),
+            calls: time_limits::Calls::new(member, source),
             bodies: duplicates::Bodies::default(),
-            references: temp_directories::checked(member)
+            references: temp_directories::checked(member, source)
                 .then(temp_directories::References::default),
             git_commands: Vec::new(),
             resolutions: real_paths::checked(member, source).then(real_paths::Resolutions::default),

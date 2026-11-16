@@ -74,51 +74,14 @@ pub(crate) fn permitted_build(from: &str, to: &str) -> bool {
 /// The path crate, which native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";
 
-/// Dependency-free test-support crate reachable only through native development edges.
-pub(crate) const TEST_PROCESS: &str = "maestro-test-process";
+/// Native test isolation owner reachable only through native development edges.
+pub(crate) const TEST_PROCESS: &str = "maestro-test-harness";
 
-/// The only crates that may declare the test-process owner as a development dependency.
+/// The only crates that may declare the test-harness owner as a development dependency.
 pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro",
     "maestro-agent",
     "maestro-app",
-    "maestro-models-registry",
-    "maestro-chat",
-    "maestro-cli",
-    "maestro-credentials",
-    "maestro-daemon",
-    "maestro-detection",
-    "maestro-extensions",
-    "maestro-extensions-guest",
-    "maestro-extensions-wasmtime",
-    "maestro-http",
-    "maestro-lock",
-    "maestro-models",
-    "maestro-packages",
-    "maestro-process",
-    "maestro-providers",
-    "maestro-resources",
-    "maestro-rpc",
-    "maestro-session",
-    "maestro-session-reports",
-    "maestro-settings",
-    "maestro-test-conventions",
-    "maestro-theme",
-    "maestro-tooling",
-    "maestro-tools",
-    "maestro-tui",
-    "maestro-tui-crossterm",
-    "maestro-web",
-];
-
-/// Native disposable-directory owner.
-pub(crate) const TEST_DIRECTORY: &str = "maestro-test-directory";
-
-/// Declared consumers of disposable native directory ownership.
-pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
-    "maestro",
-    "maestro-app",
-    "maestro-models-registry",
     "maestro-chat",
     "maestro-cli",
     "maestro-credentials",
@@ -132,6 +95,7 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-lock",
     "maestro-models",
     "maestro-models-generator",
+    "maestro-models-registry",
     "maestro-packages",
     "maestro-process",
     "maestro-providers",
@@ -143,25 +107,13 @@ pub(crate) const TEST_DIRECTORY_CALLERS: &[&str] = &[
     "maestro-terminal-emulator",
     "maestro-test-browser",
     "maestro-test-conventions",
-    "maestro-test-process",
     "maestro-theme",
     "maestro-tooling",
     "maestro-tools",
     "maestro-tui",
     "maestro-tui-crossterm",
     "maestro-watch",
-    "maestro-workspace",
-];
-
-/// Native owner of scoped tracing subscribers that see every callsite.
-pub(crate) const TEST_TRACING: &str = "maestro-test-tracing";
-
-/// Declared consumers of scoped test tracing.
-pub(crate) const TEST_TRACING_CALLERS: &[&str] = &[
-    "maestro-daemon",
-    "maestro-http",
-    "maestro-process",
-    "maestro-terminal-emulator",
+    "maestro-web",
     "maestro-workspace",
 ];
 
@@ -183,8 +135,6 @@ pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str
     match owner {
         TEST_PROCESS => Some(TEST_PROCESS_CALLERS),
         TEST_FIXTURES => Some(TEST_FIXTURE_CALLERS),
-        TEST_DIRECTORY => Some(TEST_DIRECTORY_CALLERS),
-        TEST_TRACING => Some(TEST_TRACING_CALLERS),
         _ => None,
     }
 }
@@ -194,13 +144,6 @@ pub(crate) const UNIFIER: &str = "maestro-feature-unifier";
 
 /// Owner of mutual exclusion over files and shared in-memory state.
 pub(crate) const LOCK: &str = "maestro-lock";
-
-/// Report whether `from` may reach `to` as the checked child launcher's only edge to
-/// the directory owner: the launcher declares that owner normally, so its fixtures
-/// read the platform directory it hands to its cleared children through that edge.
-pub(crate) fn directory_observation(from: &str, to: &str) -> bool {
-    from == TEST_PROCESS && to == TEST_DIRECTORY
-}
 
 /// Report whether a crate may declare the path crate as a production dependency.
 pub(crate) fn uses_utility(name: &str) -> bool {
@@ -232,10 +175,8 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-models-generator"
                 | "maestro-test-browser"
                 | "maestro-test-conventions"
-                | "maestro-test-process"
-                | "maestro-test-directory"
+                | "maestro-test-harness"
                 | "maestro-test-fixtures"
-                | "maestro-test-tracing"
                 | "maestro-session-reports"
                 | "maestro-tooling"
         ) {

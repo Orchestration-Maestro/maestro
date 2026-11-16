@@ -1,6 +1,6 @@
 //! The pinned search program resolver accepts only the supplied directories' exact programs.
 use super::*;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use std::ffi::OsStr;
 use std::path::Path;
 
@@ -13,7 +13,7 @@ fn fixture(root: &Path, stdout: &[u8], code: u8) -> std::io::Result<()> {
         "code": code,
     });
     let entry = root.join(format!("fd{}", std::env::consts::EXE_SUFFIX));
-    maestro_test_process::install_command(&entry, &record.to_string())
+    maestro_test_harness::install_command(&entry, &record.to_string())
 }
 
 /// Empty and nonexistent search directories never fall back to ambient PATH.

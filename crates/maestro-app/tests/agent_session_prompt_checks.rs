@@ -17,7 +17,7 @@ use maestro_models::{
 };
 use maestro_resources::{SyntheticSourceOptions, create_synthetic_source_info};
 use maestro_session::message_records::SendUserMessageOptions;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::RwLock};
 use tokio::sync::Notify;
@@ -194,7 +194,7 @@ fn prompt_images_reach_the_provider() {
 #[test]
 fn skill_input_reaches_the_provider_expanded() {
     on_task_set(|_| async {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let directory = scratch.path().join("skills");
         std::fs::create_dir_all(&directory).unwrap();
         let file = directory.join("test-skill.md");

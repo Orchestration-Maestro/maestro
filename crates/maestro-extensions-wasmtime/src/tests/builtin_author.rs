@@ -50,7 +50,7 @@ pub(super) async fn loaded_with_reporter(
             crate::tests::support::widgets(),
             crate::Installation {
                 version: "builtin-test-version".into(),
-                agent_dir: maestro_test_process::run_agent_directory().unwrap_or_default(),
+                agent_dir: maestro_test_harness::run_agent_dir().unwrap_or_default(),
             },
         ),
         "/".into(),
@@ -72,14 +72,14 @@ pub(super) async fn loaded_with_reporter(
 
 /// Runs a real-search witness with pinned executables, never the runner's search PATH.
 pub(super) fn with_search_tools(test: &str) -> bool {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return true;
     }
-    let bin = maestro_test_directory::Scratch::new().unwrap();
+    let bin = maestro_test_harness::Scratch::new().unwrap();
     for name in ["rg", "fd"] {
-        maestro_test_process::install_search_program(name, bin.path()).unwrap();
+        maestro_test_harness::install_search_program(name, bin.path()).unwrap();
     }
-    let output = maestro_test_process::TestProcess::current(test)
+    let output = maestro_test_harness::TestProcess::current(test)
         .unwrap()
         .case("search-tools")
         .nocapture()

@@ -19,7 +19,7 @@ pub(crate) static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Disposable directory removed when dropped.
 pub struct TempDir(
-    maestro_test_directory::Scratch,
+    maestro_test_harness::Scratch,
     Option<RwLockReadGuard<'static, ()>>,
 );
 
@@ -27,7 +27,7 @@ impl TempDir {
     /// Create an empty directory with the supplied creation-error context.
     pub fn new(name: &str) -> Self {
         Self(
-            maestro_test_directory::Scratch::new()
+            maestro_test_harness::Scratch::new()
                 .unwrap_or_else(|error| panic!("create {name} fixture: {error}")),
             None,
         )
@@ -57,11 +57,11 @@ impl TempDir {
 
 /// Whether this process is a child started by [`run_child`].
 pub fn is_child() -> bool {
-    maestro_test_process::selection().is_child()
+    maestro_test_harness::selection().is_child()
 }
 
 /// Run the configured test process with supplied edits and cwd.
-pub fn run_child(process: maestro_test_process::TestProcess, cwd: &Path, envs: &[(&str, &str)]) {
+pub fn run_child(process: maestro_test_harness::TestProcess, cwd: &Path, envs: &[(&str, &str)]) {
     let command = process
         .nocapture()
         .envs(envs.iter().copied())
@@ -86,14 +86,14 @@ pub fn run_child(process: maestro_test_process::TestProcess, cwd: &Path, envs: &
 /// Run the named test again in a clean child with only the supplied environment.
 pub fn run_isolated(test: &str, case: &str, envs: &[(&str, &str)]) {
     let dir = TempDir::new(test);
-    let process = maestro_test_process::TestProcess::named(test).unwrap();
+    let process = maestro_test_harness::TestProcess::named(test).unwrap();
     run_child(process.env_clear().case(case), dir.root(), envs);
 }
 
 /// The case identifier this process was launched with, empty in the parent and in a
 /// wildcard child.
 pub fn selected_case() -> String {
-    maestro_test_process::selection()
+    maestro_test_harness::selection()
         .case()
         .unwrap_or_default()
         .to_owned()

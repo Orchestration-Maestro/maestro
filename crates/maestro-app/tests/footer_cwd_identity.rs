@@ -7,10 +7,10 @@ use maestro_app::presentation_data::status_line::{
 use std::{path::PathBuf, rc::Rc, time::Duration};
 
 /// One owned repository stand-in: its disposable root and the repository inside it.
-struct Repository(maestro_test_directory::Scratch, PathBuf);
+struct Repository(maestro_test_harness::Scratch, PathBuf);
 
 fn directory(content: &str) -> Repository {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path().to_path_buf();
     std::fs::create_dir_all(root.join("refs")).unwrap();
     std::fs::write(root.join("refs/table"), content).unwrap();
@@ -20,10 +20,10 @@ fn directory(content: &str) -> Repository {
 #[test]
 fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     const CASE: &str = "footer-cwd-identity";
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let path = std::env::var("PATH").unwrap();
         {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "footer_native_effects_keep_admission_directory_after_cwd_change",
             )
             .unwrap()
@@ -45,7 +45,7 @@ fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     let original_cwd = std::env::current_dir().unwrap();
     for (root, branch) in [(&first, "original"), (&second, "decoy")] {
         assert!(
-            maestro_test_process::git_command::command()
+            maestro_test_harness::git_command::command()
                 .args(["init", "--quiet", "--initial-branch", branch])
                 .arg(root)
                 .status()

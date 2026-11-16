@@ -28,11 +28,11 @@ const LAUNCH_CONTEXT_ROOT: &str = "MAESTRO_LAUNCH_CONTEXT_ROOT";
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     /// The case that repeats the fixture comparison in a child.
     const CHILD: &str = "native";
-    if maestro_test_process::selection().case() == Some(CHILD) {
+    if maestro_test_harness::selection().case() == Some(CHILD) {
         run(Path::new(&std::env::var_os(LAUNCH_CONTEXT_ROOT).unwrap()));
         return;
     }
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_harness::Scratch::new().unwrap();
     let root = owned.path();
     for (directory, text) in [("parent", "parent"), ("chosen", "chosen")] {
         let tools = root.join(directory).join("tools");
@@ -42,7 +42,7 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
             write_wrapper(&tools.join(only_name()), text);
         }
     }
-    let output = maestro_test_process::TestProcess::current(name)
+    let output = maestro_test_harness::TestProcess::current(name)
         .unwrap()
         .case(CHILD)
         .env(LAUNCH_CONTEXT_ROOT, root)
@@ -77,7 +77,7 @@ fn write_wrapper(path: &Path, text: &str) {
     {
         let artifact =
             std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
-        maestro_test_process::install_executable(std::path::Path::new(&artifact), path).unwrap();
+        maestro_test_harness::install_executable(std::path::Path::new(&artifact), path).unwrap();
         let mut record = path.as_os_str().to_owned();
         record.push(".fixture");
         std::fs::write(record, format!("echo\n{text}\n")).unwrap();
@@ -262,8 +262,8 @@ fn assert_native_image_policy(chosen: &Path, parent: &Path) {
 fn loaded_image(program: &str, cwd: &Path, environment: &[(&str, &str)]) -> PathBuf {
     let mut environment = environment.to_vec();
     environment.push(("MAESTRO_LOADED_IMAGE_PROBE", "1"));
-    let output = maestro_test_process::TestProcess::named(
-        maestro_test_process::test_name(loaded_image_probe).unwrap(),
+    let output = maestro_test_harness::TestProcess::named(
+        maestro_test_harness::test_name(loaded_image_probe).unwrap(),
     )
     .unwrap()
     .nocapture()
@@ -323,7 +323,7 @@ fn run_wrapper(program: &Path, cwd: &Path, environment: &[(&str, &str)]) -> Stri
 
 #[test]
 fn launch_rejects_missing_files_and_directories() {
-    let owned = maestro_test_directory::Scratch::new().unwrap();
+    let owned = maestro_test_harness::Scratch::new().unwrap();
     let root = owned.path();
     std::fs::create_dir(root.join("nonfile.CMD")).unwrap();
     for program in ["./missing", "./nonfile.CMD"] {

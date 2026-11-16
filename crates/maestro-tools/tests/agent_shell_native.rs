@@ -362,7 +362,7 @@ impl maestro_tools::BashOperations for ArtifactPending {
     > {
         Box::pin(async move {
             (options.on_data)(&vec![b'A'; 51201]);
-            std::fs::create_dir(maestro_test_directory::temporary_root()).unwrap();
+            std::fs::create_dir(maestro_test_harness::temporary_root()).unwrap();
             (options.on_data)(b"ignored after failure");
             self.release.notified().await;
             self.settled
@@ -376,10 +376,10 @@ impl maestro_tools::BashOperations for ArtifactPending {
 
 #[test]
 fn bash_artifact_creation_failure_is_reported() {
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let dir = Scratch::new().unwrap();
         let missing = dir.path().join("missing");
-        let output = maestro_test_process::TestProcess::current(
+        let output = maestro_test_harness::TestProcess::current(
             "bash_artifact_creation_failure_is_reported",
         )
         .unwrap()

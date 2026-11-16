@@ -7,7 +7,7 @@ use maestro_app::test_support::{
     RuntimeOptions, answer, on_task_set, runtime_with, script_responses,
 };
 use maestro_extensions::types::ForkOptions;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 
 /// Prompts each candidate and observes the branch selected before `selected`.

@@ -109,7 +109,7 @@ where
 /// # Errors
 /// Returns Wasmtime's failure to configure the engine.
 pub fn engine() -> wasmtime::Result<Engine> {
-    let cache = maestro_test_process::run_agent_directory()
+    let cache = maestro_test_harness::run_agent_dir()
         .and_then(|agent| maestro_extensions_wasmtime::component_cache(&agent));
     maestro_extensions_wasmtime::component_engine(cache)
 }

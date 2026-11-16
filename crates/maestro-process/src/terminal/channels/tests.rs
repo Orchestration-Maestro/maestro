@@ -7,7 +7,7 @@ use super::{
 };
 use crate::children::tests::children;
 use futures_util::FutureExt;
-use maestro_test_process::child::without_harness;
+use maestro_test_harness::child::without_harness;
 use std::os::fd::AsRawFd;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -63,7 +63,7 @@ async fn finish(handle: PtyIoActorHandle) {
 #[test]
 fn user_input_reaches_the_owned_descriptor() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("user_input_reaches_the_owned_descriptor").unwrap() {
+        if maestro_test_harness::run_alone("user_input_reaches_the_owned_descriptor").unwrap() {
             return;
         }
         let (handle, mut peer, _reads) = fixture(false);
@@ -78,7 +78,7 @@ fn user_input_reaches_the_owned_descriptor() {
 #[test]
 fn continuous_output_keeps_input_and_interrupt_writable() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("continuous_output_keeps_input_and_interrupt_writable")
+        if maestro_test_harness::run_alone("continuous_output_keeps_input_and_interrupt_writable")
             .unwrap()
         {
             return;
@@ -129,7 +129,7 @@ fn continuous_output_keeps_input_and_interrupt_writable() {
 #[test]
 fn continuous_output_keeps_async_input_producers_running() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("continuous_output_keeps_async_input_producers_running")
+        if maestro_test_harness::run_alone("continuous_output_keeps_async_input_producers_running")
             .unwrap()
         {
             return;
@@ -173,7 +173,7 @@ fn continuous_output_keeps_async_input_producers_running() {
 #[test]
 fn appearance_reports_precede_queries_of_the_new_appearance() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone(
+        if maestro_test_harness::run_alone(
             "appearance_reports_precede_queries_of_the_new_appearance",
         )
         .unwrap()
@@ -260,7 +260,7 @@ async fn assert_appearance_read(
 #[test]
 fn handoff_pauses_reads_and_input_until_rollback() {
     crate::children::runtime().unwrap().block_on(async {
-    if maestro_test_process::run_alone("handoff_pauses_reads_and_input_until_rollback").unwrap() {
+    if maestro_test_harness::run_alone("handoff_pauses_reads_and_input_until_rollback").unwrap() {
         return;
     }
     let (handle, mut peer, mut reads) = fixture(false);
@@ -320,9 +320,9 @@ fn handoff_pauses_reads_and_input_until_rollback() {
 #[test]
 fn actor_exit_and_errors_preserve_their_single_delivery() {
     let events = Events::default();
-    maestro_test_tracing::with_default(events.clone(), || {
+    maestro_test_harness::trace_capture::with_default(events.clone(), || {
         crate::children::runtime().unwrap().block_on(async {
-            if maestro_test_process::run_alone(
+            if maestro_test_harness::run_alone(
                 "actor_exit_and_errors_preserve_their_single_delivery",
             )
             .unwrap()
@@ -370,7 +370,7 @@ fn parked_handle() -> (
 #[test]
 fn empty_input_does_not_reach_the_terminal() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("empty_input_does_not_reach_the_terminal").unwrap() {
+        if maestro_test_harness::run_alone("empty_input_does_not_reach_the_terminal").unwrap() {
             return;
         }
         let mut writes = super::runner::Writes::default();
@@ -389,7 +389,7 @@ fn empty_input_does_not_reach_the_terminal() {
 #[test]
 fn idle_actor_processes_new_input_without_polling() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("idle_actor_processes_new_input_without_polling")
+        if maestro_test_harness::run_alone("idle_actor_processes_new_input_without_polling")
             .unwrap()
         {
             return;
@@ -409,7 +409,7 @@ fn idle_actor_processes_new_input_without_polling() {
 #[test]
 fn terminal_reads_reach_the_supplied_callback() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("terminal_reads_reach_the_supplied_callback").unwrap() {
+        if maestro_test_harness::run_alone("terminal_reads_reach_the_supplied_callback").unwrap() {
             return;
         }
         let (tx, mut reads) = mpsc::unbounded_channel();
@@ -440,7 +440,7 @@ fn terminal_reads_reach_the_supplied_callback() {
 #[test]
 fn idle_actor_accepts_handoff_without_polling() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("idle_actor_accepts_handoff_without_polling").unwrap() {
+        if maestro_test_harness::run_alone("idle_actor_accepts_handoff_without_polling").unwrap() {
             return;
         }
         let (handle, _peer, _) = fixture(false);
@@ -456,7 +456,7 @@ fn idle_actor_accepts_handoff_without_polling() {
 #[test]
 fn quiesced_hangup_is_not_read_or_busy_polled() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("quiesced_hangup_is_not_read_or_busy_polled").unwrap() {
+        if maestro_test_harness::run_alone("quiesced_hangup_is_not_read_or_busy_polled").unwrap() {
             return;
         }
         let (handle, peer, mut reads) = fixture(true);
@@ -471,7 +471,7 @@ fn quiesced_hangup_is_not_read_or_busy_polled() {
 #[test]
 fn handoff_duplicates_only_a_quiesced_master() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("handoff_duplicates_only_a_quiesced_master").unwrap() {
+        if maestro_test_harness::run_alone("handoff_duplicates_only_a_quiesced_master").unwrap() {
             return;
         }
         let (handle, mut peer, _) = fixture(false);
@@ -497,7 +497,7 @@ fn handoff_duplicates_only_a_quiesced_master() {
 #[test]
 fn full_input_queue_keeps_the_latest_resize_and_nudge() {
     crate::children::runtime().unwrap().block_on(async {
-    if maestro_test_process::run_alone("full_input_queue_keeps_the_latest_resize_and_nudge").unwrap(){return;}
+    if maestro_test_harness::run_alone("full_input_queue_keeps_the_latest_resize_and_nudge").unwrap(){return;}
     let (handle, _data, _control) = parked_handle();
     handle.try_write_user_input(vec![1]).unwrap();
     let size = |rows, cols| crate::terminal::PtySize {
@@ -590,7 +590,7 @@ fn full_input_queue_does_not_block_handoff_control() {
 #[test]
 fn handoff_drains_input_queued_before_admission_closed() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("handoff_drains_input_queued_before_admission_closed")
+        if maestro_test_harness::run_alone("handoff_drains_input_queued_before_admission_closed")
             .unwrap()
         {
             return;
@@ -613,7 +613,7 @@ fn handoff_drains_input_queued_before_admission_closed() {
 #[test]
 fn committed_release_stops_terminal_io() {
     crate::children::runtime().unwrap().block_on(async {
-    if maestro_test_process::run_alone("committed_release_stops_terminal_io").unwrap() {
+    if maestro_test_harness::run_alone("committed_release_stops_terminal_io").unwrap() {
         return;
     }
     let (handle, mut peer, mut reads) = fixture(false);
@@ -723,7 +723,7 @@ async fn assert_quiesced_read_decision() {
 #[test]
 fn resize_is_applied_before_its_terminal_responses() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("resize_is_applied_before_its_terminal_responses")
+        if maestro_test_harness::run_alone("resize_is_applied_before_its_terminal_responses")
             .unwrap()
         {
             return;
@@ -759,7 +759,7 @@ fn resize_is_applied_before_its_terminal_responses() {
 #[test]
 fn actor_redraw_nudge_restores_the_requested_size() {
     crate::tests::runtime::paused_runtime().block_on(async {
-        if maestro_test_process::run_alone("actor_redraw_nudge_restores_the_requested_size")
+        if maestro_test_harness::run_alone("actor_redraw_nudge_restores_the_requested_size")
             .unwrap()
         {
             return;
@@ -833,7 +833,7 @@ fn fill(socket: &std::os::unix::net::UnixStream) -> usize {
 #[test]
 fn input_backpressure_does_not_stop_terminal_output() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("input_backpressure_does_not_stop_terminal_output")
+        if maestro_test_harness::run_alone("input_backpressure_does_not_stop_terminal_output")
             .unwrap()
         {
             return;
@@ -891,7 +891,7 @@ async fn reply_boundary<F: std::future::Future>(future: F) -> F::Output {
 #[test]
 fn actor_deadlines_restore_admission_without_losing_pending_bytes() {
     crate::tests::runtime::paused_runtime().block_on(async {
-        if maestro_test_process::run_alone(
+        if maestro_test_harness::run_alone(
             "actor_deadlines_restore_admission_without_losing_pending_bytes",
         )
         .unwrap()
@@ -1304,7 +1304,7 @@ async fn finish_at<F: std::future::Future>(future: F, deadline: tokio::time::Ins
 #[test]
 fn reader_exit_keeps_blocking_runtime_notifications() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("reader_exit_keeps_blocking_runtime_notifications")
+        if maestro_test_harness::run_alone("reader_exit_keeps_blocking_runtime_notifications")
             .unwrap()
         {
             return;
@@ -1335,7 +1335,7 @@ fn reader_exit_keeps_blocking_runtime_notifications() {
 #[test]
 fn exit_hook_completion_precedes_master_release() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("exit_hook_completion_precedes_master_release").unwrap()
+        if maestro_test_harness::run_alone("exit_hook_completion_precedes_master_release").unwrap()
         {
             return;
         }
@@ -1378,7 +1378,7 @@ fn exit_hook_completion_precedes_master_release() {
 
 #[test]
 fn exit_hook_cancellation_releases_master() {
-    if maestro_test_process::run_alone("exit_hook_cancellation_releases_master").unwrap() {
+    if maestro_test_harness::run_alone("exit_hook_cancellation_releases_master").unwrap() {
         return;
     }
     let runtime = crate::children::runtime().unwrap();
@@ -1422,7 +1422,7 @@ fn exit_hook_cancellation_releases_master() {
 #[test]
 fn restored_master_is_not_inherited_by_children() {
     crate::children::runtime().unwrap().block_on(async {
-        if maestro_test_process::run_alone("restored_master_is_not_inherited_by_children").unwrap()
+        if maestro_test_harness::run_alone("restored_master_is_not_inherited_by_children").unwrap()
         {
             return;
         }
@@ -1468,13 +1468,13 @@ fn restored_master_is_not_inherited_by_children() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 fn master_descriptor_probe() {
-    let number = maestro_test_process::child::variable("MAESTRO_TEST_MASTER_FD").unwrap();
+    let number = maestro_test_harness::child::variable("MAESTRO_TEST_MASTER_FD").unwrap();
     let descriptor = format!("/proc/self/fd/{number}");
     let answer = if std::path::Path::new(&descriptor).exists() {
         &b"leaked"[..]
     } else {
         b"closed"
     };
-    maestro_test_process::child::write_stdout(answer).unwrap();
-    maestro_test_process::child::leave(0)
+    maestro_test_harness::child::write_stdout(answer).unwrap();
+    maestro_test_harness::child::leave(0)
 }

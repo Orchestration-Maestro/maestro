@@ -11,8 +11,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 #[cfg(unix)]
-use maestro_test_directory::Scratch;
-use maestro_test_process::TestProcess;
+use maestro_test_harness::Scratch;
+use maestro_test_harness::TestProcess;
 use maestro_tooling as tooling;
 
 /// Exercise Rustup selection with an incomplete default and an installed pin.
@@ -71,7 +71,7 @@ fn child_toolchain_uses_declared_pin() {
 /// Observe unsanitized default and override failures before using fixture setup.
 fn assert_incomplete_default() {
     let default = Command::new("rustup")
-        .current_dir(maestro_test_directory::temporary_root())
+        .current_dir(maestro_test_harness::temporary_root())
         .env_remove("RUSTUP_TOOLCHAIN")
         .args(["show", "active-toolchain"])
         .output()
@@ -85,7 +85,7 @@ fn assert_incomplete_default() {
     for selector in [None, Some("incomplete")] {
         let mut compiler = Command::new("rustc");
         compiler
-            .current_dir(maestro_test_directory::temporary_root())
+            .current_dir(maestro_test_harness::temporary_root())
             .arg("--version");
         compiler.env_remove("RUSTUP_TOOLCHAIN");
         if let Some(selector) = selector {
@@ -221,7 +221,7 @@ fn child_toolchain_preserves_parent_profile_destination() {
     let output = TestProcess::current("child_toolchain_preserves_parent_profile_destination")
         .unwrap()
         .nocapture()
-        .current_dir(maestro_test_directory::temporary_root())
+        .current_dir(maestro_test_harness::temporary_root())
         .env(PROBE, "1")
         .env("LLVM_PROFILE_FILE", "parent-%p.profraw")
         .env("RUSTFLAGS", "-C instrument-coverage")
@@ -411,18 +411,18 @@ fn main() {
 "#;
 
 struct Fixture {
-    root: maestro_test_directory::Scratch,
+    root: maestro_test_harness::Scratch,
     child: PathBuf,
     /// Retains the deliberately spaced and apostrophe-containing parent of `root`.
-    _parent: maestro_test_directory::Scratch,
+    _parent: maestro_test_harness::Scratch,
 }
 
 impl Fixture {
     fn new() -> Self {
-        let parent = maestro_test_directory::Scratch::new().unwrap();
+        let parent = maestro_test_harness::Scratch::new().unwrap();
         let spelled = parent.path().join("Maestro's tooling fixture");
         fs::create_dir(&spelled).unwrap();
-        let root = maestro_test_directory::Scratch::new_in(&spelled).unwrap();
+        let root = maestro_test_harness::Scratch::new_in(&spelled).unwrap();
         compiler::declare_toolchain(root.path(), include_str!("../../../rust-toolchain.toml"))
             .unwrap();
         fs::create_dir(root.path().join("receipt")).unwrap();
@@ -536,7 +536,7 @@ fn isolated(mut command: Command) -> Command {
             command.env(key, value);
         }
     }
-    maestro_test_process::git_command::isolate(&mut command);
+    maestro_test_harness::git_command::isolate(&mut command);
     command
 }
 
@@ -1749,7 +1749,7 @@ fn maestro_missing_metadata_names_the_absent_path() {
 fn maestro_unreadable_viewer_names_its_path() {
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
-    let Some(_denied) = maestro_test_directory::deny(&viewer, 0o000).unwrap() else {
+    let Some(_denied) = maestro_test_harness::deny(&viewer, 0o000).unwrap() else {
         return;
     };
     let destination = fixture.root.path().join("standalone");
@@ -1782,7 +1782,7 @@ fn maestro_unreadable_source_file_names_its_path() {
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
     let input = package.join("README.md");
-    let Some(_denied) = maestro_test_directory::deny(&input, 0o000).unwrap() else {
+    let Some(_denied) = maestro_test_harness::deny(&input, 0o000).unwrap() else {
         return;
     };
     let error = tooling::copy_assets::copy(
@@ -1813,7 +1813,7 @@ fn maestro_unreadable_tree_entry_names_that_entry() {
     let fixture = Fixture::new();
     let (source, package, metadata, viewer) = split_inputs(&fixture);
     let entry = package.join("docs/guide.md");
-    let Some(_denied) = maestro_test_directory::deny(&entry, 0o000).unwrap() else {
+    let Some(_denied) = maestro_test_harness::deny(&entry, 0o000).unwrap() else {
         return;
     };
     let error = tooling::copy_assets::copy(
@@ -1955,7 +1955,7 @@ fn asset_matches_follow_name_order_over_creation_order() {
 /// A tree copy visits its entries in name order even when created in reverse.
 #[test]
 fn asset_tree_follows_name_order_over_creation_order() {
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let source = scratch.path().join("source");
     let destination = scratch.path().join("destination");
     for name in ["zulu.txt", "mike.txt", "alpha.txt"] {
@@ -2213,7 +2213,7 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
 }
 
 pub(crate) fn git(root: &Path, args: &[&str]) -> Output {
-    let output = maestro_test_process::git_command::command()
+    let output = maestro_test_harness::git_command::command()
         .current_dir(root)
         .args(args)
         .output()
@@ -3984,7 +3984,7 @@ fn age_cache_outputs(profile: &Path) {
 #[test]
 fn cache_normalization_reads_the_pinned_cargo_builds() {
     use std::time::{Duration, UNIX_EPOCH};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path();
     cache_fixture(root);
     let profile = root.join("target/debug");
@@ -4032,7 +4032,7 @@ fn cache_normalization_reads_the_pinned_cargo_builds() {
 #[test]
 fn cache_normalization_skips_build_scripts_named_after_their_file() {
     use std::time::{Duration, UNIX_EPOCH};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path();
     cache_fixture(root);
     let profile = root.join("target/debug");
@@ -4072,7 +4072,7 @@ fn cache_normalization_skips_build_scripts_named_after_their_file() {
 #[test]
 fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
     use std::time::{Duration, UNIX_EPOCH};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path();
     cache_fixture(root);
     let profile = root.join("target/debug");
@@ -4100,7 +4100,7 @@ fn cache_normalization_keeps_consumers_of_newer_linked_builds_stale() {
 #[test]
 fn cache_normalization_keeps_consumers_of_replaced_builds_stale() {
     use std::time::{Duration, UNIX_EPOCH};
-    let scratch = maestro_test_directory::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path();
     cache_fixture(root);
     let profile = root.join("target/debug");
@@ -4162,7 +4162,7 @@ fn author_setup(root: &Path, profile: &Path) -> Output {
         .env("NEXTEST_LD_LIBRARY_PATH", profile)
         .env("NEXTEST_DYLD_FALLBACK_LIBRARY_PATH", profile)
         .env("CARGO", root.join("cargo"));
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     command.output().unwrap()
 }
 
@@ -4181,7 +4181,7 @@ fn run_author_setup(root: &Path, profile: &Path) -> String {
 /// Independent source files supply their own index rows without a second inventory.
 #[test]
 fn example_index_discovers_independent_additions() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let folder = root.path().join("examples/extensions");
     example_checkout(root.path());
     fs::create_dir_all(folder.join("nested")).unwrap();
@@ -4291,7 +4291,7 @@ fn example_index(root: &Path, check: bool) -> std::io::Result<std::process::Exit
 /// Example sources supply manifest targets without rewriting runtime preparation.
 #[test]
 fn example_index_renders_targets() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let folder = root.path().join("examples/extensions");
     let local = root
         .path()
@@ -4352,7 +4352,7 @@ fn example_index_renders_targets() {
 /// A directory entry point supplies the one row for its undocumented support files.
 #[test]
 fn example_index_summarizes_folder_entry_without_parsing_support_files() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     example_checkout(root.path());
     let folder = root.path().join("examples/extensions");
     fs::create_dir_all(folder.join("game")).unwrap();
@@ -4380,7 +4380,7 @@ fn example_index_summarizes_folder_entry_without_parsing_support_files() {
 /// Guest dependency changes are detected without repairing files until generation is requested.
 #[test]
 fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     example_checkout(root.path());
     example_index(root.path(), false).unwrap();
     let lock = root
@@ -4423,7 +4423,7 @@ fn example_index_refreshes_guide_lock_after_guest_dependency_change() {
 /// Resolver failures retain Cargo's diagnostic without replacing the guide lock.
 #[test]
 fn example_index_preserves_guide_lock_on_resolver_failure() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     example_checkout(root.path());
     example_index(root.path(), false).unwrap();
     let fixture = root
@@ -4461,7 +4461,7 @@ fn shipped_example_index_matches_documentation() {
 /// A source-only addition supplies its build target, environment and setup selection.
 #[test]
 fn example_components_discover_source_only_additions() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     fs::create_dir(root.path().join("helpers")).unwrap();
     fs::write(root.path().join("helpers/unmarked.rs"), "//! Helper.\n").unwrap();
     let prepare = || {
@@ -4505,7 +4505,7 @@ fn example_components_discover_source_only_additions() {
 /// Invalid environment markers never reach the component builder.
 #[test]
 fn example_components_reject_invalid_markers() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     for variable in [
         "OTHER_FIXTURE_COMPONENT",
         "MAESTRO_FIXTURE",
@@ -4539,7 +4539,7 @@ fn example_components_reject_invalid_markers() {
 /// A repeated variable is rejected before its second build, even across files.
 #[test]
 fn example_components_reject_duplicate_markers() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     for name in ["first", "second"] {
         fs::write(
             root.path().join(format!("{name}.rs")),
@@ -4570,7 +4570,7 @@ fn example_components_reject_duplicate_markers() {
 /// Builder failures retain their error and stop preparation before later targets.
 #[test]
 fn example_components_propagate_builder_failure() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     for (name, variable) in [
         ("first", "MAESTRO_FIRST_COMPONENT"),
         ("second", "MAESTRO_SECOND_COMPONENT"),
@@ -4613,7 +4613,7 @@ fn example_components_propagate_builder_failure() {
 /// Fixed exports cannot be replaced by a source marker or reach the builder.
 #[test]
 fn example_components_reject_reserved_variables() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     for variable in ["MAESTRO_AUTHOR_COMPONENT", "MAESTRO_CONTEXT_COMPONENT"] {
         fs::write(
             root.path().join("fixture.rs"),
@@ -4636,7 +4636,7 @@ fn example_components_reject_reserved_variables() {
 /// Component exports remain unique across the local and shipped roots.
 #[test]
 fn example_components_reject_cross_root_duplicates() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let folders = [root.path().join("local"), root.path().join("shipped")];
     for folder in &folders {
         fs::create_dir(folder).unwrap();
@@ -4666,7 +4666,7 @@ fn example_components_reject_cross_root_duplicates() {
 /// Marked directory entry points use the same target as the generated manifest.
 #[test]
 fn example_components_prepare_directory_targets() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     fs::create_dir(root.path().join("with-deps")).unwrap();
     fs::write(
         root.path().join("with-deps/main.rs"),
@@ -4692,7 +4692,7 @@ fn example_components_prepare_directory_targets() {
 /// A top-level main source retains its file-stem target rather than its root name.
 #[test]
 fn example_components_prepare_top_level_main() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     fs::write(
         root.path().join("main.rs"),
         "// maestro-component: MAESTRO_MAIN_COMPONENT\n",

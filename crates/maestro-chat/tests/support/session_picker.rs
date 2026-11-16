@@ -1227,13 +1227,13 @@ fn focus(
 struct Filesystem {
     root: String,
     /// The disposable root that removes the padded tree.
-    scratch: maestro_test_directory::Scratch,
+    scratch: maestro_test_harness::Scratch,
     saved_records: std::cell::RefCell<Option<Vec<maestro_session::SessionInfo>>>,
 }
 impl Filesystem {
     /// Creates the fixture below the disposable root; the fixed width retains oracle padding.
     fn new() -> Self {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let parent = scratch.path().to_string_lossy().into_owned();
         let root = format!(
             "{parent}/{}",
@@ -1393,4 +1393,4 @@ pub mod session_picker_scopes;
 
 /// Shared subprocess isolation for native picker observations.
 #[cfg(unix)]
-pub use maestro_test_process::probe as native_child;
+pub use maestro_test_harness::probe as native_child;

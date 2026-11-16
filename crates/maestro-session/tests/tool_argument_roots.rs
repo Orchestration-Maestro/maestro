@@ -6,7 +6,7 @@ use maestro_models::test_support::target_model;
 use maestro_models::{AssistantContent, Message, ToolCall, transform_messages};
 use maestro_session::SessionManager;
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 
 /// Every root kind a stored call can carry.

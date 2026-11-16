@@ -107,7 +107,7 @@ fn relative_entry_uses_the_selected_child_directory() {
     let peer = Peer::new();
     let dist = peer.join("dist");
     std::fs::create_dir(&dist).unwrap();
-    maestro_test_process::rpc_peer::install(&Path::new(&dist).join("maestro"), Scenario::Entry)
+    maestro_test_harness::rpc_peer::install(&Path::new(&dist).join("maestro"), Scenario::Entry)
         .unwrap();
     let here = std::env::current_dir().unwrap();
     let up = "../".repeat(here.components().count() - 1);
@@ -335,11 +335,11 @@ fn forwarding_child() {
 
 #[test]
 fn stderr_is_forwarded_and_retained_during_start_and_stop() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         forwarding_child();
         return;
     }
-    let mut child = maestro_test_process::TestProcess::current(
+    let mut child = maestro_test_harness::TestProcess::current(
         "stderr_is_forwarded_and_retained_during_start_and_stop",
     )
     .unwrap()
@@ -420,11 +420,11 @@ fn delivering_child() {
 
 #[test]
 fn stop_ends_after_every_captured_diagnostic_byte_is_written() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         delivering_child();
         return;
     }
-    let mut child = maestro_test_process::TestProcess::current(
+    let mut child = maestro_test_harness::TestProcess::current(
         "stop_ends_after_every_captured_diagnostic_byte_is_written",
     )
     .unwrap()

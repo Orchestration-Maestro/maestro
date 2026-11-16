@@ -22,7 +22,7 @@ use maestro_session::{
     summarization::CompactionResult,
 };
 use maestro_settings::SettingsManager;
-use maestro_test_process::IsolatedSetup;
+use maestro_test_harness::IsolatedSetup;
 use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tui::{Component, KeybindingKeys};
 use serde::Deserialize;

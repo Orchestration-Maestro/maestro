@@ -5,7 +5,7 @@
 //! standard input and a pipe as its standard output.
 #![cfg(windows)]
 use crate::support::{ChildGuard, Root};
-use maestro_test_process::on_console;
+use maestro_test_harness::on_console;
 use std::{
     fs::OpenOptions,
     io::Read,

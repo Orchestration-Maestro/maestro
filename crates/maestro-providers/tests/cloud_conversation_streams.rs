@@ -877,7 +877,7 @@ fn setup_failure_ends_stream(profile: Option<&str>) -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn sdk_setup_failures_end_stream() -> TestResult {
-    match maestro_test_process::selection() {
+    match maestro_test_harness::selection() {
         selection if selection.is_child() && selection.runs_case("no credentials") => {
             return setup_failure_ends_stream(None);
         }
@@ -893,7 +893,7 @@ fn sdk_setup_failures_end_stream() -> TestResult {
     for case in ["no credentials", "unknown profile"] {
         {
             let output =
-                maestro_test_process::TestProcess::current("sdk_setup_failures_end_stream")?
+                maestro_test_harness::TestProcess::current("sdk_setup_failures_end_stream")?
                     .nocapture()
                     .env_clear()
                     .envs(isolated.iter().copied())

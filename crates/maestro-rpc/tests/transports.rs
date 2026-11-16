@@ -7,7 +7,7 @@ use maestro_models::Local;
 use maestro_protocol::schema::{ErrorBody, EventData, ResponseResult};
 use maestro_rpc::connection_runner::{JsonlLineReader, RpcLine, RpcOutput};
 use maestro_rpc::{RpcConnectionOutcome, run_rpc_connection};
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 use tokio::task::LocalSet;
@@ -25,7 +25,7 @@ const COMMANDS: &str = concat!(
 
 /// Whether this process is a serving child; the child serves and never returns.
 fn serve_when_child(served: impl FnOnce() -> Served) {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         serve(served());
     }
 }
@@ -282,8 +282,8 @@ fn framing_reuse_handles_chunks_blanks_and_detach() {
 #[test]
 fn native_process_reopens_and_shares_termination_delivery() {
     use maestro_rpc::connection_runner::RpcProcessPort;
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(
             "native_process_reopens_and_shares_termination_delivery",
         )
         .unwrap()

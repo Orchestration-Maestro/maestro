@@ -299,10 +299,10 @@ fn custom(api: &str, label: &'static str) -> ApiProvider {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_initial_registry_is_ready() -> TestResult {
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
             let output =
-                maestro_test_process::TestProcess::current("maestro_initial_registry_is_ready")?
+                maestro_test_harness::TestProcess::current("maestro_initial_registry_is_ready")?
                     .nocapture()
                     .env_clear()
                     .case("fresh")
@@ -1289,9 +1289,9 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_first_access_is_safe_across_threads() -> TestResult {
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "maestro_first_access_is_safe_across_threads",
             )?
             .nocapture()

@@ -718,7 +718,7 @@ mod tests {
     /// Child side: a manager that cannot start its write thread.
     #[cfg(unix)]
     fn run_without_threads() {
-        let _setup = maestro_test_process::IsolatedSetup::apply_requested()
+        let _setup = maestro_test_harness::IsolatedSetup::apply_requested()
             .expect("the child applies its requested limit");
         let limit = rustix::process::getrlimit(rustix::process::Resource::Nproc).current;
         if std::thread::Builder::new().spawn(|| ()).is_ok() {
@@ -781,7 +781,7 @@ mod tests {
                 "settings_reload::tests::flush_observes_without_cancelling_dropped_waiter",
                 "limit",
             )
-            .setup(maestro_test_process::IsolatedSetup::new().process_limit(1));
+            .setup(maestro_test_harness::IsolatedSetup::new().process_limit(1));
             let output = limited.output().unwrap();
             assert!(output.status.success());
             let report = support::child_report(&output);

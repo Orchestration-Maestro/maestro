@@ -20,7 +20,7 @@ const LOGIN_CACHE: &str = "aa01d9c4877a85c7815b4f59b8b2fe0920e856d4abfbb70f5354a
 const LOGIN_KEY_BODY: &str = "MHcCAQEEIJKAC0XipkXMOTC/Hd1cno0PhBaJz1utsrH8KYnENayuoAoGCCqGSM49\nAwEHoUQDQgAEspyh2xH6X8yuVvVwXgMHhyBgXjQ+zzb9EV3rELvy4ok1j6rpc4I7\ntaOcUSE9wGl1wkddcgKdEg0RQeiTK/hatQ==\n";
 
 /// A row's directory, removed when dropped.
-pub struct Workdir(maestro_test_directory::Scratch);
+pub struct Workdir(maestro_test_harness::Scratch);
 
 impl Drop for Workdir {
     fn drop(&mut self) {
@@ -36,7 +36,7 @@ impl Drop for Workdir {
 
 /// Install the prepared credential process, which counts its runs beside itself.
 fn install_process(directory: &Path) -> TestResult {
-    use maestro_test_process::credentials::{Scenario, install};
+    use maestro_test_harness::credentials::{Scenario, install};
     install(&directory.join("process"), Scenario::AwsProcess)?;
     Ok(())
 }
@@ -44,7 +44,7 @@ fn install_process(directory: &Path) -> TestResult {
 impl Workdir {
     /// Create the directory of a row and write everything its input asks for.
     pub fn create(input: &Input) -> TestResult<Self> {
-        let directory = Self(maestro_test_directory::Scratch::new()?);
+        let directory = Self(maestro_test_harness::Scratch::new()?);
         directory.write(input)?;
         Ok(directory)
     }

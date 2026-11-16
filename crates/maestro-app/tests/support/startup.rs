@@ -1,7 +1,7 @@
 //! Strict corpus replay with isolated environment and native failure controls.
 use super::child;
 use base64::{Engine, engine::general_purpose::STANDARD};
-use maestro_test_process::{IsolatedSetup, TestProcess};
+use maestro_test_harness::{IsolatedSetup, TestProcess};
 use serde::Deserialize;
 use std::{
     collections::BTreeMap,

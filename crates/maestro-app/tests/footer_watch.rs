@@ -12,7 +12,7 @@ use maestro_app::presentation_data::status_line::{FooterOperations, NativeFooter
 #[cfg(unix)]
 use maestro_process::children::process_exists;
 #[cfg(unix)]
-use maestro_test_process::git_command;
+use maestro_test_harness::git_command;
 use serde::Deserialize;
 use std::{
     cell::{Cell, RefCell},
@@ -150,7 +150,7 @@ fn footer_watch_selection_tracks_common_metadata() {
 /// premise cannot be exercised there.
 fn keeps_stars() -> bool {
     let name = std::ffi::OsStr::new("storage [one]*");
-    let kept = maestro_test_directory::Scratch::new()
+    let kept = maestro_test_harness::Scratch::new()
         .unwrap()
         .keeps_distinct(&[name])
         .unwrap();
@@ -869,7 +869,7 @@ fn footer_native_poll_detects_change_time() {
 #[cfg(windows)]
 #[test]
 fn footer_native_poll_detects_a_replaced_table_on_windows() {
-    let root = maestro_test_directory::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let (path, staged) = (
         root.path().join("tables.list"),
         root.path().join("tables.new"),
@@ -977,7 +977,7 @@ fn native_command_probe(root: &native::Scratch) {
     )
     .expect("alias installs");
     let output = native::probe(
-        maestro_test_process::TestProcess::current(
+        maestro_test_harness::TestProcess::current(
             "footer_native_async_lookup_runs_selected_command",
         )
         .unwrap()
@@ -1001,7 +1001,7 @@ fn native_command_probe(root: &native::Scratch) {
         ]
     );
     let failed = native::probe(
-        maestro_test_process::TestProcess::current(
+        maestro_test_harness::TestProcess::current(
             "footer_native_async_lookup_runs_selected_command",
         )
         .unwrap()
@@ -1214,7 +1214,7 @@ fn footer_async_lookup_keeps_output_until_pipe_eof() {
     .expect("descendant installs");
     assert!(
         native::probe(
-            maestro_test_process::TestProcess::current(
+            maestro_test_harness::TestProcess::current(
                 "footer_async_lookup_keeps_output_until_pipe_eof"
             )
             .unwrap()

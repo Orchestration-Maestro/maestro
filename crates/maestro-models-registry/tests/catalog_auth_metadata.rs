@@ -67,9 +67,9 @@ fn availability_walk_reloads_slots_after_callbacks() {
 #[test]
 fn metadata_preserves_sources_without_helper_or_refresh_effects() {
     use maestro_credentials::{AuthSource, AuthStatus};
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let test = "metadata_preserves_sources_without_helper_or_refresh_effects";
-        let process = maestro_test_process::TestProcess::current(test).unwrap();
+        let process = maestro_test_harness::TestProcess::current(test).unwrap();
         let environment = [
             ("ENV", Some("value")),
             ("EMPTY_ENV", Some("")),
@@ -78,7 +78,7 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         ];
         return crate::subprocess::run_child(process.case("*"), &environment).unwrap();
     }
-    let marker = maestro_test_directory::temporary_root().join(format!(
+    let marker = maestro_test_harness::temporary_root().join(format!(
         "maestro-models-registry-auth-marker-{}",
         std::process::id()
     ));
@@ -254,8 +254,8 @@ fn available_models_keep_order_duplicates_and_shared_descriptors() {
 }
 #[test]
 fn display_table_mutations_are_shared_between_registries() {
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(
             "display_table_mutations_are_shared_between_registries",
         )
         .unwrap()

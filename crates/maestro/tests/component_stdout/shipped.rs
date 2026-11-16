@@ -1,6 +1,6 @@
 //! Shipped stdout routing with a real terminal input and an unread output pipe.
 use crate::support::{ChildGuard, Root};
-use maestro_test_process::{HARNESS_START, TestProcess, child};
+use maestro_test_harness::{HARNESS_START, TestProcess, child};
 use rustix::process::{Pid, Signal, WaitOptions, kill_process, waitpid};
 use serde_json::json;
 use std::{

@@ -575,9 +575,9 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn direct_cloud_local_submission_preserves_hook_phases() -> crate::TestResult {
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "direct_cloud_local_submission_preserves_hook_phases",
             )?
             .nocapture()

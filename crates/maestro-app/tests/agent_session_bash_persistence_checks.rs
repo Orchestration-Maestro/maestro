@@ -12,7 +12,7 @@ use maestro_app::{AgentSessionEvent, agent_session::BashRunOptions};
 use maestro_session::{
     message_records::SendMessageOptions, session_manager::ReadonlySessionManager,
 };
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use maestro_tools::BashResult;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 /// A truecolor terminal, so theme loads without an explicit mode emit RGB.
 pub const TRUECOLOR: &[(&str, &str)] = &[("COLORTERM", "truecolor")];
 
-/// Run cases through [`maestro_test_process::run_per_environment`], which keeps the
+/// Run cases through [`maestro_test_harness::run_per_environment`], which keeps the
 /// temporary directory unless a case supplies one. Checked-child selection and
 /// instrumentation variables are also supplied. Return this child's cases, or `None`
 /// in the calling process once every child passed.
@@ -16,7 +16,7 @@ pub fn per_environment<C>(
     cases: impl IntoIterator<Item = C>,
     environment: impl Fn(&C) -> &[(&'static str, &'static str)],
 ) -> Option<Vec<C>> {
-    maestro_test_process::run_per_environment(test, cases, |case| {
+    maestro_test_harness::run_per_environment(test, cases, |case| {
         environment(case)
             .iter()
             .map(|(name, value)| ((*name).to_owned(), Some((*value).to_owned())))

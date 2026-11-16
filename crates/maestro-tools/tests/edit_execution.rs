@@ -204,7 +204,7 @@ fn edit_execution_requires_read_and_write_access() {
         let path = dir.file(&args.path, &args.bytes);
         let mode = args.mode.unwrap();
         // A privileged run reads and writes anyway, so there is nothing to check.
-        let Some(restore) = maestro_test_directory::deny(&path, mode).unwrap() else {
+        let Some(restore) = maestro_test_harness::deny(&path, mode).unwrap() else {
             continue;
         };
         let tool: Tool = create_edit_tool_definition(dir.text(), EditToolOptions::default());
@@ -481,7 +481,7 @@ fn cwd_binding() {
         assert!(ops.script.calls().iter().all(|call| call[1] == absolute));
         std::env::set_current_dir(original.path()).unwrap();
     }
-    std::env::set_current_dir(maestro_test_directory::temporary_root()).unwrap();
+    std::env::set_current_dir(maestro_test_harness::temporary_root()).unwrap();
 }
 
 /// Native adapter whose first read is captured before a controlled release.
@@ -651,7 +651,7 @@ fn edit_empty_list_fails_before_path_or_queue() {
     if !read_support::isolated("edit_empty_list_fails_before_path_or_queue", "empty", &[]) {
         return;
     }
-    let removed = maestro_test_directory::Scratch::new().unwrap();
+    let removed = maestro_test_harness::Scratch::new().unwrap();
     removed.enter_removed("removed").unwrap();
     let signal = Cancellation::new();
     signal.abort();
@@ -675,7 +675,7 @@ fn edit_empty_list_fails_before_path_or_queue() {
     .unwrap();
     assert!(error.message.contains("edits needs at least one entry"));
     assert!(ops.script.calls().is_empty());
-    std::env::set_current_dir(maestro_test_directory::temporary_root()).unwrap();
+    std::env::set_current_dir(maestro_test_harness::temporary_root()).unwrap();
 }
 
 #[test]
@@ -872,7 +872,7 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
         return;
     }
     let dir = Scratch::new().unwrap();
-    let gone = maestro_test_directory::Scratch::new().unwrap();
+    let gone = maestro_test_harness::Scratch::new().unwrap();
     let absolute = dir.file("file", b"hello");
     gone.enter_removed("removed").unwrap();
     for wrapped in [false, true] {
@@ -913,7 +913,7 @@ fn edit_path_capture_reads_ambient_state_only_when_needed() {
             }
         }
     }
-    std::env::set_current_dir(maestro_test_directory::temporary_root()).unwrap();
+    std::env::set_current_dir(maestro_test_harness::temporary_root()).unwrap();
 }
 
 #[test]

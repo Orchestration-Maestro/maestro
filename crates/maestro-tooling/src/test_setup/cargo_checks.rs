@@ -228,7 +228,7 @@ mod tests {
     /// Failed Cargo checks retain the compiler's code and offending import in their error.
     #[test]
     fn failed_cargo_check_reports_compiler_diagnostics() {
-        let scratch = maestro_test_directory::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let root = scratch.path();
         std::fs::write(
             root.join("Cargo.toml"),

@@ -7,7 +7,7 @@ use maestro_extensions_wasmtime::native_io::{
     ChildProcess, ExitStatus, FsWatcher, IoFuture, NativeIo, Readable, Request, Response,
     SpawnOptions, Writable,
 };
-use maestro_test_process::{HARNESS_START, TestProcess, child};
+use maestro_test_harness::{HARNESS_START, TestProcess, child};
 use serde_json::{Value, json};
 
 /// Data identifying the disposable launch operand that selects the checked child.

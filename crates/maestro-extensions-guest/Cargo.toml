@@ -95,8 +95,7 @@ regex.workspace = true
 ryu-js.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-directory.workspace = true
-maestro-test-process = { path = "../maestro-test-process" }
+maestro-test-harness.workspace = true
 maestro-models = { path = "../maestro-models" }
 maestro-extensions-wasmtime = { path = "../maestro-extensions-wasmtime" }
 maestro-listeners.workspace = true

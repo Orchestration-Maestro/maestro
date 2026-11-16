@@ -59,7 +59,7 @@ pub fn manager(bin: String, counter: &Arc<AtomicUsize>) -> Arc<ToolsManager> {
 /// decides which program a real search runs. The directory lives as long as the returned guard.
 pub fn pinned_manager(program: &str) -> (Scratch, Arc<ToolsManager>) {
     let bin = Scratch::new().unwrap();
-    maestro_test_process::install_search_program(program, bin.path()).unwrap();
+    maestro_test_harness::install_search_program(program, bin.path()).unwrap();
     let pinned = manager(bin.text(), &Arc::new(AtomicUsize::new(0)));
     (bin, pinned)
 }

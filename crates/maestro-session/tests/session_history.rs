@@ -8,16 +8,16 @@ use maestro_session::session_manager::ReadonlySessionManager;
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn memory_session_starts_with_current_header() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         assert_ne!(chrono::Local::now().offset().local_minus_utc(), 0);
         support::session_history::group("memory_session_starts_with_current_header");
         return;
     }
-    if !maestro_test_process::local_zone_follows_tz() {
+    if !maestro_test_harness::local_zone_follows_tz() {
         return;
     }
     let output =
-        maestro_test_process::TestProcess::current("memory_session_starts_with_current_header")
+        maestro_test_harness::TestProcess::current("memory_session_starts_with_current_header")
             .unwrap()
             .nocapture()
             .case("*")
@@ -120,7 +120,7 @@ struct NativeCase {
 #[test]
 #[cfg(unix)]
 fn explicit_cwd_survives_a_missing_process_directory() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let rows: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("fixtures/session_history.json")).unwrap();
         let selected: Vec<NativeCase> = rows
@@ -137,7 +137,7 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         assert_eq!(case.operation, "native_cwd");
         let original = std::env::current_dir().unwrap();
-        let removed = maestro_test_directory::Scratch::new().unwrap();
+        let removed = maestro_test_harness::Scratch::new().unwrap();
         removed.enter_removed("removed").unwrap();
         let explicit = maestro_session::SessionManager::in_memory(Some("")).unwrap();
         let native = std::env::current_dir().unwrap_err();
@@ -153,7 +153,7 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         return;
     }
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "explicit_cwd_survives_a_missing_process_directory",
     )
     .unwrap()

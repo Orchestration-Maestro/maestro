@@ -158,7 +158,7 @@ fn local_graphics_media_remain_available() {
 /// Upload one raw pixel from a regular file through the same APC route.
 fn file_upload(terminal: &mut Terminal, action: &str) {
     use base64::Engine;
-    let scratch = maestro_test_directory::Scratch::new().expect("test directory should be created");
+    let scratch = maestro_test_harness::Scratch::new().expect("test directory should be created");
     let path = scratch
         .path()
         .join(format!("maestro-graphics-placement-{action}.rgba"));

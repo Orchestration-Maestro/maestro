@@ -11,7 +11,7 @@ use maestro_extensions::{
     },
 };
 use maestro_models::Local;
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::BTreeMap, fs, os::unix::fs::PermissionsExt, rc::Rc};
@@ -180,7 +180,7 @@ pub fn check_with_home_dot(test: &str, ids: &[&str]) {
 
 /// Runs the named cases in one cleared child per case with `HOME` set to `<case root>/<spelling>`.
 fn check_with_home_spelling(test: &str, ids: &[&str], spelling: &str) {
-    let parent = (!maestro_test_process::selection().is_child()).then(|| Scratch::new().unwrap());
+    let parent = (!maestro_test_harness::selection().is_child()).then(|| Scratch::new().unwrap());
     let base = parent.as_ref().map_or_else(
         || {
             let home = std::env::var("HOME").unwrap();
@@ -190,7 +190,7 @@ fn check_with_home_spelling(test: &str, ids: &[&str], spelling: &str) {
         |scratch| scratch.path().display().to_string(),
     );
     let home = |id: &&str| BTreeMap::from([("HOME", Some(format!("{base}/{id}/{spelling}")))]);
-    let selected = maestro_test_process::run_per_environment(test, ids.iter().copied(), home);
+    let selected = maestro_test_harness::run_per_environment(test, ids.iter().copied(), home);
     for id in selected.unwrap().into_iter().flatten() {
         run_case(&format!("{base}/{id}"), &case(id));
     }

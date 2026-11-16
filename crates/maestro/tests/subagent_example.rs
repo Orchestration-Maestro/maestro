@@ -9,7 +9,7 @@ mod render;
 mod trust;
 use maestro_app::AgentSession;
 #[cfg(unix)]
-use maestro_test_directory::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{path::Path, rc::Rc, sync::OnceLock};
 
@@ -156,14 +156,14 @@ fn subagent_discovery_refreshes_scopes_and_nearest_project_shadowing() {
 /// Starts a selected test with a disposable controlled-child launch operand.
 #[cfg(unix)]
 fn child_fixture(test: &str, component: Option<&Path>) -> Option<Scratch> {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return None;
     }
     let root = Scratch::new().unwrap();
     std::fs::create_dir(root.path().join("tmp")).unwrap();
     let program = root.path().join("maestro-child");
     std::fs::write(&program, child::MARKER).unwrap();
-    let status = maestro_test_process::TestProcess::current(test)
+    let status = maestro_test_harness::TestProcess::current(test)
         .unwrap()
         .case("*")
         .env("MAESTRO_BIN_PATH", &program)

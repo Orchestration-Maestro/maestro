@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 #[test]
 fn cloudflare_resolved_endpoint_reaches_raw_and_simple_compatibility_calls() -> TestResult {
     let _registry = crate::bundled::registry();
-    let Some(_) = maestro_test_process::run_per_environment(
+    let Some(_) = maestro_test_harness::run_per_environment(
         std::thread::current().name().unwrap(),
         [()],
         |()| std::collections::BTreeMap::<String, Option<String>>::new(),

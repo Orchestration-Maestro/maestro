@@ -52,7 +52,7 @@ pub fn files_below(directory: &Path) -> Vec<std::path::PathBuf> {
 /// Loads a valid empty component through the extension loader, which compiles it and then
 /// fails to start it as an extension. Returns its path and the failures reported.
 pub fn load_empty_component(
-    scratch: &maestro_test_directory::Scratch,
+    scratch: &maestro_test_harness::Scratch,
 ) -> (std::path::PathBuf, Vec<String>) {
     let path = scratch.path().join("empty.wasm");
     std::fs::write(&path, b"\0asm\x0d\0\x01\0").unwrap();
