@@ -895,7 +895,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_pending_auth_observer_releases_waiter() {
+    fn pending_auth_observer_releases_waiter() {
         block_on_paused(async {
             dropped_while_waiting().await;
             dropped_while_refreshing().await;
