@@ -157,7 +157,7 @@ fn assert_cluster_whole(piece: &str, cluster: &str, text: &str) {
 }
 
 #[test]
-fn maestro_text_keeps_escaped_flag_atomic() {
+fn text_keeps_escaped_flag_atomic() {
     let mut checked = 0;
     for (family, cells) in FAMILIES {
         let cluster: String = family.iter().collect();

@@ -104,412 +104,412 @@ fn event_json(event: &StdinBufferEventMap) -> Value {
 }
 
 #[test]
-fn maestro_stdin_pass_through_regular_characters_immediately() {
-    replay("maestro_stdin_pass_through_regular_characters_immediately");
+fn stdin_pass_through_regular_characters_immediately() {
+    replay("stdin_pass_through_regular_characters_immediately");
 }
 
 #[test]
-fn maestro_stdin_pass_through_multiple_regular_characters() {
-    replay("maestro_stdin_pass_through_multiple_regular_characters");
+fn stdin_pass_through_multiple_regular_characters() {
+    replay("stdin_pass_through_multiple_regular_characters");
 }
 
 #[test]
-fn maestro_stdin_handle_unicode_characters() {
-    replay("maestro_stdin_handle_unicode_characters");
+fn stdin_handle_unicode_characters() {
+    replay("stdin_handle_unicode_characters");
 }
 
 #[test]
-fn maestro_stdin_keeps_supplementary_characters_whole() {
-    replay("maestro_stdin_keeps_supplementary_characters_whole");
+fn stdin_keeps_supplementary_characters_whole() {
+    replay("stdin_keeps_supplementary_characters_whole");
 }
 
 #[test]
-fn maestro_stdin_preserves_whitespace_and_control_scalars() {
-    replay("maestro_stdin_preserves_whitespace_and_control_scalars");
+fn stdin_preserves_whitespace_and_control_scalars() {
+    replay("stdin_preserves_whitespace_and_control_scalars");
 }
 
 #[test]
-fn maestro_stdin_handle_empty_input() {
-    replay("maestro_stdin_handle_empty_input");
+fn stdin_handle_empty_input() {
+    replay("stdin_handle_empty_input");
 }
 
 #[test]
-fn maestro_stdin_complete_sgr_mouse_sequences_reach_the_handler() {
-    replay("maestro_stdin_complete_sgr_mouse_sequences_reach_the_handler");
+fn stdin_complete_sgr_mouse_sequences_reach_the_handler() {
+    replay("stdin_complete_sgr_mouse_sequences_reach_the_handler");
 }
 
 #[test]
-fn maestro_stdin_complete_arrow_sequences_reach_the_handler() {
-    replay("maestro_stdin_complete_arrow_sequences_reach_the_handler");
+fn stdin_complete_arrow_sequences_reach_the_handler() {
+    replay("stdin_complete_arrow_sequences_reach_the_handler");
 }
 
 #[test]
-fn maestro_stdin_complete_function_key_sequences_reach_the_handler() {
-    replay("maestro_stdin_complete_function_key_sequences_reach_the_handler");
+fn stdin_complete_function_key_sequences_reach_the_handler() {
+    replay("stdin_complete_function_key_sequences_reach_the_handler");
 }
 
 #[test]
-fn maestro_stdin_pass_through_meta_key_sequences() {
-    replay("maestro_stdin_pass_through_meta_key_sequences");
+fn stdin_pass_through_meta_key_sequences() {
+    replay("stdin_pass_through_meta_key_sequences");
 }
 
 #[test]
-fn maestro_stdin_pass_through_ss3_sequences() {
-    replay("maestro_stdin_pass_through_ss3_sequences");
+fn stdin_pass_through_ss3_sequences() {
+    replay("stdin_pass_through_ss3_sequences");
 }
 
 #[test]
-fn maestro_stdin_characters_before_an_escape_sequence_are_read() {
-    replay("maestro_stdin_characters_before_an_escape_sequence_are_read");
+fn stdin_characters_before_an_escape_sequence_are_read() {
+    replay("stdin_characters_before_an_escape_sequence_are_read");
 }
 
 #[test]
-fn maestro_stdin_characters_after_an_escape_sequence_are_read() {
-    replay("maestro_stdin_characters_after_an_escape_sequence_are_read");
+fn stdin_characters_after_an_escape_sequence_are_read() {
+    replay("stdin_characters_after_an_escape_sequence_are_read");
 }
 
 #[test]
-fn maestro_stdin_handle_multiple_complete_sequences() {
-    replay("maestro_stdin_handle_multiple_complete_sequences");
+fn stdin_handle_multiple_complete_sequences() {
+    replay("stdin_handle_multiple_complete_sequences");
 }
 
 #[test]
-fn maestro_stdin_kitty_csi_u_press_events_are_read() {
-    replay("maestro_stdin_kitty_csi_u_press_events_are_read");
+fn stdin_kitty_csi_u_press_events_are_read() {
+    replay("stdin_kitty_csi_u_press_events_are_read");
 }
 
 #[test]
-fn maestro_stdin_kitty_csi_u_release_events_are_read() {
-    replay("maestro_stdin_kitty_csi_u_release_events_are_read");
+fn stdin_kitty_csi_u_release_events_are_read() {
+    replay("stdin_kitty_csi_u_release_events_are_read");
 }
 
 #[test]
-fn maestro_stdin_a_batched_kitty_press_and_release_is_read() {
-    replay("maestro_stdin_a_batched_kitty_press_and_release_is_read");
+fn stdin_a_batched_kitty_press_and_release_is_read() {
+    replay("stdin_a_batched_kitty_press_and_release_is_read");
 }
 
 #[test]
-fn maestro_stdin_handle_multiple_batched_kitty_events() {
-    replay("maestro_stdin_handle_multiple_batched_kitty_events");
+fn stdin_handle_multiple_batched_kitty_events() {
+    replay("stdin_handle_multiple_batched_kitty_events");
 }
 
 #[test]
-fn maestro_stdin_kitty_arrow_keys_keep_their_event_type() {
-    replay("maestro_stdin_kitty_arrow_keys_keep_their_event_type");
+fn stdin_kitty_arrow_keys_keep_their_event_type() {
+    replay("stdin_kitty_arrow_keys_keep_their_event_type");
 }
 
 #[test]
-fn maestro_stdin_kitty_function_keys_keep_their_event_type() {
-    replay("maestro_stdin_kitty_function_keys_keep_their_event_type");
+fn stdin_kitty_function_keys_keep_their_event_type() {
+    replay("stdin_kitty_function_keys_keep_their_event_type");
 }
 
 #[test]
-fn maestro_stdin_plain_characters_and_kitty_sequences_mix() {
-    replay("maestro_stdin_plain_characters_and_kitty_sequences_mix");
+fn stdin_plain_characters_and_kitty_sequences_mix() {
+    replay("stdin_plain_characters_and_kitty_sequences_mix");
 }
 
 #[test]
-fn maestro_stdin_fast_typing_keeps_kitty_order() {
-    replay("maestro_stdin_fast_typing_keeps_kitty_order");
+fn stdin_fast_typing_keeps_kitty_order() {
+    replay("stdin_fast_typing_keeps_kitty_order");
 }
 
 #[test]
-fn maestro_stdin_handle_mouse_press_event() {
-    replay("maestro_stdin_handle_mouse_press_event");
+fn stdin_handle_mouse_press_event() {
+    replay("stdin_handle_mouse_press_event");
 }
 
 #[test]
-fn maestro_stdin_handle_mouse_release_event() {
-    replay("maestro_stdin_handle_mouse_release_event");
+fn stdin_handle_mouse_release_event() {
+    replay("stdin_handle_mouse_release_event");
 }
 
 #[test]
-fn maestro_stdin_handle_multiple_mouse_events() {
-    replay("maestro_stdin_handle_multiple_mouse_events");
+fn stdin_handle_multiple_mouse_events() {
+    replay("stdin_handle_multiple_mouse_events");
 }
 
 #[test]
-fn maestro_stdin_an_old_style_mouse_report_is_read() {
-    replay("maestro_stdin_an_old_style_mouse_report_is_read");
+fn stdin_an_old_style_mouse_report_is_read() {
+    replay("stdin_an_old_style_mouse_report_is_read");
 }
 
 #[test]
-fn maestro_stdin_handle_very_long_sequences() {
-    replay("maestro_stdin_handle_very_long_sequences");
+fn stdin_handle_very_long_sequences() {
+    replay("stdin_handle_very_long_sequences");
 }
 
 #[test]
-fn maestro_stdin_counts_complete_scalars_in_legacy_mouse_reports() {
-    replay("maestro_stdin_counts_complete_scalars_in_legacy_mouse_reports");
+fn stdin_counts_complete_scalars_in_legacy_mouse_reports() {
+    replay("stdin_counts_complete_scalars_in_legacy_mouse_reports");
 }
 
 #[test]
-fn maestro_stdin_frames_meta_ss3_and_legacy_mouse() {
-    replay("maestro_stdin_frames_meta_ss3_and_legacy_mouse");
+fn stdin_frames_meta_ss3_and_legacy_mouse() {
+    replay("stdin_frames_meta_ss3_and_legacy_mouse");
 }
 
 #[test]
-fn maestro_stdin_recognizes_csi_final_byte_boundaries() {
-    replay("maestro_stdin_recognizes_csi_final_byte_boundaries");
+fn stdin_recognizes_csi_final_byte_boundaries() {
+    replay("stdin_recognizes_csi_final_byte_boundaries");
 }
 
 #[test]
-fn maestro_stdin_buffer_incomplete_mouse_sgr_sequence() {
-    replay("maestro_stdin_buffer_incomplete_mouse_sgr_sequence");
+fn stdin_buffer_incomplete_mouse_sgr_sequence() {
+    replay("stdin_buffer_incomplete_mouse_sgr_sequence");
 }
 
 #[test]
-fn maestro_stdin_buffer_incomplete_csi_sequence() {
-    replay("maestro_stdin_buffer_incomplete_csi_sequence");
+fn stdin_buffer_incomplete_csi_sequence() {
+    replay("stdin_buffer_incomplete_csi_sequence");
 }
 
 #[test]
-fn maestro_stdin_buffer_split_across_many_chunks() {
-    replay("maestro_stdin_buffer_split_across_many_chunks");
+fn stdin_buffer_split_across_many_chunks() {
+    replay("stdin_buffer_split_across_many_chunks");
 }
 
 #[test]
-fn maestro_stdin_flush_incomplete_sequence_after_timeout() {
-    replay("maestro_stdin_flush_incomplete_sequence_after_timeout");
+fn stdin_flush_incomplete_sequence_after_timeout() {
+    replay("stdin_flush_incomplete_sequence_after_timeout");
 }
 
 #[test]
-fn maestro_stdin_a_partial_sequence_after_characters_is_buffered() {
-    replay("maestro_stdin_a_partial_sequence_after_characters_is_buffered");
+fn stdin_a_partial_sequence_after_characters_is_buffered() {
+    replay("stdin_a_partial_sequence_after_characters_is_buffered");
 }
 
 #[test]
-fn maestro_stdin_a_partial_old_style_mouse_report_waits() {
-    replay("maestro_stdin_a_partial_old_style_mouse_report_waits");
+fn stdin_a_partial_old_style_mouse_report_waits() {
+    replay("stdin_a_partial_old_style_mouse_report_waits");
 }
 
 #[test]
-fn maestro_stdin_handle_split_mouse_events() {
-    replay("maestro_stdin_handle_split_mouse_events");
+fn stdin_handle_split_mouse_events() {
+    replay("stdin_handle_split_mouse_events");
 }
 
 #[test]
-fn maestro_stdin_the_timeout_reads_a_lone_escape() {
-    replay("maestro_stdin_the_timeout_reads_a_lone_escape");
+fn stdin_the_timeout_reads_a_lone_escape() {
+    replay("stdin_the_timeout_reads_a_lone_escape");
 }
 
 #[test]
-fn maestro_stdin_an_explicit_flush_reads_a_lone_escape() {
-    replay("maestro_stdin_an_explicit_flush_reads_a_lone_escape");
+fn stdin_an_explicit_flush_reads_a_lone_escape() {
+    replay("stdin_an_explicit_flush_reads_a_lone_escape");
 }
 
 #[test]
-fn maestro_stdin_flush_incomplete_sequences() {
-    replay("maestro_stdin_flush_incomplete_sequences");
+fn stdin_flush_incomplete_sequences() {
+    replay("stdin_flush_incomplete_sequences");
 }
 
 #[test]
-fn maestro_stdin_a_flush_with_nothing_pending_returns_empty() {
-    replay("maestro_stdin_a_flush_with_nothing_pending_returns_empty");
+fn stdin_a_flush_with_nothing_pending_returns_empty() {
+    replay("stdin_a_flush_with_nothing_pending_returns_empty");
 }
 
 #[test]
-fn maestro_stdin_clear_buffered_content_without_emitting() {
-    replay("maestro_stdin_clear_buffered_content_without_emitting");
+fn stdin_clear_buffered_content_without_emitting() {
+    replay("stdin_clear_buffered_content_without_emitting");
 }
 
 #[test]
-fn maestro_stdin_clear_buffer_on_destroy() {
-    replay("maestro_stdin_clear_buffer_on_destroy");
+fn stdin_clear_buffer_on_destroy() {
+    replay("stdin_clear_buffer_on_destroy");
 }
 
 #[test]
-fn maestro_stdin_clear_pending_timeouts_on_destroy() {
-    replay("maestro_stdin_clear_pending_timeouts_on_destroy");
+fn stdin_clear_pending_timeouts_on_destroy() {
+    replay("stdin_clear_pending_timeouts_on_destroy");
 }
 
 #[test]
-fn maestro_stdin_uses_the_configured_timeout() {
-    replay("maestro_stdin_uses_the_configured_timeout");
+fn stdin_uses_the_configured_timeout() {
+    replay("stdin_uses_the_configured_timeout");
 }
 
 #[test]
-fn maestro_stdin_rearms_only_the_current_incomplete_fragment() {
-    replay("maestro_stdin_rearms_only_the_current_incomplete_fragment");
+fn stdin_rearms_only_the_current_incomplete_fragment() {
+    replay("stdin_rearms_only_the_current_incomplete_fragment");
 }
 
 #[test]
-fn maestro_stdin_cancels_deadline_after_completion() {
-    replay("maestro_stdin_cancels_deadline_after_completion");
+fn stdin_cancels_deadline_after_completion() {
+    replay("stdin_cancels_deadline_after_completion");
 }
 
 #[test]
-fn maestro_stdin_empty_input_rearms_a_pending_fragment() {
-    replay("maestro_stdin_empty_input_rearms_a_pending_fragment");
+fn stdin_empty_input_rearms_a_pending_fragment() {
+    replay("stdin_empty_input_rearms_a_pending_fragment");
 }
 
 #[test]
-fn maestro_stdin_flush_returns_without_emitting_and_cancels_deadline() {
-    replay("maestro_stdin_flush_returns_without_emitting_and_cancels_deadline");
+fn stdin_flush_returns_without_emitting_and_cancels_deadline() {
+    replay("stdin_flush_returns_without_emitting_and_cancels_deadline");
 }
 
 #[test]
-fn maestro_stdin_retains_split_ss3_and_meta_sequences() {
-    replay("maestro_stdin_retains_split_ss3_and_meta_sequences");
+fn stdin_retains_split_ss3_and_meta_sequences() {
+    replay("stdin_retains_split_ss3_and_meta_sequences");
 }
 
 #[test]
-fn maestro_stdin_frames_string_controls_by_their_terminators() {
-    replay("maestro_stdin_frames_string_controls_by_their_terminators");
+fn stdin_frames_string_controls_by_their_terminators() {
+    replay("stdin_frames_string_controls_by_their_terminators");
 }
 
 #[test]
-fn maestro_stdin_requires_three_ascii_mouse_coordinates() {
-    replay("maestro_stdin_requires_three_ascii_mouse_coordinates");
+fn stdin_requires_three_ascii_mouse_coordinates() {
+    replay("stdin_requires_three_ascii_mouse_coordinates");
 }
 
 #[test]
-fn maestro_stdin_a_duplicate_scalar_after_a_kitty_printable_is_dropped() {
-    replay("maestro_stdin_a_duplicate_scalar_after_a_kitty_printable_is_dropped");
+fn stdin_a_duplicate_scalar_after_a_kitty_printable_is_dropped() {
+    replay("stdin_a_duplicate_scalar_after_a_kitty_printable_is_dropped");
 }
 
 #[test]
-fn maestro_stdin_a_duplicate_scalar_split_across_chunks_is_dropped() {
-    replay("maestro_stdin_a_duplicate_scalar_split_across_chunks_is_dropped");
+fn stdin_a_duplicate_scalar_split_across_chunks_is_dropped() {
+    replay("stdin_a_duplicate_scalar_split_across_chunks_is_dropped");
 }
 
 #[test]
-fn maestro_stdin_a_different_character_after_a_kitty_printable_is_kept() {
-    replay("maestro_stdin_a_different_character_after_a_kitty_printable_is_kept");
+fn stdin_a_different_character_after_a_kitty_printable_is_kept() {
+    replay("stdin_a_different_character_after_a_kitty_printable_is_kept");
 }
 
 #[test]
-fn maestro_stdin_the_raw_character_after_a_modified_kitty_printable_is_kept() {
-    replay("maestro_stdin_the_raw_character_after_a_modified_kitty_printable_is_kept");
+fn stdin_the_raw_character_after_a_modified_kitty_printable_is_kept() {
+    replay("stdin_the_raw_character_after_a_modified_kitty_printable_is_kept");
 }
 
 #[test]
-fn maestro_stdin_bounds_printable_duplicate_identity() {
-    replay("maestro_stdin_bounds_printable_duplicate_identity");
+fn stdin_bounds_printable_duplicate_identity() {
+    replay("stdin_bounds_printable_duplicate_identity");
 }
 
 #[test]
-fn maestro_stdin_matches_only_unmodified_printable_reports() {
-    replay("maestro_stdin_matches_only_unmodified_printable_reports");
+fn stdin_matches_only_unmodified_printable_reports() {
+    replay("stdin_matches_only_unmodified_printable_reports");
 }
 
 #[test]
-fn maestro_stdin_consumes_only_one_adjacent_duplicate() {
-    replay("maestro_stdin_consumes_only_one_adjacent_duplicate");
+fn stdin_consumes_only_one_adjacent_duplicate() {
+    replay("stdin_consumes_only_one_adjacent_duplicate");
 }
 
 #[test]
-fn maestro_stdin_resets_duplicate_identity_on_intervening_data() {
-    replay("maestro_stdin_resets_duplicate_identity_on_intervening_data");
+fn stdin_resets_duplicate_identity_on_intervening_data() {
+    replay("stdin_resets_duplicate_identity_on_intervening_data");
 }
 
 #[test]
-fn maestro_stdin_suppresses_duplicate_enhanced_emoji() {
-    replay("maestro_stdin_suppresses_duplicate_enhanced_emoji");
+fn stdin_suppresses_duplicate_enhanced_emoji() {
+    replay("stdin_suppresses_duplicate_enhanced_emoji");
 }
 
 #[test]
-fn maestro_stdin_empty_flush_keeps_pending_printable_identity() {
-    replay("maestro_stdin_empty_flush_keeps_pending_printable_identity");
+fn stdin_empty_flush_keeps_pending_printable_identity() {
+    replay("stdin_empty_flush_keeps_pending_printable_identity");
 }
 
 #[test]
-fn maestro_stdin_a_complete_bracketed_paste_emits_one_event() {
-    replay("maestro_stdin_a_complete_bracketed_paste_emits_one_event");
+fn stdin_a_complete_bracketed_paste_emits_one_event() {
+    replay("stdin_a_complete_bracketed_paste_emits_one_event");
 }
 
 #[test]
-fn maestro_stdin_handle_paste_arriving_in_chunks() {
-    replay("maestro_stdin_handle_paste_arriving_in_chunks");
+fn stdin_handle_paste_arriving_in_chunks() {
+    replay("stdin_handle_paste_arriving_in_chunks");
 }
 
 #[test]
-fn maestro_stdin_handle_paste_with_input_before_and_after() {
-    replay("maestro_stdin_handle_paste_with_input_before_and_after");
+fn stdin_handle_paste_with_input_before_and_after() {
+    replay("stdin_handle_paste_with_input_before_and_after");
 }
 
 #[test]
-fn maestro_stdin_handle_paste_with_newlines() {
-    replay("maestro_stdin_handle_paste_with_newlines");
+fn stdin_handle_paste_with_newlines() {
+    replay("stdin_handle_paste_with_newlines");
 }
 
 #[test]
-fn maestro_stdin_handle_paste_with_unicode() {
-    replay("maestro_stdin_handle_paste_with_unicode");
+fn stdin_handle_paste_with_unicode() {
+    replay("stdin_handle_paste_with_unicode");
 }
 
 #[test]
-fn maestro_stdin_retains_each_split_paste_start() {
-    replay("maestro_stdin_retains_each_split_paste_start");
+fn stdin_retains_each_split_paste_start() {
+    replay("stdin_retains_each_split_paste_start");
 }
 
 #[test]
-fn maestro_stdin_retains_each_split_paste_end() {
-    replay("maestro_stdin_retains_each_split_paste_end");
+fn stdin_retains_each_split_paste_end() {
+    replay("stdin_retains_each_split_paste_end");
 }
 
 #[test]
-fn maestro_stdin_orders_adjacent_pastes_and_surrounding_data() {
-    replay("maestro_stdin_orders_adjacent_pastes_and_surrounding_data");
+fn stdin_orders_adjacent_pastes_and_surrounding_data() {
+    replay("stdin_orders_adjacent_pastes_and_surrounding_data");
 }
 
 #[test]
-fn maestro_stdin_emits_empty_paste_as_one_event() {
-    replay("maestro_stdin_emits_empty_paste_as_one_event");
+fn stdin_emits_empty_paste_as_one_event() {
+    replay("stdin_emits_empty_paste_as_one_event");
 }
 
 #[test]
-fn maestro_stdin_empty_input_does_not_escape_paste_mode() {
-    replay("maestro_stdin_empty_input_does_not_escape_paste_mode");
+fn stdin_empty_input_does_not_escape_paste_mode() {
+    replay("stdin_empty_input_does_not_escape_paste_mode");
 }
 
 #[test]
-fn maestro_stdin_preserves_incomplete_data_before_paste() {
-    replay("maestro_stdin_preserves_incomplete_data_before_paste");
+fn stdin_preserves_incomplete_data_before_paste() {
+    replay("stdin_preserves_incomplete_data_before_paste");
 }
 
 #[test]
-fn maestro_stdin_paste_waits_for_end_without_a_fragment_timeout() {
-    replay("maestro_stdin_paste_waits_for_end_without_a_fragment_timeout");
+fn stdin_paste_waits_for_end_without_a_fragment_timeout() {
+    replay("stdin_paste_waits_for_end_without_a_fragment_timeout");
 }
 
 #[test]
-fn maestro_stdin_paste_treats_inner_start_as_content_and_first_end_as_boundary() {
-    replay("maestro_stdin_paste_treats_inner_start_as_content_and_first_end_as_boundary");
+fn stdin_paste_treats_inner_start_as_content_and_first_end_as_boundary() {
+    replay("stdin_paste_treats_inner_start_as_content_and_first_end_as_boundary");
 }
 
 #[test]
-fn maestro_stdin_expired_paste_start_prefix_is_ordinary_data() {
-    replay("maestro_stdin_expired_paste_start_prefix_is_ordinary_data");
+fn stdin_expired_paste_start_prefix_is_ordinary_data() {
+    replay("stdin_expired_paste_start_prefix_is_ordinary_data");
 }
 
 #[test]
-fn maestro_stdin_paste_boundaries_reset_printable_identity() {
-    replay("maestro_stdin_paste_boundaries_reset_printable_identity");
+fn stdin_paste_boundaries_reset_printable_identity() {
+    replay("stdin_paste_boundaries_reset_printable_identity");
 }
 
 #[test]
-fn maestro_stdin_clear_and_destroy_reset_all_pending_state() {
-    replay("maestro_stdin_clear_and_destroy_reset_all_pending_state");
+fn stdin_clear_and_destroy_reset_all_pending_state() {
+    replay("stdin_clear_and_destroy_reset_all_pending_state");
 }
 
 #[test]
-fn maestro_stdin_handle_buffer_input() {
-    replay("maestro_stdin_handle_buffer_input");
+fn stdin_handle_buffer_input() {
+    replay("stdin_handle_buffer_input");
 }
 
 #[test]
-fn maestro_stdin_decodes_buffer_inputs_without_guessing_stream_encoding() {
-    replay("maestro_stdin_decodes_buffer_inputs_without_guessing_stream_encoding");
+fn stdin_decodes_buffer_inputs_without_guessing_stream_encoding() {
+    replay("stdin_decodes_buffer_inputs_without_guessing_stream_encoding");
 }
 
 #[test]
-fn maestro_stdin_preserves_buffer_chunk_decoding() {
-    replay("maestro_stdin_preserves_buffer_chunk_decoding");
+fn stdin_preserves_buffer_chunk_decoding() {
+    replay("stdin_preserves_buffer_chunk_decoding");
 }
 
 #[test]
-fn maestro_stdin_holds_a_fragment_when_the_deadline_is_not_representable() {
+fn stdin_holds_a_fragment_when_the_deadline_is_not_representable() {
     let mut buffer = StdinBuffer::new(StdinBufferOptions {
         timeout: Duration::MAX,
     });

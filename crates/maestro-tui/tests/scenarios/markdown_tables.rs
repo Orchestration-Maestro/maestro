@@ -48,73 +48,73 @@ fn table_cases(name: &str) {
 }
 
 #[test]
-fn maestro_markdown_render_simple_table() {
-    table_cases("maestro_markdown_render_simple_table");
+fn markdown_render_simple_table() {
+    table_cases("markdown_render_simple_table");
 }
 
 #[test]
-fn maestro_markdown_draw_a_divider_between_data_rows() {
-    table_cases("maestro_markdown_draw_a_divider_between_data_rows");
+fn markdown_draw_a_divider_between_data_rows() {
+    table_cases("markdown_draw_a_divider_between_data_rows");
 }
 
 #[test]
-fn maestro_markdown_size_a_column_to_at_least_its_longest_word() {
-    table_cases("maestro_markdown_size_a_column_to_at_least_its_longest_word");
+fn markdown_size_a_column_to_at_least_its_longest_word() {
+    table_cases("markdown_size_a_column_to_at_least_its_longest_word");
 }
 
 #[test]
-fn maestro_markdown_render_table_with_alignment() {
-    table_cases("maestro_markdown_render_table_with_alignment");
+fn markdown_render_table_with_alignment() {
+    table_cases("markdown_render_table_with_alignment");
 }
 
 #[test]
-fn maestro_markdown_render_tables_whose_columns_have_different_widths() {
-    table_cases("maestro_markdown_render_tables_whose_columns_have_different_widths");
+fn markdown_render_tables_whose_columns_have_different_widths() {
+    table_cases("markdown_render_tables_whose_columns_have_different_widths");
 }
 
 #[test]
-fn maestro_markdown_wrap_cells_when_the_table_is_wider_than_the_viewport() {
-    table_cases("maestro_markdown_wrap_cells_when_the_table_is_wider_than_the_viewport");
+fn markdown_wrap_cells_when_the_table_is_wider_than_the_viewport() {
+    table_cases("markdown_wrap_cells_when_the_table_is_wider_than_the_viewport");
 }
 
 #[test]
-fn maestro_markdown_wrap_long_cell_content_across_several_lines() {
-    table_cases("maestro_markdown_wrap_long_cell_content_across_several_lines");
+fn markdown_wrap_long_cell_content_across_several_lines() {
+    table_cases("markdown_wrap_long_cell_content_across_several_lines");
 }
 
 #[test]
-fn maestro_markdown_break_long_unbroken_tokens_inside_cells_anywhere() {
-    table_cases("maestro_markdown_break_long_unbroken_tokens_inside_cells_anywhere");
+fn markdown_break_long_unbroken_tokens_inside_cells_anywhere() {
+    table_cases("markdown_break_long_unbroken_tokens_inside_cells_anywhere");
 }
 
 #[test]
-fn maestro_markdown_wrap_styled_inline_code_in_a_cell_keeping_the_borders() {
-    table_cases("maestro_markdown_wrap_styled_inline_code_in_a_cell_keeping_the_borders");
+fn markdown_wrap_styled_inline_code_in_a_cell_keeping_the_borders() {
+    table_cases("markdown_wrap_styled_inline_code_in_a_cell_keeping_the_borders");
 }
 
 #[test]
-fn maestro_markdown_handle_extremely_narrow_width_gracefully() {
-    table_cases("maestro_markdown_handle_extremely_narrow_width_gracefully");
+fn markdown_handle_extremely_narrow_width_gracefully() {
+    table_cases("markdown_handle_extremely_narrow_width_gracefully");
 }
 
 #[test]
-fn maestro_markdown_render_a_table_that_fits_without_wrapping() {
-    table_cases("maestro_markdown_render_a_table_that_fits_without_wrapping");
+fn markdown_render_a_table_that_fits_without_wrapping() {
+    table_cases("markdown_render_a_table_that_fits_without_wrapping");
 }
 
 #[test]
-fn maestro_markdown_count_paddingx_when_calculating_table_width() {
-    table_cases("maestro_markdown_count_paddingx_when_calculating_table_width");
+fn markdown_count_paddingx_when_calculating_table_width() {
+    table_cases("markdown_count_paddingx_when_calculating_table_width");
 }
 
 #[test]
-fn maestro_markdown_no_trailing_blank_line_after_a_final_table() {
-    table_cases("maestro_markdown_no_trailing_blank_line_after_a_final_table");
+fn markdown_no_trailing_blank_line_after_a_final_table() {
+    table_cases("markdown_no_trailing_blank_line_after_a_final_table");
 }
 
 #[test]
-fn maestro_markdown_render_lists_and_tables_together() {
-    table_cases("maestro_markdown_render_lists_and_tables_together");
+fn markdown_render_lists_and_tables_together() {
+    table_cases("markdown_render_lists_and_tables_together");
 }
 
 #[test]

@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 #[test]
-fn maestro_overlays_non_capturing_overlay_preserves_focus_on_creation() {
+fn overlays_non_capturing_overlay_preserves_focus_on_creation() {
     let _input = crate::input_support::globals();
     let scene = Scene::new(20, 6);
     scene.start(&["editor"]);
@@ -62,7 +62,7 @@ fn top(scene: &Scene, expected: &str) {
 }
 
 #[test]
-fn maestro_overlays_focus_transfers_focus_to_the_overlay() {
+fn overlays_focus_transfers_focus_to_the_overlay() {
     let scene = focused_scene();
     let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.focus();
@@ -72,7 +72,7 @@ fn maestro_overlays_focus_transfers_focus_to_the_overlay() {
 }
 
 #[test]
-fn maestro_overlays_unfocus_restores_previous_focus() {
+fn overlays_unfocus_restores_previous_focus() {
     let scene = focused_scene();
     let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.focus();
@@ -83,7 +83,7 @@ fn maestro_overlays_unfocus_restores_previous_focus() {
 }
 
 #[test]
-fn maestro_overlays_sethidden_false_on_non_capturing_overlay_does_not_auto_focus() {
+fn overlays_sethidden_false_on_non_capturing_overlay_does_not_auto_focus() {
     let scene = focused_scene();
     let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.set_hidden(true);
@@ -93,7 +93,7 @@ fn maestro_overlays_sethidden_false_on_non_capturing_overlay_does_not_auto_focus
 }
 
 #[test]
-fn maestro_overlays_hide_when_overlay_is_not_focused_does_not_change_focus() {
+fn overlays_hide_when_overlay_is_not_focused_does_not_change_focus() {
     let scene = focused_scene();
     let (_, handle) = show(&scene, "A", true).unwrap();
     handle.hide().unwrap();
@@ -102,7 +102,7 @@ fn maestro_overlays_hide_when_overlay_is_not_focused_does_not_change_focus() {
 }
 
 #[test]
-fn maestro_overlays_hide_when_focused_restores_focus_correctly() {
+fn overlays_hide_when_focused_restores_focus_correctly() {
     let scene = focused_scene();
     let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.focus();
@@ -112,7 +112,7 @@ fn maestro_overlays_hide_when_focused_restores_focus_correctly() {
 }
 
 #[test]
-fn maestro_overlays_capturing_overlay_removed_with_non_capturing_below_restores_focus_to_editor() {
+fn overlays_capturing_overlay_removed_with_non_capturing_below_restores_focus_to_editor() {
     let scene = focused_scene();
     let (noncapturing, _) = show(&scene, "N", true).unwrap();
     let (capturing, handle) = show(&scene, "C", false).unwrap();
@@ -123,7 +123,7 @@ fn maestro_overlays_capturing_overlay_removed_with_non_capturing_below_restores_
 }
 
 #[test]
-fn maestro_overlays_sub_overlay_cleanup_then_hideoverlay_restores_focus_and_input_to_editor() {
+fn overlays_sub_overlay_cleanup_then_hideoverlay_restores_focus_and_input_to_editor() {
     let _input = crate::input_support::globals();
     let scene = focused_scene();
     let (timer, handle) = show(&scene, "T", true).unwrap();
@@ -139,7 +139,7 @@ fn maestro_overlays_sub_overlay_cleanup_then_hideoverlay_restores_focus_and_inpu
 }
 
 #[test]
-fn maestro_overlays_deferred_sub_overlay_restores_focus() {
+fn overlays_deferred_sub_overlay_restores_focus() {
     use maestro_tui::TuiRuntime;
     use std::cell::Cell;
     use std::time::Duration;
@@ -176,7 +176,7 @@ fn maestro_overlays_deferred_sub_overlay_restores_focus() {
 }
 
 #[test]
-fn maestro_overlays_handleinput_redirection_skips_non_capturing_overlays_when_focused_overlay_becomes_invisible()
+fn overlays_handleinput_redirection_skips_non_capturing_overlays_when_focused_overlay_becomes_invisible()
  {
     use std::cell::Cell;
     let _input = crate::input_support::globals();
@@ -204,7 +204,7 @@ fn maestro_overlays_handleinput_redirection_skips_non_capturing_overlays_when_fo
 }
 
 #[test]
-fn maestro_overlays_hideoverlay_does_not_reassign_focus_when_topmost_overlay_is_non_capturing() {
+fn overlays_hideoverlay_does_not_reassign_focus_when_topmost_overlay_is_non_capturing() {
     let scene = focused_scene();
     let (capturing, _) = show(&scene, "C", false).unwrap();
     show(&scene, "N", true).unwrap();
@@ -214,7 +214,7 @@ fn maestro_overlays_hideoverlay_does_not_reassign_focus_when_topmost_overlay_is_
 }
 
 #[test]
-fn maestro_overlays_multiple_capturing_and_non_capturing_overlays_restore_focus_through_removals() {
+fn overlays_multiple_capturing_and_non_capturing_overlays_restore_focus_through_removals() {
     let scene = focused_scene();
     let (first, first_handle) = show(&scene, "A", false).unwrap();
     show(&scene, "N", true).unwrap();
@@ -229,8 +229,7 @@ fn maestro_overlays_multiple_capturing_and_non_capturing_overlays_restore_focus_
 }
 
 #[test]
-fn maestro_overlays_capturing_overlay_unfocus_on_topmost_capturing_overlay_falls_back_to_prefocus()
-{
+fn overlays_capturing_overlay_unfocus_on_topmost_capturing_overlay_falls_back_to_prefocus() {
     let scene = focused_scene();
     let (overlay, handle) = show(&scene, "C", false).unwrap();
     assert!(overlay.focus.get());
@@ -240,7 +239,7 @@ fn maestro_overlays_capturing_overlay_unfocus_on_topmost_capturing_overlay_falls
 }
 
 #[test]
-fn maestro_overlays_focus_on_hidden_overlay_is_a_no_op() {
+fn overlays_focus_on_hidden_overlay_is_a_no_op() {
     let scene = focused_scene();
     let (_, handle) = show(&scene, "A", true).unwrap();
     handle.set_hidden(true);
@@ -250,7 +249,7 @@ fn maestro_overlays_focus_on_hidden_overlay_is_a_no_op() {
 }
 
 #[test]
-fn maestro_overlays_focus_after_hide_is_a_no_op() {
+fn overlays_focus_after_hide_is_a_no_op() {
     let scene = focused_scene();
     let (_, handle) = show(&scene, "A", true).unwrap();
     handle.hide().unwrap();
@@ -260,7 +259,7 @@ fn maestro_overlays_focus_after_hide_is_a_no_op() {
 }
 
 #[test]
-fn maestro_overlays_unfocus_when_overlay_does_not_have_focus_is_a_no_op() {
+fn overlays_unfocus_when_overlay_does_not_have_focus_is_a_no_op() {
     let scene = focused_scene();
     let (overlay, handle) = show(&scene, "A", true).unwrap();
     handle.unfocus();
@@ -269,8 +268,7 @@ fn maestro_overlays_unfocus_when_overlay_does_not_have_focus_is_a_no_op() {
 }
 
 #[test]
-fn maestro_overlays_unfocus_with_null_prefocus_clears_focus_and_does_not_route_input_back_to_overlay()
- {
+fn overlays_unfocus_with_null_prefocus_clears_focus_and_does_not_route_input_back_to_overlay() {
     let _input = crate::input_support::globals();
     let scene = Scene::new(20, 6);
     scene.start(&[]);
@@ -284,7 +282,7 @@ fn maestro_overlays_unfocus_with_null_prefocus_clears_focus_and_does_not_route_i
 }
 
 #[test]
-fn maestro_overlays_toggle_focus_between_non_capturing_overlays_then_unfocus_returns_to_editor() {
+fn overlays_toggle_focus_between_non_capturing_overlays_then_unfocus_returns_to_editor() {
     let scene = focused_scene();
     let (a, ah) = show(&scene, "A", true).unwrap();
     let (b, bh) = show(&scene, "B", true).unwrap();
@@ -297,7 +295,7 @@ fn maestro_overlays_toggle_focus_between_non_capturing_overlays_then_unfocus_ret
 }
 
 #[test]
-fn maestro_overlays_focus_on_already_focused_overlay_bumps_visual_order() {
+fn overlays_focus_on_already_focused_overlay_bumps_visual_order() {
     let scene = focused_scene();
     let (_, a) = show(&scene, "A", true).unwrap();
     show(&scene, "B", true).unwrap();
@@ -311,7 +309,7 @@ fn maestro_overlays_focus_on_already_focused_overlay_bumps_visual_order() {
 }
 
 #[test]
-fn maestro_overlays_default_rendering_order_for_overlapping_overlays_follows_creation_order() {
+fn overlays_default_rendering_order_for_overlapping_overlays_follows_creation_order() {
     let scene = focused_scene();
     show(&scene, "A", true).unwrap();
     show(&scene, "B", true).unwrap();
@@ -320,7 +318,7 @@ fn maestro_overlays_default_rendering_order_for_overlapping_overlays_follows_cre
 }
 
 #[test]
-fn maestro_overlays_focus_on_lower_overlay_renders_it_on_top() {
+fn overlays_focus_on_lower_overlay_renders_it_on_top() {
     let scene = focused_scene();
     let (_, lower) = show(&scene, "A", true).unwrap();
     show(&scene, "B", true).unwrap();
@@ -331,8 +329,7 @@ fn maestro_overlays_focus_on_lower_overlay_renders_it_on_top() {
 }
 
 #[test]
-fn maestro_overlays_focusing_middle_overlay_places_it_on_top_while_preserving_others_relative_order()
- {
+fn overlays_focusing_middle_overlay_places_it_on_top_while_preserving_others_relative_order() {
     let scene = focused_scene();
     show(&scene, "A", true).unwrap();
     let (_, middle) = show(&scene, "B", true).unwrap();
@@ -348,7 +345,7 @@ fn maestro_overlays_focusing_middle_overlay_places_it_on_top_while_preserving_ot
 }
 
 #[test]
-fn maestro_overlays_capturing_overlay_hidden_and_shown_again_renders_on_top_after_unhide() {
+fn overlays_capturing_overlay_hidden_and_shown_again_renders_on_top_after_unhide() {
     let scene = focused_scene();
     show(&scene, "A", true).unwrap();
     let (_, capturing) = show(&scene, "B", false).unwrap();
@@ -362,7 +359,7 @@ fn maestro_overlays_capturing_overlay_hidden_and_shown_again_renders_on_top_afte
 }
 
 #[test]
-fn maestro_overlays_unfocus_does_not_change_visual_order_until_another_overlay_is_focused() {
+fn overlays_unfocus_does_not_change_visual_order_until_another_overlay_is_focused() {
     let scene = focused_scene();
     let (_, a) = show(&scene, "A", true).unwrap();
     let (_, b) = show(&scene, "B", true).unwrap();

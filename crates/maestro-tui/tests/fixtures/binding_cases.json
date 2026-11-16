@@ -634,7 +634,7 @@
     },
     {
       "id": "submit-regression",
-      "test": "maestro_keys_rebinding_submit_keeps_selector_confirm",
+      "test": "keys_rebinding_submit_keeps_selector_confirm",
       "input": {
         "definitions": "builtins",
         "user": [
@@ -1297,7 +1297,7 @@
     },
     {
       "id": "cursor-regression",
-      "test": "maestro_keys_a_shared_key_keeps_the_cursor_bindings",
+      "test": "keys_a_shared_key_keeps_the_cursor_bindings",
       "input": {
         "definitions": "builtins",
         "user": [
@@ -1960,7 +1960,7 @@
     },
     {
       "id": "conflict-regression",
-      "test": "maestro_keys_direct_conflicts_are_reported_and_defaults_stay",
+      "test": "keys_direct_conflicts_are_reported_and_defaults_stay",
       "input": {
         "definitions": "builtins",
         "user": [

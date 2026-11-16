@@ -50,76 +50,76 @@ fn markers_highlight_owned_span_not_unknown_text() {
     support::run("markers_highlight_owned_span_not_unknown_text");
 }
 #[test]
-fn maestro_editor_large_paste_becomes_a_marker() {
-    support::run("maestro_editor_large_paste_becomes_a_marker");
+fn editor_large_paste_becomes_a_marker() {
+    support::run("editor_large_paste_becomes_a_marker");
 }
 #[test]
-fn maestro_editor_right_arrow_steps_over_a_whole_marker() {
-    support::run("maestro_editor_right_arrow_steps_over_a_whole_marker");
+fn editor_right_arrow_steps_over_a_whole_marker() {
+    support::run("editor_right_arrow_steps_over_a_whole_marker");
 }
 #[test]
-fn maestro_editor_left_arrow_steps_over_a_whole_marker() {
-    support::run("maestro_editor_left_arrow_steps_over_a_whole_marker");
+fn editor_left_arrow_steps_over_a_whole_marker() {
+    support::run("editor_left_arrow_steps_over_a_whole_marker");
 }
 #[test]
-fn maestro_editor_backspace_removes_a_whole_marker() {
-    support::run("maestro_editor_backspace_removes_a_whole_marker");
+fn editor_backspace_removes_a_whole_marker() {
+    support::run("editor_backspace_removes_a_whole_marker");
 }
 #[test]
-fn maestro_editor_forward_delete_removes_a_whole_marker() {
-    support::run("maestro_editor_forward_delete_removes_a_whole_marker");
+fn editor_forward_delete_removes_a_whole_marker() {
+    support::run("editor_forward_delete_removes_a_whole_marker");
 }
 #[test]
-fn maestro_editor_word_move_steps_over_a_whole_marker() {
-    support::run("maestro_editor_word_move_steps_over_a_whole_marker");
+fn editor_word_move_steps_over_a_whole_marker() {
+    support::run("editor_word_move_steps_over_a_whole_marker");
 }
 #[test]
-fn maestro_editor_undo_brings_back_the_marker_a_backspace_removed() {
-    support::run("maestro_editor_undo_brings_back_the_marker_a_backspace_removed");
+fn editor_undo_brings_back_the_marker_a_backspace_removed() {
+    support::run("editor_undo_brings_back_the_marker_a_backspace_removed");
 }
 #[test]
-fn maestro_editor_several_markers_share_one_line() {
-    support::run("maestro_editor_several_markers_share_one_line");
+fn editor_several_markers_share_one_line() {
+    support::run("editor_several_markers_share_one_line");
 }
 #[test]
-fn maestro_editor_typed_marker_text_without_a_valid_id_is_not_atomic() {
-    support::run("maestro_editor_typed_marker_text_without_a_valid_id_is_not_atomic");
+fn editor_typed_marker_text_without_a_valid_id_is_not_atomic() {
+    support::run("editor_typed_marker_text_without_a_valid_id_is_not_atomic");
 }
 #[test]
-fn maestro_editor_survives_a_marker_wider_than_the_terminal() {
-    support::run("maestro_editor_survives_a_marker_wider_than_the_terminal");
+fn editor_survives_a_marker_wider_than_the_terminal() {
+    support::run("editor_survives_a_marker_wider_than_the_terminal");
 }
 #[test]
-fn maestro_editor_survives_an_overlong_marker_under_the_cursor() {
-    support::run("maestro_editor_survives_an_overlong_marker_under_the_cursor");
+fn editor_survives_an_overlong_marker_under_the_cursor() {
+    support::run("editor_survives_an_overlong_marker_under_the_cursor");
 }
 #[test]
-fn maestro_editor_wrapping_re_checks_overflow_after_a_backtrack() {
-    support::run("maestro_editor_wrapping_re_checks_overflow_after_a_backtrack");
+fn editor_wrapping_re_checks_overflow_after_a_backtrack() {
+    support::run("editor_wrapping_re_checks_overflow_after_a_backtrack");
 }
 #[test]
-fn maestro_editor_expanded_text_returns_pasted_content_verbatim() {
-    support::run("maestro_editor_expanded_text_returns_pasted_content_verbatim");
+fn editor_expanded_text_returns_pasted_content_verbatim() {
+    support::run("editor_expanded_text_returns_pasted_content_verbatim");
 }
 #[test]
-fn maestro_editor_moving_down_into_a_marker_snaps_to_its_start() {
-    support::run("maestro_editor_moving_down_into_a_marker_snaps_to_its_start");
+fn editor_moving_down_into_a_marker_snaps_to_its_start() {
+    support::run("editor_moving_down_into_a_marker_snaps_to_its_start");
 }
 #[test]
-fn maestro_editor_sticky_column_holds_across_a_marker_line() {
-    support::run("maestro_editor_sticky_column_holds_across_a_marker_line");
+fn editor_sticky_column_holds_across_a_marker_line() {
+    support::run("editor_sticky_column_holds_across_a_marker_line");
 }
 #[test]
-fn maestro_editor_moving_down_from_a_multi_row_marker_keeps_progress() {
-    support::run("maestro_editor_moving_down_from_a_multi_row_marker_keeps_progress");
+fn editor_moving_down_from_a_multi_row_marker_keeps_progress() {
+    support::run("editor_moving_down_from_a_multi_row_marker_keeps_progress");
 }
 #[test]
-fn maestro_editor_a_target_inside_the_marker_tail_skips_its_rows() {
-    support::run("maestro_editor_a_target_inside_the_marker_tail_skips_its_rows");
+fn editor_a_target_inside_the_marker_tail_skips_its_rows() {
+    support::run("editor_a_target_inside_the_marker_tail_skips_its_rows");
 }
 #[test]
-fn maestro_editor_submit_expands_large_paste_to_full_text() {
-    support::run("maestro_editor_submit_expands_large_paste_to_full_text");
+fn editor_submit_expands_large_paste_to_full_text() {
+    support::run("editor_submit_expands_large_paste_to_full_text");
 }
 #[test]
 fn marker_snap_column_survives_resize() {
