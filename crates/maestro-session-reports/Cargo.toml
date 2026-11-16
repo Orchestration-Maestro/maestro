@@ -31,7 +31,7 @@ name = "integration"
 path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 maestro-app = { path = "../maestro-app" }
 maestro-json = { path = "../maestro-json" }
 maestro-models = { path = "../maestro-models" }

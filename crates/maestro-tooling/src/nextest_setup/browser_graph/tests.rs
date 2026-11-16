@@ -11,7 +11,7 @@ use super::{LANES, install, set_tree_time, stage};
 
 /// The build script of the workspace's feature unifier, which every native workspace crate builds
 /// on, so the fixture's dependency runs the script a real graph runs.
-const UNIFIER_BUILD_SCRIPT: &str = include_str!("../../../../maestro-dependencies/build.rs");
+const UNIFIER_BUILD_SCRIPT: &str = include_str!("../../../../maestro-feature-unifier/build.rs");
 
 /// Write a package that builds on a path dependency with the unifier's build script, so a build
 /// compiles two units and runs one script.

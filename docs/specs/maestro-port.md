@@ -843,7 +843,7 @@ Both may declare the native `maestro-path` edge; it adds no cycle because
 
 ### Native feature unifier
 
-`maestro-dependencies` is the build-only feature unifier, generated and verified
+`maestro-feature-unifier` is the build-only feature unifier, generated and verified
 by `cargo hakari`. It is a dedicated, unpublished crate with an empty library, no
 public API and no workspace dependencies, including `maestro-path`. Every other
 workspace member may declare it only as a non-optional normal dependency under

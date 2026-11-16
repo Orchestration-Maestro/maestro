@@ -190,7 +190,7 @@ pub(crate) fn test_support_callers(owner: &str) -> Option<&'static [&'static str
 }
 
 /// Generated crate that unifies native dependency features and exposes no API.
-pub(crate) const UNIFIER: &str = "maestro-dependencies";
+pub(crate) const UNIFIER: &str = "maestro-feature-unifier";
 
 /// Owner of mutual exclusion over files and shared in-memory state.
 pub(crate) const LOCK: &str = "maestro-lock";

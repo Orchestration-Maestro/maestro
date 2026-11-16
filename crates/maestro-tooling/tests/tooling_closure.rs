@@ -9,7 +9,7 @@ use cargo_metadata::{Metadata, MetadataCommand, Package};
 use crate::compiler;
 
 /// The crate every fixture replaces with an empty stand-in, so its sources are never copied.
-const STAND_IN: &str = "maestro-dependencies";
+const STAND_IN: &str = "maestro-feature-unifier";
 
 /// The local crates the tooling package needs beside itself.
 pub fn tooling_local_dependencies() -> Vec<String> {
@@ -98,14 +98,14 @@ fn closure_follows_metadata_the_way_cargo_reads_it() {
         root.join("Cargo.toml"),
         "[workspace]\nmembers = ['crates/*']\n\n[workspace.dependencies]\n\
          inherited = { path = 'crates/inherited' }\n\
-         maestro-dependencies = { path = 'crates/maestro-dependencies' }\n",
+         maestro-feature-unifier = { path = 'crates/maestro-feature-unifier' }\n",
     )
     .unwrap();
     write_crate(
         root,
         "maestro-tooling",
         "[dependencies]\ndirect = { path = '../direct' }\nregistry = '=1.0.0'\n\
-         maestro-dependencies.workspace = true\n\
+         maestro-feature-unifier.workspace = true\n\
          [target.'cfg(unix)'.dev-dependencies]\ninherited.workspace = true\n\
          [target.'cfg(windows)'.build-dependencies]\nbuilt = { path = '../built' }\n",
     );
@@ -121,7 +121,7 @@ fn closure_follows_metadata_the_way_cargo_reads_it() {
         "built",
         "transitive",
         "unread",
-        "maestro-dependencies",
+        "maestro-feature-unifier",
     ] {
         write_crate(root, name, "");
     }

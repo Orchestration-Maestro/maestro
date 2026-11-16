@@ -228,7 +228,7 @@ traversal runs, so one removal and a complete clear both stay cheap.
 
 Internal-dependency descriptions below state domain edges, subject to the
 [native feature-unifier exception](docs/specs/maestro-port.md#native-feature-unifier),
-including leaves and exact sets. The unifier itself has no workspace dependencies.
+including leaves and exact sets. The feature unifier has no workspace dependencies.
 
 - **Model registry:** The usable models resolved from the model catalog, local model files and credentials; `ModelRegistry` owns it. _Avoid:_ catalog for this concept.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The [tool interchange records](docs/tool-records.md) in `maestro-interchange::tool` own the shared tool shapes; `maestro-tools` keeps execution.
@@ -275,7 +275,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Directory listing:** One directory's entries sorted by file name on every platform, from `maestro_path::fs::read_dir`; callers list directories through it on native targets and keep their own kind filtering, name decoding and further ordering. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
 - **Live listener collection:** The core leaf `maestro-listeners` below layer 0, owning callbacks in live registration order with one admission per identity and removal that returns ownership; models, the toolkit, agent, application, extensions and cancellation subscribe and walk through it, and each keeps its own delivery and settlement policy. It depends on no workspace crate. See the [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order).
 - **Recoverable publication:** `maestro-lock` locks a canonical target, durably stages its intended bytes, then writes and syncs the target in place before deleting the recovery copy. The next holder replays an interrupted write. Native ownership, ACLs and hard links survive. Component saves use this operation; unlocked readers may see partial bytes mid-save. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#recoverable-byte-publication).
-- **Dependencies:** The generated `maestro-dependencies` crate for dependency feature unification in the [configured native scope](docs/development.md#feature-unification), including its traversal exclusions; it exports no API, has no workspace dependencies and is not reachable through wasm32 dependency edges.
+- **Feature unifier:** The generated `maestro-feature-unifier` crate for dependency feature unification in the [configured native scope](docs/development.md#feature-unification), including its traversal exclusions; it exports no API, has no workspace dependencies and is not reachable through wasm32 dependency edges. _Avoid:_ dependencies for this crate, the unifier.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.
 

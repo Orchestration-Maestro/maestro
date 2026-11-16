@@ -28,7 +28,7 @@ maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-process = { path = "../maestro-process" }
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 interprocess = { workspace = true, features = ["tokio"] }

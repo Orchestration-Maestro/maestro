@@ -52,7 +52,7 @@ aws-credential-types = { version = "=1.3.0", default-features = false }
 aws-smithy-runtime-api = { version = "=1.19.2", features = ["client", "http-1x"] }
 aws-smithy-types = { version = "=1.9.1", features = ["http-body-1-x"] }
 rustls = { version = "=0.23.46", default-features = false, features = ["std", "tls12", "aws_lc_rs"] }
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "time", "net", "io-util", "macros"] }
 hyper = { version = "=1.11.1", default-features = false, features = ["server", "client", "http1"] }
 hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }

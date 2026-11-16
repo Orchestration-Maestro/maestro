@@ -508,17 +508,21 @@ fn json_checks_include_guest_and_all_workspace_members() {
 
 /// Add the generated unifier with its own direct JSON entries and a native edge from `tui`.
 fn with_unifier(workspace: &Workspace, entries: &str, tui_json: &str) {
-    workspace.member("maestro-dependencies", "maestro-dependencies", entries);
+    workspace.member(
+        "maestro-feature-unifier",
+        "maestro-feature-unifier",
+        entries,
+    );
     workspace.member(
         "tui",
         "maestro-tui",
         &format!(
-            "[dependencies]\n{tui_json}[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\nmaestro-dependencies = {{ path = \"../maestro-dependencies\" }}\n"
+            "[dependencies]\n{tui_json}[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\nmaestro-feature-unifier = {{ path = \"../maestro-feature-unifier\" }}\n"
         ),
     );
     workspace.list(&[
         ("maestro-tui", "core"),
-        ("maestro-dependencies", "dedicated"),
+        ("maestro-feature-unifier", "dedicated"),
     ]);
 }
 

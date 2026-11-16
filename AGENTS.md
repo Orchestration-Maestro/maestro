@@ -142,7 +142,7 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 
 Dependency descriptions below state domain edges; each also permits the
 [native feature-unifier exception](docs/specs/maestro-port.md#native-feature-unifier).
-This includes leaves, exact sets and the core-to-dedicated prohibition; the unifier itself has no workspace dependencies.
+This includes leaves, exact sets and the core-to-dedicated prohibition; the feature unifier itself has no workspace dependencies.
 
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never use dedicated
@@ -187,7 +187,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   conventions checker may consume its code-block source ranges for documentation
   checks. Terminal normalization and formatting remain in the toolkit.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
-- `maestro-dependencies` is the generated, API-free feature unifier (`cargo hakari`),
+- `maestro-feature-unifier` is the generated, API-free feature unifier (`cargo hakari`),
   dedicated, unpublished and without workspace dependencies. Members declare it only
   as a non-optional normal dependency under `cfg(not(target_arch = "wasm32"))`; it
   never supplies a required edge. The crate is exempt from member `serde_json`
@@ -323,9 +323,9 @@ through declared and host-resolved Cargo metadata, including optional, target an
 build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, checked test-process owner,
 disposable test-directory owner, test tracing owner, portable fixture owner,
-repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
+repository tooling and the feature unifier (`maestro-feature-unifier`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional `maestro-path` edge and the unifier. Sparse workspaces need
+no internal dependencies apart from the optional `maestro-path` edge and the feature unifier. Sparse workspaces need
 no placeholder crates. Chat, CLI and RPC require the application edge, web declares none, and every frontend declares only the
 edges in its row of the dependency table, when used. The terminal adapter
 requires toolkit and text. The
@@ -363,7 +363,7 @@ dependencies, credentials as an extension one; the brand edge never satisfies
 the required toolkit/text set.
 
 The dedicated `maestro-test-directory` native crate owns exclusive disposable-root
-creation and cleanup. Its only internal edges are the native unifier and
+creation and cleanup. Its only internal edges are the native feature unifier and
 `maestro-path`, which its table row names because the general `maestro-path`
 permission excludes it. Only the
 crates its [directory
@@ -386,7 +386,7 @@ The dedicated, unpublished `maestro-test-fixtures` portable leaf owns shared tes
 fixture operations. Only models, request, catalog, chat, tools and export may declare
 it as a development dependency, portable or target-specific; models, request, catalog
 and chat use portable declarations, while tools and export use native declarations. It
-has no product or `maestro-path` edge, only the native unifier exception. Both cycle checks
+has no product or `maestro-path` edge, only the native feature-unifier exception. Both cycle checks
 apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 

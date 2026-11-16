@@ -13,7 +13,7 @@ unicase = "=2.10.0"
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-maestro-dependencies.workspace = true
+maestro-feature-unifier.workspace = true
 
 [[test]]
 name = "integration"
