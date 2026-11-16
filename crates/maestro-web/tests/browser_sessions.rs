@@ -763,7 +763,7 @@ fn latest_session_uses_host_locale_instead_of_lexical_order() {
         return;
     }
     for locale in ["en-US", "sv-SE"] {
-        let output = maestro_test_harness::TestProcess::current(
+        let output = maestro_test_process::TestProcess::current(
             "latest_session_uses_host_locale_instead_of_lexical_order",
         )
         .unwrap()

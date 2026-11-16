@@ -1290,12 +1290,12 @@ fn custom_skill_directories_keep_source_metadata_and_name_order() {
 /// Relative dot roots retain their literal basename after child normalization.
 #[test]
 fn maestro_skills_use_literal_dot_root_names() {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         let dir = Directory::new();
         let _ = dir.file("SKILL.md", "---\ndescription: Parent\n---");
         let _ = dir.file("child/SKILL.md", "---\ndescription: Child\n---");
         let output =
-            maestro_test_harness::TestProcess::current("maestro_skills_use_literal_dot_root_names")
+            maestro_test_process::TestProcess::current("maestro_skills_use_literal_dot_root_names")
                 .unwrap()
                 .nocapture()
                 .case("child-directory")

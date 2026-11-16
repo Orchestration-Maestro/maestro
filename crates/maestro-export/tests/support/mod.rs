@@ -592,7 +592,7 @@ pub fn document(name: &str) -> String {
     assert_eq!(*operations.themes.borrow(), row.expected.observations);
     html
 }
-pub use maestro_test_harness::Scratch;
+pub use maestro_test_directory::Scratch;
 
 /// Native fixture spellings over the shared disposable directory.
 pub trait Fixture {

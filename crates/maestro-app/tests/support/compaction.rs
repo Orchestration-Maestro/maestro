@@ -4,7 +4,7 @@ use super::session_harness::{Harness, start_prompt};
 use maestro_app::test_support::{HarnessOptions, Scripted, harness};
 use maestro_session::CompactionResult;
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 
 /// Builds two completed turns, replacing supplied settings and the context window.

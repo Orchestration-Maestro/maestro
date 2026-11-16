@@ -131,7 +131,7 @@ fn pac_bridge_uses_captured_environment_at_later_consumption() {
     const TEST: &str = "providers::amazon_bedrock::client::tests::pac::pac_bridge_uses_captured_environment_at_later_consumption";
     /// The case that repeats the bridge in a cleared child.
     const CHILD: &str = "cleared";
-    if maestro_test_harness::selection().case() == Some(CHILD) {
+    if maestro_test_process::selection().case() == Some(CHILD) {
         crate::tests::runtime::run(async {
             for bypass in [false, true] {
                 captured_environment(bypass).await;
@@ -139,7 +139,7 @@ fn pac_bridge_uses_captured_environment_at_later_consumption() {
         });
         return;
     }
-    let output = maestro_test_harness::TestProcess::current(TEST)
+    let output = maestro_test_process::TestProcess::current(TEST)
         .unwrap()
         .env_clear()
         .case(CHILD)

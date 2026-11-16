@@ -18,7 +18,7 @@ use maestro_http::test_support::tls;
 #[cfg(not(target_arch = "wasm32"))]
 use maestro_http::test_support::{ftp_server, runtime, socks};
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_harness::loopback;
+use maestro_test_process::loopback;
 mod account_message_routing;
 mod account_tool_names;
 mod assistant_publication;

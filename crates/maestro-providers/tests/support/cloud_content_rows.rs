@@ -342,7 +342,7 @@ pub fn assert_rows(test: &str) -> TestResult {
     let _registry = crate::bundled::registry();
     let rows: Vec<Row> =
         serde_json::from_str(include_str!("../fixtures/cloud_content_invocation.json"))?;
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         let (_, row) = rows
             .iter()
@@ -369,7 +369,7 @@ pub fn assert_rows(test: &str) -> TestResult {
                     .map(|(key, value)| (key.as_str(), value.as_str())),
             );
         }
-        let child = maestro_test_harness::TestProcess::current(test)?
+        let child = maestro_test_process::TestProcess::current(test)?
             .nocapture()
             .env_clear()
             .envs(env.iter().copied())

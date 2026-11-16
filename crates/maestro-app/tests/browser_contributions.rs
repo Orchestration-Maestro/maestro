@@ -32,7 +32,7 @@ fn write(path: &Path, text: &str) {
 /// Enabled files load in resolution order with their supplying package; disabled ones are skipped.
 #[test]
 fn contributions_are_read_from_enabled_packages_in_order() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     for (name, id) in [
         ("b.json", "second"),
@@ -61,7 +61,7 @@ fn contributions_are_read_from_enabled_packages_in_order() {
 /// An unreadable or invalid file yields one warning naming it, and the rest still load.
 #[test]
 fn invalid_contribution_files_report_a_warning_and_are_skipped() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     write(&root.join("bad.json"), r#"{"id":"bad","kind":"card"}"#);
     write(
@@ -119,7 +119,7 @@ fn resource_loader_reads_the_contributions_the_browser_receives() {
     )
     .unwrap();
     let package = fixtures.join("package");
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let agent = scratch.path().join("agent").to_string_lossy().into_owned();
     let cwd = fixtures.to_string_lossy().into_owned();
     let configured_package = package.clone();

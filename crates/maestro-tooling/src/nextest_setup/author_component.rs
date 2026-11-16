@@ -32,19 +32,19 @@ use crate::workspace::{FIXTURES, Workspace};
 /// example that fails keeps its own status.
 pub(super) fn run(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let directory = artifact_directory()?;
-    let agent_dir = test_setup::run_agent_dir(&directory);
+    let agent_directory = test_setup::run_agent_directory(&directory);
     let status = if let Some(bundle) = prepared_bundle(checkout) {
-        run_prepared(cargo, checkout, &bundle, &directory, &agent_dir)?
+        run_prepared(cargo, checkout, &bundle, &directory, &agent_directory)?
     } else {
         let workspace = Workspace::read(cargo, checkout)?;
         // The example is given the component crate, so a workspace without one fails here,
         // before a build.
         workspace.component_crate()?;
-        run_local(cargo, &workspace, &directory, &agent_dir)?
+        run_local(cargo, &workspace, &directory, &agent_directory)?
     };
     // The example and the installation rewrite the file, so the entry follows them.
-    let mut entry = OsString::from(format!("{}=", test_setup::AGENT_DIR));
-    entry.push(agent_dir);
+    let mut entry = OsString::from(format!("{}=", test_setup::AGENT_DIRECTORY));
+    entry.push(agent_directory);
     export(&entry)?;
     Ok(status)
 }
@@ -57,7 +57,7 @@ fn run_prepared(
     checkout: &Path,
     bundle: &Path,
     directory: &Path,
-    agent_dir: &Path,
+    agent_directory: &Path,
 ) -> io::Result<ExitCode> {
     let environment = environment_file()?;
     let compiled = test_setup::install_bundle(cargo, checkout, bundle, directory, &environment)?;
@@ -70,7 +70,7 @@ fn run_prepared(
     }
     let example = directory.join("examples").join(executable_name());
     let mut command = Command::new(&example);
-    command.env(test_setup::AGENT_DIR, agent_dir);
+    command.env(test_setup::AGENT_DIRECTORY, agent_directory);
     for (variable, _, _) in crate::search_tools::PROGRAMS {
         command.env_remove(variable);
     }
@@ -99,7 +99,7 @@ fn run_local(
     cargo: &Path,
     workspace: &Workspace,
     directory: &Path,
-    agent_dir: &Path,
+    agent_directory: &Path,
 ) -> io::Result<ExitCode> {
     let profile = directory
         .file_name()
@@ -111,27 +111,27 @@ fn run_local(
         && fresh(workspace, &example)
         && normalize::normalize(directory, archive_signalled())? == Outcome::Normalized
     {
-        return start(workspace, &example, agent_dir);
+        return start(workspace, &example, agent_directory);
     }
     let example = test_setup::example_program(cargo, workspace.root(), workspace, target, profile)?;
     // Cargo may retain an outdated example; running it still allows preparation to finish.
     if normalize::normalize(directory, archive_signalled())? == Outcome::ExampleOutdated {
         eprintln!("Cargo kept the setup example; test binaries may compile components again.");
     }
-    start(workspace, &example, agent_dir)
+    start(workspace, &example, agent_directory)
 }
 
-/// Run the setup example in the checkout with this process's environment and `agent_dir` as
+/// Run the setup example in the checkout with this process's environment and `agent_directory` as
 /// its agent directory, the workspace it prepares as its arguments and the components an earlier
 /// bundle supplies.
-fn start(workspace: &Workspace, example: &Path, agent_dir: &Path) -> io::Result<ExitCode> {
+fn start(workspace: &Workspace, example: &Path, agent_directory: &Path) -> io::Result<ExitCode> {
     let mut command = Command::new(example);
     command
         .current_dir(workspace.root())
         .args(example_arguments(workspace)?)
-        .env(test_setup::AGENT_DIR, agent_dir);
+        .env(test_setup::AGENT_DIRECTORY, agent_directory);
     // The example's time is final here, so seeded code lands in the namespace the tests read.
-    test_setup::supply_base(&mut command, workspace, example, agent_dir)?;
+    test_setup::supply_base(&mut command, workspace, example, agent_directory)?;
     Ok(exit_code(
         command.status().map_err(|error| at(example, error))?,
     ))

@@ -59,7 +59,8 @@ path = "tests/integration.rs"
 futures-util = { workspace = true, features = ["async-await"] }
 maestro-models = { path = "../maestro-models", features = ["test-support"] }
 maestro-tui-crossterm = { path = "../maestro-tui-crossterm" }
-maestro-test-harness.workspace = true
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["test-util"] }
 
 [lints]

@@ -213,16 +213,16 @@ fn emit_failing_listener() {
 #[test]
 fn default_event_bus_survives_closed_standard_error_on_listener_failure() {
     const TEST: &str = "default_event_bus_survives_closed_standard_error_on_listener_failure";
-    if maestro_test_harness::selection().is_child() {
-        maestro_test_harness::wait_for_broken_stderr();
+    if maestro_test_process::selection().is_child() {
+        maestro_test_process::wait_for_broken_stderr();
         emit_failing_listener();
         return;
     }
-    if maestro_test_harness::run_alone(TEST).unwrap() {
+    if maestro_test_process::run_alone(TEST).unwrap() {
         return;
     }
-    let status = maestro_test_harness::run_with_broken_stderr(
-        maestro_test_harness::TestProcess::current(TEST)
+    let status = maestro_test_process::run_with_broken_stderr(
+        maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .case("*"),
     )
@@ -233,11 +233,11 @@ fn default_event_bus_survives_closed_standard_error_on_listener_failure() {
 /// A failing listener's message is written to standard error as the bus formats it.
 #[test]
 fn default_event_bus_reports_listener_failures_on_stderr() {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         emit_failing_listener();
         return;
     }
-    let output = maestro_test_harness::TestProcess::current(
+    let output = maestro_test_process::TestProcess::current(
         "default_event_bus_reports_listener_failures_on_stderr",
     )
     .unwrap()

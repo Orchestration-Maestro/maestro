@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process::Command;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 
 use super::{LANES, install, set_tree_time, stage};
 
@@ -64,7 +64,7 @@ fn tree_time_reaches_files_without_opening_them_for_writing() {
     let script = scratch.path().join("build/dependency-1/build-script-build");
     fs::create_dir_all(script.parent().unwrap()).unwrap();
     fs::write(&script, b"script\n").unwrap();
-    let Some(_denied) = maestro_test_harness::deny(&script, 0o555).unwrap() else {
+    let Some(_denied) = maestro_test_directory::deny(&script, 0o555).unwrap() else {
         eprintln!("host permits writes despite denied file mode");
         return;
     };

@@ -59,7 +59,7 @@ fn windows_workspace_paths_use_the_selected_home() {
         ("HOME", "C:\\home"),
         ("USERPROFILE", "~"),
     ];
-    let Some(cases) = maestro_test_harness::run_per_environment(
+    let Some(cases) = maestro_test_process::run_per_environment(
         "locations::tests::windows_workspace_paths_use_the_selected_home",
         cases,
         |(key, value)| std::collections::BTreeMap::from([(*key, Some(*value))]),

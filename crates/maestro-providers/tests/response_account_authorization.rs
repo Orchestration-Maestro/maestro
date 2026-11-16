@@ -12,9 +12,9 @@ use std::{collections::BTreeMap, sync::Arc};
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_response_refresh_keeps_stderr_clean() {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         crate::runtime::run(async {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "maestro_response_refresh_keeps_stderr_clean",
             )
             .unwrap()
@@ -299,7 +299,7 @@ fn public_fallback_child(test: &str) -> bool {
     if std::env::var("MAESTRO_OAUTH_CALLBACK_HOST").as_deref() == Ok(" ") {
         return false;
     }
-    let output = maestro_test_harness::TestProcess::current(test)
+    let output = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .env("MAESTRO_OAUTH_CALLBACK_HOST", " ")
         .output()

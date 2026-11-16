@@ -85,7 +85,7 @@ fn converse_peer(
 
 #[test]
 fn bedrock_socks_routes_reach_conversation_stream() -> TestResult {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run(async {
             let (labels, message) = conversation(StreamOptions::default()).await?;
             completed(&labels, &message)
@@ -136,7 +136,7 @@ fn routed_conversation(scheme: &str, identity: &str, simple: bool) -> TestResult
     if simple {
         vars.push(("MAESTRO_SIMPLE", "1"));
     }
-    let result = maestro_test_harness::TestProcess::current(
+    let result = maestro_test_process::TestProcess::current(
         "bedrock_socks_routes_reach_conversation_stream",
     )
     .and_then(|process| {
@@ -249,10 +249,10 @@ fn cancellation_peer(
 
 #[test]
 fn socks_cancel_closes_inflight_connection() -> TestResult {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         return crate::runtime::run(cancel_conversation());
     }
-    if maestro_test_harness::run_alone("socks_cancel_closes_inflight_connection")? {
+    if maestro_test_process::run_alone("socks_cancel_closes_inflight_connection")? {
         return Ok(());
     }
     for (scheme, identity) in [
@@ -295,7 +295,7 @@ fn cancellation_case(scheme: &str, identity: Option<&str>, after_request: bool) 
         ("AWS_MAX_ATTEMPTS", "1"),
     ];
     let result =
-        maestro_test_harness::TestProcess::current("socks_cancel_closes_inflight_connection")
+        maestro_test_process::TestProcess::current("socks_cancel_closes_inflight_connection")
             .and_then(|process| {
                 process
                     .nocapture()
@@ -362,7 +362,7 @@ pub(super) async fn bypass_conversation(case: &str) -> TestResult {
 
 #[test]
 fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         let case = ["selected", "bypass", "replacement"]
             .into_iter()
@@ -395,7 +395,7 @@ fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
             if case == "bypass" {
                 vars.push(("NO_PROXY", "*"));
             }
-            let result = maestro_test_harness::TestProcess::current(
+            let result = maestro_test_process::TestProcess::current(
                 "bedrock_socks_bypass_and_replacement_avoid_invalid_proxy",
             )
             .and_then(|process| {

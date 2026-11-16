@@ -69,7 +69,7 @@ impl Case {
 }
 
 /// Shared-config and credentials files holding two distinguishable synthetic profiles.
-pub struct AwsFiles(maestro_test_harness::Scratch);
+pub struct AwsFiles(maestro_test_directory::Scratch);
 
 impl AwsFiles {
     pub fn create(test: &str) -> TestResult<Self> {
@@ -83,7 +83,7 @@ impl AwsFiles {
 
     /// Create exclusively owned configuration files for a synthetic profile.
     pub fn create_with(_test: &str, config: &str, credentials: &str) -> TestResult<Self> {
-        let files = Self(maestro_test_harness::Scratch::new()?);
+        let files = Self(maestro_test_directory::Scratch::new()?);
         std::fs::write(files.0.path().join("config"), config)?;
         std::fs::write(files.0.path().join("credentials"), credentials)?;
         Ok(files)
@@ -115,7 +115,7 @@ impl AwsFiles {
 
 /// Run every case of `test` in its own child, or the case this process was started for.
 pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
-    let id = maestro_test_harness::selection();
+    let id = maestro_test_process::selection();
     if id.is_child() {
         let case = cases
             .iter()
@@ -128,7 +128,7 @@ pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
         let vars = files.environment(case);
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
         {
-            let output = maestro_test_harness::TestProcess::current(test)?
+            let output = maestro_test_process::TestProcess::current(test)?
                 .nocapture()
                 .env_clear()
                 .envs(vars.iter().copied())

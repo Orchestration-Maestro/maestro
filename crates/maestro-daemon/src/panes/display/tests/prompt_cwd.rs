@@ -104,12 +104,12 @@ fn prompt_cells_includes_wide_character_wrap_spacer() {
 }
 
 /// Native directories owned by one prompt test, without changing ambient cwd.
-struct PromptDirectories(maestro_test_harness::Scratch);
+struct PromptDirectories(maestro_test_directory::Scratch);
 
 impl PromptDirectories {
     /// Exclusively create a root distinct from parallel prompt tests.
     fn new() -> Self {
-        Self(maestro_test_harness::Scratch::new().unwrap())
+        Self(maestro_test_directory::Scratch::new().unwrap())
     }
     /// The root this test owns.
     fn root(&self) -> &std::path::Path {

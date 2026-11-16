@@ -11,7 +11,7 @@ use maestro_extensions::{
     EventError, ExtensionFactory, ModelSelectEvent, ThinkingLevelSelectEvent,
 };
 use maestro_models::{Local, ModelThinkingLevel};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,

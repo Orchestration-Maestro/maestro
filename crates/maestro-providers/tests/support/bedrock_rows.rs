@@ -231,7 +231,7 @@ fn rows(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
 pub fn check_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} owns no rows");
-    let group = maestro_test_harness::run_per_environment(test, &owned, |row| {
+    let group = maestro_test_process::run_per_environment(test, &owned, |row| {
         environment(row)
             .into_iter()
             .map(|(key, value)| (key, Some(value)))

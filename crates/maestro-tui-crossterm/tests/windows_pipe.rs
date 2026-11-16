@@ -11,7 +11,7 @@ use std::rc::Rc;
 use std::task::{Context, Waker};
 use std::time::Duration;
 
-use maestro_test_harness::TestProcess;
+use maestro_test_process::TestProcess;
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
 use maestro_tui_crossterm::adapter::wait_for_input;

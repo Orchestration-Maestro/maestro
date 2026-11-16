@@ -452,10 +452,10 @@ fn capture_keeps_history_for_each_pane() {
 /// Owns each native process session inside the checked child runner.
 #[cfg(unix)]
 fn with_history(name: &str, count: usize) {
-    if maestro_test_harness::run_alone(name).unwrap() {
+    if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_harness::TestProcess::named("state::tests::daemon_capture::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::daemon_capture::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

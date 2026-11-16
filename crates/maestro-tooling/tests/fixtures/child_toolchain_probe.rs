@@ -1,5 +1,5 @@
 //! Instrumented parent of a standalone WebAssembly build.
-use maestro_test_harness::compiler;
+use maestro_test_process::compiler;
 
 use std::env;
 use std::process::ExitCode;

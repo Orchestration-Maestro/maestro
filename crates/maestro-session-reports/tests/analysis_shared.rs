@@ -5,8 +5,8 @@ use crate::analysis_fixtures::{
     ZONE, page_data, root, run_cost, run_tools, run_transcripts, run_usage, scratch,
     with_controlled_viewer, with_controlled_viewer_and,
 };
-use maestro_test_harness::with_environment;
-use maestro_test_harness::with_environment_without;
+use maestro_test_process::with_environment;
+use maestro_test_process::with_environment_without;
 
 /// An assistant entry carrying a reported cost.
 fn cost_entry(provider: &str, total: f64) -> String {

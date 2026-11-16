@@ -1,6 +1,6 @@
 //! File rotation behavior.
 use super::writer::*;
-use maestro_test_harness::{Scratch, temporary_root};
+use maestro_test_directory::{Scratch, temporary_root};
 use std::{fs, io::Write, path::PathBuf};
 use tracing_subscriber::fmt::writer::MakeWriter;
 
@@ -97,7 +97,7 @@ pub(crate) fn capture<T>(action: impl FnOnce() -> T) -> (T, Vec<Recorded>) {
     use tracing_subscriber::prelude::*;
     let events = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let subscriber = tracing_subscriber::registry().with(Recorder(events.clone()));
-    let result = maestro_test_harness::trace_capture::with_default(subscriber, action);
+    let result = maestro_test_tracing::with_default(subscriber, action);
     let events = std::mem::take(&mut *events.lock().unwrap());
     (result, events)
 }
@@ -237,7 +237,7 @@ fn log_roles_filters_and_failures_use_one_writer() {
         let path = paths.log_path(role);
         let _ = fs::remove_file(&path);
         let subscriber = super::file_subscriber(&paths, role, filter).unwrap();
-        maestro_test_harness::trace_capture::with_default(subscriber, || {
+        maestro_test_tracing::with_default(subscriber, || {
             super::api_request_started("r", "pane.get", false);
             super::startup(role);
             super::update_check_failed("controlled failure");

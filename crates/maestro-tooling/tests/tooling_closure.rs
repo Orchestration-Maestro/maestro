@@ -92,7 +92,7 @@ fn write_crate(root: &Path, name: &str, dependencies: &str) {
 /// are not.
 #[test]
 fn closure_follows_metadata_the_way_cargo_reads_it() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     fs::write(
         root.join("Cargo.toml"),

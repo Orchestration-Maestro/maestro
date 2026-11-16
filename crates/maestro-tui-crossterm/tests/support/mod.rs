@@ -16,7 +16,7 @@ use std::future::Future;
 use std::os::fd::OwnedFd;
 use std::process::Stdio;
 
-use maestro_test_harness::TestProcess;
+use maestro_test_process::TestProcess;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -44,7 +44,7 @@ pub const STOP_BYTES: &str = "\x1b[?2004l\x1b[<u";
 /// test when the child fails. Inside the child it runs `scenario` only when it is the case
 /// the parent chose. `environment` is passed to the child on top of a clean slate.
 pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario: impl FnOnce()) {
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     let chosen = case.to_string();
     if selection.is_child() {
         if selection.case() == Some(chosen.as_str()) {
@@ -76,7 +76,7 @@ pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario:
 
 /// Whether this process is the child copy of a test.
 pub fn is_child() -> bool {
-    maestro_test_harness::selection().is_child()
+    maestro_test_process::selection().is_child()
 }
 
 /// Names the calling test from a marker function declared inside it. A first argument

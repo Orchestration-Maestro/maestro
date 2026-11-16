@@ -27,7 +27,7 @@ async fn read_until_ready(output: &mut BufReader<tokio::process::ChildStdout>) {
 
 #[test]
 fn interactive_pipes_keep_native_command_and_stream_ownership() {
-    let owned = maestro_test_harness::Scratch::new().unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
     let dir = owned.path();
     let mut command = async_command(child_programs::line_answerer, &[("PROBE", "set")]);
     command.args(["two words", "$HOME"]).current_dir(dir);

@@ -28,8 +28,8 @@ use maestro_rpc::connection_runner::{
 use maestro_rpc::daemon::run_server;
 use maestro_rpc::{RpcConnectionOutcome, RpcModeOptions, run_rpc_connection};
 use maestro_settings::SettingsManager;
-use maestro_test_harness::Scratch;
-use maestro_test_harness::TestProcess;
+use maestro_test_directory::Scratch;
+use maestro_test_process::TestProcess;
 use serde_json::json;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::os::unix::{fs::FileTypeExt, fs::PermissionsExt, net::UnixStream};
@@ -257,7 +257,7 @@ enum Logged {
 /// Runs the body of `test` in a child process of its own, so the child's file logging
 /// owns that process, with `MAESTRO_LOG` at debug level and a root the parent keeps.
 fn logged(test: &str) -> Logged {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         return Logged::Child(PathBuf::from(std::env::var_os(ROOT).unwrap()));
     }
     let root = Scratch::new().unwrap();
@@ -675,7 +675,7 @@ fn socket_lifecycle_logs_keep_typed_outcomes() {
         let rename = br#"{"id":"r","type":"workspace.rename","workspace_id":"w","label":"l"}"#;
         first_reply(&socket, &[rename.as_slice(), b"\n"].concat());
         exchange(&socket, &vec![b'a'; LIMIT + 1], false);
-        maestro_test_harness::deny(&root, 0o500).unwrap()
+        maestro_test_directory::deny(&root, 0o500).unwrap()
     });
     let removal_refused = restore.is_some();
     drop(restore);
@@ -776,15 +776,18 @@ fn live_daemon(socket: &Path, args: &[String]) -> App {
     let mut app = daemon(socket);
     app.launch.setup_entry.args = args.iter().map(Into::into).collect();
     app.config.terminal.default_shell = "/bin/sh".into();
-    app.config.terminal.new_cwd =
-        NewTerminalCwdConfig::Path(maestro_test_harness::temporary_root().display().to_string());
+    app.config.terminal.new_cwd = NewTerminalCwdConfig::Path(
+        maestro_test_directory::temporary_root()
+            .display()
+            .to_string(),
+    );
     app
 }
 
 /// Runs `test` alone in a process of its own, serving a live daemon through `run_server`
 /// while `client` runs.
 fn served_live(test: &str, client: impl FnOnce(PathBuf) + Send + 'static) {
-    if maestro_test_harness::run_alone(test).unwrap() {
+    if maestro_test_process::run_alone(test).unwrap() {
         return;
     }
     let root = Scratch::new().unwrap();
@@ -1354,7 +1357,7 @@ const STARTUP: &str = "MAESTRO_STARTUP_CWD";
 #[test]
 fn server_mode_opens_the_startup_directory() {
     let test = "server_mode_opens_the_startup_directory";
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         let startup = Scratch::new().unwrap();
         for case in ["empty", "restored"] {
             let output = TestProcess::current(test)
@@ -1374,7 +1377,7 @@ fn server_mode_opens_the_startup_directory() {
         return;
     }
     let startup = PathBuf::from(std::env::var_os(STARTUP).unwrap());
-    let restored = maestro_test_harness::selection().runs_case("restored");
+    let restored = maestro_test_process::selection().runs_case("restored");
     let root = Scratch::new().unwrap();
     let paths = root_paths(root.path());
     TestProcess::named("daemon_socket::setup_entry")

@@ -79,7 +79,7 @@ fn npm_bootstrap_files(
         SourceScope::Project => fixture.project(".maestro/npm"),
         // The production root derivation names this spelling under the platform directory.
         _ => native_support::under(
-            maestro_test_harness::temporary_root(),
+            maestro_test_directory::temporary_root(),
             "maestro-extensions/npm/f35b2129",
         )
         .to_string_lossy()
@@ -304,7 +304,7 @@ fn failing_resolution(boundary: Boundary) {
         Boundary::Ignore => root.clone(),
     };
     std::fs::create_dir_all(&locked).unwrap();
-    let Some(restore) = maestro_test_harness::deny(&locked, 0o555).unwrap() else {
+    let Some(restore) = maestro_test_directory::deny(&locked, 0o555).unwrap() else {
         return;
     };
     let expected = std::fs::create_dir(native_support::under(&locked, "probe")).unwrap_err();

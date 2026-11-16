@@ -8,7 +8,7 @@ use crate::{
     settings::{model::Config, tabs::TabBarRightEntryConfig},
     state::{App, model::TabBarStatusSegment},
 };
-use maestro_test_harness::temporary_root;
+use maestro_test_directory::temporary_root;
 use std::time::Instant;
 use tokio::sync::mpsc;
 /// Supplies a daemon without launching any pane process.
@@ -165,7 +165,7 @@ fn daemon_reload_aborts_an_in_flight_command_task_and_its_descendants() {
 /// Uses FIFO handshakes rather than sleeps to start and release a real descendant.
 async fn check_descendant_reload() {
     use std::io::Write;
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let started = root.join("started");
     let gate = root.join("gate");

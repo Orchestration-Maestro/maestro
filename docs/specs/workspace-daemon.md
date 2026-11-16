@@ -300,7 +300,7 @@ exists, and a Windows pseudo-console library without a patched fork. They wait o
   platform gate.
 - **Harness floors.** A test that needs a later harness, such as the server's own test harness, lands with
   that harness.
-- **PTY children in tests.** Tests that spawn PTY children use `maestro-test-harness` to run a named test as
+- **PTY children in tests.** Tests that spawn PTY children use `maestro-test-process` to run a named test as
   the child set-up step.
 - **Inputs without a source.** Tests whose subject has no Maestro input are not ported, and each is listed
   once: legacy setting values, legacy snapshot fixtures, registry files, removed flags and server-side

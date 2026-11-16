@@ -34,7 +34,7 @@ serde_json = { workspace = true, features = ["raw_value"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-http = { path = "../maestro-http", features = ["test-support"] }
-maestro-test-harness.workspace = true
+maestro-test-directory.workspace = true
 image = { version = "=0.24.9", default-features = false, features = ["png"] }
 serde.workspace = true
 sha2.workspace = true

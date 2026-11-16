@@ -17,7 +17,7 @@ use maestro_app::presentation_data::status_line::FooterDataProvider;
 use maestro_app::presentation_data::status_line::{FooterOperations, NativeFooterOperations};
 use maestro_extensions::footer::ExtensionStatuses;
 #[cfg(unix)]
-use maestro_test_harness::git_command;
+use maestro_test_process::git_command;
 use serde::Deserialize;
 use support::{Entry, Git, MetadataEffects, load, plain, provider, target};
 #[cfg(unix)]
@@ -209,7 +209,7 @@ fn native_git_observations(args: &[String]) {
     let repo = scratch.join("repo");
     let run = |path: &str, exit: &str| {
         probe(
-            maestro_test_harness::TestProcess::current(
+            maestro_test_process::TestProcess::current(
                 "footer_symbolic_lookup_uses_exact_command_and_fallback",
             )
             .unwrap()
@@ -293,7 +293,7 @@ fn check_discovery_ambient(
         env.push(("FOOTER_REMOVE_CWD", "1"));
     }
     let observed = probe(
-        maestro_test_harness::TestProcess::current(
+        maestro_test_process::TestProcess::current(
             "footer_discovers_metadata_without_skipping_broken_inner_repo",
         )
         .unwrap()
@@ -1175,7 +1175,7 @@ fn worktree_resolution_keeps_eager_drive_observations() {
     let repo = scratch.path("repo/.git");
     let drive = repo[..2].to_lowercase();
     scratch.text("worktree/.git", &format!("gitdir: {drive}../repo/.git"));
-    let output = maestro_test_harness::TestProcess::current(
+    let output = maestro_test_process::TestProcess::current(
         "worktree_resolution_keeps_eager_drive_observations",
     )
     .unwrap()
@@ -1198,7 +1198,7 @@ fn native_ambient_lines() -> Vec<String> {
     std::fs::write(scratch.join("worktree/.git"), "gitdir: ../repo/.git\n").expect("gitfile");
     let root = scratch.join("");
     probe(
-        maestro_test_harness::TestProcess::current(AMBIENT)
+        maestro_test_process::TestProcess::current(AMBIENT)
             .unwrap()
             .case("*"),
         Path::new(&scratch.join("gone")),

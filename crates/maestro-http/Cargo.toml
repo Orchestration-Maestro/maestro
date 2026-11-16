@@ -57,7 +57,9 @@ tower-service = { version = "=0.3.3", default-features = false }
 http-body-util = { version = "=0.1.5", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-harness.workspace = true
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
+maestro-test-tracing.workspace = true
 
 [[test]]
 name = "integration"

@@ -345,7 +345,7 @@ fn tab_creation_uses_the_focused_cached_directory() {
     with_live_daemon(
         "tab_commands::tab_creation_uses_the_focused_cached_directory",
         async |app| {
-            let root = maestro_test_harness::Scratch::new().unwrap();
+            let root = maestro_test_directory::Scratch::new().unwrap();
             let (first, cached) = (root.path().join("root"), root.path().join("cached"));
             std::fs::create_dir(&first).unwrap();
             std::fs::create_dir(&cached).unwrap();

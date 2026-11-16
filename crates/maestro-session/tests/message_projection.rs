@@ -88,15 +88,15 @@ fn cases(name: &str) -> Vec<Case> {
 /// Run date cases in a fresh process with the selected timezone.
 #[cfg(not(target_arch = "wasm32"))]
 fn in_timezone(name: &str, timezone: &str) -> bool {
-    if maestro_test_harness::selection().is_child()
-        && maestro_test_harness::selection().runs_case(name)
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case(name)
     {
         return true;
     }
-    if !maestro_test_harness::local_zone_follows_tz() {
+    if !maestro_test_process::local_zone_follows_tz() {
         return false;
     }
-    let output = maestro_test_harness::TestProcess::current(name)
+    let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .nocapture()
         .env("TZ", timezone)
@@ -412,13 +412,13 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
     struct ParserExpected {
         millis: Option<i64>,
     }
-    if !maestro_test_harness::selection().is_child() {
-        if !maestro_test_harness::local_zone_follows_tz() {
+    if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
             return;
         }
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             crate::subprocess::run_child(
-                maestro_test_harness::TestProcess::current(
+                maestro_test_process::TestProcess::current(
                     "parse_timestamp_millis_preserves_native_date_forms",
                 )
                 .unwrap()
@@ -465,8 +465,8 @@ struct LocalCase {
 
 #[test]
 fn local_timestamps_keep_gap_overlap_and_calendar_boundaries() {
-    if !maestro_test_harness::selection().is_child() {
-        if !maestro_test_harness::local_zone_follows_tz() {
+    if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
             return;
         }
         for tz in [
@@ -478,7 +478,7 @@ fn local_timestamps_keep_gap_overlap_and_calendar_boundaries() {
             "Europe/Berlin",
         ] {
             crate::subprocess::run_child(
-                maestro_test_harness::TestProcess::current(
+                maestro_test_process::TestProcess::current(
                     "local_timestamps_keep_gap_overlap_and_calendar_boundaries",
                 )
                 .unwrap()

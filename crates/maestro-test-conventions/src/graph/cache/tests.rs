@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::path::Path;
 
 use cargo_metadata::Metadata;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 
 use super::read;
 

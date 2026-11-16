@@ -25,7 +25,7 @@ fn daemon_server_stop_request_sets_should_quit_flag() {
 
     // A stop arriving through the loop's request arm ends the run without its shutdown.
     let mut app = daemon().unwrap();
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let paths = DaemonPaths::new(directory.path().to_str().unwrap(), None).unwrap();
     let (sender, mut requests) = mpsc::unbounded_channel();
     let (respond_to, mut response) = oneshot::channel();

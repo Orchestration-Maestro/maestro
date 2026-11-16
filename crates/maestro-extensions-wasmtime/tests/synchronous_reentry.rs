@@ -11,7 +11,7 @@ use maestro_extensions::{
     Cancellation, CompactOptions, EventBus, ExtensionActions, ExtensionContextActions,
     ExtensionExecution, ExtensionRunner, Local, create_event_bus_for, types::ProviderActions,
 };
-use maestro_test_harness::executor::run;
+use maestro_test_process::executor::run;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 

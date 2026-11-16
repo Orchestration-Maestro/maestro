@@ -560,9 +560,9 @@ async fn sent_call_args(authored: serde_json::Value) -> TestResult<serde_json::V
 #[test]
 fn registered_simple_missing_key_precedes_stream() -> TestResult {
     let _registry = crate::bundled::registry();
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "registered_simple_missing_key_precedes_stream",
             )?
             .nocapture()

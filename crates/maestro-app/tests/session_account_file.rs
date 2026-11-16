@@ -20,7 +20,7 @@ fn run(
     Result<(), AccountFileError>,
     Option<String>,
 ) {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     if let Some(seed) = seed {
         std::fs::write(&path, seed).unwrap();
@@ -77,7 +77,7 @@ fn writes_two_space_json_without_a_trailing_newline() {
 
 #[test]
 fn writes_integral_expiries_as_integers() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     std::fs::write(&path, r#"{"gamma": {"type": "oauth"}}"#).unwrap();
     let mut auth = load_auth(&path);
@@ -116,9 +116,9 @@ fn refuses_a_non_object_root_without_overwriting_it() {
 #[cfg(unix)]
 #[test]
 fn propagates_write_failures() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
-    let Some(_restore) = maestro_test_harness::deny(scratch.path(), 0o500).unwrap() else {
+    let Some(_restore) = maestro_test_directory::deny(scratch.path(), 0o500).unwrap() else {
         return;
     };
     let auth = Map::from_iter([("alpha".to_owned(), json!({"type": "oauth"}))]);
@@ -131,7 +131,7 @@ fn propagates_write_failures() {
 
 #[test]
 fn saving_reaches_a_hard_linked_account_file_in_place() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     let linked = format!("{}/linked.json", scratch.path().display());
     std::fs::write(&path, object_seed()).unwrap();
@@ -151,8 +151,8 @@ fn saving_reaches_a_hard_linked_account_file_in_place() {
 /// Re-runs the calling test in a child that creates files under umask 022, and returns that
 /// child's retained setup; `None` once the parent's child passed.
 #[cfg(unix)]
-fn relaunched_under_umask_022(test: &str) -> Option<maestro_test_harness::SetupGuard> {
-    use maestro_test_harness::{IsolatedSetup, TestProcess};
+fn relaunched_under_umask_022(test: &str) -> Option<maestro_test_process::SetupGuard> {
+    use maestro_test_process::{IsolatedSetup, TestProcess};
     if std::env::var_os("ACCOUNT_FILE_UMASK_CHILD").is_some() {
         return Some(IsolatedSetup::apply_requested().expect("the child applies its request"));
     }
@@ -181,7 +181,7 @@ fn saving_creates_the_account_file_private_to_its_owner() {
     else {
         return;
     };
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     let auth = Map::from_iter([("alpha".to_owned(), json!({"type": "oauth"}))]);
 
@@ -198,7 +198,7 @@ fn alpha() -> Map<String, Value> {
 
 #[test]
 fn saving_creates_no_directory_for_a_missing_parent() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/missing/nested/auth.json", scratch.path().display());
 
     let saved = save_auth(&path, &alpha());
@@ -213,7 +213,7 @@ fn saving_creates_no_directory_for_a_missing_parent() {
 #[cfg(unix)]
 #[test]
 fn saving_through_a_dangling_link_creates_no_directory() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let link = scratch.path().join("auth.json");
     std::os::unix::fs::symlink("missing/nested/target.json", &link).unwrap();
 
@@ -234,7 +234,7 @@ fn saving_through_a_dangling_link_creates_no_directory() {
 #[test]
 fn saving_narrows_an_existing_account_file_to_its_owner() {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     std::fs::write(&path, "{}").unwrap();
     std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
@@ -250,10 +250,10 @@ fn saving_narrows_an_existing_account_file_to_its_owner() {
 #[test]
 fn saving_refuses_a_read_only_account_file_and_leaves_it_unchanged() {
     use std::os::unix::fs::PermissionsExt;
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     std::fs::write(&path, "{}").unwrap();
-    let Some(_restored) = maestro_test_harness::deny(&path, 0o400).unwrap() else {
+    let Some(_restored) = maestro_test_directory::deny(&path, 0o400).unwrap() else {
         return;
     };
 

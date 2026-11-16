@@ -1,21 +1,25 @@
 //! Test-owned temporary directory checks.
 
 use crate::graph::policy;
-use crate::source::{Member, Source};
+use crate::source::Member;
 
 /// Spelling that names the platform temporary directory.
 const PLATFORM_DIRECTORY: &str = "temp_dir";
 
-/// Whether test code is checked outside the one platform-directory accessor file.
-pub(crate) fn checked(member: &Member, source: &Source) -> bool {
-    !(member.name == policy::TEST_PROCESS
-        && source.path == member.directory.join("src/directory.rs"))
+/// Whether the member's test code is checked for the platform temporary directory.
+///
+/// The walk sees every source of a `maestro-test-` member as test code, so the owner alone is
+/// outside the check: its `temporary_root` accessor is the one place that reads the platform
+/// directory.
+pub(crate) fn checked(member: &Member) -> bool {
+    member.name != policy::TEST_DIRECTORY
 }
 
 /// Reject a platform temporary directory that test code names itself.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
     let mut diagnostics = members
         .iter()
+        .filter(|member| checked(member))
         .flat_map(member_diagnostics)
         .collect::<Vec<_>>();
     if diagnostics.is_empty() {
@@ -26,7 +30,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         .into_iter()
         .map(|(file, line)| {
             format!(
-                "{file}:{line}: test-owned code names the platform temporary directory; use maestro_test_harness::Scratch or maestro_test_harness::temporary_root, and add a new crate to TEST_PROCESS_CALLERS"
+                "{file}:{line}: test-owned code names the platform temporary directory; use maestro_test_directory::Scratch or maestro_test_directory::temporary_root, and add a new crate to TEST_DIRECTORY_CALLERS"
             )
         })
         .collect::<Vec<_>>()

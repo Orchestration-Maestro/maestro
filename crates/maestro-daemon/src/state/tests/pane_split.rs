@@ -39,7 +39,7 @@ fn a_split_targets_the_named_pane_in_a_background_tab() {
     with_live_daemon(
         "pane_split::a_split_targets_the_named_pane_in_a_background_tab",
         async |app| {
-            let scratch = maestro_test_harness::Scratch::new().unwrap();
+            let scratch = maestro_test_directory::Scratch::new().unwrap();
             app.config.terminal.new_cwd = NewTerminalCwdConfig::Follow;
             let (active, target, focused) = background_tab(app);
             let terminal = app.state.topology.workspaces[0]
@@ -183,7 +183,7 @@ fn launch_inputs_reach_the_new_pane() {
         "pane_split::launch_inputs_reach_the_new_pane",
         async |app| {
             add_workspaces(app, &["/tabs"]).unwrap();
-            let scratch = maestro_test_harness::Scratch::new().unwrap();
+            let scratch = maestro_test_directory::Scratch::new().unwrap();
             let wire = json!({
                 "type": "pane.split", "target_pane_id": "w1:p1", "direction": "right",
                 "cwd": scratch.path(), "env": {"MAESTRO_TEST_ECHO": "é", "MAESTRO_PANE_ID": "spoofed"},
@@ -207,7 +207,7 @@ fn a_split_that_cannot_start_its_process_leaves_the_tab_alone() {
         "pane_split::a_split_that_cannot_start_its_process_leaves_the_tab_alone",
         async |app| {
             add_workspaces(app, &["/tabs"]).unwrap();
-            let missing = maestro_test_harness::Scratch::new()
+            let missing = maestro_test_directory::Scratch::new()
                 .unwrap()
                 .path()
                 .join("missing");

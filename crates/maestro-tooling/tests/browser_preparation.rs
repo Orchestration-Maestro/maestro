@@ -7,8 +7,8 @@ use std::{
     process::Command,
 };
 
-use maestro_test_harness::Scratch;
-use maestro_test_harness::{TestProcess, selection};
+use maestro_test_directory::Scratch;
+use maestro_test_process::{TestProcess, selection};
 use maestro_tooling as tooling;
 
 use crate::{browser_author_build::browser_support, compiler, recipe_support::scenario};
@@ -238,7 +238,7 @@ fn run_setup(root: &Path, wrapper: Option<&str>) -> String {
     let _ = fs::remove_file(root.join("nextest-env"));
     let mut command = Command::new(env!("CARGO_BIN_EXE_development"));
     command.args(["nextest-setup", "browser-author"]);
-    maestro_test_harness::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     command
         .current_dir(root)
         .env_clear()

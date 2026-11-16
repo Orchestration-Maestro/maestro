@@ -34,27 +34,27 @@ fn child(mode: &str) {
 }
 /// Actual default opener with argv capture, release handshake and silent startup failure.
 pub fn launch() {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let mode = ["open", "explorer.exe", "xdg-open", "missing"]
             .into_iter()
-            .find(|mode| maestro_test_harness::selection().runs_case(mode))
+            .find(|mode| maestro_test_process::selection().runs_case(mode))
             .expect("selected native mode");
         child(mode);
         return;
     }
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     for program in ["open", "explorer.exe", "xdg-open", "missing"] {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
         if program != "missing" {
-            maestro_test_harness::install_family(
+            maestro_test_process::install_family(
                 &scratch.path().join(program),
                 "browser_launch",
                 &serde_json::json!({ "port": port }).to_string(),
             )
             .expect("the prepared viewer installs");
         }
-        let command = maestro_test_harness::TestProcess::current(
+        let command = maestro_test_process::TestProcess::current(
             "native_browser_launch_is_detached_and_uses_one_literal_argument",
         )
         .unwrap()
@@ -80,7 +80,7 @@ pub fn launch() {
 /// Observe return before releasing the browser process, then consume all output.
 fn handshake(
     listener: &TcpListener,
-    child: &mut maestro_test_harness::CheckedChild,
+    child: &mut maestro_test_process::CheckedChild,
     program: &str,
 ) {
     let (stream, _) = listener.accept().unwrap();

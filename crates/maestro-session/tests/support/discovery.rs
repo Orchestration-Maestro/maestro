@@ -82,7 +82,7 @@ pub fn replay(names: &[&str], adjust: impl Fn(&str, &mut Value)) {
         .unwrap();
     for name in names {
         let case = cases.iter().find(|case| case.name == *name).unwrap();
-        let scratch = maestro_test_harness::Scratch::new().unwrap();
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
         let path = scratch.path().join("case.jsonl");
         std::fs::write(&path, &case.input).unwrap();
         let file = std::fs::File::options().write(true).open(&path).unwrap();

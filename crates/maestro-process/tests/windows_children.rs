@@ -1,7 +1,7 @@
 //! Direct Windows child termination leaves independently running descendants alive.
 #![cfg(all(test, windows))]
 use maestro_process::children::{RawChild, signal_pid};
-use maestro_test_harness::TestProcess;
+use maestro_test_process::TestProcess;
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},

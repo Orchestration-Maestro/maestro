@@ -116,9 +116,9 @@ fn watched(case: &Case<'_>, reads: &Reads) -> crate::TestResult<crate::transport
 #[test]
 fn bundled_response_policies_survive_local_submission() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "bundled_response_policies_survive_local_submission",
             )?
             .nocapture()

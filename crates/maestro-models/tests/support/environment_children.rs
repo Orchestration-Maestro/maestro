@@ -5,7 +5,7 @@ use maestro_models::{find_env_keys, get_env_api_key};
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-pub use maestro_test_harness::Scratch as Directory;
+pub use maestro_test_directory::Scratch as Directory;
 
 pub fn child() -> TestResult<bool> {
     let Ok(expectation) = std::env::var("MAESTRO_ENV_EXPECTATION") else {
@@ -33,7 +33,7 @@ pub fn child() -> TestResult<bool> {
 }
 
 pub fn run(
-    process: maestro_test_harness::TestProcess,
+    process: maestro_test_process::TestProcess,
     directory: &Directory,
     variables: &[(OsString, OsString)],
     provider: &str,

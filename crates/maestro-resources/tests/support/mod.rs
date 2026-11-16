@@ -1,5 +1,5 @@
 //! Disposable native filesystem fixtures.
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::path::{Path, PathBuf};
 
 /// Disposable native resource tree.
@@ -31,7 +31,7 @@ impl Default for Directory {
 }
 
 #[cfg(unix)]
-pub use maestro_test_harness::Restore;
+pub use maestro_test_directory::Restore;
 
 /// Take every permission away from `path`. Returns the guard that puts them back and the
 /// error reading `path` now gives, or `None` when the run still reads it (a privileged run).
@@ -41,7 +41,7 @@ pub use maestro_test_harness::Restore;
 #[cfg(unix)]
 #[must_use]
 pub fn deny(path: &Path) -> Option<(Restore, String)> {
-    let guard = maestro_test_harness::deny(path, 0o000).unwrap()?;
+    let guard = maestro_test_directory::deny(path, 0o000).unwrap()?;
     let error = if path.is_dir() {
         std::fs::read_dir(path).err()
     } else {
@@ -70,7 +70,7 @@ pub fn denied_link(dir: &Directory, link: &Path) -> Option<Restore> {
 /// The platform temporary directory as an authored loader input.
 #[must_use]
 pub fn cwd() -> String {
-    text(&maestro_test_harness::temporary_root()).to_owned()
+    text(&maestro_test_directory::temporary_root()).to_owned()
 }
 
 /// Borrow a UTF-8 authored fixture path.

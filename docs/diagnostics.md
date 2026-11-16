@@ -38,24 +38,24 @@ you are watching, keep the print macros.
 
 ## Testing a diagnostic path
 
-`maestro_test_harness::run_with_broken_stderr` runs a test in a child whose
+`maestro_test_process::run_with_broken_stderr` runs a test in a child whose
 standard error is a pipe with no reader. The child calls
-`maestro_test_harness::wait_for_broken_stderr` first, so no write can beat the
+`maestro_test_process::wait_for_broken_stderr` first, so no write can beat the
 pipe's closing, then runs the code under test. The test passes when the child
-exits with success. The parent first calls `maestro_test_harness::run_alone`, so
+exits with success. The parent first calls `maestro_test_process::run_alone`, so
 no sibling test forks while the pipe's reading end is still open.
 
 ```rust
-if maestro_test_harness::selection().is_child() {
-    maestro_test_harness::wait_for_broken_stderr();
+if maestro_test_process::selection().is_child() {
+    maestro_test_process::wait_for_broken_stderr();
     maestro_agent::diagnostics::write_stderr_line("nobody reads this");
     return;
 }
-if maestro_test_harness::run_alone("my_test").unwrap() {
+if maestro_test_process::run_alone("my_test").unwrap() {
     return;
 }
-let status = maestro_test_harness::run_with_broken_stderr(
-    maestro_test_harness::TestProcess::current("my_test").unwrap().case("*"),
+let status = maestro_test_process::run_with_broken_stderr(
+    maestro_test_process::TestProcess::current("my_test").unwrap().case("*"),
 )
 .unwrap();
 assert!(status.success());

@@ -6,7 +6,7 @@ use maestro_app::presentation_data::input_selectors::{
 use maestro_packages::{PathMetadata, ResolvedPaths, ResolvedResource};
 use maestro_resources::{SourceOrigin, SourceScope};
 use maestro_settings::{Settings, SettingsManager};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use maestro_theme::{ThemeDirectories, ThemeState};
 use std::{
     cell::{Cell, RefCell},

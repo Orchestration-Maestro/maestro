@@ -28,7 +28,7 @@ fn query<E: Fn(&str) -> Option<String>>(
 #[test]
 fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
     use fixtures::completion_native::Tree;
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let provider = CombinedAutocompleteProvider::new(
             vec![],
             "/missing".into(),
@@ -59,7 +59,7 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
             .expect("provider succeeds")
             .is_none()
     );
-    let output = maestro_test_harness::TestProcess::current(
+    let output = maestro_test_process::TestProcess::current(
         "native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
     )
     .unwrap()

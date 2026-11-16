@@ -18,4 +18,3 @@ serde_json = "*"
 sha2 = "0.11"
 tokio = { version = "*", default-features = false, features = ["rt"] }
 toml = "*"
-tracing = { version = "*", default-features = false, features = ["std"] }

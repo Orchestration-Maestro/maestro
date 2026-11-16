@@ -149,7 +149,7 @@ fn label_timestamp_toggle_obeys_live_keys_and_action_priority() {
 
 #[test]
 fn label_timestamp_uses_local_calendar_branches() {
-    if !maestro_test_harness::local_zone_follows_tz() {
+    if !maestro_test_process::local_zone_follows_tz() {
         return;
     }
     tree_label_support::group("label_timestamp_uses_local_calendar_branches");
@@ -157,7 +157,7 @@ fn label_timestamp_uses_local_calendar_branches() {
 
 #[test]
 fn label_timestamp_respects_local_daylight_transitions() {
-    if !maestro_test_harness::local_zone_follows_tz() {
+    if !maestro_test_process::local_zone_follows_tz() {
         return;
     }
     tree_label_support::group("label_timestamp_respects_local_daylight_transitions");

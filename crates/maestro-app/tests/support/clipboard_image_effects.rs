@@ -314,7 +314,7 @@ pub fn run(name: &str) {
     let (here, ambient): (Vec<_>, Vec<_>) = cases
         .into_iter()
         .partition(|case| case.input.ambient_env.is_none());
-    let selected = maestro_test_harness::run_per_environment(name, ambient, |case| {
+    let selected = maestro_test_process::run_per_environment(name, ambient, |case| {
         case.input
             .ambient_env
             .iter()

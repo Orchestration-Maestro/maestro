@@ -148,12 +148,12 @@ fn detached_custom_commands_keep_the_login_flag() {
 #[test]
 #[cfg(target_os = "linux")]
 fn scrollback_editor_keeps_shell_evaluated_editor_fallback() {
-    let owned = maestro_test_harness::Scratch::new().unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
     let dir = owned.path();
     let artifact =
         std::env::var_os("MAESTRO_NATIVE_FIXTURE").expect("run just prepare-tests first");
     let editor = dir.join("vi");
-    maestro_test_harness::install_executable(std::path::Path::new(&artifact), &editor).unwrap();
+    maestro_test_process::install_executable(std::path::Path::new(&artifact), &editor).unwrap();
     let mut record = editor.into_os_string();
     record.push(".fixture");
     std::fs::write(
@@ -254,12 +254,12 @@ const LAUNCH_PATH_ROOT: &str = "MAESTRO_LAUNCH_PATH_ROOT";
 fn launch_resolves_effective_child_path_and_extensions() {
     /// The case that repeats the lookup overrides in a child.
     const CHILD: &str = "native";
-    if maestro_test_harness::selection().case() == Some(CHILD) {
+    if maestro_test_process::selection().case() == Some(CHILD) {
         let directory = std::env::var_os(LAUNCH_PATH_ROOT).unwrap();
         assert_launch_environment(Path::new(&directory));
         return;
     }
-    let owned = maestro_test_harness::Scratch::new().unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
     let directory = owned.path();
     let parent = directory.join("parent");
     let chosen = directory.join("chosen");
@@ -270,7 +270,7 @@ fn launch_resolves_effective_child_path_and_extensions() {
     for name in ["shared.BAT", "only.BAT", "shared.CMD"] {
         std::fs::write(chosen.join(name), "@echo chosen\r\n").unwrap();
     }
-    let output = maestro_test_harness::TestProcess::current(
+    let output = maestro_test_process::TestProcess::current(
         "launch_resolves_effective_child_path_and_extensions",
     )
     .unwrap()

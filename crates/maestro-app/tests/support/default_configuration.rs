@@ -520,9 +520,9 @@ fn settings_case(
 /// # Panics
 /// Panics when fixture admission, setup or a recorded observation fails.
 pub fn settings(name: &str, group: Group) {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let index = (0..cases::<Value, Value>(group).len())
-            .find(|index| maestro_test_harness::selection().runs_case(&index.to_string()))
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
             .expect("selected settings row");
         settings_child(group, index);
         println!("\nPROBE settings-ok");
@@ -537,7 +537,7 @@ pub fn settings(name: &str, group: Group) {
         let home = scratch.join("home");
         std::fs::create_dir(&home).unwrap();
         let output = child::probe(
-            maestro_test_harness::TestProcess::current(name)
+            maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .case(index.to_string()),
             scratch.0.path(),

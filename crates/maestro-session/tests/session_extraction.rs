@@ -6,7 +6,7 @@ use crate::support;
 use maestro_interchange::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, parse_session_entries};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use serde_json::{Value, json};
 use std::fs;
 use support::native::{below, below_keeping_dots, broken_history, uncanonicalized_scratch};
@@ -195,7 +195,7 @@ fn extraction_keeps_unknown_records_and_unreached_fields() {
 #[test]
 fn extracted_context_reuses_local_timestamp_conversion() {
     let name = "extracted_context_reuses_local_timestamp_conversion";
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     let zone = selection.is_child().then(|| {
         ["America/New_York", "UTC"]
             .into_iter()
@@ -203,11 +203,11 @@ fn extracted_context_reuses_local_timestamp_conversion() {
             .expect("selected timezone")
     });
     let Some(zone) = zone else {
-        if !maestro_test_harness::local_zone_follows_tz() {
+        if !maestro_test_process::local_zone_follows_tz() {
             return;
         }
         for zone in ["America/New_York", "UTC"] {
-            let output = maestro_test_harness::TestProcess::current(name)
+            let output = maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .nocapture()
                 .env("TZ", zone)

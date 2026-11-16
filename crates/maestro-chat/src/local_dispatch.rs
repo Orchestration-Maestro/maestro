@@ -272,7 +272,7 @@ mod tests {
     use super::{DispatchToken, local_dispatch};
     use crate::components::session_selector::list::tests::session_picker::manual_runtime::ManualRuntime;
     use maestro_models::DiagnosticErrorInfo;
-    use maestro_test_harness::executor::block_on;
+    use maestro_test_process::executor::block_on;
     use std::{
         cell::{Cell, RefCell},
         future::Future,

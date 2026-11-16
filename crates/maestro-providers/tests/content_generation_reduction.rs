@@ -874,7 +874,7 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
     ] {
         selected.extend(rows(name)?);
     }
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         return crate::runtime::run(async {
             let index = (0..selected.len())
@@ -889,7 +889,7 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
     }
     for index in 0..selected.len() {
         {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "cloud_raw_entry_uses_shared_response_reduction",
             )?
             .nocapture()

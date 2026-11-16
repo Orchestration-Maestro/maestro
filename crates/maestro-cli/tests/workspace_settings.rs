@@ -1,7 +1,7 @@
 //! Settings output observed through the command presentation boundary.
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_cli::workspace_commands::settings::run_reset_keys;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::fs;
 
 #[test]

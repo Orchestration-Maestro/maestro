@@ -39,7 +39,7 @@ fn inherited_components_follow_the_discovery_rule() {
 /// Native file names reach the real copy boundary when staging and restoring a bundle.
 #[test]
 fn executable_names_survive_bundle_copy_and_restore() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let built = scratch.path().join("built");
     let bundle = scratch.path().join("bundle");
     let restored = scratch.path().join("restored");
@@ -82,7 +82,7 @@ fn member(root: &Path, name: &str) {
 /// later installation replaces the example from the earlier installation with a new file.
 #[test]
 fn bundle_export_installs_the_native_example() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     std::fs::write(
         root.join("Cargo.toml"),
@@ -187,7 +187,7 @@ fn consuming_workspace(root: &Path) -> Workspace {
 /// the crate, and no fixed component the workspace does not hold.
 #[test]
 fn the_setup_example_builds_the_component_crate_package() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     let workspace = consuming_workspace(root);
 
@@ -207,7 +207,7 @@ fn the_setup_example_builds_the_component_crate_package() {
 /// the fixed components or example inputs whose packages it does not hold.
 #[test]
 fn a_consuming_workspace_plans_its_own_components_alone() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     let workspace = consuming_workspace(root);
     let planned = plan(&workspace, Some(&workspace.component_crate().unwrap())).unwrap();
@@ -255,7 +255,7 @@ const CLOSURE_MANIFEST: &str = "[workspace]\nmembers = [\"crates/*\"]\nresolver 
 /// Each crate names the others through the workspace's dependency entries.
 fn closure_workspace(root: &Path) {
     assert!(
-        maestro_test_harness::git_command::command()
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(root)
             .status()
@@ -322,7 +322,7 @@ fn shared_digest(root: &Path) -> String {
 /// changing the source of such a crate does not.
 #[test]
 fn component_digest_ignores_tests_and_development_dependencies_of_dependencies() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     closure_workspace(root);
     let before = shared_digest(root);
@@ -350,7 +350,7 @@ fn component_digest_ignores_tests_and_development_dependencies_of_dependencies()
 /// dependencies for them.
 #[test]
 fn component_digest_follows_the_dependency_manifest_and_the_example_crate_manifest() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     closure_workspace(root);
     let before = shared_digest(root);
@@ -377,7 +377,7 @@ fn component_digest_follows_the_dependency_manifest_and_the_example_crate_manife
 /// change to any of them keeps every component.
 #[test]
 fn component_digest_ignores_workspace_manifest_entries_the_release_build_does_not_read() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     closure_workspace(root);
     let before = shared_digest(root);
@@ -407,7 +407,7 @@ fn component_digest_ignores_workspace_manifest_entries_the_release_build_does_no
 /// patches, so a change to any of them rebuilds the components.
 #[test]
 fn component_digest_follows_workspace_manifest_entries_the_release_build_reads() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     closure_workspace(root);
     let before = shared_digest(root);
@@ -558,9 +558,9 @@ fn component_crates_hold_only_what_the_wasm_build_uses() {
 #[test]
 fn component_bundle_tracks_subagent_sources_but_not_unrelated_packages() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     assert!(
-        maestro_test_harness::git_command::command()
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(scratch.path())
             .status()
@@ -606,7 +606,7 @@ fn bumped(name: &str) -> String {
 /// follows the entries of exactly those packages.
 #[test]
 fn lock_digest_follows_only_the_closure_of_the_named_packages() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let lock = scratch.path().join("Cargo.lock");
     std::fs::write(&lock, LOCK).unwrap();
     let roots = BTreeSet::from(["b".to_owned()]);
@@ -633,7 +633,7 @@ fn lock_digest_follows_only_the_closure_of_the_named_packages() {
 /// `examples/c.rs` and the shared `lib.rs`, with the rule `sources` of a component built at
 /// `out/a.wasm`.
 fn rule_files(sources: &str) -> std::io::Result<BTreeSet<String>> {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     for name in ["examples/a.rs", "examples/b.rs", "examples/c.rs", "lib.rs"] {
         std::fs::create_dir_all(root.join(name).parent().unwrap()).unwrap();
@@ -647,7 +647,7 @@ fn rule_files(sources: &str) -> std::io::Result<BTreeSet<String>> {
     )
     .unwrap();
     assert!(
-        maestro_test_harness::git_command::command()
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(root)
             .status()
@@ -683,7 +683,7 @@ fn component_inputs_hold_the_example_files_of_the_dependency_rule() {
 /// components alone, so a search program with no dependency file is never read as a component.
 #[test]
 fn staging_stages_components_alone() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     let checkout = root.join("checkout");
     let output = root.join("output");
@@ -705,7 +705,7 @@ fn staging_stages_components_alone() {
     )
     .unwrap();
     assert!(
-        maestro_test_harness::git_command::command()
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(&checkout)
             .status()

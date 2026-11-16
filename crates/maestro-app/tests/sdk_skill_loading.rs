@@ -50,7 +50,7 @@ fn sessions_keep_an_empty_supplied_skill_result() -> Result<(), Error> {
 /// A loader-supplied skill remains intact instead of being replaced by default discovery.
 #[test]
 fn sessions_keep_caller_supplied_skills() -> Result<(), Error> {
-    maestro_test_harness::with_isolated_home("sessions_keep_caller_supplied_skills", |_| {
+    maestro_test_process::with_isolated_home("sessions_keep_caller_supplied_skills", |_| {
         execute(|sample| async move {
             let mut options = sample.options()?;
             let supplied = |mut base: maestro_app::LoadSkillsResult| {

@@ -213,7 +213,7 @@ fn extension_user_message_skips_expansion_and_reports_its_source() {
     on_task_set(|_| async {
         let expected =
             expected("a user message from an extension skips expansion and reports its source");
-        let scratch = maestro_test_harness::Scratch::new().unwrap();
+        let scratch = maestro_test_directory::Scratch::new().unwrap();
         let heard = Rc::new(RefCell::new(None));
         let options = HarnessOptions {
             skills: recorded_skills(&scratch),

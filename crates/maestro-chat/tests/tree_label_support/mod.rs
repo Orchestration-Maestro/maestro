@@ -123,10 +123,10 @@ struct Effects {
 
 /// Replays all cases belonging to one named public witness in isolated zones.
 pub fn group(name: &str) {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             subprocess::run_child(
-                maestro_test_harness::TestProcess::current(name)
+                maestro_test_process::TestProcess::current(name)
                     .unwrap()
                     .case("*"),
                 &[("TZ", Some(tz))],

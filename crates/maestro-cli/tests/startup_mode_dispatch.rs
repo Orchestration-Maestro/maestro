@@ -162,7 +162,7 @@ fn scope_hint_names_the_configured_cycle_key_and_is_absent_when_unbound() {
                 ),
                 ("[]", "Model scope: captured\n"),
             ] {
-                let scratch = maestro_test_harness::Scratch::new().unwrap();
+                let scratch = maestro_test_directory::Scratch::new().unwrap();
                 std::fs::write(
                     scratch.path().join("keybindings.json"),
                     format!("{{\"app.model.cycleForward\": {binding}}}"),
@@ -474,11 +474,11 @@ fn failure_events(phase: &str) -> Vec<String> {
 #[test]
 fn print_dispatch_uses_real_modes_and_returns_status() {
     let name = "print_dispatch_uses_real_modes_and_returns_status";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         run(name, print_child);
         return;
     }
-    let root = maestro_test_harness::Scratch::new().unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
     for case in ["text-ok", "text-error", "json-ok", "json-error"] {
         let output = crate::support::missing_cwd::command(name, case, root.path())
             .quiet()
@@ -538,7 +538,7 @@ fn assert_print_output(case: &str, body: &str, stderr: &[u8]) {
 
 /// Run the real print owner, keeping its provider and cleanup observations.
 async fn print_child(local: std::rc::Rc<tokio::task::LocalSet>) {
-    use maestro_test_harness::selection;
+    use maestro_test_process::selection;
     let mut h = Harness::new(local, false).await;
     timing(&mut h);
     h.watch();
@@ -575,7 +575,7 @@ async fn print_child(local: std::rc::Rc<tokio::task::LocalSet>) {
 
 /// Prepared ordered prompts for either print representation.
 fn print_request() -> maestro_cli::startup::entrypoint::routing::ModeDispatch {
-    use maestro_test_harness::selection;
+    use maestro_test_process::selection;
     let mut input = request(
         if selection().runs_case("json-ok") || selection().runs_case("json-error") {
             AppMode::Json
@@ -633,7 +633,7 @@ fn assert_print_prompts(prompts: &[serde_json::Value]) {
 
 #[test]
 fn print_failure_does_not_restore_or_close_outer_owners() {
-    use maestro_test_harness::{run_alone, selection};
+    use maestro_test_process::{run_alone, selection};
     use std::io::{Read, Write};
     let name = "print_failure_does_not_restore_or_close_outer_owners";
     if selection().is_child() {
@@ -664,7 +664,7 @@ fn print_failure_does_not_restore_or_close_outer_owners() {
     if run_alone(name).unwrap() {
         return;
     }
-    let root = maestro_test_harness::Scratch::new().unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
     let mut child = crate::support::missing_cwd::command(name, "broken-pipe", root.path())
         .quiet()
         .nocapture()

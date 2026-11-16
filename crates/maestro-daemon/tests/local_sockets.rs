@@ -8,12 +8,12 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 
 /// Own a newly created test directory until its socket handles have dropped.
-struct Directory(maestro_test_harness::Scratch);
+struct Directory(maestro_test_directory::Scratch);
 
 impl Directory {
     /// Create a unique directory without replacing an existing entry.
     fn new() -> Self {
-        Self(maestro_test_harness::Scratch::new_socket().unwrap())
+        Self(maestro_test_directory::Scratch::new_socket().unwrap())
     }
 
     /// The directory this test owns.
@@ -44,7 +44,7 @@ fn socket_transport_connects_and_preserves_file_ownership() {
 #[test]
 fn socket_prepare_preserves_non_socket_entries() {
     use std::os::unix::fs::{MetadataExt, symlink};
-    if maestro_test_harness::run_alone("socket_prepare_preserves_non_socket_entries").unwrap() {
+    if maestro_test_process::run_alone("socket_prepare_preserves_non_socket_entries").unwrap() {
         return;
     }
     let directory = Directory::new();
@@ -94,7 +94,7 @@ fn socket_prepare_preserves_non_socket_entries() {
 
 #[test]
 fn socket_write_shutdown_preserves_reverse_direction() {
-    if maestro_test_harness::run_alone("socket_write_shutdown_preserves_reverse_direction").unwrap()
+    if maestro_test_process::run_alone("socket_write_shutdown_preserves_reverse_direction").unwrap()
     {
         return;
     }
@@ -238,7 +238,7 @@ fn socket_prepare_rejects_live_listener_with_busy_text() {
 
 #[test]
 fn socket_prepare_removes_stale_file() {
-    if maestro_test_harness::run_alone("socket_prepare_removes_stale_file").unwrap() {
+    if maestro_test_process::run_alone("socket_prepare_removes_stale_file").unwrap() {
         return;
     }
     let directory = Directory::new();
@@ -268,7 +268,7 @@ fn socket_claim_outranks_a_refused_connection() {
 
 #[test]
 fn socket_claim_release_makes_the_socket_stale_at_once() {
-    if maestro_test_harness::run_alone("socket_claim_release_makes_the_socket_stale_at_once")
+    if maestro_test_process::run_alone("socket_claim_release_makes_the_socket_stale_at_once")
         .unwrap()
     {
         return;
@@ -335,7 +335,7 @@ fn socket_prepare_preserves_unclassified_failures() {
     let denied = directory.path().join("denied");
     fs::create_dir(&denied).unwrap();
     let before = fs::symlink_metadata(&denied).unwrap();
-    let Some(guard) = maestro_test_harness::deny(&denied, 0).unwrap() else {
+    let Some(guard) = maestro_test_directory::deny(&denied, 0).unwrap() else {
         return;
     };
     let child = denied.join("new/child");
@@ -370,7 +370,7 @@ fn socket_prepare_retains_datagram_socket_errors() {
 
 #[test]
 fn socket_pending_data_is_not_peer_eof() {
-    if maestro_test_harness::run_alone("socket_pending_data_is_not_peer_eof").unwrap() {
+    if maestro_test_process::run_alone("socket_pending_data_is_not_peer_eof").unwrap() {
         return;
     }
     let directory = Directory::new();

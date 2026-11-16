@@ -58,8 +58,8 @@ For job control on Unix, the process crate also enables Tokio `signal` to observ
 continue signal, and sends the stop signal to its process group through rustix's
 `process` feature. Both reuse the locked dependency closure.
 
-The process tests run their controlled children as Rust. On Unix the test-harness owner
-(`maestro-test-harness`) depends on the existing `rustix =1.1.6` with `std`, `fs`, `stdio`
+The process tests run their controlled children as Rust. On Unix the test-process owner
+(`maestro-test-process`) depends on the existing `rustix =1.1.6` with `std`, `fs`, `stdio`
 and `process`, so a child replaces one of its standard descriptors with the null device and
 applies its own umask, process-count limit and session without unsafe code; the process
 tests share that one operation. The mode and `umask` calls are the only items behind `fs`.
@@ -76,7 +76,7 @@ feature. Their checked children block termination before replacing themselves wi
 test executable, then wait with `sigwait` after reporting readiness. No package version
 changes.
 
-The test-harness owner's single harness-free native fixture inherits the existing
+The test-process owner's single harness-free native fixture inherits the existing
 workspace `serde` and `serde_json` pins, including `float_roundtrip`, for its
 controlled Cargo and search records. Unix fixture development dependencies inherit
 the workspace `signal-hook =0.3.18` and `rustix =1.1.6` pins, both with defaults off;

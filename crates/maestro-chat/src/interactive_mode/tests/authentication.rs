@@ -950,7 +950,7 @@ fn logout_persistence_failure_remains_a_store_diagnostic() {
             let world = started_with(directory, Some(Arc::clone(&auth))).await;
             let root = directory.join("store0");
             let Some(_restored) =
-                maestro_test_harness::deny(root.join("auth.json"), 0o400).unwrap()
+                maestro_test_directory::deny(root.join("auth.json"), 0o400).unwrap()
             else {
                 return;
             };

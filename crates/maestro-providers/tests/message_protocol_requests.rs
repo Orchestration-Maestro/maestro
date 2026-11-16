@@ -80,8 +80,8 @@ async fn default_client_posts_request() -> TestResult {
 fn messages_send_key_request() -> TestResult {
     crate::runtime::run(async {
         messages::assert_rows(FIXTURE, "messages_send_key_request").await?;
-        if maestro_test_harness::selection().is_child()
-            && maestro_test_harness::selection().runs_group("messages_send_key_request")
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection().runs_group("messages_send_key_request")
         {
             default_client_posts_request().await?;
         }
@@ -135,8 +135,8 @@ async fn nonfinite_numbers_are_written_as_json_does() -> TestResult {
 fn messages_apply_raw_token_default() -> TestResult {
     crate::runtime::run(async {
         messages::assert_rows(FIXTURE, "messages_apply_raw_token_default").await?;
-        if maestro_test_harness::selection().is_child()
-            && maestro_test_harness::selection().runs_group("messages_apply_raw_token_default")
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection().runs_group("messages_apply_raw_token_default")
         {
             nonfinite_numbers_are_written_as_json_does().await?;
         }
@@ -260,8 +260,8 @@ async fn payload_members_are_written_in_order() -> TestResult {
 fn messages_apply_metadata_and_tool_choice() -> TestResult {
     crate::runtime::run(async {
         messages::assert_rows(FIXTURE, "messages_apply_metadata_and_tool_choice").await?;
-        if maestro_test_harness::selection().is_child()
-            && maestro_test_harness::selection()
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection()
                 .runs_group("messages_apply_metadata_and_tool_choice")
         {
             payload_members_are_written_in_order().await?;
@@ -380,14 +380,14 @@ async fn payload_hook_precedes_authentication_failure() -> TestResult {
 fn messages_keep_auth_failure_in_stream() -> TestResult {
     crate::runtime::run::<crate::TestResult<_>>(async {
         messages::assert_rows(FIXTURE, "messages_keep_auth_failure_in_stream").await?;
-        if maestro_test_harness::selection().is_child()
-            && maestro_test_harness::selection().runs_group("messages_keep_auth_failure_in_stream")
+        if maestro_test_process::selection().is_child()
+            && maestro_test_process::selection().runs_group("messages_keep_auth_failure_in_stream")
         {
             payload_hook_precedes_authentication_failure().await?;
         }
         Ok(())
     })?;
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         call_outside_a_runtime_ends_in_error()?;
     }
     Ok(())

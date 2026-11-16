@@ -1,7 +1,7 @@
 //! A graceful stop waits for the selected sockets to disappear within one deadline.
 use super::*;
 use crate::instances::SelectionEnvironment;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;

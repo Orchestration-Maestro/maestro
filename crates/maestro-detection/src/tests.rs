@@ -4,13 +4,13 @@ use std::path::PathBuf;
 
 pub(crate) struct Fixture {
     /// The disposable root that removes the tree.
-    root: maestro_test_harness::Scratch,
+    root: maestro_test_directory::Scratch,
     pub(crate) cache: ManifestCache,
 }
 
 impl Fixture {
     pub(crate) fn new() -> Self {
-        let root = maestro_test_harness::Scratch::new().unwrap();
+        let root = maestro_test_directory::Scratch::new().unwrap();
         let cache = ManifestCache::new(
             Some(root.path().join("overrides")),
             Some(root.path().join("catalog")),

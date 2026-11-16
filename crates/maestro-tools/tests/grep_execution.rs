@@ -132,7 +132,7 @@ fn grep_count_byte_and_clip_notices_keep_order() {
 #[test]
 fn grep_failures_keep_acquisition_path_and_exit_precedence() {
     use crate::{grep_support as g, read_support};
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let root = read_support::Scratch::new().unwrap();
         let case = g::cases("grep_failures_keep_acquisition_path_and_exit_precedence")
             .into_iter()
@@ -308,7 +308,7 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
     for worktree in [false, true] {
         if worktree {
             assert!(
-                maestro_test_harness::git_command::command()
+                maestro_test_process::git_command::command()
                     .args(["init", "-q"])
                     .arg(root.path())
                     .status()
@@ -353,7 +353,7 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
 fn grep_cancellation_drops_pending_operations() {
     use crate::{grep_support as g, read_support};
     use maestro_models::Cancellation;
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         cancel_pending_acquisition();
         return;
     }

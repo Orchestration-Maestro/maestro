@@ -718,7 +718,7 @@ async fn replay_case(directory: &Path, mut startup: Startup, expected: Vec<Step>
 fn replay(test: &str) {
     isolated(test, async |directory| {
         for (startup, expected) in cases::<Startup, Vec<Step>>(FIXTURES, test) {
-            let case = maestro_test_harness::Scratch::new_in(directory).unwrap();
+            let case = maestro_test_directory::Scratch::new_in(directory).unwrap();
             (replay_case(case.path(), startup, expected)).await;
         }
     });

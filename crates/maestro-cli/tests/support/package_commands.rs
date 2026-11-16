@@ -18,7 +18,7 @@ use maestro_process::SpawnSyncError;
 use maestro_settings::{
     Settings, SettingsManager, SettingsScope, SettingsStorage, SettingsStorageError, SettingsUpdate,
 };
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use serde_json::Value;
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;

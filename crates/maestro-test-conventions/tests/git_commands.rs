@@ -29,14 +29,14 @@ fn tests_reject_direct_git_commands() {
     ] {
         let error = check("tests/commands.rs", command).unwrap_err();
         assert!(
-            error.contains("maestro_test_harness::git_command::command"),
+            error.contains("maestro_test_process::git_command::command"),
             "{error}"
         );
     }
     assert_eq!(
         check(
             "tests/commands.rs",
-            "maestro_test_harness::git_command::command()"
+            "maestro_test_process::git_command::command()"
         ),
         Ok(())
     );
@@ -55,7 +55,7 @@ fn tests_reject_git_commands_inside_macros() {
     )
     .unwrap_err();
     assert!(
-        error.contains("maestro_test_harness::git_command::command"),
+        error.contains("maestro_test_process::git_command::command"),
         "{error}"
     );
 }

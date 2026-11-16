@@ -2,7 +2,7 @@
 
 use crate::state::test_support::spawning;
 use crate::{settings::model::Config, state::App};
-use maestro_test_harness::{TestProcess, run_alone};
+use maestro_test_process::{TestProcess, run_alone};
 
 #[test]
 fn setup_entry() {
@@ -32,7 +32,7 @@ fn daemon_new_workspace_retains_discovered_git_metadata() {
 }
 
 async fn check_admitted_repository(args: &[String]) {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     std::fs::create_dir(root.join(".git")).unwrap();
     std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
