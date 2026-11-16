@@ -18,8 +18,8 @@ use super::*;
 fn inherited_components_follow_the_discovery_rule() {
     let names = [
         "MAESTRO_AUTHOR_COMPONENT",
-        "MAESTRO_TEST_COMPONENT",
-        "MAESTRO_TEST__COMPONENT",
+        "MAESTRO_COMPONENT",
+        "MAESTRO__COMPONENT",
         "MAESTRO_TEST_HOME",
         "MAESTRO_lower_COMPONENT",
         "PATH",
@@ -29,8 +29,8 @@ fn inherited_components_follow_the_discovery_rule() {
         inherited_components(names.into_iter()),
         [
             "MAESTRO_AUTHOR_COMPONENT",
-            "MAESTRO_TEST_COMPONENT",
-            "MAESTRO_TEST__COMPONENT"
+            "MAESTRO_COMPONENT",
+            "MAESTRO__COMPONENT"
         ]
         .map(OsString::from)
     );

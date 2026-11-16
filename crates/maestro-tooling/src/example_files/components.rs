@@ -146,6 +146,8 @@ pub fn visit(
 
 /// Keep variable names within the component environment namespace and one output line.
 ///
+/// The bare `MAESTRO_COMPONENT` and empty-middle `MAESTRO__COMPONENT` forms are accepted.
+///
 /// # Errors
 /// Returns an error naming a variable that is outside that namespace.
 pub fn validate_variable(variable: &str) -> io::Result<()> {
