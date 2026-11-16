@@ -38,20 +38,20 @@ fn event_rows(test: &str, count: usize) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_retain_response_identity() -> TestResult {
-    event_rows("responses_events_retain_response_identity", 2)
+fn maestro_responses_events_retain_response_identity() -> TestResult {
+    event_rows("maestro_responses_events_retain_response_identity", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_replace_final_text() -> TestResult {
-    event_rows("responses_events_replace_final_text", 1)
+fn maestro_responses_events_replace_final_text() -> TestResult {
+    event_rows("maestro_responses_events_replace_final_text", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_encode_text_signature() -> TestResult {
-    event_rows("responses_events_encode_text_signature", 3)?;
+fn maestro_responses_events_encode_text_signature() -> TestResult {
+    event_rows("maestro_responses_events_encode_text_signature", 3)?;
     for (identity, phase, signature) in [
         ("", "false", r#"{"v":1}"#),
         (",\"id\":null", "null", r#"{"v":1,"id":null}"#),
@@ -77,68 +77,68 @@ fn responses_events_encode_text_signature() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_accept_refusal_parts() -> TestResult {
-    event_rows("responses_events_accept_refusal_parts", 2)
+fn maestro_responses_events_accept_refusal_parts() -> TestResult {
+    event_rows("maestro_responses_events_accept_refusal_parts", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_gate_deltas_by_current_part() -> TestResult {
-    event_rows("responses_events_gate_deltas_by_current_part", 37)
+fn maestro_responses_events_gate_deltas_by_current_part() -> TestResult {
+    event_rows("maestro_responses_events_gate_deltas_by_current_part", 37)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_accumulate_reasoning_parts() -> TestResult {
-    event_rows("responses_events_accumulate_reasoning_parts", 1)
+fn maestro_responses_events_accumulate_reasoning_parts() -> TestResult {
+    event_rows("maestro_responses_events_accumulate_reasoning_parts", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_choose_final_reasoning_text() -> TestResult {
-    event_rows("responses_events_choose_final_reasoning_text", 4)
+fn maestro_responses_events_choose_final_reasoning_text() -> TestResult {
+    event_rows("maestro_responses_events_choose_final_reasoning_text", 4)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_preserve_reasoning_item_json() -> TestResult {
-    event_rows("responses_events_preserve_reasoning_item_json", 2)
+fn maestro_responses_events_preserve_reasoning_item_json() -> TestResult {
+    event_rows("maestro_responses_events_preserve_reasoning_item_json", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_finish_argument_suffix() -> TestResult {
-    event_rows("responses_events_finish_argument_suffix", 4)
+fn maestro_responses_events_finish_argument_suffix() -> TestResult {
+    event_rows("maestro_responses_events_finish_argument_suffix", 4)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_remove_tool_scratch() -> TestResult {
-    event_rows("responses_events_remove_tool_scratch", 2)
+fn maestro_responses_events_remove_tool_scratch() -> TestResult {
+    event_rows("maestro_responses_events_remove_tool_scratch", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_fallback_to_final_arguments() -> TestResult {
-    event_rows("responses_events_fallback_to_final_arguments", 4)
+fn maestro_responses_events_fallback_to_final_arguments() -> TestResult {
+    event_rows("maestro_responses_events_fallback_to_final_arguments", 4)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_insert_final_only_tool() -> TestResult {
-    event_rows("responses_events_insert_final_only_tool", 1)
+fn maestro_responses_events_insert_final_only_tool() -> TestResult {
+    event_rows("maestro_responses_events_insert_final_only_tool", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_open_unmatched_final_items() -> TestResult {
-    event_rows("responses_events_open_unmatched_final_items", 2)
+fn maestro_responses_events_open_unmatched_final_items() -> TestResult {
+    event_rows("maestro_responses_events_open_unmatched_final_items", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_map_completion_status() -> TestResult {
-    event_rows("responses_events_map_completion_status", 10)?;
+fn maestro_responses_events_map_completion_status() -> TestResult {
+    event_rows("maestro_responses_events_map_completion_status", 10)?;
     for (status, error) in [
         ("false", None),
         ("null", None),
@@ -170,116 +170,116 @@ fn responses_events_map_completion_status() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_preserve_tool_finish_priority() -> TestResult {
-    event_rows("responses_events_preserve_tool_finish_priority", 3)
+fn maestro_responses_events_preserve_tool_finish_priority() -> TestResult {
+    event_rows("maestro_responses_events_preserve_tool_finish_priority", 3)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_account_usage_categories() -> TestResult {
-    event_rows("responses_events_account_usage_categories", 4)
+fn maestro_responses_events_account_usage_categories() -> TestResult {
+    event_rows("maestro_responses_events_account_usage_categories", 4)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_keep_usage_when_absent() -> TestResult {
-    event_rows("responses_events_keep_usage_when_absent", 1)
+fn maestro_responses_events_keep_usage_when_absent() -> TestResult {
+    event_rows("maestro_responses_events_keep_usage_when_absent", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_choose_service_tier() -> TestResult {
-    event_rows("responses_events_choose_service_tier", 10)
+fn maestro_responses_events_choose_service_tier() -> TestResult {
+    event_rows("maestro_responses_events_choose_service_tier", 10)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_use_tier_resolver() -> TestResult {
-    event_rows("responses_events_use_tier_resolver", 2)
+fn maestro_responses_events_use_tier_resolver() -> TestResult {
+    event_rows("maestro_responses_events_use_tier_resolver", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_skip_resolver_without_pricing() -> TestResult {
-    event_rows("responses_events_skip_resolver_without_pricing", 1)
+fn maestro_responses_events_skip_resolver_without_pricing() -> TestResult {
+    event_rows("maestro_responses_events_skip_resolver_without_pricing", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_render_direct_errors() -> TestResult {
-    event_rows("responses_events_render_direct_errors", 16)
+fn maestro_responses_events_render_direct_errors() -> TestResult {
+    event_rows("maestro_responses_events_render_direct_errors", 16)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_render_failed_details() -> TestResult {
-    event_rows("responses_events_render_failed_details", 24)
+fn maestro_responses_events_render_failed_details() -> TestResult {
+    event_rows("maestro_responses_events_render_failed_details", 24)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_incomplete_eof() -> TestResult {
-    event_rows("responses_events_reject_incomplete_eof", 3)
+fn maestro_responses_events_reject_incomplete_eof() -> TestResult {
+    event_rows("maestro_responses_events_reject_incomplete_eof", 3)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_accept_incomplete_terminal() -> TestResult {
-    event_rows("responses_events_accept_incomplete_terminal", 1)
+fn maestro_responses_events_accept_incomplete_terminal() -> TestResult {
+    event_rows("maestro_responses_events_accept_incomplete_terminal", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_ignore_unknown_events() -> TestResult {
-    event_rows("responses_events_ignore_unknown_events", 1)
+fn maestro_responses_events_ignore_unknown_events() -> TestResult {
+    event_rows("maestro_responses_events_ignore_unknown_events", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_keep_items_by_output_index() -> TestResult {
-    event_rows("responses_events_keep_items_by_output_index", 1)
+fn maestro_responses_events_keep_items_by_output_index() -> TestResult {
+    event_rows("maestro_responses_events_keep_items_by_output_index", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_keep_current_item_order() -> TestResult {
-    event_rows("responses_events_keep_current_item_order", 2)
+fn maestro_responses_events_keep_current_item_order() -> TestResult {
+    event_rows("maestro_responses_events_keep_current_item_order", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_read_numeric_usage() -> TestResult {
-    event_rows("responses_events_read_numeric_usage", 2)
+fn maestro_responses_events_read_numeric_usage() -> TestResult {
+    event_rows("maestro_responses_events_read_numeric_usage", 2)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_read_last_duplicate_fields() -> TestResult {
-    event_rows("responses_events_read_last_duplicate_fields", 1)
+fn maestro_responses_events_read_last_duplicate_fields() -> TestResult {
+    event_rows("maestro_responses_events_read_last_duplicate_fields", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_keep_argument_roots() -> TestResult {
-    event_rows("responses_events_keep_argument_roots", 6)
+fn maestro_responses_events_keep_argument_roots() -> TestResult {
+    event_rows("maestro_responses_events_keep_argument_roots", 6)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_malformed_json() -> TestResult {
-    event_rows("responses_events_reject_malformed_json", 1)
+fn maestro_responses_events_reject_malformed_json() -> TestResult {
+    event_rows("maestro_responses_events_reject_malformed_json", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_lone_surrogates() -> TestResult {
-    event_rows("responses_events_reject_lone_surrogates", 8)
+fn maestro_responses_events_reject_lone_surrogates() -> TestResult {
+    event_rows("maestro_responses_events_reject_lone_surrogates", 8)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_propagate_source_failure() -> TestResult {
-    event_rows("responses_events_propagate_source_failure", 1)
+fn maestro_responses_events_propagate_source_failure() -> TestResult {
+    event_rows("maestro_responses_events_propagate_source_failure", 1)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -290,7 +290,7 @@ fn nested(containers: usize) -> String {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_skip_unread_deep_values() -> TestResult {
+fn maestro_responses_events_skip_unread_deep_values() -> TestResult {
     let deep = nested(100_000);
     let events = vec![
         format!(r#"{{"type":"response.created","ignored":{deep},"response":{{"id":"first"}}}}"#),
@@ -334,7 +334,7 @@ fn arguments_kept(text: &str) -> TestResult<serde_json::Value> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_preserve_argument_boundaries() -> TestResult {
+fn maestro_responses_events_preserve_argument_boundaries() -> TestResult {
     for depth in [127_usize, 128, 100_000] {
         for closed in [true, false] {
             let inner = "[".repeat(depth - 1);
@@ -436,7 +436,7 @@ fn watching_source(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_share_live_output() -> TestResult {
+fn maestro_responses_events_share_live_output() -> TestResult {
     let events = [
         json!({"type": "response.output_item.added", "item": {"type": "message", "content": []}}),
         json!({"type": "response.output_item.done", "item": {"type": "message", "id": "msg_1",
@@ -477,8 +477,11 @@ fn responses_events_share_live_output() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_ignore_malformed_unselected_fields() -> TestResult {
-    event_rows("responses_events_ignore_malformed_unselected_fields", 31)?;
+fn maestro_responses_events_ignore_malformed_unselected_fields() -> TestResult {
+    event_rows(
+        "maestro_responses_events_ignore_malformed_unselected_fields",
+        31,
+    )?;
     let events = [
         r#"{"type":"future.event","delta":"\ud800","response":{"id":"\ud800"}}"#,
         r#"{"type":"response.output_item.added","item":{"type":"future.item","name":"\ud800","content":[{"text":"\ud800"}]}}"#,
@@ -540,7 +543,7 @@ fn appending_source<'a>(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_keep_started_block_identity() -> TestResult {
+fn maestro_responses_events_keep_started_block_identity() -> TestResult {
     for (item, delta, done, key, expected) in [
         (
             json!({"type":"message","content":[{"type":"output_text"}]}),
@@ -597,7 +600,7 @@ fn responses_events_keep_started_block_identity() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_publish_completion_before_callbacks() -> TestResult {
+fn maestro_responses_events_publish_completion_before_callbacks() -> TestResult {
     for status in [r#""completed""#, r#""unknown""#, r#""\ud800""#] {
         let model = responses::model(None)?;
         let output = responses::shared_output(&model, &responses::zero_usage())?;
@@ -655,14 +658,20 @@ fn responses_events_publish_completion_before_callbacks() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_diagnostic_container_types() -> TestResult {
-    event_rows("responses_events_reject_diagnostic_container_types", 3)
+fn maestro_responses_events_reject_diagnostic_container_types() -> TestResult {
+    event_rows(
+        "maestro_responses_events_reject_diagnostic_container_types",
+        3,
+    )
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_ignore_unused_final_call_members() -> TestResult {
-    event_rows("responses_events_ignore_unused_final_call_members", 2)?;
+fn maestro_responses_events_ignore_unused_final_call_members() -> TestResult {
+    event_rows(
+        "maestro_responses_events_ignore_unused_final_call_members",
+        2,
+    )?;
     let events = [
         r#"{"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":"lookup","arguments":"{\"x\":1}"}}"#,
         r#"{"type":"response.output_item.done","item":{"type":"function_call","id":"\ud800","name":"\ud800","arguments":"\ud800"}}"#,
@@ -678,7 +687,7 @@ fn responses_events_ignore_unused_final_call_members() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_defer_initial_part_decoding() -> TestResult {
+fn maestro_responses_events_defer_initial_part_decoding() -> TestResult {
     let start = r#"{"type":"response.output_item.added","item":{"type":"message","content":[{"type":"\ud800"}]}}"#;
     for selected in [false, true] {
         let mut events = vec![start.to_owned()];
@@ -700,7 +709,7 @@ fn responses_events_defer_initial_part_decoding() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_mistyped_final_values() -> TestResult {
+fn maestro_responses_events_reject_mistyped_final_values() -> TestResult {
     for (kind, field, parts) in [
         (
             "message",
@@ -747,7 +756,7 @@ fn responses_events_reject_mistyped_final_values() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_preserve_phase_before_missing_call_identity() -> TestResult {
+fn maestro_responses_events_preserve_phase_before_missing_call_identity() -> TestResult {
     let events = [
         r#"{"type":"response.output_item.added","item":{"type":"message"}}"#,
         r#"{"type":"response.output_item.done","item":{"type":"message","id":"m","phase":"other","content":[]}}"#,
@@ -774,7 +783,7 @@ fn responses_events_preserve_phase_before_missing_call_identity() -> TestResult 
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_require_selected_containers() -> TestResult {
+fn maestro_responses_events_require_selected_containers() -> TestResult {
     for event in [
         "null",
         r#"{"type":"response.created"}"#,
@@ -814,7 +823,7 @@ fn responses_events_require_selected_containers() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_mistyped_deltas() -> TestResult {
+fn maestro_responses_events_reject_mistyped_deltas() -> TestResult {
     for (kind, part, delta) in [
         ("message", "output_text", "response.output_text.delta"),
         ("message", "refusal", "response.refusal.delta"),
@@ -862,7 +871,7 @@ fn responses_events_reject_mistyped_deltas() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_keep_final_text_when_signature_fails() -> TestResult {
+fn maestro_responses_events_keep_final_text_when_signature_fails() -> TestResult {
     let events = [
         r#"{"type":"response.output_item.added","item":{"type":"message","content":[{"type":"output_text"}]}}"#,
         r#"{"type":"response.output_text.delta","delta":"draft"}"#,
@@ -888,7 +897,7 @@ fn responses_events_keep_final_text_when_signature_fails() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_unrepresentable_assigned_strings() -> TestResult {
+fn maestro_responses_events_reject_unrepresentable_assigned_strings() -> TestResult {
     for event in [
         r#"{"type":"response.output_item.added","item":{"type":"function_call"}}"#,
         r#"{"type":"response.output_item.added","item":{"type":"function_call","id":"i","call_id":"c","name":false}}"#,
@@ -919,7 +928,7 @@ fn responses_events_reject_unrepresentable_assigned_strings() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_validate_initial_arrays_only_when_used() -> TestResult {
+fn maestro_responses_events_validate_initial_arrays_only_when_used() -> TestResult {
     for (kind, field, selected) in [
         (
             "message",
@@ -971,7 +980,7 @@ fn responses_events_validate_initial_arrays_only_when_used() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_selected_tier_and_argument_types() -> TestResult {
+fn maestro_responses_events_reject_selected_tier_and_argument_types() -> TestResult {
     for pricing in [false, true] {
         let mut script = Script::of(vec![
             r#"{"type":"response.completed","response":{"service_tier":42}}"#.to_owned(),
@@ -1011,7 +1020,7 @@ fn responses_events_reject_selected_tier_and_argument_types() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_selected_identity_and_error_strings() -> TestResult {
+fn maestro_responses_events_reject_selected_identity_and_error_strings() -> TestResult {
     for event in [
         json!({"type":"error","code":"kept","message":42}),
         json!({"type":"error","code":"kept"}),
@@ -1033,7 +1042,7 @@ fn responses_events_reject_selected_identity_and_error_strings() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_accept_nullable_error_code() -> TestResult {
+fn maestro_responses_events_accept_nullable_error_code() -> TestResult {
     let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
         r#"{"type":"error","code":null,"message":"quota"}"#.to_owned(),
     ])?))?;
@@ -1043,7 +1052,7 @@ fn responses_events_accept_nullable_error_code() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_nonnumeric_usage() -> TestResult {
+fn maestro_responses_events_reject_nonnumeric_usage() -> TestResult {
     let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
         json!({"type":"response.completed","response":{"usage":{}}}).to_string(),
     ])?))?;
@@ -1102,7 +1111,7 @@ fn responses_events_reject_nonnumeric_usage() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_replay_calls_without_item_identity() -> TestResult {
+fn maestro_responses_events_replay_calls_without_item_identity() -> TestResult {
     for event_kind in ["response.output_item.added", "response.output_item.done"] {
         let item =
             json!({"type": "function_call", "call_id": "c", "name": "lookup", "arguments": "{}"});
@@ -1141,7 +1150,7 @@ fn responses_events_replay_calls_without_item_identity() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_reject_ambiguous_call_identity() -> TestResult {
+fn maestro_responses_events_reject_ambiguous_call_identity() -> TestResult {
     for event_kind in ["response.output_item.added", "response.output_item.done"] {
         let run = crate::tests::runtime::run(responses::reduce(Script::of(vec![
             json!({"type":event_kind,"item":{"type":"function_call",
@@ -1163,7 +1172,7 @@ fn responses_events_reject_ambiguous_call_identity() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_events_replay_complete_item_identity() -> TestResult {
+fn maestro_responses_events_replay_complete_item_identity() -> TestResult {
     for event_kind in ["response.output_item.added", "response.output_item.done"] {
         let mut events = vec![
             json!({"type":event_kind,"item":{"type":"function_call",

@@ -87,7 +87,7 @@ fn assert_nonreasoning_maps(model: &mut Model) {
 }
 
 #[test]
-fn thinking_levels_follow_model_maps() {
+fn maestro_thinking_levels_follow_model_maps() {
     for (provider, id) in [
         ("anthropic", "claude-opus-4-6"),
         ("anthropic", "claude-opus-4-7"),

@@ -11,7 +11,7 @@ use crate::{
 use serde_json::Value;
 
 #[test]
-fn tool_name_checks_are_exact() {
+fn maestro_tool_name_checks_are_exact() {
     let rows: Vec<Value> = serde_json::from_str(include_str!("tool_names.json")).unwrap();
     assert_eq!(rows.len(), 376);
     for row in rows {
@@ -139,7 +139,7 @@ async fn builtin_records(driver: &mut impl super::scenario::Driver) -> Result<()
 }
 
 #[test]
-fn tool_events_keep_builtin_inputs_and_custom_extras() -> Result<(), String> {
+fn maestro_tool_events_keep_builtin_inputs_and_custom_extras() -> Result<(), String> {
     on_both_adapters!(builtin_records)
 }
 
@@ -165,7 +165,7 @@ async fn override_payloads(driver: &mut impl super::scenario::Driver) -> Result<
 }
 
 #[test]
-fn named_overrides_keep_arbitrary_details() -> Result<(), String> {
+fn maestro_named_overrides_keep_arbitrary_details() -> Result<(), String> {
     on_both_adapters!(override_payloads)
 }
 
@@ -186,7 +186,7 @@ async fn override_inputs(driver: &mut impl super::scenario::Driver) -> Result<()
 }
 
 #[test]
-fn named_overrides_keep_arbitrary_inputs() -> Result<(), String> {
+fn maestro_named_overrides_keep_arbitrary_inputs() -> Result<(), String> {
     on_both_adapters!(override_inputs)
 }
 
@@ -215,7 +215,7 @@ async fn event_answers(driver: &mut impl super::scenario::Driver) -> Result<(), 
 }
 
 #[test]
-fn event_results_keep_absent_and_falsy_replacements() -> Result<(), String> {
+fn maestro_event_results_keep_absent_and_falsy_replacements() -> Result<(), String> {
     on_both_adapters!(event_answers)
 }
 
@@ -282,7 +282,7 @@ async fn custom_json(driver: &mut impl super::scenario::Driver) -> Result<(), St
 }
 
 #[test]
-fn custom_json_keeps_order_and_valid_unicode() -> Result<(), String> {
+fn maestro_custom_json_keeps_order_and_valid_unicode() -> Result<(), String> {
     on_both_adapters!(custom_json)
 }
 
@@ -303,7 +303,7 @@ async fn user_bash(driver: &mut impl super::scenario::Driver) -> Result<(), Stri
 }
 
 #[test]
-fn user_bash_results_preserve_presence_and_flags() -> Result<(), String> {
+fn maestro_user_bash_results_preserve_presence_and_flags() -> Result<(), String> {
     on_both_adapters!(user_bash)
 }
 
@@ -438,7 +438,7 @@ async fn numeric_shell_result(driver: &mut impl super::scenario::Driver) -> Resu
 }
 
 #[test]
-fn tool_numeric_fields_reject_nonfinite_output() -> Result<(), String> {
+fn maestro_tool_numeric_fields_reject_nonfinite_output() -> Result<(), String> {
     on_both_adapters!(numeric_output)
 }
 
@@ -483,7 +483,7 @@ async fn retained_payloads(driver: &mut impl super::scenario::Driver) -> Result<
 }
 
 #[test]
-fn tool_decoding_keeps_payloads_without_schema_validation() -> Result<(), String> {
+fn maestro_tool_decoding_keeps_payloads_without_schema_validation() -> Result<(), String> {
     on_both_adapters!(retained_payloads)
 }
 

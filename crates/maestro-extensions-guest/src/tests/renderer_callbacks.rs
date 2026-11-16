@@ -78,7 +78,7 @@ async fn invocation(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn renderer_invokes_and_retains_component() -> Result<(), String> {
+fn maestro_renderer_invokes_and_retains_component() -> Result<(), String> {
     on_both_adapters!(invocation)
 }
 
@@ -133,7 +133,7 @@ async fn rejection(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn renderer_owners_release_independently() -> Result<(), String> {
+fn maestro_renderer_owners_release_independently() -> Result<(), String> {
     on_both_adapters!(ownership)
 }
 
@@ -176,7 +176,7 @@ async fn emissions(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn renderer_callbacks_emit_and_recover() -> Result<(), String> {
+fn maestro_renderer_callbacks_emit_and_recover() -> Result<(), String> {
     on_both_adapters!(emissions)
 }
 
@@ -574,7 +574,7 @@ async fn payloads(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn renderer_payloads_keep_existing_record_semantics() -> Result<(), String> {
+fn maestro_renderer_payloads_keep_existing_record_semantics() -> Result<(), String> {
     on_both_adapters!(payloads)
 }
 

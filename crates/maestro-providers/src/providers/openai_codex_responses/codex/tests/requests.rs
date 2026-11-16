@@ -14,7 +14,7 @@ struct AccountCase {
 }
 
 #[test]
-fn response_sessions_extract_account_claim() {
+fn maestro_response_sessions_extract_account_claim() {
     let rows: Vec<AccountCase> =
         super::fixture_rows(include_str!("fixtures/account.json"), &["token"]).unwrap();
     for row in rows {
@@ -53,7 +53,7 @@ struct BodyCase {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_build_request_defaults() {
+fn maestro_response_sessions_build_request_defaults() {
     crate::tests::runtime::run(async {
         let rows = body_cases("defaults").unwrap();
         for row in rows {
@@ -164,7 +164,7 @@ impl From<RequestOptions> for super::super::OpenAICodexResponsesOptions {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_select_text_verbosity() {
+fn maestro_response_sessions_select_text_verbosity() {
     use super::super::OpenAICodexTextVerbosity as Verbosity;
     crate::tests::runtime::run(async {
         let row: BodyCase = body_cases("defaults").unwrap().remove(0);
@@ -201,7 +201,7 @@ struct EndpointCase {
 }
 
 #[test]
-fn response_sessions_resolve_sse_endpoint() {
+fn maestro_response_sessions_resolve_sse_endpoint() {
     let rows: Vec<EndpointCase> =
         super::fixture_rows(include_str!("fixtures/endpoints.json"), &["base"]).unwrap();
     for row in rows {
@@ -244,7 +244,7 @@ struct HeaderCase {
 }
 
 #[test]
-fn response_sessions_join_initial_cookie_headers() {
+fn maestro_response_sessions_join_initial_cookie_headers() {
     let mut model = super::controlled_model();
     model.headers = Some(indexmap::IndexMap::from([
         ("cookie".to_owned(), "a=1".to_owned()),
@@ -273,7 +273,7 @@ fn response_sessions_join_initial_cookie_headers() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_apply_sse_headers() {
+fn maestro_response_sessions_apply_sse_headers() {
     let rows: Vec<HeaderCase> =
         super::fixture_rows(include_str!("fixtures/headers.json"), &["input"]).unwrap();
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -311,7 +311,7 @@ fn response_sessions_apply_sse_headers() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_convert_history_and_tools() {
+fn maestro_response_sessions_convert_history_and_tools() {
     crate::tests::runtime::run(async {
         let rows = body_cases("history").unwrap();
         for row in rows {
@@ -355,19 +355,19 @@ async fn assert_bodies(text: &str) {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_map_reasoning_from_descriptor() {
+fn maestro_response_sessions_map_reasoning_from_descriptor() {
     crate::tests::runtime::run(assert_bodies("reasoning"));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_keep_raw_minimal_without_mapping() {
+fn maestro_response_sessions_keep_raw_minimal_without_mapping() {
     crate::tests::runtime::run(assert_bodies("minimal"));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_default_reasoning_summary() {
+fn maestro_response_sessions_default_reasoning_summary() {
     crate::tests::runtime::run(assert_bodies("summary"));
 }
 
@@ -384,7 +384,7 @@ struct RetryCase {
 }
 
 #[test]
-fn response_sessions_distinguish_http_failures() {
+fn maestro_response_sessions_distinguish_http_failures() {
     let rows: Vec<RetryCase> =
         super::fixture_rows(include_str!("fixtures/retries.json"), &["status", "text"]).unwrap();
     for row in rows {
@@ -425,7 +425,7 @@ struct ErrorTexts {
 }
 
 #[test]
-fn response_sessions_render_friendly_http_errors() {
+fn maestro_response_sessions_render_friendly_http_errors() {
     assert_conditional_clock();
     let rows: Vec<ErrorCase> = super::fixture_rows(
         include_str!("fixtures/errors.json"),
@@ -465,7 +465,7 @@ struct TierCase {
 }
 
 #[test]
-fn response_sessions_resolve_echoed_tier() {
+fn maestro_response_sessions_resolve_echoed_tier() {
     let rows: Vec<TierCase> = super::fixture_rows(
         include_str!("fixtures/tiers.json"),
         &["response", "request"],
@@ -499,7 +499,7 @@ struct PriceCase {
 }
 
 #[test]
-fn response_sessions_price_all_cost_categories() {
+fn maestro_response_sessions_price_all_cost_categories() {
     let rows: Vec<PriceCase> = super::fixture_rows(
         include_str!("fixtures/prices.json"),
         &["id", "tier", "cost"],
@@ -521,7 +521,7 @@ fn response_sessions_price_all_cost_categories() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_sessions_validate_headers_before_fetch() {
+fn maestro_response_sessions_validate_headers_before_fetch() {
     crate::tests::runtime::run(async {
         for (name, value, replaced, expected) in [
             ("Bad Header", "x", false, "Header bad header:"),

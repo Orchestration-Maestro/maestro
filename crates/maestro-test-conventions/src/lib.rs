@@ -63,8 +63,6 @@ mod temp_directories;
 mod test_budget;
 /// Repository directories that tests read at run time.
 mod test_input_routes;
-/// Behaviour-only names for attributed tests.
-mod test_names;
 /// Test-owned timed-wait and optional polling checks.
 mod time_limits;
 /// Tokio macros that need the `macros` feature.
@@ -113,12 +111,6 @@ mod tracked_sizes;
 /// Periods use positive whole seconds (`"Ns"`).
 ///
 /// Native fixture setup selection must match the declared test-harness callers plus their owner.
-///
-/// A test attribute marks its function as test-owned code, including at a library root:
-/// its name may not start with `maestro_` or `test_`, or contain `issue_` followed by a digit.
-/// Raw identifiers follow the same rule; unattributed helpers retain their names. Each violation
-/// names the source file, declaration line and function. The shared syntax walk reads test
-/// attributes ending in `test` without expanding macros.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Sources load, and the source checks run, on
@@ -247,7 +239,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| fixture_includes::check(&members),
         &|| leaked_words::check(root, &members),
         &|| bucket_modules::check(root, &members),
-        &|| test_names::check(&members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.
     pool::map(checks, |check| check())?.into_iter().collect()

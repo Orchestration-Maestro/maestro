@@ -249,78 +249,78 @@ fn markdown_extended_autolinks_match_standard_examples() {
 }
 
 #[test]
-fn markdown_render_simple_nested_list() {
-    markdown::cases("markdown_render_simple_nested_list");
+fn maestro_markdown_render_simple_nested_list() {
+    markdown::cases("maestro_markdown_render_simple_nested_list");
 }
 
 #[test]
-fn markdown_render_deeply_nested_list() {
-    markdown::cases("markdown_render_deeply_nested_list");
+fn maestro_markdown_render_deeply_nested_list() {
+    markdown::cases("maestro_markdown_render_deeply_nested_list");
 }
 
 #[test]
-fn markdown_render_ordered_nested_list() {
-    markdown::cases("markdown_render_ordered_nested_list");
+fn maestro_markdown_render_ordered_nested_list() {
+    markdown::cases("maestro_markdown_render_ordered_nested_list");
 }
 
 #[test]
-fn markdown_render_nested_ordered_and_unordered_lists_together() {
-    markdown::cases("markdown_render_nested_ordered_and_unordered_lists_together");
+fn maestro_markdown_render_nested_ordered_and_unordered_lists_together() {
+    markdown::cases("maestro_markdown_render_nested_ordered_and_unordered_lists_together");
 }
 
 #[test]
-fn markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output() {
-    markdown::cases("markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output");
+fn maestro_markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output() {
+    markdown::cases("maestro_markdown_keep_numbering_when_code_blocks_carry_no_indent_llm_output");
 }
 
 #[test]
-fn markdown_gap_between_code_block_and_paragraph_is_one_line() {
-    markdown::cases("markdown_gap_between_code_block_and_paragraph_is_one_line");
+fn maestro_markdown_gap_between_code_block_and_paragraph_is_one_line() {
+    markdown::cases("maestro_markdown_gap_between_code_block_and_paragraph_is_one_line");
 }
 
 #[test]
-fn markdown_collapse_block_spacing_to_a_single_gap() {
-    markdown::cases("markdown_collapse_block_spacing_to_a_single_gap");
+fn maestro_markdown_collapse_block_spacing_to_a_single_gap() {
+    markdown::cases("maestro_markdown_collapse_block_spacing_to_a_single_gap");
 }
 
 #[test]
-fn markdown_no_trailing_blank_line_after_a_final_code_block() {
-    markdown::cases("markdown_no_trailing_blank_line_after_a_final_code_block");
+fn maestro_markdown_no_trailing_blank_line_after_a_final_code_block() {
+    markdown::cases("maestro_markdown_no_trailing_blank_line_after_a_final_code_block");
 }
 
 #[test]
-fn markdown_gap_between_divider_and_para_is_one_line() {
-    markdown::cases("markdown_gap_between_divider_and_para_is_one_line");
+fn maestro_markdown_gap_between_divider_and_para_is_one_line() {
+    markdown::cases("maestro_markdown_gap_between_divider_and_para_is_one_line");
 }
 
 #[test]
-fn markdown_no_trailing_blank_line_after_a_final_divider() {
-    markdown::cases("markdown_no_trailing_blank_line_after_a_final_divider");
+fn maestro_markdown_no_trailing_blank_line_after_a_final_divider() {
+    markdown::cases("maestro_markdown_no_trailing_blank_line_after_a_final_divider");
 }
 
 #[test]
-fn markdown_gap_between_heading_and_para_is_one_line() {
-    markdown::cases("markdown_gap_between_heading_and_para_is_one_line");
+fn maestro_markdown_gap_between_heading_and_para_is_one_line() {
+    markdown::cases("maestro_markdown_gap_between_heading_and_para_is_one_line");
 }
 
 #[test]
-fn markdown_no_trailing_blank_line_after_a_final_heading() {
-    markdown::cases("markdown_no_trailing_blank_line_after_a_final_heading");
+fn maestro_markdown_no_trailing_blank_line_after_a_final_heading() {
+    markdown::cases("maestro_markdown_no_trailing_blank_line_after_a_final_heading");
 }
 
 #[test]
-fn markdown_gap_between_quote_and_para_is_one_line() {
-    markdown::cases("markdown_gap_between_quote_and_para_is_one_line");
+fn maestro_markdown_gap_between_quote_and_para_is_one_line() {
+    markdown::cases("maestro_markdown_gap_between_quote_and_para_is_one_line");
 }
 
 #[test]
-fn markdown_no_trailing_blank_line_after_a_final_quote() {
-    markdown::cases("markdown_no_trailing_blank_line_after_a_final_quote");
+fn maestro_markdown_no_trailing_blank_line_after_a_final_quote() {
+    markdown::cases("maestro_markdown_no_trailing_blank_line_after_a_final_quote");
 }
 
 #[test]
-fn markdown_render_list_content_inside_blockquotes() {
-    markdown::cases("markdown_render_list_content_inside_blockquotes");
+fn maestro_markdown_render_list_content_inside_blockquotes() {
+    markdown::cases("maestro_markdown_render_list_content_inside_blockquotes");
 }
 
 #[test]
@@ -354,58 +354,62 @@ fn markdown_list_items_skip_children_that_render_empty() {
 }
 
 #[test]
-fn markdown_wrap_long_blockquote_lines_and_border_every_wrapped_line() {
-    markdown::cases("markdown_wrap_long_blockquote_lines_and_border_every_wrapped_line");
+fn maestro_markdown_wrap_long_blockquote_lines_and_border_every_wrapped_line() {
+    markdown::cases("maestro_markdown_wrap_long_blockquote_lines_and_border_every_wrapped_line");
 }
 
 #[test]
-fn markdown_render_text_as_strikethrough() {
-    markdown::cases("markdown_render_text_as_strikethrough");
+fn maestro_markdown_render_text_as_strikethrough() {
+    markdown::cases("maestro_markdown_render_text_as_strikethrough");
 }
 
 #[test]
-fn markdown_show_no_duplicate_url_for_autolinked_emails() {
-    markdown::cases("markdown_show_no_duplicate_url_for_autolinked_emails");
+fn maestro_markdown_show_no_duplicate_url_for_autolinked_emails() {
+    markdown::cases("maestro_markdown_show_no_duplicate_url_for_autolinked_emails");
 }
 
 #[test]
-fn markdown_show_no_duplicate_url_for_bare_urls() {
-    markdown::cases("markdown_show_no_duplicate_url_for_bare_urls");
+fn maestro_markdown_show_no_duplicate_url_for_bare_urls() {
+    markdown::cases("maestro_markdown_show_no_duplicate_url_for_bare_urls");
 }
 
 #[test]
-fn markdown_show_a_url_in_parentheses_without_hyperlink_support() {
-    markdown::cases("markdown_show_a_url_in_parentheses_without_hyperlink_support");
+fn maestro_markdown_show_a_url_in_parentheses_without_hyperlink_support() {
+    markdown::cases("maestro_markdown_show_a_url_in_parentheses_without_hyperlink_support");
 }
 
 #[test]
-fn markdown_show_a_mailto_url_in_parentheses_without_hyperlink_support() {
-    markdown::cases("markdown_show_a_mailto_url_in_parentheses_without_hyperlink_support");
+fn maestro_markdown_show_a_mailto_url_in_parentheses_without_hyperlink_support() {
+    markdown::cases("maestro_markdown_show_a_mailto_url_in_parentheses_without_hyperlink_support");
 }
 
 #[test]
-fn markdown_emit_the_osc_8_hyperlink_sequence_when_the_terminal_has_hyperlinks() {
-    markdown::cases("markdown_emit_the_osc_8_hyperlink_sequence_when_the_terminal_has_hyperlinks");
+fn maestro_markdown_emit_the_osc_8_hyperlink_sequence_when_the_terminal_has_hyperlinks() {
+    markdown::cases(
+        "maestro_markdown_emit_the_osc_8_hyperlink_sequence_when_the_terminal_has_hyperlinks",
+    );
 }
 
 #[test]
-fn markdown_use_osc_8_for_a_mailto_link_when_the_terminal_has_hyperlinks() {
-    markdown::cases("markdown_use_osc_8_for_a_mailto_link_when_the_terminal_has_hyperlinks");
+fn maestro_markdown_use_osc_8_for_a_mailto_link_when_the_terminal_has_hyperlinks() {
+    markdown::cases(
+        "maestro_markdown_use_osc_8_for_a_mailto_link_when_the_terminal_has_hyperlinks",
+    );
 }
 
 #[test]
-fn markdown_use_osc_8_for_a_bare_url_when_the_terminal_has_hyperlinks() {
-    markdown::cases("markdown_use_osc_8_for_a_bare_url_when_the_terminal_has_hyperlinks");
+fn maestro_markdown_use_osc_8_for_a_bare_url_when_the_terminal_has_hyperlinks() {
+    markdown::cases("maestro_markdown_use_osc_8_for_a_bare_url_when_the_terminal_has_hyperlinks");
 }
 
 #[test]
-fn markdown_render_markup_tags_as_literal_text() {
-    markdown::cases("markdown_render_markup_tags_as_literal_text");
+fn maestro_markdown_render_markup_tags_as_literal_text() {
+    markdown::cases("maestro_markdown_render_markup_tags_as_literal_text");
 }
 
 #[test]
-fn markdown_render_html_tags_inside_code_blocks() {
-    markdown::cases("markdown_render_html_tags_inside_code_blocks");
+fn maestro_markdown_render_html_tags_inside_code_blocks() {
+    markdown::cases("maestro_markdown_render_html_tags_inside_code_blocks");
 }
 
 #[test]

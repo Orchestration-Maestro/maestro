@@ -126,7 +126,7 @@ impl Serialize for Between {
 
 /// Shared data is frozen before the finite and JSON serialization passes.
 #[test]
-fn stream_output_observes_one_post_callback_snapshot() -> Result<(), String> {
+fn maestro_stream_output_observes_one_post_callback_snapshot() -> Result<(), String> {
     use crate::bindings::exports::maestro::extension::guest::Decision;
     use crate::{AgentMessage, AssistantMessageEvent, ExtensionEvent, MessageUpdateEvent};
     let shared = std::sync::Arc::new(std::sync::RwLock::new(
@@ -239,21 +239,21 @@ async fn terminal_reasons(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn stream_terminal_reasons_keep_their_subsets() -> Result<(), String> {
+fn maestro_stream_terminal_reasons_keep_their_subsets() -> Result<(), String> {
     on_both_adapters!(terminal_reasons)
 }
 
 #[test]
-fn nested_event_numbers_keep_bits() -> Result<(), String> {
+fn maestro_nested_event_numbers_keep_bits() -> Result<(), String> {
     on_both_adapters!(numbers)
 }
 
 #[test]
-fn tool_notifications_keep_opaque_values() -> Result<(), String> {
+fn maestro_tool_notifications_keep_opaque_values() -> Result<(), String> {
     on_both_adapters!(tools)
 }
 
 #[test]
-fn stream_events_keep_all_variants_and_signatures() -> Result<(), String> {
+fn maestro_stream_events_keep_all_variants_and_signatures() -> Result<(), String> {
     on_both_adapters!(streams)
 }

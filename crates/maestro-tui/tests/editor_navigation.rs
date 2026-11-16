@@ -84,178 +84,178 @@ fn word_bindings_admit_each_default_alias() {
 }
 
 #[test]
-fn editor_ctrl_w_and_alt_backspace_remove_whole_words() {
-    support::run("editor_ctrl_w_and_alt_backspace_remove_whole_words");
+fn maestro_editor_ctrl_w_and_alt_backspace_remove_whole_words() {
+    support::run("maestro_editor_ctrl_w_and_alt_backspace_remove_whole_words");
 }
 
 #[test]
-fn editor_ctrl_left_and_right_step_by_word() {
-    support::run("editor_ctrl_left_and_right_step_by_word");
+fn maestro_editor_ctrl_left_and_right_step_by_word() {
+    support::run("maestro_editor_ctrl_left_and_right_step_by_word");
 }
 
 #[test]
-fn editor_forward_jump_reaches_the_nearest_match_ahead() {
-    support::run("editor_forward_jump_reaches_the_nearest_match_ahead");
+fn maestro_editor_forward_jump_reaches_the_nearest_match_ahead() {
+    support::run("maestro_editor_forward_jump_reaches_the_nearest_match_ahead");
 }
 
 #[test]
-fn editor_second_forward_jump_reaches_the_next_match() {
-    support::run("editor_second_forward_jump_reaches_the_next_match");
+fn maestro_editor_second_forward_jump_reaches_the_next_match() {
+    support::run("maestro_editor_second_forward_jump_reaches_the_next_match");
 }
 
 #[test]
-fn editor_jump_forward_crosses_line_breaks() {
-    support::run("editor_jump_forward_crosses_line_breaks");
+fn maestro_editor_jump_forward_crosses_line_breaks() {
+    support::run("maestro_editor_jump_forward_crosses_line_breaks");
 }
 
 #[test]
-fn editor_backward_jump_reaches_the_nearest_match_behind() {
-    support::run("editor_backward_jump_reaches_the_nearest_match_behind");
+fn maestro_editor_backward_jump_reaches_the_nearest_match_behind() {
+    support::run("maestro_editor_backward_jump_reaches_the_nearest_match_behind");
 }
 
 #[test]
-fn editor_jump_backward_crosses_line_breaks() {
-    support::run("editor_jump_backward_crosses_line_breaks");
+fn maestro_editor_jump_backward_crosses_line_breaks() {
+    support::run("maestro_editor_jump_backward_crosses_line_breaks");
 }
 
 #[test]
-fn editor_a_missing_forward_target_keeps_the_cursor() {
-    support::run("editor_a_missing_forward_target_keeps_the_cursor");
+fn maestro_editor_a_missing_forward_target_keeps_the_cursor() {
+    support::run("maestro_editor_a_missing_forward_target_keeps_the_cursor");
 }
 
 #[test]
-fn editor_a_missing_backward_target_keeps_the_cursor() {
-    support::run("editor_a_missing_backward_target_keeps_the_cursor");
+fn maestro_editor_a_missing_backward_target_keeps_the_cursor() {
+    support::run("maestro_editor_a_missing_backward_target_keeps_the_cursor");
 }
 
 #[test]
-fn editor_matches_search_character_case_exactly() {
-    support::run("editor_matches_search_character_case_exactly");
+fn maestro_editor_matches_search_character_case_exactly() {
+    support::run("maestro_editor_matches_search_character_case_exactly");
 }
 
 #[test]
-fn editor_second_ctrl_ends_jump_mode() {
-    support::run("editor_second_ctrl_ends_jump_mode");
+fn maestro_editor_second_ctrl_ends_jump_mode() {
+    support::run("maestro_editor_second_ctrl_ends_jump_mode");
 }
 
 #[test]
-fn editor_escape_ends_jump_mode_then_reaches_the_editor() {
-    support::run("editor_escape_ends_jump_mode_then_reaches_the_editor");
+fn maestro_editor_escape_ends_jump_mode_then_reaches_the_editor() {
+    support::run("maestro_editor_escape_ends_jump_mode_then_reaches_the_editor");
 }
 
 #[test]
-fn editor_second_ctrl_alt_ends_backward_jump_mode() {
-    support::run("editor_second_ctrl_alt_ends_backward_jump_mode");
+fn maestro_editor_second_ctrl_alt_ends_backward_jump_mode() {
+    support::run("maestro_editor_second_ctrl_alt_ends_backward_jump_mode");
 }
 
 #[test]
-fn editor_jump_finds_punctuation_targets() {
-    support::run("editor_jump_finds_punctuation_targets");
+fn maestro_editor_jump_finds_punctuation_targets() {
+    support::run("maestro_editor_jump_finds_punctuation_targets");
 }
 
 #[test]
-fn editor_accepts_empty_text_without_error() {
-    support::run("editor_accepts_empty_text_without_error");
+fn maestro_editor_accepts_empty_text_without_error() {
+    support::run("maestro_editor_accepts_empty_text_without_error");
 }
 
 #[test]
-fn editor_clears_last_action_after_a_jump() {
-    support::run("editor_clears_last_action_after_a_jump");
+fn maestro_editor_clears_last_action_after_a_jump() {
+    support::run("maestro_editor_clears_last_action_after_a_jump");
 }
 
 #[test]
-fn editor_moving_up_past_a_shorter_line_keeps_the_target_column() {
-    support::run("editor_moving_up_past_a_shorter_line_keeps_the_target_column");
+fn maestro_editor_moving_up_past_a_shorter_line_keeps_the_target_column() {
+    support::run("maestro_editor_moving_up_past_a_shorter_line_keeps_the_target_column");
 }
 
 #[test]
-fn editor_moving_down_past_a_shorter_line_keeps_the_target_column() {
-    support::run("editor_moving_down_past_a_shorter_line_keeps_the_target_column");
+fn maestro_editor_moving_down_past_a_shorter_line_keeps_the_target_column() {
+    support::run("maestro_editor_moving_down_past_a_shorter_line_keeps_the_target_column");
 }
 
 #[test]
-fn editor_drops_retained_column_after_left_arrow() {
-    support::run("editor_drops_retained_column_after_left_arrow");
+fn maestro_editor_drops_retained_column_after_left_arrow() {
+    support::run("maestro_editor_drops_retained_column_after_left_arrow");
 }
 
 #[test]
-fn editor_drops_retained_column_after_right_arrow() {
-    support::run("editor_drops_retained_column_after_right_arrow");
+fn maestro_editor_drops_retained_column_after_right_arrow() {
+    support::run("maestro_editor_drops_retained_column_after_right_arrow");
 }
 
 #[test]
-fn editor_drops_retained_column_after_typing() {
-    support::run("editor_drops_retained_column_after_typing");
+fn maestro_editor_drops_retained_column_after_typing() {
+    support::run("maestro_editor_drops_retained_column_after_typing");
 }
 
 #[test]
-fn editor_drops_retained_column_after_backspace() {
-    support::run("editor_drops_retained_column_after_backspace");
+fn maestro_editor_drops_retained_column_after_backspace() {
+    support::run("maestro_editor_drops_retained_column_after_backspace");
 }
 
 #[test]
-fn editor_ctrl_a_to_line_start_drops_the_sticky_column() {
-    support::run("editor_ctrl_a_to_line_start_drops_the_sticky_column");
+fn maestro_editor_ctrl_a_to_line_start_drops_the_sticky_column() {
+    support::run("maestro_editor_ctrl_a_to_line_start_drops_the_sticky_column");
 }
 
 #[test]
-fn editor_ctrl_e_to_line_end_drops_the_sticky_column() {
-    support::run("editor_ctrl_e_to_line_end_drops_the_sticky_column");
+fn maestro_editor_ctrl_e_to_line_end_drops_the_sticky_column() {
+    support::run("maestro_editor_ctrl_e_to_line_end_drops_the_sticky_column");
 }
 
 #[test]
-fn editor_ctrl_left_word_move_drops_the_sticky_column() {
-    support::run("editor_ctrl_left_word_move_drops_the_sticky_column");
+fn maestro_editor_ctrl_left_word_move_drops_the_sticky_column() {
+    support::run("maestro_editor_ctrl_left_word_move_drops_the_sticky_column");
 }
 
 #[test]
-fn editor_ctrl_right_word_move_drops_the_sticky_column() {
-    support::run("editor_ctrl_right_word_move_drops_the_sticky_column");
+fn maestro_editor_ctrl_right_word_move_drops_the_sticky_column() {
+    support::run("maestro_editor_ctrl_right_word_move_drops_the_sticky_column");
 }
 
 #[test]
-fn editor_drops_retained_column_after_undo() {
-    support::run("editor_drops_retained_column_after_undo");
+fn maestro_editor_drops_retained_column_after_undo() {
+    support::run("maestro_editor_drops_retained_column_after_undo");
 }
 
 #[test]
-fn editor_repeated_up_and_down_moves_stay_consistent() {
-    support::run("editor_repeated_up_and_down_moves_stay_consistent");
+fn maestro_editor_repeated_up_and_down_moves_stay_consistent() {
+    support::run("maestro_editor_repeated_up_and_down_moves_stay_consistent");
 }
 
 #[test]
-fn editor_wrapped_rows_advance_without_stalling() {
-    support::run("editor_wrapped_rows_advance_without_stalling");
+fn maestro_editor_wrapped_rows_advance_without_stalling() {
+    support::run("maestro_editor_wrapped_rows_advance_without_stalling");
 }
 
 #[test]
-fn editor_clears_retained_column_when_text_is_replaced() {
-    support::run("editor_clears_retained_column_when_text_is_replaced");
+fn maestro_editor_clears_retained_column_when_text_is_replaced() {
+    support::run("maestro_editor_clears_retained_column_when_text_is_replaced");
 }
 
 #[test]
-fn editor_right_at_the_last_row_end_sets_the_target_column() {
-    support::run("editor_right_at_the_last_row_end_sets_the_target_column");
+fn maestro_editor_right_at_the_last_row_end_sets_the_target_column() {
+    support::run("maestro_editor_right_at_the_last_row_end_sets_the_target_column");
 }
 
 #[test]
-fn editor_resize_keeps_the_target_column_on_the_same_line() {
-    support::run("editor_resize_keeps_the_target_column_on_the_same_line");
+fn maestro_editor_resize_keeps_the_target_column_on_the_same_line() {
+    support::run("maestro_editor_resize_keeps_the_target_column_on_the_same_line");
 }
 
 #[test]
-fn editor_resize_keeps_the_target_column_on_another_line() {
-    support::run("editor_resize_keeps_the_target_column_on_another_line");
+fn maestro_editor_resize_keeps_the_target_column_on_another_line() {
+    support::run("maestro_editor_resize_keeps_the_target_column_on_another_line");
 }
 
 #[test]
-fn editor_rewrapped_target_inside_the_column_is_kept() {
-    support::run("editor_rewrapped_target_inside_the_column_is_kept");
+fn maestro_editor_rewrapped_target_inside_the_column_is_kept() {
+    support::run("maestro_editor_rewrapped_target_inside_the_column_is_kept");
 }
 
 #[test]
-fn editor_rewrapped_target_below_the_column_falls_back() {
-    support::run("editor_rewrapped_target_below_the_column_falls_back");
+fn maestro_editor_rewrapped_target_below_the_column_falls_back() {
+    support::run("maestro_editor_rewrapped_target_below_the_column_falls_back");
 }
 
 #[test]

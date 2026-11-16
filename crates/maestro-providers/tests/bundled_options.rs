@@ -26,12 +26,12 @@ use std::collections::{BTreeMap, BTreeSet};
 #[cfg(not(target_arch = "wasm32"))]
 /// Tests that own fixture rows.
 const OWNERS: [&str; 6] = [
-    "anthropic_extras_reach_requests",
-    "chat_extras_reach_requests",
-    "mistral_extras_reach_requests",
-    "response_extras_keep_presence",
-    "azure_extras_select_target",
-    "response_session_extras_keep_domain_and_presence",
+    "maestro_anthropic_extras_reach_requests",
+    "maestro_chat_extras_reach_requests",
+    "maestro_mistral_extras_reach_requests",
+    "maestro_response_extras_keep_presence",
+    "maestro_azure_extras_select_target",
+    "maestro_response_session_extras_keep_domain_and_presence",
 ];
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -223,32 +223,32 @@ fn assert_row(row: &Row) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn anthropic_extras_reach_requests() -> TestResult {
-    assert_rows("anthropic_extras_reach_requests")
+fn maestro_anthropic_extras_reach_requests() -> TestResult {
+    assert_rows("maestro_anthropic_extras_reach_requests")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn chat_extras_reach_requests() -> TestResult {
-    assert_rows("chat_extras_reach_requests")
+fn maestro_chat_extras_reach_requests() -> TestResult {
+    assert_rows("maestro_chat_extras_reach_requests")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn mistral_extras_reach_requests() -> TestResult {
-    assert_rows("mistral_extras_reach_requests")
+fn maestro_mistral_extras_reach_requests() -> TestResult {
+    assert_rows("maestro_mistral_extras_reach_requests")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_extras_keep_presence() -> TestResult {
-    assert_rows("response_extras_keep_presence")
+fn maestro_response_extras_keep_presence() -> TestResult {
+    assert_rows("maestro_response_extras_keep_presence")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn azure_extras_select_target() -> TestResult {
-    assert_rows("azure_extras_select_target")
+fn maestro_azure_extras_select_target() -> TestResult {
+    assert_rows("maestro_azure_extras_select_target")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -371,7 +371,7 @@ fn simple_requests(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn simple_dispatch_keeps_adapter_policy() -> TestResult {
+fn maestro_simple_dispatch_keeps_adapter_policy() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     let overrides =
@@ -413,8 +413,8 @@ fn simple_dispatch_keeps_adapter_policy() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn response_session_extras_keep_domain_and_presence() -> TestResult {
-    assert_rows("response_session_extras_keep_domain_and_presence")
+fn maestro_response_session_extras_keep_domain_and_presence() -> TestResult {
+    assert_rows("maestro_response_session_extras_keep_domain_and_presence")
 }
 
 #[cfg(not(target_arch = "wasm32"))]

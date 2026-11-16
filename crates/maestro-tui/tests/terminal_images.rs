@@ -299,16 +299,16 @@ fn fallback_text_includes_only_present_metadata() {
 }
 
 #[test]
-fn images_suppresses_kitty_replies_for_delete_commands() {
+fn maestro_images_suppresses_kitty_replies_for_delete_commands() {
     use maestro_tui::images::terminal_image::{delete_all_kitty_images, delete_kitty_image};
     assert_eq!(delete_kitty_image(42), "\x1b_Ga=d,d=I,i=42,q=2\x1b\\");
     assert_eq!(delete_all_kitty_images(), "\x1b_Ga=d,d=A,q=2\x1b\\");
 }
 
 #[test]
-fn images_a_render_can_request_no_side_cursor_move() {
+fn maestro_images_a_render_can_request_no_side_cursor_move() {
     use maestro_tui::images::terminal_image::*;
-    for case in image_support::cases("images_a_render_can_request_no_side_cursor_move") {
+    for case in image_support::cases("maestro_images_a_render_can_request_no_side_cursor_move") {
         let args = &case["args"];
         assert_eq!(
             encode_kitty(

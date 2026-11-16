@@ -72,6 +72,6 @@ async fn optional_roles(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn message_roles_keep_content_and_optional_fields() -> Result<(), String> {
+fn maestro_message_roles_keep_content_and_optional_fields() -> Result<(), String> {
     on_both_adapters!(roles)
 }

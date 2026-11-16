@@ -12,7 +12,7 @@ use tokio::net::TcpListener;
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
 #[test]
-fn response_sessions_do_not_replay_started_output() {
+fn maestro_response_sessions_do_not_replay_started_output() {
     let _guard = super::exclusive();
     run(maestro_response_sessions_do_not_replay_started_output_scenario());
 }
@@ -31,7 +31,7 @@ async fn maestro_response_sessions_do_not_replay_started_output_scenario() {
 }
 
 #[test]
-fn response_sessions_default_auto_reuses_context() {
+fn maestro_response_sessions_default_auto_reuses_context() {
     let _guard = super::exclusive();
     run(maestro_response_sessions_default_auto_reuses_context_scenario());
 }
@@ -111,7 +111,7 @@ async fn scripted(
 }
 
 #[test]
-fn response_sessions_prestart_transport_fallback() {
+fn maestro_response_sessions_prestart_transport_fallback() {
     let _guard = super::exclusive();
     run(maestro_response_sessions_prestart_transport_fallback_scenario());
 }
@@ -164,7 +164,7 @@ async fn maestro_response_sessions_prestart_transport_fallback_scenario() {
 }
 
 #[test]
-fn response_sessions_suppress_fallback_for_protocol_api_and_abort() {
+fn maestro_response_sessions_suppress_fallback_for_protocol_api_and_abort() {
     let _guard = super::exclusive();
     run(maestro_response_sessions_suppress_fallback_for_protocol_api_and_abort_scenario());
 }
@@ -243,7 +243,7 @@ pub(super) struct DiagnosticCase {
 }
 
 #[test]
-fn response_sessions_preserve_transport_diagnostics() {
+fn maestro_response_sessions_preserve_transport_diagnostics() {
     let rows: Vec<DiagnosticCase> =
         super::fixture_rows(include_str!("fixtures/public-diagnostic.json"), &["input"]).unwrap();
     assert_eq!(rows.len(), 8);
@@ -276,7 +276,7 @@ fn response_sessions_preserve_transport_diagnostics() {
 }
 
 #[test]
-fn response_sessions_dispatch_cache_matrix() {
+fn maestro_response_sessions_dispatch_cache_matrix() {
     let _guard = super::exclusive();
     run(maestro_response_sessions_dispatch_cache_matrix_scenario());
 }
@@ -523,7 +523,7 @@ fn assert_matrix(
 }
 
 #[test]
-fn response_sessions_hook_edits_survive_fallback() {
+fn maestro_response_sessions_hook_edits_survive_fallback() {
     let _guard = super::exclusive();
     run(maestro_response_sessions_hook_edits_survive_fallback_scenario());
 }

@@ -194,7 +194,7 @@ async fn view_catalog(driver: &mut impl Driver, kind: usize, name: &str) -> Resu
     Ok(())
 }
 #[test]
-fn present_values_reach_every_context_view() -> Result<(), String> {
+fn maestro_present_values_reach_every_context_view() -> Result<(), String> {
     on_both_adapters!(present_views)
 }
 /// Repeated getters read current state, with independently supplied booleans.
@@ -345,7 +345,7 @@ async fn getters(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn context_getters_remain_live_and_errors_are_catchable() -> Result<(), String> {
+fn maestro_context_getters_remain_live_and_errors_are_catchable() -> Result<(), String> {
     on_both_adapters!(getters)
 }
 /// Cancellation remains independently retained after callback completion and replacement.
@@ -400,7 +400,7 @@ async fn release_signals(driver: &mut impl Driver, baseline: usize) -> Result<()
     Ok(())
 }
 #[test]
-fn signal_outlives_callback_return() -> Result<(), String> {
+fn maestro_signal_outlives_callback_return() -> Result<(), String> {
     on_both_adapters!(signals)
 }
 /// Preserve ordered catalog lists and literal lookup operands.
@@ -663,7 +663,7 @@ async fn release_capabilities(driver: &mut impl Driver, baseline: usize) -> Resu
     Ok(())
 }
 #[test]
-fn retained_context_capabilities_release_independently() -> Result<(), String> {
+fn maestro_retained_context_capabilities_release_independently() -> Result<(), String> {
     on_both_adapters!(retained_capabilities)
 }
 /// A named completion barrier witnesses pending ownership and all three authentication outcomes.
@@ -769,7 +769,7 @@ async fn compaction(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn compaction_handler_uses_preparation_and_returns_content() -> Result<(), String> {
+fn maestro_compaction_handler_uses_preparation_and_returns_content() -> Result<(), String> {
     on_both_adapters!(compaction)
 }
 /// One pinned decoder boundary observation.
@@ -1020,7 +1020,7 @@ async fn shared_records(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn context_and_catalog_records_keep_shared_semantics() -> Result<(), String> {
+fn maestro_context_and_catalog_records_keep_shared_semantics() -> Result<(), String> {
     on_both_adapters!(shared_records)
 }
 

@@ -274,7 +274,7 @@
     },
     {
       "id": "budget-undefined",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -329,7 +329,7 @@
     },
     {
       "id": "budget-0",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -385,7 +385,7 @@
     },
     {
       "id": "budget--1",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -441,7 +441,7 @@
     },
     {
       "id": "budget-0.5",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -486,7 +486,7 @@
     },
     {
       "id": "budget-1",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -537,7 +537,7 @@
     },
     {
       "id": "budget-2",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -593,7 +593,7 @@
     },
     {
       "id": "budget-2.5",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -649,7 +649,7 @@
     },
     {
       "id": "compaction-below-ninety",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -715,7 +715,7 @@
     },
     {
       "id": "compaction-at-ninety",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -775,7 +775,7 @@
     },
     {
       "id": "compaction-above-ninety",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -835,7 +835,7 @@
     },
     {
       "id": "branch_summary-below-ninety",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -900,7 +900,7 @@
     },
     {
       "id": "branch_summary-at-ninety",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -959,7 +959,7 @@
     },
     {
       "id": "branch_summary-above-ninety",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -1018,7 +1018,7 @@
     },
     {
       "id": "exact-summary-budget",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -1083,7 +1083,7 @@
     },
     {
       "id": "oversized-first-summary",
-      "test": "branch_budget_keeps_summary_exception",
+      "test": "maestro_branch_budget_keeps_summary_exception",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -1171,7 +1171,7 @@
     },
     {
       "id": "carried-and-visited-overbudget",
-      "test": "branch_files_include_visited_overbudget_call",
+      "test": "maestro_branch_files_include_visited_overbudget_call",
       "operation": "prepare",
       "args": {
         "entries": [
@@ -2703,7 +2703,7 @@
     },
     {
       "id": "compaction-details-not-carried",
-      "test": "branch_files_include_visited_overbudget_call",
+      "test": "maestro_branch_files_include_visited_overbudget_call",
       "operation": "prepare",
       "args": {
         "entries": [

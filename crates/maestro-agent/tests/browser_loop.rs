@@ -145,7 +145,7 @@ fn local_model() -> Model {
 
 /// Compile both observable wrappers with local payloads and task submission.
 #[test]
-fn browser_raw_wrappers_accept_local_captures() {
+fn maestro_browser_raw_wrappers_accept_local_captures() {
     let local = Rc::new(());
     let config = SharedHandle::new(local_config(Rc::clone(&local), &local));
     let tasks = Rc::new(std::cell::RefCell::new(Vec::new()));

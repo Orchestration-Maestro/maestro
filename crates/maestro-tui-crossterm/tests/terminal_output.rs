@@ -238,7 +238,7 @@ fn native_dimensions_use_the_numeric_value_of_environment_text() {
 }
 
 #[test]
-fn stdin_falls_back_to_columns_and_lines_before_default_dimensions() {
+fn maestro_stdin_falls_back_to_columns_and_lines_before_default_dimensions() {
     isolated!(0, &[], || {
         let rig = Rig::paused();
         let _output = pipe_output();

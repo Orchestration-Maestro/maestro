@@ -136,7 +136,7 @@ async fn exercise_with(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn device_login_uses_remaining_lifetime() {
+fn maestro_device_login_uses_remaining_lifetime() {
     run_paused_after_start(maestro_device_login_uses_remaining_lifetime_scenario());
 }
 

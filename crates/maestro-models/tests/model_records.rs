@@ -3,7 +3,7 @@ mod tests {
     use maestro_models::{EnumOptions, headers_to_record, short_hash, string_enum};
     use serde_json::json;
     #[test]
-    fn headers_and_schema_keep_supplied_values() {
+    fn maestro_headers_and_schema_keep_supplied_values() {
         assert!(headers_to_record([]).is_empty());
         let headers = headers_to_record([
             ("content-type", "text/plain"),
@@ -38,7 +38,7 @@ mod tests {
     }
 
     #[test]
-    fn hash_matches_utf16_vectors() {
+    fn maestro_hash_matches_utf16_vectors() {
         for (input, expected) in [
             ("", "k4n83c7h0j2b"),
             ("hello", "1h6qa0qrowduu"),
@@ -54,7 +54,7 @@ mod tests {
     }
 
     #[test]
-    fn assistant_stream_is_exported_from_record_types() {
+    fn maestro_assistant_stream_is_exported_from_record_types() {
         use maestro_models::records::events::create_assistant_message_event_stream;
         use maestro_models::records::types::{
             AssistantMessageEvent, AssistantMessageEventStream, DoneReason, ErrorReason,
@@ -90,7 +90,7 @@ mod tests {
     }
 
     #[test]
-    fn diagnostics_append_with_current_timestamp() {
+    fn maestro_diagnostics_append_with_current_timestamp() {
         use crate::clock::epoch_millis;
         use maestro_models::records::diagnostics::{
             DiagnosticInput, append_assistant_message_diagnostic,
@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn runtime_option_records_keep_wire_contracts() {
+    fn maestro_runtime_option_records_keep_wire_contracts() {
         use maestro_models::records::types::{CacheRetention, ThinkingBudgets, Transport};
         assert_literals::<CacheRetention>(&["none", "short", "long"]);
         assert_literals::<Transport>(&["sse", "websocket", "websocket-cached", "auto"]);

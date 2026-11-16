@@ -11,6 +11,6 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Recorded public observations for reasoning survives tool continuations.
 #[test]
-fn reasoning_survives_tool_continuations() -> TestResult {
-    qualification::assert_rows("reasoning_survives_tool_continuations")
+fn maestro_reasoning_survives_tool_continuations() -> TestResult {
+    qualification::assert_rows("maestro_reasoning_survives_tool_continuations")
 }

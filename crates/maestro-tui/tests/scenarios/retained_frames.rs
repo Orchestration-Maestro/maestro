@@ -128,7 +128,7 @@ fn unchanged_frame_only_repositions_cursor() {
 }
 
 #[test]
-fn frames_renders_correctly_when_only_a_middle_line_changes_spinner_case() {
+fn maestro_frames_renders_correctly_when_only_a_middle_line_changes_spinner_case() {
     assert_frames("middle_change_leaves_later_rows_untouched");
     let scene = Scene::new(40, 10);
     scene.start(&["Header", "Working...", "Footer"]);
@@ -145,7 +145,7 @@ fn frames_renders_correctly_when_only_a_middle_line_changes_spinner_case() {
 }
 
 #[test]
-fn frames_renders_correctly_when_first_line_changes_but_rest_stays_same() {
+fn maestro_frames_renders_correctly_when_first_line_changes_but_rest_stays_same() {
     assert_frames("first_change_retains_unchanged_suffix");
     let scene = Scene::new(40, 10);
     scene.start(&["Line 0", "Line 1", "Line 2", "Line 3"]);
@@ -159,7 +159,7 @@ fn frames_renders_correctly_when_first_line_changes_but_rest_stays_same() {
 }
 
 #[test]
-fn frames_renders_correctly_when_last_line_changes_but_rest_stays_same() {
+fn maestro_frames_renders_correctly_when_last_line_changes_but_rest_stays_same() {
     assert_frames("last_change_keeps_prefix");
     let scene = Scene::new(40, 10);
     scene.start(&["Line 0", "Line 1", "Line 2", "Line 3"]);
@@ -173,7 +173,7 @@ fn frames_renders_correctly_when_last_line_changes_but_rest_stays_same() {
 }
 
 #[test]
-fn frames_renders_correctly_when_multiple_non_adjacent_lines_change() {
+fn maestro_frames_renders_correctly_when_multiple_non_adjacent_lines_change() {
     assert_frames("disjoint_changes_redraw_the_intervening_span");
     let scene = Scene::new(40, 10);
     scene.start(&["Line 0", "Line 1", "Line 2", "Line 3", "Line 4"]);
@@ -197,7 +197,7 @@ fn append_blank_line_is_not_lost() {
 }
 
 #[test]
-fn frames_tracks_cursor_correctly_when_content_shrinks_with_unchanged_remaining_lines() {
+fn maestro_frames_tracks_cursor_correctly_when_content_shrinks_with_unchanged_remaining_lines() {
     assert_frames("deleted_tail_clears_without_redrawing_prefix");
     let scene = Scene::new(40, 10);
     scene.start(&["Line 0", "Line 1", "Line 2", "Line 3", "Line 4"]);
@@ -219,7 +219,7 @@ fn default_empty_frame_clears_last_row() {
 }
 
 #[test]
-fn frames_handles_transition_from_content_to_empty_and_back_to_content() {
+fn maestro_frames_handles_transition_from_content_to_empty_and_back_to_content() {
     assert_frames("empty_frame_can_grow_again");
     let scene = Scene::new(40, 10);
     scene.start(&["Line 0", "Line 1", "Line 2"]);
@@ -233,7 +233,7 @@ fn frames_handles_transition_from_content_to_empty_and_back_to_content() {
 }
 
 #[test]
-fn frames_triggers_full_re_render_when_terminal_width_changes() {
+fn maestro_frames_triggers_full_re_render_when_terminal_width_changes() {
     assert_frames("width_change_clears_purges_and_redraws");
     let scene = Scene::new(40, 10);
     scene.start(&["Line 0", "Line 1", "Line 2"]);
@@ -245,7 +245,7 @@ fn frames_triggers_full_re_render_when_terminal_width_changes() {
 }
 
 #[test]
-fn frames_triggers_full_re_render_when_terminal_height_changes() {
+fn maestro_frames_triggers_full_re_render_when_terminal_height_changes() {
     assert_frames("height_change_clears_purges_and_redraws");
     let scene = Scene::new(40, 10);
     scene.start(&["Line 0", "Line 1", "Line 2"]);
@@ -258,9 +258,9 @@ fn frames_triggers_full_re_render_when_terminal_height_changes() {
 }
 
 #[test]
-fn frames_retains_mobile_height_resize_behavior() {
+fn maestro_frames_retains_mobile_height_resize_behavior() {
     crate::scenarios::support::in_child(
-        "frames_retains_mobile_height_resize_behavior",
+        "maestro_frames_retains_mobile_height_resize_behavior",
         &[("TERMUX_VERSION", "1")],
         || {
             for scenario in scenarios("mobile_height_change_keeps_history") {
@@ -290,7 +290,7 @@ fn mobile_height_change_keeps_history() {
 }
 
 #[test]
-fn frames_clears_empty_rows_when_content_shrinks_significantly() {
+fn maestro_frames_clears_empty_rows_when_content_shrinks_significantly() {
     assert_frames("clear_on_shrink_resets_high_water");
     let scene = Scene::new(40, 10);
     scene.tui.set_clear_on_shrink(true);
@@ -304,7 +304,7 @@ fn frames_clears_empty_rows_when_content_shrinks_significantly() {
 }
 
 #[test]
-fn frames_handles_shrink_to_single_line() {
+fn maestro_frames_handles_shrink_to_single_line() {
     let scene = Scene::new(40, 10);
     scene.tui.set_clear_on_shrink(true);
     scene.start(&["Line 0", "Line 1", "Line 2", "Line 3"]);
@@ -315,7 +315,7 @@ fn frames_handles_shrink_to_single_line() {
 }
 
 #[test]
-fn frames_handles_shrink_to_empty() {
+fn maestro_frames_handles_shrink_to_empty() {
     let scene = Scene::new(40, 10);
     scene.tui.set_clear_on_shrink(true);
     scene.start(&["Line 0", "Line 1", "Line 2"]);
@@ -331,7 +331,7 @@ fn changed_scrollback_forces_full_redraw() {
 }
 
 #[test]
-fn frames_full_re_renders_when_deleted_lines_move_the_viewport_upward() {
+fn maestro_frames_full_re_renders_when_deleted_lines_move_the_viewport_upward() {
     let scene = Scene::new(20, 5);
     let lines: Vec<String> = (0..12).map(|row| format!("Line {row}")).collect();
     scene.start(&lines.iter().map(String::as_str).collect::<Vec<_>>());
@@ -347,7 +347,7 @@ fn frames_full_re_renders_when_deleted_lines_move_the_viewport_upward() {
 }
 
 #[test]
-fn frames_appends_after_a_shrink_without_another_full_redraw_once_the_viewport_is_reset() {
+fn maestro_frames_appends_after_a_shrink_without_another_full_redraw_once_the_viewport_is_reset() {
     assert_frames("shrink_above_viewport_resets_then_appends");
     let scene = Scene::new(20, 5);
     let lines: Vec<String> = (0..8).map(|row| format!("Line {row}")).collect();
@@ -364,7 +364,8 @@ fn frames_appends_after_a_shrink_without_another_full_redraw_once_the_viewport_i
 }
 
 #[test]
-fn frames_clears_stale_content_when_maxlinesrendered_was_inflated_by_a_transient_component() {
+fn maestro_frames_clears_stale_content_when_maxlinesrendered_was_inflated_by_a_transient_component()
+{
     let scene = Scene::new(40, 10);
     let editor = Probe::shared(&["Editor 0", "Editor 1", "Editor 2"]);
     scene.tui.add_child(editor.clone());
@@ -486,7 +487,7 @@ fn placement(payload: &str, rows: usize, image_id: u32) -> String {
 }
 
 #[test]
-fn frames_deletes_changed_image_ids_before_drawing_moved_placements() {
+fn maestro_frames_deletes_changed_image_ids_before_drawing_moved_placements() {
     assert_frames("changed_image_is_deleted_before_placement");
     let scene = Scene::new(40, 10);
     scene.start(&["top", &placement("AAAA", 2, 42)]);
@@ -505,7 +506,7 @@ fn frames_deletes_changed_image_ids_before_drawing_moved_placements() {
 }
 
 #[test]
-fn frames_redraws_image_lines_when_an_earlier_reserved_image_row_changes() {
+fn maestro_frames_redraws_image_lines_when_an_earlier_reserved_image_row_changes() {
     assert_frames("reserved_row_change_redraws_image");
     let scene = Scene::new(40, 10);
     let image = placement("AAAA", 2, 88);
@@ -528,7 +529,7 @@ fn frames_redraws_image_lines_when_an_earlier_reserved_image_row_changes() {
 }
 
 #[test]
-fn frames_deletes_previously_rendered_image_ids_during_full_redraws() {
+fn maestro_frames_deletes_previously_rendered_image_ids_during_full_redraws() {
     assert_frames("forced_redraw_deletes_prior_images");
     let scene = Scene::new(40, 10);
     scene.start(&[&placement("AAAA", 2, 77)]);
@@ -557,7 +558,7 @@ struct LineReset {
 }
 
 #[test]
-fn frames_resets_styles_after_each_rendered_line() {
+fn maestro_frames_resets_styles_after_each_rendered_line() {
     let cases: Vec<LineReset> = parse(include_str!("fixtures/line_resets.json"));
     for case in cases {
         let scenario = Scenario {

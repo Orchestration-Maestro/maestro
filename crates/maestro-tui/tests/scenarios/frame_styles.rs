@@ -3,7 +3,8 @@
 use crate::scenarios::support::scene::Scene;
 
 #[test]
-fn frames_not_leak_styles_when_a_trailing_reset_sits_beyond_the_last_visible_column_no_overlay() {
+fn maestro_frames_not_leak_styles_when_a_trailing_reset_sits_beyond_the_last_visible_column_no_overlay()
+ {
     let width = 20;
     let base_line = format!("\x1b[3m{}\x1b[23m", "X".repeat(width));
     let scene = Scene::new(width, 6);

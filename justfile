@@ -23,7 +23,7 @@ _check *selection: sandbox-runtime
     @cargo clippy {{quote(selection)}} --all-targets --locked --target x86_64-pc-windows-gnu -- -D warnings
     @cargo run --quiet --locked -p maestro-tooling --bin development -- browser-clippy {{quote(selection)}}
     @RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc {{quote(selection)}} --no-deps --locked
-    cargo test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::locked_resolution_keeps_checkout_clean
+    cargo test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean
 
 # Stage the development tool that nextest's component setup runs.
 prepare-tests:

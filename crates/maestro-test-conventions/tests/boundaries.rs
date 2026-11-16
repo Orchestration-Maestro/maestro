@@ -686,7 +686,7 @@ fn raw_identifier_declarations_keep_their_owners() {
 }
 
 #[test]
-fn conventions_decodes_static_paths_as_rust() {
+fn maestro_conventions_decodes_static_paths_as_rust() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-extensions-guest", "maestro-extensions-wasmtime"]);
     for (directory, literal) in [

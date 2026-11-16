@@ -175,7 +175,7 @@ async fn live_reads(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn session_actions_keep_delivery_and_payload_presence() -> Result<(), String> {
+fn maestro_session_actions_keep_delivery_and_payload_presence() -> Result<(), String> {
     on_both_adapters!(actions)
 }
 /// Construct typed legal operands for each rejected action.
@@ -223,7 +223,7 @@ async fn errors(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn action_errors_keep_messages_and_leave_the_instance_usable() -> Result<(), String> {
+fn maestro_action_errors_keep_messages_and_leave_the_instance_usable() -> Result<(), String> {
     on_both_adapters!(errors)
 }
 /// Admit through command or ordinary context without driving any notification.
@@ -367,7 +367,7 @@ async fn compaction_returns(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn compaction_returns_before_its_notifications() -> Result<(), String> {
+fn maestro_compaction_returns_before_its_notifications() -> Result<(), String> {
     on_both_adapters!(compaction_returns)
 }
 /// Each admitted request has a unique host registration name.
@@ -510,7 +510,7 @@ async fn notifications(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn compaction_notifications_keep_results_and_callback_errors() -> Result<(), String> {
+fn maestro_compaction_notifications_keep_results_and_callback_errors() -> Result<(), String> {
     on_both_adapters!(notifications)
 }
 /// Read capture destruction only from this completed operation's transcript slice.
@@ -611,7 +611,7 @@ async fn ownership(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn compaction_release_preserves_independent_callback_owners() -> Result<(), String> {
+fn maestro_compaction_release_preserves_independent_callback_owners() -> Result<(), String> {
     on_both_adapters!(ownership)
 }
 /// Original selected wire record with an independently measured native decoder outcome.
@@ -647,7 +647,7 @@ async fn decoders(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn action_results_use_their_existing_record_decoders() -> Result<(), String> {
+fn maestro_action_results_use_their_existing_record_decoders() -> Result<(), String> {
     on_both_adapters!(decoders)
 }
 /// The host forwards the existing emissions ledger to a receiver after the notification returns.
@@ -669,7 +669,7 @@ async fn emissions(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn compaction_notifications_reuse_callback_scoped_emission() -> Result<(), String> {
+fn maestro_compaction_notifications_reuse_callback_scoped_emission() -> Result<(), String> {
     on_both_adapters!(emissions)
 }
 

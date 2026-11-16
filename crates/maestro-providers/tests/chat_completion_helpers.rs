@@ -79,11 +79,11 @@ const SUBSTITUTIONS: &[Substitution] = &[
 ];
 
 #[cfg(not(target_arch = "wasm32"))]
-const TEST: &str = "cloudflare_resolves_account_urls";
+const TEST: &str = "maestro_cloudflare_resolves_account_urls";
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn cloudflare_resolves_account_urls() -> TestResult {
+fn maestro_cloudflare_resolves_account_urls() -> TestResult {
     let case = maestro_test_harness::selection();
     if case.is_child() {
         let index = (0..SUBSTITUTIONS.len())
@@ -160,7 +160,7 @@ fn image() -> serde_json::Value {
 }
 
 #[test]
-fn copilot_marks_request_initiation() -> TestResult {
+fn maestro_copilot_marks_request_initiation() -> TestResult {
     for (history, initiator) in [
         (json!([]), "user"),
         (json!([user(&json!("x"))]), "user"),
@@ -179,7 +179,7 @@ fn copilot_marks_request_initiation() -> TestResult {
 }
 
 #[test]
-fn copilot_detects_vision_history() -> TestResult {
+fn maestro_copilot_detects_vision_history() -> TestResult {
     let text = json!([{"type": "text", "text": "found"}]);
     for (history, initiator, vision) in [
         (json!([]), "user", false),

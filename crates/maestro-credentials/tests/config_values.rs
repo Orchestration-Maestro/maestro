@@ -113,7 +113,7 @@ mod tests {
         }
     }
     #[test]
-    fn command_cache_uses_full_command() {
+    fn maestro_command_cache_uses_full_command() {
         let _serial = SERIAL.lock().unwrap();
         clear_config_value_cache();
         let operations = Operations::default();

@@ -8,7 +8,7 @@ use support::{Directory, strings};
 
 /// A described skill retains complete local provenance.
 #[test]
-fn skills_load_valid_metadata_and_source() {
+fn maestro_skills_load_valid_metadata_and_source() {
     let dir = Directory::new();
     let file = dir.file(
         "calendar/SKILL.md",
@@ -40,7 +40,7 @@ fn skills_load_valid_metadata_and_source() {
 
 /// A name that differs from the containing directory loads without a warning.
 #[test]
-fn skills_accept_name_that_differs_from_directory() {
+fn maestro_skills_accept_name_that_differs_from_directory() {
     let dir = Directory::new();
     let file = dir.file(
         "calendar/SKILL.md",
@@ -58,7 +58,7 @@ fn skills_accept_name_that_differs_from_directory() {
 
 /// Name warnings retain their authored order and count complete characters.
 #[test]
-fn skills_keep_name_warning_order() {
+fn maestro_skills_keep_name_warning_order() {
     let dir = Directory::new();
     let name = format!("-{}--", "A".repeat(62));
     let file = dir.file(
@@ -112,7 +112,7 @@ fn skills_keep_name_warning_order() {
 
 /// Missing description warnings precede name warnings before omission.
 #[test]
-fn skills_validate_description_before_name() {
+fn maestro_skills_validate_description_before_name() {
     let dir = Directory::new();
     for header in [
         "",
@@ -156,7 +156,7 @@ fn skills_validate_description_before_name() {
 
 /// Overlong descriptions remain intact and use Unicode character counts.
 #[test]
-fn skills_keep_overlong_descriptions() {
+fn maestro_skills_keep_overlong_descriptions() {
     let dir = Directory::new();
     for c in ['a', '😀'] {
         for count in [1024, 1025] {
@@ -189,7 +189,7 @@ fn skills_keep_overlong_descriptions() {
 
 /// Wrong-typed supported fields produce one path-bearing failure.
 #[test]
-fn skills_reject_nonstring_metadata_fields() {
+fn maestro_skills_reject_nonstring_metadata_fields() {
     let dir = Directory::new();
     for field in ["name", "description"] {
         for value in ["true", "42", "[a]", "{a: b}"] {
@@ -236,7 +236,7 @@ fn skills_reject_nonstring_metadata_fields() {
 
 /// Unrelated nested metadata is retained by projection without loader warnings.
 #[test]
-fn skills_ignore_unrelated_metadata() {
+fn maestro_skills_ignore_unrelated_metadata() {
     let dir = Directory::new();
     let text = "---\ndescription: Useful\ncustom: {nested: [true, 4]}\n---";
     let file = dir.file("parent/SKILL.md", text);
@@ -267,7 +267,7 @@ fn skills_ignore_unrelated_metadata() {
 
 /// Directory scans descend to nested entry files.
 #[test]
-fn skills_find_nested_entry_files() {
+fn maestro_skills_find_nested_entry_files() {
     let dir = Directory::new();
     let file = dir.file(
         "nested/calendar/SKILL.md",
@@ -286,7 +286,7 @@ fn skills_find_nested_entry_files() {
 
 /// A root entry file is preferred even when a child was created first.
 #[test]
-fn skills_prefer_the_root_candidate() {
+fn maestro_skills_prefer_the_root_candidate() {
     let dir = Directory::new();
     let _ = dir.file("parent/child/SKILL.md", "---\ndescription: Child\n---");
     let file = dir.file("parent/SKILL.md", "---\ndescription: Parent\n---");
@@ -302,7 +302,7 @@ fn skills_prefer_the_root_candidate() {
 
 /// Any attempted root entry prevents descent, including loading failures.
 #[test]
-fn skills_root_failure_stops_descent() {
+fn maestro_skills_root_failure_stops_descent() {
     let dir = Directory::new();
     let _ = dir.file("parent/child/SKILL.md", "---\ndescription: Child\n---");
     for text in [
@@ -349,7 +349,7 @@ fn skills_root_failure_stops_descent() {
 
 /// Nonfiles, ignored roots and dangling links allow other children to load.
 #[test]
-fn skills_skip_nonfile_or_ignored_root_candidates() {
+fn maestro_skills_skip_nonfile_or_ignored_root_candidates() {
     for branch in ["directory", "ignored", "dangling"] {
         let dir = Directory::new();
         let child = dir.file("child/SKILL.md", "---\ndescription: Child\n---");
@@ -377,7 +377,7 @@ fn skills_skip_nonfile_or_ignored_root_candidates() {
 
 /// Preserve multiline descriptions.
 #[test]
-fn skills_preserve_multiline_descriptions() {
+fn maestro_skills_preserve_multiline_descriptions() {
     let dir = Directory::new();
     let file = dir.file(
         "parent/SKILL.md",
@@ -394,7 +394,7 @@ fn skills_preserve_multiline_descriptions() {
 
 /// Return empty for missing directories.
 #[test]
-fn skills_return_empty_for_missing_directories() {
+fn maestro_skills_return_empty_for_missing_directories() {
     let dir = Directory::new();
     let result = load_skills_from_dir(LoadSkillsFromDirOptions {
         cwd: &support::cwd(),
@@ -407,7 +407,7 @@ fn skills_return_empty_for_missing_directories() {
 
 /// Use basename when name is absent.
 #[test]
-fn skills_use_basename_when_name_is_absent() {
+fn maestro_skills_use_basename_when_name_is_absent() {
     let dir = Directory::new();
     for name in ["", "name: null\n", "name: ''\n"] {
         let file = dir.file(
@@ -426,7 +426,7 @@ fn skills_use_basename_when_name_is_absent() {
 
 /// Disable only explicit boolean true.
 #[test]
-fn skills_disable_only_explicit_boolean_true() {
+fn maestro_skills_disable_only_explicit_boolean_true() {
     let dir = Directory::new();
     for flag in ["true", "false", "'true'", "1", "null"] {
         let file = dir.file(
@@ -445,7 +445,7 @@ fn skills_disable_only_explicit_boolean_true() {
 
 /// Empty and fully disabled skills produce no prompt text.
 #[test]
-fn skills_empty_or_hidden_lists_have_no_prompt() {
+fn maestro_skills_empty_or_hidden_lists_have_no_prompt() {
     assert_eq!(maestro_resources::format_skills_for_prompt(&[]), "");
     let dir = Directory::new();
     let file = dir.file(
@@ -465,7 +465,7 @@ fn skills_empty_or_hidden_lists_have_no_prompt() {
 
 /// Prompt instructions, indentation and file location are exact.
 #[test]
-fn skills_render_exact_prompt_instructions() {
+fn maestro_skills_render_exact_prompt_instructions() {
     let dir = Directory::new();
     let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
     let result = load_skills_from_dir(LoadSkillsFromDirOptions {
@@ -485,7 +485,7 @@ fn skills_render_exact_prompt_instructions() {
 
 /// XML fields escape all special characters without rescanning replacements.
 #[test]
-fn skills_escape_every_xml_field() {
+fn maestro_skills_escape_every_xml_field() {
     let dir = Directory::new();
     let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
     let mut result = load_skills_from_dir(LoadSkillsFromDirOptions {
@@ -507,7 +507,7 @@ fn skills_escape_every_xml_field() {
 
 /// Preserve prompt order.
 #[test]
-fn skills_preserve_prompt_order() {
+fn maestro_skills_preserve_prompt_order() {
     let dir = Directory::new();
     let mut skills = Vec::new();
     for name in ["second", "first"] {
@@ -530,7 +530,7 @@ fn skills_preserve_prompt_order() {
 
 /// Filter hidden prompt members.
 #[test]
-fn skills_filter_hidden_prompt_members() {
+fn maestro_skills_filter_hidden_prompt_members() {
     let dir = Directory::new();
     let mut skills = Vec::new();
     for (name, hidden) in [("visible", false), ("secret", true)] {
@@ -557,7 +557,7 @@ fn skills_filter_hidden_prompt_members() {
 
 /// Explicit files and directories load without ambient defaults.
 #[test]
-fn skills_accept_explicit_files_and_directories() {
+fn maestro_skills_accept_explicit_files_and_directories() {
     let dir = Directory::new();
     let first = dir.file("calendar/SKILL.md", "---\ndescription: Meetings\n---");
     let second = dir.file("notes/notes.md", "---\ndescription: Notes\n---");
@@ -590,7 +590,7 @@ fn skills_accept_explicit_files_and_directories() {
 
 /// Explicit wrong-kind, missing and stat failures retain resolved paths.
 #[test]
-fn skills_report_explicit_path_failures() {
+fn maestro_skills_report_explicit_path_failures() {
     let dir = Directory::new();
     let upper = dir.file("upper.MD", "---\ndescription: Not loaded\n---");
     let missing = dir.0.path().join("absent");
@@ -643,7 +643,7 @@ fn skills_report_explicit_path_failures() {
 /// The home forms and relative components resolve to populated resources, and `~name` stays a
 /// path below the working directory.
 #[test]
-fn skills_expand_all_home_path_forms() {
+fn maestro_skills_expand_all_home_path_forms() {
     let dir = Directory::new();
     let file = dir.file("home/calendar/SKILL.md", "---\ndescription: Meetings\n---");
     let home = dir.0.path().join("home");
@@ -706,7 +706,7 @@ fn skills_expand_all_home_path_forms() {
 
 /// The complete fixture tree yields exact retained files and diagnostic cardinality.
 #[test]
-fn skills_load_the_complete_fixture_tree() {
+fn maestro_skills_load_the_complete_fixture_tree() {
     let root = support::under(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")),
         "tests/fixtures/skills",
@@ -744,7 +744,7 @@ fn skills_load_the_complete_fixture_tree() {
 
 /// Public loading keeps the first name and appends complete collision details last.
 #[test]
-fn skills_keep_first_discovered_name() {
+fn maestro_skills_keep_first_discovered_name() {
     let root = support::under(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")),
         "tests/fixtures/skills-collision",
@@ -785,7 +785,7 @@ fn skills_keep_first_discovered_name() {
 
 /// User then project then explicit paths determine winners in controlled order.
 #[test]
-fn skills_load_defaults_before_explicit_paths() {
+fn maestro_skills_load_defaults_before_explicit_paths() {
     let dir = Directory::new();
     let user = dir.file(
         "agent/skills/calendar/SKILL.md",
@@ -834,7 +834,7 @@ fn skills_load_defaults_before_explicit_paths() {
 
 /// Explicit source scopes use component containment and user precedence.
 #[test]
-fn skills_classify_explicit_source_scopes() {
+fn maestro_skills_classify_explicit_source_scopes() {
     let dir = Directory::new();
     for (relative, scope) in [
         ("agent/skills/user/SKILL.md", SourceScope::User),
@@ -875,7 +875,7 @@ fn skills_classify_explicit_source_scopes() {
 
 /// Canonical aliases deduplicate before name collision, with spelling fallback.
 #[test]
-fn skills_deduplicate_paths_before_names() {
+fn maestro_skills_deduplicate_paths_before_names() {
     let dir = Directory::new();
     let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
     let alias = dir.0.path().join("parent/alias.md");
@@ -901,7 +901,7 @@ fn skills_deduplicate_paths_before_names() {
 
 /// Repeated losing paths repeat collisions after all ordinary diagnostics.
 #[test]
-fn skills_repeat_collisions_for_losing_paths() {
+fn maestro_skills_repeat_collisions_for_losing_paths() {
     let dir = Directory::new();
     let winner = dir.file("first/calendar/SKILL.md", "---\ndescription: Winner\n---");
     let loser = dir.file("second/calendar/SKILL.md", "---\ndescription: Loser\n---");
@@ -934,7 +934,7 @@ fn skills_repeat_collisions_for_losing_paths() {
 
 /// Loose markdown belongs only to the scan root; links follow targets.
 #[test]
-fn skills_limit_loose_markdown_to_the_scan_root() {
+fn maestro_skills_limit_loose_markdown_to_the_scan_root() {
     let dir = Directory::new();
     let root = dir.file("loose.md", "---\nname: loose\ndescription: Root\n---");
     let nested = dir.file("nested/loose.md", "---\ndescription: Nested loose\n---");
@@ -966,7 +966,7 @@ fn skills_limit_loose_markdown_to_the_scan_root() {
 /// Native traversal follows file and directory links while skipping broken ones.
 #[cfg(unix)]
 #[test]
-fn skills_follow_native_links_and_skip_broken_links() {
+fn maestro_skills_follow_native_links_and_skip_broken_links() {
     let dir = Directory::new();
     let target = dir.file("outside/calendar/SKILL.md", "---\ndescription: Linked\n---");
     let scan = dir.0.path().join("scan");
@@ -1087,7 +1087,7 @@ fn entry_classification_uses_supplied_observations() {
 
 /// Three ignore files share ordered rules and later negations reopen files.
 #[test]
-fn skills_apply_all_ignore_files_in_order() {
+fn maestro_skills_apply_all_ignore_files_in_order() {
     let dir = Directory::new();
     let a = dir.file("a/SKILL.md", "---\ndescription: A\n---");
     let _ = dir.file("b/SKILL.md", "---\ndescription: B\n---");
@@ -1113,7 +1113,7 @@ fn skills_apply_all_ignore_files_in_order() {
 
 /// Nested ignore rules are directory-prefixed and scan-local.
 #[test]
-fn skills_scope_nested_ignore_rules() {
+fn maestro_skills_scope_nested_ignore_rules() {
     let dir = Directory::new();
     let _ = dir.file("nested/drop/SKILL.md", "---\ndescription: Drop\n---");
     let keep = dir.file("sibling/drop/SKILL.md", "---\ndescription: Keep\n---");
@@ -1138,7 +1138,7 @@ fn skills_scope_nested_ignore_rules() {
 
 /// Escaped exclamations remain literal at root and nested ignore scopes.
 #[test]
-fn skills_preserve_escaped_exclamation_rules() {
+fn maestro_skills_preserve_escaped_exclamation_rules() {
     let dir = Directory::new();
     let _ = dir.file(
         "!literal.md",
@@ -1169,7 +1169,7 @@ fn skills_preserve_escaped_exclamation_rules() {
 
 /// Child negation cannot reopen excluded parents and matching ignores case.
 #[test]
-fn skills_respect_excluded_parent_directories() {
+fn maestro_skills_respect_excluded_parent_directories() {
     let dir = Directory::new();
     let _ = dir.file("excluded/child/SKILL.md", "---\ndescription: Excluded\n---");
     let keep = dir.file("kept/child/SKILL.md", "---\ndescription: Kept\n---");
@@ -1193,7 +1193,7 @@ fn skills_respect_excluded_parent_directories() {
 
 /// Invalid ignore rules remain inert while valid rules still apply.
 #[test]
-fn skills_ignore_invalid_rules_without_panicking() {
+fn maestro_skills_ignore_invalid_rules_without_panicking() {
     let dir = Directory::new();
     let keep = dir.file("keep/SKILL.md", "---\ndescription: Keep\n---");
     let _ = dir.file("drop/SKILL.md", "---\ndescription: Drop\n---");
@@ -1219,7 +1219,7 @@ fn skills_ignore_invalid_rules_without_panicking() {
 /// I/O failures preserve earlier discoveries and the quiet-versus-warning routes.
 #[cfg(unix)]
 #[test]
-fn skills_keep_partial_results_after_io_failures() {
+fn maestro_skills_keep_partial_results_after_io_failures() {
     let dir = Directory::new();
     let keep = dir.file("keep/SKILL.md", "---\ndescription: Keep\n---");
     let unreadable = dir.file("unreadable/SKILL.md", "---\ndescription: Unreadable\n---");
@@ -1289,13 +1289,13 @@ fn custom_skill_directories_keep_source_metadata_and_name_order() {
 
 /// Relative dot roots retain their literal basename after child normalization.
 #[test]
-fn skills_use_literal_dot_root_names() {
+fn maestro_skills_use_literal_dot_root_names() {
     if !maestro_test_harness::selection().is_child() {
         let dir = Directory::new();
         let _ = dir.file("SKILL.md", "---\ndescription: Parent\n---");
         let _ = dir.file("child/SKILL.md", "---\ndescription: Child\n---");
         let output =
-            maestro_test_harness::TestProcess::current("skills_use_literal_dot_root_names")
+            maestro_test_harness::TestProcess::current("maestro_skills_use_literal_dot_root_names")
                 .unwrap()
                 .nocapture()
                 .case("child-directory")
@@ -1327,7 +1327,7 @@ fn skills_use_literal_dot_root_names() {
 }
 
 #[test]
-fn skills_resolve_authored_project_roots() {
+fn maestro_skills_resolve_authored_project_roots() {
     let dir = Directory::new();
     let file = dir.file("config/skills/SKILL.md", "---\ndescription: Project\n---");
     let config = "./config/../config";
@@ -1347,7 +1347,7 @@ fn skills_resolve_authored_project_roots() {
 
 /// Preferred defaults skip explicit children, whose enabled-default scope is temporary.
 #[test]
-fn skills_classify_skipped_default_children_as_temporary() {
+fn maestro_skills_classify_skipped_default_children_as_temporary() {
     let dir = Directory::new();
     let agent = dir.0.path().join("agent");
     let _ = dir.file(
@@ -1405,7 +1405,7 @@ fn skills_classify_skipped_default_children_as_temporary() {
 
 /// Explicit dot components remain part of fallback names and provenance.
 #[test]
-fn skills_preserve_authored_dot_basename_and_provenance() {
+fn maestro_skills_preserve_authored_dot_basename_and_provenance() {
     use maestro_resources::{LoadSkillsOptions, load_skills};
     let dir = Directory::new();
     let _ = dir.file("calendar/SKILL.md", "---\ndescription: Meetings\n---");
@@ -1438,7 +1438,7 @@ fn skills_preserve_authored_dot_basename_and_provenance() {
 
 /// Repeated separators do not enter normalized default scope prefixes.
 #[test]
-fn skills_keep_repeated_separator_paths_temporary() {
+fn maestro_skills_keep_repeated_separator_paths_temporary() {
     use maestro_resources::{LoadSkillsOptions, load_skills};
     let dir = Directory::new();
     for root in ["agent/skills", ".maestro/skills"] {
@@ -1470,7 +1470,7 @@ fn skills_keep_repeated_separator_paths_temporary() {
 
 /// A scan root spelled with dot components still matches ignore rules by the paths below it.
 #[test]
-fn skills_match_ignore_rules_below_a_dotted_scan_root() {
+fn maestro_skills_match_ignore_rules_below_a_dotted_scan_root() {
     let dir = Directory::new();
     let _ = dir.file("skills/.gitignore", "nested/drop/\n");
     let _ = dir.file(
@@ -1493,7 +1493,7 @@ fn skills_match_ignore_rules_below_a_dotted_scan_root() {
 
 /// Absolute project configuration roots replace the working directory prefix.
 #[test]
-fn skills_resolve_absolute_project_configuration() {
+fn maestro_skills_resolve_absolute_project_configuration() {
     use maestro_resources::{LoadSkillsOptions, load_skills};
     let dir = Directory::new();
     let config = dir.0.path().join("config");
@@ -1518,7 +1518,7 @@ fn skills_resolve_absolute_project_configuration() {
 
 /// Explicit directories equal to normalized default roots retain their scope.
 #[test]
-fn skills_classify_exact_default_roots() {
+fn maestro_skills_classify_exact_default_roots() {
     use maestro_resources::{LoadSkillsOptions, load_skills};
     let dir = Directory::new();
     for (root, scope) in [
@@ -1593,7 +1593,7 @@ struct RecordedSkill {
 
 /// The whole prompt escapes every field once.
 #[test]
-fn skills_render_the_recorded_escaped_prompt() {
+fn maestro_skills_render_the_recorded_escaped_prompt() {
     let recorded: RecordedPrompt =
         serde_json::from_str(include_str!("fixtures/skill_prompt.json")).unwrap();
     let dir = Directory::new();
@@ -1615,7 +1615,7 @@ fn skills_render_the_recorded_escaped_prompt() {
 
 /// Skills load in the name order of their directories, whatever order the file system lists.
 #[test]
-fn skills_load_in_directory_name_order() {
+fn maestro_skills_load_in_directory_name_order() {
     let dir = Directory::new();
     // NTFS lists these case-insensitively (a, b, C, _x); name order is byte order.
     for name in ["b", "_x", "a", "C"] {

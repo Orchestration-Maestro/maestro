@@ -223,16 +223,16 @@ async fn result_numbers(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn agent_result_numbers_validate_guest_assignments() -> Result<(), String> {
+fn maestro_agent_result_numbers_validate_guest_assignments() -> Result<(), String> {
     on_both_adapters!(result_numbers)
 }
 
 #[test]
-fn context_and_message_results_keep_presence() -> Result<(), String> {
+fn maestro_context_and_message_results_keep_presence() -> Result<(), String> {
     on_both_adapters!(results)
 }
 
 #[test]
-fn agent_events_keep_messages_and_system_prompt_options() -> Result<(), String> {
+fn maestro_agent_events_keep_messages_and_system_prompt_options() -> Result<(), String> {
     on_both_adapters!(agent_events)
 }

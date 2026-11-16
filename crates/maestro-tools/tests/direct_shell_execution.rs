@@ -456,7 +456,7 @@ fn direct_local_abort_retains_sanitized_prefix() {
 
 #[test]
 #[cfg(target_os = "linux")]
-fn direct_bash_finishes_after_inherited_pipe_grace() {
+fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
     use tokio::io::AsyncWriteExt;
     run(async {
         let dir = read_support::Scratch::new().unwrap();
@@ -541,7 +541,7 @@ impl Drop for WindowsDescendant {
 
 #[test]
 #[cfg(windows)]
-fn direct_bash_finishes_after_inherited_pipe_grace() {
+fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
     use crate::read_support::Fixture;
     run(async {
         let dir = read_support::Scratch::new().unwrap();

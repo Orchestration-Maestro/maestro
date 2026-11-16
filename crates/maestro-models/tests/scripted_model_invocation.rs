@@ -26,7 +26,7 @@ mod tests {
     }
     #[test]
     /// Exercise builders combine content through the public invocation boundary.
-    fn builders_combine_content() {
+    fn maestro_builders_combine_content() {
         let message = faux_assistant_message(
             vec![
                 AssistantContent::Thinking(faux_thinking("plan")),
@@ -77,7 +77,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise registration estimates usage through the public invocation boundary.
-    fn registration_estimates_usage() {
+    fn maestro_registration_estimates_usage() {
         let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("answer")]);
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     /// Exercise builders keep defaults and options through the public invocation boundary.
-    fn builders_keep_defaults_and_options() {
+    fn maestro_builders_keep_defaults_and_options() {
         let options = FauxAssistantMessageOptions {
             stop_reason: Some(StopReason::Length),
             error_message: Some(String::new()),
@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     /// Exercise builder usage is owned through the public invocation boundary.
-    fn builder_usage_is_owned() {
+    fn maestro_builder_usage_is_owned() {
         let mut first = faux_assistant_message("one", FauxAssistantMessageOptions::default());
         let second = faux_assistant_message("two", FauxAssistantMessageOptions::default());
         first.usage.input = 9.0;
@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     /// Exercise registration defaults and overrides through the public invocation boundary.
-    fn registration_defaults_and_overrides() {
+    fn maestro_registration_defaults_and_overrides() {
         let _serial = crate::registry::registry();
         for models in [None, Some(vec![])] {
             let registration = register_faux_provider(RegisterFauxProviderOptions {
@@ -307,7 +307,7 @@ mod tests {
 
     #[test]
     /// Exercise identifier defaults are independent through the public invocation boundary.
-    fn identifier_defaults_are_independent() {
+    fn maestro_identifier_defaults_are_independent() {
         let _serial = crate::registry::registry();
         let first = register_faux_provider(RegisterFauxProviderOptions::default());
         let second = register_faux_provider(RegisterFauxProviderOptions::default());
@@ -356,7 +356,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise responses keep invocation identity through the public invocation boundary.
-    fn responses_keep_invocation_identity() {
+    fn maestro_responses_keep_invocation_identity() {
         let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions {
             provider: Some("custom-provider".into()),
@@ -394,7 +394,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise queue exhaustion counts requests through the public invocation boundary.
-    fn queue_exhaustion_counts_requests() {
+    fn maestro_queue_exhaustion_counts_requests() {
         let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Exhaustion);
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
@@ -423,7 +423,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise queue replacement and append through the public invocation boundary.
-    fn queue_replacement_and_append() {
+    fn maestro_queue_replacement_and_append() {
         let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("discard")]);
@@ -449,7 +449,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise caches do not cross sessions through the public invocation boundary.
-    fn caches_do_not_cross_sessions() {
+    fn maestro_caches_do_not_cross_sessions() {
         let _serial = crate::registry::registry();
         let first = register_faux_provider(RegisterFauxProviderOptions::default());
         let second = register_faux_provider(RegisterFauxProviderOptions::default());
@@ -479,7 +479,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise session prefix cache reuses prompt through the public invocation boundary.
-    fn session_prefix_cache_reuses_prompt() {
+    fn maestro_session_prefix_cache_reuses_prompt() {
         let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         for (text, read, write) in [
@@ -501,7 +501,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise disabled cache leaves no state through the public invocation boundary.
-    fn disabled_cache_leaves_no_state() {
+    fn maestro_disabled_cache_leaves_no_state() {
         let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         for (text, retention, read, write, input) in [
@@ -527,7 +527,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise cache totals count prompt once through the public invocation boundary.
-    fn cache_totals_count_prompt_once() {
+    fn maestro_cache_totals_count_prompt_once() {
         let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         for (text, prompt, read) in [
@@ -737,7 +737,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise mixed content streams argument chunks through the public invocation boundary.
-    fn mixed_content_streams_argument_chunks() {
+    fn maestro_mixed_content_streams_argument_chunks() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let authored = mixed();
@@ -770,7 +770,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise fixed chunks have ordered events through the public invocation boundary.
-    fn fixed_chunks_have_ordered_events() {
+    fn maestro_fixed_chunks_have_ordered_events() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         for reason in [StopReason::Stop, StopReason::Length, StopReason::ToolUse] {
@@ -814,7 +814,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise tool blocks keep distinct indices through the public invocation boundary.
-    fn tool_blocks_keep_distinct_indices() {
+    fn maestro_tool_blocks_keep_distinct_indices() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let blocks: Vec<_> = ["one", "two"]
@@ -859,7 +859,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise explicit error retains message through the public invocation boundary.
-    fn explicit_error_retains_message() {
+    fn maestro_explicit_error_retains_message() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let authored = faux_assistant_message(
@@ -897,7 +897,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise explicit abort retains message through the public invocation boundary.
-    fn explicit_abort_retains_message() {
+    fn maestro_explicit_abort_retains_message() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
@@ -940,7 +940,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced text cancel keeps prefix through the public invocation boundary.
-    fn paced_text_cancel_keeps_prefix() {
+    fn maestro_paced_text_cancel_keeps_prefix() {
         let _serial = crate::registry::registry();
         check_cancel(
             AssistantContent::Text(faux_text("abcdefghijkl")),
@@ -951,7 +951,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced thinking cancel keeps prefix through the public invocation boundary.
-    fn paced_thinking_cancel_keeps_prefix() {
+    fn maestro_paced_thinking_cancel_keeps_prefix() {
         let _serial = crate::registry::registry();
         check_cancel(
             AssistantContent::Thinking(faux_thinking("abcdefghijkl")),
@@ -962,7 +962,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise paced tool cancel keeps empty arguments through the public invocation boundary.
-    fn paced_tool_cancel_keeps_empty_arguments() {
+    fn maestro_paced_tool_cancel_keeps_empty_arguments() {
         let _serial = crate::registry::registry();
         check_cancel(
             AssistantContent::ToolCall(faux_tool_call(
@@ -977,7 +977,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise partials retain block membership through the public invocation boundary.
-    fn partials_retain_block_membership() {
+    fn maestro_partials_retain_block_membership() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(mixed()))]);
@@ -1023,7 +1023,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise empty blocks still finish through the public invocation boundary.
-    fn empty_blocks_still_finish() {
+    fn maestro_empty_blocks_still_finish() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Message(Box::new(
@@ -1074,7 +1074,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise scalar boundaries keep text valid through the public invocation boundary.
-    fn scalar_boundaries_keep_text_valid() {
+    fn maestro_scalar_boundaries_keep_text_valid() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let text = "abc😀e\u{301}\u{feff}\u{85}";
@@ -1102,7 +1102,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise chunk bounds preserve unpaced delivery through the public invocation boundary.
-    fn chunk_bounds_preserve_unpaced_delivery() {
+    fn maestro_chunk_bounds_preserve_unpaced_delivery() {
         let _serial = crate::registry::registry();
         let text = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
         for (min, max, speed, lower, upper) in [
@@ -1135,7 +1135,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise factories observe selected model through the public invocation boundary.
-    fn factories_observe_selected_model() {
+    fn maestro_factories_observe_selected_model() {
         let _serial = crate::registry::registry();
         let registration = register_faux_provider(RegisterFauxProviderOptions {
             models: Some(vec![
@@ -1179,7 +1179,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise async factories observe live state through the public invocation boundary.
-    fn async_factories_observe_live_state() {
+    fn maestro_async_factories_observe_live_state() {
         let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Live);
         let registration = fixed(None);
@@ -1394,7 +1394,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise factory failure is terminal through the public invocation boundary.
-    fn factory_failure_is_terminal() {
+    fn maestro_factory_failure_is_terminal() {
         let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Failure);
         let registration = fixed(None);
@@ -1422,7 +1422,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise preaborted request consumes response through the public invocation boundary.
-    fn preaborted_request_consumes_response() {
+    fn maestro_preaborted_request_consumes_response() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let signal = Cancellation::new();
@@ -1479,7 +1479,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise unregister only removes owned source through the public invocation boundary.
-    fn unregister_only_removes_owned_source() {
+    fn maestro_unregister_only_removes_owned_source() {
         let _serial = crate::registry::registry();
         let first = fixed(None);
         let api = first.api.clone();
@@ -1527,7 +1527,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     /// Dropped observers leave production and the detached session cache intact.
     #[test]
-    fn production_survives_dropped_observers() {
+    fn maestro_production_survives_dropped_observers() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let (step, entered, release) = gated_response(faux_assistant_message(
@@ -1618,7 +1618,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise serialized context drives usage through the public invocation boundary.
-    fn serialized_context_drives_usage() {
+    fn maestro_serialized_context_drives_usage() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let context = context_with_all_roles();
@@ -1760,7 +1760,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Canonical streamed argument text keeps every supplied value.
-    fn serialization_keeps_supplied_values() {
+    fn maestro_serialization_keeps_supplied_values() {
         let _serial = crate::registry::registry();
         let registration = fixed(None);
         let mut arguments = JsonObject::new();
@@ -1825,7 +1825,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise raw and simple options reach factory through the public invocation boundary.
-    fn raw_and_simple_options_reach_factory() {
+    fn maestro_raw_and_simple_options_reach_factory() {
         let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Options);
         let registration = fixed(None);
@@ -1941,7 +1941,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise response hook precedes factory through the public invocation boundary.
-    fn response_hook_precedes_factory() {
+    fn maestro_response_hook_precedes_factory() {
         let _serial = crate::registry::registry();
         families::exercise(families::Scenario::Order);
         let registration = fixed(None);
@@ -2023,7 +2023,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise pacing needs no caller timer through the public invocation boundary.
-    fn pacing_needs_no_caller_timer() {
+    fn maestro_pacing_needs_no_caller_timer() {
         let _serial = crate::registry::registry();
         for caller_runtime in [false, true] {
             let registration = fixed(Some(50.0));
@@ -2196,7 +2196,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     /// Exercise documented flow runs offline through the public invocation boundary.
-    fn documented_flow_runs_offline() {
+    fn maestro_documented_flow_runs_offline() {
         let _serial = crate::registry::registry();
         let output = crate::runtime::run(documented_flow()).unwrap();
         assert_eq!(&output[output.len() - 3..], ["true", "0", "2"]);

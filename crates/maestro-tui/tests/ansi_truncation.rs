@@ -123,7 +123,7 @@ const LINK_CASES: &[LinkCase] = &[
 ];
 
 #[test]
-fn truncation_closes_retained_links() {
+fn maestro_truncation_closes_retained_links() {
     for terminator in ["\x07", "\x1b\\"] {
         let open = format!("\x1b]8;id=z;https://example.com{terminator}");
         let close = format!("\x1b]8;;{terminator}");

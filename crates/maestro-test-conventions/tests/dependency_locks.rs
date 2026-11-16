@@ -10,7 +10,7 @@ use cargo_metadata::{Metadata, MetadataCommand};
 
 /// Resolve the complete delivered workspace without rewriting its owning inputs.
 #[test]
-fn locked_resolution_keeps_checkout_clean() {
+fn maestro_locked_resolution_keeps_checkout_clean() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let tracked = maestro_test_harness::git_command::command()
         .args([
@@ -253,7 +253,7 @@ fn assert_edges(metadata: &Metadata, expected: &[&str]) {
 
 /// Locks retain inactive declarations while graph views independently select their edges.
 #[test]
-fn locked_graph_keeps_inactive_dependencies() {
+fn maestro_locked_graph_keeps_inactive_dependencies() {
     let fixture = ResolverFixture::new();
     fixture.lock();
     let cold = fixture.metadata(false, &[]).exec().unwrap();
@@ -290,7 +290,7 @@ fn locked_graph_keeps_inactive_dependencies() {
 
 /// Locked requests reject stale inactive declarations and never repair or create lock data.
 #[test]
-fn locked_resolution_rejects_stale_inputs() {
+fn maestro_locked_resolution_rejects_stale_inputs() {
     let fixture = ResolverFixture::new();
     fixture.lock();
     let lock_path = fixture.scratch.root.path().join("Cargo.lock");

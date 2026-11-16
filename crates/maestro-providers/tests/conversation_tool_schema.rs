@@ -12,6 +12,6 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Compare the complete recorded public observations.
 #[test]
-fn conversation_preserves_nested_schema_keywords() -> TestResult {
-    qualification::assert_rows("conversation_preserves_nested_schema_keywords")
+fn maestro_conversation_preserves_nested_schema_keywords() -> TestResult {
+    qualification::assert_rows("maestro_conversation_preserves_nested_schema_keywords")
 }

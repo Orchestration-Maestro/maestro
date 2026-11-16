@@ -142,7 +142,7 @@ fn check_expiry(now: f64, expiry: f64, refresh: bool, events: &Arc<Mutex<Vec<&'s
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn oauth_expiry_uses_numeric_comparison() {
+fn maestro_oauth_expiry_uses_numeric_comparison() {
     let _admission = Admission::enter();
     let events = Arc::new(Mutex::new(Vec::new()));
     register_oauth_provider(Arc::new(Provider {
@@ -177,7 +177,7 @@ fn oauth_expiry_uses_numeric_comparison() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn oauth_clock_is_read_only_for_present_credentials() {
+fn maestro_oauth_clock_is_read_only_for_present_credentials() {
     let _admission = Admission::enter();
     let events = Arc::new(Mutex::new(Vec::new()));
     register_oauth_provider(Arc::new(Provider {

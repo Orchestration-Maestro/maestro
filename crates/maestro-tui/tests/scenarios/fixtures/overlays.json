@@ -5448,7 +5448,7 @@
       }
     }
   ],
-  "overlays_truncate_overlay_lines_past_the_declared_width": [
+  "maestro_overlays_truncate_overlay_lines_past_the_declared_width": [
     {
       "case": "truncate_overlay_lines_past_the_declared_width",
       "input": {
@@ -5473,7 +5473,7 @@
       }
     }
   ],
-  "overlays_compose_an_overlay_over_complex_ansi_sequences": [
+  "maestro_overlays_compose_an_overlay_over_complex_ansi_sequences": [
     {
       "case": "compose_an_overlay_over_complex_ansi_sequences",
       "input": {
@@ -5500,7 +5500,7 @@
       }
     }
   ],
-  "overlays_compose_an_overlay_over_styled_base_content": [
+  "maestro_overlays_compose_an_overlay_over_styled_base_content": [
     {
       "case": "compose_an_overlay_over_styled_base_content",
       "input": {
@@ -5530,7 +5530,7 @@
       }
     }
   ],
-  "overlays_place_wide_characters_at_the_overlay_boundary": [
+  "maestro_overlays_place_wide_characters_at_the_overlay_boundary": [
     {
       "case": "place_wide_characters_at_the_overlay_boundary",
       "input": {
@@ -5555,7 +5555,7 @@
       }
     }
   ],
-  "overlays_place_an_overlay_at_the_terminal_edge": [
+  "maestro_overlays_place_an_overlay_at_the_terminal_edge": [
     {
       "case": "place_an_overlay_at_the_terminal_edge",
       "input": {
@@ -5581,7 +5581,7 @@
       }
     }
   ],
-  "overlays_compose_an_overlay_over_osc_sequences": [
+  "maestro_overlays_compose_an_overlay_over_osc_sequences": [
     {
       "case": "compose_an_overlay_over_osc_sequences",
       "input": {
@@ -5611,7 +5611,7 @@
       }
     }
   ],
-  "overlays_size_an_overlay_by_percentage_of_terminal_width": [
+  "maestro_overlays_size_an_overlay_by_percentage_of_terminal_width": [
     {
       "case": "size_an_overlay_by_percentage_of_terminal_width",
       "input": {
@@ -5636,7 +5636,7 @@
       }
     }
   ],
-  "overlays_keep_minwidth_when_widthpercent_gives_less": [
+  "maestro_overlays_keep_minwidth_when_widthpercent_gives_less": [
     {
       "case": "keep_minwidth_when_widthpercent_gives_less",
       "input": {
@@ -5662,7 +5662,7 @@
       }
     }
   ],
-  "overlays_position_overlay_at_top_left": [
+  "maestro_overlays_position_overlay_at_top_left": [
     {
       "case": "position_overlay_at_top_left",
       "input": {
@@ -5688,7 +5688,7 @@
       }
     }
   ],
-  "overlays_position_overlay_at_bottom_right": [
+  "maestro_overlays_position_overlay_at_bottom_right": [
     {
       "case": "position_overlay_at_bottom_right",
       "input": {
@@ -5714,7 +5714,7 @@
       }
     }
   ],
-  "overlays_position_overlay_at_top_center": [
+  "maestro_overlays_position_overlay_at_top_center": [
     {
       "case": "position_overlay_at_top_center",
       "input": {
@@ -5740,7 +5740,7 @@
       }
     }
   ],
-  "overlays_clamp_negative_margins_to_zero": [
+  "maestro_overlays_clamp_negative_margins_to_zero": [
     {
       "case": "clamp_negative_margins_to_zero",
       "input": {
@@ -5772,7 +5772,7 @@
       }
     }
   ],
-  "overlays_respect_margin_as_number": [
+  "maestro_overlays_respect_margin_as_number": [
     {
       "case": "respect_margin_as_number",
       "input": {
@@ -5799,7 +5799,7 @@
       }
     }
   ],
-  "overlays_respect_margin_object": [
+  "maestro_overlays_respect_margin_object": [
     {
       "case": "respect_margin_object",
       "input": {
@@ -5831,7 +5831,7 @@
       }
     }
   ],
-  "overlays_offset_the_overlay_from_its_anchor": [
+  "maestro_overlays_offset_the_overlay_from_its_anchor": [
     {
       "case": "offset_the_overlay_from_its_anchor",
       "input": {
@@ -5859,7 +5859,7 @@
       }
     }
   ],
-  "overlays_position_with_rowpercent_and_colpercent": [
+  "maestro_overlays_position_with_rowpercent_and_colpercent": [
     {
       "case": "position_with_rowpercent_and_colpercent",
       "input": {
@@ -5886,7 +5886,7 @@
       }
     }
   ],
-  "overlays_rowpercent_0_should_position_at_top": [
+  "maestro_overlays_rowpercent_0_should_position_at_top": [
     {
       "case": "rowpercent_0_should_position_at_top",
       "input": {
@@ -5912,7 +5912,7 @@
       }
     }
   ],
-  "overlays_rowpercent_100_should_position_at_bottom": [
+  "maestro_overlays_rowpercent_100_should_position_at_bottom": [
     {
       "case": "rowpercent_100_should_position_at_bottom",
       "input": {
@@ -5938,7 +5938,7 @@
       }
     }
   ],
-  "overlays_truncate_overlay_to_maxheight": [
+  "maestro_overlays_truncate_overlay_to_maxheight": [
     {
       "case": "truncate_overlay_to_maxheight",
       "input": {
@@ -5967,7 +5967,7 @@
       }
     }
   ],
-  "overlays_truncate_overlay_to_maxheightpercent": [
+  "maestro_overlays_truncate_overlay_to_maxheightpercent": [
     {
       "case": "truncate_overlay_to_maxheightpercent",
       "input": {
@@ -6001,7 +6001,7 @@
       }
     }
   ],
-  "overlays_row_and_col_override_the_anchor": [
+  "maestro_overlays_row_and_col_override_the_anchor": [
     {
       "case": "row_and_col_override_the_anchor",
       "input": {
@@ -6029,7 +6029,7 @@
       }
     }
   ],
-  "frames_draw_an_overlay_over_short_content": [
+  "maestro_frames_draw_an_overlay_over_short_content": [
     {
       "case": "short_original",
       "input": {

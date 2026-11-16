@@ -11,13 +11,13 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Recorded public observations for tool images stay with function results.
 #[test]
-fn tool_images_stay_with_function_results() -> TestResult {
-    qualification::assert_rows("tool_images_stay_with_function_results")
+fn maestro_tool_images_stay_with_function_results() -> TestResult {
+    qualification::assert_rows("maestro_tool_images_stay_with_function_results")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Recorded public observations for tool outputs preserve content classes.
 #[test]
-fn tool_outputs_preserve_content_classes() -> TestResult {
-    qualification::assert_rows("tool_outputs_preserve_content_classes")
+fn maestro_tool_outputs_preserve_content_classes() -> TestResult {
+    qualification::assert_rows("maestro_tool_outputs_preserve_content_classes")
 }

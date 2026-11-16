@@ -10,27 +10,27 @@ pub(super) fn assert_rows(test: &str) -> TestResult {
         include_str!("../fixtures/empty_content.json"),
         &[
             (
-                "crates/maestro-providers/tests/empty_content/assertions.rs::empty_arrays_retain_protocol_behavior",
+                "crates/maestro-providers/tests/empty_content/assertions.rs::maestro_empty_arrays_retain_protocol_behavior",
                 23,
             ),
             (
-                "crates/maestro-providers/tests/empty_content/assertions.rs::empty_strings_retain_protocol_behavior",
+                "crates/maestro-providers/tests/empty_content/assertions.rs::maestro_empty_strings_retain_protocol_behavior",
                 23,
             ),
             (
-                "crates/maestro-providers/tests/empty_content/assertions.rs::whitespace_inputs_retain_protocol_behavior",
+                "crates/maestro-providers/tests/empty_content/assertions.rs::maestro_whitespace_inputs_retain_protocol_behavior",
                 35,
             ),
             (
-                "crates/maestro-providers/tests/empty_content/assertions.rs::empty_assistant_retains_protocol_behavior",
+                "crates/maestro-providers/tests/empty_content/assertions.rs::maestro_empty_assistant_retains_protocol_behavior",
                 23,
             ),
             (
-                "crates/maestro-providers/tests/empty_content/assertions.rs::empty_blocks_keep_protocol_omissions",
+                "crates/maestro-providers/tests/empty_content/assertions.rs::maestro_empty_blocks_keep_protocol_omissions",
                 59,
             ),
             (
-                "crates/maestro-providers/tests/empty_content/assertions.rs::empty_streams_keep_protocol_terminal_rules",
+                "crates/maestro-providers/tests/empty_content/assertions.rs::maestro_empty_streams_keep_protocol_terminal_rules",
                 23,
             ),
         ],

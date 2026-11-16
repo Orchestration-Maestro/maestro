@@ -346,7 +346,7 @@ fn responses_send_false_payload_as_json() -> chat::TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn responses_emit_carriage_delimited_events() -> chat::TestResult {
+fn maestro_responses_emit_carriage_delimited_events() -> chat::TestResult {
     use futures_util::FutureExt as _;
     use maestro_models::{AssistantMessageEvent, StreamOptions};
     use maestro_providers::OpenAIResponsesOptions;
