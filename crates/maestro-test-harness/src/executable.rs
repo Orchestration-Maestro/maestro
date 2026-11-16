@@ -23,7 +23,7 @@ use std::process::Command;
 /// # fn main() -> std::io::Result<()> {
 /// let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
 ///     .ok_or_else(|| std::io::Error::other("run just prepare-tests first"))?;
-/// let directory = crate::Scratch::new()?;
+/// let directory = maestro_test_harness::Scratch::new()?;
 /// maestro_test_harness::install_executable(
 ///     std::path::Path::new(&artifact),
 ///     &directory.path().join(format!("ssh{}", std::env::consts::EXE_SUFFIX)),
@@ -60,7 +60,7 @@ pub fn install_executable(artifact: &Path, destination: &Path) -> io::Result<()>
 /// # Examples
 /// ```no_run
 /// # fn main() -> std::io::Result<()> {
-/// let bin = crate::Scratch::new()?;
+/// let bin = maestro_test_harness::Scratch::new()?;
 /// let fd = maestro_test_harness::install_search_program("fd", bin.path())?;
 /// # Ok(())
 /// # }

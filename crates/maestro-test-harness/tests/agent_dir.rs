@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use maestro_test_harness::{AGENT_DIRECTORY, run_agent_directory, run_per_environment};
+use maestro_test_harness::{AGENT_DIR, run_agent_dir, run_per_environment};
 
 /// One case: the variable it runs with and the directory it reports.
 type Case = (Option<&'static str>, Option<&'static str>);
@@ -19,10 +19,10 @@ fn run_agent_directory_reports_only_an_absolute_exported_path() {
     let selected = run_per_environment(
         "run_agent_directory_reports_only_an_absolute_exported_path",
         cases,
-        |(agent, _)| BTreeMap::from([(AGENT_DIRECTORY, *agent)]),
+        |(agent, _)| BTreeMap::from([(AGENT_DIR, *agent)]),
     )
     .unwrap();
     for (_, expected) in selected.into_iter().flatten() {
-        assert_eq!(run_agent_directory().as_deref(), expected);
+        assert_eq!(run_agent_dir().as_deref(), expected);
     }
 }

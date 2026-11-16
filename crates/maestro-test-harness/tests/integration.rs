@@ -1,7 +1,7 @@
 //! Child probes and the interface matrix of the checked test process.
 #![cfg(test)]
 
-mod agent_directory;
+mod agent_dir;
 mod broken_stderr;
 mod checked_runs;
 mod child_helpers;

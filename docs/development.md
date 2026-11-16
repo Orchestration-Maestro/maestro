@@ -1872,8 +1872,8 @@ build to a test body.
 
 Use `maestro_test_harness::Scratch::new()?` for a disposable directory. Read the
 platform temporary parent through `maestro_test_harness::temporary_root()`; never
-name it through `std::env::temp_dir` in test code. The directory is removed when
-its owner drops; keep the owner alive while a child uses its files.
+name it through `std::env::temp_dir` in test code. Dropping the owner attempts to
+remove the directory. Keep it alive while a child uses its files.
 
 Capture events through `maestro_test_harness::trace_capture::with_default`, or
 `trace_capture::with_subscriber` for a future. A formatting subscriber writes into
@@ -2836,7 +2836,7 @@ environment)`. It groups the cases by the edits `environment` returns and
 reruns the test once per group, in a child that applies exactly those edits
 after `env_clear()`, plus the agent directory the run's setup exports
 and the parent's temporary directory, unless the case sets one. That directory
-comes from `maestro-test-harness::temporary_root`. A value of
+comes from `maestro_test_harness::temporary_root`. A value of
 `Some` sets its variable and `None` removes it, so a case that names a kept
 variable as `None` reaches its child without it. A group child
 that loads a component therefore reuses the compiled code the run prepared
@@ -2860,7 +2860,7 @@ same when the case adds or clears named variables. Use
 `TestProcess::case(id)` to select that case. Set a
 child's temporary directory with `TestProcess::temp_dir(path)`, which writes the
 variables each platform reads, never `TMPDIR` alone. A child that replaces `HOME`
-and loads a prepared component passes `run_agent_directory()` as
+and loads a prepared component passes `run_agent_dir()` as
 `MAESTRO_CODING_AGENT_DIR`, so it reuses the setup's compiled code instead of
 compiling the component again. A test that gives an executable its own agent
 directory links the run's cache into it first with

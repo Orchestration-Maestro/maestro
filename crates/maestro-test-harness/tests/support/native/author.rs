@@ -96,7 +96,7 @@ pub(super) fn run(record: &Record, args: &[OsString]) -> io::Result<()> {
 
 /// Resolve the cache below the run's absolute agent directory without creating it during a query.
 fn cache_directory() -> io::Result<PathBuf> {
-    let agent = maestro_test_harness::run_agent_directory()
+    let agent = maestro_test_harness::run_agent_dir()
         .ok_or_else(|| io::Error::other("fixture agent directory must be absolute"))?;
     Ok(PathBuf::from(agent).join("component-cache"))
 }
@@ -132,7 +132,7 @@ fn entries(record: &Record, environment: &Path) -> io::Result<()> {
 
 /// Write the recorded cache namespaces, preserving an entry supplied by a base bundle.
 fn warm(record: &Record) -> io::Result<()> {
-    if maestro_test_harness::run_agent_directory().is_none() {
+    if maestro_test_harness::run_agent_dir().is_none() {
         return Ok(());
     }
     let time = std::fs::metadata(std::env::current_exe()?)?

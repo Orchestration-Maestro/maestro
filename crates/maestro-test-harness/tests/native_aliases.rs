@@ -222,7 +222,7 @@ fn author_cache_query_has_no_preparation_effects() {
         .arg("--cache-directory")
         .current_dir(root.path())
         .env("MAESTRO_NATIVE_RECORD", root.path().join("author-record"))
-        .env(maestro_test_harness::AGENT_DIRECTORY, &agent)
+        .env(maestro_test_harness::AGENT_DIR, &agent)
         .env("NEXTEST_ENV", &environment)
         .output()
         .unwrap();

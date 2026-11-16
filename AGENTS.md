@@ -104,7 +104,7 @@ argument or an import under any alias; a method named `temp_dir` is the
 receiver's own API and is accepted, while its arguments stay checked, and a
 declaration's own `temp_dir` name is accepted the same way with its body and
 arguments staying checked. Tests that
-observe it use `maestro-test-harness::temporary_root`, and the diagnostic names
+observe it use `maestro_test_harness::temporary_root`, and the diagnostic names
 `TEST_PROCESS_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or

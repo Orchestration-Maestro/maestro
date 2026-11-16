@@ -67,7 +67,7 @@ fn compose_frames() {
             crate::support::widgets(),
             maestro_extensions_wasmtime::Installation {
                 version: maestro_app::configuration::config::VERSION.into(),
-                agent_dir: maestro_test_harness::run_agent_directory().unwrap_or_default(),
+                agent_dir: maestro_test_harness::run_agent_dir().unwrap_or_default(),
             },
             Box::new(terminal.output_writer().unwrap()),
             true,
@@ -138,7 +138,7 @@ fn component_output_without_newline_is_flushed_before_terminal_start() {
                     crate::support::widgets(),
                     maestro_extensions_wasmtime::Installation {
                         version: maestro_app::configuration::config::VERSION.into(),
-                        agent_dir: maestro_test_harness::run_agent_directory().unwrap_or_default(),
+                        agent_dir: maestro_test_harness::run_agent_dir().unwrap_or_default(),
                     },
                     Box::new(terminal.standard_output_writer()),
                     false,

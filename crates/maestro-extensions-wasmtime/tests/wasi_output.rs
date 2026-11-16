@@ -134,7 +134,7 @@ async fn output_host(case: &str, captured: &Capture) -> Harness {
             super::support::widgets(),
             maestro_extensions_wasmtime::Installation {
                 version: "installed-component-host".into(),
-                agent_dir: maestro_test_harness::run_agent_directory().unwrap_or_default(),
+                agent_dir: maestro_test_harness::run_agent_dir().unwrap_or_default(),
             },
             writer,
             case == "terminal",

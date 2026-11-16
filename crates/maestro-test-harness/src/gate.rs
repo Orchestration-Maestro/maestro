@@ -20,8 +20,8 @@ use std::process::Command;
 ///
 /// ```no_run
 /// # fn main() -> std::io::Result<()> {
-/// use crate::gate::Gate;
-/// let directory = crate::Scratch::new()?;
+/// use maestro_test_harness::gate::Gate;
+/// let directory = maestro_test_harness::Scratch::new()?;
 /// let permit = Gate::new(&directory.path().join("permit"))?;
 /// // Hand `permit.path()` to a child that waits on it, then let one waiting child continue.
 /// permit.release()?;

@@ -41,10 +41,10 @@ fn main() -> Result<(), String> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
     match arguments.as_slice() {
         [argument] if argument == "--cache-directory" => {
-            let agent = maestro_test_harness::run_agent_directory().ok_or_else(|| {
+            let agent = maestro_test_harness::run_agent_dir().ok_or_else(|| {
                 format!(
                     "{} must name an absolute directory",
-                    maestro_test_harness::AGENT_DIRECTORY
+                    maestro_test_harness::AGENT_DIR
                 )
             })?;
             let cache = maestro_extensions_wasmtime::component_cache(&agent)

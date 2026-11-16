@@ -205,7 +205,7 @@ fn check(name: &str) {
                 &mut row,
                 scratch.path().to_str().unwrap(),
                 &std::env::var("HOME").unwrap_or_default(),
-                &maestro_test_harness::run_agent_directory().unwrap_or_default(),
+                &maestro_test_harness::run_agent_dir().unwrap_or_default(),
             );
             let result = handler(row.to_string(), runner.create_command_context())
                 .await
@@ -262,8 +262,8 @@ fn isolate_paths(name: &str) -> bool {
             ("MAESTRO_HELPER_COMPONENT", Some(component.clone())),
         ]);
         variables.extend(
-            maestro_test_harness::run_agent_directory()
-                .map(|path| (maestro_test_harness::AGENT_DIRECTORY, Some(path))),
+            maestro_test_harness::run_agent_dir()
+                .map(|path| (maestro_test_harness::AGENT_DIR, Some(path))),
         );
         variables
     })

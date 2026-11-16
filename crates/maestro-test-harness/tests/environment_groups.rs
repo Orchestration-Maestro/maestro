@@ -225,21 +225,18 @@ fn a_case_removes_a_kept_variable_from_its_child() {
         let output = TestProcess::current(test)
             .unwrap()
             .case("*")
-            .env(maestro_test_harness::AGENT_DIRECTORY, "/controlled/agent")
+            .env(maestro_test_harness::AGENT_DIR, "/controlled/agent")
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
         return;
     }
     let selected = run_per_environment(test, ["absent"], |_| {
-        BTreeMap::<&str, Option<&str>>::from([(maestro_test_harness::AGENT_DIRECTORY, None)])
+        BTreeMap::<&str, Option<&str>>::from([(maestro_test_harness::AGENT_DIR, None)])
     })
     .unwrap();
     if selected.is_some() {
-        assert_eq!(
-            std::env::var_os(maestro_test_harness::AGENT_DIRECTORY),
-            None
-        );
+        assert_eq!(std::env::var_os(maestro_test_harness::AGENT_DIR), None);
     }
 }
 

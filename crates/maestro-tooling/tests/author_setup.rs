@@ -1592,10 +1592,7 @@ fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: b
             "NEXTEST_DYLD_FALLBACK_LIBRARY_PATH",
             root.join("target/debug"),
         )
-        .env(
-            maestro_test_harness::AGENT_DIRECTORY,
-            root.join("shared-agent"),
-        );
+        .env(maestro_test_harness::AGENT_DIR, root.join("shared-agent"));
     command
 }
 

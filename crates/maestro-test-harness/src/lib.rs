@@ -13,7 +13,7 @@
 //! while a child is live runs alone through [`run_alone`]. Cases that read process variables
 //! share one cleared child per distinct environment through [`run_per_environment`], each
 //! with a scratch home and its own variable edits through [`with_isolated_home`]. A child
-//! that replaces `HOME` passes the run's agent directory back through [`run_agent_directory`],
+//! that replaces `HOME` passes the run's agent directory back through [`run_agent_dir`],
 //! and a cleared child keeps the one the run's setup exported, so neither recompiles the
 //! components the run prepared.
 //!
@@ -41,7 +41,7 @@
 //! A test that starts a development setup child clears the prepared bundle its run exports
 //! with [`without_prepared_bundles`], so the child runs the setup the test supplies.
 
-mod agent_directory;
+mod agent_dir;
 mod alone;
 mod broken_stderr;
 mod checked_child;
@@ -66,7 +66,7 @@ mod selection;
 mod setup;
 pub mod trace_capture;
 
-pub use agent_directory::{AGENT_DIRECTORY, link_files, run_agent_directory};
+pub use agent_dir::{AGENT_DIR, link_files, run_agent_dir};
 pub use alone::run_alone;
 pub use broken_stderr::{run_with_broken_stderr, wait_for_broken_stderr};
 pub use checked_child::TestProcess;

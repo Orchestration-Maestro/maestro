@@ -16,7 +16,7 @@ use crate::{CheckedChild, TestProcessError, selection};
 /// directory the run's setup exports, below which a child that loads a component finds the
 /// code the setup compiled, and the Windows system root, without which a Windows child cannot
 /// load its socket library.
-const KEPT: [&str; 3] = ["LLVM_PROFILE_FILE", crate::AGENT_DIRECTORY, "SYSTEMROOT"];
+const KEPT: [&str; 3] = ["LLVM_PROFILE_FILE", crate::AGENT_DIR, "SYSTEMROOT"];
 
 /// One ordered environment edit.
 #[derive(Debug)]
@@ -281,7 +281,7 @@ impl TestProcess {
     ///
     /// ```
     /// # #[cfg(unix)] {
-    /// use crate::{IsolatedSetup, TestProcess};
+    /// use maestro_test_harness::{IsolatedSetup, TestProcess};
     ///
     /// let child = TestProcess::named("permissions::created_file")?
     ///     .setup(IsolatedSetup::new().umask(0o022));

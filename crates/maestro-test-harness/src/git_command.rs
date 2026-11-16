@@ -91,10 +91,10 @@ pub fn environment(configuration: &Path) -> io::Result<BTreeMap<String, String>>
 /// After preparing the native fixture, install an alias in a disposable directory:
 ///
 /// ```no_run
-/// use crate::git_command::{self, Scenario};
+/// use maestro_test_harness::git_command::{self, Scenario};
 ///
 /// # fn main() -> std::io::Result<()> {
-/// let directory = crate::Scratch::new()?;
+/// let directory = maestro_test_harness::Scratch::new()?;
 /// git_command::install(&directory.path().join("git"), Scenario::Observed)?;
 /// # Ok(())
 /// # }

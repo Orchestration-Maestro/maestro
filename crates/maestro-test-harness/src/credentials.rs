@@ -17,8 +17,8 @@ use std::path::Path;
 ///
 /// ```no_run
 /// # fn main() -> std::io::Result<()> {
-/// use crate::credentials::{Scenario, install};
-/// let directory = crate::Scratch::new()?;
+/// use maestro_test_harness::credentials::{Scenario, install};
+/// let directory = maestro_test_harness::Scratch::new()?;
 /// let process = directory.path().join(format!("process{}", std::env::consts::EXE_SUFFIX));
 /// install(&process, Scenario::AwsProcess)?;
 /// # Ok(())
