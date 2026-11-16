@@ -954,7 +954,8 @@ with `just test-conventions`.
 ### Test environment variables
 
 Name test-only switches with `MAESTRO_TEST_`, such as `MAESTRO_TEST_CAPTURE`.
-Keep a user setting's name when a test reads or sets it. Run the naming guard with:
+Keep a user setting's name when a test reads or sets it. Run the `test_environment`
+check with:
 
 ```sh
 just test-conventions

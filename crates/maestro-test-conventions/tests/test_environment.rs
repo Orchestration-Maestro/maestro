@@ -121,7 +121,10 @@ fn external_module_gates_cover_their_descendants() {
 
         let error = check_workspace(workspace.root.path()).unwrap_err();
 
-        assert!(error.contains(&path.display().to_string()), "{error}");
+        assert!(
+            error.contains(&path.display().to_string()),
+            "{declaration}: {error}"
+        );
     }
 }
 
@@ -153,7 +156,7 @@ fn production_cfg_alternatives_and_siblings_remain_production() {
         let workspace = Workspace::with_text_member();
         source(&workspace, "text", "src/lib.rs", &fixture(text, "FOO"));
 
-        assert_eq!(check_workspace(workspace.root.path()), Ok(()));
+        assert_eq!(check_workspace(workspace.root.path()), Ok(()), "{text}");
     }
 }
 
