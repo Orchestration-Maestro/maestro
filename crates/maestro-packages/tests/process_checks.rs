@@ -152,7 +152,7 @@ fn streams_settle_at_child_exit(root: &Scratch) {
 const CHILD: &str = "native";
 
 /// Variable carrying the scratch directory a child fixture works in.
-const STDIO_ROOT: &str = "MAESTRO_STDIO_ROOT";
+const STDIO_ROOT: &str = "MAESTRO_TEST_STDIO_ROOT";
 
 /// Runs the three launches of the stdio test inside the child process.
 fn stdio_launches(root: &Path, supplied: bool) {
@@ -248,7 +248,7 @@ fn stdio_scenario(test: &str, supplied: bool) {
 }
 
 /// Variable carrying the scratch directory a child fixture works in.
-const REPOSITORY_ROOT: &str = "MAESTRO_REPOSITORY_ROOT";
+const REPOSITORY_ROOT: &str = "MAESTRO_TEST_REPOSITORY_ROOT";
 /// The source whose clone address the child's Git configuration rewrites to a local path.
 const REPOSITORY_SOURCE: &str = "https://example.test/team/repo@v1";
 
@@ -515,7 +515,7 @@ fn assert_supplied_capture_routes() {
         "report",
         &json!({
             "scenario": "report",
-            "fields": [{"variable": "MAESTRO_CAPTURE_VALUE"}, {"operand": 0}, "working-directory"]
+            "fields": [{"variable": "MAESTRO_TEST_CAPTURE_VALUE"}, {"operand": 0}, "working-directory"]
         }),
     );
     let output = runtime()
@@ -525,7 +525,7 @@ fn assert_supplied_capture_routes() {
             maestro_packages::CommandCaptureOptions {
                 cwd: Some(cwd),
                 timeout: None,
-                env: &[("MAESTRO_CAPTURE_VALUE", "overlaid")],
+                env: &[("MAESTRO_TEST_CAPTURE_VALUE", "overlaid")],
             },
         ))
         .unwrap();

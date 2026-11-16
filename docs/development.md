@@ -358,7 +358,7 @@ Canvas exports run on a page that holds only an 800 by 600 `#canvas` at the page
 origin, with no body margin, because they compare canvas points with page
 coordinates.
 The setup hashes the host bundle once and exports the digest as
-`MAESTRO_BROWSER_EXPORTS_DIGEST`. Each export test hashes the bundle again after
+`MAESTRO_TEST_BROWSER_EXPORTS_DIGEST`. Each export test hashes the bundle again after
 the export and fails when the two differ. Nextest prints each export's `PASS`,
 `FAIL` or `TIMEOUT` under its test name, and its summary counts every case. `PHASE` records identify loaded
 pages, resolved exports, pointer dispatch and pointer acknowledgments. Nextest
@@ -950,6 +950,31 @@ or contain `issue_` immediately followed by a digit. The attribute marks the
 function as a test even at a library root. Diagnostics give the file, line and
 function name. Helpers without a test attribute are not checked. Run the guard
 with `just test-conventions`.
+
+### Test environment variables
+
+Name test-only switches with `MAESTRO_TEST_`, such as `MAESTRO_TEST_CAPTURE`.
+Keep a user setting's name when a test reads or sets it. Run the `test_environment`
+check with:
+
+```sh
+just test-conventions
+```
+
+The `test_environment` check gathers environment-name spellings from Rust string
+literals and identifiers across the workspace. A name used only by test-owned
+code must have the prefix. Diagnostics list the name and every source location.
+Test-owned code includes `tests/`, `tests.rs`, test-attributed or test-gated items,
+`maestro-test-*` crates, `test_support` modules and items requiring the
+`test-support` feature. External modules inherit their declaration's test gate.
+Production occurrences keep their names, including names documented beside a
+reader that builds its key at run time. Ordinary comments do not count. The scan
+reads written tokens; it does not expand macros or evaluate computed names.
+
+Update both sides of a test switch: the parent that sets it and the child that
+reads it. Keep fixture records, component markers and documented test commands
+on the same spelling. For example, a child using `MAESTRO_TEST_CAPTURE` must be
+launched with that key, not a second name for the same switch.
 
 ### Shared test support
 
@@ -1830,7 +1855,7 @@ On Unix, when `RUSTC_WRAPPER` or, failing that, `CARGO_BUILD_RUSTC_WRAPPER` is s
 `fixture_command` points `RUSTC_WRAPPER` at the prepared fixture's `hide-home`
 wrapper, installed as `rustc-wrapper` in the fixture root. Shared CI sets the second
 variable. The wrapper unsets `CARGO_HOME` and `CARGO_TARGET_DIR` and runs the
-original wrapper, which it reads from `MAESTRO_FIXTURE_RUSTC_WRAPPER`. `sccache`
+original wrapper, which it reads from `MAESTRO_TEST_FIXTURE_RUSTC_WRAPPER`. `sccache`
 hashes every `CARGO_*` variable into the key of each rustc call, so a wrapper that
 saw the private home or the per-run target directory would give the registry crates
 of each fixture a key that no other fixture shares. Cargo itself keeps both
@@ -1971,13 +1996,13 @@ The portable `editor` family reads one JSON object after the family line. To
 report the edited path, set `result` to the name of the environment variable
 holding the output path. It skips its own `--custom` option and writes the next
 operand followed by a newline. A missing variable fails before file effects.
-For example, with `MAESTRO_EDITOR_RESULT=/scratch/editor-result`, this
+For example, with `MAESTRO_TEST_EDITOR_RESULT=/scratch/editor-result`, this
 `vi.fixture` record makes `vi --custom notes.txt` write `notes.txt` followed by a
 newline to `/scratch/editor-result` and exit 7:
 
 ```text
 editor
-{"result":"MAESTRO_EDITOR_RESULT","code":7}
+{"result":"MAESTRO_TEST_EDITOR_RESULT","code":7}
 ```
 
 The process tests install the alias under the name the product resolves from
@@ -2009,7 +2034,7 @@ record before any effect and rejects an unknown scenario or field, including in 
 | `hold` | Writes `"ready"` to optional `ready`, reads one byte from the `permit` FIFO, then writes `stdout`, `stderr` and optional `append`. Optional `late` names a FIFO read before the permit, for a writer that opened it first. Optional `terminate` appends and exits 0 when SIGTERM arrives, so only a termination signal ends the process after the gate. It drains standard input first, which ends when the process that started it exits. |
 | `holder` | Starts the program named by `descendant` with a shared input pipe, writes `stdout` and `stderr`, and exits at once. The descendant receives end-of-input when the holder ends, so it runs after it, and it keeps the inherited streams open until it finishes. |
 | `query` | Requires a value followed by `root -g`, prints `prefix` and the value with its newline, or writes `error` and exits `code` for the `denied` value. |
-| `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
+| `package` | Appends the working directory, the invoked name and every operand, tab-separated, to `MAESTRO_TEST_COMMAND_LOG`. Requires `--quiet` first, answers `root` with `MAESTRO_TEST_NPM_ROOT`, `view` with `"2.0.0"`, admits `install`, and fails anything else. |
 | `hold-hangup` | Requires one socket path. Registers the hangup, prints `ready` on a line of its own, and when the hangup arrives writes `h` to the socket and runs on until terminated. |
 | `await-release` | Requires one socket path. Writes `w` to it, then ends once it receives one byte. |
 | `report-environment` | Prints `seen:<ROLE>\|<MAESTRO_PANE_ID>\|<working directory>` on a line of its own, then runs on until terminated. |
@@ -2107,7 +2132,7 @@ root and keep `MAESTRO_NATIVE_FIXTURE` in the cleared child's environment, becau
 | --- | --- |
 | `shell` | `steps` run in order for each `<shell> -c <command>`: `{"print": text}`, `{"print-command": {"before", "after"}}` (the command text between two texts), `{"mark": target}` (create an empty file), `{"hold": target}`, `{"log": path}` (append one empty line), `"block"` (wait for a signal) and `{"exit": status}`. A target is `{"path": p}` or `{"command": suffix}`, the command text followed by the suffix. |
 | `tmux` | Answers `show -gv extended-keys` and `show -gv extended-keys-format` with the `extended_keys` and `extended_keys_format` replies (`text`, optional `code`, optional `signal`, `"SIGTERM"`, to end by that signal after writing). |
-| `gated-tmux`, `gated-package`, `gated-probe` | Require the operands of the query, report the launch (`argv`, `cwd`, and `MAESTRO_NOTICE_INHERITED`) as JSON in `<directory>/<name>.ready`, wait for the line `go` in `<name>.permit`, then answer. The tmux query ignores SIGTERM. |
+| `gated-tmux`, `gated-package`, `gated-probe` | Require the operands of the query, report the launch (`argv`, `cwd`, and `MAESTRO_TEST_NOTICE_INHERITED`) as JSON in `<directory>/<name>.ready`, wait for the line `go` in `<name>.permit`, then answer. The tmux query ignores SIGTERM. |
 | `package-version` | Appends the working directory and each operand, joined by `\|`, to `log` and prints `"2"`. |
 | `package-remote` | Appends one JSON line (`cwd`, `argv`, `prompt`) to `log` and answers `rev-parse HEAD`, `rev-parse --abbrev-ref @{upstream}` and `ls-remote origin refs/heads/main`. |
 | `gh` | `state` receives `argv.jsonl`, one JSON array per call, and the copied document. `auth status` follows `auth` (`exit`, `remove_self`, `signal`). `gist create` plays `gist.frames` against its last operand: `{"stdout": bytes}`, `{"stderr": bytes}`, `{"send": bytes}` and `"hold"` on the control connection at `gist.port`, `"release"`, `{"chmod": octal}` and `{"copy": name}`, then ends with `gist.exit`. |
@@ -2208,16 +2233,16 @@ behavior; an unknown family, scenario or field fails before any effect.
 
 | Scenario | Behavior |
 | --- | --- |
-| `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_CWD`, writes the brand and environment observations to `MAESTRO_BRAND_RESULT` and `MAESTRO_ENV_RESULT`, and ends with status 17 when `MAESTRO_FAIL` names the first operand or `MAESTRO_FAIL_ARG` names any operand. |
-| `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
+| `tooling-command` `stand-in` | Prints `controlled command stdout` and `controlled command stderr` when `MAESTRO_TEST_COMMAND_OUTPUT` is set. Runs the real Cargo in `MAESTRO_TEST_REAL_CARGO`, and after a successful `build` runs the staged `target/debug/maestro-models` and `target/debug/development --rebuild-marker`. Forwards `run -- <program>` to `MAESTRO_TEST_DEVELOPMENT` and a `watchexec` invocation to `MAESTRO_TEST_REAL_WATCHEXEC` with `--wrap-process=none`. Otherwise it appends the invoked name, a space and the operands joined by a vertical bar to `MAESTRO_LOG`, writes the working directory to `MAESTRO_TEST_CWD`, writes the brand and environment observations to `MAESTRO_TEST_BRAND_RESULT` and `MAESTRO_TEST_ENV_RESULT`, and ends with status 17 when `MAESTRO_TEST_FAIL` names the first operand or `MAESTRO_TEST_FAIL_ARG` names any operand. |
+| `tooling-command` `forward` | Appends the operands, separated by spaces, to `MAESTRO_TEST_NATIVE_LOG`. Writes `controlled native tool failure` and ends with status 17 when `MAESTRO_TEST_NATIVE_FAIL` is `1`, except for a `--version` first operand. Otherwise runs `MAESTRO_TEST_NATIVE_TOOL` with the same operands. Browser-author fixtures install it under `wasm-opt`, so the recipe still calls the real optimizer and the test reads what it received. |
 | `tooling-sources` `sources` | Records `cargo vendor` calls in the record's `calls` file and `cargo build` calls in `builds`; writes `vendor exploded` or `build exploded` and ends with status 1 when `fails` names that operation. Otherwise a build leaves the seed units in `CARGO_TARGET_DIR/debug`, and a vendor creates the last operand as a directory and prints the vendored-source configuration. The fixture-sources setup installs it as `cargo`. |
 | `tooling-sources` `operands` | Prints each operand on its own line, writes the record's `stderr` text, and ends with the record's `code`. Tests use it to prove an adapter passes literal operands, diagnostics and the status through unchanged. |
-| `tooling-sources` `trunk-hook` | Copies `assets/app.css` to `hook.css`, writes the first operand and the `TRUNK_*` and `MAESTRO_HOOK_INHERITED` variables, one per line, to `hook-environment`, and ends with the status in `MAESTRO_HOOK_STATUS`. Installed as an authored build hook. |
+| `tooling-sources` `trunk-hook` | Copies `assets/app.css` to `hook.css`, writes the first operand and the `TRUNK_*` and `MAESTRO_TEST_HOOK_INHERITED` variables, one per line, to `hook-environment`, and ends with the status in `MAESTRO_TEST_HOOK_STATUS`. Installed as an authored build hook. |
 | `tooling-sources` `call-log` | Appends `call` and the operands to the record's `path`, followed by every variable whose name starts with one of the record's `prefixes`, sorted. Ends with status 1 when the first operand is the record's `refuse`. |
 | `tooling-sources` `artifacts` | Appends the operands to the file `CARGO_CALLS` names, then reports one compiled artifact per name in the record, at `/built/<name>.wasm`. |
-| `tooling-sources` `consumer-cargo` | Appends the operands to `cargo-log`, beside the directory holding the alias. Ends with status 17 when `MAESTRO_FAIL_PHASE` names the first operand, succeeds without work for `hakari`, `test` and `nextest`, and runs the record's `cargo` for everything else. |
+| `tooling-sources` `consumer-cargo` | Appends the operands to `cargo-log`, beside the directory holding the alias. Ends with status 17 when `MAESTRO_TEST_FAIL_PHASE` names the first operand, succeeds without work for `hakari`, `test` and `nextest`, and runs the record's `cargo` for everything else. |
 | `tooling-sources` `announce` | Prints `cargo` and the operands. When the record names `rebuilt`, it also replaces that path with a copy of itself that prints `example`. |
-| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
+| `tooling-wrapper` `hide-home` | Runs the compiler wrapper named by `MAESTRO_TEST_FIXTURE_RUSTC_WRAPPER` with `CARGO_HOME` and `CARGO_TARGET_DIR` removed. The child-toolchain builder installs it as `rustc-wrapper` in every fixture root, so the compiler cache never keys a fixture's dependencies on that fixture's private Cargo home or output directory. |
 | `tooling-wrapper` `recording` | Appends the `CARGO_HOME` the compiler saw, or `unset`, to a log beside the alias, and the `CARGO_TARGET_DIR` it saw, or `unset`, to a second log with the `.target.log` suffix, then runs the first operand with the remaining ones. A test installs it as an inherited `RUSTC_WRAPPER` or `CARGO_BUILD_RUSTC_WRAPPER` to observe the same boundary. |
 
 A runner that starts `just build` in a recipe workspace therefore never needs
@@ -2250,7 +2275,7 @@ when the variable is missing or relative. The component setup always supplies an
 agent directory, so the failure is reachable only when the fixture runs outside that
 setup. The built alias
 has a sibling record. When a test exercises product copying or relocation,
-set `MAESTRO_NATIVE_RECORD` on the child command to select the author record
+set `MAESTRO_TEST_NATIVE_RECORD` on the child command to select the author record
 explicitly; the product does not copy fixture sidecars. Only the author-example
 alias reads this selector, so nested Cargo and other aliases retain their own
 records. Other tooling fixture families keep their existing contracts.

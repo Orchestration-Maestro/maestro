@@ -221,7 +221,10 @@ fn author_cache_query_has_no_preparation_effects() {
     let output = Command::new(alias)
         .arg("--cache-directory")
         .current_dir(root.path())
-        .env("MAESTRO_NATIVE_RECORD", root.path().join("author-record"))
+        .env(
+            "MAESTRO_TEST_NATIVE_RECORD",
+            root.path().join("author-record"),
+        )
         .env(maestro_test_harness::AGENT_DIR, &agent)
         .env("NEXTEST_ENV", &environment)
         .output()
@@ -400,8 +403,8 @@ fn malformed_command_records_have_no_partial_effects() {
             .arg("--maestro-observe")
             .arg(path)
             .args(["--quiet", "root"])
-            .env("MAESTRO_COMMAND_LOG", &sentinel)
-            .env("MAESTRO_NPM_ROOT", root.path())
+            .env("MAESTRO_TEST_COMMAND_LOG", &sentinel)
+            .env("MAESTRO_TEST_NPM_ROOT", root.path())
             .output()
             .unwrap();
         assert!(!run.status.success(), "accepted {record}");

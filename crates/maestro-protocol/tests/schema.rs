@@ -905,7 +905,7 @@ fn layout_exchange_preserves_tree_records() {
             pane: LayoutPane {
                 label: Some("tests".into()),
                 command: Some(vec!["sh".into(), "-c".into(), "just test".into()]),
-                env: HashMap::from([("MAESTRO_ROLE".into(), "tests".into())]),
+                env: HashMap::from([("MAESTRO_TEST_ROLE".into(), "tests".into())]),
                 ..Default::default()
             },
         }),
@@ -1135,7 +1135,7 @@ fn action_pane_request_preserves_popup_options() {
             direction: None,
             cwd: Some("/tmp".into()),
             focus: true,
-            env: [("MAESTRO_ROLE".to_string(), "board".to_string())].into(),
+            env: [("MAESTRO_TEST_ROLE".to_string(), "board".to_string())].into(),
         }),
     };
 
@@ -1144,7 +1144,7 @@ fn action_pane_request_preserves_popup_options() {
     assert_eq!(json["placement"], "popup");
     assert_eq!(json["width"], 90);
     assert_eq!(json["height"], "80%");
-    assert_eq!(json["env"]["MAESTRO_ROLE"], "board");
+    assert_eq!(json["env"]["MAESTRO_TEST_ROLE"], "board");
     let restored: Request = serde_json::from_value(json).unwrap();
     assert_eq!(restored, request);
 }

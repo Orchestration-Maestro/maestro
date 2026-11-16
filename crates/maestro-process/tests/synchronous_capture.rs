@@ -19,7 +19,7 @@ fn sync_capture_keeps_raw_stdout_status_and_closed_input() {
         );
         command
             .args(["literal $HOME;|", "", "literal $HOME;|"])
-            .env("MAESTRO_CAPTURE", "chosen")
+            .env("MAESTRO_TEST_CAPTURE", "chosen")
             .current_dir(directory);
         let output = spawn_sync(
             &mut command,

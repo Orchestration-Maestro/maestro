@@ -17,7 +17,7 @@ fn loaded(root: &Root) -> Rpc {
 /// Loads the same component with a controlled provider for active-run cancellation.
 fn connected(root: &Root, base: &str) -> Rpc {
     root.models(base);
-    let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
+    let component = std::env::var("MAESTRO_TEST_NATIVE_IO_COMPONENT").unwrap();
     Rpc::command(&mut root.command(&[
         "--mode",
         "rpc",
@@ -175,7 +175,7 @@ fn native_child_keeps_literal_arguments_and_cwd() {
 fn native_child_keeps_environment_selection() {
     let root = Root::new();
     root.models("http://127.0.0.1:1/v1");
-    let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
+    let component = std::env::var("MAESTRO_TEST_NATIVE_IO_COMPONENT").unwrap();
     let mut command = root.command(&[
         "--mode",
         "rpc",
@@ -628,7 +628,7 @@ fn native_child_abort_keeps_the_original_signal() {
     let root = Root::new();
     let provider = HeldProvider::new();
     root.models(&provider.base);
-    let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
+    let component = std::env::var("MAESTRO_TEST_NATIVE_IO_COMPONENT").unwrap();
     let mut rpc = Rpc::command(&mut root.command(&[
         "--mode",
         "rpc",
@@ -679,7 +679,7 @@ fn native_io_keeps_full_user_basics() {
     std::fs::write(&outside, b"absolute\0\xff").unwrap();
     std::fs::write(&target, b"symlink\0\xfe").unwrap();
     std::os::unix::fs::symlink("../linked 雪", &link).unwrap();
-    let component = std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap();
+    let component = std::env::var("MAESTRO_TEST_NATIVE_IO_COMPONENT").unwrap();
     let mut process = root
         .command(&[
             "--mode",
@@ -692,7 +692,7 @@ fn native_io_keeps_full_user_basics() {
             &component,
         ])
         .env(
-            "MAESTRO_NATIVE_IO_BASICS",
+            "MAESTRO_TEST_NATIVE_IO_BASICS",
             json!([outside, "relative link"]).to_string(),
         )
         .env("NATIVE_IO_SENTINEL", "inherited Ω\n")

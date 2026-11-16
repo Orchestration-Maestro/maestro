@@ -16,10 +16,10 @@ use serde_json::{Value, json};
 use std::{cell::RefCell, path::Path, rc::Rc, sync::RwLock};
 
 /// Setup variable naming the component whose `location` flag defaults to its own path.
-const LOCATION: &str = "MAESTRO_LOCATION_COMPONENT";
+const LOCATION: &str = "MAESTRO_TEST_LOCATION_COMPONENT";
 
 /// Setup variable naming the component that installs described hooks and registrations.
-const HOOKS: &str = "MAESTRO_HOOK_COMPONENT";
+const HOOKS: &str = "MAESTRO_TEST_HOOK_COMPONENT";
 
 /// The host spelling of a path.
 fn spelled(path: &Path) -> String {

@@ -6,8 +6,8 @@ use std::process::ExitCode;
 
 /// Build the child while retaining every inherited parent variable.
 fn main() -> ExitCode {
-    let Some(cargo) = env::var_os("MAESTRO_PROBE_CARGO") else {
-        eprintln!("the probe needs MAESTRO_PROBE_CARGO");
+    let Some(cargo) = env::var_os("MAESTRO_TEST_PROBE_CARGO") else {
+        eprintln!("the probe needs MAESTRO_TEST_PROBE_CARGO");
         return ExitCode::FAILURE;
     };
     let before: Vec<_> = env::vars_os().collect();

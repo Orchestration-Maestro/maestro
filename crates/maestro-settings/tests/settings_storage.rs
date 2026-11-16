@@ -36,7 +36,7 @@ mod tests {
             Some("control") => {
                 let cwd = std::env::current_dir().unwrap();
                 let expected =
-                    std::path::PathBuf::from(std::env::var_os("MAESTRO_EXPECT_CWD").unwrap());
+                    std::path::PathBuf::from(std::env::var_os("MAESTRO_TEST_EXPECT_CWD").unwrap());
                 assert_eq!(
                     cwd.canonicalize().unwrap(),
                     expected.canonicalize().unwrap()
@@ -45,8 +45,8 @@ mod tests {
                     std::env::var_os("LLVM_PROFILE_FILE").unwrap(),
                     expected.join("literal-%p-%m.profraw")
                 );
-                assert_eq!(std::env::var("MAESTRO_ORDER").unwrap(), "replacement");
-                assert!(std::env::var_os("MAESTRO_REMOVE").is_none());
+                assert_eq!(std::env::var("MAESTRO_TEST_ORDER").unwrap(), "replacement");
+                assert!(std::env::var_os("MAESTRO_TEST_REMOVE").is_none());
                 support::report(&json!({"selected": true, "value": "replacement"}));
                 true
             }
@@ -69,8 +69,8 @@ mod tests {
         if support::child_case().is_none() {
             let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
             let output = support::child_command(NAME, "seed")
-                .env("MAESTRO_REMOVE", "inherited")
-                .env("MAESTRO_ORDER", "original")
+                .env("MAESTRO_TEST_REMOVE", "inherited")
+                .env("MAESTRO_TEST_ORDER", "original")
                 .output()
                 .unwrap();
             assert!(
@@ -84,19 +84,19 @@ mod tests {
             );
             return;
         }
-        assert_eq!(std::env::var("MAESTRO_REMOVE").unwrap(), "inherited");
+        assert_eq!(std::env::var("MAESTRO_TEST_REMOVE").unwrap(), "inherited");
         let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
         let root = Scratch::new().unwrap();
         let output = support::child_command(NAME, "control")
             .current_dir(root.path())
-            .env("MAESTRO_EXPECT_CWD", root.path())
+            .env("MAESTRO_TEST_EXPECT_CWD", root.path())
             .env(
                 "LLVM_PROFILE_FILE",
                 root.path().join("literal-%p-%m.profraw"),
             )
-            .env_remove("MAESTRO_ORDER")
-            .env("MAESTRO_ORDER", "replacement")
-            .env_remove("MAESTRO_REMOVE")
+            .env_remove("MAESTRO_TEST_ORDER")
+            .env("MAESTRO_TEST_ORDER", "replacement")
+            .env_remove("MAESTRO_TEST_REMOVE")
             .output()
             .unwrap();
         assert!(output.status.success());

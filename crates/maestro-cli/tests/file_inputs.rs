@@ -418,7 +418,7 @@ fn file_refusals_stop_at_the_stage_that_refused() {
 }
 
 /// Environment variable naming the supplied refusal a child replays.
-const FIXTURE_REFUSAL: &str = "MAESTRO_CLI_FIXTURE_REFUSAL";
+const FIXTURE_REFUSAL: &str = "MAESTRO_TEST_CLI_FIXTURE_REFUSAL";
 
 /// Run the recorded fatal case in this process, which leaves through the native exit.
 fn fatal_child() {

@@ -6,7 +6,7 @@ use std::{cell::RefCell, rc::Rc, sync::RwLock};
 
 /// A real component runner whose raw-output diagnostics remain externally observable.
 async fn loaded() -> (ExtensionRunner<Local>, Rc<RefCell<Vec<String>>>) {
-    let path = std::env::var("MAESTRO_LOCAL_SHELL_COMPONENT").unwrap();
+    let path = std::env::var("MAESTRO_TEST_LOCAL_SHELL_COMPONENT").unwrap();
     let runtime = maestro_extensions::create_extension_runtime::<Local>();
     runtime.set_tool_construction(maestro_extensions::ToolConstruction {
         tools_manager: std::sync::Arc::new(maestro_extensions::ToolsManager::new(
@@ -203,8 +203,8 @@ async fn local_streams_and_environment(runner: &ExtensionRunner<Local>, cwd: &st
         execute(
             runner,
             json!({"cwd":cwd,"shell":"/bin/bash",
-        "command":"printf '%s:%s' \"$MAESTRO_LOCAL_ENV\" \"${MAESTRO_UNSET-unset}\"",
-        "env":{"MAESTRO_LOCAL_ENV":"é","MAESTRO_UNSET":null}})
+        "command":"printf '%s:%s' \"$MAESTRO_TEST_LOCAL_ENV\" \"${MAESTRO_TEST_UNSET-unset}\"",
+        "env":{"MAESTRO_TEST_LOCAL_ENV":"é","MAESTRO_TEST_UNSET":null}})
         )
         .await,
         json!({"bytes":"é:unset".as_bytes(),"result":{"Ok":0.0}})

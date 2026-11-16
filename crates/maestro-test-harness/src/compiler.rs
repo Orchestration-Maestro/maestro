@@ -99,7 +99,7 @@ fn replaced_wrapper(command: &Command) -> Option<std::ffi::OsString> {
 
 /// The variable through which the wrapper receives the wrapper it replaced.
 #[cfg(unix)]
-const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_FIXTURE_RUSTC_WRAPPER";
+const ORIGINAL_RUSTC_WRAPPER: &str = "MAESTRO_TEST_FIXTURE_RUSTC_WRAPPER";
 
 /// The wrapper alias in `root` that unsets `CARGO_HOME` and `CARGO_TARGET_DIR` before forwarding.
 #[cfg(unix)]

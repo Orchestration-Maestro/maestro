@@ -39,7 +39,7 @@ fn consuming_workspace(root: &Path) {
         ),
         (
             root.join("examples/extensions/hello.rs"),
-            "//! Hello extension.\n// maestro-component: MAESTRO_HELLO_COMPONENT\n".to_owned(),
+            "//! Hello extension.\n// maestro-component: MAESTRO_TEST_HELLO_COMPONENT\n".to_owned(),
         ),
         (component.join("src/lib.rs"), String::new()),
         (
@@ -109,7 +109,7 @@ fn setup_example_prepares_a_consuming_component_crate() {
     );
     let exported = std::fs::read_to_string(environment).unwrap();
     let component = exported
-        .strip_prefix("MAESTRO_HELLO_COMPONENT=")
+        .strip_prefix("MAESTRO_TEST_HELLO_COMPONENT=")
         .and_then(|rest| rest.strip_suffix('\n'))
         .unwrap_or_else(|| panic!("{exported}"));
     assert!(

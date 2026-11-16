@@ -61,6 +61,8 @@ mod standard_error;
 mod temp_directories;
 /// Nextest's default budget and documented slow-test exceptions.
 mod test_budget;
+/// Names reserved for test-only environment inputs.
+mod test_environment;
 /// Repository directories that tests read at run time.
 mod test_input_routes;
 /// Behaviour-only names for attributed tests.
@@ -119,6 +121,12 @@ mod tracked_sizes;
 /// Raw identifiers follow the same rule; unattributed helpers retain their names. Each violation
 /// names the source file, declaration line and function. The shared syntax walk reads test
 /// attributes ending in `test` without expanding macros.
+///
+/// An environment name found only in test-owned string literals or identifiers must start
+/// with `MAESTRO_TEST_`. Test layouts, dedicated test crates, test gates and test-support
+/// modules/features establish ownership; external modules inherit their declaration's gate.
+/// Production documentation also counts, retaining keys a reader builds at run time.
+/// Each rejected name lists every source location; ordinary comments do not count.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Sources load, and the source checks run, on
@@ -248,6 +256,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| leaked_words::check(root, &members),
         &|| bucket_modules::check(root, &members),
         &|| test_names::check(&members),
+        &|| test_environment::check(&members),
     ];
     // The source checks only read the loaded members, so they run at once and report in order.
     pool::map(checks, |check| check())?.into_iter().collect()

@@ -34,10 +34,10 @@ static ENV_PACKAGE_DIR: LazyLock<String> =
     LazyLock::new(|| format!("{}_PACKAGE_DIR", APP_NAME.to_uppercase()));
 
 /// The state directory the controlled program reads its configuration from.
-const ENV_STATE: &str = "MAESTRO_SHARE_STATE";
+const ENV_STATE: &str = "MAESTRO_TEST_SHARE_STATE";
 
 /// The temporary directory the child's artifacts are created in.
-const ENV_TEMP: &str = "MAESTRO_SHARE_TEMP";
+const ENV_TEMP: &str = "MAESTRO_TEST_SHARE_TEMP";
 
 /// The environment keys a controlled child keeps unset.
 const CONTROLLED: [&str; 5] = [

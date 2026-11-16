@@ -160,7 +160,7 @@ fn local_author_setup_rebuilds_after_search_resolver_edits() {
         resolver_fixture(root);
         let setup = || {
             export_command(root, &root.join("target/test-setup"), false)
-                .env_remove("MAESTRO_NATIVE_RECORD")
+                .env_remove("MAESTRO_TEST_NATIVE_RECORD")
                 .output()
                 .unwrap()
         };
@@ -168,7 +168,7 @@ fn local_author_setup_rebuilds_after_search_resolver_edits() {
             fs::read_to_string(root.join("nextest-env"))
                 .unwrap()
                 .lines()
-                .any(|line| line.starts_with("MAESTRO_COMPONENT="))
+                .any(|line| line.starts_with("MAESTRO_TEST_COMPONENT="))
         };
         assert_success(&setup());
         assert!(exports_component());
@@ -243,7 +243,7 @@ fn archived_author_setup_reuses_relocated_components() {
     for variable in [
         "MAESTRO_AUTHOR_COMPONENT",
         "MAESTRO_CONTEXT_COMPONENT",
-        "MAESTRO_COMPONENT",
+        "MAESTRO_TEST_COMPONENT",
     ] {
         let path = environment
             .lines()
@@ -878,20 +878,20 @@ fn local_author_setup_builds_only_the_components_a_base_cannot_supply() {
 
     assert_eq!(built(Some(&base)), Vec::<String>::new());
     let entries = fs::read_to_string(root.join("nextest-env")).unwrap();
-    let reused = base.join("MAESTRO_ALPHA_COMPONENT.wasm");
+    let reused = base.join("MAESTRO_TEST_ALPHA_COMPONENT.wasm");
     assert!(
         entries
             .lines()
-            .any(|line| line == format!("MAESTRO_ALPHA_COMPONENT={}", reused.display())),
+            .any(|line| line == format!("MAESTRO_TEST_ALPHA_COMPONENT={}", reused.display())),
         "{entries}"
     );
 
     fs::write(
         root.join("examples/extensions/alpha.rs"),
-        "// maestro-component: MAESTRO_ALPHA_COMPONENT\n// edited\n",
+        "// maestro-component: MAESTRO_TEST_ALPHA_COMPONENT\n// edited\n",
     )
     .unwrap();
-    assert_eq!(built(Some(&base)), ["MAESTRO_ALPHA_COMPONENT"]);
+    assert_eq!(built(Some(&base)), ["MAESTRO_TEST_ALPHA_COMPONENT"]);
 
     fs::write(
         root.join("crates/maestro-extensions-guest/src/lib.rs"),
@@ -1022,7 +1022,7 @@ fn marked_fixture(root: &Path) {
         fs::create_dir_all(root.join("examples/extensions")).unwrap();
         fs::write(
             root.join(format!("examples/extensions/{name}.rs")),
-            format!("// maestro-component: MAESTRO_{variable}_COMPONENT\n"),
+            format!("// maestro-component: MAESTRO_TEST_{variable}_COMPONENT\n"),
         )
         .unwrap();
     }
@@ -1041,7 +1041,7 @@ fn prepare_as_child(test: &str, root: &Path, base: &Path) -> Output {
         .unwrap()
         .case("base")
         .nocapture()
-        .env("MAESTRO_FIXTURE_ROOT", root)
+        .env("MAESTRO_TEST_FIXTURE_ROOT", root)
         .env("TEST_PREPARE_BASE", base)
         .output()
         .unwrap()
@@ -1050,8 +1050,9 @@ fn prepare_as_child(test: &str, root: &Path, base: &Path) -> Output {
 /// The child half of the base tests: prepare the fixture checkout named by the environment into
 /// the output directory it names, `target/next-setup` unless it names none.
 fn child_prepare() {
-    let root = PathBuf::from(std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap());
-    let output = std::env::var_os("MAESTRO_FIXTURE_OUTPUT").unwrap_or("target/next-setup".into());
+    let root = PathBuf::from(std::env::var_os("MAESTRO_TEST_FIXTURE_ROOT").unwrap());
+    let output =
+        std::env::var_os("MAESTRO_TEST_FIXTURE_OUTPUT").unwrap_or("target/next-setup".into());
     let arguments = ["prepare-test-setup".into(), "prepare".into(), output];
     let target = root.join("target/next-prepare").into();
     maestro_tooling::run(
@@ -1110,7 +1111,7 @@ fn prepare_reports_reused_and_built_component_counts() {
 #[test]
 fn prepare_rejects_oversupplied_component_counts() {
     if selection().is_child() {
-        let root = PathBuf::from(std::env::var_os("MAESTRO_FIXTURE_ROOT").unwrap());
+        let root = PathBuf::from(std::env::var_os("MAESTRO_TEST_FIXTURE_ROOT").unwrap());
         let error = run_prepare(&root).expect_err("oversupplied base must fail preparation");
         assert_eq!(error.kind(), std::io::ErrorKind::Other);
         assert_eq!(
@@ -1127,13 +1128,13 @@ fn prepare_rejects_oversupplied_component_counts() {
     let base = root.join("target/test-setup");
     edit_manifest(&base, |components| {
         components.insert(
-            "MAESTRO_UNUSED_COMPONENT".to_owned(),
+            "MAESTRO_TEST_UNUSED_COMPONENT".to_owned(),
             components["MAESTRO_AUTHOR_COMPONENT"].clone(),
         );
     });
     fs::copy(
         base.join("MAESTRO_AUTHOR_COMPONENT.wasm"),
-        base.join("MAESTRO_UNUSED_COMPONENT.wasm"),
+        base.join("MAESTRO_TEST_UNUSED_COMPONENT.wasm"),
     )
     .unwrap();
 
@@ -1175,12 +1176,13 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
         ),
         Vec::<String>::new()
     );
-    let reused = fs::read(root.join("target/next-setup/MAESTRO_ALPHA_COMPONENT.wasm")).unwrap();
+    let reused =
+        fs::read(root.join("target/next-setup/MAESTRO_TEST_ALPHA_COMPONENT.wasm")).unwrap();
     assert_eq!(reused, b"component bytes");
 
     fs::write(
         root.join("examples/extensions/alpha.rs"),
-        "// maestro-component: MAESTRO_ALPHA_COMPONENT\n// edited\n",
+        "// maestro-component: MAESTRO_TEST_ALPHA_COMPONENT\n// edited\n",
     )
     .unwrap();
     assert_eq!(
@@ -1189,7 +1191,7 @@ fn prepare_builds_only_the_components_a_base_cannot_supply() {
             root,
             &base
         ),
-        ["MAESTRO_ALPHA_COMPONENT"]
+        ["MAESTRO_TEST_ALPHA_COMPONENT"]
     );
 
     fs::write(
@@ -1303,7 +1305,7 @@ fn prepare_rebuilds_the_components_that_read_an_edited_shared_module() {
     let manifest: serde_json::Value =
         serde_json::from_slice(&fs::read(base.join("components.json")).unwrap()).unwrap();
     assert_eq!(
-        manifest["components"]["MAESTRO_ALPHA_COMPONENT"]["inputs"]["paths"],
+        manifest["components"]["MAESTRO_TEST_ALPHA_COMPONENT"]["inputs"]["paths"],
         serde_json::json!([
             "examples/extensions/alpha.rs",
             "examples/extensions/support/tail.rs"
@@ -1322,7 +1324,10 @@ fn prepare_rebuilds_the_components_that_read_an_edited_shared_module() {
             root,
             &base
         ),
-        ["MAESTRO_ALPHA_COMPONENT", "MAESTRO_BETA_COMPONENT"]
+        [
+            "MAESTRO_TEST_ALPHA_COMPONENT",
+            "MAESTRO_TEST_BETA_COMPONENT"
+        ]
     );
 }
 
@@ -1344,20 +1349,20 @@ fn prepare_reuses_a_base_in_its_own_output_directory() {
             .unwrap()
             .case("base")
             .nocapture()
-            .env("MAESTRO_FIXTURE_ROOT", root)
-            .env("MAESTRO_FIXTURE_OUTPUT", "target/test-setup")
+            .env("MAESTRO_TEST_FIXTURE_ROOT", root)
+            .env("MAESTRO_TEST_FIXTURE_OUTPUT", "target/test-setup")
             .env("TEST_PREPARE_BASE", &bundle)
             .output()
             .unwrap(),
     );
     assert!(!root.join("built").exists());
-    let staged = fs::read(bundle.join("MAESTRO_ALPHA_COMPONENT.wasm")).unwrap();
+    let staged = fs::read(bundle.join("MAESTRO_TEST_ALPHA_COMPONENT.wasm")).unwrap();
     assert_eq!(staged, b"component bytes");
 }
 
 /// The fixture setup example: it records the author component it was given and writes
 /// nextest's environment file from the components it was given, or from the checkout. It
-/// also exports `MAESTRO_COMPONENT`, a name source discovery accepts.
+/// also exports `MAESTRO_TEST_COMPONENT`, a name source discovery accepts.
 const EXAMPLE: &str = r#"{"scenario":"cached","engine":"fixture"}"#;
 
 /// A setup example that exports components without populating the cache.
@@ -1584,7 +1589,7 @@ fn shard_command(mut command: Command, root: &Path, prepared: &Path, archived: b
     command
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
-        .env("MAESTRO_NATIVE_RECORD", root.join("example-source"))
+        .env("MAESTRO_TEST_NATIVE_RECORD", root.join("example-source"))
         .env("TEST_PREPARE_OUTPUT", prepared)
         .env("NEXTEST_ENV", root.join("nextest-env"))
         .env("NEXTEST_LD_LIBRARY_PATH", root.join("target/debug"))
@@ -1648,13 +1653,13 @@ fn tamper(root: &Path, change: &str) -> PathBuf {
             // The renamed component keeps its file and digest, so only the name is wrong.
             let renamed = "MAESTRO_lower_COMPONENT";
             fs::rename(
-                prepared.join("MAESTRO_COMPONENT.wasm"),
+                prepared.join("MAESTRO_TEST_COMPONENT.wasm"),
                 prepared.join(format!("{renamed}.wasm")),
             )
             .unwrap();
             edit_manifest(&prepared, |components| {
-                let digest = components["MAESTRO_COMPONENT"].clone();
-                components.retain(|variable, _| variable != "MAESTRO_COMPONENT");
+                let digest = components["MAESTRO_TEST_COMPONENT"].clone();
+                components.retain(|variable, _| variable != "MAESTRO_TEST_COMPONENT");
                 components.insert(renamed.to_owned(), digest);
             });
         }

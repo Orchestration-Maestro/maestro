@@ -21,7 +21,7 @@ use support::key_cases::{
 use crate::input_support::GLOBALS as PROTOCOL;
 
 /// Variable that selects the scenario a probe child process runs.
-const PROBE: &str = "MAESTRO_KEY_PROBE";
+const PROBE: &str = "MAESTRO_TEST_KEY_PROBE";
 
 /// Variables that decide whether a raw backspace byte means ctrl+backspace.
 const TERMINAL_VARIABLES: [&str; 4] = ["WT_SESSION", "SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY"];

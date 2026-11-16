@@ -99,7 +99,7 @@ impl Request {
         if executable
             .file_stem()
             .is_some_and(|name| name == "prepare_author_component")
-            && let Some(record) = std::env::var_os("MAESTRO_NATIVE_RECORD")
+            && let Some(record) = std::env::var_os("MAESTRO_TEST_NATIVE_RECORD")
         {
             return Self::record(Path::new(&record), args);
         }

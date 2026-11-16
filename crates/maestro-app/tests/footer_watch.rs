@@ -1195,7 +1195,7 @@ fn footer_pending_refresh_after_leaving_repository_keeps_branch_absent() {
 #[cfg(unix)]
 #[test]
 fn footer_async_lookup_keeps_output_until_pipe_eof() {
-    if std::env::var_os("MAESTRO_FOOTER_HOLDER").is_some() {
+    if std::env::var_os("MAESTRO_TEST_FOOTER_HOLDER").is_some() {
         footer_pipe_child();
         return;
     }
@@ -1222,7 +1222,7 @@ fn footer_async_lookup_keeps_output_until_pipe_eof() {
             root.0.path(),
             &[
                 ("PATH", &root.join("bin")),
-                ("MAESTRO_FOOTER_HOLDER", "1"),
+                ("MAESTRO_TEST_FOOTER_HOLDER", "1"),
                 ("GIT_HOLDER", &holder),
             ],
             &[]

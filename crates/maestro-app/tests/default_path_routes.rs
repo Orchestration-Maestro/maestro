@@ -251,7 +251,7 @@ fn child_case(name: &str, group: Group, index: usize) {
     let row = &rows[index];
     let mut envs = vec![
         ("HOME".to_owned(), home),
-        ("MAESTRO_DEFAULT_ROOT".into(), root.into()),
+        ("MAESTRO_TEST_DEFAULT_ROOT".into(), root.into()),
     ];
     if group == Group::PackageAndBinaryPathsReachRealFiles {
         let input: PackageInput = fixture::instantiate(&row.input, root, "");
@@ -288,7 +288,7 @@ fn qualify(name: &str, group: Group) {
     if maestro_test_harness::selection().is_child()
         && !maestro_test_harness::selection().runs_case("outer")
     {
-        let root = std::env::var("MAESTRO_DEFAULT_ROOT").unwrap();
+        let root = std::env::var("MAESTRO_TEST_DEFAULT_ROOT").unwrap();
         let rows = fixture::cases::<Value, Value>(group);
         let row = rows
             .iter()
@@ -302,7 +302,7 @@ fn qualify(name: &str, group: Group) {
             roots(group, &row.input, &row.expected, &root);
         }
         println!("\nPROBE routes-ok");
-    } else if std::env::var_os("MAESTRO_DEFAULT_OUTER").is_some() {
+    } else if std::env::var_os("MAESTRO_TEST_DEFAULT_OUTER").is_some() {
         for index in 0..fixture::cases::<Value, Value>(group).len() {
             child_case(name, group, index);
         }
@@ -320,7 +320,7 @@ fn qualify(name: &str, group: Group) {
                     .case("outer"),
                 scratch.0.path(),
                 &[
-                    ("MAESTRO_DEFAULT_OUTER", "1"),
+                    ("MAESTRO_TEST_DEFAULT_OUTER", "1"),
                     ("MAESTRO_CODING_AGENT_DIR", "inherited-decoy"),
                     ("MAESTRO_PACKAGE_DIR", "inherited-decoy")
                 ],

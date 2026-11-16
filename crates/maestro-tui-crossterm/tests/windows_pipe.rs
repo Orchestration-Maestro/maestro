@@ -17,7 +17,7 @@ use maestro_tui_crossterm::ProcessTerminal;
 use maestro_tui_crossterm::adapter::wait_for_input;
 
 /// Marks the copy whose standard input is the pipe under test.
-const ROLE: &str = "MAESTRO_TERMINAL_TEST_PIPE";
+const ROLE: &str = "MAESTRO_TEST_TERMINAL_PIPE";
 
 /// The child has installed its reader, or has stopped it for the restart scenario.
 const READY: &str = "pipe ready";

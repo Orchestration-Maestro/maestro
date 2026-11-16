@@ -1,5 +1,5 @@
 //! Exercises native operations through the ordinary author facade.
-// maestro-component: MAESTRO_NATIVE_IO_COMPONENT
+// maestro-component: MAESTRO_TEST_NATIVE_IO_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
@@ -62,7 +62,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 }),
             },
         )?;
-        if let Ok(paths) = std::env::var("MAESTRO_NATIVE_IO_BASICS") {
+        if let Ok(paths) = std::env::var("MAESTRO_TEST_NATIVE_IO_BASICS") {
             full_user_basics(&paths).map_err(|error| error.to_string())?;
         }
         Ok(())

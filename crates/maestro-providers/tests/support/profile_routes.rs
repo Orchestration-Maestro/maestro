@@ -214,7 +214,7 @@ fn environment(row: &Row, work: &Workdir, input: &Input, urls: [&str; 3]) -> Vec
     let [credentials, conversation, proxy] = urls;
     let mut vars = work.environment(input, credentials);
     vars.push((
-        "MAESTRO_CONVERSATION_URL".to_owned(),
+        "MAESTRO_TEST_CONVERSATION_URL".to_owned(),
         conversation.to_owned(),
     ));
     vars.push(("AWS_MAX_ATTEMPTS".to_owned(), "1".to_owned()));
@@ -304,7 +304,7 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
     );
     let test = if supplied {
         vars.retain(|(name, _)| !name.to_lowercase().contains("proxy"));
-        vars.push(("MAESTRO_SUPPLIED_SENDER".to_owned(), "1".to_owned()));
+        vars.push(("MAESTRO_TEST_SUPPLIED_SENDER".to_owned(), "1".to_owned()));
         "credential_services_reuse_the_supplied_sender"
     } else {
         &row.test
@@ -456,7 +456,7 @@ async fn converse(row: &Row, supplied: bool) -> TestResult {
         ..BedrockOptions::default()
     };
     let stream = stream_bedrock(
-        bedrock::model(&std::env::var("MAESTRO_CONVERSATION_URL")?)?,
+        bedrock::model(&std::env::var("MAESTRO_TEST_CONVERSATION_URL")?)?,
         bedrock::context("question")?,
         Some(options),
     );

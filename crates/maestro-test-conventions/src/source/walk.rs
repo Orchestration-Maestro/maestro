@@ -5,10 +5,14 @@
 //! all checks. The walk also records the file-level facts checks read from the parsed
 //! file, so no syntax outlives it.
 
+/// Inherited test context for the shared traversal.
+mod context;
+
+use context::{Context, Environment, Gate, span_positions};
 use std::collections::BTreeSet;
 use std::ops::Range;
 
-use syn::{spanned::Spanned, visit::Visit};
+use syn::{ext::IdentExt, spanned::Spanned, visit::Visit};
 
 use super::{
     Member, Scope, Source, cfg_test, impl_item_attributes, item_attributes, trait_item_attributes,
@@ -18,11 +22,13 @@ use crate::graph::packages::{self, Exports};
 use crate::{
     bucket_modules, child_tests, duplicates, fixture_includes, generated, git_commands,
     integration_tests, poison, quality, real_paths, repetition, standard_error, temp_directories,
-    test_input_routes, test_names, time_limits, tokio_macros,
+    test_environment, test_input_routes, test_names, time_limits, tokio_macros,
 };
 
 /// Every check's findings for one parsed source.
 pub(crate) struct Walk {
+    /// Environment-name test ownership without changing other checks' scope.
+    pub(crate) environment: test_environment::Ownership,
     /// Whether the file's inner attributes gate it on the test configuration.
     pub(crate) gated: bool,
     /// End line of the last item when that item is test-gated.
@@ -86,33 +92,10 @@ pub(super) fn walk(member: &Member, source: &Source, syntax: &syn::File) -> Walk
     walker.finish()
 }
 
-/// Item kinds by how far the checks inherit their test gate, weakest first.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum Gate {
-    /// An item inside an `extern` block, which records a test span only.
-    Foreign,
-    /// An item inside an `impl` or `trait` block, whose syntax is test code.
-    Associated,
-    /// A module-level item, whose syntax is test code that also exports nothing.
-    Item,
-}
-
-/// Test context and traversal position that the check states read.
-#[derive(Clone, Copy, Default)]
-struct Context {
-    /// Strongest test gate around the current syntax; any gate means a recorded test span,
-    /// so a gated item nested inside adds no span.
-    gate: Option<Gate>,
-    /// Inside an attribute.
-    attribute: bool,
-    /// Inside a `use` tree.
-    importing: bool,
-    /// Inside the attributes or the name of a method call, which the reference scan skips.
-    method_parts: bool,
-}
-
 /// The single visitor that drives every check's state through one traversal.
 struct Walker<'a> {
+    /// Test-owned environment-name ranges and external module declarations.
+    environment: test_environment::Ownership,
     /// Current test context and traversal position.
     context: Context,
     /// The file's production role or explicit test boundary.
@@ -177,6 +160,10 @@ impl<'a> Walker<'a> {
         let gated = cfg_test(&file.attrs);
         let scope = Scope::new(member, source, gated);
         Self {
+            environment: test_environment::Ownership {
+                gated: test_environment::attributes(&file.attrs),
+                ..test_environment::Ownership::default()
+            },
             context: Context::default(),
             scope,
             gated,
@@ -231,14 +218,6 @@ impl<'a> Walker<'a> {
         !self.context.method_parts && (self.testing() || self.context.importing)
     }
 
-    /// Visit one subtree under a changed context, then restore the outer context.
-    fn nested(&mut self, change: impl FnOnce(&mut Context), visit: impl FnOnce(&mut Self)) {
-        let outer = self.context;
-        change(&mut self.context);
-        visit(self);
-        self.context = outer;
-    }
-
     /// Visit an item inside the test gate its attributes declare, recording the outermost span.
     fn gate(
         &mut self,
@@ -251,13 +230,15 @@ impl<'a> Walker<'a> {
         if gated && self.context.gate.is_none() {
             self.test_spans.push(span_positions(item.span()));
         }
-        self.nested(
-            |context| {
-                if gated {
-                    context.gate = context.gate.max(Some(kind));
-                }
-            },
-            visit,
+        let gate = if gated {
+            self.context.gate.max(Some(kind))
+        } else {
+            self.context.gate
+        };
+        self.environment_gate(
+            item.span(),
+            test_environment::attributes(attributes),
+            |walker| walker.nested(|context| context.gate = gate, visit),
         );
     }
 
@@ -272,6 +253,7 @@ impl<'a> Walker<'a> {
     fn finish(mut self) -> Walk {
         self.test_spans.sort_unstable_by_key(|span| span.start);
         Walk {
+            environment: self.environment,
             gated: self.gated,
             test_end: self.test_end,
             factory: self.factory,
@@ -579,7 +561,23 @@ impl<'a> Visit<'a> for Walker<'a> {
         if let Some(uses) = &mut self.uses {
             uses.enter(item);
         }
-        syn::visit::visit_item_mod(self, item);
+        self.environment_gate(
+            item.span(),
+            item.ident.unraw() == "test_support",
+            |walker| {
+                walker
+                    .environment
+                    .nesting
+                    .push(item.ident.unraw().to_string());
+                if item.content.is_none() {
+                    walker
+                        .environment
+                        .external(item, walker.context.environment == Environment::Test);
+                }
+                syn::visit::visit_item_mod(walker, item);
+                walker.environment.nesting.pop();
+            },
+        );
         if let Some(uses) = &mut self.uses {
             uses.leave();
         }
@@ -616,11 +614,4 @@ impl<'a> Visit<'a> for Walker<'a> {
         }
         syn::visit::visit_expr_path(self, expression);
     }
-}
-
-/// Convert a syntax span into comparable line and character coordinates.
-fn span_positions(span: proc_macro2::Span) -> Range<(usize, usize)> {
-    let start = span.start();
-    let end = span.end();
-    (start.line, start.column)..(end.line, end.column)
 }

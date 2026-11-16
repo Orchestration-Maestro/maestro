@@ -32,7 +32,7 @@ impl Drop for FailingWriter {
 
 #[test]
 fn direct_spill_io_errors_are_returned() {
-    if std::env::var_os("MAESTRO_DIRECT_MISSING_TEMP").is_some() {
+    if std::env::var_os("MAESTRO_TEST_DIRECT_MISSING_TEMP").is_some() {
         missing_temp_child();
         return;
     }
@@ -42,7 +42,7 @@ fn direct_spill_io_errors_are_returned() {
     ));
     let child = maestro_test_harness::TestProcess::current("direct_spill_io_errors_are_returned")
         .unwrap()
-        .env("MAESTRO_DIRECT_MISSING_TEMP", "1")
+        .env("MAESTRO_TEST_DIRECT_MISSING_TEMP", "1")
         .temp_dir(&missing)
         .status()
         .unwrap();

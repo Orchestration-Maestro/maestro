@@ -513,7 +513,7 @@ use crate::child;
 fn native_agent_root_reads_disposable_environment() {
     if maestro_test_harness::selection().is_child() {
         let matches_expected = maestro_app::get_agent_dir().unwrap()
-            == std::env::var("MAESTRO_CONFIGURATION_EXPECTED").unwrap();
+            == std::env::var("MAESTRO_TEST_CONFIGURATION_EXPECTED").unwrap();
         assert!(matches_expected);
         println!("\nPROBE agent-directory-ok");
         println!("PROBE {}", maestro_app::VERSION);
@@ -534,7 +534,7 @@ fn native_agent_root_reads_disposable_environment() {
             .case("*"),
             scratch.0.path(),
             &[
-                ("MAESTRO_CONFIGURATION_EXPECTED", &expected),
+                ("MAESTRO_TEST_CONFIGURATION_EXPECTED", &expected),
                 ("HOME", &home),
                 ("MAESTRO_CODING_AGENT_DIR", override_dir),
             ],
@@ -570,8 +570,8 @@ fn native_probe_rejects_missing_selection() {
 #[cfg(unix)]
 #[test]
 fn native_probe_preserves_cwd_and_environment_order() {
-    const KEY: &str = "MAESTRO_PROBE_ORDER";
-    if let Ok(expected) = std::env::var("MAESTRO_PROBE_CWD") {
+    const KEY: &str = "MAESTRO_TEST_PROBE_ORDER";
+    if let Ok(expected) = std::env::var("MAESTRO_TEST_PROBE_CWD") {
         assert_eq!(
             std::env::current_dir().unwrap(),
             std::path::Path::new(&expected)
@@ -579,7 +579,7 @@ fn native_probe_preserves_cwd_and_environment_order() {
         assert_eq!(std::env::var(KEY).unwrap(), "replacement");
         assert_eq!(
             std::env::var("PATH").ok(),
-            std::env::var("MAESTRO_PROBE_PATH").ok()
+            std::env::var("MAESTRO_TEST_PROBE_PATH").ok()
         );
         println!("\nPROBE first");
         println!("unrelated output");
@@ -596,9 +596,9 @@ fn native_probe_preserves_cwd_and_environment_order() {
         .case("*"),
         scratch.0.path(),
         &[
-            ("MAESTRO_PROBE_CWD", scratch.0.path().to_str().unwrap()),
+            ("MAESTRO_TEST_PROBE_CWD", scratch.0.path().to_str().unwrap()),
             (KEY, "replacement"),
-            ("MAESTRO_PROBE_PATH", &std::env::var("PATH").unwrap()),
+            ("MAESTRO_TEST_PROBE_PATH", &std::env::var("PATH").unwrap()),
         ],
         &[KEY],
     )

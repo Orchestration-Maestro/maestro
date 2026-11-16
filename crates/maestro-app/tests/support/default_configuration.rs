@@ -543,7 +543,10 @@ pub fn settings(name: &str, group: Group) {
             scratch.0.path(),
             &[
                 ("HOME", &home),
-                ("MAESTRO_DEFAULT_ROOT", scratch.0.path().to_str().unwrap()),
+                (
+                    "MAESTRO_TEST_DEFAULT_ROOT",
+                    scratch.0.path().to_str().unwrap(),
+                ),
             ],
             REMOVED,
         )
@@ -561,7 +564,7 @@ pub fn settings(name: &str, group: Group) {
 
 /// Run both adapters for one complete recorded row.
 fn settings_child(group: Group, index: usize) {
-    let root = std::env::var("MAESTRO_DEFAULT_ROOT").unwrap();
+    let root = std::env::var("MAESTRO_TEST_DEFAULT_ROOT").unwrap();
     let rows = cases::<Value, Value>(group);
     let row = &rows[index];
     let input: SettingsInput = instantiate(&row.input, &root, "");

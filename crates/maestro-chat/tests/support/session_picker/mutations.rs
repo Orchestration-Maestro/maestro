@@ -1367,7 +1367,7 @@ fn native_run(mode: &str) {
         h.finish("current", vec![]);
         if mode == "leading-dash" {
             assert_eq!(
-                std::fs::read_to_string(std::env::var("MAESTRO_TRASH_LOG").unwrap()).unwrap(),
+                std::fs::read_to_string(std::env::var("MAESTRO_TEST_TRASH_LOG").unwrap()).unwrap(),
                 "--\n-session.jsonl\n"
             );
         }
@@ -1419,7 +1419,7 @@ fn native_launch(test: &str) {
                 .unwrap()
                 .case(mode),
             dir.path(),
-            &[("PATH", &path), ("MAESTRO_TRASH_LOG", &log)],
+            &[("PATH", &path), ("MAESTRO_TEST_TRASH_LOG", &log)],
             &[],
         )
         .expect("child starts");

@@ -66,12 +66,12 @@ pub struct Route {
     pub proxied: bool,
 }
 
-/// Send one conversation to the origin the environment names; with `MAESTRO_REFUSED` set the
+/// Send one conversation to the origin the environment names; with `MAESTRO_TEST_REFUSED` set the
 /// conversation must end in an error without the response hook having run.
 fn converse() -> TestResult {
     crate::runtime::run(async {
-        let origin = std::env::var("MAESTRO_ORIGIN")?;
-        let refused = std::env::var_os("MAESTRO_REFUSED").is_some();
+        let origin = std::env::var("MAESTRO_TEST_ORIGIN")?;
+        let refused = std::env::var_os("MAESTRO_TEST_REFUSED").is_some();
         let hooked = Arc::new(AtomicBool::new(false));
         let seen = Arc::clone(&hooked);
         let options = BedrockOptions {
@@ -125,7 +125,7 @@ pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
             .env
             .iter()
             .map(|(name, value)| ((*name).to_owned(), value.replace("PROXY", &proxy_url)))
-            .chain([("MAESTRO_ORIGIN".to_owned(), origin_url.clone())])
+            .chain([("MAESTRO_TEST_ORIGIN".to_owned(), origin_url.clone())])
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
         {
@@ -184,8 +184,8 @@ pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
             .iter()
             .map(|(name, value)| ((*name).to_owned(), value.replace("BAIT", &bait_url)))
             .chain([
-                ("MAESTRO_ORIGIN".to_owned(), origin_url),
-                ("MAESTRO_REFUSED".to_owned(), "1".to_owned()),
+                ("MAESTRO_TEST_ORIGIN".to_owned(), origin_url),
+                ("MAESTRO_TEST_REFUSED".to_owned(), "1".to_owned()),
             ])
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();

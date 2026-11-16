@@ -22,7 +22,7 @@ use std::{
 const LOCATION: &str = "MAESTRO_EXTENSION_PATH";
 
 /// Variable through which the test setup supplies the built component.
-const COMPONENT: &str = "MAESTRO_LOCATION_COMPONENT";
+const COMPONENT: &str = "MAESTRO_TEST_LOCATION_COMPONENT";
 
 /// Copies the built component into the nested directories below `root` as `index.wasm`.
 fn install(root: &Path, directories: &[&str]) -> PathBuf {

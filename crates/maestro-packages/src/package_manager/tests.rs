@@ -49,21 +49,21 @@ fn native_empty_environment_recovery_reads_procfs() {
     if maestro_test_harness::selection().is_child() {
         assert_eq!(
             std::env::var_os("LLVM_PROFILE_FILE"),
-            std::env::var_os("MAESTRO_EXPECT_PROFILE")
+            std::env::var_os("MAESTRO_TEST_EXPECT_PROFILE")
         );
-        assert!(std::env::var_os("MAESTRO_UNRELATED").is_none());
+        assert!(std::env::var_os("MAESTRO_TEST_UNRELATED").is_none());
         let result = recover_environment("linux", BTreeMap::new(), || {
             std::fs::read("/proc/self/environ")
         });
         assert_eq!(
-            result.get("MAESTRO_ENV_SENTINEL").map(String::as_str),
+            result.get("MAESTRO_TEST_ENV_SENTINEL").map(String::as_str),
             Some("a=b")
         );
         let scratch = maestro_test_harness::Scratch::new().unwrap();
         let alias = scratch.path().join("sentinel");
         maestro_test_harness::install_command(
             &alias,
-            r#"{"scenario":"report","fields":[{"variable":"MAESTRO_ENV_SENTINEL"}]}"#,
+            r#"{"scenario":"report","fields":[{"variable":"MAESTRO_TEST_ENV_SENTINEL"}]}"#,
         )
         .unwrap();
         let output = NativePackageOperations::new(
@@ -88,7 +88,7 @@ fn native_empty_environment_recovery_reads_procfs() {
     .envs(
         profile
             .iter()
-            .map(|value| ("MAESTRO_EXPECT_PROFILE", value)),
+            .map(|value| ("MAESTRO_TEST_EXPECT_PROFILE", value)),
     )
     .envs(
         artifact
@@ -96,7 +96,7 @@ fn native_empty_environment_recovery_reads_procfs() {
             .map(|value| ("MAESTRO_NATIVE_FIXTURE", value)),
     )
     .case("*")
-    .env("MAESTRO_ENV_SENTINEL", "a=b")
+    .env("MAESTRO_TEST_ENV_SENTINEL", "a=b")
     .output()
     .unwrap();
     assert!(

@@ -8,7 +8,7 @@ pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 pub use maestro_test_harness::Scratch as Directory;
 
 pub fn child() -> TestResult<bool> {
-    let Ok(expectation) = std::env::var("MAESTRO_ENV_EXPECTATION") else {
+    let Ok(expectation) = std::env::var("MAESTRO_TEST_ENV_EXPECTATION") else {
         return Ok(false);
     };
     let (provider, names, value): (String, Option<Vec<String>>, Option<String>) =
@@ -21,11 +21,11 @@ pub fn child() -> TestResult<bool> {
             value
         );
     }
-    if let Some(path) = std::env::var_os("MAESTRO_ENV_REMOVE") {
+    if let Some(path) = std::env::var_os("MAESTRO_TEST_ENV_REMOVE") {
         std::fs::remove_file(path)?;
         assert_eq!(get_env_api_key(&provider), value);
     }
-    if let Some(path) = std::env::var_os("MAESTRO_ENV_CREATE") {
+    if let Some(path) = std::env::var_os("MAESTRO_TEST_ENV_CREATE") {
         std::fs::write(path, b"not credential contents")?;
         assert_eq!(get_env_api_key(&provider), value);
     }
@@ -47,7 +47,7 @@ pub fn run(
         .nocapture()
         .envs(variables.iter().map(|(key, value)| (key, value)))
         .env(
-            "MAESTRO_ENV_EXPECTATION",
+            "MAESTRO_TEST_ENV_EXPECTATION",
             serde_json::to_string(&(provider, expected.0, expected.1))?,
         )
         .output()?;

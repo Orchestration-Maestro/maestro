@@ -49,7 +49,7 @@ fn sdk_loads_and_reloads_packaged_component_tools() {
             "one"
         );
         std::fs::copy(
-            std::env::var_os("MAESTRO_RESOURCE_RELOADED_COMPONENT").unwrap(),
+            std::env::var_os("MAESTRO_TEST_RESOURCE_RELOADED_COMPONENT").unwrap(),
             package.join("index.wasm"),
         )
         .unwrap();
@@ -85,7 +85,7 @@ fn sdk_component_uses_async_filesystem_and_standard_library_bytes() {
         let session = component_session(
             &root,
             local.clone(),
-            std::env::var("MAESTRO_SDK_STANDARD_COMPONENT").unwrap(),
+            std::env::var("MAESTRO_TEST_SDK_STANDARD_COMPONENT").unwrap(),
             None,
             crate::support::widgets(),
         )
@@ -129,7 +129,7 @@ fn sdk_executes_a_packaged_dependency_backed_author_workload() {
         let root = Root::new();
         let package = root.path("project/duration-package");
         std::fs::create_dir(&package).unwrap();
-        std::fs::copy(std::env::var_os("MAESTRO_WITH_DEPS_COMPONENT").unwrap(), package.join("duration.wasm")).unwrap();
+        std::fs::copy(std::env::var_os("MAESTRO_TEST_WITH_DEPS_COMPONENT").unwrap(), package.join("duration.wasm")).unwrap();
         std::fs::write(package.join("package.json"), r#"{"name":"duration-package","maestro":{"extensions":["duration.wasm"]}}"#).unwrap();
         let session = component_session(&root, local.clone(), package.display().to_string(), None, crate::support::widgets()).await;
         assert_eq!(execute(&session, "parse_duration", json!({"duration":"2 days"})).await["content"][0]["text"], "2 days = 172800000 milliseconds");
@@ -151,7 +151,7 @@ fn sdk_component_keeps_native_links_and_standard_cwd() {
         let session = component_session(
             &root,
             local.clone(),
-            std::env::var("MAESTRO_SDK_STANDARD_COMPONENT").unwrap(),
+            std::env::var("MAESTRO_TEST_SDK_STANDARD_COMPONENT").unwrap(),
             None,
             crate::support::widgets(),
         )

@@ -32,7 +32,7 @@ fn workspace_recipes_keep_phase_order() {
     fs::remove_file(workspace.path().join("log")).unwrap();
     let result = workspace
         .command("prepublish")
-        .env("MAESTRO_FAIL", "build")
+        .env("MAESTRO_TEST_FAIL", "build")
         .output()
         .unwrap();
     assert!(!result.status.success());
@@ -44,7 +44,7 @@ fn workspace_recipes_keep_phase_order() {
         fs::remove_file(workspace.path().join("log")).unwrap();
         let output = workspace
             .command("ci")
-            .env("MAESTRO_FAIL", phase)
+            .env("MAESTRO_TEST_FAIL", phase)
             .output()
             .unwrap();
         assert!(!output.status.success());
@@ -89,7 +89,7 @@ fn scoped_check_consumes_package_selection() {
     let result = workspace
         .command("_check")
         .args(["-p", "maestro-models"])
-        .env("MAESTRO_FAIL", "clippy")
+        .env("MAESTRO_TEST_FAIL", "clippy")
         .output()
         .unwrap();
     assert!(!result.status.success());
@@ -106,7 +106,7 @@ fn scoped_check_stops_on_windows_failure() {
     let result = workspace
         .command("_check")
         .args(["-p", "maestro-path"])
-        .env("MAESTRO_FAIL_ARG", "x86_64-pc-windows-gnu")
+        .env("MAESTRO_TEST_FAIL_ARG", "x86_64-pc-windows-gnu")
         .output()
         .unwrap();
 
@@ -124,7 +124,7 @@ fn scoped_check_stops_on_browser_lint_failure() {
     let result = workspace
         .command("_check")
         .args(["-p", "maestro-path"])
-        .env("MAESTRO_FAIL_ARG", "browser-clippy")
+        .env("MAESTRO_TEST_FAIL_ARG", "browser-clippy")
         .output()
         .unwrap();
 
@@ -139,12 +139,12 @@ fn scoped_check_stops_on_browser_lint_failure() {
 fn assert_test_phase_failures(workspace: &Workspace) {
     for (variable, phase, expected) in [
         (
-            "MAESTRO_FAIL",
+            "MAESTRO_TEST_FAIL",
             "nextest",
             "cargo nextest|run|--workspace|--locked\n",
         ),
         (
-            "MAESTRO_FAIL_ARG",
+            "MAESTRO_TEST_FAIL_ARG",
             "doc-test",
             "cargo nextest|run|--workspace|--locked\ncargo run|--quiet|--locked|-p|maestro-tooling|--bin|development|--|doc-test\n",
         ),
@@ -365,7 +365,7 @@ fn forwarded_arguments_stay_out_of_recipe_echo() {
         let output = workspace
             .command(recipe)
             .arg("fake-secret-do-not-echo")
-            .env("MAESTRO_COMMAND_OUTPUT", "1")
+            .env("MAESTRO_TEST_COMMAND_OUTPUT", "1")
             .output()
             .unwrap();
         assert!(output.status.success());
@@ -498,7 +498,7 @@ fn clean_keeps_sources_and_sibling_outputs() {
     assert!(
         workspace
             .command("models-clean")
-            .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+            .env("MAESTRO_TEST_REAL_CARGO", env!("CARGO"))
             .output()
             .unwrap()
             .status
@@ -531,8 +531,8 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
     }
     let output = workspace
         .command("app-clean")
-        .env("MAESTRO_REAL_CARGO", env!("CARGO"))
-        .env("MAESTRO_DEVELOPMENT", development)
+        .env("MAESTRO_TEST_REAL_CARGO", env!("CARGO"))
+        .env("MAESTRO_TEST_DEVELOPMENT", development)
         .output()
         .unwrap();
     assert!(
@@ -559,7 +559,7 @@ fn assert_asset_cleanup(workspace: &Workspace, development: &Path) {
     assert!(
         workspace
             .command("clean")
-            .env("MAESTRO_REAL_CARGO", env!("CARGO"))
+            .env("MAESTRO_TEST_REAL_CARGO", env!("CARGO"))
             .output()
             .unwrap()
             .status
@@ -597,8 +597,8 @@ fn prepare_configured_assets(workspace: &Workspace) -> PathBuf {
     for recipe in ["copy-assets", "copy-binary-assets"] {
         let output = workspace
             .command(recipe)
-            .env("MAESTRO_REAL_CARGO", env!("CARGO"))
-            .env("MAESTRO_DEVELOPMENT", &development)
+            .env("MAESTRO_TEST_REAL_CARGO", env!("CARGO"))
+            .env("MAESTRO_TEST_DEVELOPMENT", &development)
             .output()
             .unwrap();
         assert!(
@@ -713,9 +713,9 @@ fn start_watch(
     fs::create_dir_all(&profiles).unwrap();
     command.env("LLVM_PROFILE_FILE", profiles.join("watch-%p-%m.profraw"));
     command
-        .env("MAESTRO_REAL_CARGO", env!("CARGO"))
-        .env("MAESTRO_DEVELOPMENT", binary)
-        .env("MAESTRO_REAL_WATCHEXEC", watcher_path());
+        .env("MAESTRO_TEST_REAL_CARGO", env!("CARGO"))
+        .env("MAESTRO_TEST_DEVELOPMENT", binary)
+        .env("MAESTRO_TEST_REAL_WATCHEXEC", watcher_path());
     let (child, receive, thread) = recipe_support::start_output(command);
     (child, receive, [thread])
 }
@@ -952,7 +952,7 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     }
     fs::write(
         workspace.path().join("crates/maestro-models/src/main.rs"),
-        "fn main() { println!(\"{}\\n{}\\n{}\", maestro_models::MARKER, maestro_agent::MARKER, env!(\"MAESTRO_REBUILD_MARKER\")); }\n",
+        "fn main() { println!(\"{}\\n{}\\n{}\", maestro_models::MARKER, maestro_agent::MARKER, env!(\"MAESTRO_TEST_REBUILD_MARKER\")); }\n",
     ).unwrap();
     fs::write(workspace.path().join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
     assert!(
@@ -966,7 +966,7 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     fs::create_dir(workspace.path().join(".cargo")).unwrap();
     fs::write(
         workspace.path().join(".cargo/config.toml"),
-        "[build]\ntarget-dir = 'target'\n[env]\nMAESTRO_REBUILD_MARKER = 'maestro-initial-config'\n",
+        "[build]\ntarget-dir = 'target'\n[env]\nMAESTRO_TEST_REBUILD_MARKER = 'maestro-initial-config'\n",
     )
     .unwrap();
     fs::create_dir_all(workspace.path().join("target")).unwrap();
@@ -1315,8 +1315,11 @@ fn native_tests_keep_filters_and_ignored_cases() {
     let output = workspace
         .command("test")
         .arg("selected_behavior")
-        .env("MAESTRO_REAL_CARGO", env!("CARGO"))
-        .env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"))
+        .env("MAESTRO_TEST_REAL_CARGO", env!("CARGO"))
+        .env(
+            "MAESTRO_TEST_DEVELOPMENT",
+            env!("CARGO_BIN_EXE_development"),
+        )
         .output()
         .unwrap();
     assert!(
@@ -1580,6 +1583,8 @@ fn offline_recipe_is_explicit_only() {
     let auth = home.join(".maestro/agent/auth.json");
     fs::write(&auth, "synthetic authentication").unwrap();
     library_workspace(&workspace);
+    let env_result = workspace.path().join("env-result");
+    let development = env!("CARGO_BIN_EXE_development");
     for (recipe, expected) in [
         ("test-offline", "key=false auth=false flag=1\n"),
         ("test", "key=true auth=true flag=kept\n"),
@@ -1587,13 +1592,13 @@ fn offline_recipe_is_explicit_only() {
     ] {
         let mut command = workspace.command(recipe);
         if recipe == "test-offline" {
-            command.env("MAESTRO_DEVELOPMENT", env!("CARGO_BIN_EXE_development"));
+            command.env("MAESTRO_TEST_DEVELOPMENT", development);
         }
         let output = command
             .env("HOME", &home)
             .env("OPENAI_API_KEY", "controlled")
             .env("MAESTRO_NO_LOCAL_LLM", "kept")
-            .env("MAESTRO_ENV_RESULT", workspace.path().join("env-result"))
+            .env("MAESTRO_TEST_ENV_RESULT", &env_result)
             .output()
             .unwrap();
         assert!(
@@ -1601,10 +1606,7 @@ fn offline_recipe_is_explicit_only() {
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
-        assert_eq!(
-            fs::read_to_string(workspace.path().join("env-result")).unwrap(),
-            expected
-        );
+        assert_eq!(fs::read_to_string(&env_result).unwrap(), expected);
         assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
     }
     assert!(
@@ -1617,13 +1619,13 @@ fn offline_recipe_is_explicit_only() {
         .env("HOME", &home)
         .env("OPENAI_API_KEY", "controlled")
         .env("MAESTRO_NO_LOCAL_LLM", "kept")
-        .env("MAESTRO_ENV_RESULT", workspace.path().join("env-result"))
-        .env("MAESTRO_FAIL", "nextest")
+        .env("MAESTRO_TEST_ENV_RESULT", &env_result)
+        .env("MAESTRO_TEST_FAIL", "nextest")
         .output()
         .unwrap();
     assert!(!output.status.success());
     assert_eq!(
-        fs::read_to_string(workspace.path().join("env-result")).unwrap(),
+        fs::read_to_string(&env_result).unwrap(),
         "key=true auth=true flag=kept\n"
     );
     assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
@@ -1840,7 +1842,7 @@ fn catalog_build_recipes_generate_once_before_compilation() {
         fs::remove_file(workspace.path().join("log")).unwrap();
         let result = workspace
             .command(recipe)
-            .env("MAESTRO_FAIL", "run")
+            .env("MAESTRO_TEST_FAIL", "run")
             .output()
             .unwrap();
         assert!(!result.status.success(), "{recipe}");
@@ -1886,7 +1888,7 @@ fn catalog_cargo_tests_and_watch_routes_stay_offline() {
 #[test]
 fn watch_child_transcript_survives_forced_kill() {
     use std::io::{Read, Write};
-    if std::env::var_os("MAESTRO_CAPTURE_CONTROL").is_some() {
+    if std::env::var_os("MAESTRO_TEST_CAPTURE_CONTROL").is_some() {
         let (reader, mut writer) = std::os::unix::net::UnixStream::pair().unwrap();
         let (send, receive) = std::sync::mpsc::channel();
         let _reader = recipe_support::capture_lines(move || reader, send);
@@ -1927,7 +1929,7 @@ fn assert_killed_transcript(directory: Option<&Path>) {
     let mut child = process
         .nocapture()
         .single_threaded()
-        .env("MAESTRO_CAPTURE_CONTROL", "1")
+        .env("MAESTRO_TEST_CAPTURE_CONTROL", "1")
         .stdin(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()

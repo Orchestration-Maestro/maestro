@@ -215,7 +215,7 @@ pub fn selection() -> CaseSelection {
 ///
 /// A caller that hands a child its environment instead of launching it through
 /// [`TestProcess`] names this variable and passes the case identifier as its value.
-pub const CASE: &str = "MAESTRO_CHILD_CASE";
+pub const CASE: &str = "MAESTRO_TEST_CHILD_CASE";
 
 #[cfg(test)]
 mod tests {

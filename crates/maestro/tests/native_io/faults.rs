@@ -165,7 +165,7 @@ pub(crate) async fn session(
     );
     resources
         .additional_extension_paths
-        .push(std::env::var("MAESTRO_NATIVE_IO_COMPONENT").unwrap());
+        .push(std::env::var("MAESTRO_TEST_NATIVE_IO_COMPONENT").unwrap());
     resources.offline = Some(true);
     let cwd = root.path("project").display().to_string();
     let options = maestro_app::CreateAgentSessionOptions {

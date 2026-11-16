@@ -133,7 +133,7 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
         let dir = scratch::Scratch::new().unwrap();
         let root = dir.path().to_str().unwrap();
         fs::create_dir_all(dir.path().join("work")).unwrap();
-        let mut envs = vec![("MAESTRO_CASE_ROOT", root)];
+        let mut envs = vec![("MAESTRO_TEST_CASE_ROOT", root)];
         let selected = case
             .input
             .r#override
@@ -162,7 +162,7 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
 }
 /// Execute the complete workflow in an environment-isolated process.
 fn root_case(case: &fixtures::Case<RootInput, Roots>) {
-    let root = std::env::var("MAESTRO_CASE_ROOT").unwrap();
+    let root = std::env::var("MAESTRO_TEST_CASE_ROOT").unwrap();
     let cwd = format!("{root}/work");
     let agent = get_agent_dir().unwrap();
     assert_eq!(agent, case.expected.agent.replace("$ROOT", &root));
@@ -269,10 +269,10 @@ fn selected_package_roots_keep_update_pins_and_progress() {
                 .case(&case.id),
                 &dir.path().join("work"),
                 &[
-                    ("MAESTRO_CASE_ROOT", root),
+                    ("MAESTRO_TEST_CASE_ROOT", root),
                     ("MAESTRO_CODING_AGENT_DIR", &agent),
-                    ("MAESTRO_COMMAND_LOG", &log),
-                    ("MAESTRO_NPM_ROOT", &npm)
+                    ("MAESTRO_TEST_COMMAND_LOG", &log),
+                    ("MAESTRO_TEST_NPM_ROOT", &npm)
                 ],
                 &["MAESTRO_OFFLINE"]
             )
@@ -283,7 +283,7 @@ fn selected_package_roots_keep_update_pins_and_progress() {
 }
 /// Seed unequal versions and drive the file-backed configured updater.
 fn update_case(case: &fixtures::Case<UpdateInput, Updated>) {
-    let root = std::env::var("MAESTRO_CASE_ROOT").unwrap();
+    let root = std::env::var("MAESTRO_TEST_CASE_ROOT").unwrap();
     let cwd = format!("{root}/work");
     let agent = get_agent_dir().unwrap();
     assert_eq!(agent, format!("{root}/selected"));

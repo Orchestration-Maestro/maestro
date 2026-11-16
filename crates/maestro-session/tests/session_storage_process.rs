@@ -10,7 +10,7 @@ use std::{
 
 #[test]
 fn append_waits_for_one_replacement_and_preserves_its_entry() {
-    if let Ok(path) = std::env::var("MAESTRO_SESSION_APPEND_PATH") {
+    if let Ok(path) = std::env::var("MAESTRO_TEST_SESSION_APPEND_PATH") {
         append_child(&path);
         return;
     }
@@ -27,9 +27,9 @@ fn append_waits_for_one_replacement_and_preserves_its_entry() {
     let child = TestProcess::current("append_waits_for_one_replacement_and_preserves_its_entry")
         .unwrap()
         .nocapture()
-        .env("MAESTRO_SESSION_APPEND_PATH", path)
+        .env("MAESTRO_TEST_SESSION_APPEND_PATH", path)
         .env(
-            "MAESTRO_SESSION_APPEND_ADDRESS",
+            "MAESTRO_TEST_SESSION_APPEND_ADDRESS",
             listener.local_addr().unwrap().to_string(),
         )
         .spawn()
@@ -81,7 +81,7 @@ fn observe_waiter(pid: u32, stream: &TcpStream) -> bool {
 /// Starts an ordinary append after reporting the child's identity to the lock holder.
 fn append_child(path: &str) {
     let mut manager = SessionManager::open(path, None, Some("/work")).unwrap();
-    let address = std::env::var("MAESTRO_SESSION_APPEND_ADDRESS").unwrap();
+    let address = std::env::var("MAESTRO_TEST_SESSION_APPEND_ADDRESS").unwrap();
     let mut stream = TcpStream::connect(address).unwrap();
     stream.write_all(&std::process::id().to_be_bytes()).unwrap();
     stream.read_exact(&mut [0; 2]).unwrap();
@@ -93,7 +93,7 @@ fn append_child(path: &str) {
 
 #[test]
 fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
-    if let Ok(path) = std::env::var("MAESTRO_SESSION_MIGRATE_PATH") {
+    if let Ok(path) = std::env::var("MAESTRO_TEST_SESSION_MIGRATE_PATH") {
         migrate_child(&path);
         return;
     }
@@ -110,9 +110,9 @@ fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
         TestProcess::current("migration_rechecks_a_concurrent_append_before_atomic_publication")
             .unwrap()
             .nocapture()
-            .env("MAESTRO_SESSION_MIGRATE_PATH", path)
+            .env("MAESTRO_TEST_SESSION_MIGRATE_PATH", path)
             .env(
-                "MAESTRO_SESSION_APPEND_ADDRESS",
+                "MAESTRO_TEST_SESSION_APPEND_ADDRESS",
                 listener.local_addr().unwrap().to_string(),
             )
             .spawn()
@@ -154,7 +154,7 @@ fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
 /// Announces migration before opening the history, then signals completion.
 fn migrate_child(path: &str) {
     let mut stream =
-        TcpStream::connect(std::env::var("MAESTRO_SESSION_APPEND_ADDRESS").unwrap()).unwrap();
+        TcpStream::connect(std::env::var("MAESTRO_TEST_SESSION_APPEND_ADDRESS").unwrap()).unwrap();
     stream.write_all(&std::process::id().to_be_bytes()).unwrap();
     SessionManager::open(path, None, Some("/work")).unwrap();
     stream.write_all(b"done").unwrap();

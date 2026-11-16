@@ -31,12 +31,12 @@ pub(super) fn run() {
         root.models("http://127.0.0.1:1/v1");
         let helper = TestProcess::child(acknowledge).unwrap().command().unwrap();
         let execution = TestProcess::child(native_exec).unwrap().command().unwrap();
-        let component = std::env::var("MAESTRO_WASI_COMPONENT").unwrap();
+        let component = std::env::var("MAESTRO_TEST_WASI_COMPONENT").unwrap();
         let mut command = root.command(&["--offline", "--extension", &component]);
         command
-            .env("MAESTRO_WASI_ROOT_OUTPUT", root.path("ack"))
+            .env("MAESTRO_TEST_WASI_ROOT_OUTPUT", root.path("ack"))
             .env(
-                "MAESTRO_WASI_ROOT_COMMAND",
+                "MAESTRO_TEST_WASI_ROOT_COMMAND",
                 json!({
                     "command":helper.get_program().to_str().unwrap(),
                     "args":helper.get_args().map(|arg| arg.to_str().unwrap()).collect::<Vec<_>>(),
@@ -46,7 +46,7 @@ pub(super) fn run() {
                 .to_string(),
             )
             .env(
-                "MAESTRO_WASI_STARTUP_OUTPUT",
+                "MAESTRO_TEST_WASI_STARTUP_OUTPUT",
                 json!({
                     "generation":generation,"bytes":INIT,
                 })
@@ -257,8 +257,8 @@ fn native_exec() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 fn acknowledge() {
-    let endpoint = std::env::var("MAESTRO_STDOUT_ENDPOINT").unwrap();
-    let reply = std::env::var("MAESTRO_STDOUT_REPLY").unwrap();
+    let endpoint = std::env::var("MAESTRO_TEST_STDOUT_ENDPOINT").unwrap();
+    let reply = std::env::var("MAESTRO_TEST_STDOUT_REPLY").unwrap();
     UnixStream::connect(endpoint)
         .unwrap()
         .write_all(reply.as_bytes())

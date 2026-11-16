@@ -1,5 +1,5 @@
 //! A fixture component whose duration tool uses an author-declared parsing dependency.
-// maestro-component: MAESTRO_WITH_DEPS_COMPONENT
+// maestro-component: MAESTRO_TEST_WITH_DEPS_COMPONENT
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,

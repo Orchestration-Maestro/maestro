@@ -124,7 +124,7 @@ fn app_reload_reads_current_component_bytes_and_resources() {
     assert_eq!(before["calls"], 1);
     assert_eq!(snapshot(&mut rpc)["calls"], 2);
     std::fs::copy(
-        std::env::var_os("MAESTRO_RESOURCE_RELOADED_COMPONENT")
+        std::env::var_os("MAESTRO_TEST_RESOURCE_RELOADED_COMPONENT")
             .expect("nextest author-component setup"),
         base.join("index.wasm"),
     )
@@ -196,7 +196,7 @@ fn compiled_user_bash_operations_reach_the_interactive_shell_cursor() {
     .unwrap();
     let session = root.path("shell.jsonl");
     std::fs::write(&session, json!({"type":"session","version":3,"id":"local-shell","timestamp":"2026-01-01T00:00:00.000Z","cwd":root.path("project")}).to_string()+"\n").unwrap();
-    let component = std::env::var("MAESTRO_LOCAL_SHELL_COMPONENT").unwrap();
+    let component = std::env::var("MAESTRO_TEST_LOCAL_SHELL_COMPONENT").unwrap();
     let command = "exec 2>&1; printf '\\033[31mRAW\\033[0m\\000\\r\\n'; exit 7";
     let output = crate::support::screen::shell(
         &root,

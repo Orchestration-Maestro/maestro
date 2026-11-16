@@ -81,7 +81,7 @@ mod tests {
 
     /// Variable the probe sets to a value that is not UTF-8.
     #[cfg(unix)]
-    const PROBE: &str = "MAESTRO_TUI_ENVIRONMENT_PROBE";
+    const PROBE: &str = "MAESTRO_TEST_TUI_ENVIRONMENT_PROBE";
 
     /// The reader keeps a value the platform cannot decode as text, with replacement
     /// characters, instead of dropping it.

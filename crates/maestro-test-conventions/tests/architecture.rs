@@ -1203,7 +1203,7 @@ fn metadata_fixtures_run_while_scenario_data_is_open() {
 #[cfg(unix)]
 #[test]
 fn metadata_queries_leave_compiler_wrappers_to_builds() {
-    const PROBE: &str = "MAESTRO_CONVENTIONS_WRAPPER_PROBE";
+    const PROBE: &str = "MAESTRO_TEST_CONVENTIONS_WRAPPER_PROBE";
     if std::env::var_os(PROBE).is_some() {
         let wrapper = std::env::var_os("RUSTC_WRAPPER");
         let workspace = Workspace::new();
@@ -1240,12 +1240,12 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
 #[cfg(unix)]
 #[test]
 fn metadata_graph_failures_cross_the_public_interface() {
-    if let Some(root) = std::env::var_os("MAESTRO_CONVENTIONS_PROBE_ROOT") {
-        if let Some(matrix) = std::env::var_os("MAESTRO_CONVENTIONS_POLICY_MATRIX") {
+    if let Some(root) = std::env::var_os("MAESTRO_TEST_CONVENTIONS_PROBE_ROOT") {
+        if let Some(matrix) = std::env::var_os("MAESTRO_TEST_CONVENTIONS_POLICY_MATRIX") {
             return policy_edge_cases(std::path::Path::new(&root), matrix == "dev");
         }
         let result = check_workspace(std::path::Path::new(&root));
-        let expected = std::env::var("MAESTRO_CONVENTIONS_EXPECT").unwrap();
+        let expected = std::env::var("MAESTRO_TEST_CONVENTIONS_EXPECT").unwrap();
         if expected == "ok" {
             assert_eq!(result, Ok(()));
         } else {

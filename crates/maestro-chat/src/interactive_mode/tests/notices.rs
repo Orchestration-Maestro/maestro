@@ -1275,7 +1275,7 @@ fn startup_checks_start_in_order_without_blocking_prompts() {
             &index.to_string(),
             &[
                 (
-                    OsStr::new("MAESTRO_NOTICE_INHERITED"),
+                    OsStr::new("MAESTRO_TEST_NOTICE_INHERITED"),
                     OsStr::new("retained"),
                 ),
                 (OsStr::new("TMUX"), OsStr::new("session")),
@@ -1567,7 +1567,7 @@ fn tmux_probe_uses_both_options_concurrently() {
         "child",
         &[
             (
-                OsStr::new("MAESTRO_NOTICE_INHERITED"),
+                OsStr::new("MAESTRO_TEST_NOTICE_INHERITED"),
                 OsStr::new("retained"),
             ),
             (OsStr::new("TMUX"), OsStr::new("session")),
@@ -1613,7 +1613,7 @@ fn tmux_query_failures_and_timeout_are_silent() {
         TEST,
         "deadline",
         &[(
-            OsStr::new("MAESTRO_NOTICE_INHERITED"),
+            OsStr::new("MAESTRO_TEST_NOTICE_INHERITED"),
             OsStr::new("retained"),
         )],
         async |root| {
@@ -2106,7 +2106,7 @@ fn initialization_case(test: &str, body: impl AsyncFnOnce(&std::path::Path)) {
         &[
             (OsStr::new("PATH"), OsStr::new(&path)),
             (
-                OsStr::new("MAESTRO_NOTICE_INHERITED"),
+                OsStr::new("MAESTRO_TEST_NOTICE_INHERITED"),
                 OsStr::new("retained"),
             ),
         ],

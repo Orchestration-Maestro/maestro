@@ -143,11 +143,11 @@ fn observe_comparison(
 /// Appends `after` as the launched second process; false in the test's own process.
 #[cfg(target_os = "linux")]
 fn appended_as_child() -> bool {
-    let Ok(path) = std::env::var("MAESTRO_COMPARED_APPEND") else {
+    let Ok(path) = std::env::var("MAESTRO_TEST_COMPARED_APPEND") else {
         return false;
     };
     let mut stream =
-        TcpStream::connect(std::env::var("MAESTRO_COMPARED_ADDRESS").unwrap()).unwrap();
+        TcpStream::connect(std::env::var("MAESTRO_TEST_COMPARED_ADDRESS").unwrap()).unwrap();
     stream.write_all(&std::process::id().to_be_bytes()).unwrap();
     super::super::persistence::append(&path, b"after\n").unwrap();
     stream.write_all(b"done").unwrap();
@@ -165,13 +165,13 @@ fn appender(
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let child = maestro_test_harness::TestProcess::current(test)
         .unwrap()
-        .env("MAESTRO_COMPARED_APPEND", target)
+        .env("MAESTRO_TEST_COMPARED_APPEND", target)
         .env(
             "MAESTRO_CODING_AGENT_DIR",
             target.parent().unwrap().join("other-config-root"),
         )
         .env(
-            "MAESTRO_COMPARED_ADDRESS",
+            "MAESTRO_TEST_COMPARED_ADDRESS",
             listener.local_addr().unwrap().to_string(),
         );
     move || {

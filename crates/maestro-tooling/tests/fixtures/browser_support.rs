@@ -382,10 +382,10 @@ pub fn native_tool(browser: &Browser, command: &mut Command, name: &str) -> Path
             ),
         )
         .env(
-            "MAESTRO_NATIVE_TOOL",
+            "MAESTRO_TEST_NATIVE_TOOL",
             std::str::from_utf8(&tool.stdout).unwrap().trim(),
         )
-        .env("MAESTRO_NATIVE_LOG", &log);
+        .env("MAESTRO_TEST_NATIVE_LOG", &log);
     log
 }
 

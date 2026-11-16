@@ -181,7 +181,7 @@ fn check(name: &str) {
     super::components::local(async {
         let bus = super::components::TracedBus::new();
         let runtime = create_extension_runtime::<Local>();
-        let path = std::env::var("MAESTRO_HELPER_COMPONENT").unwrap();
+        let path = std::env::var("MAESTRO_TEST_HELPER_COMPONENT").unwrap();
         let owner = load_extension_from_factory(
             crate::artifact(path.clone()),
             "/helpers".into(),
@@ -253,13 +253,13 @@ fn runnable_rows(name: &str, scratch: &maestro_test_harness::Scratch) -> Vec<Val
 /// Runs directory observations under a supplied host home, absent from the guest environment.
 fn isolate_paths(name: &str) -> bool {
     let home = maestro_test_harness::Scratch::new().unwrap();
-    let component = std::env::var("MAESTRO_HELPER_COMPONENT").unwrap();
+    let component = std::env::var("MAESTRO_TEST_HELPER_COMPONENT").unwrap();
     let home_text = home.path().to_str().unwrap().to_owned();
     maestro_test_harness::run_per_environment(name, [home_text], |home| {
         let mut variables = std::collections::BTreeMap::from([
             ("HOME", Some(home.clone())),
             ("USERPROFILE", Some(home.clone())),
-            ("MAESTRO_HELPER_COMPONENT", Some(component.clone())),
+            ("MAESTRO_TEST_HELPER_COMPONENT", Some(component.clone())),
         ]);
         variables.extend(
             maestro_test_harness::run_agent_dir()

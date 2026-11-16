@@ -90,7 +90,7 @@ fn supplied(calls: Calls) -> BashOperations {
         exec: Rc::new(move |command, cwd, options| {
             calls.borrow_mut().push(serde_json::json!({
                 "command":command,"cwd":cwd,"timeout":options.timeout,
-                "hookValue":options.env.as_ref().and_then(|env| env.get("MAESTRO_BUILTIN_HOOK")).cloned(),
+                "hookValue":options.env.as_ref().and_then(|env| env.get("MAESTRO_TEST_BUILTIN_HOOK")).cloned(),
                 "home":options.env.as_ref().is_some_and(|env| env.contains_key("HOME")),
                 "unset":options.env.as_ref().and_then(|env| env.get("UNSET_BY_HOOK")).cloned(),
                 "unsetPresent":options.env.as_ref().is_some_and(|env| env.contains_key("UNSET_BY_HOOK")),
@@ -116,7 +116,7 @@ fn hook(
 ) -> BashSpawnHook {
     Rc::new(move |mut spawn, emitter| {
         calls.borrow_mut().push(serde_json::json!({"hook":spawn.command,"cwd":spawn.cwd,
-            "fresh":!spawn.env.contains_key("MAESTRO_BUILTIN_HOOK"),"home":spawn.env.contains_key("HOME")}));
+            "fresh":!spawn.env.contains_key("MAESTRO_TEST_BUILTIN_HOOK"),"home":spawn.env.contains_key("HOME")}));
         emitter.emit("builtin-bash-spawn", serde_json::json!("hook"))?;
         if mode == "error" {
             return Err("hook rejected é".into());
@@ -130,18 +130,21 @@ fn hook(
             return Ok(BashSpawnContext {
                 command: "printf replacement".into(),
                 cwd,
-                env: [("MAESTRO_BUILTIN_HOOK".into(), Some("replacement".into()))]
-                    .into_iter()
-                    .collect(),
+                env: [(
+                    "MAESTRO_TEST_BUILTIN_HOOK".into(),
+                    Some("replacement".into()),
+                )]
+                .into_iter()
+                .collect(),
             });
         }
         spawn.command =
-            "printf '%s:%s' \"$MAESTRO_BUILTIN_HOOK\" \"${UNSET_BY_HOOK-unset}\"".into();
+            "printf '%s:%s' \"$MAESTRO_TEST_BUILTIN_HOOK\" \"${UNSET_BY_HOOK-unset}\"".into();
         spawn.cwd = cwd;
         spawn.env.shift_remove("HOME");
         spawn
             .env
-            .insert("MAESTRO_BUILTIN_HOOK".into(), Some("edited".into()));
+            .insert("MAESTRO_TEST_BUILTIN_HOOK".into(), Some("edited".into()));
         spawn.env.insert("UNSET_BY_HOOK".into(), None);
         Ok(spawn)
     })

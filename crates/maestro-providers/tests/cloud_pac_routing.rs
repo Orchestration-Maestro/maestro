@@ -30,9 +30,9 @@ fn pac_bedrock_routes_reach_raw_and_simple_streams() -> TestResult {
 /// Consume the same script with a destination that selects DIRECT instead of the proxy.
 async fn direct_conversation() -> TestResult {
     use maestro_providers::providers::amazon_bedrock::{stream_bedrock, stream_simple_bedrock};
-    let model = bedrock::model(&std::env::var("MAESTRO_DIRECT_ORIGIN")?)?;
+    let model = bedrock::model(&std::env::var("MAESTRO_TEST_DIRECT_ORIGIN")?)?;
     let context = bedrock::context("question")?;
-    let stream = if std::env::var_os("MAESTRO_SIMPLE").is_some() {
+    let stream = if std::env::var_os("MAESTRO_TEST_SIMPLE").is_some() {
         stream_simple_bedrock(model, context, None)
     } else {
         stream_bedrock(model, context, None)
@@ -86,9 +86,9 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
     .nocapture()
     .env_clear()
     .env("HTTP_PROXY", &proxy)
-    .env("MAESTRO_ORIGIN", format!("{origin}/a%20b?x=1&x=2"))
+    .env("MAESTRO_TEST_ORIGIN", format!("{origin}/a%20b?x=1&x=2"))
     .env(
-        "MAESTRO_DIRECT_ORIGIN",
+        "MAESTRO_TEST_DIRECT_ORIGIN",
         format!("{}/a%20b?x=1&x=2", server.url),
     )
     .env("AWS_REGION", "us-east-1")
@@ -96,7 +96,7 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
     .env("AWS_MAX_ATTEMPTS", "1")
     .case(directive);
     if simple {
-        child = child.env("MAESTRO_SIMPLE", "1");
+        child = child.env("MAESTRO_TEST_SIMPLE", "1");
     }
     let output = child.output()?;
     server.finish()?;
@@ -166,7 +166,7 @@ fn pac_bypass_and_supplied_fetch_avoid_script_loading() -> TestResult {
         .nocapture()
         .env_clear()
         .env("HTTP_PROXY", format!("pac+{}", source.url))
-        .env("MAESTRO_ORIGIN", &origin.url)
+        .env("MAESTRO_TEST_ORIGIN", &origin.url)
         .env("AWS_REGION", "us-east-1")
         .env("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer")
         .env("AWS_MAX_ATTEMPTS", "1")
@@ -235,7 +235,7 @@ fn ftp_child(origin: &str, ftp: &crate::ftp_server::Peer) -> TestResult<std::pro
                 "HTTP_PROXY",
                 format!("pac+ftp://{}/script.pac", ftp.address()),
             )
-            .env("MAESTRO_ORIGIN", origin)
+            .env("MAESTRO_TEST_ORIGIN", origin)
             .env("AWS_REGION", "us-east-1")
             .env("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer")
             .env("AWS_MAX_ATTEMPTS", "1")
@@ -303,7 +303,7 @@ fn routed_replies(
 /// Four sends over an FTP-held script, then a refused source that ends the send.
 async fn ftp_source_conversations() -> TestResult {
     use maestro_providers::providers::amazon_bedrock::stream_bedrock;
-    let origin = std::env::var("MAESTRO_ORIGIN")?;
+    let origin = std::env::var("MAESTRO_TEST_ORIGIN")?;
     for _ in 0..4 {
         let stream = stream_bedrock(
             bedrock::model(&origin)?,

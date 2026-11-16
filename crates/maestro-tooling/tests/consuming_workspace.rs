@@ -47,7 +47,7 @@ fn consuming_workspace(root: &Path, shipped: bool) {
     fs::create_dir_all(root.join("crates/component-fixture/tests/support")).unwrap();
     fs::write(
         root.join("crates/component-fixture/tests/support/local.rs"),
-        "//! Local component.\n// maestro-component: MAESTRO_LOCAL_COMPONENT\n",
+        "//! Local component.\n// maestro-component: MAESTRO_TEST_LOCAL_COMPONENT\n",
     )
     .unwrap();
     if shipped {

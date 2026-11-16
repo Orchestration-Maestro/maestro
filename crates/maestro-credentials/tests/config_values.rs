@@ -484,7 +484,7 @@ mod tests {
         run_child(
             process.case("*"),
             root,
-            &[("MAESTRO_CONFIG_VALUE", "inherited-value")],
+            &[("MAESTRO_TEST_CONFIG_VALUE", "inherited-value")],
         );
     }
     #[cfg(unix)]
@@ -494,7 +494,7 @@ mod tests {
             let operations = ProcessConfigValueOperations::new(|| unreachable!());
             assert_eq!(
                 resolve_config_value_uncached(
-                    "!printf '%s' \"$MAESTRO_CONFIG_VALUE\"; cat relative-key",
+                    "!printf '%s' \"$MAESTRO_TEST_CONFIG_VALUE\"; cat relative-key",
                     &operations
                 )
                 .as_deref(),

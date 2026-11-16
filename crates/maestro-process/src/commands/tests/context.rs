@@ -22,7 +22,7 @@ fn launch_honors_current_directory_search_policy() {
 }
 
 /// Variable carrying the scratch directory a child fixture works in.
-const LAUNCH_CONTEXT_ROOT: &str = "MAESTRO_LAUNCH_CONTEXT_ROOT";
+const LAUNCH_CONTEXT_ROOT: &str = "MAESTRO_TEST_LAUNCH_CONTEXT_ROOT";
 
 /// Reuses the same executable fixtures in a checked child with a chosen parent directory.
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
@@ -261,7 +261,7 @@ fn assert_native_image_policy(chosen: &Path, parent: &Path) {
 #[cfg(windows)]
 fn loaded_image(program: &str, cwd: &Path, environment: &[(&str, &str)]) -> PathBuf {
     let mut environment = environment.to_vec();
-    environment.push(("MAESTRO_LOADED_IMAGE_PROBE", "1"));
+    environment.push(("MAESTRO_TEST_LOADED_IMAGE_PROBE", "1"));
     let output = maestro_test_harness::TestProcess::named(
         maestro_test_harness::test_name(loaded_image_probe).unwrap(),
     )
@@ -290,7 +290,7 @@ fn loaded_image(program: &str, cwd: &Path, environment: &[(&str, &str)]) -> Path
 #[test]
 #[cfg(windows)]
 fn loaded_image_probe() {
-    if std::env::var_os("MAESTRO_LOADED_IMAGE_PROBE").is_some() {
+    if std::env::var_os("MAESTRO_TEST_LOADED_IMAGE_PROBE").is_some() {
         println!(
             "LOADED-IMAGE {}",
             std::env::current_exe().unwrap().display()
