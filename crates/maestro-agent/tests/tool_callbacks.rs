@@ -76,7 +76,7 @@ fn typed_body(calls: Arc<AtomicUsize>) -> ExecuteTool<Parameters, Details> {
 }
 /// Typed arguments, progress and final details survive the erased callback boundary.
 #[test]
-fn maestro_typed_tool_round_trips_arguments_results_and_progress() {
+fn typed_tool_round_trips_arguments_results_and_progress() {
     let calls = Arc::new(AtomicUsize::new(0));
     let execute = typed_body(Arc::clone(&calls));
     let tool = AgentTool::typed(definition(), "Double".into(), execute);
@@ -127,7 +127,7 @@ fn maestro_typed_tool_round_trips_arguments_results_and_progress() {
 }
 /// Infinite final details encode as null.
 #[test]
-fn maestro_typed_tool_uses_host_json_number_semantics() {
+fn typed_tool_uses_host_json_number_semantics() {
     let tool = AgentTool::typed::<u32, f64>(
         definition(),
         "Numbers".into(),
@@ -181,7 +181,7 @@ fn encoding_failure_tool(progress: bool) -> AgentTool {
 }
 /// Final and progress serialization failures are returned, and body failures survive.
 #[test]
-fn maestro_typed_tool_returns_callback_and_encoding_failures() {
+fn typed_tool_returns_callback_and_encoding_failures() {
     for progress in [false, true] {
         let tool = encoding_failure_tool(progress);
         let error = completed((tool.execute)(

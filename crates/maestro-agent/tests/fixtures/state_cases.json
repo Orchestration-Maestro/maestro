@@ -1,6 +1,6 @@
 [
   {
-    "name": "maestro_new_agent_has_inert_defaults",
+    "name": "new_agent_has_inert_defaults",
     "input": {},
     "expected": {
       "state": {
@@ -37,7 +37,7 @@
     }
   },
   {
-    "name": "maestro_initial_state_uses_supplied_values",
+    "name": "initial_state_uses_supplied_values",
     "input": {
       "systemPrompt": "instruction",
       "model": {
@@ -107,7 +107,7 @@
     }
   },
   {
-    "name": "maestro_initial_state_uses_supplied_values",
+    "name": "initial_state_uses_supplied_values",
     "input": {
       "systemPrompt": "instruction",
       "model": {
@@ -177,7 +177,7 @@
     }
   },
   {
-    "name": "maestro_initial_state_uses_supplied_values",
+    "name": "initial_state_uses_supplied_values",
     "input": {
       "systemPrompt": "instruction",
       "model": {
@@ -247,7 +247,7 @@
     }
   },
   {
-    "name": "maestro_initial_state_uses_supplied_values",
+    "name": "initial_state_uses_supplied_values",
     "input": {
       "systemPrompt": "instruction",
       "model": {
@@ -317,7 +317,7 @@
     }
   },
   {
-    "name": "maestro_initial_state_uses_supplied_values",
+    "name": "initial_state_uses_supplied_values",
     "input": {
       "systemPrompt": "instruction",
       "model": {
@@ -387,7 +387,7 @@
     }
   },
   {
-    "name": "maestro_initial_state_uses_supplied_values",
+    "name": "initial_state_uses_supplied_values",
     "input": {
       "systemPrompt": "instruction",
       "model": {
@@ -457,7 +457,7 @@
     }
   },
   {
-    "name": "maestro_message_collections_preserve_aliases",
+    "name": "message_collections_preserve_aliases",
     "input": {
       "initial": "original",
       "outside": "outside",
@@ -519,7 +519,7 @@
     }
   },
   {
-    "name": "maestro_state_and_model_handles_stay_live",
+    "name": "state_and_model_handles_stay_live",
     "input": {
       "modelId": "retained-model",
       "systemPrompt": "updated",
@@ -561,7 +561,7 @@
     }
   },
   {
-    "name": "maestro_tool_collections_retain_executable_entries",
+    "name": "tool_collections_retain_executable_entries",
     "input": {
       "name": "echo",
       "label": "Revised",
@@ -585,7 +585,7 @@
     }
   },
   {
-    "name": "maestro_steering_only_enqueues",
+    "name": "steering_only_enqueues",
     "input": {
       "queue": "steer",
       "text": "queued"
@@ -597,7 +597,7 @@
     }
   },
   {
-    "name": "maestro_follow_up_only_enqueues",
+    "name": "follow_up_only_enqueues",
     "input": {
       "queue": "followUp",
       "text": "queued"
@@ -609,7 +609,7 @@
     }
   },
   {
-    "name": "maestro_queue_modes_are_independent",
+    "name": "queue_modes_are_independent",
     "input": {
       "steeringMode": "all",
       "followUpMode": "all"
@@ -630,7 +630,7 @@
     }
   },
   {
-    "name": "maestro_queue_modes_are_independent",
+    "name": "queue_modes_are_independent",
     "input": {
       "steeringMode": "all",
       "followUpMode": "one-at-a-time"
@@ -651,7 +651,7 @@
     }
   },
   {
-    "name": "maestro_queue_modes_are_independent",
+    "name": "queue_modes_are_independent",
     "input": {
       "steeringMode": "one-at-a-time",
       "followUpMode": "all"
@@ -672,7 +672,7 @@
     }
   },
   {
-    "name": "maestro_queue_modes_are_independent",
+    "name": "queue_modes_are_independent",
     "input": {
       "steeringMode": "one-at-a-time",
       "followUpMode": "one-at-a-time"
@@ -693,7 +693,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "none",
       "clear": "clearSteeringQueue"
@@ -704,7 +704,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "none",
       "clear": "clearFollowUpQueue"
@@ -715,7 +715,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "none",
       "clear": "clearAllQueues"
@@ -726,7 +726,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "steering",
       "clear": "clearSteeringQueue"
@@ -737,7 +737,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "steering",
       "clear": "clearFollowUpQueue"
@@ -748,7 +748,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "steering",
       "clear": "clearAllQueues"
@@ -759,7 +759,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "followUp",
       "clear": "clearSteeringQueue"
@@ -770,7 +770,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "followUp",
       "clear": "clearFollowUpQueue"
@@ -781,7 +781,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "followUp",
       "clear": "clearAllQueues"
@@ -792,7 +792,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "both",
       "clear": "clearSteeringQueue"
@@ -803,7 +803,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "both",
       "clear": "clearFollowUpQueue"
@@ -814,7 +814,7 @@
     }
   },
   {
-    "name": "maestro_clears_only_selected_queues",
+    "name": "clears_only_selected_queues",
     "input": {
       "present": "both",
       "clear": "clearAllQueues"
@@ -825,7 +825,7 @@
     }
   },
   {
-    "name": "maestro_reset_replaces_history_and_clears_queues",
+    "name": "reset_replaces_history_and_clears_queues",
     "input": {
       "systemPrompt": "kept",
       "thinkingLevel": "high",
@@ -886,7 +886,7 @@
     }
   },
   {
-    "name": "maestro_custom_messages_keep_typed_payload_identity",
+    "name": "custom_messages_keep_typed_payload_identity",
     "input": {
       "role": "widget-status",
       "text": "changed"
@@ -904,7 +904,7 @@
     }
   },
   {
-    "name": "maestro_standard_message_variants_remain_shared",
+    "name": "standard_message_variants_remain_shared",
     "input": {
       "role": "assistant",
       "text": "changed"
@@ -944,7 +944,7 @@
     }
   },
   {
-    "name": "maestro_standard_message_variants_remain_shared",
+    "name": "standard_message_variants_remain_shared",
     "input": {
       "role": "toolResult",
       "text": "changed"
@@ -972,7 +972,7 @@
     }
   },
   {
-    "name": "maestro_assignment_moves_outer_storage_not_entries",
+    "name": "assignment_moves_outer_storage_not_entries",
     "input": {
       "text": "assign",
       "edit": "inside",
@@ -990,7 +990,7 @@
     }
   },
   {
-    "name": "maestro_default_models_stay_agent_local",
+    "name": "default_models_stay_agent_local",
     "input": {
       "id": "edited-model",
       "api": "edited-api",

@@ -16,7 +16,7 @@ use support::{observable::*, *};
 
 /// The capturing spawner retains one operation before request conversion runs.
 #[test]
-fn maestro_raw_stream_returns_before_work_is_driven() {
+fn raw_stream_returns_before_work_is_driven() {
     for continuation in [false, true] {
         let tasks = Arc::new(owned::Tasks::default());
         let calls = Arc::new(AtomicUsize::new(0));
@@ -46,7 +46,7 @@ fn maestro_raw_stream_returns_before_work_is_driven() {
 }
 /// Prompt submission captures the outer history while retaining entry aliases.
 #[test]
-fn maestro_submission_captures_prompt_history() {
+fn submission_captures_prompt_history() {
     let context = context();
     let history = Arc::clone(&context.messages);
     let old = user("old");
@@ -90,7 +90,7 @@ fn maestro_submission_captures_prompt_history() {
 
 /// Already admitted continuations keep live history after another operation finishes.
 #[test]
-fn maestro_overlapping_continuations_keep_admission_and_live_history() {
+fn overlapping_continuations_keep_admission_and_live_history() {
     let context = context();
     let history = Arc::clone(&context.messages);
     let tasks = Arc::new(owned::Tasks::default());
@@ -137,7 +137,7 @@ fn maestro_overlapping_continuations_keep_admission_and_live_history() {
 
 /// Absent and paused consumers do not delay production.
 #[test]
-fn maestro_slow_observers_do_not_block_production() {
+fn slow_observers_do_not_block_production() {
     for paused in [false, true] {
         let tasks = Arc::new(owned::Tasks::default());
         let stream = start(
@@ -182,7 +182,7 @@ fn maestro_slow_observers_do_not_block_production() {
 }
 /// Dropping observation does not cancel the retained producer or its tool effect.
 #[test]
-fn maestro_dropped_observers_preserve_owned_work() {
+fn dropped_observers_preserve_owned_work() {
     for dropped in 0..3 {
         let effect = Arc::new(AtomicUsize::new(0));
         let count = Arc::clone(&effect);
@@ -219,7 +219,7 @@ fn maestro_dropped_observers_preserve_owned_work() {
 }
 /// A reader's terminal wake sees the result before successful producer return.
 #[test]
-fn maestro_terminal_result_keeps_message_handles() {
+fn terminal_result_keeps_message_handles() {
     let (stream, tasks, release) = held_terminal();
     let mut result = Box::pin(stream.result());
     assert!(poll(result.as_mut()).is_pending());
@@ -294,7 +294,7 @@ fn same_entry(a: &AgentMessage, b: &AgentMessage) {
 }
 /// Assistant tails fail synchronously without entering caller callbacks.
 #[test]
-fn maestro_raw_continue_rejects_assistant_before_submission() {
+fn raw_continue_rejects_assistant_before_submission() {
     let context = context();
     *context.messages.write().unwrap() = vec![AgentMessage::Assistant(assistant("old"))];
     let mut config = config();
@@ -316,7 +316,7 @@ fn maestro_raw_continue_rejects_assistant_before_submission() {
 }
 /// Invocation overrides preserve model, options and executable tool operands.
 #[test]
-fn maestro_wrapper_overrides_reach_request_and_tool() {
+fn wrapper_overrides_reach_request_and_tool() {
     for (continuation, present, stage) in [false, true].into_iter().flat_map(|c| {
         [false, true]
             .into_iter()
@@ -411,7 +411,7 @@ fn check_signal(actual: Option<&Cancellation>, expected: Option<&Cancellation>) 
 }
 /// Default dispatch and supplied streams select distinct adapters.
 #[test]
-fn maestro_wrapper_uses_registered_default_stream() {
+fn wrapper_uses_registered_default_stream() {
     use maestro_models::{ApiProvider, register_api_provider, unregister_api_providers};
     let calls = Arc::new(AtomicUsize::new(0));
     let count = Arc::clone(&calls);
@@ -449,19 +449,18 @@ fn maestro_wrapper_uses_registered_default_stream() {
 }
 /// Rejections retain their prefix and remain unsettled, with one native diagnostic.
 #[test]
-fn maestro_raw_failure_reports_without_finishing_stream() {
+fn raw_failure_reports_without_finishing_stream() {
     if maestro_test_harness::selection().is_child() {
         failure_child();
         return;
     }
-    let output = maestro_test_harness::TestProcess::current(
-        "maestro_raw_failure_reports_without_finishing_stream",
-    )
-    .unwrap()
-    .nocapture()
-    .case("*")
-    .output()
-    .unwrap();
+    let output =
+        maestro_test_harness::TestProcess::current("raw_failure_reports_without_finishing_stream")
+            .unwrap()
+            .nocapture()
+            .case("*")
+            .output()
+            .unwrap();
     assert!(output.status.success());
 
     assert_eq!(
@@ -492,7 +491,7 @@ fn failure_child() {
 }
 /// Identical adapters give identical requests, entries and event order.
 #[test]
-fn maestro_awaited_and_observable_share_adapters() {
+fn awaited_and_observable_share_adapters() {
     let events = Arc::new(Mutex::new(Vec::new()));
     let observed = Arc::clone(&events);
     let first_requests = Arc::new(Mutex::new(Vec::new()));
@@ -546,7 +545,7 @@ fn maestro_awaited_and_observable_share_adapters() {
 }
 /// Empty and repeated prompts preserve authored order without old history.
 #[test]
-fn maestro_empty_and_repeated_prompts_keep_order() {
+fn empty_and_repeated_prompts_keep_order() {
     for inputs in [vec![], vec!["zulu", "alpha", "zulu"]] {
         let context = context();
         let history = Arc::clone(&context.messages);
@@ -585,7 +584,7 @@ fn maestro_empty_and_repeated_prompts_keep_order() {
 }
 /// Tool-result tails are admitted and retained history appends without replay.
 #[test]
-fn maestro_raw_continue_accepts_tool_result_tail() {
+fn raw_continue_accepts_tool_result_tail() {
     let context = context();
     let history = Arc::clone(&context.messages);
     *history.write().unwrap() = vec![AgentMessage::ToolResult(Arc::new(std::sync::RwLock::new(
@@ -648,7 +647,7 @@ fn maestro_raw_continue_accepts_tool_result_tail() {
 }
 /// Returned failed assistants complete normally rather than rejecting the producer.
 #[test]
-fn maestro_failed_assistant_still_finishes_raw_stream() {
+fn failed_assistant_still_finishes_raw_stream() {
     for reason in [StopReason::Error, StopReason::Aborted] {
         let response = assistant("failed");
         response.write().unwrap().stop_reason = reason;
@@ -673,7 +672,7 @@ fn maestro_failed_assistant_still_finishes_raw_stream() {
 }
 /// Updates keep the original model and progress payloads in emission order.
 #[test]
-fn maestro_raw_updates_keep_payloads_and_order() {
+fn raw_updates_keep_payloads_and_order() {
     let response = tool_call();
     let partial = Arc::clone(&response);
     let options = AgentLoopOptions {

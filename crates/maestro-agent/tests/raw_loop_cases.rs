@@ -15,7 +15,7 @@ use support::{observable::*, *};
 
 /// Lifecycle and result retain the actual prompt and response handles.
 #[test]
-fn maestro_raw_loop_returns_new_messages() {
+fn raw_loop_returns_new_messages() {
     let context = context();
     context.messages.write().unwrap().clear();
     let prompt = user("Hello");
@@ -56,7 +56,7 @@ fn maestro_raw_loop_returns_new_messages() {
 
 /// Custom entries project only at the caller's conversion boundary.
 #[test]
-fn maestro_custom_roles_are_projected_by_caller() {
+fn custom_roles_are_projected_by_caller() {
     let (context, mut config) = notice_context();
     let history = Arc::clone(&context.messages);
     config.convert_to_llm = Arc::new(|entries| {
@@ -98,7 +98,7 @@ fn maestro_custom_roles_are_projected_by_caller() {
 
 /// Conversion receives the selected transformed entries in their actual order.
 #[test]
-fn maestro_transform_precedes_model_conversion() {
+fn transform_precedes_model_conversion() {
     let context = context();
     *context.messages.write().unwrap() = vec![
         user("old message 1"),
@@ -135,7 +135,7 @@ fn maestro_transform_precedes_model_conversion() {
 
 /// Echo execution, event payloads and final artifacts agree.
 #[test]
-fn maestro_tool_turn_returns_tool_results() {
+fn tool_turn_returns_tool_results() {
     let echo = tool(
         "echo",
         Arc::new(|id, args, _, _| {
@@ -178,7 +178,7 @@ fn maestro_tool_turn_returns_tool_results() {
 
 /// Before hooks edit validated arguments without a second validation pass.
 #[test]
-fn maestro_before_hook_mutates_validated_arguments() {
+fn before_hook_mutates_validated_arguments() {
     let echo = tool(
         "echo",
         Arc::new(|_, args, _, _| {
@@ -207,7 +207,7 @@ fn maestro_before_hook_mutates_validated_arguments() {
 
 /// Preparation reshapes flat edit input before schema validation.
 #[test]
-fn maestro_preparation_runs_before_validation() {
+fn preparation_runs_before_validation() {
     let echo = tool(
         "edit",
         Arc::new(|_, args, _, _| {
@@ -267,7 +267,7 @@ fn preparation_mutation_survives_callback_failure() {
 
 /// Completion order differs from artifact and turn-result source order.
 #[test]
-fn maestro_tool_events_follow_completion_results_follow_source() {
+fn tool_events_follow_completion_results_follow_source() {
     let (release, gate) = tokio::sync::oneshot::channel();
     let gate = Arc::new(Mutex::new(Some(gate)));
     let echo = tool(
@@ -321,7 +321,7 @@ fn maestro_tool_events_follow_completion_results_follow_source() {
 
 /// Steering available after the first execution waits for the batch artifacts.
 #[test]
-fn maestro_steering_waits_for_all_tools() {
+fn steering_waits_for_all_tools() {
     let executed = Arc::new(AtomicUsize::new(0));
     let count = Arc::clone(&executed);
     let echo = tool(
@@ -371,17 +371,17 @@ fn maestro_steering_waits_for_all_tools() {
 
 /// A sequential declaration overrides the parallel default.
 #[test]
-fn maestro_sequential_tool_overrides_parallel_default() {
+fn sequential_tool_overrides_parallel_default() {
     scheduling(ToolExecutionMode::Sequential, false);
 }
 /// A mixed batch is sequential when one member requires it.
 #[test]
-fn maestro_mixed_tool_batch_runs_sequentially() {
+fn mixed_tool_batch_runs_sequentially() {
     scheduling(ToolExecutionMode::Sequential, true);
 }
 /// Parallel declarations allow overlap through named gates.
 #[test]
-fn maestro_parallel_tools_overlap() {
+fn parallel_tools_overlap() {
     scheduling(ToolExecutionMode::Parallel, false);
 }
 
@@ -448,7 +448,7 @@ fn scheduling(mode: ToolExecutionMode, mixed: bool) {
 
 /// A true stop hook prevents subsequent steering and follow-up polls.
 #[test]
-fn maestro_stop_hook_prevents_later_queue_poll() {
+fn stop_hook_prevents_later_queue_poll() {
     let steering = Arc::new(AtomicUsize::new(0));
     let follow = Arc::new(AtomicUsize::new(0));
     let mut config = config();
@@ -509,17 +509,17 @@ fn maestro_stop_hook_prevents_later_queue_poll() {
 
 /// Unanimous termination suppresses automatic follow-up.
 #[test]
-fn maestro_all_terminated_tools_stop_follow_up() {
+fn all_terminated_tools_stop_follow_up() {
     termination(Termination::All, false);
 }
 /// A nonterminating member keeps automatic continuation.
 #[test]
-fn maestro_mixed_termination_continues() {
+fn mixed_termination_continues() {
     termination(Termination::Mixed, false);
 }
 /// The after-hook's effective result controls termination.
 #[test]
-fn maestro_after_hook_can_terminate_batch() {
+fn after_hook_can_terminate_batch() {
     termination(Termination::All, true);
 }
 /// Observe request cardinality through controlled producer completion.
@@ -586,7 +586,7 @@ fn termination(termination: Termination, after: bool) {
 
 /// Empty continuation is rejected synchronously without submission.
 #[test]
-fn maestro_raw_continue_rejects_empty_context() {
+fn raw_continue_rejects_empty_context() {
     let context = context();
     context.messages.write().unwrap().clear();
     let tasks = Arc::new(owned::Tasks::default());
@@ -606,7 +606,7 @@ fn maestro_raw_continue_rejects_empty_context() {
 }
 /// Existing user events are not replayed, and the supplied history appends.
 #[test]
-fn maestro_continue_does_not_replay_user_events() {
+fn continue_does_not_replay_user_events() {
     let context = context();
     let history = Arc::clone(&context.messages);
     let tasks = Arc::new(owned::Tasks::default());
@@ -644,7 +644,7 @@ fn maestro_continue_does_not_replay_user_events() {
 }
 /// Custom tails are admitted before their first conversion.
 #[test]
-fn maestro_continue_accepts_convertible_custom_tail() {
+fn continue_accepts_convertible_custom_tail() {
     let (context, mut config) = notice_context();
     let converted = Arc::new(AtomicUsize::new(0));
     let count = Arc::clone(&converted);
