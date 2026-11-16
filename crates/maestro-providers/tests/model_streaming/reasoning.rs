@@ -7,12 +7,12 @@ use crate::model_streaming::chat::TestResult;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_stream_thinking_keeps_controls_and_signatures() -> TestResult {
-    assert_rows("maestro_stream_thinking_keeps_controls_and_signatures")
+fn stream_thinking_keeps_controls_and_signatures() -> TestResult {
+    assert_rows("stream_thinking_keeps_controls_and_signatures")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_tool_results_drive_follow_on_turns() -> TestResult {
-    assert_rows("maestro_tool_results_drive_follow_on_turns")
+fn tool_results_drive_follow_on_turns() -> TestResult {
+    assert_rows("tool_results_drive_follow_on_turns")
 }

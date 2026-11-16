@@ -1,7 +1,7 @@
 [
   {
     "id": "abort_1_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -161,7 +161,7 @@
   },
   {
     "id": "abort_2_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "gpt-5.4-mini",
@@ -378,7 +378,7 @@
   },
   {
     "id": "abort_3_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -579,7 +579,7 @@
   },
   {
     "id": "abort_4_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -783,7 +783,7 @@
   },
   {
     "id": "abort_5_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "grok-3-fast",
@@ -940,7 +940,7 @@
   },
   {
     "id": "abort_6_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "openai/gpt-oss-20b",
@@ -1099,7 +1099,7 @@
   },
   {
     "id": "abort_7_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "qwen-3-235b-a22b-instruct-2507",
@@ -1256,7 +1256,7 @@
   },
   {
     "id": "abort_8_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "@cf/moonshotai/kimi-k2.6",
@@ -1420,7 +1420,7 @@
   },
   {
     "id": "abort_9_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "workers-ai/@cf/moonshotai/kimi-k2.6",
@@ -1585,7 +1585,7 @@
   },
   {
     "id": "abort_10_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "moonshotai/Kimi-K2.5",
@@ -1748,7 +1748,7 @@
   },
   {
     "id": "abort_11_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "glm-4.5-air",
@@ -1915,7 +1915,7 @@
   },
   {
     "id": "abort_12_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -2061,7 +2061,7 @@
   },
   {
     "id": "abort_13_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -2261,7 +2261,7 @@
   },
   {
     "id": "abort_14_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "kimi-for-coding",
@@ -2466,7 +2466,7 @@
   },
   {
     "id": "abort_15_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "google/gemini-2.5-flash",
@@ -2667,7 +2667,7 @@
   },
   {
     "id": "abort_16_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -2836,7 +2836,7 @@
   },
   {
     "id": "abort_17_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -3005,7 +3005,7 @@
   },
   {
     "id": "abort_18_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -3174,7 +3174,7 @@
   },
   {
     "id": "abort_19_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -3343,7 +3343,7 @@
   },
   {
     "id": "abort_20_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -3570,7 +3570,7 @@
   },
   {
     "id": "abort_21_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -3744,7 +3744,7 @@
   },
   {
     "id": "abort_22_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -3959,7 +3959,7 @@
   },
   {
     "id": "abort_23_0",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_retains_reported_usage",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_retains_reported_usage",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -4175,7 +4175,7 @@
   },
   {
     "id": "totals_0_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -4380,7 +4380,7 @@
   },
   {
     "id": "totals_0_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -4643,7 +4643,7 @@
   },
   {
     "id": "totals_1_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -4874,7 +4874,7 @@
   },
   {
     "id": "totals_1_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -5163,7 +5163,7 @@
   },
   {
     "id": "totals_2_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -5324,7 +5324,7 @@
   },
   {
     "id": "totals_2_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -5533,7 +5533,7 @@
   },
   {
     "id": "totals_3_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -5778,7 +5778,7 @@
   },
   {
     "id": "totals_3_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -6100,7 +6100,7 @@
   },
   {
     "id": "totals_4_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -6348,7 +6348,7 @@
   },
   {
     "id": "totals_4_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -6673,7 +6673,7 @@
   },
   {
     "id": "totals_6_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "grok-3-fast",
@@ -6831,7 +6831,7 @@
   },
   {
     "id": "totals_6_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "grok-3-fast",
@@ -7037,7 +7037,7 @@
   },
   {
     "id": "totals_7_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "openai/gpt-oss-120b",
@@ -7197,7 +7197,7 @@
   },
   {
     "id": "totals_7_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "openai/gpt-oss-120b",
@@ -7405,7 +7405,7 @@
   },
   {
     "id": "totals_8_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-oss-120b",
@@ -7563,7 +7563,7 @@
   },
   {
     "id": "totals_8_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-oss-120b",
@@ -7769,7 +7769,7 @@
   },
   {
     "id": "totals_9_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "@cf/moonshotai/kimi-k2.6",
@@ -7934,7 +7934,7 @@
   },
   {
     "id": "totals_9_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "@cf/moonshotai/kimi-k2.6",
@@ -8147,7 +8147,7 @@
   },
   {
     "id": "totals_10_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "workers-ai/@cf/moonshotai/kimi-k2.6",
@@ -8313,7 +8313,7 @@
   },
   {
     "id": "totals_10_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "workers-ai/@cf/moonshotai/kimi-k2.6",
@@ -8527,7 +8527,7 @@
   },
   {
     "id": "totals_11_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "moonshotai/Kimi-K2.5",
@@ -8691,7 +8691,7 @@
   },
   {
     "id": "totals_11_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "moonshotai/Kimi-K2.5",
@@ -8903,7 +8903,7 @@
   },
   {
     "id": "totals_12_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "glm-4.5-air",
@@ -9071,7 +9071,7 @@
   },
   {
     "id": "totals_12_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "glm-4.5-air",
@@ -9287,7 +9287,7 @@
   },
   {
     "id": "totals_13_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -9439,7 +9439,7 @@
   },
   {
     "id": "totals_13_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -9650,7 +9650,7 @@
   },
   {
     "id": "totals_14_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -9854,7 +9854,7 @@
   },
   {
     "id": "totals_14_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -10116,7 +10116,7 @@
   },
   {
     "id": "totals_15_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -10282,7 +10282,7 @@
   },
   {
     "id": "totals_15_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -10498,7 +10498,7 @@
   },
   {
     "id": "totals_16_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -10664,7 +10664,7 @@
   },
   {
     "id": "totals_16_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -10880,7 +10880,7 @@
   },
   {
     "id": "totals_17_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -11046,7 +11046,7 @@
   },
   {
     "id": "totals_17_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -11262,7 +11262,7 @@
   },
   {
     "id": "totals_18_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -11428,7 +11428,7 @@
   },
   {
     "id": "totals_18_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -11644,7 +11644,7 @@
   },
   {
     "id": "totals_19_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "kimi-k2-thinking",
@@ -11852,7 +11852,7 @@
   },
   {
     "id": "totals_19_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "kimi-k2-thinking",
@@ -12118,7 +12118,7 @@
   },
   {
     "id": "totals_20_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "google/gemini-2.5-flash",
@@ -12323,7 +12323,7 @@
   },
   {
     "id": "totals_20_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "google/gemini-2.5-flash",
@@ -12586,7 +12586,7 @@
   },
   {
     "id": "totals_21_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "anthropic/claude-sonnet-4",
@@ -12785,7 +12785,7 @@
   },
   {
     "id": "totals_21_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "anthropic/claude-sonnet-4",
@@ -13032,7 +13032,7 @@
   },
   {
     "id": "totals_22_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "deepseek/deepseek-chat",
@@ -13192,7 +13192,7 @@
   },
   {
     "id": "totals_22_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "deepseek/deepseek-chat",
@@ -13400,7 +13400,7 @@
   },
   {
     "id": "totals_23_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mistralai/mistral-small-3.2-24b-instruct",
@@ -13561,7 +13561,7 @@
   },
   {
     "id": "totals_23_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "mistralai/mistral-small-3.2-24b-instruct",
@@ -13770,7 +13770,7 @@
   },
   {
     "id": "totals_24_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "google/gemini-2.0-flash-001",
@@ -13931,7 +13931,7 @@
   },
   {
     "id": "totals_24_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "google/gemini-2.0-flash-001",
@@ -14140,7 +14140,7 @@
   },
   {
     "id": "totals_25_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "meta-llama/llama-4-scout",
@@ -14301,7 +14301,7 @@
   },
   {
     "id": "totals_25_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "meta-llama/llama-4-scout",
@@ -14510,7 +14510,7 @@
   },
   {
     "id": "totals_26_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -14685,7 +14685,7 @@
   },
   {
     "id": "totals_26_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -14908,7 +14908,7 @@
   },
   {
     "id": "totals_27_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -15127,7 +15127,7 @@
   },
   {
     "id": "totals_27_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -15404,7 +15404,7 @@
   },
   {
     "id": "totals_29_0",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -15667,7 +15667,7 @@
   },
   {
     "id": "totals_29_1",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_usage_preserves_provider_total",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::usage_preserves_provider_total",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -16007,7 +16007,7 @@
   },
   {
     "id": "chat_empty",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -16157,7 +16157,7 @@
   },
   {
     "id": "chat_ordinary",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -16311,7 +16311,7 @@
   },
   {
     "id": "chat_cache_hit",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -16465,7 +16465,7 @@
   },
   {
     "id": "chat_detail_wins",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -16622,7 +16622,7 @@
   },
   {
     "id": "chat_read_write",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -16782,7 +16782,7 @@
   },
   {
     "id": "chat_write_equal",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -16939,7 +16939,7 @@
   },
   {
     "id": "chat_prompt_equal_cache",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -17096,7 +17096,7 @@
   },
   {
     "id": "chat_write_exceeds",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -17253,7 +17253,7 @@
   },
   {
     "id": "chat_read_exceeds",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_avoids_cache_and_reasoning_double_count",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_avoids_cache_and_reasoning_double_count",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -17409,7 +17409,7 @@
   },
   {
     "id": "top_wins",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_prefers_top_level_then_choice",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_prefers_top_level_then_choice",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -17566,7 +17566,7 @@
   },
   {
     "id": "choice_only",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_prefers_top_level_then_choice",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_prefers_top_level_then_choice",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -17719,7 +17719,7 @@
   },
   {
     "id": "empty_top_wins",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_prefers_top_level_then_choice",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_prefers_top_level_then_choice",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -17873,7 +17873,7 @@
   },
   {
     "id": "chat_replaces",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_chat_usage_prefers_top_level_then_choice",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::chat_usage_prefers_top_level_then_choice",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -18034,7 +18034,7 @@
   },
   {
     "id": "response_openai-responses_reported",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -18279,7 +18279,7 @@
   },
   {
     "id": "response_openai-responses_zero",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -18518,7 +18518,7 @@
   },
   {
     "id": "response_openai-responses_missing_total",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -18756,7 +18756,7 @@
   },
   {
     "id": "response_openai-responses_no_usage",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -18990,7 +18990,7 @@
   },
   {
     "id": "response_openai-responses_zero_usage",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -19229,7 +19229,7 @@
   },
   {
     "id": "response_azure-openai-responses_reported",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -19477,7 +19477,7 @@
   },
   {
     "id": "response_azure-openai-responses_zero",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -19719,7 +19719,7 @@
   },
   {
     "id": "response_azure-openai-responses_missing_total",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -19960,7 +19960,7 @@
   },
   {
     "id": "response_azure-openai-responses_no_usage",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -20197,7 +20197,7 @@
   },
   {
     "id": "response_azure-openai-responses_zero_usage",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -20439,7 +20439,7 @@
   },
   {
     "id": "response_openai-codex-responses_reported",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -20702,7 +20702,7 @@
   },
   {
     "id": "response_openai-codex-responses_zero",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -20959,7 +20959,7 @@
   },
   {
     "id": "response_openai-codex-responses_missing_total",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -21215,7 +21215,7 @@
   },
   {
     "id": "response_openai-codex-responses_no_usage",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -21467,7 +21467,7 @@
   },
   {
     "id": "response_openai-codex-responses_zero_usage",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_response_usage_preserves_reported_totals",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::response_usage_preserves_reported_totals",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -21724,7 +21724,7 @@
   },
   {
     "id": "conversation_reported",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_conversation_usage_uses_total_or_fallback",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::conversation_usage_uses_total_or_fallback",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -21869,7 +21869,7 @@
   },
   {
     "id": "conversation_zero",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_conversation_usage_uses_total_or_fallback",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::conversation_usage_uses_total_or_fallback",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -22014,7 +22014,7 @@
   },
   {
     "id": "conversation_missing",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_conversation_usage_uses_total_or_fallback",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::conversation_usage_uses_total_or_fallback",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -22158,7 +22158,7 @@
   },
   {
     "id": "conversation_empty",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_conversation_usage_uses_total_or_fallback",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::conversation_usage_uses_total_or_fallback",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -22299,7 +22299,7 @@
   },
   {
     "id": "message_partial",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_message_usage_updates_only_reported_categories",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::message_usage_updates_only_reported_categories",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -22503,7 +22503,7 @@
   },
   {
     "id": "message_zero",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_message_usage_updates_only_reported_categories",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::message_usage_updates_only_reported_categories",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -22710,7 +22710,7 @@
   },
   {
     "id": "message_null",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_message_usage_updates_only_reported_categories",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::message_usage_updates_only_reported_categories",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -22917,7 +22917,7 @@
   },
   {
     "id": "message_replace",
-    "test": "crates/maestro-providers/tests/usage_totals.rs::maestro_message_usage_updates_only_reported_categories",
+    "test": "crates/maestro-providers/tests/usage_totals.rs::message_usage_updates_only_reported_categories",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -23124,7 +23124,7 @@
   },
   {
     "id": "zero_abort_openai-completions",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_before_usage_keeps_zero_counters",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_before_usage_keeps_zero_counters",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -23284,7 +23284,7 @@
   },
   {
     "id": "partial_abort_openai-completions",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_keeps_each_reported_category",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_keeps_each_reported_category",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -23453,7 +23453,7 @@
   },
   {
     "id": "zero_abort_anthropic-messages",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_before_usage_keeps_zero_counters",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_before_usage_keeps_zero_counters",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -23657,7 +23657,7 @@
   },
   {
     "id": "partial_abort_anthropic-messages",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_keeps_each_reported_category",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_keeps_each_reported_category",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -23861,7 +23861,7 @@
   },
   {
     "id": "zero_abort_openai-responses",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_before_usage_keeps_zero_counters",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_before_usage_keeps_zero_counters",
     "input": {
       "model": {
         "id": "gpt-4o",
@@ -24059,7 +24059,7 @@
   },
   {
     "id": "zero_abort_azure-openai-responses",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_before_usage_keeps_zero_counters",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_before_usage_keeps_zero_counters",
     "input": {
       "model": {
         "id": "gpt-4o-mini",
@@ -24260,7 +24260,7 @@
   },
   {
     "id": "zero_abort_openai-codex-responses",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_before_usage_keeps_zero_counters",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_before_usage_keeps_zero_counters",
     "input": {
       "model": {
         "id": "gpt-5.2-codex",
@@ -24476,7 +24476,7 @@
   },
   {
     "id": "zero_abort_mistral-conversations",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_before_usage_keeps_zero_counters",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_before_usage_keeps_zero_counters",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -24622,7 +24622,7 @@
   },
   {
     "id": "partial_abort_mistral-conversations",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_abort_keeps_each_reported_category",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::abort_keeps_each_reported_category",
     "input": {
       "model": {
         "id": "devstral-medium-latest",
@@ -24777,7 +24777,7 @@
   },
   {
     "id": "late_xiaomi",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -24943,7 +24943,7 @@
   },
   {
     "id": "late_xiaomi-token-plan-cn",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -25109,7 +25109,7 @@
   },
   {
     "id": "late_xiaomi-token-plan-ams",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",
@@ -25275,7 +25275,7 @@
   },
   {
     "id": "late_xiaomi-token-plan-sgp",
-    "test": "crates/maestro-providers/tests/usage_after_abort.rs::maestro_final_only_usage_is_not_fabricated",
+    "test": "crates/maestro-providers/tests/usage_after_abort.rs::final_only_usage_is_not_fabricated",
     "input": {
       "model": {
         "id": "mimo-v2.5-pro",

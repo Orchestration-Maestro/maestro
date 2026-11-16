@@ -2,14 +2,14 @@
 use crate::tests::runtime::run;
 
 #[test]
-fn maestro_response_sessions_request_ids_and_host_identity() {
+fn response_sessions_request_ids_and_host_identity() {
     let _guard = super::exclusive();
     run(maestro_response_sessions_request_ids_and_host_identity_scenario());
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_host_identity_uses_node_os_spellings() {
+fn host_identity_uses_node_os_spellings() {
     use super::super::host::node_names;
     for (os, arch, platform, node_arch) in [
         ("linux", "powerpc64", "linux", "ppc64"),

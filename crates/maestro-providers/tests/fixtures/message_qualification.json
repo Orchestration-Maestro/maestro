@@ -1,7 +1,7 @@
 [
   {
     "id": "catalog_candidates",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_expands_catalog_candidates",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_expands_catalog_candidates",
     "input": {
       "operation": "catalogCandidates"
     },
@@ -1102,7 +1102,7 @@
   },
   {
     "id": "select_empty",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": []
@@ -1116,7 +1116,7 @@
   },
   {
     "id": "select_cost",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1162,7 +1162,7 @@
   },
   {
     "id": "select_priority",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1232,7 +1232,7 @@
   },
   {
     "id": "select_haiku_cost_boundary",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1278,7 +1278,7 @@
   },
   {
     "id": "select_fractional_cost",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1324,7 +1324,7 @@
   },
   {
     "id": "select_id_shapes",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1508,7 +1508,7 @@
   },
   {
     "id": "select_locale_ties",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1638,7 +1638,7 @@
   },
   {
     "id": "select_locale_case",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1684,7 +1684,7 @@
   },
   {
     "id": "select_locale_accent",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1730,7 +1730,7 @@
   },
   {
     "id": "select_locale_numeric",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1776,7 +1776,7 @@
   },
   {
     "id": "select_locale_punctuation",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1822,7 +1822,7 @@
   },
   {
     "id": "select_stable_reversed",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1868,7 +1868,7 @@
   },
   {
     "id": "select_stable_equal",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -1941,7 +1941,7 @@
   },
   {
     "id": "select_group_order",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -2014,7 +2014,7 @@
   },
   {
     "id": "select_forced_filter",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_selects_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_selects_provider_probes",
     "input": {
       "operation": "selectProviderProbes",
       "cases": [
@@ -2114,7 +2114,7 @@
   },
   {
     "id": "eager_absent_absent",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -2299,7 +2299,7 @@
   },
   {
     "id": "eager_absent_0",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -2485,7 +2485,7 @@
   },
   {
     "id": "eager_absent_1",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -2705,7 +2705,7 @@
   },
   {
     "id": "eager_true_absent",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -2893,7 +2893,7 @@
   },
   {
     "id": "eager_true_0",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -3082,7 +3082,7 @@
   },
   {
     "id": "eager_true_1",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -3305,7 +3305,7 @@
   },
   {
     "id": "eager_false_absent",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -3493,7 +3493,7 @@
   },
   {
     "id": "eager_false_0",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -3682,7 +3682,7 @@
   },
   {
     "id": "eager_false_1",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_eager_input_follows_compatibility",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_eager_input_follows_compatibility",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -3905,7 +3905,7 @@
   },
   {
     "id": "configured_anthropic",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -4134,7 +4134,7 @@
   },
   {
     "id": "configured_cloudflare-ai-gateway",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -4363,7 +4363,7 @@
   },
   {
     "id": "configured_fireworks",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "accounts/fireworks/routers/kimi-k2p5-turbo",
@@ -4592,7 +4592,7 @@
   },
   {
     "id": "configured_github-copilot",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "claude-haiku-4.5",
@@ -4836,7 +4836,7 @@
   },
   {
     "id": "configured_kimi-coding",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "kimi-for-coding",
@@ -5069,7 +5069,7 @@
   },
   {
     "id": "configured_minimax",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -5297,7 +5297,7 @@
   },
   {
     "id": "configured_minimax-cn",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -5525,7 +5525,7 @@
   },
   {
     "id": "configured_opencode",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -5754,7 +5754,7 @@
   },
   {
     "id": "configured_vercel-ai-gateway",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_uses_configured_provider_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_uses_configured_provider_probes",
     "input": {
       "model": {
         "id": "anthropic/claude-haiku-4.5",
@@ -5983,7 +5983,7 @@
   },
   {
     "id": "forced_anthropic",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -6220,7 +6220,7 @@
   },
   {
     "id": "forced_cloudflare-ai-gateway",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -6457,7 +6457,7 @@
   },
   {
     "id": "forced_fireworks",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "accounts/fireworks/routers/kimi-k2p5-turbo",
@@ -6694,7 +6694,7 @@
   },
   {
     "id": "forced_github-copilot",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "claude-sonnet-4.6",
@@ -6944,7 +6944,7 @@
   },
   {
     "id": "forced_kimi-coding",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "kimi-for-coding",
@@ -7185,7 +7185,7 @@
   },
   {
     "id": "forced_minimax",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -7421,7 +7421,7 @@
   },
   {
     "id": "forced_minimax-cn",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -7657,7 +7657,7 @@
   },
   {
     "id": "forced_opencode",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -7894,7 +7894,7 @@
   },
   {
     "id": "forced_vercel-ai-gateway",
-    "test": "crates/maestro-providers/tests/message_eager_input.rs::maestro_message_forces_only_supported_eager_probes",
+    "test": "crates/maestro-providers/tests/message_eager_input.rs::message_forces_only_supported_eager_probes",
     "input": {
       "model": {
         "id": "anthropic/claude-haiku-4.5",
@@ -8131,7 +8131,7 @@
   },
   {
     "id": "long_anthropic",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -8323,7 +8323,7 @@
   },
   {
     "id": "long_cloudflare-ai-gateway",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -8515,7 +8515,7 @@
   },
   {
     "id": "long_fireworks",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "accounts/fireworks/routers/kimi-k2p5-turbo",
@@ -8707,7 +8707,7 @@
   },
   {
     "id": "long_github-copilot",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "claude-haiku-4.5",
@@ -8912,7 +8912,7 @@
   },
   {
     "id": "long_kimi-coding",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "kimi-for-coding",
@@ -9108,7 +9108,7 @@
   },
   {
     "id": "long_minimax",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -9299,7 +9299,7 @@
   },
   {
     "id": "long_minimax-cn",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "MiniMax-M2.7",
@@ -9490,7 +9490,7 @@
   },
   {
     "id": "long_opencode",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "claude-haiku-4-5",
@@ -9682,7 +9682,7 @@
   },
   {
     "id": "long_vercel-ai-gateway",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_probes_long_retention_per_provider",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_probes_long_retention_per_provider",
     "input": {
       "model": {
         "id": "anthropic/claude-haiku-4.5",
@@ -9874,7 +9874,7 @@
   },
   {
     "id": "markers_none_absent",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -10141,7 +10141,7 @@
   },
   {
     "id": "markers_none_true",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -10411,7 +10411,7 @@
   },
   {
     "id": "markers_none_false",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -10681,7 +10681,7 @@
   },
   {
     "id": "markers_short_absent",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -10962,7 +10962,7 @@
   },
   {
     "id": "markers_short_true",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -11246,7 +11246,7 @@
   },
   {
     "id": "markers_short_false",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -11530,7 +11530,7 @@
   },
   {
     "id": "markers_long_absent",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -11814,7 +11814,7 @@
   },
   {
     "id": "markers_long_true",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -12101,7 +12101,7 @@
   },
   {
     "id": "markers_long_false",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -12385,7 +12385,7 @@
   },
   {
     "id": "marker_parts",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -12608,7 +12608,7 @@
   },
   {
     "id": "marker_image",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -12823,7 +12823,7 @@
   },
   {
     "id": "marker_assistant_last",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -13048,7 +13048,7 @@
   },
   {
     "id": "marker_tool_result",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_places_retention_markers",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_places_retention_markers",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -13309,7 +13309,7 @@
   },
   {
     "id": "policies_false_true",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_keeps_compatibility_policies_independent",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_keeps_compatibility_policies_independent",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -13546,7 +13546,7 @@
   },
   {
     "id": "policies_true_false",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_keeps_compatibility_policies_independent",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_keeps_compatibility_policies_independent",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -13781,7 +13781,7 @@
   },
   {
     "id": "policies_true_true",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_keeps_compatibility_policies_independent",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_keeps_compatibility_policies_independent",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -14018,7 +14018,7 @@
   },
   {
     "id": "policies_false_false",
-    "test": "crates/maestro-providers/tests/message_long_retention.rs::maestro_message_keeps_compatibility_policies_independent",
+    "test": "crates/maestro-providers/tests/message_long_retention.rs::message_keeps_compatibility_policies_independent",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -14253,7 +14253,7 @@
   },
   {
     "id": "disabled_claude-sonnet-4-5",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_disables_budget_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_disables_budget_thinking",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -14445,7 +14445,7 @@
   },
   {
     "id": "raw_claude-sonnet-4-5_absent",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -14634,7 +14634,7 @@
   },
   {
     "id": "raw_claude-sonnet-4-5_false",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -14827,7 +14827,7 @@
   },
   {
     "id": "raw_claude-sonnet-4-5_true",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -15023,7 +15023,7 @@
   },
   {
     "id": "disabled_claude-opus-4-6",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_disables_adaptive_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_disables_adaptive_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -15221,7 +15221,7 @@
   },
   {
     "id": "raw_claude-opus-4-6_absent",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -15416,7 +15416,7 @@
   },
   {
     "id": "raw_claude-opus-4-6_false",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -15615,7 +15615,7 @@
   },
   {
     "id": "raw_claude-opus-4-6_true",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -15815,7 +15815,7 @@
   },
   {
     "id": "disabled_claude-opus-4-7",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_disables_adaptive_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_disables_adaptive_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -16013,7 +16013,7 @@
   },
   {
     "id": "raw_claude-opus-4-7_absent",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -16208,7 +16208,7 @@
   },
   {
     "id": "raw_claude-opus-4-7_false",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -16407,7 +16407,7 @@
   },
   {
     "id": "raw_claude-opus-4-7_true",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_distinguishes_raw_and_simple_thinking",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_distinguishes_raw_and_simple_thinking",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -16607,7 +16607,7 @@
   },
   {
     "id": "effort_claude-opus-4-6_minimal",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -16810,7 +16810,7 @@
   },
   {
     "id": "effort_claude-opus-4-6_low",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -17013,7 +17013,7 @@
   },
   {
     "id": "effort_claude-opus-4-6_medium",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -17216,7 +17216,7 @@
   },
   {
     "id": "effort_claude-opus-4-6_high",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -17419,7 +17419,7 @@
   },
   {
     "id": "effort_claude-opus-4-6_xhigh",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-6",
@@ -17622,7 +17622,7 @@
   },
   {
     "id": "effort_claude-opus-4-7_minimal",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -17825,7 +17825,7 @@
   },
   {
     "id": "effort_claude-opus-4-7_low",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -18028,7 +18028,7 @@
   },
   {
     "id": "effort_claude-opus-4-7_medium",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -18231,7 +18231,7 @@
   },
   {
     "id": "effort_claude-opus-4-7_high",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -18434,7 +18434,7 @@
   },
   {
     "id": "effort_claude-opus-4-7_xhigh",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -18637,7 +18637,7 @@
   },
   {
     "id": "raw_effort_summarized",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -18842,7 +18842,7 @@
   },
   {
     "id": "raw_effort_omitted",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_preserves_adaptive_effort",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_preserves_adaptive_effort",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -19047,7 +19047,7 @@
   },
   {
     "id": "arithmetic_plain",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_streams_signed_arithmetic",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_streams_signed_arithmetic",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -19319,7 +19319,7 @@
   },
   {
     "id": "arithmetic_trim_bom",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_streams_signed_arithmetic",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_streams_signed_arithmetic",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -19591,7 +19591,7 @@
   },
   {
     "id": "arithmetic_keep_nel",
-    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::maestro_message_streams_signed_arithmetic",
+    "test": "crates/maestro-providers/tests/message_adaptive_thinking.rs::message_streams_signed_arithmetic",
     "input": {
       "model": {
         "id": "claude-opus-4-7",
@@ -19863,7 +19863,7 @@
   },
   {
     "id": "off_forty",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_off_stream_contains_only_text",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_off_stream_contains_only_text",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -20070,7 +20070,7 @@
   },
   {
     "id": "off_boundaries",
-    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::maestro_message_off_stream_contains_only_text",
+    "test": "crates/maestro-providers/tests/message_thinking_disabled.rs::message_off_stream_contains_only_text",
     "input": {
       "model": {
         "id": "claude-sonnet-4-5",
@@ -20277,7 +20277,7 @@
   },
   {
     "id": "name_todowrite",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_restores_original_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_restores_original_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -20534,7 +20534,7 @@
   },
   {
     "id": "name_read",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_restores_original_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_restores_original_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -20791,7 +20791,7 @@
   },
   {
     "id": "name_write",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_restores_original_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_restores_original_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -21048,7 +21048,7 @@
   },
   {
     "id": "name_edit",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_restores_original_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_restores_original_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -21305,7 +21305,7 @@
   },
   {
     "id": "name_bash",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_restores_original_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_restores_original_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -21562,7 +21562,7 @@
   },
   {
     "id": "name_ReAd",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_restores_original_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_restores_original_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -21819,7 +21819,7 @@
   },
   {
     "id": "custom_find_find",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_keeps_unrelated_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_keeps_unrelated_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -22076,7 +22076,7 @@
   },
   {
     "id": "custom_find_Glob",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_keeps_unrelated_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_keeps_unrelated_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -22333,7 +22333,7 @@
   },
   {
     "id": "custom_my_custom_tool_my_custom_tool",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_keeps_unrelated_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_keeps_unrelated_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -22590,7 +22590,7 @@
   },
   {
     "id": "custom_ReadFile_ReadFile",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_keeps_unrelated_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_keeps_unrelated_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -22847,7 +22847,7 @@
   },
   {
     "id": "custom_réad_réad",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_keeps_unrelated_tool_names",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_keeps_unrelated_tool_names",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -23104,7 +23104,7 @@
   },
   {
     "id": "history_names",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_projects_names_without_mutating_callers",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_projects_names_without_mutating_callers",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -23487,7 +23487,7 @@
   },
   {
     "id": "first_declared",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_projects_names_without_mutating_callers",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_projects_names_without_mutating_callers",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -23775,7 +23775,7 @@
   },
   {
     "id": "plain_plain-key_read",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_leaves_key_authenticated_names_plain",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_leaves_key_authenticated_names_plain",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -24020,7 +24020,7 @@
   },
   {
     "id": "plain_plain-key_find",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_leaves_key_authenticated_names_plain",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_leaves_key_authenticated_names_plain",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -24265,7 +24265,7 @@
   },
   {
     "id": "plain_prefix-sk-ant-oat-suffix_read",
-    "test": "crates/maestro-providers/tests/account_tool_names.rs::maestro_account_leaves_key_authenticated_names_plain",
+    "test": "crates/maestro-providers/tests/account_tool_names.rs::account_leaves_key_authenticated_names_plain",
     "input": {
       "model": {
         "id": "claude-sonnet-4-6",
@@ -24522,7 +24522,7 @@
   },
   {
     "id": "routing_user",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_routes_message_authentication",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_routes_message_authentication",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -24736,7 +24736,7 @@
   },
   {
     "id": "routing_assistant",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_routes_message_authentication",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_routes_message_authentication",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -24969,7 +24969,7 @@
   },
   {
     "id": "routing_vision",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_routes_message_authentication",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_routes_message_authentication",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -25192,7 +25192,7 @@
   },
   {
     "id": "beta_false_absent_false",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -25400,7 +25400,7 @@
   },
   {
     "id": "beta_false_absent_true",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -25611,7 +25611,7 @@
   },
   {
     "id": "beta_false_false_false",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -25820,7 +25820,7 @@
   },
   {
     "id": "beta_false_false_true",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -26031,7 +26031,7 @@
   },
   {
     "id": "beta_false_true_false",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -26240,7 +26240,7 @@
   },
   {
     "id": "beta_false_true_true",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-sonnet-4",
@@ -26452,7 +26452,7 @@
   },
   {
     "id": "beta_true_absent_false",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-opus-4.7",
@@ -26663,7 +26663,7 @@
   },
   {
     "id": "beta_true_absent_true",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-opus-4.7",
@@ -26875,7 +26875,7 @@
   },
   {
     "id": "beta_true_false_false",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-opus-4.7",
@@ -27087,7 +27087,7 @@
   },
   {
     "id": "beta_true_false_true",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-opus-4.7",
@@ -27300,7 +27300,7 @@
   },
   {
     "id": "beta_true_true_false",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-opus-4.7",
@@ -27512,7 +27512,7 @@
   },
   {
     "id": "beta_true_true_true",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-opus-4.7",
@@ -27725,7 +27725,7 @@
   },
   {
     "id": "beta_legacy_only",
-    "test": "crates/maestro-providers/tests/account_message_routing.rs::maestro_account_selects_interleaved_beta_independently",
+    "test": "crates/maestro-providers/tests/account_message_routing.rs::account_selects_interleaved_beta_independently",
     "input": {
       "model": {
         "id": "claude-sonnet-4",

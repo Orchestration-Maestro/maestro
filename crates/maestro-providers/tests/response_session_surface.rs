@@ -8,7 +8,7 @@ use maestro_providers::{OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugSt
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_response_sessions_public_surface() {
+fn response_sessions_public_surface() {
     let options = public_records();
     let model: Model = serde_json::from_value(serde_json::json!({"id":"fixture","name":"fixture","api":"openai-codex-responses","provider":"fixture-no-key","baseUrl":"http://localhost","reasoning":false,"input":["text"],"cost":{"input":1,"output":2,"cacheRead":0,"cacheWrite":0},"contextWindow":1000,"maxTokens":100})).unwrap();
     let context = Context {

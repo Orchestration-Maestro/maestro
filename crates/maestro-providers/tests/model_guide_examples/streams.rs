@@ -12,7 +12,7 @@ use maestro_models::{
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_quick_start_completes_without_network() -> TestResult {
+fn guide_quick_start_completes_without_network() -> TestResult {
     let _registry = bundled::registry();
     crate::runtime::run(async {
         let model = get_model("openai", "gpt-4o-mini").ok_or("catalog model")?;
@@ -77,7 +77,7 @@ fn interleaved_frames() -> Vec<u8> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_consumes_interleaved_stream() -> TestResult {
+fn guide_consumes_interleaved_stream() -> TestResult {
     use maestro_models::{AssistantMessageEvent, StreamOptions};
     use maestro_providers::{AnthropicOptions, stream_anthropic};
     use std::sync::Arc;
@@ -137,7 +137,7 @@ fn maestro_guide_consumes_interleaved_stream() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_observes_failure_and_cancellation() -> TestResult {
+fn guide_observes_failure_and_cancellation() -> TestResult {
     use maestro_cancellation::Cancellation;
     use maestro_models::{AssistantMessageEvent, ErrorReason};
     use maestro_providers::{AnthropicOptions, stream_anthropic};

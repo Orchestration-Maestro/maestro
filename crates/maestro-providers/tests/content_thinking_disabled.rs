@@ -12,6 +12,6 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Compare the complete recorded public observations.
 #[test]
-fn maestro_shipped_models_disable_unrequested_thinking() -> TestResult {
-    qualification::assert_rows("maestro_shipped_models_disable_unrequested_thinking")
+fn shipped_models_disable_unrequested_thinking() -> TestResult {
+    qualification::assert_rows("shipped_models_disable_unrequested_thinking")
 }

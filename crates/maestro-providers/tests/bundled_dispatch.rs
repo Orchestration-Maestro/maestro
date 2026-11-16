@@ -241,7 +241,7 @@ fn expected_hooks(protocol: &Protocol) -> &'static [&'static str] {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_public_routes_reach_real_adapters() -> TestResult {
+fn public_routes_reach_real_adapters() -> TestResult {
     let _registry = bundled::registry();
     maestro_providers::reset_api_providers();
     crate::runtime::run(async {
@@ -298,15 +298,14 @@ fn custom(api: &str, label: &'static str) -> ApiProvider {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_initial_registry_is_ready() -> TestResult {
+fn initial_registry_is_ready() -> TestResult {
     if !maestro_test_harness::selection().is_child() {
         return {
-            let output =
-                maestro_test_harness::TestProcess::current("maestro_initial_registry_is_ready")?
-                    .nocapture()
-                    .env_clear()
-                    .case("fresh")
-                    .output()?;
+            let output = maestro_test_harness::TestProcess::current("initial_registry_is_ready")?
+                .nocapture()
+                .env_clear()
+                .case("fresh")
+                .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
         };
@@ -318,7 +317,7 @@ fn maestro_initial_registry_is_ready() -> TestResult {
 }
 
 #[test]
-fn maestro_registration_keeps_custom_order() {
+fn registration_keeps_custom_order() {
     let _registry = bundled::registry();
     reset_api_providers();
     register_api_provider(custom("custom-a", "a"), Some("extension".into()));
@@ -368,7 +367,7 @@ fn maestro_registration_keeps_custom_order() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_reset_restores_builtin_adapters() -> TestResult {
+fn reset_restores_builtin_adapters() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     for protocol in &PROTOCOLS {
@@ -416,7 +415,7 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_clear_does_not_reactivate() -> TestResult {
+fn clear_does_not_reactivate() -> TestResult {
     let _registry = bundled::registry();
     clear_api_providers();
     crate::runtime::run::<crate::TestResult<_>>(async {
@@ -445,7 +444,7 @@ fn maestro_clear_does_not_reactivate() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_custom_setup_errors_stay_immediate() -> TestResult {
+fn custom_setup_errors_stay_immediate() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     register_api_provider(custom("custom-api", "custom setup"), None);
@@ -484,7 +483,7 @@ fn ending_provider() -> ApiProvider {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_explicit_end_keeps_result_pending() -> TestResult {
+fn explicit_end_keeps_result_pending() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     register_api_provider(ending_provider(), None);
@@ -648,7 +647,7 @@ async fn assert_setup_error(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_builtin_setup_errors_settle() -> TestResult {
+fn builtin_setup_errors_settle() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     let aborted = maestro_cancellation::Cancellation::new();
@@ -830,7 +829,7 @@ async fn assert_hook_failure(protocol: &Protocol, fail_payload: bool) -> TestRes
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_root_hooks_keep_shared_results() -> TestResult {
+fn root_hooks_keep_shared_results() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     crate::runtime::run_paused(async {
@@ -889,7 +888,7 @@ fn single_body_fetch(body: maestro_models::HttpBody) -> maestro_models::Fetch {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_cloud_partial_failure_settles() -> TestResult {
+fn cloud_partial_failure_settles() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     crate::runtime::run(async {
@@ -1056,7 +1055,7 @@ fn extra_options(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_invalid_extra_reports_decode_failure() -> TestResult {
+fn invalid_extra_reports_decode_failure() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     crate::runtime::run(async {
@@ -1134,7 +1133,7 @@ fn recording_provider(seen: &ObjectsSeen) -> ApiProvider {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_provider_objects_keep_typed_aliases() -> TestResult {
+fn provider_objects_keep_typed_aliases() -> TestResult {
     fn assert_send_sync<T: Send + Sync>() {}
     assert_send_sync::<maestro_models::ProviderObjects>();
     let drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -1223,7 +1222,7 @@ fn injected_client(sent: &ClientCalls) -> maestro_providers::AnthropicClient {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_injected_client_bypasses_default_setup() -> TestResult {
+fn injected_client_bypasses_default_setup() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     let sent = Arc::default();
@@ -1288,16 +1287,15 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_first_access_is_safe_across_threads() -> TestResult {
+fn first_access_is_safe_across_threads() -> TestResult {
     if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
-                "maestro_first_access_is_safe_across_threads",
-            )?
-            .nocapture()
-            .env_clear()
-            .case("threads")
-            .output()?;
+            let output =
+                maestro_test_harness::TestProcess::current("first_access_is_safe_across_threads")?
+                    .nocapture()
+                    .env_clear()
+                    .case("threads")
+                    .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
         };
@@ -1366,7 +1364,7 @@ async fn assert_session_response_retry() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_response_session_cache_affinity_completes() -> TestResult {
+fn response_session_cache_affinity_completes() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     crate::runtime::run(async {
@@ -1407,7 +1405,7 @@ fn maestro_response_session_cache_affinity_completes() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_response_session_raw_key_errors_settle() -> TestResult {
+fn response_session_raw_key_errors_settle() -> TestResult {
     let _registry = bundled::registry();
     reset_api_providers();
     crate::runtime::run(async {

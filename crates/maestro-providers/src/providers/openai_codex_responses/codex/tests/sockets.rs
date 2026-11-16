@@ -286,7 +286,7 @@ struct EndpointCase {
 }
 
 #[test]
-fn maestro_response_sessions_resolve_socket_endpoint() {
+fn response_sessions_resolve_socket_endpoint() {
     let rows: Vec<EndpointCase> =
         super::fixture_rows(include_str!("fixtures/socket_endpoints.json"), &["base"]).unwrap();
     for row in rows {
@@ -313,7 +313,7 @@ struct HeaderCase {
 }
 
 #[test]
-fn maestro_response_sessions_apply_socket_headers() {
+fn response_sessions_apply_socket_headers() {
     let rows: Vec<HeaderCase> = super::fixture_rows(
         include_str!("fixtures/socket_headers.json"),
         &["init", "additional", "request_id"],
@@ -353,7 +353,7 @@ struct BodyCase {
 }
 
 #[test]
-fn maestro_response_sessions_write_negative_zero_as_zero() {
+fn response_sessions_write_negative_zero_as_zero() {
     let body = json!({"model":"m","temperature":-0.0,"input":[]});
     assert!(body["temperature"].as_f64().unwrap().is_sign_negative());
     assert_eq!(
@@ -363,7 +363,7 @@ fn maestro_response_sessions_write_negative_zero_as_zero() {
 }
 
 #[test]
-fn maestro_response_sessions_send_full_socket_body() {
+fn response_sessions_send_full_socket_body() {
     let text = include_str!("fixtures/socket_bodies.json");
     let rows: Vec<BodyCase> = super::fixture_rows(text, &["body"]).unwrap();
     for row in rows {
@@ -384,7 +384,7 @@ struct DataCase {
 }
 
 #[test]
-fn maestro_response_sessions_decode_socket_data() {
+fn response_sessions_decode_socket_data() {
     let rows: Vec<DataCase> = super::fixture_rows(
         include_str!("fixtures/socket_data.json"),
         &["bytes", "text"],
@@ -415,7 +415,7 @@ struct EventCase {
 }
 
 #[test]
-fn maestro_response_sessions_select_socket_events() {
+fn response_sessions_select_socket_events() {
     let rows: Vec<EventCase> =
         super::fixture_rows(include_str!("fixtures/socket_events.json"), &["scenario"]).unwrap();
     run_paused(async {
@@ -447,7 +447,7 @@ struct CloseExpectation {
 }
 
 #[test]
-fn maestro_response_sessions_distinguish_socket_failures() {
+fn response_sessions_distinguish_socket_failures() {
     let rows: Vec<CloseExpectation> = super::fixture_rows(
         include_str!("fixtures/socket_failures.json"),
         &["code", "reason"],
@@ -506,7 +506,7 @@ fn assert_start_handle(run: &Run, finished: &Value, label: &str) {
 }
 
 #[test]
-fn maestro_response_sessions_run_uncached_socket_lifecycle() {
+fn response_sessions_run_uncached_socket_lifecycle() {
     let rows: Vec<LifecycleCase> = super::fixture_rows(
         include_str!("fixtures/socket_lifecycle.json"),
         &["scenario"],
@@ -593,7 +593,7 @@ async fn select_all(incoming: Vec<Incoming>) -> (Vec<String>, Option<CodexError>
 }
 
 #[test]
-fn maestro_response_sessions_keep_sse_selection_separate() {
+fn response_sessions_keep_sse_selection_separate() {
     use super::super::events::Source;
     use futures_util::stream;
     let event = r#"{"type":"future.event","n":1}"#;
@@ -717,7 +717,7 @@ fn phase_cases() -> [PhaseCase; 5] {
 }
 
 #[test]
-fn maestro_response_sessions_preserve_socket_error_phase() {
+fn response_sessions_preserve_socket_error_phase() {
     let cases = phase_cases();
     run_paused(async {
         for case in cases {

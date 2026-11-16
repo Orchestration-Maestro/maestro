@@ -12,13 +12,13 @@ use chat::TestResult;
 #[cfg(not(target_arch = "wasm32"))]
 /// Native reasoning controls follow the selected model.
 #[test]
-fn maestro_conversation_selects_native_reasoning_mode() -> TestResult {
-    qualification::assert_rows("maestro_conversation_selects_native_reasoning_mode")
+fn conversation_selects_native_reasoning_mode() -> TestResult {
+    qualification::assert_rows("conversation_selects_native_reasoning_mode")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Compare the complete recorded public observations.
 #[test]
-fn maestro_conversation_off_omits_reasoning_controls() -> TestResult {
-    qualification::assert_rows("maestro_conversation_off_omits_reasoning_controls")
+fn conversation_off_omits_reasoning_controls() -> TestResult {
+    qualification::assert_rows("conversation_off_omits_reasoning_controls")
 }

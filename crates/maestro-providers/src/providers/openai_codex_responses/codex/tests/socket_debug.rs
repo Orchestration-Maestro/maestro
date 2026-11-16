@@ -250,7 +250,7 @@ async fn failures_count_by_timing(listener: &TcpListener, url: &str) {
 }
 
 #[test]
-fn maestro_response_sessions_count_socket_request_modes() {
+fn response_sessions_count_socket_request_modes() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -339,7 +339,7 @@ fn failures_repeat(failed: &Stats) -> Stats {
 }
 
 #[test]
-fn maestro_response_sessions_snapshot_socket_debug_state() {
+fn response_sessions_snapshot_socket_debug_state() {
     let _isolated = super::exclusive();
     reset(None);
     assert!(stats_of("snapshot").is_none());
@@ -355,7 +355,7 @@ fn maestro_response_sessions_snapshot_socket_debug_state() {
 }
 
 #[test]
-fn maestro_response_sessions_reset_clears_socket_completion() {
+fn response_sessions_reset_clears_socket_completion() {
     let _isolated = super::exclusive();
     reset(None);
     let [one, all] = ["completion-one", "completion-all"];
@@ -499,7 +499,7 @@ async fn reset_while_in_flight(listener: &TcpListener, url: &str) {
 }
 
 #[test]
-fn maestro_response_sessions_separate_socket_reset_and_close() {
+fn response_sessions_separate_socket_reset_and_close() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;

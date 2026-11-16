@@ -7,36 +7,36 @@ use crate::model_streaming::chat::TestResult;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_socket_completions_continue_with_actual_assistants() -> TestResult {
-    assert_socket_rows("maestro_socket_completions_continue_with_actual_assistants")
+fn socket_completions_continue_with_actual_assistants() -> TestResult {
+    assert_socket_rows("socket_completions_continue_with_actual_assistants")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_socket_text_matches_terminal_result() -> TestResult {
-    assert_socket_rows("maestro_socket_text_matches_terminal_result")
+fn socket_text_matches_terminal_result() -> TestResult {
+    assert_socket_rows("socket_text_matches_terminal_result")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_socket_keeps_tool_argument_progress() -> TestResult {
-    assert_socket_rows("maestro_socket_keeps_tool_argument_progress")
+fn socket_keeps_tool_argument_progress() -> TestResult {
+    assert_socket_rows("socket_keeps_tool_argument_progress")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_socket_thinking_keeps_controls_and_signatures() -> TestResult {
-    assert_socket_rows("maestro_socket_thinking_keeps_controls_and_signatures")
+fn socket_thinking_keeps_controls_and_signatures() -> TestResult {
+    assert_socket_rows("socket_thinking_keeps_controls_and_signatures")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_socket_tool_results_drive_follow_on_turns() -> TestResult {
-    assert_socket_rows("maestro_socket_tool_results_drive_follow_on_turns")
+fn socket_tool_results_drive_follow_on_turns() -> TestResult {
+    assert_socket_rows("socket_tool_results_drive_follow_on_turns")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_socket_image_requests_keep_original_bytes() -> TestResult {
-    assert_socket_rows("maestro_socket_image_requests_keep_original_bytes")
+fn socket_image_requests_keep_original_bytes() -> TestResult {
+    assert_socket_rows("socket_image_requests_keep_original_bytes")
 }

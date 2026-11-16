@@ -67,7 +67,7 @@ struct Retained {
 }
 
 #[test]
-fn maestro_response_sessions_send_cached_input_delta() {
+fn response_sessions_send_cached_input_delta() {
     let rows: Vec<ContinuationCase> = super::fixture_rows(
         include_str!("fixtures/socket_continuation.json"),
         &["input"],
@@ -139,7 +139,7 @@ fn send_delta_over_the_wire() {
 }
 
 #[test]
-fn maestro_response_sessions_send_full_context_without_cache_mode() {
+fn response_sessions_send_full_context_without_cache_mode() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -241,7 +241,7 @@ fn full_conversion(model: &Model, message: &AssistantMessage) -> (Vec<Value>, Ve
 }
 
 #[test]
-fn maestro_response_sessions_project_socket_response_items() {
+fn response_sessions_project_socket_response_items() {
     let rows: Vec<ProjectionCase> =
         super::fixture_rows(include_str!("fixtures/socket_projection.json"), &["input"]).unwrap();
     assert_eq!(rows.len(), 8);
@@ -385,7 +385,7 @@ async fn raw_request(
 /// A payload hook adds a member nested beyond the depth `serde_json` parses; the second request
 /// still carries the member intact, with only the input suffix and the previous identifier.
 #[test]
-fn maestro_response_sessions_send_delta_with_deeply_nested_open_member() {
+fn response_sessions_send_delta_with_deeply_nested_open_member() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -434,7 +434,7 @@ fn maestro_response_sessions_send_delta_with_deeply_nested_open_member() {
 /// A response whose item cannot be converted fails retention with the converter's own failure
 /// and leaves the earlier context in place.
 #[test]
-fn maestro_response_sessions_report_projection_failure_on_retention() {
+fn response_sessions_report_projection_failure_on_retention() {
     let model = Arc::new(super::controlled_model());
     let mut message = maestro_models::providers::assistant_output::initial_message(&model);
     message.response_id = Some("r".to_owned());
@@ -456,7 +456,7 @@ fn maestro_response_sessions_report_projection_failure_on_retention() {
 }
 
 #[test]
-fn maestro_response_sessions_preserve_open_socket_payloads() {
+fn response_sessions_preserve_open_socket_payloads() {
     let _isolated = super::exclusive();
     run(async {
         let (first, second) = two_requests("open-fields", |payload| {

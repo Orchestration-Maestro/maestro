@@ -8,7 +8,7 @@ use maestro_models::{EnumOptions, string_enum};
 use serde_json::json;
 
 #[test]
-fn maestro_guide_builds_portable_tool_schemas() -> TestResult {
+fn guide_builds_portable_tool_schemas() -> TestResult {
     let values = ["celsius", "fahrenheit"];
     let bare = json!({"type":"string","enum":["celsius","fahrenheit"]});
     assert_eq!(string_enum(&values, None), bare);
@@ -146,7 +146,7 @@ fn check_validation_inputs(invalid: &maestro_models::ToolCall) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_validates_before_tool_execution() -> TestResult {
+fn guide_validates_before_tool_execution() -> TestResult {
     use maestro_models::{Message, ProviderStreamOptions, complete};
     let _registry = bundled::registry();
     crate::runtime::run(async {
@@ -192,7 +192,7 @@ fn maestro_guide_validates_before_tool_execution() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_reads_partial_arguments_without_execution() -> TestResult {
+fn guide_reads_partial_arguments_without_execution() -> TestResult {
     use maestro_models::{AssistantMessageEvent, validate_tool_call};
     use maestro_providers::{AnthropicOptions, stream_anthropic};
     let _registry = bundled::registry();

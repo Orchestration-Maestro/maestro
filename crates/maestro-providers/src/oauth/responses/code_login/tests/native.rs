@@ -497,7 +497,7 @@ mod oauth_callback {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_response_login_falls_back_after_bind_failure() {
+    fn response_login_falls_back_after_bind_failure() {
         run(async {
             let occupied = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
             let port = occupied.local_addr().unwrap().port();
@@ -540,7 +540,7 @@ mod oauth_callback {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_response_callback_pages_preserve_status() {
+    fn response_callback_pages_preserve_status() {
         run(async {
             let callbacks = Arc::new(Browser {
                 auth: maestro_models::EventStream::new(|_| true, Clone::clone),
