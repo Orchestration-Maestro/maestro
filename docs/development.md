@@ -941,6 +941,16 @@ An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
 
+### Test names
+
+Name each test `subject_behaviour_condition`, such as
+`settings_retain_keys_when_write_fails`. The `test_names` conventions check
+rejects test-attributed functions whose names start with `maestro_` or `test_`,
+or contain `issue_` immediately followed by a digit. The attribute marks the
+function as a test even at a library root. Diagnostics give the file, line and
+function name. Helpers without a test attribute are not checked. Run the guard
+with `just test-conventions`.
+
 ### Shared test support
 
 Keep one owner for a reusable fixture inside its crate. When unit and integration
