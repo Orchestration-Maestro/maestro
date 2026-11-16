@@ -912,11 +912,9 @@ fn availability_releases_last_owner_after_remaining_work() {
 
 /// Runs Git only in the test's disposable tree.
 fn git_at(path: &std::path::Path, args: &[&str]) -> String {
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .args(args)
         .current_dir(path)
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .output()
         .unwrap();
     assert!(output.status.success(), "sandbox Git command failed");

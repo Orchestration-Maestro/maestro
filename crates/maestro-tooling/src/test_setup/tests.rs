@@ -3,7 +3,6 @@
 use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::path::Path;
-use std::process::Command;
 
 use cargo_metadata::Metadata;
 
@@ -256,7 +255,7 @@ const CLOSURE_MANIFEST: &str = "[workspace]\nmembers = [\"crates/*\"]\nresolver 
 /// Each crate names the others through the workspace's dependency entries.
 fn closure_workspace(root: &Path) {
     assert!(
-        Command::new("git")
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(root)
             .status()
@@ -561,7 +560,7 @@ fn component_bundle_tracks_subagent_sources_but_not_unrelated_packages() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let scratch = maestro_test_directory::Scratch::new().unwrap();
     assert!(
-        Command::new("git")
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(scratch.path())
             .status()
@@ -648,7 +647,7 @@ fn rule_files(sources: &str) -> std::io::Result<BTreeSet<String>> {
     )
     .unwrap();
     assert!(
-        Command::new("git")
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(root)
             .status()
@@ -706,7 +705,7 @@ fn staging_stages_components_alone() {
     )
     .unwrap();
     assert!(
-        Command::new("git")
+        maestro_test_process::git_command::command()
             .args(["init", "-q"])
             .current_dir(&checkout)
             .status()

@@ -86,6 +86,30 @@ impl Source {
     }
 }
 
+/// A file's production role or explicit test boundary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Scope {
+    /// Production source in an ordinary crate.
+    Production,
+    /// Source in a test-named crate without an explicit test boundary.
+    Dedicated,
+    /// A test layout or a file gated on the test configuration.
+    Test,
+}
+
+impl Scope {
+    /// Classify layouts and file gates before the dedicated-crate fallback.
+    pub(super) fn new(member: &Member, source: &Source, gated: bool) -> Self {
+        if test_layout(&source.path, &member.directory) || gated {
+            Self::Test
+        } else if test_file(member, &source.path) {
+            Self::Dedicated
+        } else {
+            Self::Production
+        }
+    }
+}
+
 /// Parse one source's syntax for the shared walk, counting the passes under test.
 fn parse(contents: &str) -> Option<syn::File> {
     #[cfg(test)]

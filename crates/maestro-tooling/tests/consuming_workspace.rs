@@ -324,7 +324,7 @@ fn executable_setup_refuses_a_bundle_from_another_pinned_source() {
 
 /// Run `git` in `root` and require it to succeed.
 fn git(root: &Path, args: &[&str]) {
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .current_dir(root)
         .args(args)
         .output()

@@ -79,7 +79,7 @@ fn launch_failure_retains_process_source() {
 
 /// Runs one Git command that must succeed.
 fn git(cwd: &Path, args: &[&str]) {
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .arg("-C")
         .arg(cwd)
         .args(args)

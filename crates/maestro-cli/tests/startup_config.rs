@@ -114,44 +114,50 @@ fn config_command_ignores_other_verbs_before_observations() {
 
 #[test]
 fn config_command_preserves_resolution_presentation_and_exit_order() {
-    let harness = Harness::new(None, None);
-    let configured = harness.scratch.path().join("configured");
-    std::fs::create_dir_all(&configured).unwrap();
-    std::fs::write(configured.join("SKILL.md"), "# Configured\n").unwrap();
-    harness.write_settings(
-        Some(json!({ "skills": [configured.to_string_lossy()] })),
-        None,
-    );
-    let recording = Recording::new(&harness);
-    let writer = Presenters::new();
-    let scratch = Scratch::new().unwrap();
-    let presentation = recording.presentation(theme(scratch.path()), &writer);
-    assert!(harness.run_config(&["config", "later", "tokens"], presentation));
-    assert_eq!(
-        steps(&harness),
-        ["cwd", "agent", "settings", "manager", "present", "exit"]
-    );
-    assert_eq!(
-        harness.exit_code.get(),
-        None,
-        "the presentation exits instead"
-    );
-    assert!(harness.stdout.text().is_empty());
-    assert!(harness.stderr.text().is_empty());
+    maestro_test_process::with_isolated_home(
+        "config_command_preserves_resolution_presentation_and_exit_order",
+        |_| {
+            let harness = Harness::new(None, None);
+            let configured = harness.scratch.path().join("configured");
+            std::fs::create_dir_all(&configured).unwrap();
+            std::fs::write(configured.join("SKILL.md"), "# Configured\n").unwrap();
+            harness.write_settings(
+                Some(json!({ "skills": [configured.to_string_lossy()] })),
+                None,
+            );
+            let recording = Recording::new(&harness);
+            let writer = Presenters::new();
+            let scratch = Scratch::new().unwrap();
+            let presentation = recording.presentation(theme(scratch.path()), &writer);
+            assert!(harness.run_config(&["config", "later", "tokens"], presentation));
+            assert_eq!(
+                steps(&harness),
+                ["cwd", "agent", "settings", "manager", "present", "exit"]
+            );
+            assert_eq!(
+                harness.exit_code.get(),
+                None,
+                "the presentation exits instead"
+            );
+            assert!(harness.stdout.text().is_empty());
+            assert!(harness.stderr.text().is_empty());
 
-    let options = recording.options();
-    assert_eq!(options.cwd, harness.cwd);
-    assert_eq!(options.agent_dir, harness.agent_dir);
-    assert!(
-        Rc::ptr_eq(&options.settings_manager, &harness.supplied()),
-        "the presenter keeps the loaded settings owner"
-    );
-    assert_eq!(options.resolved_paths.skills.len(), 1);
-    assert_eq!(
-        options.resolved_paths.skills[0].path,
-        format!("{}/SKILL.md", configured.to_string_lossy())
-    );
-    assert_eq!(recording.exits.borrow().as_slice(), [0]);
+            let options = recording.options();
+            assert_eq!(options.cwd, harness.cwd);
+            assert_eq!(options.agent_dir, harness.agent_dir);
+            assert!(
+                Rc::ptr_eq(&options.settings_manager, &harness.supplied()),
+                "the presenter keeps the loaded settings owner"
+            );
+            assert_eq!(options.resolved_paths.skills.len(), 1);
+            assert_eq!(
+                options.resolved_paths.skills[0].path,
+                format!("{}/SKILL.md", configured.to_string_lossy())
+            );
+            assert_eq!(recording.exits.borrow().as_slice(), [0]);
+        },
+    )
+    .unwrap();
 }
 
 #[test]

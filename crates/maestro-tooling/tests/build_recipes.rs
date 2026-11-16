@@ -1641,7 +1641,7 @@ fn hooks(workspace: &Workspace) {
     )
     .unwrap();
     assert!(
-        Command::new("git")
+        maestro_test_process::git_command::command()
             .current_dir(workspace.path())
             .args(["init", "--quiet"])
             .status()

@@ -180,18 +180,8 @@ pub mod policy;
 /// A test hook exports `GIT_DIR` and `GIT_INDEX_FILE`, so a fixture must clear them or
 /// its commands reach the repository that runs the suite.
 pub fn git(root: &Path) -> Command {
-    let mut command = Command::new("git");
-    command.current_dir(root);
-    for (name, _) in std::env::vars_os() {
-        if name.to_string_lossy().starts_with("GIT_") {
-            command.env_remove(name);
-        }
-    }
-    command
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .env("LC_ALL", "C")
-        .args(["-c", "core.excludesFile=/dev/null"]);
+    let mut command = maestro_test_process::git_command::command();
+    command.current_dir(root).env("LC_ALL", "C");
     command
 }
 

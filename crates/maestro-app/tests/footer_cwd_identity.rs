@@ -45,7 +45,7 @@ fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     let original_cwd = std::env::current_dir().unwrap();
     for (root, branch) in [(&first, "original"), (&second, "decoy")] {
         assert!(
-            std::process::Command::new("git")
+            maestro_test_process::git_command::command()
                 .args(["init", "--quiet", "--initial-branch", branch])
                 .arg(root)
                 .status()

@@ -38,6 +38,8 @@ mod trash;
 enum Request {
     /// Copy this artifact to a caller-owned path.
     Install(PathBuf),
+    /// Write the isolated Git policy and report its setup environment.
+    GitEnvironment(PathBuf),
     /// Report the native launch and exchange raw streams.
     Observe(observe::Record, Vec<OsString>),
     /// Stand in for a controlled native program.
@@ -113,6 +115,9 @@ impl Request {
             [operation, destination] if operation == "--maestro-install" => {
                 Ok(Self::Install(destination.into()))
             }
+            [operation, configuration] if operation == "--maestro-git-environment" => {
+                Ok(Self::GitEnvironment(configuration.into()))
+            }
             [operation, record, operands @ ..] if operation == "--maestro-observe" => {
                 Self::record(Path::new(record), operands.to_vec())
             }
@@ -182,6 +187,12 @@ impl Request {
 pub(super) fn run() -> io::Result<()> {
     match Request::read(std::env::args_os().skip(1).collect())? {
         Request::Install(destination) => install(&destination),
+        Request::GitEnvironment(configuration) => {
+            let environment = maestro_test_process::git_command::environment(&configuration)?;
+            maestro_test_process::child::write_stdout(
+                &serde_json::to_vec(&environment).map_err(io::Error::other)?,
+            )
+        }
         Request::Observe(record, operands) => observe::run(&record, &operands),
         Request::Command(record, operands) => command::run(&record, &operands),
         #[cfg(unix)]

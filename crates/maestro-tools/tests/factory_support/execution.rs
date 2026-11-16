@@ -482,7 +482,7 @@ fn ignored_search() {
         let root = grep_support::tree();
         if repository {
             assert!(
-                std::process::Command::new("git")
+                maestro_test_process::git_command::command()
                     .args(["init", "-q"])
                     .current_dir(root.path())
                     .status()

@@ -3233,7 +3233,7 @@ fn argument_spelling(expression: &syn::Expr) -> Option<String> {
 /// Every tracked file is enumerated and the Rust sources are read, since only a parsed function
 /// body can delegate.
 fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
-    let listed = std::process::Command::new("git")
+    let listed = maestro_test_process::git_command::command()
         .args(["ls-files", "-z"])
         .current_dir(root)
         .output()

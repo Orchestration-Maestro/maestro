@@ -21,7 +21,7 @@ fn repository(scratch: &Scratch) -> PathBuf {
 
 /// The trimmed standard output of one successful Git command.
 fn git_stdout(cwd: &Path, args: &[&str]) -> String {
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .arg("-C")
         .arg(cwd)
         .args(args)

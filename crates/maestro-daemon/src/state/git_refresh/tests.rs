@@ -97,7 +97,7 @@ fn refresh(
 
 /// Run `git` in `directory`, which must succeed.
 fn git(directory: &Path, args: &[&str]) {
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .arg("-C")
         .arg(directory)
         .args(args)

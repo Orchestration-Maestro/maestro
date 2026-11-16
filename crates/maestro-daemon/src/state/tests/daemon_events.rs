@@ -128,7 +128,7 @@ fn context_directories() -> maestro_test_directory::Scratch {
         let path = root.path().join(name);
         std::fs::create_dir_all(&path).unwrap();
         assert!(
-            std::process::Command::new("git")
+            maestro_test_process::git_command::command()
                 .args(["init", "--quiet"])
                 .arg(path)
                 .status()

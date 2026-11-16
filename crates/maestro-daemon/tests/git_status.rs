@@ -409,7 +409,7 @@ fn linked_checkout_label_names_the_checkout() {
 fn reftable_head_identity_is_read_through_git() {
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
-    let reftable = std::process::Command::new("git")
+    let reftable = maestro_test_process::git_command::command()
         .args(["init", "--ref-format=reftable", "-b", "main"])
         .arg(&root)
         .output()

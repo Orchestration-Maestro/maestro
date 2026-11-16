@@ -12,6 +12,8 @@ mod consuming_workspace;
 mod date_time_data;
 mod examples_fetch;
 mod fixture_sources_setup;
+/// Git policy exported by native fixture setup.
+mod git_isolation;
 mod native_setup;
 mod nextest_priorities;
 mod nextest_wrapper;

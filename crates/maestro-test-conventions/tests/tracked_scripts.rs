@@ -3,11 +3,10 @@
 use crate::support::Workspace;
 use maestro_test_conventions::check_workspace;
 use std::path::Path;
-use std::process::Command;
 
 /// Run `git` in the fixture root and require success.
 fn git(root: &Path, args: &[&str]) {
-    let status = Command::new("git")
+    let status = maestro_test_process::git_command::command()
         .args(args)
         .current_dir(root)
         .status()
