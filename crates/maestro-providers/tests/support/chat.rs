@@ -2,10 +2,17 @@
 pub use crate::descriptors::{TestResult, model, overlay};
 use maestro_models::Context;
 use serde_json::{Value, json};
-/// Rows of a fixture file owned by one test.
+/// Returns fixture rows assigned to `test`, preserving their order.
+///
+/// # Errors
+/// Returns an error if the fixture cannot be decoded or no row matches `test`.
 pub fn rows(fixture: &str, test: &str) -> TestResult<Vec<Value>> {
     let all: Vec<Value> = serde_json::from_str(fixture)?;
-    Ok(all.into_iter().filter(|row| row["test"] == test).collect())
+    let selected: Vec<_> = all.into_iter().filter(|row| row["test"] == test).collect();
+    if selected.is_empty() {
+        return Err(format!("no fixture rows for {test:?}").into());
+    }
+    Ok(selected)
 }
 
 /// Fill the defaults fixtures omit from messages, then decode the context.
@@ -35,4 +42,22 @@ pub fn context(compact: &Value) -> TestResult<Context> {
         }
     }
     Ok(serde_json::from_value(value)?)
+}
+
+#[cfg(test)]
+mod tests {
+    //! Fixture selection rejects keys that would leave HTTP checks unexercised.
+    use super::*;
+
+    #[test]
+    fn fixture_rows_reject_unknown_keys() {
+        let fixture = include_str!("../fixtures/chat_completions/http.json");
+        for key in [
+            "http_joins_endpoint_urls_missing",
+            "http_preserves_setup_timeout_missing",
+        ] {
+            let error = rows(fixture, key).expect_err("an unknown key must not skip assertions");
+            assert!(error.to_string().contains(key), "{error}");
+        }
+    }
 }
