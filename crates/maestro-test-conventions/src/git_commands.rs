@@ -3,15 +3,28 @@
 use crate::source::Member;
 use proc_macro2::{TokenStream, TokenTree};
 
+/// What a test constructor must use instead of the Git executable.
+const OWNER: &str = "maestro_test_process::git_command::command";
+
 /// Reject test constructors that bypass the isolated Git command owner.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
-    let mut diagnostics: Vec<_> = members.iter().flat_map(|member| {
-        member.sources.iter().flat_map(|source| {
-            source.walk.iter().flat_map(|walk| &walk.git_commands).map(|line| {
-                format!("{}:{line}: test Git commands belong to maestro_test_process::git_command::command", source.path.display())
+    let mut diagnostics: Vec<_> = members
+        .iter()
+        .flat_map(|member| {
+            member.sources.iter().flat_map(|source| {
+                source
+                    .walk
+                    .iter()
+                    .flat_map(|walk| &walk.git_commands)
+                    .map(|line| {
+                        format!(
+                            "{}:{line}: test Git commands belong to {OWNER}",
+                            source.path.display()
+                        )
+                    })
             })
         })
-    }).collect();
+        .collect();
     diagnostics.sort();
     diagnostics.dedup();
     if diagnostics.is_empty() {

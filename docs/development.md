@@ -984,10 +984,12 @@ arguments. It does not expand macros or inspect programs stored in strings.
 Tests that discover default resources run inside
 `maestro_test_process::with_isolated_home(test_name, |base| { ... })`. Its child
 uses a disposable home under `base`, not the developer's installed skills or
-settings. Keep the existing resource assertions inside that closure. Tests that
-hide a program from `PATH` must keep the other programs and their interpreters
-reachable. Preview tests prepend rejecting author-tool stubs to the normal path;
-they also record those calls so an ignored tool failure cannot pass the test.
+settings. Keep the existing resource assertions inside that closure. A
+`maestro-packages` case that already runs through `case_in_child` gets a private
+home below its tree, so it needs no second wrapper. Tests that hide a program
+from `PATH` must keep the other programs and their interpreters reachable.
+Preview tests prepend rejecting author-tool stubs to the normal path; they also
+record those calls so an ignored tool failure cannot pass the test.
 
 An empty runner home cannot expose a missing home-isolation fixture. The planned
 [hostile-runner CI check](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/502)

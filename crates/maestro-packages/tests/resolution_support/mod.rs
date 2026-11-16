@@ -51,8 +51,9 @@ const TREE: &str = "MAESTRO_TEST_TREE";
 
 /// Runs `case` of the calling test in a child process over a fresh tree this process owns.
 /// The child starts online, without an inherited `MAESTRO_OFFLINE`, with a home below
-/// the tree. Its temporary directory is `temp` in the tree. `environment` gives the child's other variables for that
-/// tree: a value sets one, `None` removes it. Returns the tree in the child selected for
+/// the tree. Its temporary directory is `temp` in the tree. `environment` gives the
+/// child's other variables for that tree: a value sets one, `None` removes it. Returns
+/// the tree in the child selected for
 /// `case`; `None` in the caller once the child passed, and in a child selected for another
 /// case.
 pub fn case_in_child(

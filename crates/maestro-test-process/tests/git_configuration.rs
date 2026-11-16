@@ -33,8 +33,10 @@ fn git_commands_ignore_user_configuration_and_signing() {
         ],
         |base| {
             let root = Path::new(base);
+            let inherited = "[fixture]\n inherited = true\n[tag]\n gpgsign = true\n\
+                             [commit]\n gpgsign = true\n";
             for file in ["global", "system"] {
-                std::fs::write(root.join(file), "[fixture]\n inherited = true\n[tag]\n gpgsign = true\n[commit]\n gpgsign = true\n").unwrap();
+                std::fs::write(root.join(file), inherited).unwrap();
             }
             std::fs::create_dir(root.join("home")).unwrap();
             std::fs::write(root.join("home/.gitconfig"), "[fixture]\n home = true\n").unwrap();
@@ -42,11 +44,18 @@ fn git_commands_ignore_user_configuration_and_signing() {
             let config = git(root, &["config", "--list", "--show-origin"]);
             assert!(!config.contains("fixture."), "{config}");
             git(root, &["init", "-q"]);
-            git(root, &["commit", "--quiet", "--allow-empty", "-m", "fixture"]);
+            git(
+                root,
+                &["commit", "--quiet", "--allow-empty", "-m", "fixture"],
+            );
             git(root, &["tag", "v1"]);
 
-            assert_eq!(git(root, &["log", "-1", "--format=%an <%ae>"]), "Fixture <fixture@example.invalid>");
+            assert_eq!(
+                git(root, &["log", "-1", "--format=%an <%ae>"]),
+                "Fixture <fixture@example.invalid>"
+            );
             assert_eq!(git(root, &["cat-file", "-t", "v1"]), "commit");
         },
-    ).unwrap();
+    )
+    .unwrap();
 }
