@@ -148,7 +148,7 @@ async fn queries(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_session_reader_forwards_every_query() -> Result<(), String> {
+fn session_reader_forwards_every_query() -> Result<(), String> {
     on_both_adapters!(queries)
 }
 
@@ -215,7 +215,7 @@ async fn record_node(driver: &mut impl Driver, entry: &Value) -> Result<(), Stri
     .await
 }
 #[test]
-fn maestro_reader_records_keep_declared_fields() -> Result<(), String> {
+fn reader_records_keep_declared_fields() -> Result<(), String> {
     on_both_adapters!(records)
 }
 
@@ -304,7 +304,7 @@ async fn saved_node_reads(driver: &mut impl Driver, expected_node: &Value) -> Re
     Ok(())
 }
 #[test]
-fn maestro_reader_tree_keeps_order_and_independent_lifetimes() -> Result<(), String> {
+fn reader_tree_keeps_order_and_independent_lifetimes() -> Result<(), String> {
     on_both_adapters!(trees)
 }
 
@@ -364,7 +364,7 @@ async fn acquisitions(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_reader_getters_resolve_at_call_time() -> Result<(), String> {
+fn reader_getters_resolve_at_call_time() -> Result<(), String> {
     on_both_adapters!(acquisitions)
 }
 
@@ -502,7 +502,7 @@ async fn release_reader_aliases(
     Ok(())
 }
 #[test]
-fn maestro_retained_reader_survives_stale_context() -> Result<(), String> {
+fn retained_reader_survives_stale_context() -> Result<(), String> {
     on_both_adapters!(retained)
 }
 
@@ -612,7 +612,7 @@ async fn malformed_entries(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_reader_errors_are_catchable_without_partial_success() -> Result<(), String> {
+fn reader_errors_are_catchable_without_partial_success() -> Result<(), String> {
     on_both_adapters!(errors)
 }
 
@@ -709,6 +709,6 @@ async fn header_failures(driver: &mut impl Driver, base: &Value) -> Result<(), S
     Ok(())
 }
 #[test]
-fn maestro_reader_header_preserves_presence_and_native_errors() -> Result<(), String> {
+fn reader_header_preserves_presence_and_native_errors() -> Result<(), String> {
     on_both_adapters!(headers)
 }

@@ -133,7 +133,7 @@ commands from the checkout using the pinned toolchain and checked-in lock:
 just prepare-tests
 cargo nextest run --locked -p maestro-app --test integration -E 'test(/^footer_metadata::/)' --no-fail-fast
 cargo nextest run --locked -p maestro-extensions-guest --no-fail-fast
-cargo nextest run --locked -p maestro-extensions-guest --release -E 'test(/^tests::maestro_component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
+cargo nextest run --locked -p maestro-extensions-guest --release -E 'test(/^tests::component_contract_keeps_sync_and_async_calls$/)' --no-fail-fast
 ```
 
 ## Platform test qualification

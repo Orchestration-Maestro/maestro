@@ -15,7 +15,7 @@ async fn forwarding(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_registration_forwards_each_owned_callback() -> Result<(), String> {
+fn registration_forwards_each_owned_callback() -> Result<(), String> {
     on_both_adapters!(forwarding)
 }
 
@@ -69,7 +69,7 @@ async fn flags(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_flag_values_preserve_absence_false_and_empty() -> Result<(), String> {
+fn flag_values_preserve_absence_false_and_empty() -> Result<(), String> {
     on_both_adapters!(flags)
 }
 
@@ -124,7 +124,7 @@ async fn completions(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_completion_results_keep_prefixes_fields_and_order() -> Result<(), String> {
+fn completion_results_keep_prefixes_fields_and_order() -> Result<(), String> {
     on_both_adapters!(completions)
 }
 
@@ -156,7 +156,7 @@ async fn ownership(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_registration_rejection_and_release_keep_callback_ownership() -> Result<(), String> {
+fn registration_rejection_and_release_keep_callback_ownership() -> Result<(), String> {
     on_both_adapters!(ownership)
 }
 
@@ -218,7 +218,7 @@ async fn errors(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_registration_errors_are_catchable_without_poisoning_callbacks() -> Result<(), String> {
+fn registration_errors_are_catchable_without_poisoning_callbacks() -> Result<(), String> {
     on_both_adapters!(errors)
 }
 
@@ -293,7 +293,7 @@ async fn context_aliases(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_pending_callbacks_keep_contexts_and_captured_values() -> Result<(), String> {
+fn pending_callbacks_keep_contexts_and_captured_values() -> Result<(), String> {
     on_both_adapters!(pending)
 }
 

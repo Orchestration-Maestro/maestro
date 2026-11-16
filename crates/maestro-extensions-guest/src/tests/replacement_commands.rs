@@ -225,7 +225,7 @@ async fn oracle_commands(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_command_options_and_errors_reach_the_bound_host() -> Result<(), String> {
+fn command_options_and_errors_reach_the_bound_host() -> Result<(), String> {
     on_both_adapters!(forwarding)
 }
 /// Compare payloads, delivery choices and same-resource state through the public reader.
@@ -350,7 +350,7 @@ async fn after_effect(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_replacement_sends_await_the_bound_target() -> Result<(), String> {
+fn replacement_sends_await_the_bound_target() -> Result<(), String> {
     on_both_adapters!(sends)
 }
 /// Distinct closures are delivered to the host-selected target; failures never re-invoke them.
@@ -386,7 +386,7 @@ async fn continuations(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_replacement_continuations_keep_their_target_and_closure() -> Result<(), String> {
+fn replacement_continuations_keep_their_target_and_closure() -> Result<(), String> {
     on_both_adapters!(continuations)
 }
 /// Tool and shortcut callback declarations require ordinary contexts and use their supplied readers.
@@ -427,7 +427,7 @@ async fn ordinary(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_command_capabilities_are_not_available_to_tools() -> Result<(), String> {
+fn command_capabilities_are_not_available_to_tools() -> Result<(), String> {
     on_both_adapters!(ordinary)
 }
 /// Distinct source operations with distinct closure values and setup state.

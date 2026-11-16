@@ -225,20 +225,20 @@ async fn number_or_string(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_model_compat_keeps_each_declared_option() -> Result<(), String> {
+fn model_compat_keeps_each_declared_option() -> Result<(), String> {
     on_both_adapters!(compatibility)
 }
 #[test]
-fn maestro_routing_unions_keep_shape_and_presence() -> Result<(), String> {
+fn routing_unions_keep_shape_and_presence() -> Result<(), String> {
     on_both_adapters!(routing)
 }
 #[test]
-fn maestro_number_or_string_fields_keep_ambiguous_text() -> Result<(), String> {
+fn number_or_string_fields_keep_ambiguous_text() -> Result<(), String> {
     on_both_adapters!(number_or_string)
 }
 
 #[test]
-fn maestro_selection_events_keep_model_and_thinking_metadata() -> Result<(), String> {
+fn selection_events_keep_model_and_thinking_metadata() -> Result<(), String> {
     on_both_adapters!(selections)
 }
 
@@ -265,8 +265,7 @@ async fn custom_protocol_compatibility(driver: &mut impl Driver) -> Result<(), S
 }
 
 #[test]
-fn maestro_custom_protocol_selection_retains_selected_and_previous_compatibility()
--> Result<(), String> {
+fn custom_protocol_selection_retains_selected_and_previous_compatibility() -> Result<(), String> {
     on_both_adapters!(custom_protocol_compatibility)
 }
 
@@ -361,14 +360,14 @@ async fn compatibility_bits(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_selection_retains_mixed_and_open_compatibility() -> Result<(), String> {
+fn selection_retains_mixed_and_open_compatibility() -> Result<(), String> {
     on_both_adapters!(mixed_compatibility)
 }
 #[test]
-fn maestro_selection_compatibility_edits_return_on_both_adapters() -> Result<(), String> {
+fn selection_compatibility_edits_return_on_both_adapters() -> Result<(), String> {
     on_both_adapters!(edit_compatibility)
 }
 #[test]
-fn maestro_selection_retains_compatibility_number_bits() -> Result<(), String> {
+fn selection_retains_compatibility_number_bits() -> Result<(), String> {
     on_both_adapters!(compatibility_bits)
 }

@@ -136,7 +136,7 @@ async fn signed_zero(driver: &mut impl Driver, signed: SignedZero) -> ExtensionR
     Ok(())
 }
 #[test]
-fn maestro_bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
+fn bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
     let component = super::path_of_component()?;
     let mut driver = super::ComponentDriver::new(component);
     super::block_on(async {
@@ -145,7 +145,7 @@ fn maestro_bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
     })
 }
 #[test]
-fn maestro_controlled_bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
+fn controlled_bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
     let mut driver = super::ControlledDriver::new();
     super::block_on(async {
         driver.start().await?;
@@ -154,7 +154,7 @@ fn maestro_controlled_bus_channels_and_payloads_remain_literal() -> ExtensionRes
 }
 
 #[test]
-fn maestro_bus_teardown_releases_announced_tails_once() -> ExtensionResult<()> {
+fn bus_teardown_releases_announced_tails_once() -> ExtensionResult<()> {
     let host = Controlled::default();
     let bus = events(host.clone());
     bus.on("tail", Rc::new(|_, _| Ok(Some(Box::pin(async { Ok(()) })))))?;
@@ -170,7 +170,7 @@ fn maestro_bus_teardown_releases_announced_tails_once() -> ExtensionResult<()> {
 }
 
 #[test]
-fn maestro_bus_keeps_prefix_tail_and_unsubscribe_ownership() -> ExtensionResult<()> {
+fn bus_keeps_prefix_tail_and_unsubscribe_ownership() -> ExtensionResult<()> {
     let host = Controlled::default();
     let bus = events(host.clone());
     let calls = Rc::new(RefCell::new(Vec::new()));
@@ -332,7 +332,7 @@ async fn preparation_failures(driver: &mut impl Driver, mut config: Value) -> Ex
     Ok(())
 }
 #[test]
-fn maestro_prepare_arguments_can_emit_before_return() -> ExtensionResult<()> {
+fn prepare_arguments_can_emit_before_return() -> ExtensionResult<()> {
     on_both_adapters!(preparation_emission)
 }
 
@@ -360,7 +360,7 @@ impl Drop for Reenter {
     }
 }
 #[test]
-fn maestro_bus_callbacks_release_on_errors_and_reentry() -> ExtensionResult<()> {
+fn bus_callbacks_release_on_errors_and_reentry() -> ExtensionResult<()> {
     let host = Controlled::default();
     let bus = events(host.clone());
     host.observe().bus.registration_error = Some("registration denied Ω".into());
@@ -445,7 +445,7 @@ fn tail_capture_release(host: &Controlled, bus: &crate::EventBus) -> ExtensionRe
 }
 
 #[test]
-fn maestro_bus_errors_leave_later_calls_usable() -> ExtensionResult<()> {
+fn bus_errors_leave_later_calls_usable() -> ExtensionResult<()> {
     let emitter = Emitter { key: 0 };
     let host = Controlled::default();
     let bus = events(host.clone());
@@ -524,7 +524,7 @@ fn emission_failures(host: &Controlled, bus: &crate::EventBus, subscription: &cr
 }
 
 #[test]
-fn maestro_component_bus_uses_borrowed_emitters_and_native_async_tails() -> ExtensionResult<()> {
+fn component_bus_uses_borrowed_emitters_and_native_async_tails() -> ExtensionResult<()> {
     super::block_on(async {
         let path = super::build::author_component()?;
         let mut harness = super::host::Harness::start(path)
@@ -644,7 +644,7 @@ pub(super) fn captured_api(host: &Controlled) -> ExtensionResult<crate::Extensio
     Ok(CAPTURED_API.with(RefCell::take).expect("captured API"))
 }
 #[test]
-fn maestro_bus_facades_retain_the_same_host_resources() -> ExtensionResult<()> {
+fn bus_facades_retain_the_same_host_resources() -> ExtensionResult<()> {
     let host = Controlled::default();
     let api = captured_api(&host)?;
     let alias = api.clone();
@@ -701,7 +701,7 @@ fn maestro_bus_facades_retain_the_same_host_resources() -> ExtensionResult<()> {
 }
 
 #[test]
-fn maestro_listener_tail_keeps_its_origin_and_can_resume_its_emitter() -> ExtensionResult<()> {
+fn listener_tail_keeps_its_origin_and_can_resume_its_emitter() -> ExtensionResult<()> {
     super::block_on(async {
         let host = Controlled::default();
         let bus = events(host.clone());

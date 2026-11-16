@@ -47,7 +47,7 @@ async fn preparations(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_compaction_preparation_keeps_messages_settings_and_files() -> Result<(), String> {
+fn compaction_preparation_keeps_messages_settings_and_files() -> Result<(), String> {
     on_both_adapters!(preparations)
 }
 
@@ -67,7 +67,7 @@ async fn entries(driver: &mut impl Driver) -> Result<(), String> {
     .await
 }
 #[test]
-fn maestro_session_entries_keep_every_variant() -> Result<(), String> {
+fn session_entries_keep_every_variant() -> Result<(), String> {
     on_both_adapters!(entries)
 }
 
@@ -115,7 +115,7 @@ async fn file_operations(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_file_operations_keep_set_membership_and_insertion_order() -> Result<(), String> {
+fn file_operations_keep_set_membership_and_insertion_order() -> Result<(), String> {
     on_both_adapters!(file_operations)
 }
 
@@ -132,7 +132,7 @@ async fn optionals(driver: &mut impl Driver) -> Result<(), String> {
     .await
 }
 #[test]
-fn maestro_session_optional_fields_keep_missing_null_and_values() -> Result<(), String> {
+fn session_optional_fields_keep_missing_null_and_values() -> Result<(), String> {
     on_both_adapters!(optionals)
 }
 
@@ -193,7 +193,7 @@ async fn ingress(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_session_ingress_uses_selected_record_decoders() -> Result<(), String> {
+fn session_ingress_uses_selected_record_decoders() -> Result<(), String> {
     on_both_adapters!(ingress)
 }
 
@@ -268,7 +268,7 @@ async fn shared_record_order(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_shared_records_reencode_in_session_file_member_order() -> Result<(), String> {
+fn shared_records_reencode_in_session_file_member_order() -> Result<(), String> {
     on_both_adapters!(shared_record_order)
 }
 
@@ -349,7 +349,7 @@ async fn opaque_entry_payloads(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_session_entry_payloads_roundtrip_arbitrary_json() -> Result<(), String> {
+fn session_entry_payloads_roundtrip_arbitrary_json() -> Result<(), String> {
     on_both_adapters!(opaque_entry_payloads)
 }
 
