@@ -4,7 +4,7 @@
 //! helper that handles the signal still receives it.
 #![cfg(target_os = "linux")]
 use super::{World, install, isolated, isolated_output, started};
-use maestro_test_harness::IsolatedSetup;
+use maestro_test_process::IsolatedSetup;
 use maestro_tui::{Component, InputHandler};
 use serde_json::json;
 use std::{

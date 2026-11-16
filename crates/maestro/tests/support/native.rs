@@ -8,7 +8,7 @@ pub fn install(directory: &Path, name: &str, family: &str, record: &serde_json::
         .expect("run just prepare-tests, then run these tests with cargo nextest");
     std::fs::create_dir_all(directory).expect("the fixture directory is creatable");
     let path = directory.join(name);
-    maestro_test_harness::install_executable(&artifact, &path).expect("install starts");
+    maestro_test_process::install_executable(&artifact, &path).expect("install starts");
     select(&path, family, record);
     path
 }

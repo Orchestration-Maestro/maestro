@@ -58,7 +58,7 @@ fn child_root() -> std::path::PathBuf {
 #[test]
 fn binary_directory_entry_wins_before_any_probe() {
     run(async {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             for mode in ["entries", "dangling"] {
                 let scripts = Scratch::new().unwrap();
                 probe_aliases(scripts.path(), mode);
@@ -77,7 +77,7 @@ fn binary_directory_entry_wins_before_any_probe() {
         let manager = ToolsManager::new(format!("{}/./", bin.text()), Some(counting_fetch(&calls)));
         let candidate = bin.path().join("fd");
         let mut output = Vec::new();
-        if maestro_test_harness::selection().runs_case("dangling") {
+        if maestro_test_process::selection().runs_case("dangling") {
             std::os::unix::fs::symlink("absent", &candidate).unwrap();
             assert_eq!(manager.get_tool_path(SearchTool::Fd).await, None);
             assert_eq!(
@@ -161,7 +161,7 @@ const PROBE_MODES: &[&str] = &[
 #[test]
 fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
     run(async {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             for &mode in PROBE_MODES {
                 let scripts = Scratch::new().unwrap();
                 probe_aliases(scripts.path(), mode);
@@ -177,7 +177,7 @@ fn path_probes_try_aliases_in_order_whatever_the_exit_status() {
         let mode = PROBE_MODES
             .iter()
             .copied()
-            .find(|mode| maestro_test_harness::selection().runs_case(mode))
+            .find(|mode| maestro_test_process::selection().runs_case(mode))
             .expect("selected probe mode");
         check_path_probes(mode).await;
     });
@@ -231,7 +231,7 @@ async fn check_path_probes(mode: &str) {
 #[test]
 fn offline_flag_stops_a_missing_install_with_advice() {
     run(async {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             let scripts = Scratch::new().unwrap();
             assert!(!child(
                 "offline_flag_stops_a_missing_install_with_advice",
@@ -254,7 +254,7 @@ fn offline_flag_stops_a_missing_install_with_advice() {
             bin.to_str().unwrap().to_owned(),
             Some(counting_fetch(&calls)),
         );
-        let color = maestro_test_harness::selection().runs_case("styled");
+        let color = maestro_test_process::selection().runs_case("styled");
         for (tool, name) in [(SearchTool::Fd, "fd"), (SearchTool::Rg, "ripgrep")] {
             let mut output = Vec::new();
             assert_eq!(
@@ -306,7 +306,7 @@ fn probe_aliases(root: &Path, mode: &str) {
 #[test]
 fn dropping_discovery_kills_the_running_probe() {
     run(async {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             let scripts = Scratch::new().unwrap();
             crate::find_support::alias(
                 scripts.path(),

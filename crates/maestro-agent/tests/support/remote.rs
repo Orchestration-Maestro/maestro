@@ -83,7 +83,7 @@ impl Seen {
     /// Value of a header.
     #[must_use]
     pub fn header(&self, name: &str) -> Option<&str> {
-        maestro_test_harness::loopback::header(&self.headers, name)
+        maestro_test_process::loopback::header(&self.headers, name)
     }
 }
 /// Requests recorded by a controlled transport.

@@ -32,7 +32,7 @@ embedding crate is `maestro-app` (imported as `maestro_app`); this guide does no
 assume a published package. In another Cargo workspace, point the `maestro-app` dependency at
 `crates/maestro-app` in your checkout. Use the checkout's Tokio version with `rt`, `time` and `sync`
 for the executor and completion signal used below. This controlled check also
-uses `maestro-models` for its scripted provider and `maestro-test-harness` for
+uses `maestro-models` for its scripted provider and `maestro-test-directory` for
 disposable storage; they are checkout crates, not prerequisites for a live host.
 The application's manifest already declares these dependencies for its doctests.
 
@@ -75,7 +75,7 @@ impl ConfigValueOperations for NoCommands {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = maestro_test_harness::Scratch::new()?;
+    let root = maestro_test_directory::Scratch::new()?;
     let cwd = root.path().join("project");
     let agent_dir = root.path().join("agent");
     std::fs::create_dir_all(&cwd)?;

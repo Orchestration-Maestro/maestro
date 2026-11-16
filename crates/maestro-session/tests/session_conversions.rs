@@ -55,10 +55,10 @@ fn repeated_conversion_is_inert_after_current_version() {
 #[cfg(all(not(windows), not(target_arch = "wasm32")))]
 #[test]
 fn converted_context_uses_existing_local_timestamp_policy() {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let zone = ["UTC", "America/New_York"]
             .into_iter()
-            .find(|zone| maestro_test_harness::selection().runs_case(zone))
+            .find(|zone| maestro_test_process::selection().runs_case(zone))
             .expect("selected timezone");
         let local = if zone == "America/New_York" {
             1_735_711_200_000_i64
@@ -71,11 +71,11 @@ fn converted_context_uses_existing_local_timestamp_policy() {
         check_converted_timestamps(local);
         return;
     }
-    if !maestro_test_harness::local_zone_follows_tz() {
+    if !maestro_test_process::local_zone_follows_tz() {
         return;
     }
     for zone in ["UTC", "America/New_York"] {
-        let output = maestro_test_harness::TestProcess::current(
+        let output = maestro_test_process::TestProcess::current(
             "converted_context_uses_existing_local_timestamp_policy",
         )
         .unwrap()

@@ -161,7 +161,7 @@ fn check_row(row: &Row, data: &str, candidates: &[&str], active: bool) {
 /// Runs `scenario` in a child process of this executable whose terminal variables are
 /// exactly `variables`, and asserts that the child passes.
 fn run_probe(scenario: &str, variables: &[(&str, &str)]) -> io::Result<()> {
-    let mut child = maestro_test_harness::TestProcess::named("key_decoding::environment_probe")
+    let mut child = maestro_test_process::TestProcess::named("key_decoding::environment_probe")
         .map_err(io::Error::other)?
         .single_threaded();
     for name in TERMINAL_VARIABLES {

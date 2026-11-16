@@ -1,7 +1,7 @@
 //! The `examples` development command fetches the package repository's example tree.
 #![cfg(test)]
 
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::{
     collections::BTreeMap,
     ffi::OsString,

@@ -6,7 +6,7 @@ use maestro_app::output_guard::{
     flush_raw_stdout, is_stdout_taken_over, restore_stdout, take_over_stdout, write_raw_stdout,
     write_stdout,
 };
-use maestro_test_harness::{CheckedChild, TestProcess, run_alone};
+use maestro_test_process::{CheckedChild, TestProcess, run_alone};
 use serde::Deserialize;
 use std::{
     io::{self, BufRead, BufReader, Read, Write},
@@ -48,10 +48,10 @@ fn product(bytes: &[u8]) -> &[u8] {
 #[test]
 fn takeover_routes_diagnostics_without_polluting_raw_stdout() {
     let cases = fixtures::cases::<Text, Routed>("route-");
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let case = cases
             .iter()
-            .find(|c| maestro_test_harness::selection().runs_case(&c.id))
+            .find(|c| maestro_test_process::selection().runs_case(&c.id))
             .unwrap();
         let mut states = vec![is_stdout_taken_over()];
         restore_stdout();
@@ -173,7 +173,7 @@ fn pipe_case(name: &str, case: PipeCase) {
         case.taken,
         case.failed
     );
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         pipe_probe(case);
     }
     let mut process = child(name, &mode).spawn().unwrap();
@@ -230,10 +230,10 @@ fn raw_stdout_reports_flush_failure() {
 /// Runs each recorded flush combination with the given failure state once, in both ownership
 /// states.
 fn flush_cases(name: &str, failed: bool) {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let taken = [false, true]
             .into_iter()
-            .find(|taken| maestro_test_harness::selection().runs_case(&format!("{taken}:{failed}")))
+            .find(|taken| maestro_test_process::selection().runs_case(&format!("{taken}:{failed}")))
             .expect("selected flush mode");
         pipe_probe(PipeCase {
             operation: PipeOperation::Flush,
@@ -268,7 +268,7 @@ fn ordinary_stdout_reports_write_failure() {
     if run_alone("ordinary_stdout_reports_write_failure").unwrap() {
         return;
     }
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let (operation, taken) = [
             ("true:true", PipeOperation::Ordinary, true),
             ("false:true", PipeOperation::Ordinary, false),
@@ -276,7 +276,7 @@ fn ordinary_stdout_reports_write_failure() {
             ("raw:false:true", PipeOperation::Raw, false),
         ]
         .into_iter()
-        .find(|(id, _, _)| maestro_test_harness::selection().runs_case(id))
+        .find(|(id, _, _)| maestro_test_process::selection().runs_case(id))
         .map(|(_, operation, taken)| (operation, taken))
         .expect("selected write mode");
         pipe_probe(PipeCase {
@@ -327,7 +327,7 @@ fn package_children_observe_takeover_changes_after_construction() {
     assert_eq!(cases.len(), 1);
     let case = &cases[0];
     assert_eq!(case.id, "live-package-stdio");
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         package_probe();
         std::process::exit(0);
     }
@@ -374,7 +374,7 @@ fn observe_flushed(process: &mut CheckedChild, stdout: &mut impl Read, stderr: &
 fn package_probe() {
     use maestro_packages::{NativePackageOperations, PackageOperations};
     use std::rc::Rc;
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let command = crate::native::command(
         scratch.path(),
         "package-child",

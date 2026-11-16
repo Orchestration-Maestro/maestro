@@ -166,7 +166,7 @@ pub(super) fn install(
 mod tests {
     use super::*;
 
-    use maestro_test_harness::Scratch;
+    use maestro_test_directory::Scratch;
 
     /// A workspace with the crates `names` names, and the lock its dependencies come from.
     fn workspace_at(root: &Path, names: &[&str], lock: &str) -> Workspace {
@@ -260,7 +260,7 @@ mod tests {
         let cargo = root.join("cargo");
         let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
             .expect("nextest native-fixture setup supplies the artifact");
-        maestro_test_harness::install_executable(Path::new(&artifact), &cargo).unwrap();
+        maestro_test_process::install_executable(Path::new(&artifact), &cargo).unwrap();
         std::fs::write(
             root.join("cargo.fixture"),
             format!("tooling-cargo\n{}\n{}\n", env!("CARGO"), root.display()),
@@ -300,7 +300,7 @@ mod tests {
     #[test]
     fn installation_runs_cargo_on_the_checkouts_toolchain() {
         let output =
-            maestro_test_harness::TestProcess::child(install_without_an_inherited_toolchain)
+            maestro_test_process::TestProcess::child(install_without_an_inherited_toolchain)
                 .unwrap()
                 .env_remove(toolchain::SELECTOR)
                 .output()
@@ -318,19 +318,19 @@ mod tests {
     #[ignore = "runs only inside a controlled child"]
     fn install_without_an_inherited_toolchain() {
         let pin =
-            maestro_test_harness::compiler::channel().expect("the build records its toolchain");
+            maestro_test_process::compiler::channel().expect("the build records its toolchain");
         let scratch = Scratch::new().unwrap();
         let root = scratch.path();
         let cargo = root.join("cargo");
         let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
             .expect("nextest native-fixture setup supplies the artifact");
-        maestro_test_harness::install_executable(Path::new(&artifact), &cargo).unwrap();
+        maestro_test_process::install_executable(Path::new(&artifact), &cargo).unwrap();
         std::fs::write(
             root.join("cargo.fixture"),
             format!("tooling-cargo\n{}\n{}\n", env!("CARGO"), root.display()),
         )
         .unwrap();
-        maestro_test_harness::compiler::declare_toolchain(
+        maestro_test_process::compiler::declare_toolchain(
             root,
             &format!("[toolchain]\nchannel = \"{pin}\"\n"),
         )

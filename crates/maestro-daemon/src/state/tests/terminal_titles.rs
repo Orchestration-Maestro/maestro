@@ -80,10 +80,10 @@ fn updates(app: &App) -> usize {
 #[test]
 fn daemon_sync_keeps_latest_raw_title_and_emits_only_for_stripped_changes() {
     let name = "daemon_sync_keeps_latest_raw_title_and_emits_only_for_stripped_changes";
-    if maestro_test_harness::run_alone(name).unwrap() {
+    if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_harness::TestProcess::named("state::tests::terminal_titles::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -148,10 +148,10 @@ async fn check_spinner_title(app: &mut App, pane: PaneId, sources: &HashSet<Pane
 #[test]
 fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
     let name = "daemon_syncing_pending_titles_preserves_sidebar_render_impact";
-    if maestro_test_harness::run_alone(name).unwrap() {
+    if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_harness::TestProcess::named("state::tests::terminal_titles::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -179,10 +179,10 @@ fn daemon_syncing_pending_titles_preserves_sidebar_render_impact() {
 #[test]
 fn daemon_loop_consumes_titles_and_publishes_complete_pane_records() {
     let name = "daemon_loop_consumes_titles_and_publishes_complete_pane_records";
-    if maestro_test_harness::run_alone(name).unwrap() {
+    if maestro_test_process::run_alone(name).unwrap() {
         return;
     }
-    maestro_test_harness::TestProcess::named("state::tests::terminal_titles::setup_entry")
+    maestro_test_process::TestProcess::named("state::tests::terminal_titles::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

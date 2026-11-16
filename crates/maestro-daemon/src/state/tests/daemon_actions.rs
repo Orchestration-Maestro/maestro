@@ -1142,7 +1142,7 @@ fn daemon_terminal_cwd_report_updates_terminal_cwd_and_marks_session_dirty() {
         .unwrap()
         .attached_terminal_id
         .clone();
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let cwd = directory.path().to_path_buf();
     state.session_dirty = false;
 
@@ -1418,7 +1418,7 @@ fn manifest_update_refreshes_the_shared_runtime_snapshot_without_a_toast() {
         updates::{ManifestUpdateCommit, ManifestUpdateStatus, ManifestVersion},
     };
     use std::sync::{Arc, RwLock};
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let cache = Arc::new(RwLock::new(
         ManifestCache::new(Some(root.clone()), None).unwrap(),
@@ -1668,7 +1668,7 @@ fn daemon_close_pane_last_pane_in_parent_worktree_group_prompts() {
 fn daemon_close_tab_in_linked_worktree_closes_workspace_only() {
     let mut state = app_with_workspaces(&["selected", "active"]);
     mark_worktree(&mut state, 1, true);
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let checkout = directory.path().to_path_buf();
     state.topology.workspaces[1]
         .worktree_space
@@ -1701,7 +1701,7 @@ fn daemon_close_tab_last_tab_in_parent_worktree_group_prompts() {
 fn daemon_close_pane_last_pane_in_linked_worktree_closes_workspace_only() {
     let mut state = app_with_workspaces(&["selected", "active"]);
     mark_worktree(&mut state, 1, true);
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let checkout = directory.path().to_path_buf();
     state.topology.workspaces[1]
         .worktree_space

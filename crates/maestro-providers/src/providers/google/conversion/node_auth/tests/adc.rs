@@ -59,7 +59,7 @@ fn native_metadata_acquires_and_refreshes_controlled_tokens() {
 #[test]
 fn adc_quota_override_reaches_generated_headers() {
     const TEST: &str = "adc_quota_override_reaches_generated_headers";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let expected = std::env::var("EXPECTED_QUOTA").unwrap();
         let client = super::super::super::ApiClient::new(
             "https://content.invalid".into(),
@@ -97,7 +97,7 @@ fn adc_quota_override_reaches_generated_headers() {
             &serde_json::to_vec(&super::workforce(&server.url, file)).unwrap(),
         );
         {
-            let output = maestro_test_harness::TestProcess::current(TEST)
+            let output = maestro_test_process::TestProcess::current(TEST)
                 .unwrap()
                 .nocapture()
                 .env_clear()
@@ -166,7 +166,7 @@ fn adc_errors_never_include_credential_material() {
 #[test]
 fn adc_without_files_falls_through_to_metadata() {
     const TEST: &str = "adc_without_files_falls_through_to_metadata";
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         let result = super::run(super::super::NodeAuth::default().headers());
         if case.runs_case("metadata") {
@@ -194,7 +194,7 @@ fn adc_without_files_falls_through_to_metadata() {
     for (case, detection, expected) in [("disabled", "none", 0), ("metadata", "assume-present", 1)]
     {
         {
-            let output = maestro_test_harness::TestProcess::current(TEST)
+            let output = maestro_test_process::TestProcess::current(TEST)
                 .unwrap()
                 .nocapture()
                 .env_clear()
@@ -260,7 +260,7 @@ fn credentials_home(files: &super::Files, endpoint: &str) -> String {
 #[cfg_attr(not(unix), allow(unused_mut))]
 fn adc_file_order_prefers_nonempty_explicit_paths() {
     const TEST: &str = "adc_file_order_prefers_nonempty_explicit_paths";
-    let expected = maestro_test_harness::selection();
+    let expected = maestro_test_process::selection();
     if expected.is_child() {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
         assert!(expected.runs_case(&headers["x-goog-user-project"]));
@@ -308,7 +308,7 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
     let (home_name, home) = super::home_variable(&home);
     for (expected, mut variables) in cases {
         variables.push((home_name, home.as_str()));
-        let output = maestro_test_harness::TestProcess::current(TEST)
+        let output = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .nocapture()
             .env_clear()
@@ -324,7 +324,7 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
 #[test]
 fn adc_selected_file_failures_do_not_fall_back() {
     const TEST: &str = "adc_selected_file_failures_do_not_fall_back";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let error = super::run(super::super::NodeAuth::default().headers())
             .err()
             .unwrap();
@@ -346,7 +346,7 @@ fn adc_selected_file_failures_do_not_fall_back() {
         .enumerate()
     {
         {
-            let output = maestro_test_harness::TestProcess::current(TEST)
+            let output = maestro_test_process::TestProcess::current(TEST)
                 .unwrap()
                 .nocapture()
                 .env_clear()
@@ -421,7 +421,7 @@ fn newest_form(log: &Log) -> std::collections::HashMap<String, String> {
 /// The executable-sourced program, installed from the prepared native fixture.
 #[cfg(unix)]
 fn executable_source(files: &super::Files) -> String {
-    use maestro_test_harness::credentials::{Scenario, install};
+    use maestro_test_process::credentials::{Scenario, install};
     let program = files.0.path().join("script.sh");
     install(&program, Scenario::GoogleExecutable).unwrap();
     program.to_str().unwrap().to_owned()
@@ -522,7 +522,7 @@ fn assert_service_scope(authorization: &str) {
 #[test]
 fn adc_ordinary_and_external_sources_reach_native_builders() {
     const TEST: &str = "adc_ordinary_and_external_sources_reach_native_builders";
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
         if case.runs_case("service") {
@@ -537,7 +537,7 @@ fn adc_ordinary_and_external_sources_reach_native_builders() {
     for (name, value) in credential_forms(&files, &server.url) {
         let path = files.write(&format!("{name}.json"), value.to_string().as_bytes());
         {
-            let output = maestro_test_harness::TestProcess::current(TEST)
+            let output = maestro_test_process::TestProcess::current(TEST)
                 .unwrap()
                 .nocapture()
                 .env_clear()
@@ -567,7 +567,7 @@ fn adc_ordinary_and_external_sources_reach_native_builders() {
 #[test]
 fn native_sources_preserve_proxy_and_nested_transport_configuration() {
     const TEST: &str = "native_sources_preserve_proxy_and_nested_transport_configuration";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
         assert_eq!(headers["authorization"], "Bearer controlled-access");
         return;
@@ -580,7 +580,7 @@ fn native_sources_preserve_proxy_and_nested_transport_configuration() {
     for (name, value) in [("native", user), ("owned", owned)] {
         let path = files.write(&format!("{name}.json"), value.to_string().as_bytes());
         {
-            let output = maestro_test_harness::TestProcess::current(TEST)
+            let output = maestro_test_process::TestProcess::current(TEST)
                 .unwrap()
                 .nocapture()
                 .env_clear()
@@ -666,7 +666,7 @@ fn assert_impersonation_sources(token: &str, user: &serde_json::Value) {
 #[test]
 fn nested_impersonation_uses_the_retained_source_credentials() {
     const TEST: &str = "nested_impersonation_uses_the_retained_source_credentials";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let error = super::run(super::super::NodeAuth::default().headers())
             .err()
             .unwrap();
@@ -706,7 +706,7 @@ fn nested_impersonation_uses_the_retained_source_credentials() {
         ("HOME", "/nonexistent"),
     ];
     {
-        let output = maestro_test_harness::TestProcess::current(TEST)
+        let output = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .nocapture()
             .env_clear()

@@ -6,7 +6,7 @@ use crate::poll::is_pending;
 use maestro_process::children::{
     CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
-use maestro_test_harness::child::{Stream, harness, without_harness};
+use maestro_test_process::child::{Stream, harness, without_harness};
 use std::cell::Cell;
 use std::future::Future;
 use std::os::unix::process::ExitStatusExt;
@@ -114,7 +114,7 @@ async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChi
 
 #[test]
 fn captured_process_keeps_native_command_and_raw_streams() {
-    let owned = maestro_test_harness::Scratch::new().unwrap();
+    let owned = maestro_test_directory::Scratch::new().unwrap();
     let dir = owned.path();
     for (mode, stderr) in [
         (OutputMode::Capture, Some(300_006)),

@@ -239,7 +239,7 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
     use std::io::Write;
     const NAME: &str = "capture_inherits_environment_and_applies_scoped_overrides";
     if std::env::var_os("MAESTRO_CAPTURE_REEXEC").is_none() {
-        let mut child = maestro_test_harness::TestProcess::current(NAME)
+        let mut child = maestro_test_process::TestProcess::current(NAME)
             .unwrap()
             .single_threaded()
             .env("MAESTRO_CAPTURE_REEXEC", "1")

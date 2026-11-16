@@ -218,11 +218,11 @@ fn projected_context_reaches_the_shared_converter() {
 #[test]
 fn context_timestamps_use_local_time_only_for_offsetless_datetimes() {
     let name = "context_timestamps_use_local_time_only_for_offsetless_datetimes";
-    if !maestro_test_harness::selection().is_child() {
-        if !maestro_test_harness::local_zone_follows_tz() {
+    if !maestro_test_process::selection().is_child() {
+        if !maestro_test_process::local_zone_follows_tz() {
             return;
         }
-        let output = maestro_test_harness::TestProcess::current(name)
+        let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .env("TZ", "America/New_York")

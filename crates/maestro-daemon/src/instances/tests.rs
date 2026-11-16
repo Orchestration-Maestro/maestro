@@ -278,7 +278,7 @@ fn default_daemon_cannot_be_deleted() {
 #[test]
 #[cfg(unix)]
 fn daemon_listing_skips_reserved_default_directory() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path();
     for name in ["z", "a", "default", "bad name"] {
         std::fs::create_dir_all(root.join("daemons").join(name)).unwrap();

@@ -1,6 +1,6 @@
 //! Git failure classification, launch sources and defensive recovery.
 use super::*;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::{error::Error, path::Path};
 
 /// A completed Git failure with supplied diagnostic streams.
@@ -79,7 +79,7 @@ fn launch_failure_retains_process_source() {
 
 /// Runs one Git command that must succeed.
 fn git(cwd: &Path, args: &[&str]) {
-    let output = maestro_test_harness::git_command::command()
+    let output = maestro_test_process::git_command::command()
         .arg("-C")
         .arg(cwd)
         .args(args)

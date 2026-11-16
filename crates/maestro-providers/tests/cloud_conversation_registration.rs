@@ -28,9 +28,9 @@ const ENDPOINT: &str = "https://bedrock-runtime.us-east-1.amazonaws.com";
 fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "bedrock_generic_routes_reach_the_default_pair",
             )?
             .nocapture()
@@ -190,10 +190,10 @@ fn bedrock_override_setup_failures_settle() -> TestResult {
 fn bedrock_raw_options_reach_their_consumers() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         profile_options()?;
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "bedrock_raw_options_reach_their_consumers",
             )?
             .nocapture()
@@ -213,8 +213,8 @@ fn bedrock_raw_options_reach_their_consumers() -> TestResult {
             Ok(())
         };
     }
-    if maestro_test_harness::selection().is_child()
-        && maestro_test_harness::selection().runs_case("profile")
+    if maestro_test_process::selection().is_child()
+        && maestro_test_process::selection().runs_case("profile")
     {
         return crate::runtime::run(bedrock::corpus(include_str!(
             "fixtures/cloud_conversation/profile.json"
@@ -489,7 +489,7 @@ fn profile_options() -> TestResult {
         .map(|(key, value)| (key.as_str(), value.as_str()))
         .collect::<Vec<_>>();
     {
-        let output = maestro_test_harness::TestProcess::current(
+        let output = maestro_test_process::TestProcess::current(
             "bedrock_raw_options_reach_their_consumers",
         )?
         .nocapture()

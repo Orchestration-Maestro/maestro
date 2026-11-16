@@ -55,7 +55,7 @@ fn messages_normalize_subscription_tool_names() -> chat::TestResult {
 fn messages_restore_subscription_tool_names() -> chat::TestResult {
     crate::runtime::run(async {
         message_options::assert_rows("messages_restore_subscription_tool_names").await?;
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             subscription_name_is_visible_at_open().await?;
         }
         Ok(())

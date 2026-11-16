@@ -9,7 +9,7 @@ use super::{LoadSkillsOptions, LoadSkillsResult, load_skills};
 use crate::paths::resolve;
 #[cfg(not(windows))]
 use crate::{DiagnosticType, SourceOrigin, SourceScope};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -37,7 +37,7 @@ enum Cwd {
 struct Fixture {
     /// Restores read permission before the tree is removed.
     #[cfg(unix)]
-    _restore: Option<maestro_test_harness::Restore>,
+    _restore: Option<maestro_test_directory::Restore>,
     /// Owner of the tree.
     _scratch: Scratch,
     /// Root for anchored paths.
@@ -108,9 +108,9 @@ fn write(path: impl AsRef<Path>, text: &str) {
 /// run) skips the case.
 #[cfg(not(windows))]
 fn in_child(name: &str, case: &str, cwd: Cwd, body: impl FnOnce(&Fixture)) {
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     if !selection.is_child() {
-        let output = maestro_test_harness::TestProcess::current(name)
+        let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .case(case)
@@ -428,8 +428,8 @@ fn maestro_skills_collide_on_a_shared_name() {
 #[test]
 fn cwd_failure_does_not_block_supplied_drive() {
     let name = "cwd_failure_does_not_block_supplied_drive";
-    if !maestro_test_harness::selection().is_child() {
-        let output = maestro_test_harness::TestProcess::current(name)
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .case("*")
@@ -468,8 +468,8 @@ fn resolution_reads_the_working_directory_at_each_open_path() {
 /// Run `body` in a child where drive `D:` has the current directory `directory`.
 #[cfg(windows)]
 fn with_drive_directory(name: &str, directory: &str, body: impl FnOnce()) {
-    if !maestro_test_harness::selection().is_child() {
-        let output = maestro_test_harness::TestProcess::current(name)
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .case("*")
@@ -498,10 +498,10 @@ fn explicit_skill_path_on_the_cwd_drive_continues_from_the_cwd() {
 #[test]
 fn explicit_skill_path_without_a_drive_entry_continues_from_the_drive_root() {
     let name = "explicit_skill_path_without_a_drive_entry_continues_from_the_drive_root";
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         // The working directory must not be on D:, or the path continues from it instead.
         let system = std::env::var("SystemDrive").unwrap();
-        let output = maestro_test_harness::TestProcess::current(name)
+        let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .case("*")
@@ -559,9 +559,9 @@ fn real_path_continues_from_the_drive_directory() {
     let name = "real_path_continues_from_the_drive_directory";
     let scratch = Scratch::new().unwrap();
     let directory = scratch.path().to_path_buf();
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         let (letter, plain) = drive_and_plain_spelling(&directory);
-        let output = maestro_test_harness::TestProcess::current(name)
+        let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .case("*")

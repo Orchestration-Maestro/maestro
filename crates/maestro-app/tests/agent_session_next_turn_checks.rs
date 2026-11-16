@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use maestro_app::AgentSession;
 use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
 use maestro_models::Local;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},

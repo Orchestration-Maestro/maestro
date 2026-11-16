@@ -89,14 +89,14 @@ mod tests {
     #[test]
     fn environment_decodes_non_utf8_values_with_replacement_characters() {
         const TEST: &str = "environment_decodes_non_utf8_values_with_replacement_characters";
-        if maestro_test_harness::selection().is_child() {
+        if maestro_test_process::selection().is_child() {
             assert_eq!(
                 maestro_text::environment_variable(PROBE).as_deref(),
                 Some("A\u{fffd}B")
             );
             return;
         }
-        let output = maestro_test_harness::TestProcess::current(TEST)
+        let output = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .env_clear()
             .env(PROBE, std::ffi::OsStr::from_bytes(b"A\xffB"))

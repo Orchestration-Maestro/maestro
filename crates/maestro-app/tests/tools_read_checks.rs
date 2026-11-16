@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 
 /// Reads a disposable file through the application export, preserving the complete result.
 fn read(bytes: Option<&[u8]>, arguments: Value) -> Result<Value, DiagnosticErrorInfo> {
-    let root = maestro_test_harness::Scratch::new().unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
     let path = arguments["path"].as_str().unwrap();
     if let Some(bytes) = bytes {
         std::fs::write(root.path().join(path), bytes).unwrap();

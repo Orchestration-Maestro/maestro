@@ -330,7 +330,7 @@ fn parent(row: &Row, test: &str) -> TestResult {
         .iter()
         .map(|(key, value)| (key.as_str(), value.as_str()))
         .collect();
-    let output = maestro_test_harness::TestProcess::current(test)?
+    let output = maestro_test_process::TestProcess::current(test)?
         .nocapture()
         .env_clear()
         .envs(variables.iter().copied())
@@ -449,7 +449,7 @@ fn check_proxy(row: &Row, seen: &Observations, authority: &str) {
 /// Run exactly the recorded rows owned by this witness in fresh child environments.
 pub(crate) fn run_cases(test: &str) -> TestResult {
     let corpus = corpus()?;
-    let id = maestro_test_harness::selection();
+    let id = maestro_test_process::selection();
     if id.is_child() {
         let row = corpus
             .rows

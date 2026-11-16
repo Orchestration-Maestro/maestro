@@ -228,9 +228,9 @@ fn native_metadata_endpoint_chooses_ip_before_host() {
 
 #[test]
 fn metadata_detection_modes_choose_their_required_operations() {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "metadata_detection_modes_choose_their_required_operations",
             )
             .unwrap()
@@ -291,7 +291,7 @@ fn metadata_detection_modes_choose_their_required_operations() {
 #[test]
 fn metadata_disable_wins_over_residency() {
     const TEST: &str = "metadata_disable_wins_over_residency";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let (fetch, urls) = super::recording(|_| Ok(super::google_response()));
         let effects = super::super::base_external_client::Effects {
             fetch,
@@ -305,7 +305,7 @@ fn metadata_disable_wins_over_residency() {
         return;
     }
     {
-        let output = maestro_test_harness::TestProcess::current(TEST)
+        let output = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .nocapture()
             .env_clear()
@@ -327,7 +327,7 @@ fn metadata_disable_wins_over_residency() {
 #[test]
 fn metadata_unknown_policy_admits_resident_without_probe() {
     const TEST: &str = "metadata_unknown_policy_admits_resident_without_probe";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let (fetch, urls) = super::recording(|_| panic!("resident host must not probe"));
         let effects = super::super::base_external_client::Effects {
             fetch,
@@ -338,7 +338,7 @@ fn metadata_unknown_policy_admits_resident_without_probe() {
         return;
     }
     {
-        let output = maestro_test_harness::TestProcess::current(TEST)
+        let output = maestro_test_process::TestProcess::current(TEST)
             .unwrap()
             .nocapture()
             .env_clear()
@@ -360,7 +360,7 @@ fn metadata_unknown_policy_admits_resident_without_probe() {
 #[test]
 fn metadata_probe_result_is_kept_once_per_process() {
     const TEST: &str = "metadata_probe_result_is_kept_once_per_process";
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         super::run_paused(async {
             let succeeds = case.runs_case("positive");
@@ -386,7 +386,7 @@ fn metadata_probe_result_is_kept_once_per_process() {
     }
     for case in ["positive", "negative"] {
         {
-            let output = maestro_test_harness::TestProcess::current(TEST)
+            let output = maestro_test_process::TestProcess::current(TEST)
                 .unwrap()
                 .nocapture()
                 .env_clear()
@@ -408,9 +408,9 @@ fn metadata_probe_result_is_kept_once_per_process() {
 
 #[test]
 fn metadata_probe_requires_successful_google_flavor() {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "metadata_probe_requires_successful_google_flavor",
             )
             .unwrap()
@@ -455,9 +455,9 @@ fn wrong_flavor() -> HttpResponse {
 
 #[test]
 fn metadata_probe_uses_selected_deadline_and_retry_controls() {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "metadata_probe_uses_selected_deadline_and_retry_controls",
             )
             .unwrap()
@@ -489,9 +489,9 @@ fn metadata_probe_uses_selected_deadline_and_retry_controls() {
 
 #[test]
 fn metadata_default_candidates_accept_the_first_success() {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "metadata_default_candidates_accept_the_first_success",
             )
             .unwrap()
@@ -534,7 +534,7 @@ fn metadata_default_candidates_accept_the_first_success() {
 #[test]
 fn linux_residency_reads_serverless_dmi_and_network_prefix() {
     const TEST: &str = "linux_residency_reads_serverless_dmi_and_network_prefix";
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         assert_eq!(
             gcp_residency::detect_gcp_residency(),
@@ -564,7 +564,7 @@ fn linux_residency_reads_serverless_dmi_and_network_prefix() {
     for name in ["CLOUD_RUN_JOB", "FUNCTION_NAME", "K_SERVICE"] {
         for value in ["0", "false", "x"] {
             {
-                let output = maestro_test_harness::TestProcess::current(TEST)
+                let output = maestro_test_process::TestProcess::current(TEST)
                     .unwrap()
                     .nocapture()
                     .env_clear()

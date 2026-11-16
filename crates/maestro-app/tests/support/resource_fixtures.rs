@@ -451,7 +451,7 @@ pub async fn run_loader_case(root: &Root, case: &LoaderCase, local: Rc<LocalSet>
     root.normalize(&observed)
 }
 
-pub use maestro_test_harness::{with_environment, with_isolated_home};
+pub use maestro_test_process::{with_environment, with_isolated_home};
 
 /// The standard error lines of `stderr` that are warnings.
 pub fn warnings(stderr: &str) -> Vec<&str> {
@@ -481,11 +481,11 @@ pub fn child_stderr_with(
     environment: &[(&str, &str)],
     body: impl FnOnce(&str),
 ) -> Option<(String, String)> {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         body(&std::env::var(CHILD_BASE).unwrap());
         return None;
     }
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let base = scratch.path().display().to_string();
     let output = scratch_child(test, &base)
         .env_remove("FORCE_COLOR")
@@ -503,23 +503,23 @@ pub fn child_stderr_with(
 /// Runs `body` with a scratch base in a child whose standard error has no reader, and
 /// requires the child to exit successfully.
 pub fn child_with_closed_stderr(test: &str, body: impl FnOnce(&str)) {
-    if maestro_test_harness::selection().is_child() {
-        maestro_test_harness::wait_for_broken_stderr();
+    if maestro_test_process::selection().is_child() {
+        maestro_test_process::wait_for_broken_stderr();
         body(&std::env::var(CHILD_BASE).unwrap());
         return;
     }
-    if maestro_test_harness::run_alone(test).unwrap() {
+    if maestro_test_process::run_alone(test).unwrap() {
         return;
     }
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let base = scratch.path().display().to_string();
-    let status = maestro_test_harness::run_with_broken_stderr(scratch_child(test, &base)).unwrap();
+    let status = maestro_test_process::run_with_broken_stderr(scratch_child(test, &base)).unwrap();
     assert!(status.success(), "the child failed: {status}");
 }
 
 /// The child that re-runs `test` for every case with home `<base>/home` and scratch `base`.
-fn scratch_child(test: &str, base: &str) -> maestro_test_harness::TestProcess {
-    maestro_test_harness::TestProcess::current(test)
+fn scratch_child(test: &str, base: &str) -> maestro_test_process::TestProcess {
+    maestro_test_process::TestProcess::current(test)
         .unwrap()
         .case("*")
         .env("HOME", format!("{base}/home"))

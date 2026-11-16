@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 #[cfg(unix)]
 use maestro_tui::TuiRuntime as _;
 use maestro_tui::{TUI, TerminalImage};
@@ -20,12 +20,12 @@ const RENDER_DIRECTORY: &str = "/tmp/tui";
 
 /// Where the writer keeps `name` in the agent directory, joined natively.
 fn agent_log(home: &Path, name: &str) -> PathBuf {
-    agent_dir(home).join(name)
+    agent_directory(home).join(name)
 }
 
 /// The agent directory the host supplies, which the writer creates only when it writes a
 /// file.
-fn agent_dir(home: &Path) -> PathBuf {
+fn agent_directory(home: &Path) -> PathBuf {
     home.join("agent")
 }
 
@@ -61,7 +61,7 @@ impl Rig {
     /// Creates the writer; nothing is drawn yet and no log directory exists.
     fn new(home: &Path, lines: &[&str]) -> Self {
         let terminal = RecordingTerminal::new(COLUMNS, 3);
-        let runtime = ManualRuntime::with_agent_dir(agent_dir(home));
+        let runtime = ManualRuntime::with_agent_dir(agent_directory(home));
         let tui = TUI::new(
             terminal.handle(),
             runtime.handle(),
@@ -198,7 +198,7 @@ fn redraw_log_append_creates_its_directory() {
         |home| {
             let rig = Rig::new(home, &FIVE);
             assert!(
-                !agent_dir(home).exists(),
+                !agent_directory(home).exists(),
                 "the agent directory is absent before the first frame"
             );
             rig.tui.start().unwrap();
@@ -274,7 +274,7 @@ fn overflow_reports_lines_then_restores_terminal() {
         |home| {
             let rig = Rig::new(home, &["old"]);
             assert!(
-                !agent_dir(home).exists(),
+                !agent_directory(home).exists(),
                 "the crash report finds no directory"
             );
             rig.show(&["old"]).unwrap();
@@ -330,7 +330,7 @@ fn settings_description_rows_fit_the_frame_viewport() {
         |home| {
             for width in [1, 2, 3, 4, 8] {
                 let terminal = RecordingTerminal::new(width, 20);
-                let runtime = ManualRuntime::with_agent_dir(agent_dir(home));
+                let runtime = ManualRuntime::with_agent_dir(agent_directory(home));
                 let tui = TUI::new(
                     terminal.handle(),
                     runtime.handle(),
@@ -365,7 +365,7 @@ fn settings_description_rows_fit_the_frame_viewport() {
                     panic!("description must fit the frame at width {width}: {error}")
                 });
                 assert!(
-                    !agent_dir(home).exists(),
+                    !agent_directory(home).exists(),
                     "no diagnostic file at width {width}"
                 );
                 assert!(!terminal.writes().is_empty());

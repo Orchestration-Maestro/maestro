@@ -111,8 +111,8 @@ fn credentials(expires: f64) -> OAuthCredentials {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_refreshes_supplied_account_credentials() -> TestResult {
-    if !maestro_test_harness::selection().is_child() {
-        let output = maestro_test_harness::TestProcess::current(
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
             "maestro_guide_refreshes_supplied_account_credentials",
         )?
         .nocapture()
@@ -185,8 +185,8 @@ fn api_provider(text: &'static str) -> maestro_models::ApiProvider {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
-    if !maestro_test_harness::selection().is_child() {
-        let output = maestro_test_harness::TestProcess::current(
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
             "maestro_guide_registration_keeps_existing_handles",
         )?
         .nocapture()

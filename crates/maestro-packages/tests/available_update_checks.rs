@@ -912,7 +912,7 @@ fn availability_releases_last_owner_after_remaining_work() {
 
 /// Runs Git only in the test's disposable tree.
 fn git_at(path: &std::path::Path, args: &[&str]) -> String {
-    let output = maestro_test_harness::git_command::command()
+    let output = maestro_test_process::git_command::command()
         .args(args)
         .current_dir(path)
         .output()

@@ -229,7 +229,7 @@ fn two_processes(test: &str, scope: SettingsScope, kind: &str) {
         write_child(kind);
         return;
     }
-    if maestro_test_harness::run_alone(test).unwrap() {
+    if maestro_test_process::run_alone(test).unwrap() {
         return;
     }
     let root = support::Scratch::new().unwrap();

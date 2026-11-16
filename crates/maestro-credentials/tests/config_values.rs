@@ -398,7 +398,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_support_pipes_and_multiline_output() {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             return child_test_in_fresh_dir("native_helpers_support_pipes_and_multiline_output");
         }
         let operations =
@@ -417,7 +417,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn command_empty_or_failed_output_returns_absence() {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             return child_test_in_fresh_dir("command_empty_or_failed_output_returns_absence");
         }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
@@ -438,7 +438,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_decode_invalid_utf8_lossily() {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             return child_test_in_fresh_dir("native_helpers_decode_invalid_utf8_lossily");
         }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
@@ -458,7 +458,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_work_inside_running_runtime() {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             return child_test_in_fresh_dir("native_helpers_work_inside_running_runtime");
         }
         crate::support::block_on(async {
@@ -480,7 +480,7 @@ mod tests {
     /// working directory.
     #[cfg(unix)]
     fn child_test(name: &str, root: &std::path::Path) {
-        let process = maestro_test_harness::TestProcess::current(name).unwrap();
+        let process = maestro_test_process::TestProcess::current(name).unwrap();
         run_child(
             process.case("*"),
             root,
@@ -490,7 +490,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_inherit_environment_and_cwd() {
-        if maestro_test_harness::selection().is_child() {
+        if maestro_test_process::selection().is_child() {
             let operations = ProcessConfigValueOperations::new(|| unreachable!());
             assert_eq!(
                 resolve_config_value_uncached(
@@ -509,7 +509,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn config_cache_survives_adapter_and_cwd_changes() {
-        if maestro_test_harness::selection().is_child() {
+        if maestro_test_process::selection().is_child() {
             let first = ProcessConfigValueOperations::new(|| unreachable!());
             let second = ProcessConfigValueOperations::new(|| unreachable!());
             let root = std::env::current_dir().unwrap();
@@ -544,7 +544,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_timeout_without_fallback() {
-        if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_process::selection().is_child() {
             return child_test_in_fresh_dir("native_helpers_timeout_without_fallback");
         }
         let root = TempDir::new("timeout");

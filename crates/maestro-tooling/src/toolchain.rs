@@ -50,8 +50,8 @@ fn active(directory: &Path) -> Option<String> {
 mod tests {
     use super::*;
 
-    use maestro_test_harness::Scratch;
-    use maestro_test_harness::TestProcess;
+    use maestro_test_directory::Scratch;
+    use maestro_test_process::TestProcess;
 
     /// Write a crate named `name` whose library returns one.
     fn library(directory: &Path, name: &str, manifest_tail: &str) {
@@ -88,7 +88,7 @@ mod tests {
             "pinned",
             "[dependencies]\ndependency = { path = \"../dependency\" }\n[workspace]\n",
         );
-        maestro_test_harness::compiler::declare_toolchain(
+        maestro_test_process::compiler::declare_toolchain(
             &workspace,
             &format!("[toolchain]\nchannel = \"{pin}\"\n"),
         )
@@ -118,7 +118,7 @@ mod tests {
     #[ignore = "runs only inside a controlled child"]
     fn compile_with_a_dependency_that_ships_a_toolchain() {
         let pin =
-            maestro_test_harness::compiler::channel().expect("the build records its toolchain");
+            maestro_test_process::compiler::channel().expect("the build records its toolchain");
         let scratch = Scratch::new().unwrap();
         let workspace = workspace_with_a_dependency_that_ships_a_toolchain(scratch.path(), pin);
 

@@ -5,7 +5,7 @@ use std::future::Future;
 use std::process::Output;
 use std::rc::Rc;
 
-use maestro_test_harness::TestProcess;
+use maestro_test_process::TestProcess;
 use tokio::runtime::Builder;
 use tokio::task::LocalSet;
 
@@ -57,5 +57,5 @@ pub fn rerun(test: &str, setup: impl FnOnce(TestProcess) -> TestProcess) -> Outp
 
 /// Whether this process is the child copy of a test.
 pub fn is_child() -> bool {
-    maestro_test_harness::selection().is_child()
+    maestro_test_process::selection().is_child()
 }

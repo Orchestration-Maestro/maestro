@@ -8,7 +8,7 @@ use maestro_app::test_support::{HarnessOptions, harness, on_task_set};
 use maestro_extensions::{ExtensionFactory, ModelSelectEvent, ThinkingLevelSelectEvent};
 use maestro_models::{DiagnosticErrorInfo, Local, ModelThinkingLevel};
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use serde::Serialize;
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};

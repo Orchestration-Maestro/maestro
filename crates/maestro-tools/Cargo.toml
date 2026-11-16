@@ -53,7 +53,8 @@ maestro-tools = { path = ".", features = ["test-support"] }
 maestro-agent = { path = "../maestro-agent", features = ["test-support"] }
 maestro-test-fixtures.workspace = true
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
-maestro-test-harness.workspace = true
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["test-util", "net", "io-util"] }
 
 [[test]]

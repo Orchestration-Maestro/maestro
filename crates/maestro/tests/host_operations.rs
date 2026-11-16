@@ -6,7 +6,7 @@ use maestro_extensions::create_event_bus_for;
 use maestro_models::Local;
 use maestro_resources::paths::CONFIG_DIR_NAME;
 use maestro_settings::SettingsManager;
-use maestro_test_harness::{TestProcess, selection};
+use maestro_test_process::{TestProcess, selection};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 

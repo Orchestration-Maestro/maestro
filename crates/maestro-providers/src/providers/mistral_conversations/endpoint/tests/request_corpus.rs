@@ -4,7 +4,7 @@ use super::super::request;
 use crate::MistralOptions;
 use maestro_models::{Context, Model, StreamOptions};
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_harness::{TestProcess, test_name};
+use maestro_test_process::{TestProcess, test_name};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -204,7 +204,7 @@ pub(super) async fn async_corpus(name: &str, count: usize) {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 fn credential_child() {
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     if !selection.is_child() {
         return;
     }

@@ -21,7 +21,7 @@ use maestro_models::{
 use maestro_models_registry::{ProviderConfigInput, ProviderModelInput, ScopedModel};
 use maestro_session::SessionManager;
 use maestro_settings::{Settings, SettingsListEntry, SettingsManager, WarningSettings};
-use maestro_test_harness::TestProcess;
+use maestro_test_process::TestProcess;
 use maestro_tui::{Component, Input, InputHandler, Text};
 use refusing_provider::RefusingProvider;
 use serde::{Deserialize, de::DeserializeOwned};
@@ -2014,7 +2014,7 @@ fn model_scope_persistence_flushes_and_reopens_in_order() {
 fn scope_resolution_warnings_reach_standard_error() {
     let test = "scope_resolution_warnings_reach_standard_error";
     // A further child opens the panel, so its standard error reaches this parent unmixed.
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         super::isolated_case(test, "warning", &[], async |directory| {
             let world = started(directory).await;
             catalog(&world);

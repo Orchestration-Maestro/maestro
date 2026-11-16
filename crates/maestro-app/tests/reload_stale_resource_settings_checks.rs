@@ -12,7 +12,7 @@ use maestro_app::{
 };
 use maestro_models::{DiagnosticErrorInfo, Local};
 use maestro_session::SessionManager;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 

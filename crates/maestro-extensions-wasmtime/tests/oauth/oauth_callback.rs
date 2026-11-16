@@ -58,8 +58,8 @@ impl OAuthProviderInterface for Controlled {
 
 #[test]
 fn oauth_builtin_logins_use_controlled_endpoints_and_original_algorithms() {
-    if !maestro_test_harness::selection().is_child() {
-        let output = maestro_test_harness::TestProcess::current(
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
             "oauth_builtin_logins_use_controlled_endpoints_and_original_algorithms",
         )
         .unwrap()

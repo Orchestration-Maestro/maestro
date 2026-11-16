@@ -49,7 +49,7 @@ pub fn directory_input() {
 
 /// Installs a regular file holding `content` as standard input.
 pub fn file_input(content: &[u8]) {
-    let path = maestro_test_harness::temporary_root()
+    let path = maestro_test_directory::temporary_root()
         .join(format!("maestro-terminal-{}", std::process::id()));
     let mut file = File::options()
         .read(true)

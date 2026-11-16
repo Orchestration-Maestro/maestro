@@ -30,7 +30,7 @@ const CONTEXT_ROOT: &str = "MAESTRO_PACKAGE_CONTEXT_ROOT";
 fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
     /// The case that repeats the same fixtures in a child.
     const CHILD: &str = "native";
-    if maestro_test_harness::selection().case() == Some(CHILD) {
+    if maestro_test_process::selection().case() == Some(CHILD) {
         run(Path::new(&std::env::var_os(CONTEXT_ROOT).unwrap()));
         return;
     }
@@ -51,7 +51,7 @@ fn in_directory_context(name: &str, parent: &str, run: fn(&Path)) {
             &crate::native_support::output(format!("{text}\n").as_bytes(), b"", status),
         );
     }
-    let output = maestro_test_harness::TestProcess::current(name)
+    let output = maestro_test_process::TestProcess::current(name)
         .unwrap()
         .case(CHILD)
         .env(CONTEXT_ROOT, scratch.path())

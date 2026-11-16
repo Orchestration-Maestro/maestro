@@ -88,7 +88,7 @@ mod tests {
     fn malformed_reload_keeps_every_workspace_area() {
         let storage = Arc::new(ControlledStorage(Mutex::new(Ok("{".into()))));
         let mut manager = SettingsManager::from_storage(storage.clone());
-        let output = maestro_test_harness::trace_capture::Output::default();
+        let output = maestro_test_tracing::Output::default();
         let subscriber = tracing_subscriber::fmt()
             .without_time()
             .with_ansi(false)
@@ -97,10 +97,9 @@ mod tests {
                 move || output.clone()
             })
             .finish();
-        let (loaded, errors) =
-            maestro_test_harness::trace_capture::with_default(subscriber, || {
-                load_config(&mut manager, Path::new("."))
-            });
+        let (loaded, errors) = maestro_test_tracing::with_default(subscriber, || {
+            load_config(&mut manager, Path::new("."))
+        });
         assert!(errors.is_empty());
         assert_eq!(loaded.config, Config::default());
         assert!(loaded.diagnostics[0].starts_with("config parse error:"));
@@ -132,10 +131,9 @@ mod tests {
                     move || output.clone()
                 })
                 .finish();
-            let (report, errors) =
-                maestro_test_harness::trace_capture::with_default(subscriber, || {
-                    runtime.block_on(reload_config(&mut manager, &mut current, Path::new(".")))
-                });
+            let (report, errors) = maestro_test_tracing::with_default(subscriber, || {
+                runtime.block_on(reload_config(&mut manager, &mut current, Path::new(".")))
+            });
             assert!(errors.is_empty());
             assert_eq!(report.status, ConfigReloadStatus::Failed);
             assert!(report.diagnostics[0].ends_with("keeping current config"));

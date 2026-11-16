@@ -2,7 +2,7 @@
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
 use crate::analysis_fixtures::{ZONE, expected, home, resolved, run_usage, sessions, write_files};
-use maestro_test_harness::with_environment;
+use maestro_test_process::with_environment;
 
 const HELP: &str = "Usage: scripts/stats.ts [options]
 
@@ -170,7 +170,7 @@ fn usage_counts_local_calendar_days_across_dst() {
         "usage_counts_local_calendar_days_across_dst",
         &[("TZ", ZONE)],
         |base| {
-            if !maestro_test_harness::local_zone_follows_tz() {
+            if !maestro_test_process::local_zone_follows_tz() {
                 return;
             }
             let noon = Totals {

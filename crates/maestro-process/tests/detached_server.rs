@@ -3,7 +3,7 @@
 #![cfg(test)]
 use maestro_process::children::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_process::jobs::current_process_is_detached_server_daemon;
-use maestro_test_harness::TestProcess;
+use maestro_test_process::TestProcess;
 use std::process::Output;
 
 /// Marks the child run that reports its own observations.

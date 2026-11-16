@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 
 use crate::recipe_support::{installed, write_input};
 
@@ -64,7 +64,7 @@ fn setup(root: &Path, failure: Failure) -> Command {
         .current_dir(root)
         .env("CARGO", root.join("cargo"))
         .env("NEXTEST_ENV", root.join("nextest-env"));
-    maestro_test_harness::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     command
 }
 

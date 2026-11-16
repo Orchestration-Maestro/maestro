@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 #[test]
 fn repository_branch_reads_head_from_standard_repo() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     std::fs::create_dir_all(root.join(".git")).unwrap();
     std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
@@ -21,7 +21,7 @@ fn repository_branch_reads_head_from_standard_repo() {
 
 #[test]
 fn repository_branch_reads_head_from_worktree_gitdir_file() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let worktree_git_dir = root.join(".bare/worktrees/feature");
     std::fs::create_dir_all(&worktree_git_dir).unwrap();
@@ -35,7 +35,7 @@ fn repository_branch_reads_head_from_worktree_gitdir_file() {
 
 #[test]
 fn repository_branch_returns_none_for_detached_head() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     std::fs::create_dir_all(root.join(".git")).unwrap();
     std::fs::write(root.join(".git/HEAD"), "3e1b9a8d\n").unwrap();
@@ -47,10 +47,10 @@ fn repository_branch_returns_none_for_detached_head() {
 
 #[test]
 fn repository_branch_reads_symbolic_head_from_reftable_repo() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let root_arg = root.to_string_lossy().to_string();
-    let output = maestro_test_harness::git_command::command()
+    let output = maestro_test_process::git_command::command()
         .args(["init", "--ref-format=reftable", "-b", "main", &root_arg])
         .output()
         .unwrap();
@@ -66,7 +66,7 @@ fn repository_branch_reads_symbolic_head_from_reftable_repo() {
 
 #[test]
 fn repository_root_ignores_invalid_git_marker() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let scratch = directory.path().to_path_buf();
     let cwd = scratch.join("workspace");
     std::fs::create_dir_all(scratch.join(".git")).unwrap();
@@ -79,7 +79,7 @@ fn repository_root_ignores_invalid_git_marker() {
 
 #[test]
 fn repository_root_ignores_standalone_non_bare_git_dir_layout() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     std::fs::write(root.join("HEAD"), "ref: refs/heads/main\n").unwrap();
     std::fs::create_dir_all(root.join("objects")).unwrap();
@@ -93,7 +93,7 @@ fn repository_root_ignores_standalone_non_bare_git_dir_layout() {
 
 #[test]
 fn daemon_git_space_metadata_supports_standalone_bare_repo() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let bare = directory.path().to_path_buf();
     run_git(&bare, &["init", "--bare", "."]);
     let nested = bare.join("refs");
@@ -136,7 +136,7 @@ fn daemon_bare_source_and_linked_checkout_share_repo_name_but_not_auto_label() {
 
 #[test]
 fn daemon_embedded_dot_bare_source_and_checkout_use_container_repo_name() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let scratch = directory.path().to_path_buf();
     let seed = scratch.join("seed");
     let repo = scratch.join("reported-repo");
@@ -186,7 +186,7 @@ fn daemon_embedded_dot_bare_source_and_checkout_use_container_repo_name() {
 
 #[test]
 fn daemon_git_space_metadata_marks_bare_dot_git_repo() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     run_git(&root, &["init", "--bare", ".git"]);
 
@@ -209,7 +209,7 @@ fn daemon_git_space_metadata_marks_bare_dot_git_repo() {
 
 #[test]
 fn daemon_derive_label_prefers_repo_root_name() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let nested = root.join("nested");
     std::fs::create_dir_all(root.join(".git")).unwrap();
@@ -226,7 +226,7 @@ fn daemon_derive_label_prefers_repo_root_name() {
 
 #[test]
 fn daemon_derive_label_uses_path_name_outside_git() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let label = root.file_name().and_then(|name| name.to_str()).unwrap();
 
@@ -237,10 +237,10 @@ fn daemon_derive_label_uses_path_name_outside_git() {
 
 #[test]
 fn daemon_git_rev_parse_verify_reads_reftable_refs() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let root_arg = root.to_string_lossy().to_string();
-    let output = maestro_test_harness::git_command::command()
+    let output = maestro_test_process::git_command::command()
         .args(["init", "--ref-format=reftable", "-b", "main", &root_arg])
         .output()
         .unwrap();
@@ -263,8 +263,8 @@ fn daemon_git_rev_parse_verify_reads_reftable_refs() {
     std::fs::remove_dir_all(root).unwrap();
 }
 
-fn create_bare_repo_with_linked_worktree() -> (maestro_test_harness::Scratch, PathBuf, PathBuf) {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+fn create_bare_repo_with_linked_worktree() -> (maestro_test_directory::Scratch, PathBuf, PathBuf) {
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let scratch = directory.path().to_path_buf();
     let seed = scratch.join("seed");
     let bare = scratch.join(".bare");
@@ -302,7 +302,7 @@ fn canonicalize_best_effort_path(path: &Path) -> PathBuf {
 
 #[test]
 fn repository_native_links_keep_unicode_trim_and_climb_past_missing_head() {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let scratch = directory.path().to_path_buf();
     let outer = scratch.join("outer");
     let linked = outer.join("linked");
@@ -351,7 +351,7 @@ fn repository_reftable_queries_use_native_process_owner() {
         assert_eq!(git_rev_parse_verify(&root, "missing"), None);
         return;
     }
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     std::fs::create_dir(root.join(".git")).unwrap();
     std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/.invalid\n").unwrap();
@@ -369,8 +369,8 @@ fn repository_reftable_queries_use_native_process_owner() {
         format!("git\nProbe\n{}", serde_json::json!({ "cwd": &root })),
     )
     .unwrap();
-    maestro_test_harness::install_executable(Path::new(&artifact), &bin.join("git")).unwrap();
-    let output = maestro_test_harness::TestProcess::current(NAME)
+    maestro_test_process::install_executable(Path::new(&artifact), &bin.join("git")).unwrap();
+    let output = maestro_test_process::TestProcess::current(NAME)
         .unwrap()
         .env("MAESTRO_REFTABLE_PROBE", &root)
         .env("PATH", &bin)
@@ -384,7 +384,7 @@ fn repository_reftable_queries_use_native_process_owner() {
 fn repository_discovery_preserves_non_utf8_ancestors_and_relative_links() {
     use maestro_workspace::spaces::repository::native::discover_git_paths;
     use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let scratch = directory.path().to_path_buf();
     let root = scratch.join(OsStr::from_bytes(b"checkout-\xff"));
     std::fs::create_dir_all(root.join(".git")).unwrap();
@@ -418,8 +418,8 @@ fn repository_discovery_preserves_non_utf8_ancestors_and_relative_links() {
 
 /// Builds one valid enclosing checkout with a nested candidate.
 #[cfg(unix)]
-fn permission_discovery_fixture() -> (maestro_test_harness::Scratch, PathBuf, PathBuf) {
-    let directory = maestro_test_harness::Scratch::new().unwrap();
+fn permission_discovery_fixture() -> (maestro_test_directory::Scratch, PathBuf, PathBuf) {
+    let directory = maestro_test_directory::Scratch::new().unwrap();
     let outer = directory.path().join("outer");
     let inner = outer.join("inner");
     std::fs::create_dir_all(outer.join(".git")).unwrap();
@@ -436,7 +436,7 @@ fn unreadable_git_marker_keeps_workspace_ascent_and_footer_stop() {
     let marker = inner.join(".git");
     std::fs::write(&marker, "gitdir: ../.git\n").unwrap();
     // A privileged run reads the marker anyway, so there is nothing to check.
-    let Some(restore) = maestro_test_harness::deny(&marker, 0o0).unwrap() else {
+    let Some(restore) = maestro_test_directory::deny(&marker, 0o0).unwrap() else {
         return;
     };
     let workspace = discover_git_paths_with(&inner, DiscoveryPolicy::Workspace);
@@ -452,7 +452,7 @@ fn inaccessible_git_marker_stat_climbs_for_both_callers() {
     use maestro_workspace::spaces::repository::native::{DiscoveryPolicy, discover_git_paths_with};
     let (_directory, outer, inner) = permission_discovery_fixture();
     // A privileged run looks inside anyway, so there is nothing to check.
-    let Some(restore) = maestro_test_harness::deny(&inner, 0o0).unwrap() else {
+    let Some(restore) = maestro_test_directory::deny(&inner, 0o0).unwrap() else {
         return;
     };
     let workspace = discover_git_paths_with(&inner, DiscoveryPolicy::Workspace);
@@ -477,7 +477,7 @@ fn inaccessible_optional_common_metadata_falls_back_for_both_callers() {
     symlink(locked.join("common"), store.join("commondir")).unwrap();
     std::fs::write(inner.join(".git"), format!("gitdir: {}\n", store.display())).unwrap();
     // A privileged run follows the link anyway, so there is nothing to check.
-    let Some(restore) = maestro_test_harness::deny(&locked, 0o0).unwrap() else {
+    let Some(restore) = maestro_test_directory::deny(&locked, 0o0).unwrap() else {
         return;
     };
     let workspace = discover_git_paths_with(&inner, DiscoveryPolicy::Workspace);

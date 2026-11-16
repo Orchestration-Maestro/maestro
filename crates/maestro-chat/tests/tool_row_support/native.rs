@@ -115,8 +115,8 @@ pub fn terminal() -> recording_terminal::RecordingTerminal {
 }
 
 /// Create source input independently from the expected post-operation file.
-fn setup(case: &Case) -> (maestro_test_harness::Scratch, super::records::Input) {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+fn setup(case: &Case) -> (maestro_test_directory::Scratch, super::records::Input) {
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let filename = case.input["path"].as_str().unwrap();
     let text = if case.kind == "preflight" {
         "line 0\nline 1\n".into()

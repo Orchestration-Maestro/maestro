@@ -7,7 +7,7 @@ use maestro_models::StreamOptions;
 
 #[test]
 fn pac_bedrock_routes_reach_raw_and_simple_streams() -> TestResult {
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     if selection.is_child() {
         return crate::runtime::run(async {
             let (labels, message) =
@@ -80,7 +80,7 @@ fn conversation(directive: &str, simple: bool) -> TestResult {
     let encoded =
         percent_encoding::utf8_percent_encode(&script, percent_encoding::NON_ALPHANUMERIC);
     let proxy = format!("pac+data:,{encoded}");
-    let mut child = maestro_test_harness::TestProcess::current(
+    let mut child = maestro_test_process::TestProcess::current(
         "pac_bedrock_routes_reach_raw_and_simple_streams",
     )?
     .nocapture()
@@ -127,7 +127,7 @@ fn pac_credential_services_reuse_the_existing_bridge() -> TestResult {
 
 #[test]
 fn pac_bypass_and_supplied_fetch_avoid_script_loading() -> TestResult {
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     if selection.is_child() {
         let case = ["selected", "bypass", "replacement"]
             .into_iter()
@@ -160,7 +160,7 @@ fn pac_bypass_and_supplied_fetch_avoid_script_loading() -> TestResult {
                 close: false,
             }
         })?;
-        let mut child = maestro_test_harness::TestProcess::current(
+        let mut child = maestro_test_process::TestProcess::current(
             "pac_bypass_and_supplied_fetch_avoid_script_loading",
         )?
         .nocapture()
@@ -189,7 +189,7 @@ fn pac_bypass_and_supplied_fetch_avoid_script_loading() -> TestResult {
 
 #[test]
 fn pac_ftp_sources_load_and_revalidate_scripts() -> TestResult {
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     if selection.is_child() {
         return crate::runtime::run(ftp_source_conversations());
     }
@@ -228,7 +228,7 @@ fn pac_ftp_sources_load_and_revalidate_scripts() -> TestResult {
 /// Run the child that sends four conversations and one through a refused source.
 fn ftp_child(origin: &str, ftp: &crate::ftp_server::Peer) -> TestResult<std::process::Output> {
     Ok(
-        maestro_test_harness::TestProcess::current("pac_ftp_sources_load_and_revalidate_scripts")?
+        maestro_test_process::TestProcess::current("pac_ftp_sources_load_and_revalidate_scripts")?
             .nocapture()
             .env_clear()
             .env(

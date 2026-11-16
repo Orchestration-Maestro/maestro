@@ -62,7 +62,7 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
         "OPENAI_API_KEY",
     ] {
         run(
-            maestro_test_harness::TestProcess::current(PRECEDENCE)?
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
                 .env_clear()
                 .case("*"),
             &directory,
@@ -86,7 +86,7 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
         "second-independent-value",
     ] {
         run(
-            maestro_test_harness::TestProcess::current(PRECEDENCE)?
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
                 .env_clear()
                 .case("*"),
             &directory,
@@ -114,7 +114,7 @@ fn maestro_copilot_keys_ignore_generic_github_tokens() -> TestResult {
         &[("GH_TOKEN", "generic"), ("GITHUB_TOKEN", "generic")],
     ] {
         run(
-            maestro_test_harness::TestProcess::current(COPILOT)?
+            maestro_test_process::TestProcess::current(COPILOT)?
                 .env_clear()
                 .case("*"),
             &directory,
@@ -124,7 +124,7 @@ fn maestro_copilot_keys_ignore_generic_github_tokens() -> TestResult {
         )?;
     }
     run(
-        maestro_test_harness::TestProcess::current(COPILOT)?
+        maestro_test_process::TestProcess::current(COPILOT)?
             .env_clear()
             .case("*"),
         &directory,
@@ -167,7 +167,7 @@ fn assert_presence_combinations(
             .collect();
         let first = present.first().map(|key| format!("controlled-{key}"));
         run(
-            maestro_test_harness::TestProcess::current(PRECEDENCE)?
+            maestro_test_process::TestProcess::current(PRECEDENCE)?
                 .env_clear()
                 .case("*"),
             directory,
@@ -177,7 +177,7 @@ fn assert_presence_combinations(
         )?;
     }
     run(
-        maestro_test_harness::TestProcess::current(PRECEDENCE)?
+        maestro_test_process::TestProcess::current(PRECEDENCE)?
             .env_clear()
             .case("*"),
         directory,
@@ -228,7 +228,7 @@ fn vertex_run(
     expected: Option<&str>,
 ) -> TestResult {
     run(
-        maestro_test_harness::TestProcess::current(VERTEX)?
+        maestro_test_process::TestProcess::current(VERTEX)?
             .env_clear()
             .case("*"),
         directory,
@@ -266,7 +266,7 @@ fn assert_vertex_requirements(directory: &Directory, path: &std::path::Path) -> 
     ]));
     vertex_run(directory, &variables, Some("<authenticated>"))?;
     run(
-        maestro_test_harness::TestProcess::current(VERTEX)?
+        maestro_test_process::TestProcess::current(VERTEX)?
             .env_clear()
             .case("*"),
         directory,
@@ -461,7 +461,7 @@ fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     assert_eq!(router.input, [ModelInput::Text, ModelInput::Image]);
     let directory = Directory::new()?;
     run(
-        maestro_test_harness::TestProcess::current(
+        maestro_test_process::TestProcess::current(
             "maestro_fireworks_catalog_and_keys_remain_complete",
         )?
         .env_clear()
@@ -481,7 +481,7 @@ fn bedrock_run(
     expected: Option<&str>,
 ) -> TestResult {
     run(
-        maestro_test_harness::TestProcess::current(
+        maestro_test_process::TestProcess::current(
             "maestro_bedrock_configuration_signals_remain_distinct",
         )?
         .env_clear()
@@ -500,10 +500,10 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
     const NAME: &str = "cleared_environment_child_keeps_native_values_and_profile_order";
     const PROFILE: &str = "inherited-%p-%m.profraw";
     const OVERRIDE: &str = "explicit-%p-%m.profraw";
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let stage = ["outer", "inherited", "override"]
             .into_iter()
-            .find(|stage| maestro_test_harness::selection().runs_case(stage))
+            .find(|stage| maestro_test_process::selection().runs_case(stage))
             .expect("selected native stage");
         if stage != "outer" {
             return native_environment_observations(if stage == "inherited" {
@@ -516,7 +516,7 @@ fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResu
     }
     // An instrumented child writes its relative profile into its working directory.
     let root = Directory::new()?;
-    let output = maestro_test_harness::TestProcess::current(NAME)?
+    let output = maestro_test_process::TestProcess::current(NAME)?
         .nocapture()
         .case("outer")
         .current_dir(root.path())
@@ -556,7 +556,7 @@ fn outer_environment_stage(name: &str, profile: &str, overriding: &str) -> TestR
             ));
         }
         run(
-            maestro_test_harness::TestProcess::current(name)?
+            maestro_test_process::TestProcess::current(name)?
                 .env_clear()
                 .case(stage),
             &directory,

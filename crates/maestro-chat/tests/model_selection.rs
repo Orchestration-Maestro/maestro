@@ -25,7 +25,7 @@ use std::{
 /// Execute each test group in a separate process, which owns global registry/binding state.
 #[cfg(not(target_arch = "wasm32"))]
 fn isolate(name: &str) -> bool {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         let credentials = std::env::current_exe()
             .unwrap()
             .join("absent-credentials.json")
@@ -38,7 +38,7 @@ fn isolate(name: &str) -> bool {
             ("GOOGLE_APPLICATION_CREDENTIALS", Some(&credentials)),
         ]);
         subprocess::run_child(
-            maestro_test_harness::TestProcess::current(name)
+            maestro_test_process::TestProcess::current(name)
                 .unwrap()
                 .case("*"),
             &environment,

@@ -93,7 +93,7 @@ fn run_locale_child(name: &str, index: usize, environment: &HashMap<String, Stri
         .map(|key| (key, environment.get(key).map(String::as_str)))
         .collect();
     subprocess::run_child(
-        maestro_test_harness::TestProcess::current(name)
+        maestro_test_process::TestProcess::current(name)
             .unwrap()
             .case(index),
         &operands,
@@ -104,9 +104,9 @@ fn run_locale_child(name: &str, index: usize, environment: &HashMap<String, Stri
 #[test]
 fn native_model_ordering_tracks_process_locale() {
     let cases = cases();
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let index = (0..cases.len())
-            .find(|index| maestro_test_harness::selection().runs_case(&index.to_string()))
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
             .expect("selected locale row");
         check_order(&cases[index], &|key| std::env::var(key).ok());
         return;
@@ -123,9 +123,9 @@ fn native_model_ordering_tracks_process_locale() {
 #[test]
 fn supplied_locale_environment_overrides_process_environment() {
     let cases = cases();
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let index = (0..cases.len())
-            .find(|index| maestro_test_harness::selection().runs_case(&index.to_string()))
+            .find(|index| maestro_test_process::selection().runs_case(&index.to_string()))
             .expect("selected locale row");
         check_order(&cases[index], &|key| {
             cases[index].environment.get(key).cloned()
@@ -148,8 +148,8 @@ fn supplied_locale_environment_overrides_process_environment() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn native_model_ordering_recovers_from_invalid_locale() {
-    if maestro_test_harness::selection().is_child() {
-        assert!(maestro_test_harness::selection().runs_case("0"));
+    if maestro_test_process::selection().is_child() {
+        assert!(maestro_test_process::selection().runs_case("0"));
         check_order(&cases()[0], &|key| std::env::var(key).ok());
         return;
     }

@@ -1,15 +1,15 @@
-//! Checked-child proof through the existing test-harness owner.
+//! Checked-child proof through the existing test-process owner.
 #![cfg(unix)]
-use maestro_test_harness::Scratch;
-use maestro_test_harness::TestProcess;
+use maestro_test_directory::Scratch;
+use maestro_test_process::TestProcess;
 use std::{fs, io};
 
 #[test]
 fn chosen_temporary_parent_is_canonical_and_errors_stay_native() {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         let case = ["linked", "missing", "file"]
             .into_iter()
-            .find(|case| maestro_test_harness::selection().runs_case(case))
+            .find(|case| maestro_test_process::selection().runs_case(case))
             .expect("selected directory case");
         match case {
             "linked" => {
@@ -28,10 +28,10 @@ fn chosen_temporary_parent_is_canonical_and_errors_stay_native() {
             }
             "missing" => {
                 assert_eq!(Scratch::new().unwrap_err().kind(), io::ErrorKind::NotFound);
-                assert!(!maestro_test_harness::temporary_root().exists());
+                assert!(!maestro_test_directory::temporary_root().exists());
             }
             "file" => {
-                let parent = maestro_test_harness::temporary_root();
+                let parent = maestro_test_directory::temporary_root();
                 let expected = fs::create_dir(parent.join("probe")).unwrap_err().kind();
                 assert_eq!(Scratch::new().unwrap_err().kind(), expected);
                 assert_eq!(fs::read_to_string(parent).unwrap(), "unchanged");

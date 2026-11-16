@@ -4,7 +4,7 @@
 
 #[test]
 fn local_datetime_observes_supplied_timezone_inside_runtime() {
-    use maestro_test_harness::TestProcess;
+    use maestro_test_process::TestProcess;
     if let Ok(seconds) = std::env::var("MAESTRO_TEST_ZONE_OFFSET") {
         let offset = time::UtcOffset::from_whole_seconds(seconds.parse().unwrap()).unwrap();
         tokio::runtime::Builder::new_current_thread()

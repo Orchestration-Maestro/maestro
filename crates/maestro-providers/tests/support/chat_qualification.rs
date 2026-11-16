@@ -261,7 +261,7 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 /// Exercise one owner's closed fixture set in a fresh environment.
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         let variables = if test.starts_with("maestro_gateway_") {
             vec![
                 ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
@@ -278,7 +278,7 @@ pub fn assert_rows(test: &str) -> TestResult {
             test.to_owned()
         };
         return {
-            let output = maestro_test_harness::TestProcess::current(&full_name)?
+            let output = maestro_test_process::TestProcess::current(&full_name)?
                 .nocapture()
                 .env_clear()
                 .envs(variables.iter().copied())

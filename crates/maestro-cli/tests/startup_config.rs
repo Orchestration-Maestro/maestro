@@ -8,7 +8,7 @@ use maestro_app::presentation_data::input_selectors::{
     ConfigSelectorFactory, ConfigSelectorOptions,
 };
 use maestro_cli::input::configuration::ConfigPresentation;
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use maestro_theme::ThemeState;
 use serde_json::json;
 use std::cell::RefCell;
@@ -114,7 +114,7 @@ fn config_command_ignores_other_verbs_before_observations() {
 
 #[test]
 fn config_command_preserves_resolution_presentation_and_exit_order() {
-    maestro_test_harness::with_isolated_home(
+    maestro_test_process::with_isolated_home(
         "config_command_preserves_resolution_presentation_and_exit_order",
         |_| {
             let harness = Harness::new(None, None);

@@ -1641,7 +1641,7 @@ fn hooks(workspace: &Workspace) {
     )
     .unwrap();
     assert!(
-        maestro_test_harness::git_command::command()
+        maestro_test_process::git_command::command()
             .current_dir(workspace.path())
             .args(["init", "--quiet"])
             .status()
@@ -1915,7 +1915,7 @@ fn watch_child_transcript_survives_forced_kill() {
 fn assert_killed_transcript(directory: Option<&Path>) {
     use std::io::{BufRead, Read};
     let process =
-        maestro_test_harness::TestProcess::current("watch_child_transcript_survives_forced_kill")
+        maestro_test_process::TestProcess::current("watch_child_transcript_survives_forced_kill")
             .unwrap();
     let name = process.name().replace("::", "_");
     let process = process.env_remove("MAESTRO_TEST_DIAGNOSTICS_DIR");

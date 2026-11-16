@@ -218,7 +218,7 @@ fn check_outside(test: &str, row: &Row) -> TestResult {
         .map(|(name, value)| (name.as_str(), value.as_str()))
         .collect();
     {
-        let output = maestro_test_harness::TestProcess::current(test)?
+        let output = maestro_test_process::TestProcess::current(test)?
             .nocapture()
             .env_clear()
             .envs(variables.iter().copied())
@@ -295,7 +295,7 @@ pub fn check_rows(test: &str) -> TestResult {
     let all = parse_rows(FIXTURE)?;
     let owned: Vec<Row> = all.into_iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty(), "{test} owns no rows");
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         let row = owned
             .iter()
@@ -304,8 +304,8 @@ pub fn check_rows(test: &str) -> TestResult {
         return crate::runtime::run(converse(row));
     }
     // A privileged run writes a read-only cache anyway, so such a row has nothing to check.
-    let probe = maestro_test_harness::Scratch::new()?;
-    let denials = maestro_test_harness::deny(probe.path(), 0o555)?.is_some();
+    let probe = maestro_test_directory::Scratch::new()?;
+    let denials = maestro_test_directory::deny(probe.path(), 0o555)?.is_some();
     owned
         .iter()
         .filter(|row| denials || row.input.read_only.is_none())

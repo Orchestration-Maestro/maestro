@@ -1022,7 +1022,7 @@ fn project_preparation_failure() {
     let (manager, _, effects, tree) = configured(&json!([]), &json!(["npm:z", "npm:a"]));
     let root = support::below(tree.path(), "/work/project/.maestro/npm");
     std::fs::create_dir_all(&root).unwrap();
-    let Some(restore) = maestro_test_harness::deny(&root, 0o555).unwrap() else {
+    let Some(restore) = maestro_test_directory::deny(&root, 0o555).unwrap() else {
         return;
     };
     let events = Rc::new(RefCell::new(Vec::new()));

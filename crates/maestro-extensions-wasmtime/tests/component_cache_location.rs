@@ -6,8 +6,8 @@
     clippy::excessive_nesting
 )]
 use super::components::{files_below, load_empty_component};
-use maestro_test_harness::Scratch;
-use maestro_test_harness::{AGENT_DIR, TestProcess, selection};
+use maestro_test_directory::Scratch;
+use maestro_test_process::{AGENT_DIRECTORY, TestProcess, selection};
 
 /// A load compiles its component into the cache below the agent directory, and writes none to
 /// the platform's own cache locations under the home directory.
@@ -25,7 +25,7 @@ fn component_load_caches_below_the_agent_directory() {
         .unwrap()
         .env_clear()
         .case("load")
-        .env(AGENT_DIR, &agent)
+        .env(AGENT_DIRECTORY, &agent)
         .env("HOME", &home)
         .env("USERPROFILE", &home)
         .env("XDG_CACHE_HOME", home.join(".cache"))

@@ -254,7 +254,7 @@ pub fn run(name: &str) {
         .filter(|case| case.test == name)
         .collect();
     assert!(!cases.is_empty());
-    let selected = maestro_test_harness::run_per_environment(name, cases, |case| {
+    let selected = maestro_test_process::run_per_environment(name, cases, |case| {
         case.input
             .env
             .iter()

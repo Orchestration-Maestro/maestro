@@ -4,7 +4,7 @@
 use crate::support::session_harness::sdk_definition;
 use maestro_app::test_support::{HarnessOptions, harness, on_task_set, tool_definition};
 use maestro_models::{Refinement, SchemaCallback, SchemaCode, SchemaNode, ToolCall};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use serde_json::json;
 use std::{cell::Cell, rc::Rc};
 

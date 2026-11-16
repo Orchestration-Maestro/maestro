@@ -46,7 +46,7 @@ fn failed_save_keeps_the_record_another_process_appends_meanwhile() {
     if appended_as_child() {
         return;
     }
-    let root = maestro_test_harness::Scratch::new().unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
     let directory = root.path().join("sessions");
     let mut manager =
         super::super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
@@ -94,7 +94,7 @@ fn contention(alias: bool, test: &str) {
     if appended_as_child() {
         return;
     }
-    let root = maestro_test_harness::Scratch::new().unwrap();
+    let root = maestro_test_directory::Scratch::new().unwrap();
     let target = root.path().join("target.jsonl");
     fs::write(&target, b"before\n").unwrap();
     let path = if alias {
@@ -133,7 +133,7 @@ fn contention(alias: bool, test: &str) {
 fn observe_comparison(
     test: &str,
     target: &Path,
-) -> std::sync::mpsc::Receiver<(maestro_test_harness::CheckedChild, bool)> {
+) -> std::sync::mpsc::Receiver<(maestro_test_process::CheckedChild, bool)> {
     let launch = appender(test, target);
     let (sender, receiver) = std::sync::mpsc::channel();
     AFTER_COMPARE.set(Some(Box::new(move || sender.send(launch()).unwrap())));
@@ -161,9 +161,9 @@ fn appended_as_child() -> bool {
 fn appender(
     test: &str,
     target: &Path,
-) -> impl FnOnce() -> (maestro_test_harness::CheckedChild, bool) + 'static {
+) -> impl FnOnce() -> (maestro_test_process::CheckedChild, bool) + 'static {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let child = maestro_test_harness::TestProcess::current(test)
+    let child = maestro_test_process::TestProcess::current(test)
         .unwrap()
         .env("MAESTRO_COMPARED_APPEND", target)
         .env(

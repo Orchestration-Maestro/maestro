@@ -13,7 +13,7 @@ use maestro_app::test_support::{
 use maestro_export::NativeExportOperations;
 use maestro_models::Local;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use maestro_theme::{LiveTheme, ThemeDirectories, ThemeState};
 use maestro_tui::{ComponentHandle, components::Text};
 use serde_json::{Value, json};
@@ -203,7 +203,7 @@ fn html_export_refuses_memory_session() {
 #[test]
 fn html_export_reads_theme_only_for_custom_rendering() {
     let expected = corpus("html_export");
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
         let memory = harness(Scratch::new().unwrap(), HarnessOptions::default())
@@ -232,7 +232,7 @@ fn html_export_reads_theme_only_for_custom_rendering() {
 #[test]
 fn html_export_carries_prompt_tools_and_theme() {
     let expected = corpus("html_export");
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
         let manager = file_session(
@@ -330,7 +330,7 @@ fn native_payload(session: &AgentSession<Local>, root: &str) -> Value {
 /// Each tool description is resolved with the session free to change.
 #[test]
 fn html_export_resolves_tool_descriptions_outside_locks() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
         let exchange = [user(&json!("hello"), 1), assistant("hi", 2, &json!({}))];
@@ -360,7 +360,7 @@ fn html_export_resolves_tool_descriptions_outside_locks() {
 
 #[test]
 fn html_export_renders_custom_calls_with_the_session_free_to_change() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
         let call =
@@ -397,7 +397,7 @@ fn html_export_renders_custom_calls_with_the_session_free_to_change() {
 
 #[test]
 fn html_export_renders_registered_tool_calls() {
-    let scratch = maestro_test_harness::Scratch::new().unwrap();
+    let scratch = maestro_test_directory::Scratch::new().unwrap();
     let root = scratch.path().display().to_string();
     on_task_set(|_| async {
         let h = painted_harness(&root).await;

@@ -47,7 +47,7 @@ fn setup_child_that_clears_its_bundle_passes() {
         "maestro-text",
         "tests/setup_child.rs",
         &setup_child(
-            "command.args([\"nextest-setup\", \"author-component\"]);\n    maestro_test_harness::without_prepared_bundles(&mut command);",
+            "command.args([\"nextest-setup\", \"author-component\"]);\n    maestro_test_process::without_prepared_bundles(&mut command);",
             "",
         ),
     );
@@ -65,7 +65,7 @@ fn setup_child_cleared_through_a_function_of_the_source_passes() {
         "tests/setup_child.rs",
         &setup_child(
             "command.args([\"nextest-setup\", \"author-component\"]);\n    prepared(&mut command);",
-            "}\n\n/// Runs the prepared command the test supplies.\nfn prepared(command: &mut std::process::Command) {\n    maestro_test_harness::without_prepared_bundles(command);\n",
+            "}\n\n/// Runs the prepared command the test supplies.\nfn prepared(command: &mut std::process::Command) {\n    maestro_test_process::without_prepared_bundles(command);\n",
         ),
     );
     workspace.integration("maestro-text");

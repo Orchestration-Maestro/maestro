@@ -450,11 +450,11 @@ fn maestro_wrapper_uses_registered_default_stream() {
 /// Rejections retain their prefix and remain unsettled, with one native diagnostic.
 #[test]
 fn maestro_raw_failure_reports_without_finishing_stream() {
-    if maestro_test_harness::selection().is_child() {
+    if maestro_test_process::selection().is_child() {
         failure_child();
         return;
     }
-    let output = maestro_test_harness::TestProcess::current(
+    let output = maestro_test_process::TestProcess::current(
         "maestro_raw_failure_reports_without_finishing_stream",
     )
     .unwrap()

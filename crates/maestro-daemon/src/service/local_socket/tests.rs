@@ -29,7 +29,7 @@ fn socket_stale_errors_exclude_would_block() {
 
 #[test]
 fn socket_identity_records_native_device_and_inode() {
-    let root = maestro_test_harness::Scratch::new_socket().unwrap();
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
     let path = root.path().join("identity.sock");
     let listener = bind_local_listener(&path).unwrap();
     let identity = socket_file_identity(&path).unwrap();
@@ -75,7 +75,7 @@ fn fill_accept_queue(listener: &LocalListener, path: &Path) -> Vec<std::os::fd::
 
 #[test]
 fn saturated_backlog_never_returns_an_unconnected_stream() {
-    let root = maestro_test_harness::Scratch::new_socket().unwrap();
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
     let path = root.path().join("full.sock");
     let listener = bind_local_listener(&path).unwrap();
     let _clients = fill_accept_queue(&listener, &path);
@@ -87,7 +87,7 @@ fn saturated_backlog_never_returns_an_unconnected_stream() {
 
 #[test]
 fn claimed_server_with_a_full_accept_queue_keeps_its_socket() {
-    let root = maestro_test_harness::Scratch::new_socket().unwrap();
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
     let path = root.path().join("claimed.sock");
     let _claim = prepare_socket_path(&path, |_| panic!("absent")).unwrap();
     let listener = bind_local_listener(&path).unwrap();
@@ -100,7 +100,7 @@ fn claimed_server_with_a_full_accept_queue_keeps_its_socket() {
 
 #[test]
 fn bounded_connections_are_close_on_exec() {
-    let root = maestro_test_harness::Scratch::new_socket().unwrap();
+    let root = maestro_test_directory::Scratch::new_socket().unwrap();
     let path = root.path().join("cloexec.sock");
     let _listener = bind_local_listener(&path).unwrap();
     let stream =

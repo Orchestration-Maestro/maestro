@@ -243,7 +243,7 @@ fn read_base(checkout: &Path, shared: &Inputs) -> Option<Base> {
 
 /// Hand the setup example `command` runs every component that the first bundle in
 /// `TEST_PREPARE_BASE` prepared from the checkout's shared inputs supplies, and seed that
-/// bundle's compiled code for `example` in the cache below `agent_dir`, as preparation
+/// bundle's compiled code for `example` in the cache below `agent_directory`, as preparation
 /// does. Without such a bundle the example builds every component.
 ///
 /// # Errors
@@ -253,7 +253,7 @@ pub(crate) fn supply_base(
     command: &mut Command,
     workspace: &Workspace,
     example: &Path,
-    agent_dir: &Path,
+    agent_directory: &Path,
 ) -> io::Result<()> {
     // Digesting the shared inputs reads every file they name, so a run without a base skips it.
     if std::env::var_os(BASE).is_none() {
@@ -267,7 +267,7 @@ pub(crate) fn supply_base(
     let cache_directory = compiled_code::directory(
         Command::new(example)
             .current_dir(checkout)
-            .env(AGENT_DIR, agent_dir),
+            .env(AGENT_DIRECTORY, agent_directory),
     )?;
     base.seed(&cache_directory, example)?;
     command.envs(
@@ -448,19 +448,19 @@ fn preparation_command(checkout: &Path, example: &Path, target: &Path) -> Comman
     let mut command = Command::new(example);
     command
         .current_dir(checkout)
-        .env(AGENT_DIR, preparation_agent(target));
+        .env(AGENT_DIRECTORY, preparation_agent(target));
     command
 }
 
 /// The variable that names the agent directory, below which the engine keeps compiled components.
-pub(crate) const AGENT_DIR: &str = "MAESTRO_CODING_AGENT_DIR";
+pub(crate) const AGENT_DIRECTORY: &str = "MAESTRO_CODING_AGENT_DIR";
 
 /// The directory beside the profile directory that a test run uses as its agent directory. It is
 /// separate from the preparation agent directory, which each preparation deletes.
 const RUN_AGENT: &str = "run-agent";
 
 /// The agent directory a test run shares, beside its profile directory.
-pub(crate) fn run_agent_dir(directory: &Path) -> PathBuf {
+pub(crate) fn run_agent_directory(directory: &Path) -> PathBuf {
     directory.parent().unwrap_or(directory).join(RUN_AGENT)
 }
 
@@ -521,7 +521,7 @@ pub(crate) fn install_bundle(
         staged: compiled,
         example: installed,
         checkout: checkout.to_path_buf(),
-        agent_dir: run_agent_dir(directory),
+        agent_directory: run_agent_directory(directory),
     }))
 }
 
@@ -537,7 +537,7 @@ pub(crate) struct CompiledInstall {
     /// The checkout the example runs in.
     checkout: PathBuf,
     /// The agent directory of the run, below which the engine keeps its cache.
-    agent_dir: PathBuf,
+    agent_directory: PathBuf,
 }
 
 impl CompiledInstall {
@@ -550,7 +550,7 @@ impl CompiledInstall {
         let cache_directory = compiled_code::directory(
             Command::new(&self.example)
                 .current_dir(&self.checkout)
-                .env(AGENT_DIR, &self.agent_dir),
+                .env(AGENT_DIRECTORY, &self.agent_directory),
         )?;
         self.code
             .install(&self.staged, &cache_directory, &self.example)

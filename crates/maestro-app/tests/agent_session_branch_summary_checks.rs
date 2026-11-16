@@ -4,7 +4,7 @@
 use crate::support::session_harness::start_prompt;
 use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
 use maestro_session::session_manager::{NavigateTreeOptions, ReadonlySessionManager};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 
 #[test]
 fn branch_summary_request_reaches_the_session_stream_function() {

@@ -29,7 +29,7 @@ maestro-feature-unifier.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-test-fixtures.workspace = true
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
-maestro-test-harness.workspace = true
+maestro-test-directory.workspace = true
 
 [lints]
 workspace = true

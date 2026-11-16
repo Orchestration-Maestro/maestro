@@ -95,7 +95,7 @@ fn termination_subscription_delivers_and_removes_for_both_callers() {
 /// default action while its native handler is still running on another thread.
 #[test]
 fn first_signal_removal_does_not_terminate_in_flight_delivery() {
-    use maestro_test_harness::{TestProcess, selection};
+    use maestro_test_process::{TestProcess, selection};
     if !selection().is_child() {
         let output =
             TestProcess::current("first_signal_removal_does_not_terminate_in_flight_delivery")
@@ -129,7 +129,7 @@ fn first_signal_removal_does_not_terminate_in_flight_delivery() {
 
 #[test]
 fn last_removal_restores_native_termination() {
-    use maestro_test_harness::{TestProcess, selection};
+    use maestro_test_process::{TestProcess, selection};
     use std::os::unix::process::ExitStatusExt;
     if selection().is_child() {
         let runtime = tokio::runtime::Builder::new_current_thread()
@@ -166,8 +166,8 @@ fn last_removal_restores_native_termination() {
 
 #[test]
 fn reopen_and_independent_registrations_remain_live() {
-    if !maestro_test_harness::selection().is_child() {
-        let output = maestro_test_harness::TestProcess::current(
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
             "reopen_and_independent_registrations_remain_live",
         )
         .unwrap()

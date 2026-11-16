@@ -18,7 +18,7 @@ fn exact_child_selection_reaches_workspace_check() {
     assert_eq!(
         check_workspace(workspace.root.path()).unwrap_err(),
         format!(
-            "{}:2: exact test selection belongs to maestro-test-harness",
+            "{}:2: exact test selection belongs to maestro-test-process",
             path.display()
         )
     );

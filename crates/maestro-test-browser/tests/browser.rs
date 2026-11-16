@@ -1124,7 +1124,7 @@ fn resources_close_after_success_and_failure() {
 #[test]
 #[ignore = "runs in the pinned Chromium job"]
 fn tool_report_paints_from_its_verified_assets() {
-    let work = maestro_test_harness::Scratch::new().unwrap();
+    let work = maestro_test_directory::Scratch::new().unwrap();
     let checkout = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
 
     run(browser_driver::tool_report(
@@ -1141,7 +1141,7 @@ fn tool_report_paints_from_its_verified_assets() {
 mod exports {
     use super::browser_driver;
     use super::support::{chromium, prepared, run};
-    use maestro_test_harness::Scratch;
+    use maestro_test_directory::Scratch;
 
     /// Run one export in its own browser.
     fn export(family: &str, name: &str) {

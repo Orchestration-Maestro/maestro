@@ -395,9 +395,9 @@ fn bedrock_socks_reuses_credential_route() -> TestResult {
 
 #[test]
 fn idle_routed_shutdown_joins_without_connection_errors() -> TestResult {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "idle_routed_shutdown_joins_without_connection_errors",
             )?
             .nocapture()

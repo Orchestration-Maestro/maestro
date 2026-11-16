@@ -6,7 +6,7 @@ use std::{
 
 use super::build::engine;
 use super::build::{compile, warm, warm_with};
-use maestro_test_harness::Scratch;
+use maestro_test_directory::Scratch;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use wasmtime::{Config, Engine};
 

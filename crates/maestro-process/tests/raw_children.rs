@@ -2,9 +2,9 @@
 #![cfg(all(test, unix))]
 use crate::child_programs::{self, async_command};
 use maestro_process::children::{RawChild, RawOutput};
-use maestro_test_harness::HARNESS_START;
-use maestro_test_harness::child::harness;
-use maestro_test_harness::executor::run;
+use maestro_test_process::HARNESS_START;
+use maestro_test_process::child::harness;
+use maestro_test_process::executor::run;
 use std::{
     process::Stdio,
     task::{Context, Waker},

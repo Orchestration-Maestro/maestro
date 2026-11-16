@@ -7,7 +7,7 @@ pub use maestro_tui::test_support::{manual_runtime, recording_terminal};
 /// The scenario re-runs as `test`, so a witness that reads process variables states them
 /// here instead of inheriting the runner's.
 pub fn in_child(test: &str, environment: &[(&str, &str)], body: impl FnOnce()) {
-    let cases = match maestro_test_harness::run_per_environment(test, [()], |()| {
+    let cases = match maestro_test_process::run_per_environment(test, [()], |()| {
         environment
             .iter()
             .map(|(key, value)| (*key, Some(*value)))

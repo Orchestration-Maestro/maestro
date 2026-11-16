@@ -733,7 +733,7 @@ const ORIGIN_VIEWPORT_CHECK: &str = "clipped_placement: viewport check viewport_
 /// Debug lines one clipping call emits, without the event header, and its result.
 #[cfg(not(target_arch = "wasm32"))]
 fn clipping_events(placement: &HostPlacement) -> (Option<(ClippedPlacement, u32)>, Vec<String>) {
-    let output = maestro_test_harness::trace_capture::Output::default();
+    let output = maestro_test_tracing::Output::default();
     let writer = output.clone();
     let subscriber = tracing_subscriber::fmt()
         .without_time()
@@ -743,9 +743,7 @@ fn clipping_events(placement: &HostPlacement) -> (Option<(ClippedPlacement, u32)
         .with_max_level(tracing::Level::DEBUG)
         .with_writer(move || writer.clone())
         .finish();
-    let clipped = maestro_test_harness::trace_capture::with_default(subscriber, || {
-        clipped_placement(placement)
-    });
+    let clipped = maestro_test_tracing::with_default(subscriber, || clipped_placement(placement));
     (clipped, output.text().lines().map(str::to_owned).collect())
 }
 

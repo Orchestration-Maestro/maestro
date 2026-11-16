@@ -4,8 +4,8 @@
 use crate::support::{Child, Served, serve};
 use maestro_extensions::{ExtensionFactory, types::events::SessionShutdownEvent};
 use maestro_models::Local;
-use maestro_test_harness::Scratch;
-use maestro_test_harness::{CASE, TestProcess, selection};
+use maestro_test_directory::Scratch;
+use maestro_test_process::{CASE, TestProcess, selection};
 use std::convert::Infallible;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};

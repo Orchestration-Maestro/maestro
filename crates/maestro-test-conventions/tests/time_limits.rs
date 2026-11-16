@@ -29,7 +29,7 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
                 if *api == "optional-poll" {
                     format!("{}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())", directory.join(native_path(file)).display())
                 } else if api.starts_with("tracing::") {
-                    format!("{}:{line}: scoped tracing capture outside maestro-test-harness::trace_capture: {api}; call maestro_test_harness::trace_capture::with_default or with_subscriber instead", directory.join(native_path(file)).display())
+                    format!("{}:{line}: scoped tracing capture outside maestro-test-tracing: {api}; call maestro_test_tracing::with_default or with_subscriber instead", directory.join(native_path(file)).display())
                 } else {
                     format!("{}:{line}: test-owned time limit: {api}; wait for completion instead", directory.join(native_path(file)).display())
                 }
@@ -295,7 +295,7 @@ fn test_support_members_are_checked() {
         &[("src/lib.rs", 2, "tokio::time::timeout")],
     );
     check(
-        "maestro-test-harness",
+        "maestro-test-directory",
         &[(
             "src/lib.rs",
             "async fn sample() {\n    tokio::time::timeout(deadline, operation).await;\n}\n",
@@ -830,14 +830,14 @@ fn owner_captures_and_production_dispatch_are_allowed() {
         "maestro-tui",
         &[(
             "src/tests.rs",
-            "use maestro_test_harness::trace_capture::with_subscriber;\nasync fn sample() {\n    maestro_test_harness::trace_capture::with_default(subscriber, action);\n    with_subscriber(operation, subscriber).await;\n}\n",
+            "use maestro_test_tracing::with_subscriber;\nasync fn sample() {\n    maestro_test_tracing::with_default(subscriber, action);\n    with_subscriber(operation, subscriber).await;\n}\n",
         )],
         &[],
     );
     check(
-        "maestro-test-harness",
+        "maestro-test-tracing",
         &[(
-            "src/trace_capture.rs",
+            "src/lib.rs",
             "fn sample() {\n    tracing::subscriber::with_default(subscriber, action);\n    operation.with_subscriber(subscriber);\n}\n",
         )],
         &[],
@@ -850,29 +850,4 @@ fn owner_captures_and_production_dispatch_are_allowed() {
         )],
         &[],
     );
-}
-
-#[test]
-fn harness_captures_outside_the_owner_file_are_rejected() {
-    for file in [
-        "src/lib.rs",
-        "src/other.rs",
-        "src/nested/src/trace_capture.rs",
-    ] {
-        check(
-            "maestro-test-harness",
-            &[(
-                file,
-                "fn sample() {\n    tracing::subscriber::with_default(subscriber, action);\n    operation.with_subscriber(subscriber);\n}\n",
-            )],
-            &[
-                (file, 2, "tracing::subscriber::with_default"),
-                (
-                    file,
-                    3,
-                    "tracing::instrument::WithSubscriber::with_subscriber",
-                ),
-            ],
-        );
-    }
 }

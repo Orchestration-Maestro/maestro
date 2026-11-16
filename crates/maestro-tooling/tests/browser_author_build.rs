@@ -20,7 +20,7 @@ fn browser_setup_errors_reach_stderr_and_transcript() {
             std::process::id()
         ));
         fs::create_dir_all(&directory).unwrap();
-        let child = maestro_test_harness::TestProcess::current(
+        let child = maestro_test_process::TestProcess::current(
             "browser_setup_errors_reach_stderr_and_transcript",
         )
         .unwrap()
@@ -76,7 +76,7 @@ fn fail_setup(stage: &str) {
     command
         .args(["nextest-setup", "fixture-sources", "workspace"])
         .current_dir(browser.workspace.path());
-    maestro_test_harness::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     let status = recipe_support::setup_status(&mut command);
     assert!(!status.success());
 }
@@ -146,7 +146,7 @@ fn browser_resolution_never_reaches_the_shared_cargo_home() {
 /// Source preparation also precedes Cargo-home isolation without nextest setup exports.
 #[test]
 fn browser_resolution_prepares_sources_outside_nextest() {
-    let output = maestro_test_harness::TestProcess::named(
+    let output = maestro_test_process::TestProcess::named(
         "browser_author_build::browser_resolution_never_reaches_the_shared_cargo_home",
     )
     .unwrap()
@@ -982,7 +982,7 @@ fn browser_prepared_metadata_is_template_only() {
 fn browser_ignores_only_generated_outputs() {
     let browser = Browser::new();
     assert!(
-        maestro_test_harness::git_command::command()
+        maestro_test_process::git_command::command()
             .current_dir(browser.workspace.path())
             .args(["init", "--quiet"])
             .status()
@@ -1004,7 +1004,7 @@ fn browser_ignores_only_generated_outputs() {
         ("assets/app.css", false),
         ("package.json.in", false),
     ] {
-        let result = maestro_test_harness::git_command::command()
+        let result = maestro_test_process::git_command::command()
             .current_dir(browser.workspace.path())
             .args(["check-ignore", "--no-index", "--quiet"])
             .arg(browser.fixture(path))
@@ -1018,7 +1018,7 @@ fn browser_ignores_only_generated_outputs() {
         "assets/brand/mark.svg",
     ] {
         assert!(
-            !maestro_test_harness::git_command::command()
+            !maestro_test_process::git_command::command()
                 .current_dir(browser.workspace.path())
                 .args(["check-ignore", "--no-index", "--quiet"])
                 .arg(path)
@@ -1131,7 +1131,7 @@ fn check_root_browser_selection(workspace: &Workspace) {
 fn preview_tools(browser: &Browser) -> std::ffi::OsString {
     fs::remove_file(browser.path("bin/miniserve")).unwrap();
     for name in ["cargo", "trunk", "mise", "prek", "watchexec"] {
-        maestro_test_harness::install_command(
+        maestro_test_process::install_command(
             &browser.path("bin").join(name),
             &serde_json::json!({
                 "scenario": "output", "stdout": [],

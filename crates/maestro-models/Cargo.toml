@@ -51,7 +51,8 @@ tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-t
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-harness.workspace = true
+maestro-test-directory.workspace = true
+maestro-test-process.workspace = true
 tokio = { version = "=1.53.3", features = ["rt", "time", "test-util"] }
 
 [[test]]

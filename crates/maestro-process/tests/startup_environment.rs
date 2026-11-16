@@ -4,7 +4,7 @@
 use crate::child_programs;
 use maestro_process::commands::Launch;
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
-use maestro_test_harness::child::without_harness;
+use maestro_test_process::child::without_harness;
 use std::path::Path;
 
 /// A launch of `program` from this test executable, with `operands` after the harness
@@ -41,7 +41,7 @@ fn output(launch: Launch, environment: &[(&str, &str)], cwd: Option<&Path>) -> S
 
 #[test]
 fn startup_child_default_keeps_explicit_marker_overlay() {
-    let tree = maestro_test_harness::Scratch::new().unwrap();
+    let tree = maestro_test_directory::Scratch::new().unwrap();
     let observed = output(
         probe(),
         &[
@@ -110,12 +110,12 @@ const AMBIENT: [(Option<&str>, &str); 2] = [(Some("true"), "true"), (None, "")];
 
 #[test]
 fn sdk_children_keep_ambient_marker() {
-    let selection = maestro_test_harness::selection();
+    let selection = maestro_test_process::selection();
     if !selection.is_child() {
         for (index, (value, _observed)) in AMBIENT.iter().enumerate() {
             let case = index.to_string();
             let mut child =
-                maestro_test_harness::TestProcess::current("sdk_children_keep_ambient_marker")
+                maestro_test_process::TestProcess::current("sdk_children_keep_ambient_marker")
                     .unwrap()
                     .case(&case);
             child = match value {
@@ -192,8 +192,8 @@ fn startup_child_default_keeps_launch_context() {
 
 #[test]
 fn executable_marker_default_precedes_explicit_child_edits() {
-    if !maestro_test_harness::selection().is_child() {
-        let output = maestro_test_harness::TestProcess::current(
+    if !maestro_test_process::selection().is_child() {
+        let output = maestro_test_process::TestProcess::current(
             "startup_environment::executable_marker_default_precedes_explicit_child_edits",
         )
         .unwrap()

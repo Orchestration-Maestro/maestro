@@ -232,9 +232,9 @@ fn cloud_owned_producer_keeps_lifetime_and_deadline_policy() -> TestResult {
 #[test]
 fn cloud_local_and_threaded_registration_keep_hook_captures() -> TestResult {
     let _registry = crate::bundled::registry();
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "cloud_local_and_threaded_registration_keep_hook_captures",
             )?
             .nocapture()
@@ -257,9 +257,9 @@ fn cloud_raw_entry_uses_shared_response_reduction() -> TestResult {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_call_counters_are_independent_between_entries() -> TestResult {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "cloud_call_counters_are_independent_between_entries",
             )?
             .nocapture()
@@ -321,9 +321,9 @@ mod routes;
 #[test]
 fn cloud_root_and_registry_entries_dispatch() -> TestResult {
     let _registry = crate::bundled::registry();
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "cloud_root_and_registry_entries_dispatch",
             )?
             .nocapture()
@@ -341,9 +341,9 @@ fn cloud_root_and_registry_entries_dispatch() -> TestResult {
 #[test]
 fn cloud_raw_options_preserve_declared_fields() -> TestResult {
     let _registry = crate::bundled::registry();
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "cloud_raw_options_preserve_declared_fields",
             )?
             .nocapture()
@@ -364,7 +364,7 @@ mod deadline;
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn cloud_authentication_consumes_the_selected_deadline() -> TestResult {
-    let case = maestro_test_harness::selection();
+    let case = maestro_test_process::selection();
     if case.is_child() {
         return crate::runtime::run(deadline::delayed_refresh(case.runs_case("expired")));
     }
@@ -372,7 +372,7 @@ fn cloud_authentication_consumes_the_selected_deadline() -> TestResult {
         let files = crate::content_credentials::Files::new();
         let path = files.path("adc.json");
         {
-            let output = maestro_test_harness::TestProcess::current(
+            let output = maestro_test_process::TestProcess::current(
                 "cloud_authentication_consumes_the_selected_deadline",
             )?
             .nocapture()

@@ -2,10 +2,10 @@
 use super::Entry;
 use std::collections::BTreeMap;
 
-pub struct Repository(maestro_test_harness::Scratch);
+pub struct Repository(maestro_test_directory::Scratch);
 impl Default for Repository {
     fn default() -> Self {
-        Self(maestro_test_harness::Scratch::new().unwrap())
+        Self(maestro_test_directory::Scratch::new().unwrap())
     }
 }
 impl Repository {

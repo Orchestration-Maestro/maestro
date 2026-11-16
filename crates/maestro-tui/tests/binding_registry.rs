@@ -76,9 +76,9 @@ fn global_registry_is_lazy_shared_replaceable_and_restorable() {
 
 /// Run the initial-global observation in a fresh process.
 fn run_child() -> bool {
-    if !maestro_test_harness::selection().is_child() {
+    if !maestro_test_process::selection().is_child() {
         let name = "binding_registry::global_registry_is_lazy_shared_replaceable_and_restorable";
-        let output = maestro_test_harness::TestProcess::current(name)
+        let output = maestro_test_process::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .case("*")

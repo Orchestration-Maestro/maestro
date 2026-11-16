@@ -23,13 +23,13 @@ fn take_work() -> Vec<(&'static str, usize)> {
 
 /// Invocation-local native filesystem fixture.
 #[cfg(unix)]
-struct Fixture(maestro_test_harness::Scratch);
+struct Fixture(maestro_test_directory::Scratch);
 
 #[cfg(unix)]
 impl Fixture {
     /// Create distinct source and destination directories with canonical identities.
     fn new() -> Self {
-        let root = maestro_test_harness::Scratch::new().unwrap();
+        let root = maestro_test_directory::Scratch::new().unwrap();
         fs::create_dir(root.path().join("old")).unwrap();
         fs::create_dir(root.path().join("new")).unwrap();
         Self(root)

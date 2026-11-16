@@ -433,7 +433,7 @@ pub fn assert_rows(test: &str) -> TestResult {
         .filter(|(_, row)| row.test == test)
         .collect();
     assert!(!owned.is_empty(), "no fixture rows");
-    let group = maestro_test_harness::run_per_environment(test, owned, |(_, row)| {
+    let group = maestro_test_process::run_per_environment(test, owned, |(_, row)| {
         [
             ("GEMINI_API_KEY", &row.input.env_key),
             ("GOOGLE_GEMINI_BASE_URL", &row.input.env_base),

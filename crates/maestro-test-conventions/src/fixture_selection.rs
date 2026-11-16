@@ -1,4 +1,4 @@
-//! Keeps native fixture setup selection equal to the declared test-harness callers.
+//! Keeps native fixture setup selection equal to the declared test-process callers.
 
 use std::{collections::BTreeSet, path::Path};
 
@@ -98,7 +98,7 @@ fn selected(config: &Value) -> Result<BTreeSet<&str>, String> {
 mod tests {
     use super::*;
     use cargo_metadata::{Metadata, MetadataCommand};
-    use maestro_test_harness::Scratch;
+    use maestro_test_directory::Scratch;
 
     /// A complete native-fixture rule built from the declared caller policy.
     fn config() -> String {
@@ -128,7 +128,7 @@ filter = """
         std::fs::write(root.path().join("src/lib.rs"), "").unwrap();
         std::fs::write(
             root.path().join("Cargo.toml"),
-            "[package]\nname = 'maestro-test-harness'\nversion = '0.1.0'\n[workspace]\n",
+            "[package]\nname = 'maestro-test-process'\nversion = '0.1.0'\n[workspace]\n",
         )
         .unwrap();
         std::fs::create_dir(root.path().join(".config")).unwrap();
@@ -221,7 +221,7 @@ filter = """
 
         let error = check(root.path(), &metadata).unwrap_err();
 
-        for name in ["maestro-test-harness", "maestro-cli", "maestro-agent"] {
+        for name in ["maestro-test-process", "maestro-cli", "maestro-agent"] {
             assert!(
                 error.contains(&format!("missing package(={name})")),
                 "{error}"

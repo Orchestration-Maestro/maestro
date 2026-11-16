@@ -1,7 +1,7 @@
 //! Prepared component coverage and reuse at the shared Cargo boundary.
 
-use maestro_test_harness::Scratch;
-use maestro_test_harness::{TestProcess, selection};
+use maestro_test_directory::Scratch;
+use maestro_test_process::{TestProcess, selection};
 use std::{collections::HashMap, fs, path::Path};
 
 #[path = "../../maestro-extensions-guest/src/tests/build/cargo.rs"]
@@ -240,7 +240,7 @@ fn normalize_run(root: &Path, archived: bool) {
         .args(["nextest-setup", "normalize-component-cache"])
         .arg(root.join("target/debug"))
         .current_dir(root);
-    maestro_test_harness::without_prepared_bundles(&mut command);
+    maestro_test_process::without_prepared_bundles(&mut command);
     if archived {
         command.env("TEST_ARCHIVE", "1");
     }
@@ -322,7 +322,7 @@ fn cache_normalization_advances_executables_without_opening_them_for_writing() {
     let deps = scratch.path().join("target/debug/deps");
     let older = output(&deps, "older-1", true, 50);
     output(&deps, "newest-1", true, 400);
-    let Some(_denied) = maestro_test_harness::deny(&older, 0o555).unwrap() else {
+    let Some(_denied) = maestro_test_directory::deny(&older, 0o555).unwrap() else {
         eprintln!("host permits writes despite denied file mode");
         return;
     };

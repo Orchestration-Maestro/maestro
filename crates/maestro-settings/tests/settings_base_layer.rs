@@ -248,7 +248,7 @@ fn inaccessible_base_layer_removal_reports_error_and_can_be_retried() {
         });
         let record = parent.join("base-settings.json");
         let saved = std::fs::read(&record).unwrap();
-        let Some(restore) = maestro_test_harness::deny(&parent, 0o600).unwrap() else {
+        let Some(restore) = maestro_test_directory::deny(&parent, 0o600).unwrap() else {
             continue;
         };
         manager.publish_base_layer(scope, None);

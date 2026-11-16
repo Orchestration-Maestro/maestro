@@ -21,7 +21,7 @@ pub fn write(path: impl AsRef<Path>, text: &str) {
 pub fn command(directory: &Path, name: &str, record: &serde_json::Value) -> PathBuf {
     std::fs::create_dir_all(directory).unwrap();
     let path = directory.join(name);
-    maestro_test_harness::install_command(&path, &record.to_string())
+    maestro_test_process::install_command(&path, &record.to_string())
         .expect("the prepared native fixture installs");
     path
 }

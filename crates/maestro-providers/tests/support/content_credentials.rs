@@ -5,13 +5,13 @@
 /// Disposable exclusively created files owned by one test transaction.
 pub(crate) struct Files(
     /// Directory owned by this transaction.
-    pub(crate) maestro_test_harness::Scratch,
+    pub(crate) maestro_test_directory::Scratch,
 );
 
 impl Files {
     /// Create a unique directory without overwriting an existing path.
     pub(crate) fn new() -> Self {
-        Self(maestro_test_harness::Scratch::new().unwrap())
+        Self(maestro_test_directory::Scratch::new().unwrap())
     }
 
     /// Resolve a fixture path without creating it.

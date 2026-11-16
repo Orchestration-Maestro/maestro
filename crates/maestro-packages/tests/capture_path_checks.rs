@@ -11,7 +11,7 @@ const PATH_ROOT: &str = "MAESTRO_CAPTURE_PATH_ROOT";
 fn capture_resolves_override_path_before_parent_decoys() {
     /// The case that repeats the lookup decoys in a child.
     const CHILD: &str = "native";
-    if maestro_test_harness::selection().case() == Some(CHILD) {
+    if maestro_test_process::selection().case() == Some(CHILD) {
         let directory = std::env::var_os(PATH_ROOT).unwrap();
         let chosen = std::path::PathBuf::from(directory).join("chosen");
         let path = chosen.to_str().unwrap();
@@ -48,7 +48,7 @@ fn capture_resolves_override_path_before_parent_decoys() {
     for name in ["shared.BAT", "only.BAT"] {
         std::fs::write(chosen.join(name), "@echo chosen\r\n").unwrap();
     }
-    let output = maestro_test_harness::TestProcess::current(
+    let output = maestro_test_process::TestProcess::current(
         "capture_resolves_override_path_before_parent_decoys",
     )
     .unwrap()

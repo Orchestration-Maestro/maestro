@@ -239,7 +239,7 @@ pub fn manager(root: &read_support::Scratch) -> Arc<ToolsManager> {
 /// depends on the runner's `PATH`. The directory lives as long as the returned guard.
 pub fn pinned_manager() -> (read_support::Scratch, Arc<ToolsManager>) {
     let (bin, manager) = find_support::pinned_manager("fd");
-    maestro_test_harness::install_search_program("rg", bin.path()).unwrap();
+    maestro_test_process::install_search_program("rg", bin.path()).unwrap();
     (bin, manager)
 }
 
@@ -482,7 +482,7 @@ fn ignored_search() {
         let root = grep_support::tree();
         if repository {
             assert!(
-                maestro_test_harness::git_command::command()
+                maestro_test_process::git_command::command()
                     .args(["init", "-q"])
                     .current_dir(root.path())
                     .status()

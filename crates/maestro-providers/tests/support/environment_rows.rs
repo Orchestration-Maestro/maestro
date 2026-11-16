@@ -2,7 +2,7 @@
 
 #![cfg(not(target_arch = "wasm32"))]
 use crate::chat::TestResult;
-use maestro_test_harness::run_per_environment;
+use maestro_test_process::run_per_environment;
 use serde_json::Value;
 use std::collections::BTreeMap;
 
