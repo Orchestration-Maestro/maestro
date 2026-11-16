@@ -247,8 +247,8 @@ The history example runs eight destination projections and a persisted context.
 It then sends a returned assistant message and its tool feedback to a different
 provider identity and checks the serialized request. The full association and
 image policy is in [conversation projection](../conversation-projection.md),
-with the regressions `maestro_projection_preserves_colliding_call_associations`
-and `maestro_projection_downgrades_unsupported_images_once` in the
+with the regressions `projection_preserves_colliding_call_associations`
+and `projection_downgrades_unsupported_images_once` in the
 [history tests](../../crates/maestro-models/tests/model_history_projection.rs).
 
 ## Thinking, usage and provider-specific options
@@ -324,7 +324,7 @@ policies. No callback boundary is universal: read the
 timestamp. `append_assistant_message_diagnostic` adds the supplied details and
 keeps the existing diagnostics. The declarations are in
 [diagnostics](../../crates/maestro-interchange/src/diagnostics.rs), and the
-`maestro_diagnostics_append_with_current_timestamp` witness is in the
+`diagnostics_append_with_current_timestamp` witness is in the
 [record tests](../../crates/maestro-models/tests/model_records.rs).
 
 ## Native and browser authentication
@@ -398,15 +398,15 @@ does not remove the registration. `cleanup_session_resources` invokes the live
 registered callbacks and collects their failures in order; call it for the one
 session you own or for all sessions, as the case requires. See the
 [cleanup declarations](../../crates/maestro-models/src/records/sessions.rs),
-`maestro_cleanup_collects_failures_in_order` in the
+`cleanup_collects_failures_in_order` in the
 [invocation tests](../../crates/maestro-models/tests/model_invocation.rs) and
-`maestro_cleanup_observes_live_changes` in the
+`cleanup_observes_live_changes` in the
 [lifetime tests](../../crates/maestro-models/tests/model_stream_lifetimes.rs).
 
 The [scripted model guide](faux.md) covers the opt-in `register_faux_provider`,
 the message and content builders, replacing and appending queued responses,
 pending and call counts, pacing, factories, the session-local cache and explicit
-unregister. Reuse the two-turn `maestro_documented_flow_runs_offline` in the
+unregister. Reuse the two-turn `documented_flow_runs_offline` in the
 [scripted invocation tests](../../crates/maestro-models/tests/scripted_model_invocation.rs);
 do not write a second simulator or tutorial executor. A scripted call that is
 aborted before it starts still consumes its queued response. Dropping a result

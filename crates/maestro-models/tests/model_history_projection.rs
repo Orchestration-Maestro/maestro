@@ -86,7 +86,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_projects_account_tool_history_for_message_models() {
+    fn projects_account_tool_history_for_message_models() {
         let target = target_model();
         let normalize = |id: &str, _: &Model, _: &AssistantMessage| {
             id.chars()
@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_replay_preserves_only_compatible_thinking() {
+    fn replay_preserves_only_compatible_thinking() {
         let target = target_model();
         for difference in 0..4 {
             for signature in [None, Some(""), Some("signed")] {
@@ -273,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_projection_downgrades_unsupported_images_once() {
+    fn projection_downgrades_unsupported_images_once() {
         for (placeholder, tool) in [
             ("(image omitted: model does not support images)", false),
             ("(tool image omitted: model does not support images)", true),
@@ -358,7 +358,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_projection_pairs_tool_occurrences() {
+    fn projection_pairs_tool_occurrences() {
         let target = target_model();
         assert!(transform_messages(&[], &target, None).is_empty());
         check_normalizer_inputs(&target);
@@ -508,7 +508,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_projection_preserves_colliding_call_associations() {
+    fn projection_preserves_colliding_call_associations() {
         let target = target_model();
         for already_equal in [false, true] {
             let ids = if already_equal {
@@ -575,7 +575,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_projection_never_mutates_history() {
+    fn projection_never_mutates_history() {
         let source = assistant(vec![
             thinking("plan", Some("signed"), None),
             call("a", "first"),

@@ -20,48 +20,48 @@ fn invocation(arguments: Value) -> Result<ToolCall, serde_json::Error> {
 }
 
 #[test]
-fn maestro_validates_without_runtime_code_generation() {
-    run_cases("maestro_validates_without_runtime_code_generation").unwrap();
+fn validates_without_runtime_code_generation() {
+    run_cases("validates_without_runtime_code_generation").unwrap();
 }
 
 #[test]
-fn maestro_coerces_declared_primitive_types() {
-    run_cases("maestro_coerces_declared_primitive_types").unwrap();
+fn coerces_declared_primitive_types() {
+    run_cases("coerces_declared_primitive_types").unwrap();
 }
 
 #[test]
-fn maestro_rejects_invalid_primitive_coercion() {
-    run_cases("maestro_rejects_invalid_primitive_coercion").unwrap();
+fn rejects_invalid_primitive_coercion() {
+    run_cases("rejects_invalid_primitive_coercion").unwrap();
 }
 
 #[test]
-fn maestro_validation_selects_first_duplicate_tool() {
-    run_cases("maestro_validation_selects_first_duplicate_tool").unwrap();
+fn validation_selects_first_duplicate_tool() {
+    run_cases("validation_selects_first_duplicate_tool").unwrap();
 }
 
 #[test]
-fn maestro_reports_missing_tool_exactly() {
-    run_cases("maestro_reports_missing_tool_exactly").unwrap();
+fn reports_missing_tool_exactly() {
+    run_cases("reports_missing_tool_exactly").unwrap();
 }
 
 #[test]
-fn maestro_coerces_numeric_text_at_boundaries() {
-    run_cases("maestro_coerces_numeric_text_at_boundaries").unwrap();
+fn coerces_numeric_text_at_boundaries() {
+    run_cases("coerces_numeric_text_at_boundaries").unwrap();
 }
 
 #[test]
-fn maestro_formats_coerced_numbers_with_stable_spelling() {
-    run_cases("maestro_formats_coerced_numbers_with_stable_spelling").unwrap();
+fn formats_coerced_numbers_with_stable_spelling() {
+    run_cases("formats_coerced_numbers_with_stable_spelling").unwrap();
 }
 
 #[test]
-fn maestro_traverses_objects_items_and_additional_properties() {
-    run_cases("maestro_traverses_objects_items_and_additional_properties").unwrap();
+fn traverses_objects_items_and_additional_properties() {
+    run_cases("traverses_objects_items_and_additional_properties").unwrap();
 }
 
 #[test]
-fn maestro_validation_preserves_inputs_and_schema_changes() {
-    run_cases("maestro_validation_preserves_inputs_and_schema_changes").unwrap();
+fn validation_preserves_inputs_and_schema_changes() {
+    run_cases("validation_preserves_inputs_and_schema_changes").unwrap();
     let mut tool = declaration(
         json!({"type":"object","properties":{"nested":{"type":"object","properties":{"count":{"type":"number","minimum":1}}}}}),
     );
@@ -86,28 +86,28 @@ fn maestro_validation_preserves_inputs_and_schema_changes() {
 }
 
 #[test]
-fn maestro_counts_extended_graphemes_at_both_string_bounds() {
-    run_cases("maestro_counts_extended_graphemes_at_both_string_bounds").unwrap();
+fn counts_extended_graphemes_at_both_string_bounds() {
+    run_cases("counts_extended_graphemes_at_both_string_bounds").unwrap();
 }
 
 #[test]
-fn maestro_preserves_type_unions_but_tries_combinators_in_order() {
-    run_cases("maestro_preserves_type_unions_but_tries_combinators_in_order").unwrap();
+fn preserves_type_unions_but_tries_combinators_in_order() {
+    run_cases("preserves_type_unions_but_tries_combinators_in_order").unwrap();
 }
 
 #[test]
-fn maestro_reports_required_and_root_paths() {
-    run_cases("maestro_reports_required_and_root_paths").unwrap();
+fn reports_required_and_root_paths() {
+    run_cases("reports_required_and_root_paths").unwrap();
 }
 
 #[test]
-fn maestro_validates_pattern_and_prefix_constraints_without_extra_coercion() {
-    run_cases("maestro_validates_pattern_and_prefix_constraints_without_extra_coercion").unwrap();
+fn validates_pattern_and_prefix_constraints_without_extra_coercion() {
+    run_cases("validates_pattern_and_prefix_constraints_without_extra_coercion").unwrap();
 }
 
 #[test]
-fn maestro_validates_offline_refs_and_rejects_unknown_resources() {
-    run_cases("maestro_validates_offline_refs_and_rejects_unknown_resources").unwrap();
+fn validates_offline_refs_and_rejects_unknown_resources() {
+    run_cases("validates_offline_refs_and_rejects_unknown_resources").unwrap();
 }
 
 #[derive(serde::Deserialize)]
@@ -198,13 +198,13 @@ fn run_case(fixture: Fixture) {
 }
 
 #[test]
-fn maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data() {
-    run_cases("maestro_validates_mixed_tuple_dialects_without_rewriting_literal_data").unwrap();
+fn validates_mixed_tuple_dialects_without_rewriting_literal_data() {
+    run_cases("validates_mixed_tuple_dialects_without_rewriting_literal_data").unwrap();
 }
 
 #[test]
-fn maestro_formats_original_arguments_in_error_order() {
-    run_cases("maestro_formats_original_arguments_in_error_order").unwrap();
+fn formats_original_arguments_in_error_order() {
+    run_cases("formats_original_arguments_in_error_order").unwrap();
     let input = json!({"4294967295":4,"2":2,"01":1,"0":0,"4294967294":3,"-0":-0.0,"numeric":1e21,"unicode":"é\"\\\n"});
     let tool = declaration(json!(false));
     let error = validate_tool_arguments(&tool, &invocation(input).unwrap()).unwrap_err();
@@ -215,32 +215,32 @@ fn maestro_formats_original_arguments_in_error_order() {
 }
 
 #[test]
-fn maestro_rejects_invalid_nested_scalar_candidates() {
-    run_cases("maestro_rejects_invalid_nested_scalar_candidates").unwrap();
+fn rejects_invalid_nested_scalar_candidates() {
+    run_cases("rejects_invalid_nested_scalar_candidates").unwrap();
 }
 
 #[test]
-fn maestro_preserves_original_schema_locations_for_tuple_references() {
-    run_cases("maestro_preserves_original_schema_locations_for_tuple_references").unwrap();
+fn preserves_original_schema_locations_for_tuple_references() {
+    run_cases("preserves_original_schema_locations_for_tuple_references").unwrap();
 }
 
 #[test]
-fn maestro_validates_both_tuple_forms_without_rewriting_literals() {
-    run_cases("maestro_validates_both_tuple_forms_without_rewriting_literals").unwrap();
+fn validates_both_tuple_forms_without_rewriting_literals() {
+    run_cases("validates_both_tuple_forms_without_rewriting_literals").unwrap();
 }
 
 #[test]
-fn maestro_asserts_registered_formats_and_ignores_unknown_formats() {
-    run_cases("maestro_asserts_registered_formats_and_ignores_unknown_formats").unwrap();
+fn asserts_registered_formats_and_ignores_unknown_formats() {
+    run_cases("asserts_registered_formats_and_ignores_unknown_formats").unwrap();
 }
 
 #[test]
-fn maestro_reports_invocation_names_and_reference_keyword_errors() {
-    run_cases("maestro_reports_invocation_names_and_reference_keyword_errors").unwrap();
+fn reports_invocation_names_and_reference_keyword_errors() {
+    run_cases("reports_invocation_names_and_reference_keyword_errors").unwrap();
 }
 
 #[test]
-fn maestro_stringifies_negative_zero_and_rounded_large_numbers() {
+fn stringifies_negative_zero_and_rounded_large_numbers() {
     for (number, text) in [
         (json!(-0.0), "0"),
         (json!(9_007_199_254_740_993_u64), "9007199254740992"),

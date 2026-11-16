@@ -5,7 +5,7 @@ use crate::environment_children as children;
 use children::{Directory, TestResult, child, run, vars};
 
 #[cfg(not(target_arch = "wasm32"))]
-const PRECEDENCE: &str = "maestro_environment_keys_follow_provider_precedence";
+const PRECEDENCE: &str = "environment_keys_follow_provider_precedence";
 
 #[cfg(not(target_arch = "wasm32"))]
 const PROVIDERS: &[(&str, &[&str])] = &[
@@ -42,7 +42,7 @@ const PROVIDERS: &[(&str, &[&str])] = &[
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
+fn environment_keys_follow_provider_precedence() -> TestResult {
     if child()? {
         return Ok(());
     }
@@ -99,11 +99,11 @@ fn maestro_environment_keys_follow_provider_precedence() -> TestResult {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-const COPILOT: &str = "maestro_copilot_keys_ignore_generic_github_tokens";
+const COPILOT: &str = "copilot_keys_ignore_generic_github_tokens";
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_copilot_keys_ignore_generic_github_tokens() -> TestResult {
+fn copilot_keys_ignore_generic_github_tokens() -> TestResult {
     if child()? {
         return Ok(());
     }
@@ -189,11 +189,11 @@ fn assert_presence_combinations(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-const VERTEX: &str = "maestro_vertex_keys_distinguish_explicit_and_ambient_credentials";
+const VERTEX: &str = "vertex_keys_distinguish_explicit_and_ambient_credentials";
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_vertex_keys_distinguish_explicit_and_ambient_credentials() -> TestResult {
+fn vertex_keys_distinguish_explicit_and_ambient_credentials() -> TestResult {
     if child()? {
         return Ok(());
     }
@@ -368,7 +368,7 @@ fn assert_vertex_native_paths(directory: &Directory) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_bedrock_configuration_signals_remain_distinct() -> TestResult {
+fn bedrock_configuration_signals_remain_distinct() -> TestResult {
     if child()? {
         return Ok(());
     }
@@ -429,7 +429,7 @@ fn maestro_bedrock_configuration_signals_remain_distinct() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
+fn fireworks_catalog_and_keys_remain_complete() -> TestResult {
     use maestro_models::{ModelCost, ModelInput, get_model};
     if child()? {
         return Ok(());
@@ -461,11 +461,9 @@ fn maestro_fireworks_catalog_and_keys_remain_complete() -> TestResult {
     assert_eq!(router.input, [ModelInput::Text, ModelInput::Image]);
     let directory = Directory::new()?;
     run(
-        maestro_test_harness::TestProcess::current(
-            "maestro_fireworks_catalog_and_keys_remain_complete",
-        )?
-        .env_clear()
-        .case("*"),
+        maestro_test_harness::TestProcess::current("fireworks_catalog_and_keys_remain_complete")?
+            .env_clear()
+            .case("*"),
         &directory,
         &vars(&[("FIREWORKS_API_KEY", "test-fireworks-key")]),
         "fireworks",
@@ -482,7 +480,7 @@ fn bedrock_run(
 ) -> TestResult {
     run(
         maestro_test_harness::TestProcess::current(
-            "maestro_bedrock_configuration_signals_remain_distinct",
+            "bedrock_configuration_signals_remain_distinct",
         )?
         .env_clear()
         .case("*"),
