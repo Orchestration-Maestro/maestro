@@ -15,7 +15,7 @@ const EXPECTED: [(&str, Option<&str>, bool); 4] = [
 ];
 
 #[test]
-fn maestro_development_prompts_keep_argument_fields() {
+fn development_prompts_keep_argument_fields() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()

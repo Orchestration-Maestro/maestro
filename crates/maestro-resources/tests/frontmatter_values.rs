@@ -4,7 +4,7 @@ use maestro_resources::{
 
 /// Keep literal scalar newlines separate from body trimming.
 #[test]
-fn maestro_frontmatter_preserves_literal_newlines() {
+fn frontmatter_preserves_literal_newlines() {
     let parsed =
         parse_frontmatter("---\ndescription: |\n  Line one\n  Line two\n---\n\nBody").unwrap();
     assert_eq!(
@@ -19,7 +19,7 @@ fn maestro_frontmatter_preserves_literal_newlines() {
 
 /// Leave ordinary and unterminated documents intact.
 #[test]
-fn maestro_frontmatter_keeps_unclosed_or_absent_headers() {
+fn frontmatter_keeps_unclosed_or_absent_headers() {
     for input in [
         "Just text\nsecond line",
         "---\nname: test\nBody without terminator",
@@ -33,7 +33,7 @@ fn maestro_frontmatter_keeps_unclosed_or_absent_headers() {
 
 /// Default only empty and null roots, retaining useful scalar kinds.
 #[test]
-fn maestro_frontmatter_defaults_empty_and_null_roots() {
+fn frontmatter_defaults_empty_and_null_roots() {
     for yaml in ["", "# just a comment\n", "null\n"] {
         assert_eq!(
             parse_frontmatter(&format!("---\n{yaml}---\n Body "))
@@ -64,7 +64,7 @@ fn maestro_frontmatter_defaults_empty_and_null_roots() {
 
 /// Strip through the parsing interface without trimming plain documents.
 #[test]
-fn maestro_frontmatter_strips_only_present_headers() {
+fn frontmatter_strips_only_present_headers() {
     assert_eq!(
         strip_frontmatter("---\nkey: value\n---\n\nBody\n").unwrap(),
         "Body"
@@ -77,7 +77,7 @@ fn maestro_frontmatter_strips_only_present_headers() {
 
 /// Consume one complete opening character and retain closing suffixes.
 #[test]
-fn maestro_frontmatter_keeps_intact_delimiter_suffixes() {
+fn frontmatter_keeps_intact_delimiter_suffixes() {
     for input in [
         "---Xname: ok\n---suffix\n body ",
         "---😀name: ok\n---suffix\n body ",
@@ -99,7 +99,7 @@ fn maestro_frontmatter_keeps_intact_delimiter_suffixes() {
 
 /// Distinguish BOM whitespace from a retained next-line character.
 #[test]
-fn maestro_frontmatter_uses_exact_text_whitespace() {
+fn frontmatter_uses_exact_text_whitespace() {
     assert_eq!(
         parse_frontmatter("---\nx: y\n---\n\u{feff} body \u{feff}")
             .unwrap()
@@ -120,7 +120,7 @@ fn maestro_frontmatter_uses_exact_text_whitespace() {
 
 /// Resolve tagged scalars and anchored data without expanding merge keys.
 #[test]
-fn maestro_frontmatter_resolves_core_tags_and_aliases() {
+fn frontmatter_resolves_core_tags_and_aliases() {
     let parsed = parse_frontmatter("---\na: &a hello\nb: *a\nc: !!int \"42\"\nd: !!int 0x10\ne: !!float 1\nf: !!str 42\ng: !!bool TRUE\nh: !!null null\ni: !custom true\nbase: &base {description: shared}\n<<: *base\n---\nbody").unwrap();
     let shared = FrontmatterValue::Mapping(vec![(
         "description".into(),
@@ -146,7 +146,7 @@ fn maestro_frontmatter_resolves_core_tags_and_aliases() {
 
 /// Reject equal typed keys and invalid document continuation.
 #[test]
-fn maestro_frontmatter_rejects_duplicate_keys_and_documents() {
+fn frontmatter_rejects_duplicate_keys_and_documents() {
     for yaml in [
         "description: first\ndescription: second",
         "1: first\n1: second",
@@ -162,7 +162,7 @@ fn maestro_frontmatter_rejects_duplicate_keys_and_documents() {
 
 /// Preserve insertion position when distinct keys stringify alike.
 #[test]
-fn maestro_frontmatter_retains_distinct_typed_key_overwrites() {
+fn frontmatter_retains_distinct_typed_key_overwrites() {
     let parsed =
         parse_frontmatter("---\n1: first\nx: middle\n\"1\": second\n? null\n: empty\n---\nbody")
             .unwrap();
@@ -178,7 +178,7 @@ fn maestro_frontmatter_retains_distinct_typed_key_overwrites() {
 
 /// Retain f64 scalar kinds and exact scalar-key spellings.
 #[test]
-fn maestro_frontmatter_keeps_large_and_nonfinite_numbers() {
+fn frontmatter_keeps_large_and_nonfinite_numbers() {
     let parsed = parse_frontmatter("---\nn: 18446744073709551616\nover: 1e400\nfraction: .5e2\npositive: .inf\nnegative: -.inf\nnan: .nan\n1e21: a\n1e20: b\n1e-6: c\n1e-7: d\n-0: e\n.inf: f\n-.inf: g\n.nan: h\n---\nbody").unwrap();
     let FrontmatterValue::Mapping(values) = parsed.frontmatter else {
         panic!("mapping expected");
@@ -212,7 +212,7 @@ fn maestro_frontmatter_keeps_large_and_nonfinite_numbers() {
 
 /// Retain underlying text rather than a foreign binary object.
 #[test]
-fn maestro_frontmatter_resolves_binary_as_core_data() {
+fn frontmatter_resolves_binary_as_core_data() {
     assert_eq!(
         parse_frontmatter("---\nvalue: !!binary true\n---\nbody")
             .unwrap()
@@ -232,7 +232,7 @@ fn maestro_frontmatter_resolves_binary_as_core_data() {
 
 /// Retain underlying set-tagged mapping data.
 #[test]
-fn maestro_frontmatter_resolves_set_as_core_data() {
+fn frontmatter_resolves_set_as_core_data() {
     assert_eq!(
         parse_frontmatter("---\nmembers: !!set { a: null, b: null }\n---\nbody")
             .unwrap()
@@ -249,7 +249,7 @@ fn maestro_frontmatter_resolves_set_as_core_data() {
 
 /// Retain timestamp-tagged text without a native date object.
 #[test]
-fn maestro_frontmatter_resolves_timestamp_as_core_data() {
+fn frontmatter_resolves_timestamp_as_core_data() {
     assert_eq!(
         parse_frontmatter("---\ndate: !!timestamp 2026-01-01\n---\nbody")
             .unwrap()
@@ -263,7 +263,7 @@ fn maestro_frontmatter_resolves_timestamp_as_core_data() {
 
 /// Retain the ordered-map tag's underlying sequence.
 #[test]
-fn maestro_frontmatter_resolves_omap_as_core_data() {
+fn frontmatter_resolves_omap_as_core_data() {
     assert_eq!(
         parse_frontmatter("---\norder: !!omap [a: 1, b: 2]\n---\nbody")
             .unwrap()
@@ -280,7 +280,7 @@ fn maestro_frontmatter_resolves_omap_as_core_data() {
 
 /// Retain the pairs tag's underlying sequence.
 #[test]
-fn maestro_frontmatter_resolves_pairs_as_core_data() {
+fn frontmatter_resolves_pairs_as_core_data() {
     assert_eq!(
         parse_frontmatter("---\npairs: !!pairs [a: 1, b: 2]\n---\nbody")
             .unwrap()
@@ -297,7 +297,7 @@ fn maestro_frontmatter_resolves_pairs_as_core_data() {
 
 /// Discard collection-key pairs without losing ordinary fields.
 #[test]
-fn maestro_frontmatter_ignores_collection_key_pairs() {
+fn frontmatter_ignores_collection_key_pairs() {
     for key in ["[a, b]", "[]", "[\"a, b\", \"true\"]", "{a: b}"] {
         assert_eq!(
             parse_frontmatter(&format!(
@@ -315,7 +315,7 @@ fn maestro_frontmatter_ignores_collection_key_pairs() {
 
 /// Return the native parser cause through both parsing entry points.
 #[test]
-fn maestro_frontmatter_reports_invalid_metadata() {
+fn frontmatter_reports_invalid_metadata() {
     let input = "---\nfoo: [bar\n---\nBody";
     let error = parse_frontmatter(input).unwrap_err();
     assert!(!error.message.is_empty());
@@ -326,7 +326,7 @@ fn maestro_frontmatter_reports_invalid_metadata() {
 
 /// Normalize both authored carriage-return conventions.
 #[test]
-fn maestro_frontmatter_normalizes_line_endings() {
+fn frontmatter_normalizes_line_endings() {
     for input in [
         "---\r\nname: test\r\n---\r\nLine one\r\nLine two",
         "---\rname: test\r---\rLine one\rLine two",
@@ -337,7 +337,7 @@ fn maestro_frontmatter_normalizes_line_endings() {
 
 /// Read quoted and hyphenated keys with the exact extracted body.
 #[test]
-fn maestro_frontmatter_reads_metadata_and_body() {
+fn frontmatter_reads_metadata_and_body() {
     let parsed = parse_frontmatter(
         "---\nname: \"skill-name\"\ndescription: 'A desc'\nfoo-bar: value\n---\n\nBody text",
     )
@@ -358,7 +358,7 @@ fn maestro_frontmatter_reads_metadata_and_body() {
 
 /// Signs inside radix prefixes remain strings in plain and tagged scalars.
 #[test]
-fn maestro_frontmatter_rejects_inner_radix_signs() {
+fn frontmatter_rejects_inner_radix_signs() {
     for scalar in ["0x+10", "0o+10", "0x-10", "0o-10", "0x", "0o", "0xg", "0o8"] {
         for tag in ["", "!!int "] {
             let parsed = parse_frontmatter(&format!("---\nn: {tag}{scalar}\n---")).unwrap();
@@ -376,7 +376,7 @@ fn maestro_frontmatter_rejects_inner_radix_signs() {
 
 /// Radix integers have no intermediate width limit and round ties to even.
 #[test]
-fn maestro_frontmatter_rounds_unbounded_radix_numbers() {
+fn frontmatter_rounds_unbounded_radix_numbers() {
     for (scalar, expected) in [
         (
             "0x100000000000000000000000000000000",
@@ -417,7 +417,7 @@ fn maestro_frontmatter_rounds_unbounded_radix_numbers() {
 
 /// Core scalar spellings resolve to typed values while lookalikes remain text.
 #[test]
-fn maestro_frontmatter_resolves_schema_scalar_spellings() {
+fn frontmatter_resolves_schema_scalar_spellings() {
     for (yaml, expected) in [
         ("0o17", FrontmatterValue::Number(15.0)),
         ("-12", FrontmatterValue::Number(-12.0)),
