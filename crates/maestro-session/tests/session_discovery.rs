@@ -195,7 +195,7 @@ fn discovery_ignores_unread_fields_and_uses_last_duplicate() {
 }
 
 #[test]
-fn maestro_session_recency_uses_conversation_activity() {
+fn session_recency_uses_conversation_activity() {
     replay_fixed(&[
         "activity_max_not_last",
         "tool_only_uses_header",

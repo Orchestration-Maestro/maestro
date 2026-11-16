@@ -3,8 +3,8 @@
 use crate::support;
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_branch_collection_uses_deepest_common_ancestor() {
-    support::branch_summary::group("maestro_branch_collection_uses_deepest_common_ancestor");
+fn branch_collection_uses_deepest_common_ancestor() {
+    support::branch_summary::group("branch_collection_uses_deepest_common_ancestor");
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -19,13 +19,13 @@ fn preparation_converts_content_and_skips_metadata() {
 }
 
 #[test]
-fn maestro_branch_budget_keeps_summary_exception() {
-    support::branch_summary::prepare_group("maestro_branch_budget_keeps_summary_exception");
+fn branch_budget_keeps_summary_exception() {
+    support::branch_summary::prepare_group("branch_budget_keeps_summary_exception");
 }
 
 #[test]
-fn maestro_branch_files_include_visited_overbudget_call() {
-    support::branch_summary::prepare_group("maestro_branch_files_include_visited_overbudget_call");
+fn branch_files_include_visited_overbudget_call() {
+    support::branch_summary::prepare_group("branch_files_include_visited_overbudget_call");
 }
 
 #[test]
@@ -62,8 +62,8 @@ fn preparation_counts_before_projection() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_branch_request_preserves_instruction_mode() {
-    support::branch_summary::group("maestro_branch_request_preserves_instruction_mode");
+fn branch_request_preserves_instruction_mode() {
+    support::branch_summary::group("branch_request_preserves_instruction_mode");
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -92,8 +92,8 @@ fn branch_controls_have_no_implicit_reasoning_or_retry() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_branch_summary_distinguishes_abort_error_success() {
-    support::branch_summary::group("maestro_branch_summary_distinguishes_abort_error_success");
+fn branch_summary_distinguishes_abort_error_success() {
+    support::branch_summary::group("branch_summary_distinguishes_abort_error_success");
 }
 
 #[cfg(not(target_arch = "wasm32"))]
