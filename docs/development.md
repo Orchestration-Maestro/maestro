@@ -972,7 +972,7 @@ production feature for test access.
 Provider protocol tests select recorded rows with `chat::rows(fixture, key)`.
 Each key must match at least one row's `test` field. A missing match returns an
 error naming the key, so a typo or rename cannot leave a test checking no rows.
-Keep callers fallible with `?`; their loops consume the selected rows unchanged.
+Callers propagate that error with `?`.
 
 Run the native suite through nextest so its setup scripts apply. The existing
 `native-fixture` setup writes a test-owned Git configuration and exports it to

@@ -181,7 +181,6 @@ pub fn rows(test: &str) -> TestResult<Vec<Row>> {
     let all: Vec<Value> = serde_json::from_str(fixture)?;
     check_assignment(&all, names)?;
     let owned = chat::rows(fixture, test)?;
-    assert!(!owned.is_empty(), "no rows for {test}");
     owned
         .into_iter()
         .map(|row| Ok(serde_json::from_value::<Row>(row)?))
