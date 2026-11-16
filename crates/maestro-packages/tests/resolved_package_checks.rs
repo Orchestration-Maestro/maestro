@@ -6,7 +6,7 @@ use serde_json::json;
 
 #[test]
 fn resolved_packages_keep_project_pin_and_empty_filtered_roots() {
-    maestro_test_process::with_isolated_home(
+    maestro_test_harness::with_isolated_home(
         "resolved_packages_keep_project_pin_and_empty_filtered_roots",
         |_| {
             let fixture =

@@ -27,7 +27,7 @@ sha2.workspace = true
 serde_json.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 tokio-tungstenite.workspace = true
 
 [[test]]

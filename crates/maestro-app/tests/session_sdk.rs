@@ -23,7 +23,7 @@ use maestro_models::{
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use maestro_settings::SettingsManager;
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::{
     cell::RefCell,
@@ -857,7 +857,7 @@ fn attribution_case(id: &str, row: &Value) -> AttributionCase {
 /// Sends each recorded attribution case `ids` names from a child without the telemetry
 /// variable and compares the presence and the whole map of the provider's headers.
 fn check_attribution_cases(ids: &[&str]) {
-    maestro_test_process::with_environment_without(
+    maestro_test_harness::with_environment_without(
         std::thread::current().name().unwrap(),
         &[],
         &["MAESTRO_TELEMETRY"],

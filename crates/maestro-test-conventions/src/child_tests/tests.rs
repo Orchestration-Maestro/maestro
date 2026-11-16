@@ -79,9 +79,9 @@ fn exact_child_selection_ignores_comments_and_fixture_strings() {
 fn exact_child_selection_exempts_only_the_owner_package() {
     for path in ["src/lib.rs", "tests/child.rs"] {
         for (name, directory, exempt) in [
-            ("maestro-test-process", "renamed", true),
-            ("maestro-models", "maestro-test-process", false),
-            ("maestro-test-process-extra", "renamed", false),
+            ("maestro-test-harness", "renamed", true),
+            ("maestro-models", "maestro-test-harness", false),
+            ("maestro-test-harness-extra", "renamed", false),
             ("maestro-test-proc", "renamed", false),
         ] {
             let package = member(name, directory, path, "run(\"--exact\");");
@@ -97,7 +97,7 @@ fn exact_child_selection_reports_source_line() {
     let package = member("maestro-models", "models", "models/src/child.rs", source);
     assert_eq!(
         check(&[package]),
-        Err("models/src/child.rs:4: exact test selection belongs to maestro-test-process".into())
+        Err("models/src/child.rs:4: exact test selection belongs to maestro-test-harness".into())
     );
     assert_eq!(exact_offset(source), Some(source.find("r#").unwrap()));
 }

@@ -2,7 +2,7 @@
 
 use std::{fs, path::Path, process::ExitCode};
 
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use maestro_tooling as tooling;
 
 /// A registry package whose identity must remain unchanged by scratch resolution, beside the

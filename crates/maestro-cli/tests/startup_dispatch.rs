@@ -109,7 +109,7 @@ fn initial_preparation_consumes_only_first_message() {
 #[test]
 fn file_preparation_forwards_resize_order_and_failures() {
     use maestro_cli::startup::entrypoint::inputs::prepare_initial_message;
-    use maestro_test_process::Scratch;
+    use maestro_test_harness::Scratch;
     let scratch = Scratch::new().unwrap();
     let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/files");
     let text = scratch.path().join("one.txt");

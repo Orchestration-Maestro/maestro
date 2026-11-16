@@ -107,7 +107,7 @@ fn native_helpers_preserve_shell_output_and_failure() {
 #[test]
 fn configured_environment_is_read_on_each_call() {
     let values = [None, Some(""), Some("first"), Some("second"), Some(" ")];
-    let Some(values) = maestro_test_process::run_per_environment(
+    let Some(values) = maestro_test_harness::run_per_environment(
         std::thread::current().name().unwrap(),
         values,
         |value| std::collections::BTreeMap::from([("ENV", *value)]),
@@ -147,8 +147,8 @@ fn configured_environment_is_read_on_each_call() {
 
 #[test]
 fn request_keys_preserve_lower_layer_precedence() {
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(
             "request_keys_preserve_lower_layer_precedence",
         )
         .unwrap()
@@ -559,8 +559,8 @@ fn selected_request_fields_keep_last_member_values() {
 
 #[test]
 fn stored_commands_keep_lower_layer_cache_policy() {
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(
             "stored_commands_keep_lower_layer_cache_policy",
         )
         .unwrap()
@@ -1349,7 +1349,7 @@ fn provider_request_lookup_avoids_auth_fallback() {
 #[test]
 fn captured_subprocess_preserves_descriptors_and_environment_order() {
     const NAME: &str = "captured_subprocess_preserves_descriptors_and_environment_order";
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     if selection.is_child() && selection.runs_case("inner") {
         use std::io::Read as _;
         let mut input = Vec::new();
@@ -1366,7 +1366,7 @@ fn captured_subprocess_preserves_descriptors_and_environment_order() {
             "inherited"
         );
         crate::subprocess::run_child(
-            maestro_test_process::TestProcess::current(NAME)
+            maestro_test_harness::TestProcess::current(NAME)
                 .unwrap()
                 .case("inner"),
             &[
@@ -1378,7 +1378,7 @@ fn captured_subprocess_preserves_descriptors_and_environment_order() {
     } else {
         assert!(!selection.is_child(), "unknown capture stage");
         let input = support::File::new(b"finite nonempty input");
-        let output = maestro_test_process::TestProcess::current(NAME)
+        let output = maestro_test_harness::TestProcess::current(NAME)
             .unwrap()
             .nocapture()
             .case("outer")

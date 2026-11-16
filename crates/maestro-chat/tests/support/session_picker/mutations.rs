@@ -698,8 +698,8 @@ fn calls(port: &Effects, expected: Vec<RecordedCall>, (from, to): (&str, &str)) 
 /// A real session file named like the recorded `name`, created unless it should be
 /// absent, with the tree that owns it.
 #[cfg(not(target_arch = "wasm32"))]
-fn session_file(name: &str, present: bool) -> (maestro_test_process::Scratch, String) {
-    let dir = maestro_test_process::Scratch::new().unwrap();
+fn session_file(name: &str, present: bool) -> (maestro_test_harness::Scratch, String) {
+    let dir = maestro_test_harness::Scratch::new().unwrap();
     let path = dir.path().join(name);
     if present {
         std::fs::write(&path, "").unwrap();
@@ -1315,7 +1315,7 @@ use super::super::native_child;
 /// re-running `test` (the caller's qualified test name) for each scenario.
 #[cfg(target_os = "linux")]
 pub fn native(test: &str) {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let mode = [
             "unavailable",
             "nonzero",
@@ -1325,7 +1325,7 @@ pub fn native(test: &str) {
             "unlink-error",
         ]
         .into_iter()
-        .find(|mode| maestro_test_process::selection().runs_case(mode))
+        .find(|mode| maestro_test_harness::selection().runs_case(mode))
         .expect("selected native mode");
         native_run(mode);
     } else {
@@ -1385,7 +1385,7 @@ fn native_launch(test: &str) {
         "leading-dash",
         "unlink-error",
     ] {
-        let dir = maestro_test_process::Scratch::new().unwrap();
+        let dir = maestro_test_harness::Scratch::new().unwrap();
         std::fs::create_dir(dir.path().join("bin")).unwrap();
         let name = if mode == "leading-dash" {
             "-session.jsonl"
@@ -1411,11 +1411,11 @@ fn native_launch(test: &str) {
             std::fs::write(record, format!("trash\n{outcome}")).unwrap();
             let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
                 .expect("nextest native-fixture setup supplies the prepared artifact");
-            maestro_test_process::install_executable(std::path::Path::new(&artifact), &entry)
+            maestro_test_harness::install_executable(std::path::Path::new(&artifact), &entry)
                 .unwrap();
         }
         let lines = native_child::probe(
-            maestro_test_process::TestProcess::named(test)
+            maestro_test_harness::TestProcess::named(test)
                 .unwrap()
                 .case(mode),
             dir.path(),

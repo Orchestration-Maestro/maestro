@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use std::{fmt::Write as _, sync::Arc};
 
 /// Creates the native edit tool for a disposable root.
-fn edit_tool(root: &maestro_test_process::Scratch) -> maestro_agent::AgentTool {
+fn edit_tool(root: &maestro_test_harness::Scratch) -> maestro_agent::AgentTool {
     maestro_app::create_edit_tool(
         root.path().display().to_string(),
         EditToolOptions::default(),
@@ -20,7 +20,7 @@ fn edit_tool(root: &maestro_test_process::Scratch) -> maestro_agent::AgentTool {
 
 /// Runs one edit against a disposable file and compares both its result and final bytes.
 fn check_edit(name: &str, before: &str, edits: Value) {
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let path = root.path().join("file.txt");
     std::fs::write(&path, before).unwrap();
     let tool = edit_tool(&root);
@@ -58,7 +58,7 @@ fn edit_rejects_absent_old_text() {
 
 #[test]
 fn edit_preserves_missing_file_failure_kind() {
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let native = std::fs::read(root.path().join("missing.txt")).unwrap_err();
     assert_eq!(native.kind(), std::io::ErrorKind::NotFound);
     let tool = edit_tool(&root);
@@ -121,7 +121,7 @@ fn edit_matches_each_block_against_original() {
 
 #[test]
 fn edit_rejects_empty_replacement_list() {
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let file = root.path().join("file.txt");
     std::fs::write(&file, "hello\nworld\n").unwrap();
     let tool = edit_tool(&root);
@@ -160,10 +160,10 @@ fn edit_leaves_file_unchanged_after_later_failure() {
 #[cfg(unix)]
 #[test]
 fn edit_preserves_write_access_failure_kind() {
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let file = root.path().join("file.txt");
     std::fs::write(&file, "hello\n").unwrap();
-    let Some(_denied) = maestro_test_process::deny(&file, 0o444).unwrap() else {
+    let Some(_denied) = maestro_test_harness::deny(&file, 0o444).unwrap() else {
         eprintln!("host permits writes despite denied file mode");
         return;
     };
@@ -208,7 +208,7 @@ impl EditOperations for UnavailableEdit {
 
 #[test]
 fn edit_preserves_supplied_access_failure() {
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let tool = maestro_app::create_edit_tool(
         root.path().display().to_string(),
         EditToolOptions {
@@ -417,7 +417,7 @@ fn edit_root_preparation_retains_in_place_and_returned_forms() {
         ("empty", json!({"path":"file.txt","edits":[]})),
     ];
     for (name, mut retained) in cases {
-        let root = maestro_test_process::Scratch::new().unwrap();
+        let root = maestro_test_harness::Scratch::new().unwrap();
         let file = root.path().join("file.txt");
         std::fs::write(&file, "a b").unwrap();
         let tool = edit_tool(&root);

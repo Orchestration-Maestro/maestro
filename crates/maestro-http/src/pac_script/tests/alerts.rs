@@ -53,7 +53,7 @@ impl tracing::field::Visit for Messages {
 #[test]
 fn pac_alerts_preserve_exact_messages_without_printing() {
     let messages = Messages::default();
-    maestro_test_process::trace_capture::with_default(messages.clone(), || {
+    maestro_test_harness::trace_capture::with_default(messages.clone(), || {
         crate::tests::runtime::run(async {
             assert_eq!(
                 super::expression(
@@ -93,7 +93,7 @@ fn pac_containing_source_owner_releases_interpreter() {
             signal: None,
         };
         let error =
-            maestro_test_process::trace_capture::with_subscriber(fetch(request), subscriber)
+            maestro_test_harness::trace_capture::with_subscriber(fetch(request), subscriber)
                 .await
                 .err()
                 .unwrap();
@@ -130,7 +130,7 @@ fn pac_cancelled_startup_releases_queued_interpreter() {
                 messages: Mutex::default(),
                 released: Mutex::new(Some(released)),
             }));
-            let mut startup = Box::pin(maestro_test_process::trace_capture::with_subscriber(
+            let mut startup = Box::pin(maestro_test_harness::trace_capture::with_subscriber(
                 super::super::Resolver::new(
                     "alert('started');function FindProxyForURL(){return 'DIRECT'}".into(),
                 ),

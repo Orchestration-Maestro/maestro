@@ -72,7 +72,7 @@ test_prepare_inputs = [
     "crates/maestro-session/**",
     "crates/maestro-subagents/**",
     "crates/maestro-test-fixtures/**",
-    "crates/maestro-test-process/**",
+    "crates/maestro-test-harness/**",
     "crates/maestro-text/**",
     "crates/maestro-theme/**",
     "crates/maestro-tooling/**",

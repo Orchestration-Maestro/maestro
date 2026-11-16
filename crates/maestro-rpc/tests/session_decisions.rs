@@ -4,7 +4,7 @@
 use crate::support::rpc_connection::connect;
 use maestro_app::test_support::{RuntimeOptions, assistant, on_task_set, runtime_with};
 use maestro_settings::{DecisionRequest, SettingsDecider};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::json;
 use std::{rc::Rc, sync::Arc};
 

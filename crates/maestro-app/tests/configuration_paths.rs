@@ -194,12 +194,12 @@ use std::cell::Cell;
 #[cfg(not(target_arch = "wasm32"))]
 fn in_work_directory(test: &str, removed: bool) -> Option<String> {
     let case = if removed { "removed-work" } else { "work" };
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     if !selection.is_child() {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let work = scratch.path().join("work");
         std::fs::create_dir(&work).unwrap();
-        let output = maestro_test_process::TestProcess::current(test)
+        let output = maestro_test_harness::TestProcess::current(test)
             .unwrap()
             .nocapture()
             .case(case)
@@ -511,7 +511,7 @@ use crate::child;
 #[cfg(unix)]
 #[test]
 fn native_agent_root_reads_disposable_environment() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let matches_expected = maestro_app::get_agent_dir().unwrap()
             == std::env::var("MAESTRO_CONFIGURATION_EXPECTED").unwrap();
         assert!(matches_expected);
@@ -527,7 +527,7 @@ fn native_agent_root_reads_disposable_environment() {
         ("../raw/./agent", "../raw/./agent".to_owned()),
     ] {
         let output = child::probe(
-            maestro_test_process::TestProcess::current(
+            maestro_test_harness::TestProcess::current(
                 "native_agent_root_reads_disposable_environment",
             )
             .unwrap()
@@ -553,7 +553,7 @@ fn native_probe_rejects_missing_selection() {
     assert!(
         std::panic::catch_unwind(|| {
             child::probe(
-                maestro_test_process::TestProcess::named("configuration_paths::missing_probe")
+                maestro_test_harness::TestProcess::named("configuration_paths::missing_probe")
                     .unwrap(),
                 scratch.0.path(),
                 &[],
@@ -589,7 +589,7 @@ fn native_probe_preserves_cwd_and_environment_order() {
     let before = std::env::var_os(KEY);
     let scratch = child::Scratch::new();
     let records = child::probe(
-        maestro_test_process::TestProcess::current(
+        maestro_test_harness::TestProcess::current(
             "native_probe_preserves_cwd_and_environment_order",
         )
         .unwrap()

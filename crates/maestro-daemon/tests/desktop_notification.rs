@@ -11,7 +11,7 @@ fn install_notify_send(directory: &Path, record: &serde_json::Value) {
         .expect("nextest native-fixture setup supplies the artifact");
     let fixture = directory.join("notify-send.fixture");
     std::fs::write(&fixture, format!("notify-send\n{record}")).unwrap();
-    maestro_test_process::install_executable(Path::new(&artifact), &directory.join("notify-send"))
+    maestro_test_harness::install_executable(Path::new(&artifact), &directory.join("notify-send"))
         .unwrap();
 }
 
@@ -25,13 +25,13 @@ fn daemon_desktop_notification_separates_option_like_titles() {
         );
         return;
     }
-    let directory = maestro_test_process::Scratch::new().unwrap();
+    let directory = maestro_test_harness::Scratch::new().unwrap();
     let bin = directory.path().join("bin");
     let args = directory.path().join("args");
     std::fs::create_dir(&bin).unwrap();
     install_notify_send(&bin, &serde_json::json!({ "args": args, "code": 0 }));
     assert!(
-        maestro_test_process::TestProcess::current(
+        maestro_test_harness::TestProcess::current(
             "daemon_desktop_notification_separates_option_like_titles"
         )
         .unwrap()
@@ -52,11 +52,11 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
         return;
     }
     let name = "desktop_notification_does_not_claim_unavailable_or_failed_delivery";
-    let directory = maestro_test_process::Scratch::new().unwrap();
+    let directory = maestro_test_harness::Scratch::new().unwrap();
     let bin = directory.path().join("bin");
     std::fs::create_dir(&bin).unwrap();
     assert!(
-        maestro_test_process::TestProcess::current(name)
+        maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
             .env_remove("DISPLAY")
@@ -67,7 +67,7 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
             .success()
     );
     assert!(
-        maestro_test_process::TestProcess::current(name)
+        maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
             .env("DISPLAY", ":0")
@@ -78,7 +78,7 @@ fn desktop_notification_does_not_claim_unavailable_or_failed_delivery() {
     );
     install_notify_send(&bin, &serde_json::json!({ "args": null, "code": 1 }));
     assert!(
-        maestro_test_process::TestProcess::current(name)
+        maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .env("MAESTRO_NOTIFICATION_UNAVAILABLE", "1")
             .env("DISPLAY", ":0")

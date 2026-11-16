@@ -3,7 +3,7 @@
 use maestro_app::BuildSystemPromptOptions;
 use maestro_app::configuration::config::{get_docs_path, get_readme_path, paths};
 use maestro_app::resources::instructions::build_system_prompt;
-use maestro_test_process::{TestProcess, selection};
+use maestro_test_harness::{TestProcess, selection};
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::Path;
@@ -143,7 +143,7 @@ fn default_prompt_documentation_paths_exist_in_the_installation() {
 #[test]
 fn custom_prompt_never_reads_documentation_paths() {
     if selection().is_child() {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         scratch.enter_removed("cwd").unwrap();
         let options = |custom: Value| {
             let options = serde_json::json!({"customPrompt": custom, "cwd": "/work"});

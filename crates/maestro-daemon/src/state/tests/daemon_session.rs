@@ -5,8 +5,8 @@ use crate::tests::block_on;
 use crate::{locations::DaemonPaths, service::event_hub::EventHub};
 use std::time::{Duration, Instant};
 /// Owns an isolated root for one named daemon's persistence paths.
-fn paths() -> (maestro_test_process::Scratch, DaemonPaths) {
-    let directory = maestro_test_process::Scratch::new().unwrap();
+fn paths() -> (maestro_test_harness::Scratch, DaemonPaths) {
+    let directory = maestro_test_harness::Scratch::new().unwrap();
     let paths = DaemonPaths::new(directory.path().to_str().unwrap(), Some("session-test")).unwrap();
     (directory, paths)
 }

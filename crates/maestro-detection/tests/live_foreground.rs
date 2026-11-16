@@ -4,7 +4,7 @@
 
 use maestro_detection::agents::{Agent, identify_agent_in_job};
 use maestro_process::terminal::{self, PtyCommand, PtyEnvironment, PtySize, jobs::ForegroundJob};
-use maestro_test_process::{TestProcess, run_alone};
+use maestro_test_harness::{TestProcess, run_alone};
 use std::{
     io::{self, Read, Write},
     process::{Command, Output},
@@ -18,7 +18,7 @@ use std::{
 /// behaviour they observe.
 #[test]
 fn setup_entry() {
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     let Some(child) = selection.case() else {
         return;
     };
@@ -59,7 +59,7 @@ fn capture_job(child: &str, input: &[u8], release: &[u8], argv0: &str) -> Foregr
                 args: harness.iter().map(Into::into).collect(),
                 cwd: None,
                 environment: PtyEnvironment::Inherit(vec![(
-                    maestro_test_process::CASE.into(),
+                    maestro_test_harness::CASE.into(),
                     Some(child.into()),
                 )]),
             };

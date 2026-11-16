@@ -417,7 +417,7 @@ fn trunk(
 mod tests {
     use super::*;
 
-    use maestro_test_process::TestProcess;
+    use maestro_test_harness::TestProcess;
 
     /// Both bootstrap builds name the checkout's toolchain even when the caller inherited none,
     /// because they compile registry dependencies that may ship their own toolchain file.
@@ -441,7 +441,7 @@ mod tests {
     fn bootstrap_builds_select_a_toolchain() {
         let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let pin =
-            maestro_test_process::compiler::channel().expect("the build records its toolchain");
+            maestro_test_harness::compiler::channel().expect("the build records its toolchain");
         for command in bootstrap_commands(Path::new("cargo"), &checkout) {
             let selected = command
                 .get_envs()

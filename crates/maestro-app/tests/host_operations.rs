@@ -20,7 +20,7 @@ fn threaded_factory_reads_original_raw_settings_before_runner_binding() {
         .unwrap();
     let local = Rc::new(tokio::task::LocalSet::new());
     local.block_on(&runtime, async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap().to_owned();
         let storage = Arc::new(InMemorySettingsStorage::new());
         for (scope, value) in [
@@ -87,7 +87,7 @@ async fn observe_settings(
 /// A loader over caller-supplied raw settings and disposable installed contents.
 struct Probe {
     /// Retains the native fixture root.
-    _scratch: maestro_test_process::Scratch,
+    _scratch: maestro_test_harness::Scratch,
     /// The exact owner the loader receives.
     settings: Rc<RefCell<SettingsManager>>,
     /// Project source base.
@@ -98,7 +98,7 @@ struct Probe {
 impl Probe {
     /// Creates both scopes without writing or changing ambient settings.
     fn new(user: serde_json::Value, project: serde_json::Value) -> Self {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let cwd = scratch.path().join("project");
         let agent_dir = scratch.path().join("agent");
         std::fs::create_dir(&cwd).unwrap();

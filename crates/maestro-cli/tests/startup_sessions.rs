@@ -6,7 +6,7 @@ use maestro_cli::startup::entrypoint::sessions::{
     resolve_session_path, select_session_operation,
 };
 use maestro_session::{Presence, SessionManager, session_manager::ReadonlySessionManager};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::Value;
 
 /// The first header record of a stored history.

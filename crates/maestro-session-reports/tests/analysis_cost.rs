@@ -2,7 +2,7 @@
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
 use crate::analysis_fixtures::{ZONE, run_cost, sessions, write_files};
-use maestro_test_process::with_environment;
+use maestro_test_harness::with_environment;
 
 const HELP: &str = "Usage: cost.ts -d <path> -n <days>
   -d, --dir <path>   Directory path (required)
@@ -78,7 +78,7 @@ fn cost_filename_cutoff_uses_local_midnight() {
         "cost_filename_cutoff_uses_local_midnight",
         &[("TZ", ZONE)],
         |base| {
-            if !maestro_test_process::local_zone_follows_tz() {
+            if !maestro_test_harness::local_zone_follows_tz() {
                 return;
             }
             let older = entry("2026-03-09T12:00:00Z", "older", 1.0);

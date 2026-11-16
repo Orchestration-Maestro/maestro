@@ -20,8 +20,8 @@ fn answer(api: &str) -> TestResult<Vec<u8>> {
 #[test]
 fn built_in_protocols_dispatch_the_same_loopback_answers() -> TestResult {
     let _admission = bundled::registry();
-    if !maestro_test_process::selection().is_child() {
-        let output = maestro_test_process::TestProcess::current(
+    if !maestro_test_harness::selection().is_child() {
+        let output = maestro_test_harness::TestProcess::current(
             "built_in_protocols_dispatch_the_same_loopback_answers",
         )?
         .nocapture()

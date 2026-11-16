@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 
 /// The package of the fixture's component crate, which differs from its directory name.
 const PACKAGE: &str = "example-components";

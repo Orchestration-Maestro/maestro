@@ -249,7 +249,7 @@ fn cases(name: &str) -> Vec<Case> {
 /// Replay all rows owned by a named witness.
 pub fn replay(name: &str) {
     let _admission = super::keybindings::bindings_guard();
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     let mut matched = false;
     for (index, case) in cases(name).into_iter().enumerate() {
         let mut query: Query = serde_json::from_value(case.input).unwrap();
@@ -302,7 +302,7 @@ fn run(expected: serde_json::Value, query: &mut Query, name: &str) {
 }
 /// Isolate environment cases in the existing test executable, waiting for process completion.
 fn child(name: &str, index: usize, env: &BTreeMap<String, String>) {
-    let output = maestro_test_process::TestProcess::current(name)
+    let output = maestro_test_harness::TestProcess::current(name)
         .unwrap()
         .nocapture()
         .env_remove("OPENAI_API_KEY")

@@ -1,7 +1,7 @@
 //! Real signals, tracked detached children and the actual native output producers.
 use super::super::super::lifecycle::{LifecycleEffects, LifecycleState};
 use super::{Setup, ports};
-use maestro_test_process::{CheckedChild, TestProcess, selection};
+use maestro_test_harness::{CheckedChild, TestProcess, selection};
 use maestro_tui::{Terminal, TuiRuntime};
 use std::{
     cell::{Cell, RefCell},
@@ -175,7 +175,7 @@ pub(super) fn run(test: &str, case: &str, first: &str, second: Option<&str>) {
         }
         return;
     }
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let directory = scratch.path();
     let gate = install_tracked(directory);
     super::super::controlled_search_programs(directory);

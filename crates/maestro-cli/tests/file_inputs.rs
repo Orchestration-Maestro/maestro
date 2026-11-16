@@ -6,7 +6,7 @@ use maestro_cli::input::file_processor::{
     ProcessedFiles, process_file_arguments,
 };
 use maestro_models::ImageContent;
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use maestro_tools::utils::ResizedImage;
 use std::cell::RefCell;
 use std::io;
@@ -335,14 +335,14 @@ fn read_path_variants_reach_the_existing_path_owner() {
 
 #[test]
 fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
-    if maestro_test_process::selection().case().is_some()
+    if maestro_test_harness::selection().case().is_some()
         || std::env::var_os(FIXTURE_REFUSAL).is_some()
     {
         fatal_child();
     }
     for case in ["files-195", "files-196"] {
         let scratch = scratch();
-        let output = maestro_test_process::TestProcess::current(
+        let output = maestro_test_harness::TestProcess::current(
             "file_failure_phases_keep_their_diagnostics_and_exit_status",
         )
         .unwrap()
@@ -367,13 +367,13 @@ fn file_failure_phases_keep_their_diagnostics_and_exit_status() {
 
 #[test]
 fn a_supplied_text_read_refusal_keeps_the_native_diagnostic_and_status() {
-    if maestro_test_process::selection().case().is_some()
+    if maestro_test_harness::selection().case().is_some()
         || std::env::var_os(FIXTURE_REFUSAL).is_some()
     {
         fatal_child();
     }
     let scratch = scratch();
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "a_supplied_text_read_refusal_keeps_the_native_diagnostic_and_status",
     )
     .unwrap()
@@ -432,7 +432,7 @@ fn fatal_child() {
             prepared.is_ok()
         );
     }
-    let case = maestro_test_process::selection().case().unwrap().to_owned();
+    let case = maestro_test_harness::selection().case().unwrap().to_owned();
     let recorded = support::case_by_title("files", &case);
     let styles = recorded.input["styles_enabled"].as_bool().unwrap();
     let files = file_names(&recorded);

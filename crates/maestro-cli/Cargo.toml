@@ -48,7 +48,7 @@ path = "tests/integration.rs"
 maestro-listeners = { path = "../maestro-listeners" }
 maestro-providers = { path = "../maestro-providers" }
 futures-util = { workspace = true, features = ["async-await"] }
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 
 [target.'cfg(unix)'.dev-dependencies]

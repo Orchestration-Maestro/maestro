@@ -105,7 +105,7 @@ fn converse() -> TestResult {
 
 /// Run each route in a child and check which loopback peer it reached.
 pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return converse();
     }
     for route in routes {
@@ -129,7 +129,7 @@ pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
         {
-            let output = maestro_test_process::TestProcess::current(test)?
+            let output = maestro_test_harness::TestProcess::current(test)?
                 .nocapture()
                 .env_clear()
                 .envs(vars.iter().copied())
@@ -168,7 +168,7 @@ pub struct Refusal {
 /// Run each refusal in a child; the origin sees a request only when it redirects, and the
 /// second peer is never contacted.
 pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return converse();
     }
     for refusal in refusals {
@@ -190,7 +190,7 @@ pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
         {
-            let output = maestro_test_process::TestProcess::current(test)?
+            let output = maestro_test_harness::TestProcess::current(test)?
                 .nocapture()
                 .env_clear()
                 .envs(vars.iter().copied())

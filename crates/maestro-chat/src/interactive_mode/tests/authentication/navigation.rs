@@ -450,7 +450,7 @@ fn api_key_store_failure_remains_a_store_diagnostic() {
             keyed(&world, "custom-key", Some("Custom"), None);
             let file = directory.join("store0").join("auth.json");
             let before = std::fs::read_to_string(&file).unwrap();
-            let Some(_restored) = maestro_test_process::deny(file.clone(), 0o400).unwrap() else {
+            let Some(_restored) = maestro_test_harness::deny(file.clone(), 0o400).unwrap() else {
                 return;
             };
             sign_in_to(&world, AuthType::ApiKey, "custom-key");

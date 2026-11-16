@@ -637,7 +637,7 @@ fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
     ) {
         return;
     }
-    let parent = maestro_test_process::Scratch::new().unwrap();
+    let parent = maestro_test_harness::Scratch::new().unwrap();
     parent.enter_removed("gone").unwrap();
     assert!(std::env::current_dir().is_err());
     read_renders_without_process_directory();

@@ -179,13 +179,13 @@ use crate::child;
 /// Panics when fixture data or controlled observations violate the test contract.
 #[must_use]
 pub fn isolated(name: &str) -> bool {
-    if maestro_test_process::selection().is_child()
-        && maestro_test_process::selection().runs_case(name)
+    if maestro_test_harness::selection().is_child()
+        && maestro_test_harness::selection().runs_case(name)
     {
         return false;
     }
     child::probe(
-        maestro_test_process::TestProcess::current(name)
+        maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .case(name),
         &std::env::current_dir().unwrap(),
@@ -203,12 +203,12 @@ pub fn isolated(name: &str) -> bool {
 #[must_use]
 pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<Case> {
     let cases = cases(group);
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return Some(
             cases
                 .into_iter()
                 .enumerate()
-                .find(|(index, _)| maestro_test_process::selection().runs_case(&index.to_string()))
+                .find(|(index, _)| maestro_test_harness::selection().runs_case(&index.to_string()))
                 .expect("selected service row")
                 .1,
         );
@@ -228,7 +228,7 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
             }
         }
         child::probe(
-            maestro_test_process::TestProcess::current(name)
+            maestro_test_harness::TestProcess::current(name)
                 .unwrap()
                 .case(&index),
             &std::env::current_dir().unwrap(),
@@ -246,7 +246,7 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
 /// Panics when fixture data or controlled observations violate the test contract.
 pub fn native_probe(name: &str, envs: &[(&str, &str)], removed: &[&str]) {
     child::probe(
-        maestro_test_process::TestProcess::current(name)
+        maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .case(name),
         &std::env::current_dir().unwrap(),

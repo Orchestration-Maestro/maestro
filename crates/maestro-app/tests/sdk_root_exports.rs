@@ -9,7 +9,7 @@ use maestro_app::{
     AgentSessionServices, CreateAgentSessionFromServicesOptions, ExtensionBindings, NoTools,
     create_agent_session_from_services,
 };
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -75,7 +75,7 @@ fn creates_a_session_over_existing_services() {
 
 #[test]
 fn reads_and_writes_the_account_file_at_the_root() {
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let path = format!("{}/auth.json", scratch.path().display());
     let mut auth = maestro_app::model_account::cli::load_auth(&path);
     auth.insert("alpha".into(), json!({"type": "oauth"}));

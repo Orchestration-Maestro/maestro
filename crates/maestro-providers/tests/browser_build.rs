@@ -3,9 +3,9 @@
 /// A prepared browser check needs neither Cargo nor a compiler in the test body.
 #[test]
 fn prepared_browser_check_runs_without_a_build_toolchain() {
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let missing = scratch.path().join("missing-toolchain");
-    let output = maestro_test_process::TestProcess::named(
+    let output = maestro_test_harness::TestProcess::named(
         "browser_build::maestro_browser_environment_has_no_key",
     )
     .unwrap()

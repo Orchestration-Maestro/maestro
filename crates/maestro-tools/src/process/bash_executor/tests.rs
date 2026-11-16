@@ -36,11 +36,11 @@ fn direct_spill_io_errors_are_returned() {
         missing_temp_child();
         return;
     }
-    let missing = maestro_test_process::temporary_root().join(format!(
+    let missing = maestro_test_harness::temporary_root().join(format!(
         "maestro-missing-{}",
         crate::output::output_accumulator::random_id().unwrap()
     ));
-    let child = maestro_test_process::TestProcess::current("direct_spill_io_errors_are_returned")
+    let child = maestro_test_harness::TestProcess::current("direct_spill_io_errors_are_returned")
         .unwrap()
         .env("MAESTRO_DIRECT_MISSING_TEMP", "1")
         .temp_dir(&missing)

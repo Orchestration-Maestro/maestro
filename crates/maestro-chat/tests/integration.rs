@@ -35,7 +35,7 @@ mod resource_configuration;
 use maestro_tui::test_support::runtime_spy;
 mod scoped_model_selection;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_process as scratch;
+use maestro_test_harness as scratch;
 #[path = "support/selector.rs"]
 mod selector;
 mod selector_failure_support;
@@ -60,7 +60,7 @@ mod shell_rows;
 mod simple_selector_cases;
 mod simple_selectors;
 #[cfg(not(target_arch = "wasm32"))]
-use maestro_test_process::subprocess;
+use maestro_test_harness::subprocess;
 mod tool_rows;
 mod transcript;
 #[path = "support/tree.rs"]

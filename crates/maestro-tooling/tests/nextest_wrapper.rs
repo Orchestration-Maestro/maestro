@@ -3,15 +3,15 @@
 use std::fs::OpenOptions;
 use std::process::Command;
 
-use maestro_test_process::Scratch;
-use maestro_test_process::TestProcess;
+use maestro_test_harness::Scratch;
+use maestro_test_harness::TestProcess;
 
 /// Variable naming the lock file the wrapper holds while its child runs.
 const LOCK: &str = "MAESTRO_FIXED_PORT_LOCK";
 
 #[test]
 fn fixed_port_wrapper_holds_lock_while_child_runs() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -35,7 +35,7 @@ fn fixed_port_wrapper_holds_lock_while_child_runs() {
                     .args(["nextest-wrapper", "fixed-port"])
                     .arg(std::env::current_exe()?)
                     .args(arguments)
-                    .env(maestro_test_process::CASE, "wrapped")
+                    .env(maestro_test_harness::CASE, "wrapped")
                     .env(LOCK, &path)
                     .output()
             })
@@ -59,7 +59,7 @@ fn fixed_port_wrapper_holds_lock_while_child_runs() {
 #[cfg(unix)]
 #[test]
 fn signalled_child_failure_names_its_signal() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         std::process::abort();
     }
     let output = TestProcess::named("nextest_wrapper::signalled_child_failure_names_its_signal")
@@ -69,7 +69,7 @@ fn signalled_child_failure_names_its_signal() {
                 .args(["nextest-wrapper", "fixed-port"])
                 .arg(std::env::current_exe()?)
                 .args(arguments)
-                .env(maestro_test_process::CASE, "signalled")
+                .env(maestro_test_harness::CASE, "signalled")
                 .env_remove(LOCK)
                 .output()
         })
@@ -84,7 +84,7 @@ fn signalled_child_failure_names_its_signal() {
 
 #[test]
 fn fixed_port_wrapper_runs_without_the_lock_variable() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return;
     }
     let output =
@@ -96,7 +96,7 @@ fn fixed_port_wrapper_runs_without_the_lock_variable() {
                     .args(["nextest-wrapper", "fixed-port"])
                     .arg(std::env::current_exe()?)
                     .args(arguments)
-                    .env(maestro_test_process::CASE, "wrapped")
+                    .env(maestro_test_harness::CASE, "wrapped")
                     .env_remove(LOCK)
                     .output()
             })

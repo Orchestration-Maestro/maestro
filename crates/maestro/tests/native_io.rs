@@ -668,7 +668,7 @@ fn native_child_abort_keeps_the_original_signal() {
 fn native_io_keeps_full_user_basics() {
     use std::{io::Write, process::Stdio};
     // The child reads to the end of its input, so no sibling fork may hold the pipe open.
-    if maestro_test_process::run_alone("native_io_keeps_full_user_basics").unwrap() {
+    if maestro_test_harness::run_alone("native_io_keeps_full_user_basics").unwrap() {
         return;
     }
     let root = Root::new();

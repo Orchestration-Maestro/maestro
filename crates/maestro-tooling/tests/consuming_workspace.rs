@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use crate::recipe_support::{executable, installed};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 
 use tooling::workspace::{REGION_END, REGION_START};
 
@@ -257,7 +257,7 @@ fn executable_setup(root: &Path, bundle: &Path) -> std::process::Output {
         .args(["nextest-setup", "executable"])
         .current_dir(root)
         .env("NEXTEST_ENV", root.join("nextest-env"));
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     command.env("TEST_PREPARE_OUTPUT", bundle).output().unwrap()
 }
 
@@ -324,7 +324,7 @@ fn executable_setup_refuses_a_bundle_from_another_pinned_source() {
 
 /// Run `git` in `root` and require it to succeed.
 fn git(root: &Path, args: &[&str]) {
-    let output = maestro_test_process::git_command::command()
+    let output = maestro_test_harness::git_command::command()
         .current_dir(root)
         .args(args)
         .output()
@@ -349,7 +349,7 @@ fn prepare_without_a_component_crate_installs_the_locked_programs() {
         "[package]\nname = \"component-fixture\"\nversion = \"0.1.0\"\n",
     )
     .unwrap();
-    for package in ["maestro", "maestro-test-process"] {
+    for package in ["maestro", "maestro-test-harness"] {
         depend_on(root, package, PINNED);
     }
     let record = format!(
@@ -377,7 +377,7 @@ fn prepare_without_a_component_crate_installs_the_locked_programs() {
     let pinned = format!("--git https://example.invalid/maestro --rev {PINNED}");
     assert!(
         installs.contains(&format!(
-            "{pinned} maestro-test-process --example native_fixture "
+            "{pinned} maestro-test-harness --example native_fixture "
         )),
         "{installs}"
     );

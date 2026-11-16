@@ -36,7 +36,7 @@ fn check(member: &str, file: &str, contents: &str, expected: &[usize]) {
             .iter()
             .map(|line| {
                 format!(
-                    "{}:{line}: test-owned code names the platform temporary directory; use maestro_test_process::Scratch or maestro_test_process::temporary_root, and add a new crate to TEST_PROCESS_CALLERS",
+                    "{}:{line}: test-owned code names the platform temporary directory; use maestro_test_harness::Scratch or maestro_test_harness::temporary_root, and add a new crate to TEST_PROCESS_CALLERS",
                     path.display()
                 )
             })
@@ -116,7 +116,7 @@ fn discarded_owner_call_does_not_hide_a_named_directory() {
     check(
         "maestro-daemon",
         "src/persist/tests.rs",
-        "//! Persist.\n\n#[test]\nfn saves_a_snapshot() {\n    let _ = maestro_test_process::Scratch::new().unwrap();\n    std::fs::create_dir_all(std::env::temp_dir().join(\"maestro-snapshot\")).unwrap();\n}\n",
+        "//! Persist.\n\n#[test]\nfn saves_a_snapshot() {\n    let _ = maestro_test_harness::Scratch::new().unwrap();\n    std::fs::create_dir_all(std::env::temp_dir().join(\"maestro-snapshot\")).unwrap();\n}\n",
         &[6],
     );
 }
@@ -126,7 +126,7 @@ fn owner_parent_from_the_owner_root_is_accepted() {
     check(
         "maestro-daemon",
         "src/persist/tests.rs",
-        "//! Persist.\n\n#[test]\nfn saves_a_snapshot() {\n    let scratch = maestro_test_process::Scratch::new_in(&maestro_test_process::temporary_root()).unwrap();\n    std::fs::create_dir(scratch.path().join(\"work\")).unwrap();\n}\n",
+        "//! Persist.\n\n#[test]\nfn saves_a_snapshot() {\n    let scratch = maestro_test_harness::Scratch::new_in(&maestro_test_harness::temporary_root()).unwrap();\n    std::fs::create_dir(scratch.path().join(\"work\")).unwrap();\n}\n",
         &[],
     );
 }
@@ -136,7 +136,7 @@ fn platform_directory_observation_is_accepted() {
     check(
         "maestro-daemon",
         "src/pane/runtime/tests.rs",
-        "//! Runtime.\n\n#[test]\nfn reports_the_platform_directory() {\n    let cwd = maestro_test_process::temporary_root();\n    assert!(cwd.is_absolute());\n}\n",
+        "//! Runtime.\n\n#[test]\nfn reports_the_platform_directory() {\n    let cwd = maestro_test_harness::temporary_root();\n    assert!(cwd.is_absolute());\n}\n",
         &[],
     );
 }
@@ -146,7 +146,7 @@ fn uncreated_socket_path_is_accepted() {
     check(
         "maestro-daemon",
         "src/pane/runtime/tests.rs",
-        "//! Runtime.\n\nfn paths() -> std::path::PathBuf {\n    maestro_test_process::temporary_root().join(\"maestro-test.sock\")\n}\n\n#[test]\nfn reports_the_socket_path() {\n    assert!(paths().is_absolute());\n}\n",
+        "//! Runtime.\n\nfn paths() -> std::path::PathBuf {\n    maestro_test_harness::temporary_root().join(\"maestro-test.sock\")\n}\n\n#[test]\nfn reports_the_socket_path() {\n    assert!(paths().is_absolute());\n}\n",
         &[],
     );
 }
@@ -156,7 +156,7 @@ fn single_temporary_file_is_accepted() {
     check(
         "maestro-session",
         "tests/session_files.rs",
-        "//! Session files.\n\n#[test]\nfn publishes_a_file() {\n    let path = maestro_test_process::temporary_root().join(\"maestro-published.jsonl\");\n    std::fs::write(&path, b\"line\").unwrap();\n}\n",
+        "//! Session files.\n\n#[test]\nfn publishes_a_file() {\n    let path = maestro_test_harness::temporary_root().join(\"maestro-published.jsonl\");\n    std::fs::write(&path, b\"line\").unwrap();\n}\n",
         &[],
     );
 }
@@ -166,7 +166,7 @@ fn owner_path_shadowing_its_platform_parent_is_accepted() {
     check(
         "maestro-daemon",
         "src/persist/tests.rs",
-        "//! Persist.\n\n#[test]\nfn saves_a_snapshot() {\n    let root = maestro_test_process::temporary_root();\n    let scratch = maestro_test_process::Scratch::new_in(&root).unwrap();\n    let root = scratch.path();\n    std::fs::create_dir(root.join(\"work\")).unwrap();\n}\n",
+        "//! Persist.\n\n#[test]\nfn saves_a_snapshot() {\n    let root = maestro_test_harness::temporary_root();\n    let scratch = maestro_test_harness::Scratch::new_in(&root).unwrap();\n    let root = scratch.path();\n    std::fs::create_dir(root.join(\"work\")).unwrap();\n}\n",
         &[],
     );
 }
@@ -193,7 +193,7 @@ fn every_member_outside_the_owner_is_checked() {
 
 #[test]
 fn owner_member_reads_the_platform_directory() {
-    check("maestro-test-process", "src/directory.rs", SEEDED, &[]);
+    check("maestro-test-harness", "src/directory.rs", SEEDED, &[]);
 }
 
 /// The detection helper that returned a platform directory it never created.
@@ -254,7 +254,7 @@ fn test_process_builder_method_call_is_accepted() {
     check(
         "maestro-app",
         "tests/support/session_harness.rs",
-        "//! Session harness support.\n\n#[test]\nfn launches_the_selected_child_in_its_own_temporary_directory() {\n    let root = maestro_test_process::Scratch::new().unwrap();\n    let child = maestro_test_process::TestProcess::current(\"name\")\n        .unwrap()\n        .nocapture()\n        .temp_dir(root.path());\n    let _ = child;\n}\n",
+        "//! Session harness support.\n\n#[test]\nfn launches_the_selected_child_in_its_own_temporary_directory() {\n    let root = maestro_test_harness::Scratch::new().unwrap();\n    let child = maestro_test_harness::TestProcess::current(\"name\")\n        .unwrap()\n        .nocapture()\n        .temp_dir(root.path());\n    let _ = child;\n}\n",
         &[],
     );
 }
@@ -274,7 +274,7 @@ fn declared_item_fn_name_is_accepted() {
     check(
         "maestro-app",
         "tests/support/harness.rs",
-        "//! Session harness support.\n\nfn temp_dir() -> std::path::PathBuf {\n    maestro_test_process::temporary_root()\n}\n",
+        "//! Session harness support.\n\nfn temp_dir() -> std::path::PathBuf {\n    maestro_test_harness::temporary_root()\n}\n",
         &[],
     );
 }
@@ -314,7 +314,7 @@ fn platform_directory_passed_to_a_method_call_is_rejected() {
     check(
         "maestro-app",
         "tests/support/child.rs",
-        "//! Child processes.\n\n#[test]\nfn launches_the_selected_child_in_its_own_temporary_directory() {\n    let mut child = maestro_test_process::TestProcess::current(\"name\").unwrap();\n    child.current_dir(std::env::temp_dir());\n}\n",
+        "//! Child processes.\n\n#[test]\nfn launches_the_selected_child_in_its_own_temporary_directory() {\n    let mut child = maestro_test_harness::TestProcess::current(\"name\").unwrap();\n    child.current_dir(std::env::temp_dir());\n}\n",
         &[6],
     );
 }
@@ -332,7 +332,7 @@ fn packages_reads_the_platform_directory_into_a_setting() {
 /// Platform directory spellings in members the migration converted.
 const ADDED: &[(&str, &str, &str, &[usize])] = &[
     (
-        "maestro-test-process",
+        "maestro-test-harness",
         "tests/environment_groups.rs",
         "//! Group fixtures.\n\nfn marker(test: &str) -> std::path::PathBuf {\n    let path = std::env::temp_dir().join(format!(\"maestro-groups-{test}\"));\n    std::fs::write(&path, \"\").unwrap();\n    path\n}\n",
         &[4],
@@ -421,6 +421,6 @@ fn added_crates_report_their_platform_spelling() {
 #[test]
 fn harness_platform_directory_reads_outside_owner_file_are_rejected() {
     for file in ["src/lib.rs", "src/other.rs", "src/nested/src/directory.rs"] {
-        check("maestro-test-process", file, SEEDED, &[4]);
+        check("maestro-test-harness", file, SEEDED, &[4]);
     }
 }

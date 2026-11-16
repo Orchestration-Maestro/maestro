@@ -3,7 +3,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use maestro_agent::diagnostics::{write_stderr, write_stderr_line};
-use maestro_test_process::{
+use maestro_test_harness::{
     TestProcess, run_alone, run_with_broken_stderr, selection, wait_for_broken_stderr,
 };
 

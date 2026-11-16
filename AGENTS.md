@@ -104,7 +104,7 @@ argument or an import under any alias; a method named `temp_dir` is the
 receiver's own API and is accepted, while its arguments stay checked, and a
 declaration's own `temp_dir` name is accepted the same way with its body and
 arguments staying checked. Tests that
-observe it use `maestro-test-process::temporary_root`, and the diagnostic names
+observe it use `maestro-test-harness::temporary_root`, and the diagnostic names
 `TEST_PROCESS_CALLERS`, where a new crate asks for that owner.
 Conventions reject a second or foreign `MessageRendererCall` declaration and raw
 `MessageRenderer`, `CallbackEmitter`, `EventBus`, `get_message_renderer` or
@@ -354,17 +354,17 @@ controlled guest bus registrations, the native-only,
 non-optional `maestro` to `maestro-lock` development edge that serializes the
 executable's file-trigger test on the shared host fixture,
 and the native, non-optional dev-dependencies
-of the thirty-six declared callers on `maestro-test-process`, the owner of
+of the thirty-six declared callers on `maestro-test-harness`, the owner of
 native test isolation (see
-[the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
+[the spec](docs/specs/maestro-port.md#test-harness-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build
 dependencies, credentials as an extension one; the brand edge never satisfies
 the required toolkit/text set.
 
-The dedicated `maestro-test-process` native crate isolates tests from process-wide
+The dedicated `maestro-test-harness` native crate isolates tests from process-wide
 state. Its only internal production edges are the native feature unifier and
 `maestro-path`, which its table row names because the general path permission
-excludes it. Only the callers in its [contract](docs/specs/maestro-port.md#test-process-owner)
+excludes it. Only the callers in its [contract](docs/specs/maestro-port.md#test-harness-owner)
 may declare it, as a non-optional native development dependency when used.
 `Scratch::new`
 resolves its chosen root through `maestro_path::fs`, in the ordinary Windows
@@ -386,7 +386,7 @@ has no product or `maestro-path` edge, only the native feature-unifier exception
 apply. See the
 [fixture contract](docs/specs/maestro-port.md#test-fixture-owner).
 
-Tests capture tracing through `maestro_test_process::trace_capture::with_default`
+Tests capture tracing through `maestro_test_harness::trace_capture::with_default`
 or, for a future, `with_subscriber`. Formatting subscribers write into the same
 module's `Output` sink. The conventions check exempts only `src/trace_capture.rs`
 from the scoped-capture check and only `src/directory.rs` from the platform

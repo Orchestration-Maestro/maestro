@@ -1,10 +1,10 @@
-//! Native Git test commands belong to the isolated test-process owner.
+//! Native Git test commands belong to the isolated test-harness owner.
 
 use crate::source::Member;
 use proc_macro2::{TokenStream, TokenTree};
 
 /// What a test constructor must use instead of the Git executable.
-const OWNER: &str = "maestro_test_process::git_command::command";
+const OWNER: &str = "maestro_test_harness::git_command::command";
 
 /// Reject test constructors that bypass the isolated Git command owner.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {

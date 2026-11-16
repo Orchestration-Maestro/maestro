@@ -460,10 +460,10 @@ fn installed_matches(row: &Install, bin: &str, result: Option<&String>) {
 /// the developer's shell never reaches the install. True in that child; false in the caller
 /// once the child passed.
 fn online(test: &str) -> bool {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return true;
     }
-    let child = maestro_test_process::TestProcess::current(test).unwrap();
+    let child = maestro_test_harness::TestProcess::current(test).unwrap();
     let output = child
         .case("*")
         .env_remove("MAESTRO_OFFLINE")
@@ -493,7 +493,7 @@ async fn installs(name: &str) {
         return;
     }
     for row in cases::<Install>(name) {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let root = scratch.path().to_str().unwrap();
         // A host `tar` that accepts an empty archive reaches the binary check instead of the
         // recorded extraction failure.
@@ -605,7 +605,7 @@ struct WalkCase {
 #[test]
 fn recursive_search_prefers_files_then_the_last_directory() {
     for row in cases::<WalkCase>("recursive_search_prefers_files_then_the_last_directory") {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let root = scratch.path();
         for file in row.files {
             let path = root.join(&file);
@@ -644,7 +644,7 @@ struct EntryCase {
 fn windows_binary_directory_entries_carry_the_exe_suffix() {
     run(async {
         for row in cases::<EntryCase>("windows_binary_directory_entries_carry_the_exe_suffix") {
-            let scratch = maestro_test_process::Scratch::new().unwrap();
+            let scratch = maestro_test_harness::Scratch::new().unwrap();
             let root = scratch.path();
             let root_text = root.to_str().unwrap();
             let path = root.join("fd.exe");
@@ -701,7 +701,7 @@ fn fd_downloads_pin_to_the_last_intel_macos_build() {
         ),
     ];
     for (os, arch, expected) in cases {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let bin = maestro_path::join(&[scratch.path().to_str().unwrap(), "bin"]);
         let urls = Arc::new(Mutex::new(Vec::new()));
         let seen = Arc::clone(&urls);
@@ -728,7 +728,7 @@ fn lookup_and_download_deadlines_cover_the_whole_body() {
     }
     run_paused(async {
         for phase in 0..3 {
-            let scratch = maestro_test_process::Scratch::new().unwrap();
+            let scratch = maestro_test_harness::Scratch::new().unwrap();
             let bin = maestro_path::join(&[scratch.path().to_str().unwrap(), "bin"]);
             let fetch = stalled_fetch(phase);
             let mut manager = ToolsManager::new(bin.clone(), Some(fetch));
@@ -773,7 +773,7 @@ fn concurrent_installs_stage_in_separate_directories() {
         return;
     }
     run(async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let bin = maestro_path::join(&[scratch.path().to_str().unwrap(), "bin"]);
         let fetch = concurrent_fetch(bin.clone());
         let mut manager = ToolsManager::new(bin.clone(), Some(fetch));

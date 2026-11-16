@@ -1,7 +1,7 @@
 use super::words::{find, fnv1a, spans};
 use super::{Exemption, Lists, check_with, exemptions};
 use crate::source::Member;
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use std::path::Path;
 
 /// A member holding one source file with the given contents.

@@ -4,7 +4,7 @@
 use crate::support::session_harness::corpus;
 use maestro_app::test_support::{HarnessOptions, harness, on_task_set};
 use maestro_session::session_manager::ReadonlySessionManager;
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::json;
 
 #[test]

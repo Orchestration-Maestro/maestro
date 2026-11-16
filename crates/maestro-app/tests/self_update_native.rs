@@ -9,7 +9,7 @@ use maestro_app::configuration::config::{
     get_self_update_unavailable_instruction,
 };
 use maestro_process::SpawnSyncError;
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use std::process::Output;
 
 /// Guidance for an installation no evidenced global root holds.
@@ -127,7 +127,7 @@ fn native_update_access_matches_system_decision() {
     );
     // Each refused write withholds the command on its own, beside the other permitted one.
     for path in [&package, &parent] {
-        let Some(refused) = maestro_test_process::deny(path, 0o500).unwrap() else {
+        let Some(refused) = maestro_test_harness::deny(path, 0o500).unwrap() else {
             // A privileged run is not refused the write, so it cannot state these rows.
             return;
         };

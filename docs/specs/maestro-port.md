@@ -314,7 +314,7 @@ Server rendering/hydration; another application framework; a new package manager
 
 Development commands (offline test launcher, source launchers, commit hook, asset copying, browser smoke check) live in `maestro-tooling`, which is never shipped, has wiring-only binaries and exposes its library to integration tests.
 
-`maestro-test-browser` owns pinned-browser export and report qualification. This dedicated, unpublished native test crate depends on `maestro-tooling` for preparation, asset copying and locked metadata, and on `maestro-path` for its served root's real path. Its test-only browser stack never enters `maestro-tooling` or the development binary. Hakari excludes this member from traversal so browser-only features never enter the native unifier. `just browser-test` runs its single integration target as one nextest run: its build script generates one test per inventory export, and its wiring-only binary is the nextest setup that prepares the export package. Its native development dependency on `maestro-test-process` owns disposable test roots; no product crate depends on this browser qualification owner.
+`maestro-test-browser` owns pinned-browser export and report qualification. This dedicated, unpublished native test crate depends on `maestro-tooling` for preparation, asset copying and locked metadata, and on `maestro-path` for its served root's real path. Its test-only browser stack never enters `maestro-tooling` or the development binary. Hakari excludes this member from traversal so browser-only features never enter the native unifier. `just browser-test` runs its single integration target as one nextest run: its build script generates one test per inventory export, and its wiring-only binary is the nextest setup that prepares the export package. Its native development dependency on `maestro-test-harness` owns disposable test roots; no product crate depends on this browser qualification owner.
 
 Browser-author preparation and check/build/watch dispatch share that library's command operation. The editable fixture is an independent workspace with its own reviewed adjacent lock and no native path dependencies or build script. A locked native `maestro-theme` example exports presentation files and authored/canonical pack/mark directory observations; the fixture includes those files through `MAESTRO_BROWSER_INPUTS`. Tooling prepares route-specific inputs and absolute-path Trunk JSON configuration under `target/maestro-browser/.author/{library,example,debug}/`, outside replaceable distributions. Trunk alone watches and serves; its pre-build hook repeats the same locked native export. Authored hooks keep their authored working directory, arguments, platform overrides, inherited environment and failure status through the existing development command. Authored watch and ignore paths resolve against that directory. Startup watch roots retain authored roots and include the fixture, default identity and observed pack/mark directories; the generated preparation tree is ignored, and selecting dependencies outside the watched roots requires restarting.
 
@@ -365,7 +365,7 @@ Maestro's examples live in the package repository, maestro-packages, beside its 
 
 | Directory | Role |
 |---|---|
-| `crates/maestro-test-process/tests/support/` | native test children |
+| `crates/maestro-test-harness/tests/support/` | native test children |
 | `crates/maestro-extensions-guest/tests/support/` | host-qualification fixture components and their preparation program |
 | `crates/maestro-models-generator/scripts/` | catalog and fixture generators |
 | `crates/maestro-providers/tests/support/`, `crates/maestro-models-registry/tests/support/` | browser smoke checks |
@@ -480,7 +480,7 @@ as one portable build dependency and one portable development dependency.
 | `maestro-test-browser` | qualify browser exports | `maestro-tooling` | 0 |
 | `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-fixtures` | share cross-package test fixture operations | — | 0 |
-| `maestro-test-process` | isolate native tests from process-wide state | `maestro-path` | 0 |
+| `maestro-test-harness` | isolate native tests from process-wide state | `maestro-path` | 0 |
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, POSIX shell operands, author-written number prefixes, URI component encoding, locale construction, number formatting and raw CR/LF byte-line framing) | — | below 0 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-interchange`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand` | 1 |
 | `maestro-tooling` | automate repository development | — | 0 |
@@ -818,7 +818,7 @@ Native crates may depend on `maestro-path` without changing their delivery layer
 This optional edge is ignored when evaluating leaf status and exact
 direct-dependency sets; every other dependency rule, including cycle and internal
 dev-dependency checks, still applies. The guest authoring crate
-(`maestro-extensions-guest`), native test harness (`maestro-test-process`),
+(`maestro-extensions-guest`), native test harness (`maestro-test-harness`),
 fixture owner (`maestro-test-fixtures`), cancellation leaf (`maestro-cancellation`), shared
 record owner (`maestro-interchange`), watch leaf (`maestro-watch`), process owner (`maestro-process`), file-pattern owner (`maestro-pattern`),
 Markdown parser (`maestro-markdown`), office document reader (`maestro-office`), text leaf (`maestro-text`),
@@ -851,7 +851,7 @@ Never hand-edit its generated manifest section. Hakari excludes `maestro-test-br
 The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails.
 
-The internal development edges include the test-process edges below. `maestro-tui-crossterm` to
+The internal development edges include the test-harness edges below. `maestro-tui-crossterm` to
 `maestro-brand` serves the terminal examples' shared brand projection. It does not
 permit a normal or build dependency on brand or theme, or satisfy either required
 toolkit/text dependency.
@@ -915,12 +915,12 @@ resets signals and replaces itself with the requested command. The parent passes
 an explicit executable and entry arguments; libraries never assume the current
 executable implements the entry. Re-execution avoids an unsafe post-fork hook.
 
-Daemon runtime tests use the checked test-process owner to select a child test
-that calls this same entry. The test-process leaf does not depend on process.
+Daemon runtime tests use the checked test-harness owner to select a child test
+that calls this same entry. The test-harness leaf does not depend on process.
 
-### Test process owner
+### Test harness owner
 
-`maestro-test-process` is a dedicated, unpublished, native test-support leaf
+`maestro-test-harness` is a dedicated, unpublished, native test-support leaf
 that starts checked named libtest children and direct native fixtures. Checked
 reruns prove the child started exactly the selected test. One harness-free
 `native_fixture` example receives literal native operands and raw byte streams;
@@ -1017,7 +1017,7 @@ ownership-transfer API.
 
 Scoped tracing lives in the public `trace_capture` module.
 
-`maestro_test_process::trace_capture::with_default(subscriber, action)` keeps one
+`maestro_test_harness::trace_capture::with_default(subscriber, action)` keeps one
 subscriber that records nothing
 registered for the life of the test process, then runs the action under
 `tracing::subscriber::with_default`. `trace_capture::with_subscriber(future, subscriber)`
@@ -1104,7 +1104,7 @@ unchanged.
 
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
-1. **Layer 0:** `maestro-extensions-guest`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-fixtures`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
+1. **Layer 0:** `maestro-extensions-guest`, `maestro-models`, `maestro-office`, `maestro-resources`, `maestro-settings`, `maestro-test-browser`, `maestro-test-conventions`, `maestro-test-fixtures`, `maestro-test-harness`, `maestro-tooling`, `maestro-tui`, `maestro-terminal-emulator`, `maestro-workspace`, `maestro-detection`
 2. **Layer 1:** `maestro-agent`, `maestro-packages`, `maestro-providers`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-credentials`, `maestro-models-generator`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-models-registry`, `maestro-export`

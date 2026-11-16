@@ -2,7 +2,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
 use maestro_models_registry::{ModelRegistry, NativeModelFileOperations, ProviderConfigInput};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use std::sync::{Arc, RwLock};
 
 /// These literals distinguish partial overrides from whole custom-model replacement.

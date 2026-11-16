@@ -78,7 +78,7 @@ struct Fixture {
     /// Surviving settings alias.
     settings: Rc<std::cell::RefCell<SettingsManager>>,
     /// Guards that give denied entries their permissions back before the tree goes.
-    _denied: Vec<maestro_test_process::Restore>,
+    _denied: Vec<maestro_test_harness::Restore>,
     /// Completed effect observations.
     effects: Rc<support::Effects>,
 }
@@ -175,7 +175,7 @@ fn setup(recipe: &Recipe, root: std::path::PathBuf) -> Option<Fixture> {
 }
 /// Creates each supplied file, directory, package and link, then denies access to the
 /// recipe's denied entries; `None` when this process is not refused.
-fn native_tree(root: &Path, recipe: &Recipe) -> Option<Vec<maestro_test_process::Restore>> {
+fn native_tree(root: &Path, recipe: &Recipe) -> Option<Vec<maestro_test_harness::Restore>> {
     let base = root.to_str().unwrap();
     for (name, text) in &recipe.files {
         let path = root.join(name);
@@ -199,7 +199,7 @@ fn native_tree(root: &Path, recipe: &Recipe) -> Option<Vec<maestro_test_process:
     recipe
         .denied
         .iter()
-        .map(|name| maestro_test_process::deny(root.join(name), 0o000).unwrap())
+        .map(|name| maestro_test_harness::deny(root.join(name), 0o000).unwrap())
         .collect()
 }
 /// Supplies controlled acquisition failures below their owning wrappers.

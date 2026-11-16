@@ -29,7 +29,7 @@ maestro-credentials = { path = "../maestro-credentials" }
 maestro-models = { path = "../maestro-models" }
 maestro-providers = { path = "../maestro-providers" }
 maestro-session = { path = "../maestro-session" }
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 maestro-theme = { path = "../maestro-theme" }
 maestro-tui = { path = "../maestro-tui", features = ["test-support"] }
 

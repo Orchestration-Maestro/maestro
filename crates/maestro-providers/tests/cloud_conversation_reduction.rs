@@ -180,9 +180,9 @@ fn cancellation_keeps_partial_blocks_and_allows_a_new_call() -> TestResult {
 #[test]
 fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
     let _registry = crate::bundled::registry();
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "thinking_tool_results_replay_through_generic_dispatch",
             )?
             .nocapture()

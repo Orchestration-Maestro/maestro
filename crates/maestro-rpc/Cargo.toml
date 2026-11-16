@@ -46,7 +46,7 @@ rustix = { workspace = true, features = ["std", "process"] }
 maestro-feature-unifier.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 maestro-app = { path = "../maestro-app", features = ["test-support"] }
 maestro-models-registry = { path = "../maestro-models-registry" }
 maestro-credentials = { path = "../maestro-credentials", features = ["test-support"] }

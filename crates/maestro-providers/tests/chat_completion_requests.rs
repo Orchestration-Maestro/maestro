@@ -54,9 +54,9 @@ fn assert_history_rows(test: &str) -> TestResult {
 fn maestro_chat_replays_thinking_as_text() -> TestResult {
     crate::runtime::run(async {
         assert_history_rows("maestro_chat_replays_thinking_as_text")?;
-        if !maestro_test_process::selection().is_child() {
+        if !maestro_test_harness::selection().is_child() {
             return {
-                let output = maestro_test_process::TestProcess::current(
+                let output = maestro_test_harness::TestProcess::current(
                     "maestro_chat_replays_thinking_as_text",
                 )?
                 .nocapture()
@@ -239,7 +239,7 @@ async fn payload_matches(row: &Value) -> TestResult {
 async fn assert_payload_rows(test: &str) -> TestResult {
     let owned = rows(FIXTURE, test)?;
     assert!(!owned.is_empty(), "{test} has fixture rows");
-    let group = maestro_test_process::run_per_environment(test, &owned, |row| {
+    let group = maestro_test_harness::run_per_environment(test, &owned, |row| {
         row.get("env")
             .and_then(Value::as_object)
             .into_iter()
@@ -324,7 +324,7 @@ async fn non_finite_numbers_become_null() -> TestResult {
 fn maestro_chat_preserves_numeric_options() -> TestResult {
     crate::runtime::run(async {
         assert_payload_rows("maestro_chat_preserves_numeric_options").await?;
-        if !maestro_test_process::selection().is_child() {
+        if !maestro_test_harness::selection().is_child() {
             non_finite_numbers_become_null().await?;
         }
         Ok(())
@@ -811,7 +811,7 @@ fn replayed_with_signature(signature: &str) -> TestResult<Value> {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let deepest = cases::DEEPEST_NESTING;
         let accepted = cases::nested_json(deepest);
         assert_eq!(
@@ -829,7 +829,7 @@ fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
         return Ok(());
     }
     {
-        let output = maestro_test_process::TestProcess::current(
+        let output = maestro_test_harness::TestProcess::current(
             "maestro_chat_bounds_signature_replay_nesting",
         )?
         .nocapture()

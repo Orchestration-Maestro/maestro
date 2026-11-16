@@ -2,7 +2,7 @@
 use crate::tests::session_harness::{retry_started, start_prompt};
 use maestro_agent::PromptInput;
 use maestro_app::test_support::{HarnessOptions, Scripted, harness, on_task_set};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::json;
 
 /// A retry wait leaves the low-level agent idle but still owns the session run.

@@ -88,7 +88,7 @@ mod tests {
     fn malformed_reload_keeps_every_workspace_area() {
         let storage = Arc::new(ControlledStorage(Mutex::new(Ok("{".into()))));
         let mut manager = SettingsManager::from_storage(storage.clone());
-        let output = maestro_test_process::trace_capture::Output::default();
+        let output = maestro_test_harness::trace_capture::Output::default();
         let subscriber = tracing_subscriber::fmt()
             .without_time()
             .with_ansi(false)
@@ -98,7 +98,7 @@ mod tests {
             })
             .finish();
         let (loaded, errors) =
-            maestro_test_process::trace_capture::with_default(subscriber, || {
+            maestro_test_harness::trace_capture::with_default(subscriber, || {
                 load_config(&mut manager, Path::new("."))
             });
         assert!(errors.is_empty());
@@ -133,7 +133,7 @@ mod tests {
                 })
                 .finish();
             let (report, errors) =
-                maestro_test_process::trace_capture::with_default(subscriber, || {
+                maestro_test_harness::trace_capture::with_default(subscriber, || {
                     runtime.block_on(reload_config(&mut manager, &mut current, Path::new(".")))
                 });
             assert!(errors.is_empty());

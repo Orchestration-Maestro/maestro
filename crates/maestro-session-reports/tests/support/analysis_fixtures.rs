@@ -2,7 +2,7 @@
 
 use chrono::TimeZone;
 use maestro_session_reports::{cost, session_transcripts, stats, tool_stats};
-use maestro_test_process::with_environment;
+use maestro_test_harness::with_environment;
 use std::path::Path;
 use std::process::ExitCode;
 
@@ -205,11 +205,11 @@ pub fn page_data(page: &str) -> serde_json::Value {
 }
 
 /// A fresh disposable directory.
-pub fn scratch() -> maestro_test_process::Scratch {
-    maestro_test_process::Scratch::new().expect("a scratch directory is creatable")
+pub fn scratch() -> maestro_test_harness::Scratch {
+    maestro_test_harness::Scratch::new().expect("a scratch directory is creatable")
 }
 
 /// The directory text of `scratch`.
-pub fn root(scratch: &maestro_test_process::Scratch) -> String {
+pub fn root(scratch: &maestro_test_harness::Scratch) -> String {
     scratch.path().display().to_string()
 }

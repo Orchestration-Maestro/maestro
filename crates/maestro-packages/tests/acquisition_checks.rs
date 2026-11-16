@@ -500,7 +500,7 @@ fn git_project_paths_preserve_parent_and_ignore_files() {
 #[cfg(unix)]
 fn locked<T>(path: &str, operation: impl FnOnce() -> T) -> Option<T> {
     std::fs::create_dir_all(path).unwrap();
-    let _restore = maestro_test_process::deny(path, 0o555).unwrap()?;
+    let _restore = maestro_test_harness::deny(path, 0o555).unwrap()?;
     Some(operation())
 }
 
@@ -625,13 +625,13 @@ fn local_remove_has_no_filesystem_or_command_effect() {
 fn explicit_install_does_not_obey_offline_resolution_policy() {
     /// The case that repeats the install with the offline policy supplied.
     const CHILD: &str = "offline";
-    if maestro_test_process::selection().case() == Some(CHILD) {
+    if maestro_test_harness::selection().case() == Some(CHILD) {
         let fixture = Fixture::new(&json!({}));
         block_on(fixture.manager.install("npm:pkg", None)).unwrap();
         assert_eq!(fixture.calls(), [call("npm", &["install", "-g", "pkg"])]);
         return;
     }
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "explicit_install_does_not_obey_offline_resolution_policy",
     )
     .unwrap()
@@ -745,7 +745,7 @@ fn git_pruning_distinguishes_read_and_remove_failures() {
     let fixture = build();
     let parent = fixture.agent("git/github.com/user");
     // Write and search permission without read: the checkout goes, the listing fails.
-    let Some(restore) = maestro_test_process::deny(&parent, 0o300).unwrap() else {
+    let Some(restore) = maestro_test_harness::deny(&parent, 0o300).unwrap() else {
         return;
     };
     let result = block_on(fixture.manager.remove(source, None));

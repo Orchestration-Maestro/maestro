@@ -11,12 +11,12 @@ use std::rc::Rc;
 /// Directory of the shipped theme documents.
 const SHIPPED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/theme");
 /// A fresh directory, removed on drop.
-pub struct Scratch(maestro_test_process::Scratch);
+pub struct Scratch(maestro_test_harness::Scratch);
 
 impl Scratch {
     /// Create the directory.
     pub fn new() -> Self {
-        Self(maestro_test_process::Scratch::new().unwrap())
+        Self(maestro_test_harness::Scratch::new().unwrap())
     }
 
     /// Path of an entry below the scratch directory.

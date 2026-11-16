@@ -7,7 +7,7 @@ use maestro_app::test_support::{HarnessOptions, harness, on_task_set};
 use maestro_models::ModelThinkingLevel;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_settings::{DecisionRequest, SettingsDecider};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use std::sync::{Arc, Mutex};
 
 /// Refuses explicit operations while recording their requested, unclamped values.

@@ -60,7 +60,7 @@ rustix = { workspace = true, features = ["std", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 maestro-packages = { path = "../maestro-packages", features = ["test-support"] }
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 futures-util = { workspace = true, features = ["async-await"] }
 tokio = { version = "=1.53.3", default-features = false, features = ["rt-multi-thread", "sync", "net", "io-util", "io-std", "signal", "test-util"] }
 

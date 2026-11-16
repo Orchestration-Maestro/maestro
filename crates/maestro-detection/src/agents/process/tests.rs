@@ -440,7 +440,7 @@ fn command_line_helper_name_does_not_match_a_substring() {
 
 #[test]
 fn symlinked_executable_resolves_agent_identity() {
-    let dir = maestro_test_process::Scratch::new().expect("test directory should be created");
+    let dir = maestro_test_harness::Scratch::new().expect("test directory should be created");
     let target = dir.path().join("cursor-agent");
     let link = dir.path().join("agent");
     std::fs::File::create_new(&target).expect("target should be created");

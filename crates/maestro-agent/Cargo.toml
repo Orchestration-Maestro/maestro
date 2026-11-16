@@ -19,7 +19,7 @@ serde = { workspace = true, features = ["rc"] }
 maestro-lock = { path = "../maestro-lock" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 tokio = { version = "=1.53.3", default-features = false, features = ["rt", "sync", "macros", "net", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

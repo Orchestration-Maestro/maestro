@@ -3,7 +3,7 @@
 use crate::compiler;
 use crate::recipe_support::{self, Workspace};
 use crate::tooling_closure::{dependency_entries, tooling_local_dependencies};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -180,7 +180,7 @@ fn build_fixture(root: &Path) {
 /// recorder's directory.
 #[cfg(unix)]
 fn build_behind_recorder(test: &str, wrapper_variable: &str) -> (Scratch, Scratch) {
-    use maestro_test_process::TestProcess;
+    use maestro_test_harness::TestProcess;
 
     let root = Scratch::new().unwrap();
     fs::create_dir(root.path().join("src")).unwrap();
@@ -268,7 +268,7 @@ fn fixture_command_wraps_an_inherited_cargo_build_rustc_wrapper() {
 #[cfg(unix)]
 #[test]
 fn fixture_command_wraps_only_a_wrapper_the_command_keeps() {
-    use maestro_test_process::TestProcess;
+    use maestro_test_harness::TestProcess;
 
     const REPORT: &str = "MAESTRO_FIXTURE_WRAPPER_REPORT";
     const COVERAGE: &str = "__CARGO_LLVM_COV_RUSTC_WRAPPER";

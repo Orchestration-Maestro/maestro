@@ -10,7 +10,7 @@ use crate::analysis_fixtures::{
 #[cfg(not(windows))]
 use maestro_session_reports::tool_stats;
 #[cfg(not(windows))]
-use maestro_test_process::with_environment;
+use maestro_test_harness::with_environment;
 use serde_json::Value;
 #[cfg(not(windows))]
 use std::io::{BufRead, BufReader, Read, Write};
@@ -63,7 +63,7 @@ fn write(directory: &str, files: &[(&str, String)]) {
 }
 
 /// Run the report over `sessions` and read back the page it wrote.
-fn report(scratch: &maestro_test_process::Scratch, sessions: &str) -> (Run, String) {
+fn report(scratch: &maestro_test_harness::Scratch, sessions: &str) -> (Run, String) {
     let output = maestro_path::join(&[&root(scratch), "report.html"]);
     let run = run_tools(&["--sessions-dir", sessions, "--output", &output])
         .expect("the report reads its directory");
@@ -741,7 +741,7 @@ fn viewer_program() -> &'static str {
 #[cfg(not(windows))]
 fn install_viewer(directory: &std::path::Path, program: &str, port: u16) {
     std::fs::create_dir_all(directory).expect("the viewer directory is creatable");
-    maestro_test_process::install_family(
+    maestro_test_harness::install_family(
         &directory.join(program),
         "browser_launch",
         &serde_json::json!({"port": port}).to_string(),

@@ -214,7 +214,7 @@ pub fn group(name: &str) {
     }
     let selected: Vec<_> = cases.iter().filter(|c| c.test == name).collect();
     assert!(!selected.is_empty());
-    let groups = maestro_test_process::run_per_environment(name, selected, |case| {
+    let groups = maestro_test_harness::run_per_environment(name, selected, |case| {
         case.input
             .env
             .iter()

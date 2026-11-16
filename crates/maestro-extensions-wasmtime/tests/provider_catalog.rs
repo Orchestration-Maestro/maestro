@@ -191,7 +191,7 @@ fn catalog_construction_forwards_auth_and_path_independently() {
 #[test]
 fn catalog_file_constructors_keep_independent_paths_and_live_credentials() {
     super::components::local(async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let (_owner, runner) = loaded().await;
         for auth in ["a", "b"] {
             let path = scratch.path().join(format!("auth-{auth}.json"));
@@ -582,7 +582,7 @@ async fn constructor_case(
 #[test]
 fn catalog_factory_construction_resolves_only_absent_paths_before_bind() {
     super::components::local(async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let files = constructor_files(scratch.path());
         for (auth, models, key, id) in [
             (None, None, "default-auth", "default-model"),
@@ -910,7 +910,7 @@ fn file_session(path: &std::path::Path) -> maestro_extensions::execution::Extens
 #[test]
 fn catalog_refresh_retains_readers_and_drains_load_error() {
     super::components::local(async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let path = scratch.path().join("models.json");
         std::fs::write(&path, r#"{"providers":{"broken":{"apiKey":false}}}"#).unwrap();
         let session = file_session(&path);
@@ -1101,7 +1101,7 @@ fn selected(
 
 /// Replaces complete lists, replays first registration order and restores file/shipped models.
 async fn provider_restoration() {
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let path = scratch.path().join("models.json");
     std::fs::write(&path, json!({"providers":{"restored":provider_config("file"),"anthropic":{"baseUrl":"https://file.invalid"}}}).to_string()).unwrap();
     let session = file_session(&path);
@@ -1594,9 +1594,9 @@ async fn assert_session_release(
 fn provider_request_auth_uses_shared_credential_owner() {
     /// The case that repeats the request in a cleared child per key.
     const CHILD: &str = "cleared";
-    if maestro_test_process::selection().case() != Some(CHILD) {
+    if maestro_test_harness::selection().case() != Some(CHILD) {
         for key in ["", "environment-key"] {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "provider_request_auth_uses_shared_credential_owner",
             )
             .unwrap()

@@ -3,8 +3,8 @@
 #![cfg(test)]
 use crate::child_programs::{self, async_command};
 use maestro_process::children::{CapturedChild, OutputMode, WaitOptions, wait_for_child_process};
-use maestro_test_process::HARNESS_START;
-use maestro_test_process::child::{harness, without_harness};
+use maestro_test_harness::HARNESS_START;
+use maestro_test_harness::child::{harness, without_harness};
 use std::io::Write as _;
 
 /// Collects the harness start bytes from the first chunks and releases the child with the

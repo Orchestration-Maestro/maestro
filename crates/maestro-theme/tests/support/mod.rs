@@ -2,7 +2,7 @@
 pub mod highlighting;
 pub mod observations;
 
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use maestro_theme::{ColorMode, Theme, ThemeColor, ThemeError, load_theme_from_path};
 use serde_json::Value;
 

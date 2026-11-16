@@ -7,7 +7,7 @@ use chrono::TimeZone;
 use maestro_interchange::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, SessionTreeNode};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use support::native::broken_history;
 
@@ -290,11 +290,11 @@ fn tree_local_dates_use_the_native_local_zone() {
         assert_eq!(shape(&tree[0]), expected);
         return;
     }
-    if !maestro_test_process::local_zone_follows_tz() {
+    if !maestro_test_harness::local_zone_follows_tz() {
         return;
     }
     for zone in ["UTC", "America/New_York"] {
-        let output = maestro_test_process::TestProcess::current(name)
+        let output = maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .env("TZ", zone)
@@ -427,7 +427,7 @@ fn failed_history_switch_preserves_existing_labels() {
     std::fs::set_permissions(&rewrite_failure, permissions).unwrap();
     // A privileged Unix run rewrites the read-only file anyway, so there is nothing to check.
     #[cfg(unix)]
-    if maestro_test_process::deny(&rewrite_failure, 0o444)
+    if maestro_test_harness::deny(&rewrite_failure, 0o444)
         .unwrap()
         .is_none()
     {

@@ -6,8 +6,8 @@
     clippy::excessive_nesting
 )]
 use super::components::{files_below, load_empty_component};
-use maestro_test_process::Scratch;
-use maestro_test_process::{AGENT_DIRECTORY, TestProcess, selection};
+use maestro_test_harness::Scratch;
+use maestro_test_harness::{AGENT_DIRECTORY, TestProcess, selection};
 
 /// A load compiles its component into the cache below the agent directory, and writes none to
 /// the platform's own cache locations under the home directory.

@@ -12,7 +12,7 @@ use maestro_extensions::{
 };
 use maestro_models::Local;
 use maestro_session::{Presence, session_manager::ReadonlySessionManager};
-use maestro_test_process::IsolatedSetup;
+use maestro_test_harness::IsolatedSetup;
 use maestro_tui::Component;
 use serde_json::json;
 use std::{

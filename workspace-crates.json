@@ -43,7 +43,7 @@
   "maestro-test-browser": "dedicated",
   "maestro-test-conventions": "dedicated",
   "maestro-test-fixtures": "dedicated",
-  "maestro-test-process": "dedicated",
+  "maestro-test-harness": "dedicated",
   "maestro-text": "core",
   "maestro-theme": "core",
   "maestro-tooling": "dedicated",

@@ -90,7 +90,7 @@ async fn run_recipe(row: Recipe) {
     );
     let denied = row
         .denied
-        .then(|| maestro_test_process::deny(scene.path().join("denied"), 0o0).unwrap());
+        .then(|| maestro_test_harness::deny(scene.path().join("denied"), 0o0).unwrap());
     if matches!(denied, Some(None)) {
         return;
     }

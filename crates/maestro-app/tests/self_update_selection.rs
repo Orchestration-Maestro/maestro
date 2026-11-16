@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_test_process::{TestProcess, test_name};
+use maestro_test_harness::{TestProcess, test_name};
 
 #[path = "support/self_update/mod.rs"]
 mod support;
@@ -192,7 +192,7 @@ fn literal_query() {
             .skip("argument with spaces")
             .skip("literal & | ; $HOME %PATH% ^ < >")
     };
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let directory = scratch.path().join("maestro query");
     std::fs::create_dir(&directory).unwrap();
     let executable = directory.join(format!("npm{}", std::env::consts::EXE_SUFFIX));

@@ -24,7 +24,7 @@ use maestro_session::{
     session_manager::{NavigateTreeOptions, ReadonlySessionManager},
 };
 use maestro_settings::SettingsManager;
-use maestro_test_process::IsolatedSetup;
+use maestro_test_harness::IsolatedSetup;
 use maestro_tui::{Cancellation, Component, EditorComponent, Focusable, Text};
 use serde_json::json;
 use std::ffi::OsStr;

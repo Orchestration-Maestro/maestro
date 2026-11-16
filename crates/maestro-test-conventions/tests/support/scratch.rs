@@ -1,13 +1,13 @@
-use maestro_test_process::compiler;
+use maestro_test_harness::compiler;
 
 /// A fresh temporary directory, removed when dropped.
 pub struct Scratch {
-    pub root: maestro_test_process::Scratch,
+    pub root: maestro_test_harness::Scratch,
 }
 
 impl Scratch {
     pub fn new() -> Self {
-        let root = maestro_test_process::Scratch::new().expect("create fixture");
+        let root = maestro_test_harness::Scratch::new().expect("create fixture");
         compiler::declare_toolchain(root.path(), include_str!("../../../../rust-toolchain.toml"))
             .unwrap();
         // Cargo keeps its compiler probes in an existing target directory and otherwise

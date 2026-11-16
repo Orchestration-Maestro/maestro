@@ -127,19 +127,19 @@ use session_picker::native_child as keybinding_child;
 #[test]
 fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
     const NAME: &str = "session_selector_default_file_manager_and_supplied_manager_are_distinct";
-    if maestro_test_process::selection().is_child()
-        && maestro_test_process::selection().runs_case("yes")
+    if maestro_test_harness::selection().is_child()
+        && maestro_test_harness::selection().runs_case("yes")
     {
         session_picker::session_picker_scopes::default_manager();
     } else {
-        let dir = maestro_test_process::Scratch::new().expect("scratch directory is new");
+        let dir = maestro_test_harness::Scratch::new().expect("scratch directory is new");
         std::fs::write(
             dir.path().join("keybindings.json"),
             "{\"app.session.toggleNamedFilter\":\"ctrl+x\"}",
         )
         .unwrap();
         keybinding_child::probe(
-            maestro_test_process::TestProcess::current(NAME)
+            maestro_test_harness::TestProcess::current(NAME)
                 .unwrap()
                 .case("yes"),
             dir.path(),

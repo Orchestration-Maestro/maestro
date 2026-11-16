@@ -5,7 +5,7 @@
 use crate::support;
 use maestro_interchange::presence::Presence;
 use maestro_session::{SessionInfo, SessionManager, parse_session_entries};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 use std::io;
 use std::path::Path;
@@ -225,11 +225,11 @@ fn discovery_missing_timestamp_uses_parsed_entry_time() {
 #[test]
 fn discovery_local_dates_use_native_local_zone() {
     let name = "discovery_local_dates_use_native_local_zone";
-    if !maestro_test_process::selection().is_child() {
-        if !maestro_test_process::local_zone_follows_tz() {
+    if !maestro_test_harness::selection().is_child() {
+        if !maestro_test_harness::local_zone_follows_tz() {
             return;
         }
-        let output = maestro_test_process::TestProcess::current(name)
+        let output = maestro_test_harness::TestProcess::current(name)
             .unwrap()
             .nocapture()
             .env("TZ", "America/New_York")
@@ -555,7 +555,7 @@ fn all_projects_skips_unreadable_children() {
     std::fs::write(sessions.join("good/bad.jsonl"), "{broken").unwrap();
     let locked = sessions.join("locked");
     // A privileged run reads the locked project anyway, so there is nothing to check.
-    let Some(restore) = maestro_test_process::deny(&locked, 0o000).unwrap() else {
+    let Some(restore) = maestro_test_harness::deny(&locked, 0o000).unwrap() else {
         return;
     };
     let mut seen = Vec::new();

@@ -28,7 +28,7 @@ struct Row {
     expected: Vec<String>,
 }
 /// Removes the disposable native tree after the last observation.
-struct Scene(maestro_test_process::Scratch);
+struct Scene(maestro_test_harness::Scratch);
 impl Scene {
     fn path(&self) -> &Path {
         self.0.path()
@@ -67,12 +67,12 @@ fn synchronous_walk_matches_native_filesystem_cases() {
         "../../../tests/fixtures/glob_native_walk.json"
     ))
     .unwrap();
-    let scene = Scene(maestro_test_process::Scratch::new().unwrap());
+    let scene = Scene(maestro_test_harness::Scratch::new().unwrap());
     setup(scene.path(), inputs);
     let base = scene.path().to_string_lossy();
     for row in rows {
         let denied = (row.case == "denied_read")
-            .then(|| maestro_test_process::deny(scene.path().join("denied"), 0o0).unwrap());
+            .then(|| maestro_test_harness::deny(scene.path().join("denied"), 0o0).unwrap());
         // A privileged run reads the denied directory anyway.
         if matches!(denied, Some(None)) {
             continue;
@@ -95,7 +95,7 @@ fn synchronous_walk_matches_native_filesystem_cases() {
 #[test]
 fn globstar_literals_keep_platform_case_policy() {
     use maestro_pattern::{GlobMatcher, GlobOptions, Platform};
-    let scene = Scene(maestro_test_process::Scratch::new().unwrap());
+    let scene = Scene(maestro_test_harness::Scratch::new().unwrap());
     for name in ["main.ts", "maint.ts"] {
         fs::write(scene.path().join(name), "fixture").unwrap();
     }

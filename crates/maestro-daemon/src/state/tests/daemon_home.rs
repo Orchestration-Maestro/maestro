@@ -38,7 +38,7 @@ fn expected(case: Home) -> Option<PathBuf> {
 #[test]
 fn daemon_home_uses_only_the_environment() {
     let cases = [Home::Unset, Home::Empty, Home::Set];
-    let Some(cases) = maestro_test_process::run_per_environment(
+    let Some(cases) = maestro_test_harness::run_per_environment(
         "state::tests::daemon_home::daemon_home_uses_only_the_environment",
         cases,
         |case| variable(*case),
@@ -104,7 +104,7 @@ fn window_title(home: &std::path::Path) -> String {
 /// Missing HOME and an unreadable process directory fall back to the filesystem root.
 #[test]
 fn daemon_home_without_readable_cwd_uses_root() {
-    let Some(_) = maestro_test_process::run_per_environment(
+    let Some(_) = maestro_test_harness::run_per_environment(
         "state::tests::daemon_home::daemon_home_without_readable_cwd_uses_root",
         [Home::Unset],
         |case| variable(*case),
@@ -112,7 +112,7 @@ fn daemon_home_without_readable_cwd_uses_root() {
     .unwrap() else {
         return;
     };
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     scratch.enter_removed("cwd").unwrap();
     for policy in [NewTerminalCwdConfig::Home, NewTerminalCwdConfig::Follow] {
         assert_eq!(new_workspace_directory(policy), PathBuf::from("/"));
@@ -122,7 +122,7 @@ fn daemon_home_without_readable_cwd_uses_root() {
 /// Creation never shortens the account directory to a home label when HOME is absent.
 #[test]
 fn daemon_creation_without_home_labels_the_account_directory_by_name() {
-    let Some(_) = maestro_test_process::run_per_environment(
+    let Some(_) = maestro_test_harness::run_per_environment(
         "state::tests::daemon_home::daemon_creation_without_home_labels_the_account_directory_by_name",
         [Home::Unset],
         |case| variable(*case),
@@ -133,7 +133,7 @@ fn daemon_creation_without_home_labels_the_account_directory_by_name() {
     let Some(account) = std::env::home_dir() else {
         return;
     };
-    maestro_test_process::TestProcess::named("state::tests::daemon_runtime::setup_entry")
+    maestro_test_harness::TestProcess::named("state::tests::daemon_runtime::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()

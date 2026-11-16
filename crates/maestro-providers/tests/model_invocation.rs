@@ -43,10 +43,10 @@ mod tests {
         use maestro_models::{get_oauth_provider, reset_oauth_providers};
         use maestro_providers::BedrockProviderModule;
         let _serial = crate::bundled::registry();
-        if !maestro_test_process::selection().is_child() {
+        if !maestro_test_harness::selection().is_child() {
             let name = "maestro_platform_stores_keep_distinct_owners";
             return {
-                let output = maestro_test_process::TestProcess::current(name)?
+                let output = maestro_test_harness::TestProcess::current(name)?
                     .nocapture()
                     .env_clear()
                     .case("owners")

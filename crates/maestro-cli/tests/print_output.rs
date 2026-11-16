@@ -129,11 +129,11 @@ fn a_print_run_shuts_the_session_down_with_quit() {
 #[test]
 fn a_termination_signal_disposes_the_run_and_reports_quit() {
     let name = "a_termination_signal_disposes_the_run_and_reports_quit";
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         signalling_child();
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
     let (mut child, mut diagnostics) =
         signalling_case(name, SignallingCase::Termination, root.path(), &report);
@@ -156,11 +156,11 @@ fn a_termination_signal_disposes_the_run_and_reports_quit() {
 #[test]
 fn a_hangup_after_a_termination_ends_the_run_and_reports_quit_once() {
     let name = "a_hangup_after_a_termination_ends_the_run_and_reports_quit_once";
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         signalling_child();
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
     let (mut child, mut diagnostics) =
         signalling_case(name, SignallingCase::Hangup, root.path(), &report);
@@ -185,11 +185,11 @@ fn a_hangup_after_a_termination_ends_the_run_and_reports_quit_once() {
 #[test]
 fn a_rejected_disposal_ends_the_run_and_reports_quit() {
     let name = "a_rejected_disposal_ends_the_run_and_reports_quit";
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         signalling_child();
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let report = root.path().join("shutdown.json");
     let (mut child, mut diagnostics) =
         signalling_case(name, SignallingCase::Rejected, root.path(), &report);
@@ -273,7 +273,7 @@ fn signalling_child() {
     let running = {
         let local = Rc::clone(&local);
         async move {
-            let case = SignallingCase::parse(maestro_test_process::selection().case());
+            let case = SignallingCase::parse(maestro_test_harness::selection().case());
             let fixture =
                 signalling_fixture(Rc::clone(&local), std::path::Path::new(&report), case).await;
             let created = create_runtime(

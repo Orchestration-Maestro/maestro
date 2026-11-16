@@ -271,7 +271,7 @@ fn report_scenario() {
 
 #[test]
 fn failed_work_prints_each_source_and_keeps_running() {
-    if maestro_test_process::run_alone("failed_work_prints_each_source_and_keeps_running").unwrap()
+    if maestro_test_harness::run_alone("failed_work_prints_each_source_and_keeps_running").unwrap()
     {
         return;
     }

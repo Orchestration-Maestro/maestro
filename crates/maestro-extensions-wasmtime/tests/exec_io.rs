@@ -9,8 +9,8 @@ use super::example_process::{install, run};
 use maestro_extensions::{
     Cancellation, EventBus, ExtensionRunner, Local, create_event_bus_for, types::ExtensionHandle,
 };
-use maestro_test_process::Scratch;
-use maestro_test_process::loopback;
+use maestro_test_harness::Scratch;
+use maestro_test_harness::loopback;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use tokio::io::AsyncReadExt;

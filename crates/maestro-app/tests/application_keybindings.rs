@@ -373,14 +373,14 @@ fn file_loading_follows_native_symlinks_without_rewriting_the_target() {
 }
 
 fn isolated(name: &str, run: impl FnOnce(&std::path::Path)) {
-    if maestro_test_process::selection().is_child()
-        && maestro_test_process::selection().runs_case(name)
+    if maestro_test_harness::selection().is_child()
+        && maestro_test_harness::selection().runs_case(name)
     {
         run(&std::env::current_dir().unwrap());
     } else {
         let dir = child::Scratch::new();
         child::probe(
-            maestro_test_process::TestProcess::current(name)
+            maestro_test_harness::TestProcess::current(name)
                 .unwrap()
                 .case(name),
             dir.0.path(),
@@ -653,7 +653,7 @@ fn effective_snapshots_are_owned_and_inherited_operations_stay_available() {
 #[test]
 fn reset_keys_backs_up_exact_bytes_and_preserves_other_actions() {
     use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let path = scratch.path().join("keybindings.json");
     let original = b"{\n  \"app.exit\": \"ctrl+d\",\n  \"unknown\": {\"kept\":true,\"large\":[9007199254740993,18446744073709551615,-9223372036854775808]},\n  \"multiplexer.focus\": [\"alt+h\"],\n  \"multiplexer.\": null,\n  \"multiplexer\": 42\n}\n";
     std::fs::write(&path, original).unwrap();
@@ -683,7 +683,7 @@ fn reset_keys_backs_up_exact_bytes_and_preserves_other_actions() {
 #[test]
 fn reset_keys_never_overwrites_a_backup_or_edits_invalid_input() {
     use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path().to_str().unwrap();
     let path = scratch.path().join("keybindings.json");
     let backup = scratch.path().join("keybindings.json.bak-7");
@@ -706,7 +706,7 @@ fn reset_keys_never_overwrites_a_backup_or_edits_invalid_input() {
 #[test]
 fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
     use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let target_dir = scratch.path().join("target");
     std::fs::create_dir(&target_dir).unwrap();
     let target = target_dir.join("keys.json");
@@ -714,7 +714,7 @@ fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
     std::fs::write(&target, original).unwrap();
     let path = scratch.path().join("keybindings.json");
     std::os::unix::fs::symlink(&target, &path).unwrap();
-    let Some(_guard) = maestro_test_process::deny(&target, 0o400).unwrap() else {
+    let Some(_guard) = maestro_test_harness::deny(&target, 0o400).unwrap() else {
         eprintln!("host permits writes to a read-only file; permission premise unavailable");
         return;
     };
@@ -731,7 +731,7 @@ fn reset_keys_keeps_original_and_backup_when_publication_is_refused() {
 #[test]
 fn reset_keys_leaves_missing_configuration_untouched() {
     use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let missing = scratch.path().join("missing");
     let reset = reset_multiplexer_keybindings(missing.to_str().unwrap(), 42).unwrap();
     assert_eq!(reset.removed, 0);
@@ -743,7 +743,7 @@ fn reset_keys_leaves_missing_configuration_untouched() {
 #[test]
 fn reset_keys_leaves_override_free_configuration_untouched() {
     use maestro_app::presentation_data::bindings::reset_multiplexer_keybindings;
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let root = scratch.path().to_str().unwrap();
     let path = scratch.path().join("keybindings.json");
     let backup = scratch.path().join("keybindings.json.bak-42");

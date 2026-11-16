@@ -8,7 +8,7 @@ use maestro_session::session_manager::{
     CompactionOptions, ReadonlySessionManager, parse_session_entries,
 };
 use maestro_session::{SessionEntry, SessionManager};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 
 /// The position of `entry`'s parent among the appended identities, or `-1` for a root.
@@ -957,7 +957,7 @@ fn first_user_fork_delays_file_and_writes_each_entry_once() {
         "first_user_fork_delays_file_and_writes_each_entry_once",
     );
     on_task_set(|_| async {
-        let root = maestro_test_process::Scratch::new().expect("scratch");
+        let root = maestro_test_harness::Scratch::new().expect("scratch");
         let root = root.path().display().to_string();
         let options = HarnessOptions {
             session_manager: Some(file_session(&root)),
@@ -1019,7 +1019,7 @@ fn fork_with_an_assistant_writes_the_file_immediately() {
         "fork_with_an_assistant_writes_the_file_immediately",
     );
     on_task_set(|_| async {
-        let root = maestro_test_process::Scratch::new().expect("scratch");
+        let root = maestro_test_harness::Scratch::new().expect("scratch");
         let root = root.path().display().to_string();
         let h = harness(
             Scratch::new().unwrap(),

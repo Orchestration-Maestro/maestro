@@ -26,7 +26,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
         .into_iter()
         .map(|(file, line)| {
             format!(
-                "{file}:{line}: test-owned code names the platform temporary directory; use maestro_test_process::Scratch or maestro_test_process::temporary_root, and add a new crate to TEST_PROCESS_CALLERS"
+                "{file}:{line}: test-owned code names the platform temporary directory; use maestro_test_harness::Scratch or maestro_test_harness::temporary_root, and add a new crate to TEST_PROCESS_CALLERS"
             )
         })
         .collect::<Vec<_>>()

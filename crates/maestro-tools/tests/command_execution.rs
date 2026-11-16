@@ -18,7 +18,7 @@ use tokio::net::{TcpListener, TcpStream};
 
 /// The temporary directory, as the positional working directory.
 fn cwd() -> String {
-    maestro_test_process::temporary_root()
+    maestro_test_harness::temporary_root()
         .canonicalize()
         .unwrap()
         .to_str()

@@ -141,9 +141,9 @@ async fn release_gates(selection: (Option<bool>, Option<bool>)) -> (usize, usize
 
 #[test]
 fn startup_selection_skips_all_release_entrypoints() {
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let home = scratch.path().display().to_string();
-    let selected = maestro_test_process::run_per_environment(
+    let selected = maestro_test_harness::run_per_environment(
         "startup_selection_skips_all_release_entrypoints",
         AMBIENTS,
         |ambient| {
@@ -183,7 +183,7 @@ fn ambient_flag_is_set(key: &str) -> bool {
 
 #[test]
 fn release_reads_nonempty_flags_without_trimming() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         let disabled = ambient_flag_is_set("MAESTRO_OFFLINE")
             || ambient_flag_is_set("MAESTRO_SKIP_VERSION_CHECK");
         let t = transport();
@@ -243,7 +243,7 @@ fn startup_selection_skips_install_reporting() {
 
 #[test]
 fn install_reporting_keeps_telemetry_and_skip_independent() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         assert_eq!(
             report_with_skip_flag(),
             1,

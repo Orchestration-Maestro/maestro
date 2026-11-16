@@ -1,7 +1,7 @@
 //! Cross-process appends against a held session publication lock.
 #![cfg(target_os = "linux")]
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
-use maestro_test_process::TestProcess;
+use maestro_test_harness::TestProcess;
 use std::{
     fs,
     io::{Read, Write},
@@ -14,7 +14,7 @@ fn append_waits_for_one_replacement_and_preserves_its_entry() {
         append_child(&path);
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let directory = root.path().to_str().unwrap();
     let mut manager = SessionManager::create("/work", Some(directory), "unused").unwrap();
     manager
@@ -97,7 +97,7 @@ fn migration_rechecks_a_concurrent_append_before_atomic_publication() {
         migrate_child(&path);
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let path = root.path().join("migration.jsonl");
     let path = path.to_str().unwrap();
     let original = b"{\"type\":\"session\",\"id\":\"kept\",\"version\":2,\"cwd\":\"/work\"}\n";

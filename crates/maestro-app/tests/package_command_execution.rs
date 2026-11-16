@@ -129,11 +129,11 @@ fn executed_step(directory: &Path, log: &Path, operands_log: &Path) -> SelfUpdat
 
 #[test]
 fn inherited_steps_run_authored_operands_with_the_parent_environment() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         inherited_steps_run_authored_operands_child();
         return;
     }
-    let output = maestro_test_process::TestProcess::current(
+    let output = maestro_test_harness::TestProcess::current(
         "inherited_steps_run_authored_operands_with_the_parent_environment",
     )
     .expect("the checked child runs")

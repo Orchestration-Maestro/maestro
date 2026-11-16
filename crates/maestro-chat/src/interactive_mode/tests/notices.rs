@@ -1,7 +1,7 @@
 //! The full changelog command and the exact submission that runs it.
 use super::typed::{poll, recalled, waiting};
 use super::{Setup, VERSION, World, cases, isolated_package, painted, started};
-use maestro_test_process::IsolatedSetup;
+use maestro_test_harness::IsolatedSetup;
 use maestro_text::is_whitespace_scalar;
 use maestro_theme::ThemeColor;
 use maestro_tui::{Component, TerminalCapabilities};
@@ -112,7 +112,7 @@ fn changelog_command_uses_all_entries_and_empty_fallback() {
             );
         }
     });
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let error = std::fs::read(".").unwrap_err();
         assert_eq!(
             String::from_utf8(stderr).unwrap(),
@@ -298,7 +298,7 @@ fn changelog_startup_selects_new_entries_and_records_seen_version() {
             selection_case(directory, package, input, expected).await;
         }
     });
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return;
     }
     let warnings = String::from_utf8_lossy(&stderr)

@@ -1,6 +1,6 @@
 //! Shared helpers for the public-interface settings tests.
 
-use maestro_test_process::{CheckedChild, CheckedStdout, TestProcess};
+use maestro_test_harness::{CheckedChild, CheckedStdout, TestProcess};
 use std::future::Future;
 use std::process::Output;
 use std::sync::{Arc, Condvar, Mutex};
@@ -250,7 +250,7 @@ pub fn assert_number(actual: f64, expected: f64) {
 
 /// The case a child process was started for; `None` in the parent test run.
 pub fn child_case() -> Option<String> {
-    maestro_test_process::selection()
+    maestro_test_harness::selection()
         .case()
         .map(ToOwned::to_owned)
 }
@@ -283,7 +283,7 @@ pub fn report(value: &Value) {
     println!("REPORT:{value}");
 }
 
-pub use maestro_test_process::Scratch;
+pub use maestro_test_harness::Scratch;
 
 /// Environment variable naming the file a lock child works on.
 const CHILD_PATH: &str = "MAESTRO_SETTINGS_TEST_PATH";

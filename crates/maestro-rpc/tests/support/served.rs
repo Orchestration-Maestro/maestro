@@ -15,7 +15,7 @@ use maestro_protocol::{envelopes as workspace, schema as workspace_schema};
 use maestro_rpc::connection_runner::{RpcFuture, WorkspaceEventSink, WorkspaceOperations};
 use maestro_rpc::{NativeRpcProcess, RpcModeOptions, run_rpc_mode};
 use maestro_session::SessionManager;
-use maestro_test_process::{CheckedChild, CheckedStdout, TestProcess};
+use maestro_test_harness::{CheckedChild, CheckedStdout, TestProcess};
 use maestro_theme::{SyntectHighlighter, ThemeState};
 use maestro_tools::ToolRenderEnvironment;
 use serde_json::Value;
@@ -193,7 +193,7 @@ pub fn on_local<T>(body: impl AsyncFnOnce(Rc<LocalSet>) -> T) -> T {
 pub fn serve(served: Served) -> ! {
     eprintln!("{}", std::process::id());
     let failure = on_local(async move |local| {
-        let agent_dir = maestro_test_process::Scratch::new().unwrap();
+        let agent_dir = maestro_test_harness::Scratch::new().unwrap();
         let runtime = runtime(&local, agent_dir.path(), served.factories).await;
         let runtime = Rc::new(runtime);
         let running = Rc::clone(&local);

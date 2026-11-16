@@ -26,7 +26,7 @@ it ends, usually with `unwrap` at the call.
 `AgentSession::new`. The session uses a registered scripted provider, in-memory
 credentials, a catalog that knows the scripted models, in-memory settings and
 history. `scratch` owns the disposable root that holds the working directory,
-usually `Scratch::new()` from `maestro-test-process`; the harness keeps it
+usually `Scratch::new()` from `maestro-test-harness`; the harness keeps it
 until the test drops the harness. Options supply
 extension factories, tools in place of the built-in ones, skills, prompt
 templates, settings and scripted responses. Tests reach the provider through

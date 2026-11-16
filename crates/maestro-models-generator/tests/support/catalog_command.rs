@@ -1,5 +1,5 @@
 //! Shared native command directories and failing output sinks.
-pub(crate) use maestro_test_process::Scratch;
+pub(crate) use maestro_test_harness::Scratch;
 use std::io;
 /// Fail a writer at an exact byte boundary with an identifiable native cause.
 pub(crate) struct FailingWriter {

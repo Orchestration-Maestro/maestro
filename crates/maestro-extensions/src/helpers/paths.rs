@@ -238,7 +238,7 @@ mod tests {
         assert_ne!(first, second);
         assert_eq!(
             first.parent(),
-            Some(maestro_test_process::temporary_root().as_path())
+            Some(maestro_test_harness::temporary_root().as_path())
         );
         assert!(
             first
@@ -295,7 +295,7 @@ mod tests {
                 ("USERPROFILE", Some("/home/al")),
             ])
         };
-        let selected = maestro_test_process::run_per_environment(test, ["home"], |_| home());
+        let selected = maestro_test_harness::run_per_environment(test, ["home"], |_| home());
         if selected.unwrap().is_none() {
             return;
         }

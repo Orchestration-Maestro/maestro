@@ -9,8 +9,8 @@
 use super::components::{files_below, load_empty_component};
 use super::example_process::record;
 use maestro_extensions_wasmtime::{component_cache, component_engine};
-use maestro_test_process::Scratch;
-use maestro_test_process::{
+use maestro_test_harness::Scratch;
+use maestro_test_harness::{
     AGENT_DIRECTORY, CheckedChild, TestProcess, run_agent_directory, selection,
 };
 use std::{
@@ -121,7 +121,7 @@ fn cache_consumers(root: &Path, archived: bool) -> [std::path::PathBuf; 2] {
     let example = profile.join("examples/prepare_author_component");
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("run just prepare-tests, then run these tests with cargo nextest");
-    maestro_test_process::install_executable(Path::new(&artifact), &example).unwrap();
+    maestro_test_harness::install_executable(Path::new(&artifact), &example).unwrap();
     let built = if archived { 5 } else { 1 };
     std::fs::File::options()
         .write(true)
@@ -290,7 +290,7 @@ fn started(configured: &Command, binary: &Path) -> Command {
 /// test's own bundle variables and archive signal reach the command.
 fn prepared_setup(configured: &Command, binary: &Path) -> Command {
     let mut command = Command::new(binary);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     copied_into(&mut command, configured);
     command
 }

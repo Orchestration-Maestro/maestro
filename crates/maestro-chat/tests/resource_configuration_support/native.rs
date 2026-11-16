@@ -11,7 +11,7 @@ use serde_json::json;
 use std::{path::Path, rc::Rc};
 /// Run cwd mutations only inside the existing isolated child seam.
 pub fn paths() {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         child();
         println!("\nPROBE native directory outcomes matched");
         return;
@@ -20,7 +20,7 @@ pub fn paths() {
     let scratch = crate::scratch::Scratch::new().unwrap();
     assert_eq!(
         crate::session_picker_support::native_child::probe(
-            maestro_test_process::TestProcess::current(
+            maestro_test_harness::TestProcess::current(
                 "resource_relative_paths_observe_live_directory_and_preserve_failures"
             )
             .unwrap()
@@ -77,7 +77,7 @@ fn child() {
     std::env::set_current_dir(&root).unwrap();
     let failed = native(&target, "", &scopes());
     let before = failed.frame(80);
-    let removed = maestro_test_process::Scratch::new_in(&root).unwrap();
+    let removed = maestro_test_harness::Scratch::new_in(&root).unwrap();
     removed.enter_removed("gone").unwrap();
     failures(&failed, &before);
     no_directory_needed(&target, &a);

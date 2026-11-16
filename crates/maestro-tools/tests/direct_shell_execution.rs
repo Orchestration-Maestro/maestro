@@ -116,7 +116,7 @@ impl Supplied<'_> {
 use crate::runtime::run;
 
 fn corpus(name: &str) {
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let dir = read_support::Scratch::new().unwrap();
         read_support::isolated_temp_dir(name, "direct-corpus", dir.path());
         return;
@@ -226,7 +226,7 @@ fn observe_error(
         marker
     ));
     assert!(case.expected.result.is_none());
-    let paths: Vec<_> = std::fs::read_dir(maestro_test_process::temporary_root())
+    let paths: Vec<_> = std::fs::read_dir(maestro_test_harness::temporary_root())
         .unwrap()
         .map(|entry| entry.unwrap().path())
         .collect();

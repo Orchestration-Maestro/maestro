@@ -19,7 +19,7 @@ mod unix {
     use maestro_app::configuration::conversion::{
         migrate_auth_to_auth_json, migrate_sessions_from_agent_root,
     };
-    use maestro_test_process::IsolatedSetup;
+    use maestro_test_harness::IsolatedSetup;
     use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
     use serde::Serialize;
     use std::{ffi::OsString, io, path::PathBuf};

@@ -1,4 +1,4 @@
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 
 /// Exclusively write a file below the scratch directory, returning its path.
 fn fixture_file(scratch: &Scratch, name: impl AsRef<std::path::Path>, data: &[u8]) -> std::path::PathBuf {

@@ -22,7 +22,7 @@ maestro-feature-unifier.workspace = true
 workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 
 [[example]]
 name = "child_toolchain_probe"

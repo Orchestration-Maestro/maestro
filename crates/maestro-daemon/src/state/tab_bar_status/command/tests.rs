@@ -14,7 +14,7 @@ fn tab_status_command_timeout_starts_before_task_is_polled() {
 
 /// A launch must expire before its first scheduled native spawn.
 async fn check_unpolled_deadline() {
-    let directory = maestro_test_process::Scratch::new().unwrap();
+    let directory = maestro_test_harness::Scratch::new().unwrap();
     let path = directory.path().join("never-ran");
     let (sender, mut receiver) = mpsc::channel(1);
     let _task = spawn_status_command(

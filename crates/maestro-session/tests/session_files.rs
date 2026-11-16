@@ -81,7 +81,7 @@ fn file_loading_keeps_raw_lines_after_header_admission() {
 
 #[test]
 fn new_histories_publish_only_at_first_assistant() {
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let dir = scratch.path().to_path_buf();
     let mut manager =
         maestro_session::SessionManager::create("authored", Some(dir.to_str().unwrap()), "unused")
@@ -119,7 +119,7 @@ fn published_histories_never_republish_the_header() {
             1,
         ),
     ] {
-        let file = maestro_test_process::temporary_root()
+        let file = maestro_test_harness::temporary_root()
             .join(format!("maestro-published-{}.jsonl", uuid::Uuid::new_v4()));
         std::fs::write(&file, content).unwrap();
         let mut manager =
@@ -147,7 +147,7 @@ fn published_histories_never_republish_the_header() {
 
 #[test]
 fn continue_recent_loads_winner_or_creates_an_unpublished_history() {
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let dir = scratch.path().to_path_buf();
     let first = maestro_session::SessionManager::continue_recent(
         "caller",
@@ -189,9 +189,9 @@ fn continuation_probe_is_raw_first_line_with_a_512_byte_bound() {
 
 #[test]
 fn default_directory_encodes_authored_cwd_before_joining() {
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let directory = Directory::new();
-        let output = maestro_test_process::TestProcess::current(
+        let output = maestro_test_harness::TestProcess::current(
             "default_directory_encodes_authored_cwd_before_joining",
         )
         .unwrap()
@@ -459,7 +459,7 @@ fn failed_switch_keeps_previous_history_consistent() {
     fs::set_permissions(&readonly, restricted).unwrap();
     // A privileged Unix run writes the read-only file anyway, so there is nothing to check.
     #[cfg(unix)]
-    if maestro_test_process::deny(&readonly, 0o444)
+    if maestro_test_harness::deny(&readonly, 0o444)
         .unwrap()
         .is_none()
     {
@@ -893,11 +893,11 @@ fn jsonl_uses_compact_finite_number_spelling() {
 #[cfg(unix)]
 /// Run one named test in a disposable removed working directory child.
 fn removed_cwd_child(name: &str) -> bool {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         return true;
     }
     let directory = Directory::new();
-    let output = maestro_test_process::TestProcess::current(name)
+    let output = maestro_test_harness::TestProcess::current(name)
         .unwrap()
         .nocapture()
         .case("*")
@@ -917,8 +917,8 @@ fn removed_cwd_child(name: &str) -> bool {
 #[cfg(unix)]
 /// Enter then unlink a working directory without altering the parent test process.
 /// Returns a fixture directory and the owner of the removed one.
-fn remove_cwd() -> (Directory, maestro_test_process::Scratch) {
-    let removed = maestro_test_process::Scratch::new().unwrap();
+fn remove_cwd() -> (Directory, maestro_test_harness::Scratch) {
+    let removed = maestro_test_harness::Scratch::new().unwrap();
     removed.enter_removed("removed").unwrap();
     (Directory::new(), removed)
 }
@@ -978,11 +978,11 @@ fn opening_failure_precedence_preserves_native_read_errors() {
 }
 
 /// A uniquely named native directory removed after observations.
-struct Directory(maestro_test_process::Scratch);
+struct Directory(maestro_test_harness::Scratch);
 impl Directory {
     /// Create a fresh directory without environment mutation.
     fn new() -> Self {
-        Self(maestro_test_process::Scratch::new().unwrap())
+        Self(maestro_test_harness::Scratch::new().unwrap())
     }
     /// The directory this test owns.
     fn path(&self) -> &std::path::Path {

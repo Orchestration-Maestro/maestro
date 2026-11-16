@@ -5,8 +5,8 @@ use crate::analysis_fixtures::run_transcripts;
 #[cfg(unix)]
 use maestro_session_reports::session_transcripts;
 #[cfg(unix)]
-use maestro_test_process::with_environment;
-use maestro_test_process::with_isolated_home;
+use maestro_test_harness::with_environment;
+use maestro_test_harness::with_isolated_home;
 use serde_json::Value;
 #[cfg(unix)]
 use std::fmt::Write;
@@ -450,7 +450,7 @@ const EVENTS: [&str; 8] = [
 fn install_child(directory: &str, record: &serde_json::Value) {
     let aliases = std::path::Path::new(directory).join("bin");
     std::fs::create_dir_all(&aliases).expect("the alias directory is creatable");
-    maestro_test_process::install_command(&aliases.join("maestro"), &record.to_string())
+    maestro_test_harness::install_command(&aliases.join("maestro"), &record.to_string())
         .expect("the native fixture installs");
 }
 
@@ -685,8 +685,8 @@ fn two_files_with_summaries(base: &str) -> (String, String) {
 #[cfg(unix)]
 fn held_child(
     base: &str,
-    log: &maestro_test_process::gate::Gate,
-    permit: &maestro_test_process::gate::Gate,
+    log: &maestro_test_harness::gate::Gate,
+    permit: &maestro_test_harness::gate::Gate,
 ) {
     let events = format!(
         "{}\n{}\n",
@@ -713,14 +713,14 @@ fn held_child(
 
 /// Assert the next five bytes any child recorded on `log` are `marker`.
 #[cfg(unix)]
-fn next_marker(log: &maestro_test_process::gate::Gate, marker: [u8; 5]) {
+fn next_marker(log: &maestro_test_harness::gate::Gate, marker: [u8; 5]) {
     assert_eq!(log.take(5).expect("a child records"), marker);
 }
 
 #[cfg(unix)]
 #[test]
 fn analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_last() {
-    use maestro_test_process::gate::Gate;
+    use maestro_test_harness::gate::Gate;
     let path = "$BASE/bin";
     with_environment(
         "analysis_children_run_one_at_a_time_in_file_order_with_the_aggregating_child_last",

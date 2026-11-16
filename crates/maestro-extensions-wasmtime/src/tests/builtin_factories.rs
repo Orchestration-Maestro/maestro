@@ -20,7 +20,7 @@ fn builtin_wrapped_tools_omit_definition_only_metadata() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap();
         let manager = Arc::new(
             maestro_extensions::ToolsManager::new(cwd.into(), None).with_offline(Some(true)),
@@ -355,7 +355,7 @@ fn builtin_definitions_preserve_metadata_and_render_handles() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap();
         let manager = Arc::new(
             maestro_extensions::ToolsManager::new(cwd.into(), None).with_offline(Some(true)),
@@ -476,7 +476,7 @@ fn builtin_options_reach_only_the_selected_operations() {
         .build()
         .unwrap();
     tokio::task::LocalSet::new().block_on(&runtime, async {
-        let scratch = maestro_test_process::Scratch::new().unwrap();
+        let scratch = maestro_test_harness::Scratch::new().unwrap();
         let cwd = scratch.path().to_str().unwrap();
         let manager = Arc::new(
             maestro_extensions::ToolsManager::new(cwd.into(), None).with_offline(Some(true)),

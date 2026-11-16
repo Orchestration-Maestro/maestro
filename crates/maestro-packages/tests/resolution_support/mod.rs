@@ -34,14 +34,14 @@ pub fn manager(
 pub fn unreadable_cwd(
     test: &str,
 ) -> Option<(
-    maestro_test_process::Scratch,
-    maestro_test_process::Restore,
+    maestro_test_harness::Scratch,
+    maestro_test_harness::Restore,
     std::path::PathBuf,
 )> {
-    if maestro_test_process::run_alone(test).unwrap() {
+    if maestro_test_harness::run_alone(test).unwrap() {
         return None;
     }
-    let tree = maestro_test_process::Scratch::new().unwrap();
+    let tree = maestro_test_harness::Scratch::new().unwrap();
     let (process, restore) = tree.enter_unreadable("process").unwrap()?;
     Some((tree, restore, process))
 }
@@ -60,7 +60,7 @@ pub fn case_in_child(
     case: &str,
     environment: impl FnOnce(&str) -> Vec<(&'static str, Option<String>)>,
 ) -> Option<std::path::PathBuf> {
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     if selection.is_child() {
         return selection
             .runs_case(case)
@@ -71,7 +71,7 @@ pub fn case_in_child(
     let temp = tree.path().join("temp");
     std::fs::create_dir(&temp).unwrap();
     let mut child =
-        maestro_test_process::TestProcess::current(std::thread::current().name().unwrap())
+        maestro_test_harness::TestProcess::current(std::thread::current().name().unwrap())
             .unwrap()
             .case(case)
             .env(TREE, base)

@@ -99,7 +99,7 @@ pub fn run(test: &str) {
 
 /// Execute a case, returning normalized results and observations.
 fn replay(case: &Case) -> (Value, Value) {
-    let scratch = maestro_test_process::Scratch::new().unwrap();
+    let scratch = maestro_test_harness::Scratch::new().unwrap();
     let directory = scratch.path().to_path_buf();
     let mut manager = open(&case.input, &directory);
     let mut named = HashMap::new();

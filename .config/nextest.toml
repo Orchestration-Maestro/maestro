@@ -28,7 +28,7 @@ setup = "cargo-checks"
 command = "target/test-setup/development nextest-setup native-fixture"
 
 [[profile.default.scripts]]
-# Select the test-process owner and every declared TEST_PROCESS_CALLERS crate.
+# Select the test-harness owner and every declared TEST_PROCESS_CALLERS crate.
 filter = """
 package(=maestro)
 | package(=maestro-agent)
@@ -58,7 +58,7 @@ package(=maestro)
 | package(=maestro-terminal-emulator)
 | package(=maestro-test-browser)
 | package(=maestro-test-conventions)
-| package(=maestro-test-process)
+| package(=maestro-test-harness)
 | package(=maestro-theme)
 | package(=maestro-tooling)
 | package(=maestro-tools)

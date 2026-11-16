@@ -29,7 +29,7 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
                 match api {
                     Diagnostic::Timer(api) => format!("{file}:{line}: test-owned time limit: {api}; wait for completion instead"),
                     Diagnostic::OptionalPoll => format!("{file}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())"),
-                    Diagnostic::Capture(api) => format!("{file}:{line}: scoped tracing capture outside maestro-test-process::trace_capture: {api}; call maestro_test_process::trace_capture::with_default or with_subscriber instead"),
+                    Diagnostic::Capture(api) => format!("{file}:{line}: scoped tracing capture outside maestro-test-harness::trace_capture: {api}; call maestro_test_harness::trace_capture::with_default or with_subscriber instead"),
                 }
             })
             .collect::<Vec<_>>()

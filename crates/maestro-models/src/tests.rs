@@ -3,7 +3,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_http::test_support::{ftp_server, runtime, socks, tls};
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_test_process::loopback;
+pub use maestro_test_harness::loopback;
 
 #[path = "../tests/support/login_registry.rs"]
 pub(crate) mod login_registry;

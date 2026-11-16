@@ -442,7 +442,7 @@ mod tests {
         let file = support::settings_file(root.path(), SettingsScope::Global);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(&file, "{\"theme\": \"old\"}").unwrap();
-        let Some(_restored) = maestro_test_process::deny(&file, 0o444).unwrap() else {
+        let Some(_restored) = maestro_test_harness::deny(&file, 0o444).unwrap() else {
             return;
         };
 

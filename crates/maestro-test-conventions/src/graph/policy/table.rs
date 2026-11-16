@@ -350,7 +350,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-test-browser", &["maestro-tooling"]),
     ("maestro-test-conventions", &["maestro-markdown"]),
     ("maestro-test-fixtures", &[]),
-    ("maestro-test-process", &["maestro-path"]),
+    ("maestro-test-harness", &["maestro-path"]),
     // Common text operations include CSS string serialization for brand and application callers.
     ("maestro-text", &[]),
     (

@@ -20,7 +20,7 @@ use maestro_protocol::{
         ErrorBody, LayoutDescription, LayoutNode, LayoutPane, ResponseResult, SplitDirection,
     },
 };
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use maestro_workspace::tiling::PaneId;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
@@ -439,7 +439,7 @@ fn install_leaf(directory: &Path, name: &str, scenario: &str) -> PathBuf {
     let artifact = std::env::var_os("MAESTRO_NATIVE_FIXTURE")
         .expect("nextest native-fixture setup supplies the artifact");
     let path = directory.join(name);
-    maestro_test_process::install_executable(Path::new(&artifact), &path).unwrap();
+    maestro_test_harness::install_executable(Path::new(&artifact), &path).unwrap();
     let record = json!({"scenario": scenario});
     std::fs::write(
         directory.join(format!("{name}.fixture")),

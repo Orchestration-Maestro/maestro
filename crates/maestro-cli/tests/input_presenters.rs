@@ -13,7 +13,7 @@ use maestro_cli::input::configuration::{ConfigPresentation, select_config};
 use maestro_cli::input::session_picker::{SessionPresentation, select_session};
 use maestro_session::SessionInfo;
 use maestro_settings::{Settings, SettingsManager};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use maestro_tui::Component;
 use maestro_tui::Input;
 use maestro_tui::InputHandler;

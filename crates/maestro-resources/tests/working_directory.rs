@@ -13,9 +13,9 @@ use support::text;
 fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
     // Removing the process working directory would leave every other test in this
     // executable without one, so this test runs alone in a child process.
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "maestro_paths_resolve_absolute_paths_without_a_working_directory",
             )
             .unwrap()

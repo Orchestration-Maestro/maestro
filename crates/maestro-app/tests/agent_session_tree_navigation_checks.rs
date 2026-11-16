@@ -7,7 +7,7 @@ use maestro_app::test_support::{
     HarnessOptions, answer, harness, hold_first_answer, on_task_set, script_responses,
 };
 use maestro_session::session_manager::{NavigateTreeOptions, ReadonlySessionManager};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::{Value, json};
 
 /// A session whose message entries were produced by completed prompt turns.

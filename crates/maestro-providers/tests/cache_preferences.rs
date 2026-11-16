@@ -21,7 +21,7 @@ fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
         .iter()
         .filter(|row| row["kind"] == "retention")
         .collect();
-    let case = maestro_test_process::selection();
+    let case = maestro_test_harness::selection();
     if case.is_child() {
         if let Some((_, row)) = rows
             .iter()
@@ -40,7 +40,7 @@ fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
             .into_iter()
             .collect();
         {
-            let output = maestro_test_process::TestProcess::current(
+            let output = maestro_test_harness::TestProcess::current(
                 "maestro_cache_preferences_reach_each_protocol",
             )?
             .nocapture()

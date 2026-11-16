@@ -6,7 +6,7 @@ use maestro_app::configuration::config::{
     installation::{Installation, PackageLayout},
 };
 use maestro_process::SpawnSyncError;
-use maestro_test_process::TestProcess;
+use maestro_test_harness::TestProcess;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
@@ -240,7 +240,7 @@ fn moved(root: &str, value: Value) -> Value {
 /// from the file system, so the trace no longer records those reads. `None` for a case that
 /// needs links or a removed working directory where the platform has neither, for a case
 /// recorded with POSIX paths on a Windows host.
-fn prepare(mut case: Value, tree: &maestro_test_process::Scratch) -> Option<Case> {
+fn prepare(mut case: Value, tree: &maestro_test_harness::Scratch) -> Option<Case> {
     if case["input"]["windows"] != true {
         if cfg!(windows) {
             return None;
@@ -293,10 +293,10 @@ fn prepare(mut case: Value, tree: &maestro_test_process::Scratch) -> Option<Case
 /// Refuse this process the write each recorded access error needs. `None` when the host is
 /// not refused, as in a privileged run, so the row cannot state its premise here.
 #[cfg(unix)]
-fn refuse_writes(case: &Case) -> Option<Vec<maestro_test_process::Restore>> {
+fn refuse_writes(case: &Case) -> Option<Vec<maestro_test_harness::Restore>> {
     let mut restores = Vec::new();
     for path in &case.input.access_errors {
-        match maestro_test_process::deny(path, 0o500) {
+        match maestro_test_harness::deny(path, 0o500) {
             Ok(Some(restore)) => restores.push(restore),
             Ok(None) => {
                 println!("{} needs a process the host refuses write access", case.id);
@@ -330,7 +330,7 @@ pub fn run_bun_roots(fixture: &str) {
     // the working directory.
     #[cfg(unix)]
     for row in home_rows() {
-        let tree = maestro_test_process::Scratch::new().unwrap();
+        let tree = maestro_test_harness::Scratch::new().unwrap();
         let case = row.case(tree.path().to_str().unwrap());
         std::fs::create_dir_all(case.input.dir()).unwrap();
         replay_with_home(&case, false, Some(tree.path()), &tree);
@@ -341,11 +341,11 @@ pub fn run_bun_roots(fixture: &str) {
 /// supplied, and the isolated run has already replayed this test's body. Every case moves
 /// the working directory, which belongs to the whole process.
 fn replayed_elsewhere() -> bool {
-    if maestro_test_process::selection().is_child() {
+    if maestro_test_harness::selection().is_child() {
         replay_child();
         return true;
     }
-    maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap()
+    maestro_test_harness::run_alone(std::thread::current().name().unwrap()).unwrap()
 }
 
 /// Replay every case of `fixture`.
@@ -353,7 +353,7 @@ fn replay_cases(fixture: &str, compose_root: bool) {
     let cases: Vec<Value> = serde_json::from_str(fixture).unwrap();
     assert!(!cases.is_empty());
     for case in cases {
-        let tree = maestro_test_process::Scratch::new().unwrap();
+        let tree = maestro_test_harness::Scratch::new().unwrap();
         let Some(case) = prepare(case, &tree) else {
             continue;
         };
@@ -405,7 +405,7 @@ fn replay_with_home(
     case: &Case,
     compose_root: bool,
     dir: Option<&Path>,
-    tree: &maestro_test_process::Scratch,
+    tree: &maestro_test_harness::Scratch,
 ) {
     let path = tree.path().join("supplied-case.json");
     let mut file = fs::File::create_new(&path).unwrap();
@@ -529,12 +529,12 @@ impl HomeRow {
 /// trees of these cases are POSIX, so the row runs everywhere but Windows.
 #[cfg(not(windows))]
 pub fn run_owned(fixture: &str) {
-    if maestro_test_process::run_alone(std::thread::current().name().unwrap()).unwrap() {
+    if maestro_test_harness::run_alone(std::thread::current().name().unwrap()).unwrap() {
         return;
     }
     let mut cases: Vec<Value> = serde_json::from_str(fixture).expect("owned fixture parses");
     assert_eq!(cases.len(), 1);
-    let tree = maestro_test_process::Scratch::new().unwrap();
+    let tree = maestro_test_harness::Scratch::new().unwrap();
     let case = prepare(cases.remove(0), &tree).expect("the owned case needs no link");
     #[cfg(unix)]
     let Some(_restores) = refuse_writes(&case) else {

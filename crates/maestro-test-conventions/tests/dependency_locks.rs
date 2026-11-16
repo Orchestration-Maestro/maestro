@@ -12,7 +12,7 @@ use cargo_metadata::{Metadata, MetadataCommand};
 #[test]
 fn maestro_locked_resolution_keeps_checkout_clean() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let tracked = maestro_test_process::git_command::command()
+    let tracked = maestro_test_harness::git_command::command()
         .args([
             "ls-files",
             "-z",

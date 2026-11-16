@@ -31,7 +31,7 @@ rustix = { workspace = true, features = ["std", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 futures-util.workspace = true
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 
 [dev-dependencies]
 maestro-packages = { path = ".", features = ["test-support"] }

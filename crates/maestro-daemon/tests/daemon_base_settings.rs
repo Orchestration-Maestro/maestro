@@ -95,7 +95,7 @@ fn daemon_global_locks_win_for_every_governed_key_without_project_settings() {
 #[test]
 fn daemon_reload_rereads_global_layer_and_retains_config_on_base_read_failure() {
     use maestro_daemon::settings::{io::reload_config, model::ConfigReloadStatus};
-    use maestro_test_process::Scratch;
+    use maestro_test_harness::Scratch;
     let root = Scratch::new().unwrap();
     let agent = root.path().join("agent");
     let cwd = root.path().join("project");
@@ -395,7 +395,7 @@ fn daemon_locked_area_fallback_covers_ui_and_flattened_source_namespaces() {
 }
 #[test]
 fn daemon_startup_keeps_base_locks_when_user_document_is_unavailable() {
-    use maestro_test_process::Scratch;
+    use maestro_test_harness::Scratch;
     for unreadable in [false, true] {
         let root = Scratch::new().unwrap();
         let agent = root.path().join("agent");
@@ -468,7 +468,7 @@ fn daemon_global_view_resolves_stored_values_and_restores_locks_after_decider() 
 }
 #[test]
 fn daemon_startup_fallback_resolves_stored_values_and_restores_locks_after_decider() {
-    use maestro_test_process::Scratch;
+    use maestro_test_harness::Scratch;
     let root = Scratch::new().unwrap();
     let agent = root.path().join("agent");
     let mut publisher = SettingsManager::create(".", agent.to_str().unwrap(), ".maestro");

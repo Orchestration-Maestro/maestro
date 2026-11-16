@@ -24,7 +24,7 @@ enum Phase {
 fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
     const TEST: &str =
         "client::tests::pac::tls::pac_proxy_tls_and_destination_tls_keep_failure_phases";
-    let selection = maestro_test_process::selection();
+    let selection = maestro_test_harness::selection();
     if let Some(trust) = selection.case() {
         crate::tests::runtime::run(async {
             for phase in [Phase::Forward, Phase::Tunnel, Phase::Direct, Phase::Socks] {
@@ -52,7 +52,7 @@ fn pac_proxy_tls_and_destination_tls_keep_failure_phases() {
         &["untrusted", "trusted"]
     };
     for &trust in trusts {
-        let process = maestro_test_process::TestProcess::current(TEST)
+        let process = maestro_test_harness::TestProcess::current(TEST)
             .unwrap()
             .env_clear()
             .case(trust);

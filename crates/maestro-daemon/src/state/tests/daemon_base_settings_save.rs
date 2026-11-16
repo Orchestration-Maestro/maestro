@@ -6,7 +6,7 @@ use crate::state::App;
 use crate::state::tests::config_support;
 use config_support::{block_on, fixture};
 use maestro_settings::{Settings, SettingsErrorKind, SettingsManager, SettingsScope};
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::json;
 
 /// A native global preferences file with an independent persisted project layer.

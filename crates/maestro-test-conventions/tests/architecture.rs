@@ -1217,7 +1217,7 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
     let failing = workspace.command("failing-wrapper", &output(b"", b"", 2));
     let missing = workspace.root.path().join("missing-wrapper");
     for wrapper in [None, Some(failing), Some(missing)] {
-        let mut command = maestro_test_process::TestProcess::current(
+        let mut command = maestro_test_harness::TestProcess::current(
             "metadata_queries_leave_compiler_wrappers_to_builds",
         )
         .unwrap()
@@ -2292,10 +2292,10 @@ fn feature_unifier_preserves_required_domain_edges() {
     }
 }
 
-const OWNER: &str = "maestro-test-process";
+const OWNER: &str = "maestro-test-harness";
 const NATIVE_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
 
-/// Callers the specification lets declare the test-process owner, in its order.
+/// Callers the specification lets declare the test-harness owner, in its order.
 fn owner_callers() -> Vec<&'static str> {
     std::iter::once("maestro")
         .chain(specification_names(
@@ -3076,7 +3076,7 @@ fn argument_spelling(expression: &syn::Expr) -> Option<String> {
 /// Every tracked file is enumerated and the Rust sources are read, since only a parsed function
 /// body can delegate.
 fn tracked_rust_sources(root: &std::path::Path) -> Vec<(String, String)> {
-    let listed = maestro_test_process::git_command::command()
+    let listed = maestro_test_harness::git_command::command()
         .args(["ls-files", "-z"])
         .current_dir(root)
         .output()

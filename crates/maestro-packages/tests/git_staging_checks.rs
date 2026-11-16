@@ -147,7 +147,7 @@ fn repin_settings_replace_first_match_in_selected_scope() {
 
 #[test]
 fn npm_repin_survives_following_resolution() {
-    maestro_test_process::with_isolated_home("npm_repin_survives_following_resolution", |_| {
+    maestro_test_harness::with_isolated_home("npm_repin_survives_following_resolution", |_| {
         let fixture =
             Fixture::new(&json!({"packages":[{"source":"npm:pkg@1", "skills":["kept"]}]}));
         block_on(fixture.manager.install_and_persist("npm:pkg@2", None)).unwrap();
@@ -388,7 +388,7 @@ fn git_staging_collision_and_publication_failures_keep_owned_paths() {
         let fixture = Fixture::new(&json!({}));
         let parent = fixture.agent("git/example.test/team");
         std::fs::create_dir_all(&parent).unwrap();
-        if let Some(restore) = maestro_test_process::deny(&parent, 0o555).unwrap() {
+        if let Some(restore) = maestro_test_harness::deny(&parent, 0o555).unwrap() {
             let result = block_on(
                 fixture
                     .manager
@@ -791,7 +791,7 @@ fn git_recovery_io_failure_reports_original_kind_without_persisting() {
         .hooks
         .borrow_mut()
         .push_back(Box::new(move |_| {
-            let restore = maestro_test_process::deny(&locked, 0o555).unwrap();
+            let restore = maestro_test_harness::deny(&locked, 0o555).unwrap();
             *held.borrow_mut() = Some(restore);
         }));
     staged

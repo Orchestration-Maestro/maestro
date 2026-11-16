@@ -75,9 +75,9 @@ pub(crate) fn permitted_build(from: &str, to: &str) -> bool {
 pub(crate) const UTILITY: &str = "maestro-path";
 
 /// Native test isolation owner reachable only through native development edges.
-pub(crate) const TEST_PROCESS: &str = "maestro-test-process";
+pub(crate) const TEST_PROCESS: &str = "maestro-test-harness";
 
-/// The only crates that may declare the test-process owner as a development dependency.
+/// The only crates that may declare the test-harness owner as a development dependency.
 pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro",
     "maestro-agent",
@@ -175,7 +175,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
                 | "maestro-models-generator"
                 | "maestro-test-browser"
                 | "maestro-test-conventions"
-                | "maestro-test-process"
+                | "maestro-test-harness"
                 | "maestro-test-fixtures"
                 | "maestro-session-reports"
                 | "maestro-tooling"

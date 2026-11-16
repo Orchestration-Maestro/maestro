@@ -8,7 +8,7 @@ use maestro_app::{
 };
 use maestro_extensions::ModuleLoader;
 use maestro_models::Local;
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
 
@@ -399,7 +399,7 @@ fn second_base_layer_publisher_is_reported_without_application() {
 /// Session services read contributed model files below the user's file in the same startup.
 #[test]
 fn session_services_apply_contributed_models_before_user_models() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "session_services_apply_contributed_models_before_user_models",
     )
     .unwrap()

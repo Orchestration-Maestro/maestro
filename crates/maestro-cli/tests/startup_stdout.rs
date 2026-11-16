@@ -3,7 +3,7 @@
 
 use crate::support::entry::Entry;
 use maestro_cli::startup::entrypoint::MainOptions;
-use maestro_test_process::selection;
+use maestro_test_harness::selection;
 use serde_json::json;
 use std::cell::RefCell;
 use std::io::{self, Write};
@@ -16,7 +16,7 @@ const CHATTER: &str = "changed 1 package in 471ms\nfound 0 vulnerabilities\n";
 /// Install the prepared native fixture as the configured package command.
 fn package_command(directory: &Path, artifact: &Path) -> PathBuf {
     let path = directory.join("controlled-npm");
-    maestro_test_process::install_executable(artifact, &path).expect("install starts");
+    maestro_test_harness::install_executable(artifact, &path).expect("install starts");
     let mut record = path.as_os_str().to_owned();
     record.push(".fixture");
     let scenario = json!({
@@ -50,7 +50,7 @@ fn protocol_help(name: &str, args: &'static [&'static str]) {
     if selection().is_child() {
         let local = Rc::new(tokio::task::LocalSet::new());
         let runtime = crate::support::startup::runtime();
-        let directory = maestro_test_process::Scratch::new().unwrap();
+        let directory = maestro_test_harness::Scratch::new().unwrap();
         let npm = package_command(directory.path(), Path::new(&artifact));
         runtime.block_on(local.run_until(async {
             let mut e = Entry::new();
@@ -70,7 +70,7 @@ fn protocol_help(name: &str, args: &'static [&'static str]) {
         }));
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let output = crate::support::missing_cwd::command(name, "protocol", root.path())
         .env("MAESTRO_NATIVE_FIXTURE", artifact)
         .quiet()

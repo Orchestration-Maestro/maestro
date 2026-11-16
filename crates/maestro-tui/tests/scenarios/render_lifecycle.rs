@@ -94,7 +94,7 @@ fn hardware_cursor_defaults_and_override() {
         (Some("true"), Some(false), false),
         (Some("true"), Some(true), true),
     ];
-    let cases = match maestro_test_process::run_per_environment(TEST, cases, |case| {
+    let cases = match maestro_test_harness::run_per_environment(TEST, cases, |case| {
         case.0
             .map(|value| {
                 std::collections::BTreeMap::from([("MAESTRO_HARDWARE_CURSOR", Some(value))])
@@ -131,7 +131,7 @@ fn clear_on_shrink_defaults_to_off() {
         (Some("1"), true),
         (Some("true"), false),
     ];
-    let cases = match maestro_test_process::run_per_environment(TEST, cases, |case| {
+    let cases = match maestro_test_harness::run_per_environment(TEST, cases, |case| {
         case.0
             .map(|value| {
                 std::collections::BTreeMap::from([("MAESTRO_CLEAR_ON_SHRINK", Some(value))])

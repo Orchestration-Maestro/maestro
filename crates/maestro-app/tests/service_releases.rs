@@ -356,7 +356,7 @@ fn default_release_transport_reaches_the_controlled_server() {
 }
 async fn default_release_transport_reaches_the_controlled_server_run() {
     const NAME: &str = "default_release_transport_reaches_the_controlled_server";
-    if !maestro_test_process::selection().is_child() {
+    if !maestro_test_harness::selection().is_child() {
         let mut removed = services::FLAGS.to_vec();
         removed.extend([
             "HTTP_PROXY",

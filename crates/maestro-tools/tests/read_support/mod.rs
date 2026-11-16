@@ -17,7 +17,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
 };
 
-pub use maestro_test_process::Scratch;
+pub use maestro_test_harness::Scratch;
 
 /// Transport counting acquisition attempts, which never succeeds.
 ///
@@ -378,8 +378,8 @@ pub fn isolated(test: &str, mode: &str, envs: &[(&str, Option<&str>)]) -> bool {
 ///
 /// The parent also checks that the selected child test ran and passed.
 pub fn isolated_os(test: &str, mode: &str, envs: &[(&str, Option<&std::ffi::OsStr>)]) -> bool {
-    if maestro_test_process::selection().is_child() {
-        return maestro_test_process::selection().runs_case(mode);
+    if maestro_test_harness::selection().is_child() {
+        return maestro_test_harness::selection().runs_case(mode);
     }
     isolated_os_output(test, mode, envs);
     false
@@ -411,10 +411,10 @@ pub fn isolated_temp_dir(test: &str, mode: &str, root: &std::path::Path) {
 fn isolated_output(
     test: &str,
     mode: &str,
-    configure: impl FnOnce(maestro_test_process::TestProcess) -> maestro_test_process::TestProcess,
+    configure: impl FnOnce(maestro_test_harness::TestProcess) -> maestro_test_harness::TestProcess,
 ) -> std::process::Output {
     let command = configure(
-        maestro_test_process::TestProcess::current(test)
+        maestro_test_harness::TestProcess::current(test)
             .unwrap()
             .nocapture()
             .case(mode),
@@ -451,7 +451,7 @@ pub fn native_alias(
         format!("{family}\n{record}"),
     )
     .unwrap();
-    maestro_test_process::install_executable(std::path::Path::new(&artifact), &program).unwrap();
+    maestro_test_harness::install_executable(std::path::Path::new(&artifact), &program).unwrap();
     program
 }
 

@@ -26,7 +26,7 @@ name = "integration"
 path = "tests/integration.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-maestro-test-process.workspace = true
+maestro-test-harness.workspace = true
 
 [lints]
 workspace = true

@@ -1,7 +1,7 @@
 //! Process discovery, parsing and bounded child-group selection.
 use super::*;
 use crate::children::tests::children;
-use maestro_test_process::HARNESS_START;
+use maestro_test_harness::HARNESS_START;
 use std::{
     io::{Read, Write},
     os::unix::ffi::OsStringExt,
@@ -95,10 +95,10 @@ fn child_group_selection_uses_the_largest_live_group() {
 }
 
 /// Owns a separate procfs fixture tree for one test transaction.
-struct ProcTree(maestro_test_process::Scratch);
+struct ProcTree(maestro_test_harness::Scratch);
 impl ProcTree {
     fn new() -> Self {
-        Self(maestro_test_process::Scratch::new().unwrap())
+        Self(maestro_test_harness::Scratch::new().unwrap())
     }
     fn path(&self) -> &std::path::Path {
         self.0.path()
@@ -352,7 +352,7 @@ fn proc_stat_names_accept_spaces_and_closing_parentheses() {
 
 #[test]
 fn raw_process_values_keep_first_environment_record_and_native_paths() {
-    if maestro_test_process::run_alone(
+    if maestro_test_harness::run_alone(
         "raw_process_values_keep_first_environment_record_and_native_paths",
     )
     .unwrap()

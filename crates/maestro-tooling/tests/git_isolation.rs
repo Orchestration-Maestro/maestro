@@ -1,7 +1,7 @@
 //! Native fixture setup isolates Git launched by production code during tests.
 
-use maestro_test_process::Scratch;
-use maestro_test_process::git_command;
+use maestro_test_harness::Scratch;
+use maestro_test_harness::git_command;
 use std::{fs, process::Command};
 
 /// The real setup exports a policy that excludes inherited Git configuration.
@@ -22,7 +22,7 @@ fn native_setup_isolates_inherited_git_configuration() {
         .args(["nextest-setup", "native-fixture"])
         .env("NEXTEST_ENV", &exports)
         .env("GIT_CONFIG_GLOBAL", &inherited);
-    maestro_test_process::without_prepared_bundles(&mut command);
+    maestro_test_harness::without_prepared_bundles(&mut command);
     let output = command.output().unwrap();
     assert!(output.status.success(), "{output:?}");
     let exports = fs::read_to_string(exports).unwrap();

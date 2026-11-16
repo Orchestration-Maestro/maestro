@@ -10,7 +10,7 @@ use serde_json::json;
 
 #[test]
 fn ls_keeps_dotfiles_and_directory_suffix() {
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     std::fs::write(root.path().join(".hidden-file"), "secret").unwrap();
     std::fs::create_dir(root.path().join(".hidden-dir")).unwrap();
     let tool = maestro_app::create_ls_tool(
@@ -33,15 +33,15 @@ fn ls_keeps_dotfiles_and_directory_suffix() {
 fn search_manager(
     program: maestro_tools::SearchTool,
 ) -> (
-    maestro_test_process::Scratch,
+    maestro_test_harness::Scratch,
     std::sync::Arc<maestro_tools::ToolsManager>,
 ) {
     let name = match program {
         maestro_tools::SearchTool::Fd => "fd",
         maestro_tools::SearchTool::Rg => "rg",
     };
-    let bin = maestro_test_process::Scratch::new().unwrap();
-    maestro_test_process::install_search_program(name, bin.path()).unwrap();
+    let bin = maestro_test_harness::Scratch::new().unwrap();
+    maestro_test_harness::install_search_program(name, bin.path()).unwrap();
     let manager = std::sync::Arc::new(maestro_tools::ToolsManager::new(
         bin.path().display().to_string(),
         Some(std::sync::Arc::new(|_| {
@@ -53,8 +53,8 @@ fn search_manager(
 
 /// Creates a file search tool using the pinned native program.
 fn find_tool(
-    root: &maestro_test_process::Scratch,
-) -> (maestro_test_process::Scratch, maestro_agent::AgentTool) {
+    root: &maestro_test_harness::Scratch,
+) -> (maestro_test_harness::Scratch, maestro_agent::AgentTool) {
     let (bin, manager) = search_manager(maestro_tools::SearchTool::Fd);
     let tool = maestro_app::create_find_tool(
         root.path().display().to_string(),
@@ -69,7 +69,7 @@ fn grep_single_file_keeps_filename_and_line() {
     if run_native_tool_child("grep_single_file_keeps_filename_and_line") {
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     std::fs::write(
         root.path().join("example.txt"),
         "first line\nmatch line\nlast line",
@@ -102,7 +102,7 @@ fn grep_limit_retains_context_and_notice() {
     if run_native_tool_child("grep_limit_retains_context_and_notice") {
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     std::fs::write(
         root.path().join("context.txt"),
         "before\nmatch one\nafter\nmiddle\nmatch two\nafter two",
@@ -138,7 +138,7 @@ fn find_keeps_unignored_hidden_paths() {
     if run_native_tool_child("find_keeps_unignored_hidden_paths") {
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     std::fs::create_dir(root.path().join(".secret")).unwrap();
     std::fs::write(root.path().join(".secret/hidden.txt"), "hidden").unwrap();
     std::fs::write(root.path().join("visible.txt"), "visible").unwrap();
@@ -166,7 +166,7 @@ fn find_applies_ignore_rules_without_repository_metadata() {
     if run_native_tool_child("find_applies_ignore_rules_without_repository_metadata") {
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     std::fs::write(root.path().join(".gitignore"), "ignored.txt\n").unwrap();
     std::fs::write(root.path().join("ignored.txt"), "ignored").unwrap();
     std::fs::write(root.path().join("kept.txt"), "kept").unwrap();
@@ -200,7 +200,7 @@ fn find_preserves_invalid_glob_failure() {
     if run_native_tool_child("find_preserves_invalid_glob_failure") {
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     run_io(async {
         let (_bin, tool) = find_tool(&root);
         let error = (tool.execute)("find".into(), json!({"pattern":"["}), None, None)
@@ -215,7 +215,7 @@ fn find_accepts_flag_like_literal_pattern() {
     if run_native_tool_child("find_accepts_flag_like_literal_pattern") {
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     run_io(async {
         let (_bin, tool) = find_tool(&root);
         let result = (tool.execute)("find".into(), json!({"pattern":"--help"}), None, None)
@@ -233,7 +233,7 @@ fn find_zero_limit_has_no_false_count_notice() {
     if run_native_tool_child("find_zero_limit_has_no_false_count_notice") {
         return;
     }
-    let root = maestro_test_process::Scratch::new().unwrap();
+    let root = maestro_test_harness::Scratch::new().unwrap();
     let expected = (0..1005)
         .map(|index| format!("file-{index:04}.txt"))
         .collect::<std::collections::BTreeSet<_>>();

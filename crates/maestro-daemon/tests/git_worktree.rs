@@ -5,7 +5,7 @@ use maestro_daemon::git::checkouts::{
     self, ExistingWorktree, WorktreeError, branch_to_path_slug, checkout_has_dirty_files,
     default_checkout_path, generated_branch_slug, local_branch_exists, worktrees_root,
 };
-use maestro_test_process::Scratch;
+use maestro_test_harness::Scratch;
 use std::path::{Path, PathBuf};
 
 /// A repository named `repo` on branch `main` with one committed file.
@@ -21,7 +21,7 @@ fn repository(scratch: &Scratch) -> PathBuf {
 
 /// The trimmed standard output of one successful Git command.
 fn git_stdout(cwd: &Path, args: &[&str]) -> String {
-    let output = maestro_test_process::git_command::command()
+    let output = maestro_test_harness::git_command::command()
         .arg("-C")
         .arg(cwd)
         .args(args)

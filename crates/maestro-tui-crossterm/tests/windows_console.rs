@@ -37,7 +37,7 @@ const VT_PROCESSING: u32 = 0x0004;
 /// Runs `scenario` with a fresh console as standard input and output, or with the null
 /// device as standard input when `null_input` is set.
 fn on_console(test: &str, null_input: bool, scenario: impl FnOnce()) {
-    maestro_test_process::on_console(
+    maestro_test_harness::on_console(
         test,
         |command| {
             let console = |name| {
