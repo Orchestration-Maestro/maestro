@@ -24,73 +24,73 @@ fn message_rows(test: &str, count: usize) -> TestResult {
 }
 
 #[test]
-fn maestro_responses_messages_select_system_role() -> TestResult {
-    message_rows("maestro_responses_messages_select_system_role", 14)
+fn responses_messages_select_system_role() -> TestResult {
+    message_rows("responses_messages_select_system_role", 14)
 }
 
 #[test]
-fn maestro_responses_messages_preserve_user_content() -> TestResult {
-    message_rows("maestro_responses_messages_preserve_user_content", 1)
+fn responses_messages_preserve_user_content() -> TestResult {
+    message_rows("responses_messages_preserve_user_content", 1)
 }
 
 #[test]
-fn maestro_responses_messages_downgrade_unsupported_images() -> TestResult {
-    message_rows("maestro_responses_messages_downgrade_unsupported_images", 1)
+fn responses_messages_downgrade_unsupported_images() -> TestResult {
+    message_rows("responses_messages_downgrade_unsupported_images", 1)
 }
 
 #[test]
-fn maestro_responses_messages_keep_transformed_indices() -> TestResult {
-    message_rows("maestro_responses_messages_keep_transformed_indices", 1)
+fn responses_messages_keep_transformed_indices() -> TestResult {
+    message_rows("responses_messages_keep_transformed_indices", 1)
 }
 
 #[test]
-fn maestro_responses_messages_number_unsigned_text() -> TestResult {
-    message_rows("maestro_responses_messages_number_unsigned_text", 2)
+fn responses_messages_number_unsigned_text() -> TestResult {
+    message_rows("responses_messages_number_unsigned_text", 2)
 }
 
 #[test]
-fn maestro_responses_messages_read_text_signatures() -> TestResult {
-    message_rows("maestro_responses_messages_read_text_signatures", 15)
+fn responses_messages_read_text_signatures() -> TestResult {
+    message_rows("responses_messages_read_text_signatures", 15)
 }
 
 #[test]
-fn maestro_responses_messages_bound_text_identity() -> TestResult {
-    message_rows("maestro_responses_messages_bound_text_identity", 4)
+fn responses_messages_bound_text_identity() -> TestResult {
+    message_rows("responses_messages_bound_text_identity", 4)
 }
 
 #[test]
-fn maestro_responses_messages_replay_signed_reasoning() -> TestResult {
-    message_rows("maestro_responses_messages_replay_signed_reasoning", 6)
+fn responses_messages_replay_signed_reasoning() -> TestResult {
+    message_rows("responses_messages_replay_signed_reasoning", 6)
 }
 
 #[test]
-fn maestro_responses_messages_omit_failed_history() -> TestResult {
-    message_rows("maestro_responses_messages_omit_failed_history", 3)
+fn responses_messages_omit_failed_history() -> TestResult {
+    message_rows("responses_messages_omit_failed_history", 3)
 }
 
 #[test]
-fn maestro_responses_messages_project_foreign_reasoning() -> TestResult {
-    message_rows("maestro_responses_messages_project_foreign_reasoning", 10)
+fn responses_messages_project_foreign_reasoning() -> TestResult {
+    message_rows("responses_messages_project_foreign_reasoning", 10)
 }
 
 #[test]
-fn maestro_responses_messages_normalize_tool_identity() -> TestResult {
-    message_rows("maestro_responses_messages_normalize_tool_identity", 34)
+fn responses_messages_normalize_tool_identity() -> TestResult {
+    message_rows("responses_messages_normalize_tool_identity", 34)
 }
 
 #[test]
-fn maestro_responses_messages_normalize_unlisted_provider() -> TestResult {
-    message_rows("maestro_responses_messages_normalize_unlisted_provider", 1)
+fn responses_messages_normalize_unlisted_provider() -> TestResult {
+    message_rows("responses_messages_normalize_unlisted_provider", 1)
 }
 
 #[test]
-fn maestro_responses_messages_keep_tool_association() -> TestResult {
-    message_rows("maestro_responses_messages_keep_tool_association", 1)
+fn responses_messages_keep_tool_association() -> TestResult {
+    message_rows("responses_messages_keep_tool_association", 1)
 }
 
 #[test]
-fn maestro_responses_messages_write_argument_json() -> TestResult {
-    message_rows("maestro_responses_messages_write_argument_json", 1)?;
+fn responses_messages_write_argument_json() -> TestResult {
+    message_rows("responses_messages_write_argument_json", 1)?;
     let arguments: Value =
         serde_json::from_str(r#"{"10":10,"2":2,"z":9007199254740993,"zero":-0,"tiny":1e-7}"#)?;
     let history = responses::context(json!({"messages":[
@@ -111,23 +111,19 @@ fn maestro_responses_messages_write_argument_json() -> TestResult {
 }
 
 #[test]
-fn maestro_responses_messages_keep_tool_result_images() -> TestResult {
-    message_rows("maestro_responses_messages_keep_tool_result_images", 10)
+fn responses_messages_keep_tool_result_images() -> TestResult {
+    message_rows("responses_messages_keep_tool_result_images", 10)
 }
 
 #[test]
-fn maestro_responses_tools_preserve_strict_states() -> TestResult {
-    responses::rows(
-        REQUESTS,
-        "maestro_responses_tools_preserve_strict_states",
-        8,
-    )?
-    .into_iter()
-    .try_for_each(responses::check_tools)
+fn responses_tools_preserve_strict_states() -> TestResult {
+    responses::rows(REQUESTS, "responses_tools_preserve_strict_states", 8)?
+        .into_iter()
+        .try_for_each(responses::check_tools)
 }
 
 #[test]
-fn maestro_responses_options_default_to_prompt_and_strict_false() -> TestResult {
+fn responses_options_default_to_prompt_and_strict_false() -> TestResult {
     let history = responses::context(json!({
         "systemPrompt": "rules",
         "messages": [{"role": "user", "content": "hello"}]
@@ -163,7 +159,7 @@ fn nested(containers: usize) -> String {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
+fn responses_messages_bound_full_signature_conversion() -> TestResult {
     let replay = |depth: usize| {
         let signature = nested(depth);
         let history = responses::context(json!({"messages": [{
@@ -227,7 +223,7 @@ fn maestro_responses_messages_bound_full_signature_conversion() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_responses_fixtures_hold_unique_queries_and_reject_unread_members() -> TestResult {
+fn responses_fixtures_hold_unique_queries_and_reject_unread_members() -> TestResult {
     responses::assert_unique_queries(REQUESTS)?;
     responses::assert_unique_queries(EVENTS)?;
 

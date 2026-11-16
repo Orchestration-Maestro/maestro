@@ -60,7 +60,7 @@ async fn finite(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_shared_finite_numbers_keep_bits_across_adapters() -> Result<(), String> {
+fn shared_finite_numbers_keep_bits_across_adapters() -> Result<(), String> {
     on_both_adapters!(finite)
 }
 
@@ -117,7 +117,7 @@ async fn nonfinite(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_shared_nonfinite_guest_edits_are_errors_across_adapters() -> Result<(), String> {
+fn shared_nonfinite_guest_edits_are_errors_across_adapters() -> Result<(), String> {
     on_both_adapters!(nonfinite)
 }
 
@@ -171,7 +171,7 @@ async fn open_role(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_shared_open_roles_keep_opaque_data_across_adapters() -> Result<(), String> {
+fn shared_open_roles_keep_opaque_data_across_adapters() -> Result<(), String> {
     on_both_adapters!(open_role)
 }
 
@@ -219,7 +219,7 @@ async fn optional(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_shared_optional_fields_match_host_records_across_adapters() -> Result<(), String> {
+fn shared_optional_fields_match_host_records_across_adapters() -> Result<(), String> {
     on_both_adapters!(optional)
 }
 
@@ -254,7 +254,6 @@ async fn union_codes(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_shared_number_or_string_unions_keep_their_branch_across_adapters() -> Result<(), String>
-{
+fn shared_number_or_string_unions_keep_their_branch_across_adapters() -> Result<(), String> {
     on_both_adapters!(union_codes)
 }

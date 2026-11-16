@@ -252,7 +252,7 @@ async fn mutable_capture(driver: &mut impl Driver) -> Result<(), String> {
     cleanup_shell(driver, Some(operation)).await
 }
 #[test]
-fn maestro_user_shell_operations_stream_and_retain_execution() -> Result<(), String> {
+fn user_shell_operations_stream_and_retain_execution() -> Result<(), String> {
     on_both_adapters!(invocation)
 }
 /// Registration release cannot revoke a pending call or an independently returned alias.
@@ -367,7 +367,7 @@ fn releases(driver: &impl Driver, before: usize, label: &str) -> usize {
         .count()
 }
 #[test]
-fn maestro_user_shell_owners_survive_registration_release() -> Result<(), String> {
+fn user_shell_owners_survive_registration_release() -> Result<(), String> {
     on_both_adapters!(ownership)
 }
 /// Keeps recoverable callback failures separate from event/document encoding errors.
@@ -463,6 +463,6 @@ async fn handler_failure(driver: &mut impl Driver) -> Result<(), String> {
     cleanup_shell(driver, None).await
 }
 #[test]
-fn maestro_user_shell_failures_preserve_independent_outcomes() -> Result<(), String> {
+fn user_shell_failures_preserve_independent_outcomes() -> Result<(), String> {
     on_both_adapters!(failures)
 }

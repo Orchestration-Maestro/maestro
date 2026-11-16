@@ -111,7 +111,7 @@ fn ids() -> Vec<String> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_registry_replaces_without_reordering() {
+fn oauth_registry_replaces_without_reordering() {
     let _admission = Admission::enter();
     assert_eq!(ids(), ["anthropic", "github-copilot", "openai-codex"]);
     register_oauth_provider(Arc::new(provider("z-last", "old")));
@@ -176,7 +176,7 @@ fn error(message: &str) -> OAuthError {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_refresh_dispatches_selected_provider() {
+fn oauth_refresh_dispatches_selected_provider() {
     let _admission = Admission::enter();
     let supplied_fetch: Fetch =
         Arc::new(|_| panic!("custom refresh only observes transport identity"));
@@ -226,7 +226,7 @@ fn maestro_oauth_refresh_dispatches_selected_provider() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_key_refreshes_at_expiry() {
+fn oauth_key_refreshes_at_expiry() {
     let _admission = Admission::enter();
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let refresh_calls = Arc::clone(&calls);
@@ -282,7 +282,7 @@ fn maestro_oauth_key_refreshes_at_expiry() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_key_preserves_error_boundaries() {
+fn oauth_key_preserves_error_boundaries() {
     let _admission = Admission::enter();
     let empty = indexmap::IndexMap::new();
     assert_eq!(
@@ -323,7 +323,7 @@ fn maestro_oauth_key_preserves_error_boundaries() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_provider_names_are_literal() {
+fn oauth_provider_names_are_literal() {
     let _admission = Admission::enter();
     let names = [
         "",
@@ -434,7 +434,7 @@ fn check_unknown_literal_names() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_registry_restores_builtin_providers() {
+fn oauth_registry_restores_builtin_providers() {
     let _admission = Admission::enter();
     for id in ["anthropic", "github-copilot", "openai-codex"] {
         register_oauth_provider(Arc::new(provider(id, "override")));
@@ -539,7 +539,7 @@ fn check_builtin_refresh(id: &str) {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_builtin_registry_uses_completed_providers() {
+fn oauth_builtin_registry_uses_completed_providers() {
     let _admission = Admission::enter();
     for (id, name, callback) in [
         ("anthropic", "Anthropic (Claude Pro/Max)", Some(true)),
@@ -567,7 +567,7 @@ fn maestro_oauth_builtin_registry_uses_completed_providers() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_registry_retains_shared_provider_state() {
+fn oauth_registry_retains_shared_provider_state() {
     let _admission = Admission::enter();
     for transition in ["replace", "remove", "reset"] {
         let state = Arc::new(Mutex::new("before".to_owned()));
@@ -625,7 +625,7 @@ fn maestro_oauth_registry_retains_shared_provider_state() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_registry_drops_callbacks_after_unlocking() {
+fn oauth_registry_drops_callbacks_after_unlocking() {
     let _admission = Admission::enter();
     let ids_read = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let id_calls = Arc::clone(&ids_read);
@@ -781,7 +781,7 @@ async fn independent_resolutions() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_oauth_callbacks_outlive_registry_changes() {
+fn oauth_callbacks_outlive_registry_changes() {
     let _admission = Admission::enter();
     crate::runtime::run(async {
         for transition in ["replace", "remove", "reset"] {

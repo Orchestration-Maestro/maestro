@@ -148,8 +148,8 @@
       ]
     },
     {
-      "id": "maestro_reasoning_summary_receives_selected_level",
-      "test": "maestro_reasoning_summary_receives_selected_level",
+      "id": "reasoning_summary_receives_selected_level",
+      "test": "reasoning_summary_receives_selected_level",
       "operation": "generateSummary",
       "args": {
         "messages": [
@@ -215,8 +215,8 @@
       ]
     },
     {
-      "id": "maestro_off_summary_omits_reasoning",
-      "test": "maestro_off_summary_omits_reasoning",
+      "id": "off_summary_omits_reasoning",
+      "test": "off_summary_omits_reasoning",
       "operation": "generateSummary",
       "args": {
         "messages": [
@@ -281,8 +281,8 @@
       ]
     },
     {
-      "id": "maestro_nonreasoning_model_omits_reasoning",
-      "test": "maestro_nonreasoning_model_omits_reasoning",
+      "id": "nonreasoning_model_omits_reasoning",
+      "test": "nonreasoning_model_omits_reasoning",
       "operation": "generateSummary",
       "args": {
         "messages": [

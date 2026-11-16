@@ -47,7 +47,7 @@ fn states<T>(present: T) -> [Presence<T>; 3] {
 }
 
 #[test]
-fn maestro_missing_properties_do_not_become_null() -> Result<(), String> {
+fn missing_properties_do_not_become_null() -> Result<(), String> {
     let flags = ["{}", r#"{"cancel":null}"#, r#"{"cancel":false}"#];
     for (cancel, expected) in states(false).into_iter().zip(flags) {
         assert_stable(&SessionBeforeSwitchResult { cancel }, expected)?;
@@ -244,11 +244,11 @@ async fn new_edit_outcomes(driver: &mut impl Driver) -> Result<(), String> {
     edit_outcomes(driver, &MARKED[..6], &KINDS[..6]).await
 }
 #[test]
-fn maestro_event_edits_survive_errors_and_kind_changes() -> Result<(), String> {
+fn event_edits_survive_errors_and_kind_changes() -> Result<(), String> {
     on_both_adapters!(edits_and_replacements)
 }
 #[test]
-fn maestro_new_event_kinds_keep_edit_and_failure_outcomes() -> Result<(), String> {
+fn new_event_kinds_keep_edit_and_failure_outcomes() -> Result<(), String> {
     on_both_adapters!(new_edit_outcomes)
 }
 
@@ -688,7 +688,7 @@ async fn decode_and_unknown(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_event_failures_keep_decode_callback_and_encoding_phases() -> Result<(), String> {
+fn event_failures_keep_decode_callback_and_encoding_phases() -> Result<(), String> {
     encoding_failures_stay_apart();
     on_both_adapters!(decode_and_unknown)
 }
@@ -720,7 +720,7 @@ async fn escaped_literals(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_event_literal_escapes_decode_without_rewriting_words() -> Result<(), String> {
+fn event_literal_escapes_decode_without_rewriting_words() -> Result<(), String> {
     on_both_adapters!(escaped_literals)
 }
 
@@ -753,7 +753,7 @@ async fn string_tags(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_event_tags_keep_string_identity_and_raw_duplicates() -> Result<(), String> {
+fn event_tags_keep_string_identity_and_raw_duplicates() -> Result<(), String> {
     on_both_adapters!(string_tags)
 }
 
@@ -883,7 +883,7 @@ async fn lifetimes(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_event_resources_release_on_every_exit() -> Result<(), String> {
+fn event_resources_release_on_every_exit() -> Result<(), String> {
     on_both_adapters!(lifetimes)
 }
 
@@ -951,7 +951,7 @@ fn with_failure(directive: &Value, message: &str) -> Value {
 }
 
 #[test]
-fn maestro_retained_event_capabilities_keep_original_identity() -> Result<(), String> {
+fn retained_event_capabilities_keep_original_identity() -> Result<(), String> {
     on_both_adapters!(retained_capabilities)
 }
 
@@ -988,6 +988,6 @@ async fn suspension(driver: &mut impl Driver) -> Result<(), String> {
 }
 
 #[test]
-fn maestro_event_future_suspends_until_host_release() -> Result<(), String> {
+fn event_future_suspends_until_host_release() -> Result<(), String> {
     on_both_adapters!(suspension)
 }

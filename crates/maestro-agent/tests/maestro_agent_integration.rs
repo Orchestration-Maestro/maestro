@@ -19,10 +19,10 @@ use support::utils::arithmetic::{calculate, calculate_tool};
 
 /// A prompt answered by the registered adapter settles user then assistant history.
 #[test]
-fn maestro_scripted_answer_settles_state() {
+fn scripted_answer_settles_state() {
     support::run_io(maestro_scripted_answer_settles_state_case());
 }
-/// Drive the scenario of `maestro_scripted_answer_settles_state` on the test runtime.
+/// Drive the scenario of `scripted_answer_settles_state` on the test runtime.
 async fn maestro_scripted_answer_settles_state_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
@@ -45,10 +45,10 @@ async fn maestro_scripted_answer_settles_state_case() {
 
 /// A calculator call runs the real arithmetic and exposes its id while pending.
 #[test]
-fn maestro_calculator_execution_tracks_pending_ids() {
+fn calculator_execution_tracks_pending_ids() {
     support::run_io(maestro_calculator_execution_tracks_pending_ids_case());
 }
-/// Drive the scenario of `maestro_calculator_execution_tracks_pending_ids` on the test runtime.
+/// Drive the scenario of `calculator_execution_tracks_pending_ids` on the test runtime.
 async fn maestro_calculator_execution_tracks_pending_ids_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
@@ -96,10 +96,10 @@ async fn maestro_calculator_execution_tracks_pending_ids_case() {
 
 /// Aborting at the request boundary leaves an aborted response and clears streaming.
 #[test]
-fn maestro_stream_abort_clears_runtime_state() {
+fn stream_abort_clears_runtime_state() {
     support::run_io(maestro_stream_abort_clears_runtime_state_case());
 }
-/// Drive the scenario of `maestro_stream_abort_clears_runtime_state` on the test runtime.
+/// Drive the scenario of `stream_abort_clears_runtime_state` on the test runtime.
 async fn maestro_stream_abort_clears_runtime_state_case() {
     let mut registered = Registered::default();
     let options = RegisterFauxProviderOptions {
@@ -134,10 +134,10 @@ async fn maestro_stream_abort_clears_runtime_state_case() {
 
 /// Chunked delivery yields the complete ordered event sequence and a two-entry history.
 #[test]
-fn maestro_chunked_response_emits_lifecycle() {
+fn chunked_response_emits_lifecycle() {
     support::run_io(maestro_chunked_response_emits_lifecycle_case());
 }
-/// Drive the scenario of `maestro_chunked_response_emits_lifecycle` on the test runtime.
+/// Drive the scenario of `chunked_response_emits_lifecycle` on the test runtime.
 async fn maestro_chunked_response_emits_lifecycle_case() {
     let mut registered = Registered::default();
     let options = RegisterFauxProviderOptions {
@@ -171,10 +171,10 @@ async fn maestro_chunked_response_emits_lifecycle_case() {
 
 /// The second turn's request carries the first turn's user message.
 #[test]
-fn maestro_second_turn_receives_prior_context() {
+fn second_turn_receives_prior_context() {
     support::run_io(maestro_second_turn_receives_prior_context_case());
 }
-/// Drive the scenario of `maestro_second_turn_receives_prior_context` on the test runtime.
+/// Drive the scenario of `second_turn_receives_prior_context` on the test runtime.
 async fn maestro_second_turn_receives_prior_context_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
@@ -197,10 +197,10 @@ async fn maestro_second_turn_receives_prior_context_case() {
 
 /// Thinking and text blocks survive streaming in their original order.
 #[test]
-fn maestro_thinking_blocks_survive_streaming() {
+fn thinking_blocks_survive_streaming() {
     support::run_io(maestro_thinking_blocks_survive_streaming_case());
 }
-/// Drive the scenario of `maestro_thinking_blocks_survive_streaming` on the test runtime.
+/// Drive the scenario of `thinking_blocks_survive_streaming` on the test runtime.
 async fn maestro_thinking_blocks_survive_streaming_case() {
     let mut registered = Registered::default();
     let options = RegisterFauxProviderOptions {
@@ -231,10 +231,10 @@ async fn maestro_thinking_blocks_survive_streaming_case() {
 
 /// Continuing an empty history is refused before any model request.
 #[test]
-fn maestro_empty_continue_reports_error() {
+fn empty_continue_reports_error() {
     support::run_io(maestro_empty_continue_reports_error_case());
 }
-/// Drive the scenario of `maestro_empty_continue_reports_error` on the test runtime.
+/// Drive the scenario of `empty_continue_reports_error` on the test runtime.
 async fn maestro_empty_continue_reports_error_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
@@ -246,10 +246,10 @@ async fn maestro_empty_continue_reports_error_case() {
 
 /// Continuing from an assistant tail with nothing queued is refused before any model request.
 #[test]
-fn maestro_unqueued_assistant_tail_reports_error() {
+fn unqueued_assistant_tail_reports_error() {
     support::run_io(maestro_unqueued_assistant_tail_reports_error_case());
 }
-/// Drive the scenario of `maestro_unqueued_assistant_tail_reports_error` on the test runtime.
+/// Drive the scenario of `unqueued_assistant_tail_reports_error` on the test runtime.
 async fn maestro_unqueued_assistant_tail_reports_error_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
@@ -268,10 +268,10 @@ async fn maestro_unqueued_assistant_tail_reports_error_case() {
 
 /// Continuing from a user tail adds only the response.
 #[test]
-fn maestro_user_tail_can_continue() {
+fn user_tail_can_continue() {
     support::run_io(maestro_user_tail_can_continue_case());
 }
-/// Drive the scenario of `maestro_user_tail_can_continue` on the test runtime.
+/// Drive the scenario of `user_tail_can_continue` on the test runtime.
 async fn maestro_user_tail_can_continue_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
@@ -289,10 +289,10 @@ async fn maestro_user_tail_can_continue_case() {
 
 /// Continuing from a tool-result tail answers from the executed calculation.
 #[test]
-fn maestro_tool_result_tail_can_continue() {
+fn tool_result_tail_can_continue() {
     support::run_io(maestro_tool_result_tail_can_continue_case());
 }
-/// Drive the scenario of `maestro_tool_result_tail_can_continue` on the test runtime.
+/// Drive the scenario of `tool_result_tail_can_continue` on the test runtime.
 async fn maestro_tool_result_tail_can_continue_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
@@ -352,7 +352,7 @@ async fn maestro_tool_result_tail_can_continue_case() {
 
 /// The fixture does real arithmetic, reports a known result and fails on anything else.
 #[test]
-fn maestro_calculator_fixture_returns_known_results_and_errors() {
+fn calculator_fixture_returns_known_results_and_errors() {
     for (expression, shown) in [("123 * 456", "123 * 456 = 56088"), ("5 + 3", "5 + 3 = 8")] {
         let result = calculate(expression).unwrap();
         let texts: Vec<_> = result.content.iter().filter_map(block_text).collect();

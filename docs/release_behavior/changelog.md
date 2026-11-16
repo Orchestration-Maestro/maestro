@@ -12,7 +12,7 @@ Catalog membership does not register an invocation API. Use exact provider/model
 IDs from the [catalog](../models/catalog.md), then check the
 [bundled protocol table](../models/api.md#bundled-protocols-and-direct-operations).
 The [custom descriptor example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
-`maestro_guide_invokes_custom_descriptors`, sends an authored descriptor through
+`guide_invokes_custom_descriptors`, sends an authored descriptor through
 its actual protocol to a controlled endpoint.
 
 [Request authentication](../request-authentication.md) separates explicit keys,
@@ -35,7 +35,7 @@ Choose current thinking levels through the model's
 helper or compatibility effort map. Missing and explicit-null entries differ.
 Raw provider options and simple thinking requests are not interchangeable; the
 [thinking/options example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
-`maestro_guide_selects_thinking_and_transport_options`, checks both routes.
+`guide_selects_thinking_and_transport_options`, checks both routes.
 
 [Conversation projection](../conversation-projection.md) creates a request view
 without editing stored history. Replay compatibility considers provider, API and
@@ -43,7 +43,7 @@ model identity; signatures, foreign thinking, failed attempts, missing tool
 results and image capability follow that owner's rules. Normalized tool IDs must
 retain the association with each original call occurrence. Use the
 [history example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
-`maestro_guide_projects_and_serializes_history`, for typed persistence and an
+`guide_projects_and_serializes_history`, for typed persistence and an
 actual cross-provider continuation rather than reconstructing displayed text.
 
 ## Streams and tool arguments
@@ -57,7 +57,7 @@ cover interleaved content, terminal failures and cancellation after progress.
 [Tool argument repair](../models/arguments.md) supports incremental display; a
 completed tool-call event is not permission to execute. Use the returned
 checked/coerced arguments only after explicit validation, as in
-`maestro_guide_validates_before_tool_execution` in the
+`guide_validates_before_tool_execution` in the
 [tool examples](../../crates/maestro-providers/tests/model_guide_examples/tools.rs).
 The caller still owns authorization and the tool effect.
 
@@ -99,7 +99,7 @@ migration format.
 
 Run the complete offline
 [quick-start example](../../crates/maestro-providers/tests/model_guide_examples/streams.rs),
-`maestro_guide_quick_start_completes_without_network`, through the guide's
+`guide_quick_start_completes_without_network`, through the guide's
 [installation instructions](../models/api.md#installation-and-offline-quick-start).
 For an opt-in deterministic two-turn model, use the existing
 [scripted model guide](../models/faux.md) and its

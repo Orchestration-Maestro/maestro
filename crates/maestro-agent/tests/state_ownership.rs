@@ -155,12 +155,12 @@ fn policies(agent: &Agent) -> Value {
 }
 /// Default state is inert and each agent owns its complete descriptor.
 #[test]
-fn maestro_new_agent_has_inert_defaults() {
+fn new_agent_has_inert_defaults() {
     let agent: Agent = Agent::default();
     let other: Agent = Agent::default();
     let retained = agent.state().read().unwrap();
     let same_model = Arc::ptr_eq(&retained.model, &other.state().read().unwrap().model);
-    for case in cases("maestro_new_agent_has_inert_defaults") {
+    for case in cases("new_agent_has_inert_defaults") {
         check(
             case,
             json!({"state": state(&retained), "sameDefaultModel": same_model,
@@ -171,8 +171,8 @@ fn maestro_new_agent_has_inert_defaults() {
 }
 /// A default agent's descriptor changes only that agent, while a supplied descriptor stays shared.
 #[test]
-fn maestro_default_models_stay_agent_local() {
-    for mut case in cases("maestro_default_models_stay_agent_local") {
+fn default_models_stay_agent_local() {
+    for mut case in cases("default_models_stay_agent_local") {
         let before: Agent = Agent::default();
         let replaced: Agent = Agent::default();
         let supplied = chosen_model();
@@ -232,8 +232,8 @@ fn supplied_agent(model: &Arc<RwLock<Model>>) -> Agent {
 }
 /// Supplied initialization preserves every thinking level and caller record.
 #[test]
-fn maestro_initial_state_uses_supplied_values() {
-    for mut case in cases("maestro_initial_state_uses_supplied_values") {
+fn initial_state_uses_supplied_values() {
+    for mut case in cases("initial_state_uses_supplied_values") {
         let entries: Vec<UserMessage> = take(&mut case.input, "messages");
         let agent: Agent = Agent::new(AgentOptions {
             initial_state: AgentInitialState {
@@ -254,8 +254,8 @@ fn maestro_initial_state_uses_supplied_values() {
 }
 /// Replacing history preserves the prior collection and shared entry identity.
 #[test]
-fn maestro_message_collections_preserve_aliases() {
-    for mut case in cases("maestro_message_collections_preserve_aliases") {
+fn message_collections_preserve_aliases() {
+    for mut case in cases("message_collections_preserve_aliases") {
         let seed = user(&take::<String>(&mut case.input, "initial"));
         let mut original = vec![seed.clone()];
         let agent: Agent = Agent::new(AgentOptions {
@@ -303,8 +303,8 @@ fn maestro_message_collections_preserve_aliases() {
 }
 /// Steering stores input without changing history or streaming.
 #[test]
-fn maestro_steering_only_enqueues() {
-    for mut case in cases("maestro_steering_only_enqueues") {
+fn steering_only_enqueues() {
+    for mut case in cases("steering_only_enqueues") {
         let agent: Agent = Agent::default();
         assert_eq!(take::<String>(&mut case.input, "queue"), "steer");
         agent.steer(user(&take::<String>(&mut case.input, "text")));
@@ -318,8 +318,8 @@ fn maestro_steering_only_enqueues() {
 }
 /// Follow-up stores input without changing history or streaming.
 #[test]
-fn maestro_follow_up_only_enqueues() {
-    for mut case in cases("maestro_follow_up_only_enqueues") {
+fn follow_up_only_enqueues() {
+    for mut case in cases("follow_up_only_enqueues") {
         let agent: Agent = Agent::default();
         assert_eq!(take::<String>(&mut case.input, "queue"), "followUp");
         agent.follow_up(user(&take::<String>(&mut case.input, "text")));
@@ -333,8 +333,8 @@ fn maestro_follow_up_only_enqueues() {
 }
 /// Clearing one queue leaves input in the other queue untouched.
 #[test]
-fn maestro_clears_only_selected_queues() {
-    for mut case in cases("maestro_clears_only_selected_queues") {
+fn clears_only_selected_queues() {
+    for mut case in cases("clears_only_selected_queues") {
         let agent: Agent = Agent::default();
         let present: String = take(&mut case.input, "present");
         if matches!(present.as_str(), "steering" | "both") {
@@ -358,8 +358,8 @@ fn maestro_clears_only_selected_queues() {
 }
 /// Initial queue policies can be independently replaced without clearing input.
 #[test]
-fn maestro_queue_modes_are_independent() {
-    for mut case in cases("maestro_queue_modes_are_independent") {
+fn queue_modes_are_independent() {
+    for mut case in cases("queue_modes_are_independent") {
         let steering = mode(&take::<String>(&mut case.input, "steeringMode"));
         let follow = mode(&take::<String>(&mut case.input, "followUpMode"));
         let agent: Agent = Agent::new(AgentOptions {
@@ -385,8 +385,8 @@ fn maestro_queue_modes_are_independent() {
 }
 /// Retained state and selected model remain live through reset.
 #[test]
-fn maestro_state_and_model_handles_stay_live() {
-    for mut case in cases("maestro_state_and_model_handles_stay_live") {
+fn state_and_model_handles_stay_live() {
+    for mut case in cases("state_and_model_handles_stay_live") {
         let model = chosen_model();
         let agent: Agent = Agent::new(AgentOptions {
             initial_state: AgentInitialState {
@@ -442,8 +442,8 @@ fn tool(
 }
 /// Reset replaces history while preserving selected configuration and tools.
 #[test]
-fn maestro_reset_replaces_history_and_clears_queues() {
-    for mut case in cases("maestro_reset_replaces_history_and_clears_queues") {
+fn reset_replaces_history_and_clears_queues() {
+    for mut case in cases("reset_replaces_history_and_clears_queues") {
         let agent: Agent = Agent::new(AgentOptions {
             initial_state: AgentInitialState {
                 system_prompt: Some(take(&mut case.input, "systemPrompt")),
@@ -476,9 +476,9 @@ fn maestro_reset_replaces_history_and_clears_queues() {
 }
 /// Retained tools preserve executable identities and both outer-copy boundaries.
 #[test]
-fn maestro_tool_collections_retain_executable_entries() {
+fn tool_collections_retain_executable_entries() {
     assert_tool_order_and_duplicates();
-    for mut case in cases("maestro_tool_collections_retain_executable_entries") {
+    for mut case in cases("tool_collections_retain_executable_entries") {
         let name: String = take(&mut case.input, "name");
         let (entry, calls) = tool(
             &name,
@@ -540,7 +540,7 @@ fn with_tool(entry: &SharedAgentTool, change: impl FnOnce(&mut AgentTool)) {
 }
 /// Tools with different parameter and detail types share one collection and keep their identity.
 #[test]
-fn maestro_heterogeneous_typed_tools_are_retained_by_identity() {
+fn heterogeneous_typed_tools_are_retained_by_identity() {
     let typed = |name: &str| maestro_models::Tool {
         name: name.into(),
         description: String::new(),
@@ -632,8 +632,8 @@ impl Drop for Widget {
 }
 /// Typed custom messages preserve role and mutable payload without cloning data.
 #[test]
-fn maestro_custom_messages_keep_typed_payload_identity() {
-    for mut case in cases("maestro_custom_messages_keep_typed_payload_identity") {
+fn custom_messages_keep_typed_payload_identity() {
+    for mut case in cases("custom_messages_keep_typed_payload_identity") {
         let entry = Arc::new(RwLock::new(Widget {
             role: take(&mut case.input, "role"),
             text: "retained".into(),
@@ -679,8 +679,8 @@ fn standard(role: &str) -> AgentMessage {
 }
 /// Assistant and tool-result variants retain later changes through the actual handles.
 #[test]
-fn maestro_standard_message_variants_remain_shared() {
-    for mut case in cases("maestro_standard_message_variants_remain_shared") {
+fn standard_message_variants_remain_shared() {
+    for mut case in cases("standard_message_variants_remain_shared") {
         let entry = standard(&take::<String>(&mut case.input, "role"));
         let agent: Agent = Agent::new(AgentOptions {
             initial_state: AgentInitialState {
@@ -722,8 +722,8 @@ fn maestro_standard_message_variants_remain_shared() {
 }
 /// Assignment isolates outer storage while retaining entry handles.
 #[test]
-fn maestro_assignment_moves_outer_storage_not_entries() {
-    for mut case in cases("maestro_assignment_moves_outer_storage_not_entries") {
+fn assignment_moves_outer_storage_not_entries() {
+    for mut case in cases("assignment_moves_outer_storage_not_entries") {
         let mut supplied = vec![user(&take::<String>(&mut case.input, "text"))];
         let agent: Agent = Agent::default();
         agent
@@ -742,7 +742,7 @@ fn maestro_assignment_moves_outer_storage_not_entries() {
 }
 /// Last-alias release is synchronous and Agent-owned state guards are released first.
 #[test]
-fn maestro_history_releases_payload_after_last_alias() {
+fn history_releases_payload_after_last_alias() {
     let payload = Arc::new(RwLock::new(Widget {
         role: "owned".into(),
         text: "payload".into(),

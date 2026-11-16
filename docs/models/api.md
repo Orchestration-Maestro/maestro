@@ -28,7 +28,7 @@ current-thread runtime built with `enable_all()`. A pure custom callback working
 without a runtime says nothing about the native adapters.
 
 The [quick-start test](../../crates/maestro-providers/tests/model_guide_examples/streams.rs),
-`maestro_guide_quick_start_completes_without_network`, is the complete example.
+`guide_quick_start_completes_without_network`, is the complete example.
 It selects `openai/gpt-4o-mini`, uses that descriptor's own API, injects a finite
 response and checks text, stop reason and usage through all four entry points.
 The shared [example data](../../crates/maestro-providers/tests/model_guide_examples/mod.rs)
@@ -60,7 +60,7 @@ Three separate concepts:
   Invocation resolves the descriptor's API, never its catalog membership.
 
 The [custom descriptor example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
-`maestro_guide_invokes_custom_descriptors`, checks lookup and sends an authored
+`guide_invokes_custom_descriptors`, checks lookup and sends an authored
 model through an existing protocol to a controlled endpoint. It inspects the URL,
 headers, system-role selection, token-limit field and omitted compatibility
 fields. Copy the descriptor of the protocol you target: a different endpoint does
@@ -82,12 +82,12 @@ root forwarding functions and the provider-module simple functions differ; see
 
 | API | Owning module / options | Focused contract / runtime witness |
 |---|---|---|
-| `anthropic-messages` | `anthropic_messages::endpoint` / `AnthropicOptions` | [Messages](anthropic-messages.md); `bundled_dispatch::maestro_public_routes_reach_real_adapters` |
+| `anthropic-messages` | `anthropic_messages::endpoint` / `AnthropicOptions` | [Messages](anthropic-messages.md); `bundled_dispatch::public_routes_reach_real_adapters` |
 | `openai-completions` | `openai_completions::endpoint` / `OpenAICompletionsOptions` | [Chat completions](openai-completions.md); same dispatch witness |
 | `mistral-conversations` | `mistral_conversations::endpoint` / `MistralOptions` | [Reasoning conversations](mistral-conversations.md); same dispatch witness |
 | `openai-responses` | `openai_responses::openai` / `OpenAIResponsesOptions` | [Responses](openai-responses.md); same dispatch witness |
-| `azure-openai-responses` | `openai_responses::azure_transport` / `AzureOpenAIResponsesOptions` | [Responses](openai-responses.md); `bundled_options::maestro_azure_extras_select_target` |
-| `openai-codex-responses` | `openai_codex_responses::codex` / `OpenAICodexResponsesOptions` | [Response sessions](openai-codex-responses.md); `bundled_dispatch::maestro_response_session_cache_affinity_completes` |
+| `azure-openai-responses` | `openai_responses::azure_transport` / `AzureOpenAIResponsesOptions` | [Responses](openai-responses.md); `bundled_options::azure_extras_select_target` |
+| `openai-codex-responses` | `openai_codex_responses::codex` / `OpenAICodexResponsesOptions` | [Response sessions](openai-codex-responses.md); `bundled_dispatch::response_session_cache_affinity_completes` |
 | `google-generative-ai` | `google::generative` / `GoogleOptions` | [Content generation](google.md); `content_generation_invocation::raw_request_projects_the_selected_payload` |
 | `google-vertex` | `google::managed` / `GoogleVertexOptions` | [Cloud content generation](google.md#cloud-invocation); `cloud_content_invocation::cloud_root_and_registry_entries_dispatch` |
 | `bedrock-converse-stream` | `amazon_bedrock` / `BedrockOptions` | [Cloud conversations](amazon-bedrock.md); `cloud_conversation_streams::text_events_keep_shared_result_and_completion` |
@@ -133,7 +133,7 @@ declarations. `Message` is `User`, `Assistant` or `ToolResult`.
   an executable callback.
 
 The [history example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
-`maestro_guide_projects_and_serializes_history`, decodes and serializes a full
+`guide_projects_and_serializes_history`, decodes and serializes a full
 context: image data, signed text and thinking, and explicit null tool-result
 details. It also checks the wire output of a continuation. Persist these records
 as they are; do not rebuild them from displayed text.
@@ -190,7 +190,7 @@ snapshots. Read or clone their current data, and release the lock before any
 
 Address blocks by `content_index`; do not assume they are contiguous. The
 [interleaved consumer](../../crates/maestro-providers/tests/model_guide_examples/streams.rs),
-`maestro_guide_consumes_interleaved_stream`, checks event order, independent
+`guide_consumes_interleaved_stream`, checks event order, independent
 thinking, text and tool indices, and the same live final handle. The failure
 example covers the `error` event. A `ToolcallEnd` carries parsed and repaired
 arguments, **not execution-validated arguments**.
@@ -200,13 +200,13 @@ arguments, **not execution-validated arguments**.
 Three [tool examples](../../crates/maestro-providers/tests/model_guide_examples/tools.rs)
 cover declaration, progress and the caller's execution loop:
 
-1. `maestro_guide_builds_portable_tool_schemas` builds JSON Schema with
+1. `guide_builds_portable_tool_schemas` builds JSON Schema with
    `string_enum`, for absent, nonempty and empty description and default options.
    The helper adds no `anyOf` wrapper.
-2. `maestro_guide_reads_partial_arguments_without_execution` reads empty,
+2. `guide_reads_partial_arguments_without_execution` reads empty,
    incomplete and completed JSON arguments at gated deltas. Show progress to the
    user; never execute on it. Adapters differ in how finely they stream fields.
-3. `maestro_guide_validates_before_tool_execution` takes a completed invalid
+3. `guide_validates_before_tool_execution` takes a completed invalid
    `kelvin` enum from a real controlled adapter, rejects it before any tool
    effect, and returns caller-authored error feedback in a tool result before the
    run continues.
@@ -247,8 +247,8 @@ The history example runs eight destination projections and a persisted context.
 It then sends a returned assistant message and its tool feedback to a different
 provider identity and checks the serialized request. The full association and
 image policy is in [conversation projection](../conversation-projection.md),
-with the regressions `maestro_projection_preserves_colliding_call_associations`
-and `maestro_projection_downgrades_unsupported_images_once` in the
+with the regressions `projection_preserves_colliding_call_associations`
+and `projection_downgrades_unsupported_images_once` in the
 [history tests](../../crates/maestro-models/tests/model_history_projection.rs).
 
 ## Thinking, usage and provider-specific options
@@ -257,7 +257,7 @@ and `maestro_projection_downgrades_unsupported_images_once` in the
 per-level `ThinkingBudgets` and the tool choice. Raw options hold the common
 settings, open adapter fields and typed retained objects. The
 [thinking and options example](../../crates/maestro-providers/tests/model_guide_examples/providers.rs),
-`maestro_guide_selects_thinking_and_transport_options`, shows a model without
+`guide_selects_thinking_and_transport_options`, shows a model without
 reasoning selecting off, an unsupported low level selecting medium, and
 independently chosen raw and simple controls reaching real requests. A missing
 thinking-map entry and an explicit null entry are different; see
@@ -299,7 +299,7 @@ three-argument entries keep their threaded options and the provider's own defaul
 admission. See [linkage](module-linkage.md).
 
 The [failure and cancellation example](../../crates/maestro-providers/tests/model_guide_examples/streams.rs),
-`maestro_guide_observes_failure_and_cancellation`, cancels only after visible text
+`guide_observes_failure_and_cancellation`, cancels only after visible text
 and a pending-body-read handshake. It checks the terminal reason, the retained
 text and the reported usage, then continues with the partial assistant message it
 received. The next request omits the aborted attempt, while stored history can
@@ -324,7 +324,7 @@ policies. No callback boundary is universal: read the
 timestamp. `append_assistant_message_diagnostic` adds the supplied details and
 keeps the existing diagnostics. The declarations are in
 [diagnostics](../../crates/maestro-interchange/src/diagnostics.rs), and the
-`maestro_diagnostics_append_with_current_timestamp` witness is in the
+`diagnostics_append_with_current_timestamp` witness is in the
 [record tests](../../crates/maestro-models/tests/model_records.rs).
 
 ## Native and browser authentication
@@ -343,7 +343,7 @@ origin and credential exposure. The
 [browser import witness](../../crates/maestro-providers/tests/support/browser_import_check.rs)
 compiles a typed model, context, tool, options and a retained local client with
 an explicit key. It starts no request, native callback listener, cloud
-credential flow or native socket. `maestro_browser_environment_has_no_key` builds
+credential flow or native socket. `browser_environment_has_no_key` builds
 that wasm artifact. This is compile evidence only; it is not a browser run or a
 live authorization check.
 
@@ -358,7 +358,7 @@ login and refresh functions, with the `OAuthLoginCallbacks` interaction contract
 Library login neither opens a browser nor stores credentials for the caller.
 
 The [supplied-account example](../../crates/maestro-providers/tests/model_guide_examples/accounts.rs),
-`maestro_guide_refreshes_supplied_account_credentials`, runs in a fresh process
+`guide_refreshes_supplied_account_credentials`, runs in a fresh process
 with fake state it owns. It covers the authorization and prompt callbacks, key
 extraction from unexpired credentials without a refresh, extraction from expired
 credentials with one refresh, missing supplied credentials and the updated
@@ -367,7 +367,7 @@ credentials that come back. `get_oauth_api_key` returns an `OAuthApiKey`.
 stores the result. The OAuth guide documents the failure boundaries and the
 controlled native-flow witnesses.
 
-`maestro_guide_registration_keeps_existing_handles` separates API callbacks from
+`guide_registration_keeps_existing_handles` separates API callbacks from
 account providers:
 
 - Replacing a registration keeps its slot, and old handles you retained keep
@@ -388,7 +388,7 @@ prove the adapter supports that transport or reuses a connection.
 [Response sessions](openai-codex-responses.md) documents `auto` when a transport is
 missing, fallback before the start, session affinity, cached-context reuse, idle
 cleanup, explicit close and debug counters, and names the native socket
-qualifications. `maestro_socket_completions_continue_with_actual_assistants` also
+qualifications. `socket_completions_continue_with_actual_assistants` also
 checks continuation in the
 [streaming socket tests](../../crates/maestro-providers/tests/model_streaming/socket.rs).
 Do not apply these session policies to other adapters.
@@ -398,15 +398,15 @@ does not remove the registration. `cleanup_session_resources` invokes the live
 registered callbacks and collects their failures in order; call it for the one
 session you own or for all sessions, as the case requires. See the
 [cleanup declarations](../../crates/maestro-models/src/records/sessions.rs),
-`maestro_cleanup_collects_failures_in_order` in the
+`cleanup_collects_failures_in_order` in the
 [invocation tests](../../crates/maestro-models/tests/model_invocation.rs) and
-`maestro_cleanup_observes_live_changes` in the
+`cleanup_observes_live_changes` in the
 [lifetime tests](../../crates/maestro-models/tests/model_stream_lifetimes.rs).
 
 The [scripted model guide](faux.md) covers the opt-in `register_faux_provider`,
 the message and content builders, replacing and appending queued responses,
 pending and call counts, pacing, factories, the session-local cache and explicit
-unregister. Reuse the two-turn `maestro_documented_flow_runs_offline` in the
+unregister. Reuse the two-turn `documented_flow_runs_offline` in the
 [scripted invocation tests](../../crates/maestro-models/tests/scripted_model_invocation.rs);
 do not write a second simulator or tutorial executor. A scripted call that is
 aborted before it starts still consumes its queued response. Dropping a result

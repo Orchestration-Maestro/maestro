@@ -212,11 +212,8 @@ fn theme_registered_lookup_avoids_unneeded_effects() {
 }
 
 #[test]
-fn maestro_theme_resolves_registered_and_file_precedence() {
-    if !in_child(
-        "maestro_theme_resolves_registered_and_file_precedence",
-        TRUECOLOR,
-    ) {
+fn theme_resolves_registered_and_file_precedence() {
+    if !in_child("theme_resolves_registered_and_file_precedence", TRUECOLOR) {
         return;
     }
     let scratch = Scratch::new();

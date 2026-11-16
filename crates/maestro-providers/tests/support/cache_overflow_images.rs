@@ -18,51 +18,51 @@ pub fn assert_rows(test: &str) -> TestResult {
         &corpus(),
         &[
             (
-                "crates/maestro-providers/tests/provider_overflow/cases.rs::maestro_overflow_errors_keep_provider_routes",
+                "crates/maestro-providers/tests/provider_overflow/cases.rs::overflow_errors_keep_provider_routes",
                 23,
             ),
             (
-                "crates/maestro-providers/tests/provider_overflow/cases.rs::maestro_successful_overflow_counts_cached_input",
+                "crates/maestro-providers/tests/provider_overflow/cases.rs::successful_overflow_counts_cached_input",
                 13,
             ),
             (
-                "crates/maestro-providers/tests/provider_overflow/cases.rs::maestro_filled_context_requires_zero_output",
+                "crates/maestro-providers/tests/provider_overflow/cases.rs::filled_context_requires_zero_output",
                 20,
             ),
             (
-                "crates/maestro-providers/tests/tool_images/cases.rs::maestro_image_results_continue_with_returned_calls",
+                "crates/maestro-providers/tests/tool_images/cases.rs::image_results_continue_with_returned_calls",
                 32,
             ),
             (
-                "crates/maestro-providers/tests/tool_images/cases.rs::maestro_mixed_results_preserve_text_and_images",
+                "crates/maestro-providers/tests/tool_images/cases.rs::mixed_results_preserve_text_and_images",
                 32,
             ),
             (
-                "crates/maestro-providers/tests/cache_preferences.rs::maestro_cache_preferences_reach_each_protocol",
+                "crates/maestro-providers/tests/cache_preferences.rs::cache_preferences_reach_each_protocol",
                 111,
             ),
             (
-                "crates/maestro-providers/tests/cache_preferences.rs::maestro_cache_none_omits_affinity_key",
+                "crates/maestro-providers/tests/cache_preferences.rs::cache_none_omits_affinity_key",
                 42,
             ),
             (
-                "crates/maestro-providers/tests/cache_preferences.rs::maestro_cache_flags_keep_independent_markers",
+                "crates/maestro-providers/tests/cache_preferences.rs::cache_flags_keep_independent_markers",
                 26,
             ),
             (
-                "crates/maestro-providers/tests/provider_overflow/cases.rs::maestro_throttling_is_not_context_overflow",
+                "crates/maestro-providers/tests/provider_overflow/cases.rs::throttling_is_not_context_overflow",
                 10,
             ),
             (
-                "crates/maestro-providers/tests/provider_overflow/local_endpoints.rs::maestro_local_descriptors_keep_overflow_signals",
+                "crates/maestro-providers/tests/provider_overflow/local_endpoints.rs::local_descriptors_keep_overflow_signals",
                 4,
             ),
             (
-                "crates/maestro-providers/tests/tool_images/payloads.rs::maestro_tool_image_fallbacks_keep_protocol_text",
+                "crates/maestro-providers/tests/tool_images/payloads.rs::tool_image_fallbacks_keep_protocol_text",
                 120,
             ),
             (
-                "crates/maestro-providers/tests/tool_images/payloads.rs::maestro_tool_images_keep_block_order_and_duplicates",
+                "crates/maestro-providers/tests/tool_images/payloads.rs::tool_images_keep_block_order_and_duplicates",
                 6,
             ),
         ],

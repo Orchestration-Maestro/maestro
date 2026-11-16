@@ -51,18 +51,17 @@ fn assert_history_rows(test: &str) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_replays_thinking_as_text() -> TestResult {
+fn chat_replays_thinking_as_text() -> TestResult {
     crate::runtime::run(async {
-        assert_history_rows("maestro_chat_replays_thinking_as_text")?;
+        assert_history_rows("chat_replays_thinking_as_text")?;
         if !maestro_test_harness::selection().is_child() {
             return {
-                let output = maestro_test_harness::TestProcess::current(
-                    "maestro_chat_replays_thinking_as_text",
-                )?
-                .nocapture()
-                .env_clear()
-                .case("*")
-                .output()?;
+                let output =
+                    maestro_test_harness::TestProcess::current("chat_replays_thinking_as_text")?
+                        .nocapture()
+                        .env_clear()
+                        .case("*")
+                        .output()?;
                 assert!(output.status.success(), "{output:?}");
                 Ok(())
             };
@@ -103,29 +102,29 @@ fn maestro_chat_replays_thinking_as_text() -> TestResult {
 }
 
 #[test]
-fn maestro_chat_preserves_assistant_content() -> TestResult {
-    assert_history_rows("maestro_chat_preserves_assistant_content")
+fn chat_preserves_assistant_content() -> TestResult {
+    assert_history_rows("chat_preserves_assistant_content")
 }
 
 #[test]
-fn maestro_chat_groups_tool_result_images() -> TestResult {
-    assert_history_rows("maestro_chat_groups_tool_result_images")
+fn chat_groups_tool_result_images() -> TestResult {
+    assert_history_rows("chat_groups_tool_result_images")
 }
 
 #[test]
-fn maestro_chat_preserves_unicode_boundaries() -> TestResult {
-    assert_history_rows("maestro_chat_preserves_unicode_boundaries")
+fn chat_preserves_unicode_boundaries() -> TestResult {
+    assert_history_rows("chat_preserves_unicode_boundaries")
 }
 
 #[test]
-fn maestro_chat_normalizes_tool_identifiers() -> TestResult {
-    assert_history_rows("maestro_chat_normalizes_tool_identifiers")
+fn chat_normalizes_tool_identifiers() -> TestResult {
+    assert_history_rows("chat_normalizes_tool_identifiers")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_serializes_replay_arguments() -> TestResult {
-    assert_history_rows("maestro_chat_serializes_replay_arguments")?;
+fn chat_serializes_replay_arguments() -> TestResult {
+    assert_history_rows("chat_serializes_replay_arguments")?;
     let history = json!({"messages": [
         {"role": "assistant", "content": [{"type": "toolCall", "id": "call", "name": "lookup",
             "arguments": {}}]}]});
@@ -321,9 +320,9 @@ async fn non_finite_numbers_become_null() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_numeric_options() -> TestResult {
+fn chat_preserves_numeric_options() -> TestResult {
     crate::runtime::run(async {
-        assert_payload_rows("maestro_chat_preserves_numeric_options").await?;
+        assert_payload_rows("chat_preserves_numeric_options").await?;
         if !maestro_test_harness::selection().is_child() {
             non_finite_numbers_become_null().await?;
         }
@@ -363,7 +362,7 @@ async fn send_through_hook(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_sends_the_payload_the_hook_returns() -> TestResult {
+fn chat_sends_the_payload_the_hook_returns() -> TestResult {
     crate::runtime::run(async {
         let unchanged = send_through_hook(|payload| payload).await?;
         assert_eq!(unchanged["temperature"], json!(0.25));
@@ -394,46 +393,38 @@ fn maestro_chat_sends_the_payload_the_hook_returns() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_selects_reasoning_payloads() -> TestResult {
-    crate::runtime::run(async {
-        assert_payload_rows("maestro_chat_selects_reasoning_payloads").await
-    })
+fn chat_selects_reasoning_payloads() -> TestResult {
+    crate::runtime::run(async { assert_payload_rows("chat_selects_reasoning_payloads").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_routing_fields() -> TestResult {
-    crate::runtime::run(async {
-        assert_payload_rows("maestro_chat_preserves_routing_fields").await
-    })
+fn chat_preserves_routing_fields() -> TestResult {
+    crate::runtime::run(async { assert_payload_rows("chat_preserves_routing_fields").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_places_cache_markers() -> TestResult {
-    crate::runtime::run(async { assert_payload_rows("maestro_chat_places_cache_markers").await })
+fn chat_places_cache_markers() -> TestResult {
+    crate::runtime::run(async { assert_payload_rows("chat_places_cache_markers").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_prompt_cache_policy() -> TestResult {
-    crate::runtime::run(async {
-        assert_payload_rows("maestro_chat_preserves_prompt_cache_policy").await
-    })
+fn chat_preserves_prompt_cache_policy() -> TestResult {
+    crate::runtime::run(async { assert_payload_rows("chat_preserves_prompt_cache_policy").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_tool_choice() -> TestResult {
-    crate::runtime::run(async { assert_payload_rows("maestro_chat_preserves_tool_choice").await })
+fn chat_preserves_tool_choice() -> TestResult {
+    crate::runtime::run(async { assert_payload_rows("chat_preserves_tool_choice").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_tool_declarations() -> TestResult {
-    crate::runtime::run(async {
-        assert_payload_rows("maestro_chat_preserves_tool_declarations").await
-    })
+fn chat_preserves_tool_declarations() -> TestResult {
+    crate::runtime::run(async { assert_payload_rows("chat_preserves_tool_declarations").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -454,7 +445,7 @@ async fn requests_tool_stream(model: &maestro_models::Model, with_tools: bool) -
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_streams_tools_for_catalog_models() -> TestResult {
+fn chat_streams_tools_for_catalog_models() -> TestResult {
     crate::runtime::run(async {
         let supported = get_model("zai", "glm-5.1").ok_or("glm-5.1")?;
         assert!(
@@ -597,24 +588,20 @@ async fn assert_compat_rows(test: &str) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_derives_compatibility() -> TestResult {
-    crate::runtime::run(async { assert_compat_rows("maestro_chat_derives_compatibility").await })
+fn chat_derives_compatibility() -> TestResult {
+    crate::runtime::run(async { assert_compat_rows("chat_derives_compatibility").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_applies_compatibility_overrides() -> TestResult {
-    crate::runtime::run(async {
-        assert_compat_rows("maestro_chat_applies_compatibility_overrides").await
-    })
+fn chat_applies_compatibility_overrides() -> TestResult {
+    crate::runtime::run(async { assert_compat_rows("chat_applies_compatibility_overrides").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_header_precedence() -> TestResult {
-    crate::runtime::run(async {
-        assert_rows(FIXTURE, "maestro_chat_preserves_header_precedence").await
-    })
+fn chat_preserves_header_precedence() -> TestResult {
+    crate::runtime::run(async { assert_rows(FIXTURE, "chat_preserves_header_precedence").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -636,7 +623,7 @@ async fn send_with_headers(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_normalizes_request_header_values() -> TestResult {
+fn chat_normalizes_request_header_values() -> TestResult {
     crate::runtime::run_paused(async {
         let padded = [
             ("x-edge", " \t\r\nvalue\n\t "),
@@ -687,9 +674,9 @@ fn maestro_chat_normalizes_request_header_values() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_gateway_authorization() -> TestResult {
+fn chat_preserves_gateway_authorization() -> TestResult {
     crate::runtime::run(async {
-        assert_rows(FIXTURE, "maestro_chat_preserves_gateway_authorization").await
+        assert_rows(FIXTURE, "chat_preserves_gateway_authorization").await
     })
 }
 
@@ -740,9 +727,9 @@ fn record_hooks(common: &mut StreamOptions) -> Arc<HookRecord> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_observes_callback_boundaries() -> TestResult {
+fn chat_observes_callback_boundaries() -> TestResult {
     crate::runtime::run_paused(async {
-        assert_rows(FIXTURE, "maestro_chat_observes_callback_boundaries").await?;
+        assert_rows(FIXTURE, "chat_observes_callback_boundaries").await?;
 
         let target = transport::transport(vec![
             transport::Attempt::body(503, &[("retry-after-ms", "1")], Vec::new()),
@@ -785,18 +772,14 @@ fn maestro_chat_observes_callback_boundaries() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_simple_options() -> TestResult {
-    crate::runtime::run(async {
-        assert_rows(FIXTURE, "maestro_chat_preserves_simple_options").await
-    })
+fn chat_preserves_simple_options() -> TestResult {
+    crate::runtime::run(async { assert_rows(FIXTURE, "chat_preserves_simple_options").await })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_auth_boundaries() -> TestResult {
-    crate::runtime::run(async {
-        assert_rows(FIXTURE, "maestro_chat_preserves_auth_boundaries").await
-    })
+fn chat_preserves_auth_boundaries() -> TestResult {
+    crate::runtime::run(async { assert_rows(FIXTURE, "chat_preserves_auth_boundaries").await })
 }
 
 /// The replayed assistant message for a tool call whose thought signature is `signature`.
@@ -810,7 +793,7 @@ fn replayed_with_signature(signature: &str) -> TestResult<Value> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
+fn chat_bounds_signature_replay_nesting() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         let deepest = cases::DEEPEST_NESTING;
         let accepted = cases::nested_json(deepest);
@@ -829,13 +812,12 @@ fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
         return Ok(());
     }
     {
-        let output = maestro_test_harness::TestProcess::current(
-            "maestro_chat_bounds_signature_replay_nesting",
-        )?
-        .nocapture()
-        .env_clear()
-        .case("nesting")
-        .output()?;
+        let output =
+            maestro_test_harness::TestProcess::current("chat_bounds_signature_replay_nesting")?
+                .nocapture()
+                .env_clear()
+                .case("nesting")
+                .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
     }
@@ -843,7 +825,7 @@ fn maestro_chat_bounds_signature_replay_nesting() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_forwards_control_characters_to_the_transport() -> TestResult {
+fn chat_forwards_control_characters_to_the_transport() -> TestResult {
     crate::runtime::run_paused(async {
         let value = "\u{b}a\u{1}b\u{7f}c\u{c}";
         let (target, outcome) = send_with_headers(&[("x-control", value)]).await?;
@@ -860,7 +842,7 @@ fn maestro_chat_forwards_control_characters_to_the_transport() -> TestResult {
 }
 
 #[test]
-fn maestro_chat_omits_unrepresentable_replayed_signatures() -> TestResult {
+fn chat_omits_unrepresentable_replayed_signatures() -> TestResult {
     let message = replayed_with_signature(r#"{"\ud800":7,"keep":1}"#)?;
     assert!(message.get("reasoning_details").is_none(), "{message}");
     assert_eq!(message["tool_calls"][0]["id"], "call");

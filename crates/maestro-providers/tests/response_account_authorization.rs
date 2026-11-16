@@ -11,17 +11,16 @@ use std::{collections::BTreeMap, sync::Arc};
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_response_refresh_keeps_stderr_clean() {
+fn response_refresh_keeps_stderr_clean() {
     if !maestro_test_harness::selection().is_child() {
         crate::runtime::run(async {
-            let output = maestro_test_harness::TestProcess::current(
-                "maestro_response_refresh_keeps_stderr_clean",
-            )
-            .unwrap()
-            .nocapture()
-            .case("*")
-            .output()
-            .unwrap();
+            let output =
+                maestro_test_harness::TestProcess::current("response_refresh_keeps_stderr_clean")
+                    .unwrap()
+                    .nocapture()
+                    .case("*")
+                    .output()
+                    .unwrap();
             assert!(
                 output.status.success(),
                 "{}",
@@ -319,8 +318,8 @@ mod oauth_callback {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_response_tokens_require_account_claim() {
-        if public_fallback_child("maestro_response_tokens_require_account_claim") {
+    fn response_tokens_require_account_claim() {
+        if public_fallback_child("response_tokens_require_account_claim") {
             return;
         }
         crate::runtime::run(maestro_response_tokens_require_account_claim_flow());
@@ -418,8 +417,8 @@ mod oauth_callback {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_response_authorization_keeps_protocol_fields() {
-        if public_fallback_child("maestro_response_authorization_keeps_protocol_fields") {
+    fn response_authorization_keeps_protocol_fields() {
+        if public_fallback_child("response_authorization_keeps_protocol_fields") {
             return;
         }
         crate::runtime::run(maestro_response_authorization_keeps_protocol_fields_flow());

@@ -155,7 +155,7 @@ fn both_transcripts() -> Result<(Vec<String>, Vec<String>), String> {
 }
 
 #[test]
-fn maestro_component_registers_invokes_and_releases() -> Result<(), String> {
+fn component_registers_invokes_and_releases() -> Result<(), String> {
     let (component, controlled) = both_transcripts()?;
     assert_eq!(component, EXPECTED);
     assert_eq!(controlled, EXPECTED);
@@ -228,7 +228,7 @@ async fn check_release<D: Driver>(adapter: impl Fn() -> D) -> Result<(), String>
 }
 
 #[test]
-fn maestro_callbacks_release_after_reentry_and_failed_registration() -> Result<(), String> {
+fn callbacks_release_after_reentry_and_failed_registration() -> Result<(), String> {
     let path = path_of_component()?;
     block_on(check_release(|| ComponentDriver::new(path.clone())))?;
     block_on(check_release(ControlledDriver::new))
@@ -581,7 +581,7 @@ fn assert_catalog_imports(contract: &Contract) {
 }
 
 #[test]
-fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String> {
+fn component_contract_keeps_sync_and_async_calls() -> Result<(), String> {
     let contract = contract()?;
     assert_async_exports(&contract);
     assert_eq!(

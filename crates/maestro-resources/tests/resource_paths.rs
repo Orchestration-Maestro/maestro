@@ -4,7 +4,7 @@ use support::text;
 
 /// Classify only the six exact lowercase source prefixes.
 #[test]
-fn maestro_paths_classify_only_known_source_prefixes() {
+fn paths_classify_only_known_source_prefixes() {
     for text in [
         "plain",
         "path/file",
@@ -32,7 +32,7 @@ fn maestro_paths_classify_only_known_source_prefixes() {
 /// Resolve actual native file and directory links.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_follow_file_and_directory_links() {
+fn paths_follow_file_and_directory_links() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
     let file_link = dir.0.path().join("file-link");
@@ -48,7 +48,7 @@ fn maestro_paths_follow_file_and_directory_links() {
 
 /// Preserve missing, dangling and failed-canonicalization path spelling.
 #[test]
-fn maestro_paths_preserve_unresolvable_spelling() {
+fn paths_preserve_unresolvable_spelling() {
     let path = std::path::Path::new("relative/../missing");
     assert_eq!(canonicalize_path(text(path)), text(path));
     #[cfg(unix)]
@@ -66,7 +66,7 @@ fn maestro_paths_preserve_unresolvable_spelling() {
 
 /// Copy complete explicit provenance without selecting defaults.
 #[test]
-fn maestro_source_info_preserves_explicit_metadata() {
+fn source_info_preserves_explicit_metadata() {
     use maestro_resources::{PathMetadata, SourceOrigin, SourceScope, create_source_info};
     for base_dir in [None, Some(String::new()), Some("/base".into())] {
         let source = create_source_info(
@@ -88,7 +88,7 @@ fn maestro_source_info_preserves_explicit_metadata() {
 
 /// Default only synthetic scope and origin while retaining explicit fields.
 #[test]
-fn maestro_source_info_defaults_only_synthetic_fields() {
+fn source_info_defaults_only_synthetic_fields() {
     use maestro_resources::{
         SourceOrigin, SourceScope, SyntheticSourceOptions, create_synthetic_source_info,
     };
@@ -126,7 +126,7 @@ fn maestro_source_info_defaults_only_synthetic_fields() {
 
 /// Return an existing file's resolved path in its authored spelling.
 #[test]
-fn maestro_paths_canonicalize_existing_files() {
+fn paths_canonicalize_existing_files() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
     std::fs::create_dir(dir.0.path().join("detour")).unwrap();
@@ -138,7 +138,7 @@ fn maestro_paths_canonicalize_existing_files() {
 /// Collapse `..` against the preceding text, before any link or existence check.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_collapse_dot_dot_before_inspecting_components() {
+fn paths_collapse_dot_dot_before_inspecting_components() {
     let dir = support::Directory::new();
     let file = dir.file("skill.md", "outer");
     let _ = dir.file("deep/inner/skill.md", "inner");
@@ -153,7 +153,7 @@ fn maestro_paths_collapse_dot_dot_before_inspecting_components() {
 /// Replace a link in any component, repeatedly, by its target text.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_follow_links_in_middle_components() {
+fn paths_follow_links_in_middle_components() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
     std::fs::create_dir(dir.0.path().join("nested")).unwrap();
@@ -172,7 +172,7 @@ fn maestro_paths_follow_links_in_middle_components() {
 /// Resolve a relative link target against the directory holding the link.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_resolve_relative_link_targets_against_their_parent() {
+fn paths_resolve_relative_link_targets_against_their_parent() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
     std::fs::create_dir(dir.0.path().join("nested")).unwrap();
@@ -184,7 +184,7 @@ fn maestro_paths_resolve_relative_link_targets_against_their_parent() {
 /// Keep the input when a link loops or a component is not a directory.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_preserve_spelling_of_link_loops_and_non_directories() {
+fn paths_preserve_spelling_of_link_loops_and_non_directories() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
     std::os::unix::fs::symlink(dir.0.path().join("loop-b"), dir.0.path().join("loop-a")).unwrap();
@@ -197,7 +197,7 @@ fn maestro_paths_preserve_spelling_of_link_loops_and_non_directories() {
 /// Keep the input when a link's target folds back to the link itself.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_preserve_spelling_of_a_link_that_folds_back_to_itself() {
+fn paths_preserve_spelling_of_a_link_that_folds_back_to_itself() {
     let dir = support::Directory::new();
     let _ = dir.file("other/alias", "target");
     std::fs::create_dir_all(dir.0.path().join("other/inner")).unwrap();
@@ -211,7 +211,7 @@ fn maestro_paths_preserve_spelling_of_a_link_that_folds_back_to_itself() {
 /// Keep the input when links fold into each other through several states.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_preserve_spelling_of_links_that_fold_into_each_other() {
+fn paths_preserve_spelling_of_links_that_fold_into_each_other() {
     let dir = support::Directory::new();
     let _ = dir.file("other/a", "first");
     let _ = dir.file("other/b", "second");
@@ -229,7 +229,7 @@ fn maestro_paths_preserve_spelling_of_links_that_fold_into_each_other() {
 /// Keep the input when a link's target folds into a longer path each time it is expanded.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_preserve_spelling_of_a_link_that_folds_into_ever_longer_paths() {
+fn paths_preserve_spelling_of_a_link_that_folds_into_ever_longer_paths() {
     let dir = support::Directory::new();
     std::fs::create_dir_all(dir.0.path().join("other/inner")).unwrap();
     std::fs::create_dir_all(dir.0.path().join("other/alias/child")).unwrap();
@@ -243,7 +243,7 @@ fn maestro_paths_preserve_spelling_of_a_link_that_folds_into_ever_longer_paths()
 /// Expand a link to its own directory once for every time the path passes through it.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_follow_a_link_to_its_own_directory_repeatedly() {
+fn paths_follow_a_link_to_its_own_directory_repeatedly() {
     let dir = support::Directory::new();
     let file = dir.file("d/x", "hello");
     std::os::unix::fs::symlink(".", dir.0.path().join("d/loop")).unwrap();
@@ -260,7 +260,7 @@ fn maestro_paths_follow_a_link_to_its_own_directory_repeatedly() {
 /// Follow a repeated link when what follows it later merely ends with the text that followed it earlier.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_text() {
+fn paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_text() {
     let dir = support::Directory::new();
     let file = dir.file("d/ax", "hello");
     std::os::unix::fs::symlink(".", dir.0.path().join("d/loop")).unwrap();
@@ -274,7 +274,7 @@ fn maestro_paths_follow_a_repeated_link_whose_remainder_only_ends_with_the_old_t
 /// Follow a repeated link when a link in between brings back components the walk has already read.
 #[cfg(unix)]
 #[test]
-fn maestro_paths_follow_a_link_whose_expansion_brings_back_components_already_read() {
+fn paths_follow_a_link_whose_expansion_brings_back_components_already_read() {
     let dir = support::Directory::new();
     let file = dir.file("d/a/x", "hello");
     std::os::unix::fs::symlink(".", dir.0.path().join("d/loop")).unwrap();

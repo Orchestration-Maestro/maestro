@@ -6,63 +6,63 @@ use crate::chat::TestResult;
 /// Exact owning test paths and closed case counts.
 const OWNERS: [(&str, usize); 15] = [
     (
-        "crates/maestro-providers/tests/cloud_model_routes.rs::maestro_cloud_catalog_keeps_configured_order",
+        "crates/maestro-providers/tests/cloud_model_routes.rs::cloud_catalog_keeps_configured_order",
         1,
     ),
     (
-        "crates/maestro-providers/tests/content_thinking_disabled.rs::maestro_shipped_models_disable_unrequested_thinking",
+        "crates/maestro-providers/tests/content_thinking_disabled.rs::shipped_models_disable_unrequested_thinking",
         4,
     ),
     (
-        "crates/maestro-providers/tests/conversation_reasoning.rs::maestro_conversation_off_omits_reasoning_controls",
+        "crates/maestro-providers/tests/conversation_reasoning.rs::conversation_off_omits_reasoning_controls",
         3,
     ),
     (
-        "crates/maestro-providers/tests/conversation_reasoning.rs::maestro_conversation_selects_native_reasoning_mode",
+        "crates/maestro-providers/tests/conversation_reasoning.rs::conversation_selects_native_reasoning_mode",
         15,
     ),
     (
-        "crates/maestro-providers/tests/conversation_tool_schema.rs::maestro_conversation_preserves_nested_schema_keywords",
+        "crates/maestro-providers/tests/conversation_tool_schema.rs::conversation_preserves_nested_schema_keywords",
         2,
     ),
     (
-        "crates/maestro-providers/tests/missing_tool_results.rs::maestro_missing_results_allow_follow_on_text",
+        "crates/maestro-providers/tests/missing_tool_results.rs::missing_results_allow_follow_on_text",
         46,
     ),
     (
-        "crates/maestro-providers/tests/provider_unicode/inputs.rs::maestro_provider_preserves_emoji_tool_text",
+        "crates/maestro-providers/tests/provider_unicode/inputs.rs::provider_preserves_emoji_tool_text",
         23,
     ),
     (
-        "crates/maestro-providers/tests/provider_unicode/inputs.rs::maestro_provider_preserves_mixed_comment_text",
+        "crates/maestro-providers/tests/provider_unicode/inputs.rs::provider_preserves_mixed_comment_text",
         23,
     ),
     (
-        "crates/maestro-providers/tests/missing_tool_results.rs::maestro_missing_results_allow_another_tool_call",
+        "crates/maestro-providers/tests/missing_tool_results.rs::missing_results_allow_another_tool_call",
         6,
     ),
     (
-        "crates/maestro-providers/tests/missing_tool_results.rs::maestro_pending_tools_flush_at_history_boundaries",
+        "crates/maestro-providers/tests/missing_tool_results.rs::pending_tools_flush_at_history_boundaries",
         12,
     ),
     (
-        "crates/maestro-providers/tests/missing_tool_results.rs::maestro_failed_assistants_do_not_leave_pending_tools",
+        "crates/maestro-providers/tests/missing_tool_results.rs::failed_assistants_do_not_leave_pending_tools",
         12,
     ),
     (
-        "crates/maestro-providers/tests/provider_unicode/inputs.rs::maestro_provider_preserves_valid_text_roles",
+        "crates/maestro-providers/tests/provider_unicode/inputs.rs::provider_preserves_valid_text_roles",
         6,
     ),
     (
-        "crates/maestro-providers/tests/provider_unicode/wire.rs::maestro_provider_decodes_split_utf8_scalars",
+        "crates/maestro-providers/tests/provider_unicode/wire.rs::provider_decodes_split_utf8_scalars",
         6,
     ),
     (
-        "crates/maestro-providers/tests/provider_unicode/wire.rs::maestro_provider_replaces_invalid_utf8_bytes",
+        "crates/maestro-providers/tests/provider_unicode/wire.rs::provider_replaces_invalid_utf8_bytes",
         6,
     ),
     (
-        "crates/maestro-providers/tests/provider_unicode/inputs.rs::maestro_sanitizer_retains_pairs_and_removes_lone_units",
+        "crates/maestro-providers/tests/provider_unicode/inputs.rs::sanitizer_retains_pairs_and_removes_lone_units",
         20,
     ),
 ];

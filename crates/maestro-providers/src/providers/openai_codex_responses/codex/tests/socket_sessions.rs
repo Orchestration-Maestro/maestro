@@ -169,7 +169,7 @@ async fn yields_expiry_to_a_claimed_handoff(listener: &TcpListener, url: &str) {
 }
 
 #[test]
-fn maestro_response_sessions_expire_idle_sockets() {
+fn response_sessions_expire_idle_sockets() {
     let _isolated = super::exclusive();
     run_paused(async {
         let (listener, url) = listen().await;
@@ -371,7 +371,7 @@ async fn busy_mismatch_and_other_session(listener: &TcpListener, url: &str) {
 }
 
 #[test]
-fn maestro_response_sessions_bind_socket_identity() {
+fn response_sessions_bind_socket_identity() {
     let _isolated = super::exclusive();
     run(async {
         let (socket, mut peer) = pair().await;
@@ -498,7 +498,7 @@ async fn publish_race(first_gate: usize) {
 }
 
 #[test]
-fn maestro_response_sessions_keep_replacement_cache_entry() {
+fn response_sessions_keep_replacement_cache_entry() {
     let _isolated = super::exclusive();
     run(async {
         let (new_peer, lease) = replaced_owner_leaves_the_replacement().await;
@@ -544,7 +544,7 @@ async fn uncached_servers(
 }
 
 #[test]
-fn maestro_response_sessions_run_busy_session_uncached() {
+fn response_sessions_run_busy_session_uncached() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -641,7 +641,7 @@ async fn idle_ping_publishes_nothing() {
 }
 
 #[test]
-fn maestro_response_sessions_replace_closed_socket() {
+fn response_sessions_replace_closed_socket() {
     let _isolated = super::exclusive();
     run(async {
         for ending in ["close", "eof", "garbage"] {
@@ -723,7 +723,7 @@ async fn independent_sessions() {
 }
 
 #[test]
-fn maestro_response_sessions_scope_missing_socket_session() {
+fn response_sessions_scope_missing_socket_session() {
     let _isolated = super::exclusive();
     run(async {
         let sessions = [
@@ -867,7 +867,7 @@ async fn failed_request(index: usize, fault: Fault, category: &str, message: &st
 }
 
 #[test]
-fn maestro_response_sessions_clear_failed_socket_continuation() {
+fn response_sessions_clear_failed_socket_continuation() {
     let _isolated = super::exclusive();
     run(async {
         for (index, (fault, category, message)) in FAULTS.into_iter().enumerate() {
@@ -956,7 +956,7 @@ async fn dropped_cache_owner(listener: &TcpListener, url: &str) {
 }
 
 #[test]
-fn maestro_response_sessions_release_socket_handoff_on_drop() {
+fn response_sessions_release_socket_handoff_on_drop() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -1087,7 +1087,7 @@ async fn close_while_connecting() {
 }
 
 #[test]
-fn maestro_response_sessions_close_active_socket_session() {
+fn response_sessions_close_active_socket_session() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -1137,7 +1137,7 @@ async fn close_with_late_frames(
 }
 
 #[test]
-fn maestro_response_sessions_keep_frames_in_flight_at_explicit_close() {
+fn response_sessions_keep_frames_in_flight_at_explicit_close() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -1162,7 +1162,7 @@ fn maestro_response_sessions_keep_frames_in_flight_at_explicit_close() {
 }
 
 #[test]
-fn maestro_response_sessions_send_requested_close_reason_when_dropped() {
+fn response_sessions_send_requested_close_reason_when_dropped() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -1219,7 +1219,7 @@ async fn send_cancelling_at_start(chat: &Conversation, signal: &Cancellation) ->
 }
 
 #[test]
-fn maestro_response_sessions_keep_post_completion_cancellation_state() {
+fn response_sessions_keep_post_completion_cancellation_state() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -1253,7 +1253,7 @@ fn maestro_response_sessions_keep_post_completion_cancellation_state() {
 }
 
 #[test]
-fn maestro_response_sessions_discard_idle_application_frames() {
+fn response_sessions_discard_idle_application_frames() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;
@@ -1286,7 +1286,7 @@ fn maestro_response_sessions_discard_idle_application_frames() {
 }
 
 #[test]
-fn maestro_response_sessions_claim_idle_socket_synchronously() {
+fn response_sessions_claim_idle_socket_synchronously() {
     let _isolated = super::exclusive();
     run(async {
         let (listener, url) = listen().await;

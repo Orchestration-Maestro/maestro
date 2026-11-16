@@ -185,7 +185,7 @@ const COST_CASES: [([f64; 4], [f64; 4], [f64; 4]); 7] = [
 ];
 
 #[test]
-fn maestro_costs_use_each_reported_category_once() {
+fn costs_use_each_reported_category_once() {
     let mut model = get_model("google", "gemini-2.5-flash").unwrap();
 
     for (rates, counts, expected) in COST_CASES {
@@ -271,7 +271,7 @@ fn assert_float(actual: f64, expected: f64) {
 }
 
 #[test]
-fn maestro_model_equality_uses_provider_and_id() {
+fn model_equality_uses_provider_and_id() {
     use maestro_models::models_are_equal;
     let original = get_model("google", "gemini-2.5-flash").unwrap();
     assert!(!models_are_equal(None, None));

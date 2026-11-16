@@ -386,8 +386,8 @@ fn relative_user_root_continues_from_the_process_directory_not_the_cwd() {
 /// canonicalizes to one skill.
 #[cfg(unix)]
 #[test]
-fn maestro_skills_collide_on_a_shared_name() {
-    let name = "maestro_skills_collide_on_a_shared_name";
+fn skills_collide_on_a_shared_name() {
+    let name = "skills_collide_on_a_shared_name";
     in_child(name, "readable", Cwd::Readable, |f| {
         let work = f.below_process("work");
         for calendar in ["calendar", "other/calendar"] {

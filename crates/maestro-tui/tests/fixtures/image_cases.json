@@ -4994,7 +4994,7 @@
     "expected": null
   },
   {
-    "test": "maestro_images_recognizes_rendered_image_components",
+    "test": "images_recognizes_rendered_image_components",
     "rule": "delivered component output is recognized",
     "symbol": "Image/isImageLine",
     "args": {
@@ -5017,7 +5017,7 @@
     }
   },
   {
-    "test": "maestro_images_recognizes_images_in_tool_output",
+    "test": "images_recognizes_images_in_tool_output",
     "rule": "delivered component output is recognized with supplied tool text",
     "symbol": "Image/isImageLine",
     "args": {
@@ -5677,7 +5677,7 @@
     "expected": true
   },
   {
-    "test": "maestro_images_recognizes_images_in_tool_output",
+    "test": "images_recognizes_images_in_tool_output",
     "symbol": "isImageLine",
     "environment": {
       "TERM": "xterm-256color",
@@ -6448,7 +6448,7 @@
     }
   },
   {
-    "test": "maestro_images_a_render_can_request_no_side_cursor_move",
+    "test": "images_a_render_can_request_no_side_cursor_move",
     "symbol": "encodeKitty",
     "environment": {
       "TERM": "xterm-256color",
@@ -6726,7 +6726,7 @@
     }
   },
   {
-    "test": "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    "test": "images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     "symbol": "setCapabilities",
     "environment": {
       "TERM": "xterm-256color",
@@ -6752,7 +6752,7 @@
     }
   },
   {
-    "test": "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    "test": "images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     "symbol": "setCellDimensions",
     "environment": {
       "TERM": "xterm-256color",
@@ -6777,7 +6777,7 @@
     }
   },
   {
-    "test": "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    "test": "images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     "symbol": "getCapabilities",
     "environment": {
       "TERM": "xterm-256color",
@@ -6799,7 +6799,7 @@
     }
   },
   {
-    "test": "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    "test": "images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     "symbol": "allocateImageId",
     "environment": {
       "TERM": "xterm-256color",
@@ -6817,7 +6817,7 @@
     "expected": 2147483648
   },
   {
-    "test": "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    "test": "images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     "symbol": "renderImage",
     "environment": {
       "TERM": "xterm-256color",
@@ -6850,7 +6850,7 @@
     }
   },
   {
-    "test": "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    "test": "images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     "symbol": "resetCapabilitiesCache",
     "environment": {
       "TERM": "xterm-256color",
@@ -6870,7 +6870,7 @@
     }
   },
   {
-    "test": "maestro_images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
+    "test": "images_the_cursor_returns_to_the_reserved_row_after_a_kitty_image",
     "symbol": "setCellDimensions",
     "environment": {
       "TERM": "xterm-256color",

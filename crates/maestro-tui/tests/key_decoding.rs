@@ -344,13 +344,13 @@ fn escape_prefixes_follow_protocol_mode_without_guessing() -> io::Result<()> {
 }
 
 #[test]
-fn maestro_keys_match_legacy_ctrl_symbol() {
+fn keys_match_legacy_ctrl_symbol() {
     let _protocol = ProtocolGuard::new(false);
     assert_key("\x1f", "ctrl+_");
 }
 
 #[test]
-fn maestro_keys_match_legacy_ctrl_alt_symbol() {
+fn keys_match_legacy_ctrl_alt_symbol() {
     let _protocol = ProtocolGuard::new(false);
     assert_key("\x1b\x1f", "ctrl+alt+_");
 }
@@ -372,7 +372,7 @@ fn escaped_direction_letters_are_alt_letters_only_while_the_protocol_is_inactive
 }
 
 #[test]
-fn maestro_keys_ignore_alt_prefixed_sequences_when_kitty_active() {
+fn keys_ignore_alt_prefixed_sequences_when_kitty_active() {
     let _protocol = ProtocolGuard::new(true);
     for (data, id) in [
         ("\x1b\x03", "ctrl+alt+c"),
@@ -385,7 +385,7 @@ fn maestro_keys_ignore_alt_prefixed_sequences_when_kitty_active() {
 }
 
 #[test]
-fn maestro_keys_treat_raw_0x08_as_plain_backspace_in_windows_terminal_over_ssh() -> io::Result<()> {
+fn keys_treat_raw_0x08_as_plain_backspace_in_windows_terminal_over_ssh() -> io::Result<()> {
     run_probe(
         "plain_backspace",
         &[
@@ -398,37 +398,37 @@ fn maestro_keys_treat_raw_0x08_as_plain_backspace_in_windows_terminal_over_ssh()
 }
 
 #[test]
-fn maestro_keys_match_ctrl_c_when_pressing_ctrl_cyrillic_with_base_layout_key() {
+fn keys_match_ctrl_c_when_pressing_ctrl_cyrillic_with_base_layout_key() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[1089::99;5u", "ctrl+c");
 }
 
 #[test]
-fn maestro_keys_match_ctrl_d_when_pressing_ctrl_cyrillic_with_base_layout_key() {
+fn keys_match_ctrl_d_when_pressing_ctrl_cyrillic_with_base_layout_key() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[1074::100;5u", "ctrl+d");
 }
 
 #[test]
-fn maestro_keys_match_ctrl_z_when_pressing_ctrl_cyrillic_with_base_layout_key() {
+fn keys_match_ctrl_z_when_pressing_ctrl_cyrillic_with_base_layout_key() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[1103::122;5u", "ctrl+z");
 }
 
 #[test]
-fn maestro_keys_match_ctrl_shift_p_with_base_layout_key() {
+fn keys_match_ctrl_shift_p_with_base_layout_key() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[1079::112;6u", "ctrl+shift+p");
 }
 
 #[test]
-fn maestro_keys_still_match_direct_codepoint_when_no_base_layout_key() {
+fn keys_still_match_direct_codepoint_when_no_base_layout_key() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[99;5u", "ctrl+c");
 }
 
 #[test]
-fn maestro_keys_match_super_modified_kitty_bindings_including_combined_modifiers() {
+fn keys_match_super_modified_kitty_bindings_including_combined_modifiers() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[107;9u", "super+k");
     assert_key("\x1b[13;9u", "super+enter");
@@ -442,7 +442,7 @@ fn maestro_keys_match_super_modified_kitty_bindings_including_combined_modifiers
 }
 
 #[test]
-fn maestro_keys_match_digit_bindings_via_kitty_csi_u() {
+fn keys_match_digit_bindings_via_kitty_csi_u() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[49u", "1");
     assert_key("\x1b[49;5u", "ctrl+1");
@@ -452,7 +452,7 @@ fn maestro_keys_match_digit_bindings_via_kitty_csi_u() {
 }
 
 #[test]
-fn maestro_keys_normalize_kitty_keypad_functional_keys_to_logical_digits_symbols_and_navigation() {
+fn keys_normalize_kitty_keypad_functional_keys_to_logical_digits_symbols_and_navigation() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[57400u", "1");
     assert_key("\x1b[57410u", "/");
@@ -479,51 +479,51 @@ fn maestro_keys_normalize_kitty_keypad_functional_keys_to_logical_digits_symbols
 }
 
 #[test]
-fn maestro_keys_handle_shifted_key_in_format() {
+fn keys_handle_shifted_key_in_format() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[99:67:99;2u", "shift+c");
 }
 
 #[test]
-fn maestro_keys_handle_event_type_in_format() {
+fn keys_handle_event_type_in_format() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[1089::99;5:3u", "ctrl+c");
 }
 
 #[test]
-fn maestro_keys_handle_full_format_with_shifted_key_base_key_and_event_type() {
+fn keys_handle_full_format_with_shifted_key_base_key_and_event_type() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[1089:1057:99;6:2u", "ctrl+shift+c");
 }
 
 #[test]
-fn maestro_keys_prefer_codepoint_for_latin_letters_even_when_base_layout_differs() {
+fn keys_prefer_codepoint_for_latin_letters_even_when_base_layout_differs() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[107::118;5u", "ctrl+k");
     assert_not_key("\x1b[107::118;5u", "ctrl+v");
 }
 
 #[test]
-fn maestro_keys_prefer_codepoint_for_symbol_keys_even_when_base_layout_differs() {
+fn keys_prefer_codepoint_for_symbol_keys_even_when_base_layout_differs() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[47::91;5u", "ctrl+/");
     assert_not_key("\x1b[47::91;5u", "ctrl+[");
 }
 
 #[test]
-fn maestro_keys_not_match_wrong_key_even_with_base_layout() {
+fn keys_not_match_wrong_key_even_with_base_layout() {
     let _protocol = ProtocolGuard::new(true);
     assert_not_key("\x1b[1089::99;5u", "ctrl+d");
 }
 
 #[test]
-fn maestro_keys_not_match_wrong_modifiers_even_with_base_layout() {
+fn keys_not_match_wrong_modifiers_even_with_base_layout() {
     let _protocol = ProtocolGuard::new(true);
     assert_not_key("\x1b[1089::99;5u", "ctrl+shift+c");
 }
 
 #[test]
-fn maestro_keys_match_modifyotherkeys_ctrl_d() {
+fn keys_match_modifyotherkeys_ctrl_d() {
     let _protocol = ProtocolGuard::new(false);
     assert_key("\x1b[27;5;100~", "ctrl+d");
     assert_parse("\x1b[27;5;100~", Some("ctrl+d"));
@@ -539,7 +539,7 @@ fn assert_modify_other_keys(cases: &[(&str, &str)]) {
 }
 
 #[test]
-fn maestro_keys_match_modifyotherkeys_backspace_variants() {
+fn keys_match_modifyotherkeys_backspace_variants() {
     assert_modify_other_keys(&[
         ("\x1b[27;1;127~", "backspace"),
         ("\x1b[27;5;127~", "ctrl+backspace"),
@@ -549,19 +549,19 @@ fn maestro_keys_match_modifyotherkeys_backspace_variants() {
 }
 
 #[test]
-fn maestro_keys_match_ctrl_alt_letter_via_csi_u_when_kitty_inactive() {
+fn keys_match_ctrl_alt_letter_via_csi_u_when_kitty_inactive() {
     let _protocol = ProtocolGuard::new(false);
     assert_key("\x1b[104;7u", "ctrl+alt+h");
     assert_parse("\x1b[104;7u", Some("ctrl+alt+h"));
 }
 
 #[test]
-fn maestro_keys_match_ctrl_alt_letter_via_modifyotherkeys() {
+fn keys_match_ctrl_alt_letter_via_modifyotherkeys() {
     assert_modify_other_keys(&[("\x1b[27;7;104~", "ctrl+alt+h")]);
 }
 
 #[test]
-fn maestro_keys_decode_kitty_keypad_functional_keys_to_printable_characters() {
+fn keys_decode_kitty_keypad_functional_keys_to_printable_characters() {
     for (code, text) in [
         (57399, '0'),
         (57400, '1'),
@@ -578,38 +578,38 @@ fn maestro_keys_decode_kitty_keypad_functional_keys_to_printable_characters() {
 }
 
 #[test]
-fn maestro_keys_return_latin_key_name_when_base_layout_key_is_present() {
+fn keys_return_latin_key_name_when_base_layout_key_is_present() {
     let _protocol = ProtocolGuard::new(true);
     assert_parse("\x1b[1089::99;5u", Some("ctrl+c"));
 }
 
 #[test]
-fn maestro_keys_prefer_codepoint_for_latin_letters_when_base_layout_differs() {
+fn keys_prefer_codepoint_for_latin_letters_when_base_layout_differs() {
     let _protocol = ProtocolGuard::new(true);
     assert_parse("\x1b[107::118;5u", Some("ctrl+k"));
 }
 
 #[test]
-fn maestro_keys_prefer_codepoint_for_symbol_keys_when_base_layout_differs() {
+fn keys_prefer_codepoint_for_symbol_keys_when_base_layout_differs() {
     let _protocol = ProtocolGuard::new(true);
     assert_parse("\x1b[47::91;5u", Some("ctrl+/"));
 }
 
 #[test]
-fn maestro_keys_return_key_name_from_codepoint_when_no_base_layout() {
+fn keys_return_key_name_from_codepoint_when_no_base_layout() {
     let _protocol = ProtocolGuard::new(true);
     assert_parse("\x1b[99;5u", Some("ctrl+c"));
 }
 
 #[test]
-fn maestro_keys_parse_shifted_uppercase_csi_u_letters_as_shift_letter() {
+fn keys_parse_shifted_uppercase_csi_u_letters_as_shift_letter() {
     let _protocol = ProtocolGuard::new(true);
     assert_key("\x1b[69;2u", "shift+e");
     assert_parse("\x1b[69;2u", Some("shift+e"));
 }
 
 #[test]
-fn maestro_keys_ignore_kitty_csi_u_with_unsupported_modifiers() {
+fn keys_ignore_kitty_csi_u_with_unsupported_modifiers() {
     let _protocol = ProtocolGuard::new(true);
     assert_parse("\x1b[99;17u", None);
 }

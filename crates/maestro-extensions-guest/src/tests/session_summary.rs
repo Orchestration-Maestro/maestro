@@ -43,6 +43,6 @@ async fn summaries(driver: &mut impl Driver) -> Result<(), String> {
     Ok(())
 }
 #[test]
-fn maestro_compaction_summary_keeps_unicode_boundaries() -> Result<(), String> {
+fn compaction_summary_keeps_unicode_boundaries() -> Result<(), String> {
     on_both_adapters!(summaries)
 }

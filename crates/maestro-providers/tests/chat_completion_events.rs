@@ -53,8 +53,8 @@ fn rows_of(test: &str) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_frames_fragmented_events() -> TestResult {
-    rows_of("maestro_chat_frames_fragmented_events")
+fn chat_frames_fragmented_events() -> TestResult {
+    rows_of("chat_frames_fragmented_events")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -86,16 +86,16 @@ async fn wrong_typed_fields_read_as_absent() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_ignores_noncontent_chunks() -> TestResult {
+fn chat_ignores_noncontent_chunks() -> TestResult {
     crate::runtime::run(async {
-        assert_rows(FIXTURE, "maestro_chat_ignores_noncontent_chunks").await?;
+        assert_rows(FIXTURE, "chat_ignores_noncontent_chunks").await?;
         wrong_typed_fields_read_as_absent().await
     })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_requires_a_running_runtime() -> TestResult {
+fn chat_requires_a_running_runtime() -> TestResult {
     let options = OpenAICompletionsOptions {
         common: StreamOptions {
             api_key: Some("fixture-key".into()),
@@ -117,50 +117,50 @@ fn maestro_chat_requires_a_running_runtime() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_retains_invocation_identity() -> TestResult {
-    rows_of("maestro_chat_retains_invocation_identity")
+fn chat_retains_invocation_identity() -> TestResult {
+    rows_of("chat_retains_invocation_identity")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_keeps_parallel_tool_deltas_independent() -> TestResult {
-    rows_of("maestro_chat_keeps_parallel_tool_deltas_independent")
+fn chat_keeps_parallel_tool_deltas_independent() -> TestResult {
+    rows_of("chat_keeps_parallel_tool_deltas_independent")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_accounts_for_usage_locations() -> TestResult {
-    rows_of("maestro_chat_accounts_for_usage_locations")
+fn chat_accounts_for_usage_locations() -> TestResult {
+    rows_of("chat_accounts_for_usage_locations")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_stream_outcomes() -> TestResult {
-    rows_of("maestro_chat_preserves_stream_outcomes")
+fn chat_preserves_stream_outcomes() -> TestResult {
+    rows_of("chat_preserves_stream_outcomes")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_resolves_late_tool_fields() -> TestResult {
-    rows_of("maestro_chat_resolves_late_tool_fields")
+fn chat_resolves_late_tool_fields() -> TestResult {
+    rows_of("chat_resolves_late_tool_fields")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_normalizes_gateway_reasoning_field() -> TestResult {
-    rows_of("maestro_chat_normalizes_gateway_reasoning_field")
+fn chat_normalizes_gateway_reasoning_field() -> TestResult {
+    rows_of("chat_normalizes_gateway_reasoning_field")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_retains_thought_signatures() -> TestResult {
-    rows_of("maestro_chat_retains_thought_signatures")
+fn chat_retains_thought_signatures() -> TestResult {
+    rows_of("chat_retains_thought_signatures")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_finalizes_partial_arguments() -> TestResult {
-    rows_of("maestro_chat_finalizes_partial_arguments")
+fn chat_finalizes_partial_arguments() -> TestResult {
+    rows_of("chat_finalizes_partial_arguments")
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -366,9 +366,9 @@ async fn body_aborts_with_the_signal() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_cancels_owned_request_work() -> TestResult {
+fn chat_cancels_owned_request_work() -> TestResult {
     crate::runtime::run_paused(async {
-        assert_rows(FIXTURE, "maestro_chat_cancels_owned_request_work").await?;
+        assert_rows(FIXTURE, "chat_cancels_owned_request_work").await?;
         abort_while_the_body_is_pending().await?;
         abort_as_the_body_ends().await?;
         body_aborts_by_itself().await?;
@@ -403,9 +403,9 @@ async fn body_fails_midstream() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_retains_failure_context() -> TestResult {
+fn chat_retains_failure_context() -> TestResult {
     crate::runtime::run_paused(async {
-        assert_rows(FIXTURE, "maestro_chat_retains_failure_context").await?;
+        assert_rows(FIXTURE, "chat_retains_failure_context").await?;
         body_fails_midstream().await
     })
 }
@@ -521,7 +521,7 @@ async fn error_body_is_decoded_as_text() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_decodes_body_text_leniently() -> TestResult {
+fn chat_decodes_body_text_leniently() -> TestResult {
     crate::runtime::run_paused(async {
         text_is_decoded_whatever_the_chunk_boundaries().await?;
         undecodable_trailer_is_an_ignored_field().await?;
@@ -556,7 +556,7 @@ async fn a_mark_opens_a_later_line() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_drops_one_byte_order_mark_per_line() -> TestResult {
+fn chat_drops_one_byte_order_mark_per_line() -> TestResult {
     crate::runtime::run_paused(async {
         repeated_marks_open_an_ignored_field().await?;
         a_mark_opens_a_later_line().await
@@ -582,7 +582,7 @@ async fn every_line_ending_ends_a_line() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_ends_lines_at_every_line_ending() -> TestResult {
+fn chat_ends_lines_at_every_line_ending() -> TestResult {
     crate::runtime::run_paused(every_line_ending_ends_a_line())
 }
 
@@ -624,7 +624,7 @@ async fn an_open_event_is_not_delivered() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_reads_event_fields() -> TestResult {
+fn chat_reads_event_fields() -> TestResult {
     crate::runtime::run_paused(async {
         unknown_fields_are_ignored().await?;
         one_space_after_the_colon_is_dropped().await?;
@@ -725,7 +725,7 @@ async fn extreme_numbers_are_positions() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_matches_tool_indices_by_number() -> TestResult {
+fn chat_matches_tool_indices_by_number() -> TestResult {
     crate::runtime::run_paused(async {
         equal_numbers_are_one_position().await?;
         extreme_numbers_are_positions().await
@@ -740,7 +740,7 @@ fn raw_event(data: &str) -> Vec<u8> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_keeps_usable_chunks_with_extreme_numbers() -> TestResult {
+fn chat_keeps_usable_chunks_with_extreme_numbers() -> TestResult {
     crate::runtime::run_paused(async {
         let usable = raw_event(concat!(
             r#"{"unread":1e400,"id":"first","id":"r","model":"first","model":"served","#,
@@ -803,7 +803,7 @@ async fn signature_after(data: &str) -> TestResult<Option<String>> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_serializes_numeric_signatures() -> TestResult {
+fn chat_serializes_numeric_signatures() -> TestResult {
     crate::runtime::run_paused(async {
         let nested_in = r#"[1e400,{"10":1,"2":2,"n":9007199254740993,"z":-1e400}]"#;
         let nested_out = r#"[null,{"2":2,"10":1,"n":9007199254740992,"z":null}]"#;
@@ -846,7 +846,7 @@ async fn failure_after_text(event: &str) -> TestResult<String> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_formats_numeric_failures() -> TestResult {
+fn chat_formats_numeric_failures() -> TestResult {
     crate::runtime::run_paused(async {
         let responses = [
             (
@@ -907,7 +907,7 @@ async fn usage_of(usage: &str) -> TestResult<maestro_models::Usage> {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_preserves_nonfinite_usage_results() -> TestResult {
+fn chat_preserves_nonfinite_usage_results() -> TestResult {
     crate::runtime::run_paused(async {
         let infinite =
             usage_of(r#"{"prompt_tokens":1e400,"prompt_tokens_details":{"cached_tokens":1e400}}"#)
@@ -969,7 +969,7 @@ async fn ending_after(reasons: &[&str]) -> TestResult<(String, StopReason, Optio
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_replaces_earlier_finish_reasons() -> TestResult {
+fn chat_replaces_earlier_finish_reasons() -> TestResult {
     crate::runtime::run_paused(async {
         let (last, stop, error) = ending_after(&["network_error", "stop"]).await?;
         assert_eq!((last.as_str(), error), ("done", None));
@@ -1076,7 +1076,7 @@ async fn read_with_probe(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_shares_partial_observations() -> TestResult {
+fn chat_shares_partial_observations() -> TestResult {
     crate::runtime::run_paused(async {
         let (attempt, release) = held_back_attempt();
         let (stream, _) = start(attempt, &Cancellation::new())?;
@@ -1141,7 +1141,7 @@ async fn finish_after_edit(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_reports_supplied_stop_reasons() -> TestResult {
+fn chat_reports_supplied_stop_reasons() -> TestResult {
     crate::runtime::run_paused(async {
         for (stop_reason, supplied, expected) in [
             (StopReason::Aborted, "ignored", "Request was aborted"),
@@ -1234,11 +1234,11 @@ async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_observes_repeated_response_headers() -> TestResult {
+fn chat_observes_repeated_response_headers() -> TestResult {
     if !maestro_test_harness::selection().is_child() {
         return {
             let output = maestro_test_harness::TestProcess::current(
-                "maestro_chat_observes_repeated_response_headers",
+                "chat_observes_repeated_response_headers",
             )?
             .nocapture()
             .env_clear()
@@ -1278,16 +1278,15 @@ fn maestro_chat_observes_repeated_response_headers() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_transport_is_replaceable() -> TestResult {
+fn chat_transport_is_replaceable() -> TestResult {
     if !maestro_test_harness::selection().is_child() {
         return {
-            let output = maestro_test_harness::TestProcess::current(
-                "maestro_chat_transport_is_replaceable",
-            )?
-            .nocapture()
-            .env_clear()
-            .case("*")
-            .output()?;
+            let output =
+                maestro_test_harness::TestProcess::current("chat_transport_is_replaceable")?
+                    .nocapture()
+                    .env_clear()
+                    .case("*")
+                    .output()?;
             assert!(output.status.success(), "{output:?}");
             Ok(())
         };
@@ -1389,13 +1388,13 @@ async fn deep_unread_fields_are_passed_over() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
+fn chat_passes_over_deeply_nested_unread_fields() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         return crate::runtime::run_paused(deep_unread_fields_are_passed_over());
     }
     {
         let output = maestro_test_harness::TestProcess::current(
-            "maestro_chat_passes_over_deeply_nested_unread_fields",
+            "chat_passes_over_deeply_nested_unread_fields",
         )?
         .nocapture()
         .env_clear()
@@ -1433,13 +1432,13 @@ async fn error_details_convert_to_the_json_limit() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
+fn chat_bounds_error_detail_nesting() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         return crate::runtime::run_paused(error_details_convert_to_the_json_limit());
     }
     {
         let output =
-            maestro_test_harness::TestProcess::current("maestro_chat_bounds_error_detail_nesting")?
+            maestro_test_harness::TestProcess::current("chat_bounds_error_detail_nesting")?
                 .nocapture()
                 .env_clear()
                 .case("nesting")
@@ -1470,18 +1469,17 @@ async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
+fn chat_bounds_streamed_signature_nesting() -> TestResult {
     if maestro_test_harness::selection().is_child() {
         return crate::runtime::run_paused(streamed_signatures_convert_to_the_json_limit());
     }
     {
-        let output = maestro_test_harness::TestProcess::current(
-            "maestro_chat_bounds_streamed_signature_nesting",
-        )?
-        .nocapture()
-        .env_clear()
-        .case("nesting")
-        .output()?;
+        let output =
+            maestro_test_harness::TestProcess::current("chat_bounds_streamed_signature_nesting")?
+                .nocapture()
+                .env_clear()
+                .case("nesting")
+                .output()?;
         assert!(output.status.success(), "{output:?}");
         Ok(())
     }
@@ -1549,7 +1547,7 @@ async fn projected_call(ending: &str) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_projects_streamed_argument_numbers() -> TestResult {
+fn chat_projects_streamed_argument_numbers() -> TestResult {
     crate::runtime::run_paused(async {
         for ending in ["}", ""] {
             projected_call(ending).await?;
@@ -1617,7 +1615,7 @@ async fn bounded_call(depth: usize, complete: bool) -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
+fn chat_bounds_tool_argument_materialization() -> TestResult {
     crate::runtime::run_paused(async {
         for depth in [127, 128] {
             for complete in [false, true] {
@@ -1630,7 +1628,7 @@ fn maestro_chat_bounds_tool_argument_materialization() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
+fn chat_omits_unrepresentable_streamed_signatures() -> TestResult {
     crate::runtime::run_paused(async {
         assert_eq!(signature_after(r#"{"\ud800":7,"keep":1}"#).await?, None);
         Ok(())
@@ -1639,7 +1637,7 @@ fn maestro_chat_omits_unrepresentable_streamed_signatures() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_chat_emits_carriage_delimited_events() -> TestResult {
+fn chat_emits_carriage_delimited_events() -> TestResult {
     use futures_util::FutureExt as _;
 
     crate::runtime::run(async {

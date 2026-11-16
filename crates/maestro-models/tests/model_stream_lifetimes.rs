@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_abandoned_waiters_remove_only_their_identity() {
+    fn abandoned_waiters_remove_only_their_identity() {
         let stream = EventStream::new(|_: &i32| false, |value| *value);
         abandon_readers(&stream);
         let mut observers: Vec<_> = (0..3).map(|_| Box::pin(stream.result())).collect();
@@ -296,7 +296,7 @@ mod tests {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_abandoned_waiters_drop_wakers_after_unlock() {
+    fn abandoned_waiters_drop_wakers_after_unlock() {
         use futures_util::FutureExt;
         for observe in [false, true] {
             let stream = EventStream::new(|_: &i32| false, |value| *value);
@@ -325,7 +325,7 @@ mod tests {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_dropped_observers_leave_producer_running() {
+    fn dropped_observers_leave_producer_running() {
         waker_destruction_can_reenter();
         result_lifetime_can_reenter();
         let stream = EventStream::new(|value: &i32| *value < 0, |value| *value);
@@ -353,7 +353,7 @@ mod tests {
 
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
-    fn maestro_terminal_admission_is_atomic() -> Result<(), Box<dyn std::error::Error>> {
+    fn terminal_admission_is_atomic() -> Result<(), Box<dyn std::error::Error>> {
         extraction_drops_reentrant_push();
         extraction_holds_terminal_publication();
         let barrier = Arc::new(std::sync::Barrier::new(2));
@@ -380,7 +380,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_stream_end_keeps_first_result() {
+    fn stream_end_keeps_first_result() {
         let stream = EventStream::new(|value: &i32| *value < 0, |value| *value);
         stream.push(1);
         let mut result = std::pin::pin!(stream.result());
@@ -397,7 +397,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_stream_finishes_all_readers() {
+    fn stream_finishes_all_readers() {
         let stream = EventStream::new(|value: &i32| *value < 0, |value| *value);
         stream.push(1);
         stream.push(2);
@@ -430,7 +430,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_partial_messages_remain_shared() {
+    fn partial_messages_remain_shared() {
         use maestro_models::records::types::{
             AssistantMessageEvent as Event, AssistantMessageEventStream, DoneReason,
         };
@@ -494,7 +494,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_cleanup_uses_live_registrations() {
+    fn cleanup_uses_live_registrations() {
         use maestro_models::{
             SessionResourceCleanup, cleanup_session_resources, register_session_resource_cleanup,
         };
@@ -539,7 +539,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_cleanup_observes_live_changes() {
+    fn cleanup_observes_live_changes() {
         use maestro_models::records::sessions::{
             SessionResourceCleanup, SessionResourceRemoval, cleanup_session_resources,
             register_session_resource_cleanup,

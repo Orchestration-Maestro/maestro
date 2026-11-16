@@ -10,7 +10,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     #[test]
-    fn maestro_cleanup_collects_failures_in_order() {
+    fn cleanup_collects_failures_in_order() {
         let _serial = crate::registry::registry();
         let visits = Arc::new(Mutex::new(Vec::new()));
         let removals: Vec<_> = ["first", "success", "last"]
@@ -106,7 +106,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_dispatch_preserves_registration_order() {
+    fn dispatch_preserves_registration_order() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::{stream, stream_simple};
         let _serial = crate::registry::registry();
@@ -147,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_api_wrappers_reject_wrong_models() {
+    fn api_wrappers_reject_wrong_models() {
         use maestro_models::records::api_registry::*;
         let _serial = crate::registry::registry();
         clear_api_providers();
@@ -280,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_dispatch_reports_missing_api() {
+    fn dispatch_reports_missing_api() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::*;
         let _serial = crate::registry::registry();
@@ -451,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_completion_observes_without_consuming() {
+    fn completion_observes_without_consuming() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::{complete, complete_simple};
         use maestro_models::records::types::*;
@@ -568,7 +568,7 @@ mod tests {
     }
 
     #[test]
-    fn maestro_hooks_keep_replacements_and_failures() {
+    fn hooks_keep_replacements_and_failures() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::stream;
         use maestro_models::records::types::*;
@@ -640,7 +640,7 @@ mod tests {
         }
     }
     #[test]
-    fn maestro_callback_destruction_can_reenter() {
+    fn callback_destruction_can_reenter() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::invocation::stream;
         let _serial = crate::registry::registry();

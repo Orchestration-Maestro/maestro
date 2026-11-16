@@ -242,87 +242,87 @@ struct Progress {
 /// Closed ownership counts prevent silently dropped fixture cases.
 const OWNERS: [(&str, usize); 21] = [
     (
-        "crates/maestro-providers/tests/history_handoffs/cases.rs::maestro_handoff_table_keeps_distinct_routes",
+        "crates/maestro-providers/tests/history_handoffs/cases.rs::handoff_table_keeps_distinct_routes",
         1,
     ),
     (
-        "crates/maestro-providers/tests/response_identity.rs::maestro_public_routes_retain_response_ids",
+        "crates/maestro-providers/tests/response_identity.rs::public_routes_retain_response_ids",
         9,
     ),
     (
-        "crates/maestro-providers/tests/response_identity.rs::maestro_failed_responses_keep_partial_identity",
+        "crates/maestro-providers/tests/response_identity.rs::failed_responses_keep_partial_identity",
         3,
     ),
     (
-        "crates/maestro-providers/tests/response_reasoning_replay.rs::maestro_replay_omits_aborted_reasoning",
+        "crates/maestro-providers/tests/response_reasoning_replay.rs::replay_omits_aborted_reasoning",
         2,
     ),
     (
-        "crates/maestro-providers/tests/response_reasoning_replay.rs::maestro_handoff_omits_foreign_reasoning_pair_ids",
+        "crates/maestro-providers/tests/response_reasoning_replay.rs::handoff_omits_foreign_reasoning_pair_ids",
         1,
     ),
     (
-        "crates/maestro-providers/tests/response_reasoning_replay.rs::maestro_handoff_preserves_response_identity",
+        "crates/maestro-providers/tests/response_reasoning_replay.rs::handoff_preserves_response_identity",
         2,
     ),
     (
-        "crates/maestro-providers/tests/response_reasoning_replay.rs::maestro_replay_selects_signatures_by_full_identity",
+        "crates/maestro-providers/tests/response_reasoning_replay.rs::replay_selects_signatures_by_full_identity",
         32,
     ),
     (
-        "crates/maestro-providers/tests/response_affinity.rs::maestro_response_cache_keys_follow_retention",
+        "crates/maestro-providers/tests/response_affinity.rs::response_cache_keys_follow_retention",
         9,
     ),
     (
-        "crates/maestro-providers/tests/response_session_affinity.rs::maestro_account_sse_keeps_session_affinity",
+        "crates/maestro-providers/tests/response_session_affinity.rs::account_sse_keeps_session_affinity",
         7,
     ),
     (
-        "crates/maestro-providers/tests/response_tool_images.rs::maestro_tool_images_stay_with_function_results",
+        "crates/maestro-providers/tests/response_tool_images.rs::tool_images_stay_with_function_results",
         8,
     ),
     (
-        "crates/maestro-providers/tests/response_tool_images.rs::maestro_tool_outputs_preserve_content_classes",
+        "crates/maestro-providers/tests/response_tool_images.rs::tool_outputs_preserve_content_classes",
         8,
     ),
     (
-        "crates/maestro-providers/tests/interleaved_reasoning.rs::maestro_reasoning_survives_tool_continuations",
+        "crates/maestro-providers/tests/interleaved_reasoning.rs::reasoning_survives_tool_continuations",
         4,
     ),
     (
-        "crates/maestro-providers/tests/invocation_cancellation.rs::maestro_public_routes_honor_preabort",
+        "crates/maestro-providers/tests/invocation_cancellation.rs::public_routes_honor_preabort",
         13,
     ),
     (
-        "crates/maestro-providers/tests/invocation_cancellation.rs::maestro_cancelled_streams_keep_partials_and_continue",
+        "crates/maestro-providers/tests/invocation_cancellation.rs::cancelled_streams_keep_partials_and_continue",
         29,
     ),
     (
-        "crates/maestro-providers/tests/history_handoffs/replay.rs::maestro_handoffs_generate_and_replay_each_route",
+        "crates/maestro-providers/tests/history_handoffs/replay.rs::handoffs_generate_and_replay_each_route",
         60,
     ),
     (
-        "crates/maestro-providers/tests/history_handoffs/replay.rs::maestro_handoffs_consume_other_histories_in_order",
+        "crates/maestro-providers/tests/history_handoffs/replay.rs::handoffs_consume_other_histories_in_order",
         30,
     ),
     (
-        "crates/maestro-providers/tests/handoff_tool_ids.rs::maestro_generated_tool_ids_survive_both_handoffs",
+        "crates/maestro-providers/tests/handoff_tool_ids.rs::generated_tool_ids_survive_both_handoffs",
         4,
     ),
     (
-        "crates/maestro-providers/tests/handoff_tool_ids.rs::maestro_long_prefilled_ids_keep_result_pairing",
+        "crates/maestro-providers/tests/handoff_tool_ids.rs::long_prefilled_ids_keep_result_pairing",
         2,
     ),
     (
-        "crates/maestro-providers/tests/history_handoffs/cases.rs::maestro_handoff_auth_selection_keeps_upstream_headers",
+        "crates/maestro-providers/tests/history_handoffs/cases.rs::handoff_auth_selection_keeps_upstream_headers",
         4,
     ),
     (
-        "crates/maestro-providers/tests/history_handoffs/replay.rs::maestro_handoff_failures_keep_payload_evidence",
+        "crates/maestro-providers/tests/history_handoffs/replay.rs::handoff_failures_keep_payload_evidence",
         4,
     ),
     (
-        "crates/maestro-providers/tests/handoff_tool_ids.rs::maestro_handoffs_pair_each_tool_occurrence",
+        "crates/maestro-providers/tests/handoff_tool_ids.rs::handoffs_pair_each_tool_occurrence",
         5,
     ),
 ];

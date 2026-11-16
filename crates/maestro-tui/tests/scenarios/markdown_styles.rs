@@ -303,49 +303,49 @@ fn markdown_highlighter_output_is_not_replaced() {
 }
 
 #[test]
-fn maestro_markdown_italic_gray_styling_survives_inline_code() {
-    markdown::cases("maestro_markdown_italic_gray_styling_survives_inline_code");
+fn markdown_italic_gray_styling_survives_inline_code() {
+    markdown::cases("markdown_italic_gray_styling_survives_inline_code");
 }
 
 #[test]
-fn maestro_markdown_italic_gray_styling_survives_bold_text() {
-    markdown::cases("maestro_markdown_italic_gray_styling_survives_bold_text");
+fn markdown_italic_gray_styling_survives_bold_text() {
+    markdown::cases("markdown_italic_gray_styling_survives_bold_text");
 }
 
 #[test]
-fn maestro_markdown_style_every_line_of_a_lazy_continuation_blockquote() {
-    markdown::cases("maestro_markdown_style_every_line_of_a_lazy_continuation_blockquote");
+fn markdown_style_every_line_of_a_lazy_continuation_blockquote() {
+    markdown::cases("markdown_style_every_line_of_a_lazy_continuation_blockquote");
 }
 
 #[test]
-fn maestro_markdown_style_every_line_of_an_explicit_multiline_blockquote() {
-    markdown::cases("maestro_markdown_style_every_line_of_an_explicit_multiline_blockquote");
+fn markdown_style_every_line_of_an_explicit_multiline_blockquote() {
+    markdown::cases("markdown_style_every_line_of_an_explicit_multiline_blockquote");
 }
 
 #[test]
-fn maestro_markdown_hanging_indent_on_wrapped_quote_lines() {
-    markdown::cases("maestro_markdown_hanging_indent_on_wrapped_quote_lines");
+fn markdown_hanging_indent_on_wrapped_quote_lines() {
+    markdown::cases("markdown_hanging_indent_on_wrapped_quote_lines");
 }
 
 #[test]
-fn maestro_markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after() {
+fn markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after() {
     markdown::cases(
-        "maestro_markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after",
+        "markdown_render_inline_formatting_inside_a_blockquote_and_restore_quote_styling_after",
     );
 }
 
 #[test]
-fn maestro_markdown_heading_style_survives_inline_code() {
-    markdown::cases("maestro_markdown_heading_style_survives_inline_code");
+fn markdown_heading_style_survives_inline_code() {
+    markdown::cases("markdown_heading_style_survives_inline_code");
 }
 
 #[test]
-fn maestro_markdown_heading_style_survives_inline_code_at_h1() {
-    markdown::cases("maestro_markdown_heading_style_survives_inline_code_at_h1");
+fn markdown_heading_style_survives_inline_code_at_h1() {
+    markdown::cases("markdown_heading_style_survives_inline_code_at_h1");
 }
 
 #[test]
-fn maestro_markdown_not_leak_h1_underline_into_padding_when_inline_code_is_the_last_token() {
+fn markdown_not_leak_h1_underline_into_padding_when_inline_code_is_the_last_token() {
     let terminal = crate::scenarios::support::virtual_terminal::VirtualTerminal::new(80, 4);
     let runtime = crate::scenarios::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(
@@ -374,8 +374,8 @@ fn maestro_markdown_not_leak_h1_underline_into_padding_when_inline_code_is_the_l
 }
 
 #[test]
-fn maestro_markdown_heading_style_survives_bold_text() {
-    markdown::cases("maestro_markdown_heading_style_survives_bold_text");
+fn markdown_heading_style_survives_bold_text() {
+    markdown::cases("markdown_heading_style_survives_bold_text");
 }
 
 #[test]
@@ -420,7 +420,7 @@ impl Component for MarkdownWithInput {
 }
 
 #[test]
-fn maestro_markdown_not_leak_styles_into_following_lines_when_rendered_in_tui() {
+fn markdown_not_leak_styles_into_following_lines_when_rendered_in_tui() {
     let terminal = crate::scenarios::support::virtual_terminal::VirtualTerminal::new(80, 6);
     let runtime = crate::scenarios::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(

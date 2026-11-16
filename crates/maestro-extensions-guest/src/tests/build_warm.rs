@@ -54,7 +54,7 @@ fn warming_a_path_that_is_not_a_component_returns_the_compile_error() {
 /// The compiled-code identity of the test engine is the explicit baseline target's,
 /// so the components a setup compiles load on any host of the architecture.
 #[test]
-fn test_engine_matches_an_explicit_baseline_target() {
+fn component_engine_matches_an_explicit_baseline_target() {
     let identity = |engine: &Engine| {
         let mut hasher = DefaultHasher::new();
         engine.precompile_compatibility_hash().hash(&mut hasher);

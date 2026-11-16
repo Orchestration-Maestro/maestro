@@ -2,7 +2,7 @@
   "rows": [
     {
       "id": "old-null",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -76,7 +76,7 @@
     },
     {
       "id": "old-empty",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -150,7 +150,7 @@
     },
     {
       "id": "same",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -224,7 +224,7 @@
     },
     {
       "id": "target-ancestor",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -321,7 +321,7 @@
     },
     {
       "id": "target-descendant",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -395,7 +395,7 @@
     },
     {
       "id": "deep-common",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -481,7 +481,7 @@
     },
     {
       "id": "disjoint",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -578,7 +578,7 @@
     },
     {
       "id": "missing-old",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -652,7 +652,7 @@
     },
     {
       "id": "missing-target",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -760,7 +760,7 @@
     },
     {
       "id": "missing-parent",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -813,7 +813,7 @@
     },
     {
       "id": "cross-compaction",
-      "test": "maestro_branch_collection_uses_deepest_common_ancestor",
+      "test": "branch_collection_uses_deepest_common_ancestor",
       "operation": "collect",
       "args": {
         "entries": [
@@ -1085,7 +1085,7 @@
     },
     {
       "id": "prompt-76",
-      "test": "maestro_branch_request_preserves_instruction_mode",
+      "test": "branch_request_preserves_instruction_mode",
       "operation": "generate",
       "args": {
         "entries": [
@@ -1182,7 +1182,7 @@
     },
     {
       "id": "prompt-77",
-      "test": "maestro_branch_request_preserves_instruction_mode",
+      "test": "branch_request_preserves_instruction_mode",
       "operation": "generate",
       "args": {
         "entries": [
@@ -1281,7 +1281,7 @@
     },
     {
       "id": "prompt-78",
-      "test": "maestro_branch_request_preserves_instruction_mode",
+      "test": "branch_request_preserves_instruction_mode",
       "operation": "generate",
       "args": {
         "entries": [
@@ -1380,7 +1380,7 @@
     },
     {
       "id": "prompt-79",
-      "test": "maestro_branch_request_preserves_instruction_mode",
+      "test": "branch_request_preserves_instruction_mode",
       "operation": "generate",
       "args": {
         "entries": [
@@ -1479,7 +1479,7 @@
     },
     {
       "id": "prompt-80",
-      "test": "maestro_branch_request_preserves_instruction_mode",
+      "test": "branch_request_preserves_instruction_mode",
       "operation": "generate",
       "args": {
         "entries": [
@@ -1578,7 +1578,7 @@
     },
     {
       "id": "prompt-81",
-      "test": "maestro_branch_request_preserves_instruction_mode",
+      "test": "branch_request_preserves_instruction_mode",
       "operation": "generate",
       "args": {
         "entries": [
@@ -1677,7 +1677,7 @@
     },
     {
       "id": "prompt-82",
-      "test": "maestro_branch_request_preserves_instruction_mode",
+      "test": "branch_request_preserves_instruction_mode",
       "operation": "generate",
       "args": {
         "entries": [
@@ -3383,7 +3383,7 @@
     },
     {
       "id": "response-stop-one",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -3470,7 +3470,7 @@
     },
     {
       "id": "response-stop-mixed",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -3577,7 +3577,7 @@
     },
     {
       "id": "response-stop-none",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -3659,7 +3659,7 @@
     },
     {
       "id": "response-stop-nontext",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -3746,7 +3746,7 @@
     },
     {
       "id": "response-stop-space",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -3833,7 +3833,7 @@
     },
     {
       "id": "response-length-one",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -3920,7 +3920,7 @@
     },
     {
       "id": "response-length-mixed",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4027,7 +4027,7 @@
     },
     {
       "id": "response-length-none",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4109,7 +4109,7 @@
     },
     {
       "id": "response-length-nontext",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4196,7 +4196,7 @@
     },
     {
       "id": "response-length-space",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4283,7 +4283,7 @@
     },
     {
       "id": "response-toolUse-one",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4370,7 +4370,7 @@
     },
     {
       "id": "response-toolUse-mixed",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4477,7 +4477,7 @@
     },
     {
       "id": "response-toolUse-none",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4559,7 +4559,7 @@
     },
     {
       "id": "response-toolUse-nontext",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4646,7 +4646,7 @@
     },
     {
       "id": "response-toolUse-space",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4733,7 +4733,7 @@
     },
     {
       "id": "aborted-only",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -4897,7 +4897,7 @@
     },
     {
       "id": "response-error-114",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -5060,7 +5060,7 @@
     },
     {
       "id": "response-error-115",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -5224,7 +5224,7 @@
     },
     {
       "id": "response-error-116",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -5388,7 +5388,7 @@
     },
     {
       "id": "response-error-117",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [
@@ -5552,7 +5552,7 @@
     },
     {
       "id": "thrown-invocation",
-      "test": "maestro_branch_summary_distinguishes_abort_error_success",
+      "test": "branch_summary_distinguishes_abort_error_success",
       "operation": "generate",
       "args": {
         "entries": [

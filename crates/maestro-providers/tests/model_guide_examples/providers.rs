@@ -9,7 +9,7 @@ use serde_json::json;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_invokes_custom_descriptors() -> TestResult {
+fn guide_invokes_custom_descriptors() -> TestResult {
     let _registry = bundled::registry();
     assert!(get_model("openai", "gpt-4o-mini").is_some());
     assert!(get_models("missing-guide-provider").is_empty());
@@ -95,7 +95,7 @@ struct ContextRoundtrip {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_projects_and_serializes_history() -> TestResult {
+fn guide_projects_and_serializes_history() -> TestResult {
     use maestro_models::{Context, Message, transform_messages};
     let _registry = bundled::registry();
     let histories: Histories = serde_json::from_str(include_str!("history.json"))?;
@@ -151,7 +151,7 @@ fn maestro_guide_projects_and_serializes_history() -> TestResult {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
-fn maestro_guide_selects_thinking_and_transport_options() -> TestResult {
+fn guide_selects_thinking_and_transport_options() -> TestResult {
     use maestro_models::{
         CacheRetention, ModelThinkingLevel, Transport, clamp_thinking_level,
         get_supported_thinking_levels,
