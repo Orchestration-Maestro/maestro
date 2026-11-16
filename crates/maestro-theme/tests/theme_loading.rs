@@ -496,7 +496,7 @@ fn theme_resolves_every_alias_before_ansi_conversion() {
 }
 
 #[test]
-fn maestro_theme_rejects_partial_hex_channels() {
+fn theme_rejects_partial_hex_channels() {
     for value in ["#1g2g3g", "#fZ00aa", "#+10000", "#-10000", "# 10000"] {
         let mut doc = dark();
         doc["colors"]["accent"] = json!(value);
