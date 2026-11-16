@@ -536,6 +536,7 @@ fn isolated(mut command: Command) -> Command {
             command.env(key, value);
         }
     }
+    maestro_test_process::git_command::isolate(&mut command);
     command
 }
 
@@ -2212,7 +2213,7 @@ fn maestro_browser_build_records_diagnostics_without_noise() {
 }
 
 pub(crate) fn git(root: &Path, args: &[&str]) -> Output {
-    let output = Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .current_dir(root)
         .args(args)
         .output()

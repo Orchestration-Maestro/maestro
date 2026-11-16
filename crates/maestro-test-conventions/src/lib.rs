@@ -28,6 +28,8 @@ mod fixture_includes;
 mod fixture_selection;
 /// Binding manifest lint exceptions and generated extension source checks.
 mod generated;
+/// Native Git test command ownership.
+mod git_commands;
 /// Workspace membership and dependency graph checks.
 mod graph;
 /// Handwritten JavaScript in crate sources.
@@ -228,6 +230,7 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
         &|| duplicates::check(&members),
         &|| temp_directories::check(&members),
         &|| setup_children::check(&members),
+        &|| git_commands::check(&members),
         &|| real_paths::check(&members),
         &|| standard_error::check(&members),
         &|| tokio_macros::check(&metadata, &members),

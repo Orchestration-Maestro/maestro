@@ -11,15 +11,14 @@ use std::ops::Range;
 use syn::{spanned::Spanned, visit::Visit};
 
 use super::{
-    Member, Source, cfg_test, impl_item_attributes, item_attributes, test_file,
-    trait_item_attributes,
+    Member, Scope, Source, cfg_test, impl_item_attributes, item_attributes, trait_item_attributes,
 };
 use crate::boundaries::{application_exports, message_renderers};
 use crate::graph::packages::{self, Exports};
 use crate::{
-    bucket_modules, child_tests, duplicates, fixture_includes, generated, integration_tests,
-    poison, quality, real_paths, repetition, standard_error, temp_directories, test_input_routes,
-    time_limits, tokio_macros,
+    bucket_modules, child_tests, duplicates, fixture_includes, generated, git_commands,
+    integration_tests, poison, quality, real_paths, repetition, standard_error, temp_directories,
+    test_input_routes, time_limits, tokio_macros,
 };
 
 /// Every check's findings for one parsed source.
@@ -48,6 +47,8 @@ pub(crate) struct Walk {
     pub(crate) bodies: Vec<(usize, usize)>,
     /// Sorted lines naming the platform temporary directory in test code.
     pub(crate) temp_directories: Vec<usize>,
+    /// Lines starting Git directly in test code.
+    pub(crate) git_commands: Vec<usize>,
     /// Sorted lines resolving a real path outside its owner, in production code.
     pub(crate) real_paths: Vec<usize>,
     /// Sorted lines invoking a standard error print macro, in production code.
@@ -112,8 +113,8 @@ struct Context {
 struct Walker<'a> {
     /// Current test context and traversal position.
     context: Context,
-    /// Whether the whole source belongs to tests.
-    scope: bool,
+    /// The file's production role or explicit test boundary.
+    scope: Scope,
     /// Whether the file's inner attributes gate it on the test configuration.
     gated: bool,
     /// End line of a test-gated last item.
@@ -138,6 +139,8 @@ struct Walker<'a> {
     bodies: duplicates::Bodies,
     /// Platform temporary directory references, for checked members.
     references: Option<temp_directories::References>,
+    /// Direct Git constructors in test code.
+    git_commands: Vec<usize>,
     /// Real-path resolution outside its owner, for every other crate.
     resolutions: Option<real_paths::Resolutions>,
     /// Standard error print macros, for checked members.
@@ -168,13 +171,13 @@ impl<'a> Walker<'a> {
     /// Record the file-level facts and prepare the states that serve this member's source.
     fn new(member: &'a Member, source: &'a Source, file: &syn::File) -> Self {
         let gated = cfg_test(&file.attrs);
-        let scope = test_file(member, &source.path) || gated;
+        let scope = Scope::new(member, source, gated);
         Self {
             context: Context::default(),
             scope,
             gated,
             test_end: quality::test_end(file),
-            factory: !scope && packages::factory(file),
+            factory: scope == Scope::Production && packages::factory(file),
             modules: application_exports::file_modules(member, source, file),
             root_modules: integration_tests::modules(member, source, file),
             test_spans: Vec::new(),
@@ -185,6 +188,7 @@ impl<'a> Walker<'a> {
             bodies: duplicates::Bodies::default(),
             references: temp_directories::checked(member)
                 .then(temp_directories::References::default),
+            git_commands: Vec::new(),
             resolutions: real_paths::checked(member, source).then(real_paths::Resolutions::default),
             prints: standard_error::checked(member).then(standard_error::Prints::default),
             tokio: tokio_macros::Spellings::default(),
@@ -196,7 +200,7 @@ impl<'a> Walker<'a> {
             credentials: application_exports::file_credentials(member, source, file),
             attributes: generated::generates(&member.name)
                 .then(|| generated::Attributes::new(file)),
-            exports: Exports::new(source, scope),
+            exports: Exports::new(source, scope != Scope::Production),
             poison: poison::Definitions::default(),
             buckets: bucket_modules::Declarations::default(),
         }
@@ -204,7 +208,12 @@ impl<'a> Walker<'a> {
 
     /// Whether the current syntax belongs to tests, by its source or an inherited gate.
     fn testing(&self) -> bool {
-        self.scope || self.context.gate >= Some(Gate::Associated)
+        self.scope != Scope::Production || self.context.gate >= Some(Gate::Associated)
+    }
+
+    /// Whether a test layout or an explicit test gate covers this Git constructor.
+    fn git_testing(&self) -> bool {
+        self.scope == Scope::Test || self.context.gate >= Some(Gate::Associated)
     }
 
     /// Whether the directory-read scan sees the current syntax: test code outside attributes.
@@ -273,6 +282,7 @@ impl<'a> Walker<'a> {
                 .references
                 .map(temp_directories::References::finish)
                 .unwrap_or_default(),
+            git_commands: self.git_commands,
             real_paths: self
                 .resolutions
                 .map(real_paths::Resolutions::finish)
@@ -490,6 +500,10 @@ impl<'a> Visit<'a> for Walker<'a> {
             }
             self.tokio.invocation(invocation);
         }
+        if self.git_testing() {
+            self.git_commands
+                .extend(git_commands::tokens(invocation.tokens.clone()));
+        }
         if self.reading() {
             self.reads.macro_tokens(invocation);
             self.includes.macro_tokens(invocation);
@@ -575,6 +589,9 @@ impl<'a> Visit<'a> for Walker<'a> {
     fn visit_expr_call(&mut self, call: &'a syn::ExprCall) {
         if self.testing() {
             self.calls.call(call);
+        }
+        if self.git_testing() {
+            self.git_commands.extend(git_commands::call(call));
         }
         syn::visit::visit_expr_call(self, call);
     }

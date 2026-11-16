@@ -14,6 +14,8 @@ mod development_guidance;
 mod documented_commands;
 mod duplicates;
 mod fixture_includes;
+/// Native Git constructor ownership.
+mod git_commands;
 mod integration_tests;
 mod json_dependencies;
 mod leaked_words;

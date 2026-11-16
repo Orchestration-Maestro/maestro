@@ -9,6 +9,8 @@ mod command_route;
 mod environment_groups;
 mod executor;
 mod gate;
+/// Git fixture configuration and signing isolation.
+mod git_configuration;
 mod linked_files;
 mod native_aliases;
 mod prepared_bundles;

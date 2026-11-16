@@ -387,7 +387,7 @@ mod tests {
         let root = scratch.path();
         std::fs::create_dir_all(root.join(SHIPPED)).unwrap();
         assert!(
-            std::process::Command::new("git")
+            maestro_test_process::git_command::command()
                 .args(["init", "-q"])
                 .current_dir(root)
                 .status()

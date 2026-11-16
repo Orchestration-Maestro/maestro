@@ -959,6 +959,36 @@ stay in their existing integration-test support modules.
 Use the shared fixture without changing the caller's assertions or adding a
 production feature for test access.
 
+Run the native suite through nextest so its setup scripts apply. The existing
+`native-fixture` setup writes a test-owned Git configuration and exports it to
+every selected test process. This also isolates Git launched by production code
+that a test calls in-process. System configuration and inherited command-line
+settings are excluded; commits and tags are unsigned. Tests that supply their
+own Git environment keep those explicit overrides.
+
+For native Git fixtures, start with
+`maestro_test_process::git_command::command()` instead of constructing a Git
+process directly. It ignores inherited repository and author variables, global
+and system configuration, signing settings, and user-level ignore files and
+attributes. Fixture repositories keep their own hooks. The fixture identity is
+`Fixture <fixture@example.invalid>`; pass explicit `-c` options when a test needs
+another identity or configuration. Repository-local settings remain
+available except where the fixture defaults override them.
+
+When a test-owned child launches Git itself, apply
+`maestro_test_process::git_command::isolate(&mut command)` to that child's
+command so its descendants receive the same configuration. The conventions check
+rejects direct Git constructors in test code, including constructors inside macro
+arguments. It does not expand macros or inspect programs stored in strings.
+
+Tests that discover default resources run inside
+`maestro_test_process::with_isolated_home(test_name, |base| { ... })`. Its child
+uses a disposable home under `base`, not the developer's installed skills or
+settings. Keep the existing resource assertions inside that closure. Tests that
+hide a program from `PATH` must keep the other programs and their interpreters
+reachable. Preview tests prepend rejecting author-tool stubs to the normal path;
+they also record those calls so an ignored tool failure cannot pass the test.
+
 Keep a crate's `examples/` directory for examples written for users. Put a program
 that exists for tests, checks or test preparation (a native test child, a fixture
 component, a browser compile witness, a terminal debugging program) in

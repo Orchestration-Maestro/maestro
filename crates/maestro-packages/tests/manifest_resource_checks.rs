@@ -325,6 +325,9 @@ fn installed_remote_malformed_lists_are_ignored() {
 /// a resource filter on the package.
 #[test]
 fn malformed_resource_lists_are_ignored_while_valid_lists_load() {
+    if crate::resolution_support::case_in_child("home", |_| vec![]).is_none() {
+        return;
+    }
     for filtered in [false, true] {
         crate::runtime::run(async move {
             let scratch = scratch::Scratch::new().unwrap();
@@ -422,6 +425,9 @@ fn manifest_overrides_apply_to_prompts_and_themes() {
 /// Unfiltered kinds in object registrations use conventions for malformed manifest lists.
 #[test]
 fn filtered_packages_fall_back_only_for_absent_or_malformed_lists() {
+    if crate::resolution_support::case_in_child("home", |_| vec![]).is_none() {
+        return;
+    }
     for value in [
         serde_json::json!(5),
         serde_json::json!("x"),

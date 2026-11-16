@@ -11,6 +11,7 @@ use maestro_test_process::{TestProcess, selection};
 /// Search setup tests work when their runner cannot discover either search program.
 #[test]
 fn author_search_setups_are_independent_of_runner_path() {
+    let (_tools, path) = path_without_search_programs();
     for test in [
         "archived_author_setup_exports_search_programs_without_path",
         "local_author_setup_resolves_search_pins_from_path",
@@ -19,7 +20,7 @@ fn author_search_setups_are_independent_of_runner_path() {
         assert_success(
             &TestProcess::named(format!("author_setup::{test}"))
                 .unwrap()
-                .env("PATH", path_without_search_programs())
+                .env("PATH", &path)
                 .output()
                 .unwrap(),
         );
@@ -35,9 +36,9 @@ fn with_search_programs(test: &str) -> bool {
     for name in ["rg", "fd"] {
         maestro_test_process::install_search_program(name, bin.path()).unwrap();
     }
+    let (_tools, without_search) = path_without_search_programs();
     let path = std::env::join_paths(
-        std::iter::once(bin.path().to_path_buf())
-            .chain(std::env::split_paths(&path_without_search_programs())),
+        std::iter::once(bin.path().to_path_buf()).chain(std::env::split_paths(&without_search)),
     )
     .unwrap();
     assert_success(
@@ -51,18 +52,31 @@ fn with_search_programs(test: &str) -> bool {
     false
 }
 
-/// The runner's PATH with every directory containing a search program removed.
-fn path_without_search_programs() -> std::ffi::OsString {
-    std::env::join_paths(
-        std::env::split_paths(&std::env::var_os("PATH").unwrap()).filter(|directory| {
-            !["rg", "fd"].iter().any(|name| {
-                directory
-                    .join(format!("{name}{}", std::env::consts::EXE_SUFFIX))
-                    .is_file()
-            })
-        }),
-    )
-    .unwrap()
+/// Replace search-containing PATH directories with owned copies that omit only `rg` and `fd`.
+fn path_without_search_programs() -> (Scratch, std::ffi::OsString) {
+    let tools = Scratch::new().unwrap();
+    let mut paths = Vec::new();
+    for (index, directory) in std::env::split_paths(&std::env::var_os("PATH").unwrap()).enumerate()
+    {
+        if ["rg", "fd"]
+            .iter()
+            .all(|name| !directory.join(name).is_file())
+        {
+            paths.push(directory);
+            continue;
+        }
+        let copy = tools.path().join(index.to_string());
+        fs::create_dir(&copy).unwrap();
+        let directory = maestro_path::fs::canonicalize(directory).unwrap();
+        for entry in fs::read_dir(directory).unwrap() {
+            let entry = entry.unwrap();
+            if entry.file_name() != "rg" && entry.file_name() != "fd" {
+                std::os::unix::fs::symlink(entry.path(), copy.join(entry.file_name())).unwrap();
+            }
+        }
+        paths.push(copy);
+    }
+    (tools, std::env::join_paths(paths).unwrap())
 }
 
 /// Preparation carries the pinned programs into a relocated archive without a search PATH.
@@ -79,7 +93,7 @@ fn archived_author_setup_exports_search_programs_without_path() {
     let moved = root.join("relocated setup");
     fs::rename(root.join("target/test-setup"), &moved).unwrap();
 
-    let search = path_without_search_programs();
+    let (_tools, search) = path_without_search_programs();
     let output = export_command(root, &moved, true)
         .env("PATH", search)
         .env_remove("MAESTRO_TEST_RG")
@@ -1437,7 +1451,7 @@ fn fixture_with(root: &Path, example: &str) {
     .unwrap();
     for args in [["init", "-q"].as_slice(), ["add", "."].as_slice()] {
         assert_success(
-            &Command::new("git")
+            &maestro_test_process::git_command::command()
                 .args(args)
                 .current_dir(root)
                 .output()

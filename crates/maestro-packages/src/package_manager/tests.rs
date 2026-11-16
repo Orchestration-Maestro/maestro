@@ -203,7 +203,7 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
         ],
     ] {
         assert!(
-            std::process::Command::new("git")
+            maestro_test_process::git_command::command()
                 .args(args)
                 .current_dir(path)
                 .stdout(std::process::Stdio::null())

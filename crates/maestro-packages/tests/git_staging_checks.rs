@@ -147,25 +147,30 @@ fn repin_settings_replace_first_match_in_selected_scope() {
 
 #[test]
 fn npm_repin_survives_following_resolution() {
-    let fixture = Fixture::new(&json!({"packages":[{"source":"npm:pkg@1", "skills":["kept"]}]}));
-    block_on(fixture.manager.install_and_persist("npm:pkg@2", None)).unwrap();
-    assert_eq!(
-        fixture.settings.borrow().get_global_settings().0["packages"],
-        json!([{"source":"npm:pkg@2", "skills":["kept"]}])
-    );
-    block_on(fixture.manager.resolve(None)).unwrap();
-    assert!(
-        !fixture
-            .calls()
-            .iter()
-            .any(|call| call.args.iter().any(|arg| arg == "pkg@1"))
-    );
-    assert!(
-        !fixture
-            .manager
-            .add_source_to_settings("npm:pkg@2", None)
-            .unwrap()
-    );
+    maestro_test_process::with_isolated_home("npm_repin_survives_following_resolution", |_| {
+        let fixture =
+            Fixture::new(&json!({"packages":[{"source":"npm:pkg@1", "skills":["kept"]}]}));
+        block_on(fixture.manager.install_and_persist("npm:pkg@2", None)).unwrap();
+        assert_eq!(
+            fixture.settings.borrow().get_global_settings().0["packages"],
+            json!([{"source":"npm:pkg@2", "skills":["kept"]}])
+        );
+        let resolved = block_on(fixture.manager.resolve(None)).unwrap();
+        assert!(resolved.skills.is_empty());
+        assert!(
+            !fixture
+                .calls()
+                .iter()
+                .any(|call| call.args.iter().any(|arg| arg == "pkg@1"))
+        );
+        assert!(
+            !fixture
+                .manager
+                .add_source_to_settings("npm:pkg@2", None)
+                .unwrap()
+        );
+    })
+    .unwrap();
 }
 
 #[cfg(unix)]

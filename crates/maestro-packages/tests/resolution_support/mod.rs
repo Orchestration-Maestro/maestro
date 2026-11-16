@@ -50,8 +50,8 @@ pub fn unreadable_cwd(
 const TREE: &str = "MAESTRO_TEST_TREE";
 
 /// Runs `case` of the calling test in a child process over a fresh tree this process owns.
-/// The child starts online, without an inherited `MAESTRO_OFFLINE`, and its temporary
-/// directory is `temp` in the tree. `environment` gives the child's other variables for that
+/// The child starts online, without an inherited `MAESTRO_OFFLINE`, with a home below
+/// the tree. Its temporary directory is `temp` in the tree. `environment` gives the child's other variables for that
 /// tree: a value sets one, `None` removes it. Returns the tree in the child selected for
 /// `case`; `None` in the caller once the child passed, and in a child selected for another
 /// case.
@@ -74,6 +74,8 @@ pub fn case_in_child(
             .unwrap()
             .case(case)
             .env(TREE, base)
+            .env("HOME", tree.path().join("home"))
+            .env("USERPROFILE", tree.path().join("home"))
             .env_remove("MAESTRO_OFFLINE")
             .temp_dir(temp);
     for (name, value) in environment(base) {

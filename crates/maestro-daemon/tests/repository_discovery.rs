@@ -50,7 +50,7 @@ fn repository_branch_reads_symbolic_head_from_reftable_repo() {
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let root_arg = root.to_string_lossy().to_string();
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .args(["init", "--ref-format=reftable", "-b", "main", &root_arg])
         .output()
         .unwrap();
@@ -240,7 +240,7 @@ fn daemon_git_rev_parse_verify_reads_reftable_refs() {
     let directory = maestro_test_directory::Scratch::new().unwrap();
     let root = directory.path().to_path_buf();
     let root_arg = root.to_string_lossy().to_string();
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .args(["init", "--ref-format=reftable", "-b", "main", &root_arg])
         .output()
         .unwrap();

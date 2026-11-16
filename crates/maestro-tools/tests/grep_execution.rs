@@ -308,7 +308,7 @@ fn grep_native_nested_ignores_hidden_and_metadata() {
     for worktree in [false, true] {
         if worktree {
             assert!(
-                std::process::Command::new("git")
+                maestro_test_process::git_command::command()
                     .args(["init", "-q"])
                     .arg(root.path())
                     .status()

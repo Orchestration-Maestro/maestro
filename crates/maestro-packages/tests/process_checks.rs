@@ -254,7 +254,7 @@ const REPOSITORY_SOURCE: &str = "https://example.test/team/repo@v1";
 
 /// Runs a Git command in `directory` with a fixed identity.
 fn git(directory: &str, args: &[&str]) {
-    let status = Command::new("git")
+    let status = maestro_test_process::git_command::command()
         .args([
             "-c",
             "user.name=t",
@@ -267,8 +267,6 @@ fn git(directory: &str, args: &[&str]) {
         ])
         .args(args)
         .current_dir(directory)
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .env("GIT_CONFIG_SYSTEM", "/dev/null")
         .status()
         .unwrap();
     assert!(status.success(), "git {args:?}");
@@ -299,11 +297,11 @@ fn repository_scenario(root: &Path) {
         std::fs::read_to_string(scratch("agent/git/.gitignore")).unwrap(),
         "*\n!.gitignore\n"
     );
-    let head = Command::new("git")
+    let head = maestro_test_process::git_command::command()
         .args(["-C", &target, "rev-parse", "HEAD"])
         .output()
         .unwrap();
-    let tag = Command::new("git")
+    let tag = maestro_test_process::git_command::command()
         .args(["-C", &target, "rev-parse", "v1^{commit}"])
         .output()
         .unwrap();

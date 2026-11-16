@@ -586,11 +586,9 @@ fn browser_preview_serves_without_author_tools() {
     for (name, bytes, _) in files {
         fs::write(dist.join(name), bytes).unwrap();
     }
-    preview_tools(&browser);
+    let path = preview_tools(&browser);
     let mut command = browser.command("browser-example-preview");
-    command
-        .env("PATH", browser.path("bin"))
-        .args(["--port", "0"]);
+    command.env("PATH", &path).args(["--port", "0"]);
     let (child, receive, thread) = start_output(command);
     let startup = wait_for(&receive, "http://127.0.0.1:");
     let port: u16 = startup
@@ -612,7 +610,13 @@ fn browser_preview_serves_without_author_tools() {
     drop(child);
     drop(receive);
     crate::recipe_support::join_reader(thread);
-    preview_failures(&browser);
+    preview_failures(&browser, &path);
+    let calls = browser.path("author-tool-calls");
+    assert!(
+        !calls.exists(),
+        "preview invoked author tools: {}",
+        fs::read_to_string(calls).unwrap()
+    );
 }
 
 #[test]
@@ -976,10 +980,9 @@ fn browser_prepared_metadata_is_template_only() {
 
 #[test]
 fn browser_ignores_only_generated_outputs() {
-    use std::process::Command;
     let browser = Browser::new();
     assert!(
-        Command::new("git")
+        maestro_test_process::git_command::command()
             .current_dir(browser.workspace.path())
             .args(["init", "--quiet"])
             .status()
@@ -1001,7 +1004,7 @@ fn browser_ignores_only_generated_outputs() {
         ("assets/app.css", false),
         ("package.json.in", false),
     ] {
-        let result = Command::new("git")
+        let result = maestro_test_process::git_command::command()
             .current_dir(browser.workspace.path())
             .args(["check-ignore", "--no-index", "--quiet"])
             .arg(browser.fixture(path))
@@ -1015,7 +1018,7 @@ fn browser_ignores_only_generated_outputs() {
         "assets/brand/mark.svg",
     ] {
         assert!(
-            !Command::new("git")
+            !maestro_test_process::git_command::command()
                 .current_dir(browser.workspace.path())
                 .args(["check-ignore", "--no-index", "--quiet"])
                 .arg(path)
@@ -1124,25 +1127,30 @@ fn check_root_browser_selection(workspace: &Workspace) {
     assert!(!log.contains("|browser-author|serve|"));
 }
 
-/// Install only the preview executable, recipe runner and shell on its PATH.
-fn preview_tools(browser: &Browser) {
-    use recipe_support::install_executable;
-    use std::process::Command;
-    let binary = Command::new("which").arg("miniserve").output().unwrap();
-    install_executable(
-        std::path::Path::new(std::str::from_utf8(&binary.stdout).unwrap().trim()),
-        &browser.path("bin/miniserve"),
-    );
+/// Preserve normal tool resolution while author-tool stubs reject unexpected preview work.
+fn preview_tools(browser: &Browser) -> std::ffi::OsString {
+    fs::remove_file(browser.path("bin/miniserve")).unwrap();
     for name in ["cargo", "trunk", "mise", "prek", "watchexec"] {
-        fs::remove_file(browser.path("bin").join(name)).unwrap();
+        maestro_test_process::install_command(
+            &browser.path("bin").join(name),
+            &serde_json::json!({
+                "scenario": "output", "stdout": [],
+                "stderr": format!("preview must not invoke {name}\n").into_bytes(),
+                "code": 1,
+                "append": {
+                    "path": browser.path("author-tool-calls"), "cwd": false,
+                    "variable": null, "bytes": format!("{name}\n").into_bytes()
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
     }
-    let just = Command::new("which").arg("just").output().unwrap();
-    std::os::unix::fs::symlink(
-        std::str::from_utf8(&just.stdout).unwrap().trim(),
-        browser.path("bin/just"),
+    std::env::join_paths(
+        std::iter::once(browser.path("bin"))
+            .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
     )
-    .unwrap();
-    std::os::unix::fs::symlink("/bin/sh", browser.path("bin/sh")).unwrap();
+    .unwrap()
 }
 
 /// Exercise each independent public command failure through its own child boundary.
@@ -1181,11 +1189,12 @@ fn check_command_failures(workspace: &Workspace) {
 }
 
 /// Native preview rejects a test-owned busy port and an absent distribution.
-fn preview_failures(browser: &Browser) {
+fn preview_failures(browser: &Browser, path: &std::ffi::OsStr) {
     let occupied = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     assert!(
         !browser
             .command("browser-example-preview")
+            .env("PATH", path)
             .args(["--port", &occupied.local_addr().unwrap().port().to_string()])
             .output()
             .unwrap()
@@ -1196,6 +1205,7 @@ fn preview_failures(browser: &Browser) {
     assert!(
         !browser
             .command("browser-example-preview")
+            .env("PATH", path)
             .args(["--port", "0"])
             .output()
             .unwrap()

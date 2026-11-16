@@ -50,23 +50,27 @@ fn sessions_keep_an_empty_supplied_skill_result() -> Result<(), Error> {
 /// A loader-supplied skill remains intact instead of being replaced by default discovery.
 #[test]
 fn sessions_keep_caller_supplied_skills() -> Result<(), Error> {
-    execute(|sample| async move {
-        let mut options = sample.options()?;
-        if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
-            resources.skills_override = Some(Box::new(|mut base| {
+    maestro_test_process::with_isolated_home("sessions_keep_caller_supplied_skills", |_| {
+        execute(|sample| async move {
+            let mut options = sample.options()?;
+            let supplied = |mut base: maestro_app::LoadSkillsResult| {
                 base.skills.push(supplied_skill());
                 base
-            }));
-        }
-        let created = maestro_app::create_agent_session(options).await?;
-        let skills = created.session.resource_loader().get_skills();
-        assert_eq!(skills.skills.len(), 1);
-        assert_eq!(skills.skills[0].name, "my-skill");
-        assert_eq!(skills.skills[0].file_path, "/virtual/SKILL.md");
-        assert_eq!(skills.skills[0].source_info.source, "sdk");
-        assert!(skills.diagnostics.is_empty());
-        created.session.dispose();
-        Ok(Value::Null)
+            };
+            if let maestro_app::SessionResources::Default(resources) = &mut options.resources {
+                resources.skills_override = Some(Box::new(supplied));
+            }
+            let created = maestro_app::create_agent_session(options).await?;
+            let skills = created.session.resource_loader().get_skills();
+            assert_eq!(skills.skills.len(), 1);
+            assert_eq!(skills.skills[0].name, "my-skill");
+            assert_eq!(skills.skills[0].file_path, "/virtual/SKILL.md");
+            assert_eq!(skills.skills[0].source_info.source, "sdk");
+            assert!(skills.diagnostics.is_empty());
+            created.session.dispose();
+            Ok(Value::Null)
+        })
+        .unwrap();
     })?;
     Ok(())
 }

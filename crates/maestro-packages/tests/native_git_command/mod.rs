@@ -2,17 +2,7 @@
 #![cfg(test)]
 /// Runs Git without inherited author or signing settings.
 pub fn git(path: &std::path::Path, args: &[&str]) -> String {
-    let result = std::process::Command::new("git")
-        .args([
-            "-c",
-            "user.name=Fixture",
-            "-c",
-            "user.email=fixture@example.invalid",
-            "-c",
-            "commit.gpgsign=false",
-            "-c",
-            "tag.gpgsign=false",
-        ])
+    let result = maestro_test_process::git_command::command()
         .args(args)
         .current_dir(path)
         .output()

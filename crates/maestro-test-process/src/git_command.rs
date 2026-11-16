@@ -1,8 +1,84 @@
-//! Native Git stand-ins for footer observations, served by the prepared fixture artifact.
+//! Isolated native Git commands and prepared stand-ins for repository observations.
 
+use std::collections::BTreeMap;
+use std::fmt::Write as _;
 use std::io;
 use std::path::Path;
 use std::str::FromStr;
+
+/// The empty configuration source on the running platform.
+const EMPTY: &str = if cfg!(windows) { "NUL" } else { "/dev/null" };
+
+/// Fixed author and filesystem policy for disposable repositories.
+const CONFIG: &[(&str, &str, &str)] = &[
+    ("user", "name", "Fixture"),
+    ("user", "email", "fixture@example.invalid"),
+    ("commit", "gpgsign", "false"),
+    ("tag", "gpgsign", "false"),
+    ("core", "excludesFile", EMPTY),
+    ("core", "attributesFile", EMPTY),
+];
+
+/// Prepare Git without inherited repository, author, configuration or signing settings.
+///
+/// Callers add operands and may override fixture defaults with explicit `-c` options.
+#[must_use]
+pub fn command() -> std::process::Command {
+    let mut command = std::process::Command::new("git");
+    isolate(&mut command);
+    command
+}
+
+/// Give a test-owned child and its Git descendants the disposable repository policy.
+///
+/// Apply this before adding a test's deliberate Git environment overrides.
+pub fn isolate(command: &mut std::process::Command) {
+    let names: Vec<_> = std::env::vars_os()
+        .map(|(key, _)| key)
+        .chain(command.get_envs().map(|(key, _)| key.to_owned()))
+        .filter(|key| {
+            key.to_string_lossy()
+                .to_ascii_uppercase()
+                .starts_with("GIT_")
+        })
+        .collect();
+    for name in names {
+        command.env_remove(name);
+    }
+    command
+        .env("GIT_CONFIG_GLOBAL", EMPTY)
+        .env("GIT_CONFIG_SYSTEM", EMPTY)
+        .env("GIT_CONFIG_COUNT", CONFIG.len().to_string());
+    for (index, (section, key, value)) in CONFIG.iter().enumerate() {
+        command
+            .env(
+                format!("GIT_CONFIG_KEY_{index}"),
+                format!("{section}.{key}"),
+            )
+            .env(format!("GIT_CONFIG_VALUE_{index}"), value);
+    }
+}
+
+/// Write the fixture policy to `configuration` and return its sorted setup exports.
+///
+/// # Errors
+/// Returns a failure to write the configuration file in its caller-owned directory.
+pub fn environment(configuration: &Path) -> io::Result<BTreeMap<String, String>> {
+    let mut text = String::new();
+    for (section, key, value) in CONFIG {
+        writeln!(text, "[{section}]\n{key} = {value}").map_err(io::Error::other)?;
+    }
+    std::fs::write(configuration, text)?;
+    Ok(BTreeMap::from([
+        (
+            "GIT_CONFIG_GLOBAL".into(),
+            configuration.to_string_lossy().into_owned(),
+        ),
+        ("GIT_CONFIG_SYSTEM".into(), EMPTY.into()),
+        ("GIT_CONFIG_COUNT".into(), "0".into()),
+        ("GIT_CONFIG_PARAMETERS".into(), String::new()),
+    ]))
+}
 
 /// Install a stand-in selected by `scenario` from the prepared `MAESTRO_NATIVE_FIXTURE` artifact.
 ///

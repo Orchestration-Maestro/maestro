@@ -13,7 +13,7 @@ pub fn init_repo_with_commit(repo: &Path) {
 }
 
 pub fn run_git(cwd: &Path, args: &[&str]) {
-    let output = std::process::Command::new("git")
+    let output = maestro_test_process::git_command::command()
         .arg("-C")
         .arg(cwd)
         .args(args)
