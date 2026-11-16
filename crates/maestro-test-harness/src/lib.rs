@@ -44,6 +44,7 @@
 mod agent_directory;
 mod alone;
 mod broken_stderr;
+mod checked_child;
 pub mod child;
 #[cfg(windows)]
 mod console;
@@ -63,12 +64,12 @@ mod search_guard;
 mod selection;
 #[cfg(unix)]
 mod setup;
-mod test_process;
 pub mod trace_capture;
 
 pub use agent_directory::{AGENT_DIRECTORY, link_files, run_agent_directory};
 pub use alone::run_alone;
 pub use broken_stderr::{run_with_broken_stderr, wait_for_broken_stderr};
+pub use checked_child::TestProcess;
 #[cfg(windows)]
 pub use console::on_console;
 #[cfg(unix)]
@@ -84,7 +85,6 @@ pub use search_guard::{SearchGuard, install_stub_search_programs};
 pub use selection::test_name;
 #[cfg(unix)]
 pub use setup::{IsolatedSetup, SetupError, SetupGuard};
-pub use test_process::TestProcess;
 
 /// Controlled loopback HTTP fixtures.
 pub mod loopback;

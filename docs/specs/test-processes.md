@@ -6,7 +6,7 @@ This contract describes checked reruns, direct native fixtures and the typed nat
 
 Controlled test programs still require Python or generated shell programs. Tests that reach a native executable through `PATH` cannot use an ordinary libtest rerun: literal native operands are not harness arguments, and harness output changes byte protocols. Tests need one Rust owner for both routes without changing the product operations they exercise.
 
-Confidence: **proven in source**. Evidence: #3768; `crates/maestro-test-harness/src/lib.rs`, `src/proof.rs` and `src/test_process.rs`; the [test-harness contract](maestro-port.md#test-harness-owner). Runtime and platform qualification of the replacement remain **unknown** until its acceptance checks pass.
+Confidence: **proven in source**. Evidence: #3768; `crates/maestro-test-harness/src/lib.rs`, `src/proof.rs` and `src/checked_child.rs`; the [test-harness contract](maestro-port.md#test-harness-owner). Runtime and platform qualification of the replacement remain **unknown** until its acceptance checks pass.
 
 ## Solution
 
@@ -159,7 +159,7 @@ These Maestro citations prove the contract or what existing tests inspect, not t
 | ID | Source or requirement |
 | --- | --- |
 | C01 | #3768: Rust controlled children, one existing owner, native PATH operands, unchanged startup and loaded qualification. #3868 retains browser-driver ownership. |
-| C02 | `crates/maestro-test-harness/src/proof.rs:8-35`; `src/test_process.rs:80-110,268-280,419-493`; [existing owner contract](maestro-port.md#test-harness-owner). |
+| C02 | `crates/maestro-test-harness/src/proof.rs:8-35`; `src/checked_child.rs:80-110,268-280,419-493`; [existing owner contract](maestro-port.md#test-harness-owner). |
 | C03 | `crates/maestro-tooling/src/test_setup.rs:1-16,45-100`; `src/test_setup/plan.rs:1-73`; `src/nextest_setup.rs`; `.config/nextest.toml`. |
 | C04 | The owner's own setup cases in `crates/maestro-test-harness/tests/checked_runs.rs`; `crates/maestro-app/tests/session_account_file.rs`; `tests/support/startup.rs`; `crates/maestro-chat/src/interactive_mode/tests.rs`; `crates/maestro-lock/src/replace/tests.rs`; `crates/maestro-settings/tests/settings_reload.rs`; component `tests/compilation_cache.rs`. |
 | C05 | `crates/maestro-rpc/tests/support/rpc_peer.rs:11-78`; `tests/rpc_client_lifecycle.rs:162-219`; complete lifecycle/events/transport modules and `src/rpc_client/tests.rs:42-68`. |
