@@ -94,14 +94,15 @@ impl Tree {
         let Some(child) = self.child.as_mut() else {
             return Ok(());
         };
-        match kill_process_group(Pid::from_child(child), Signal::KILL) {
+        let group = Pid::from_child(child);
+        match kill_process_group(group, Signal::KILL) {
             Ok(()) | Err(rustix::io::Errno::SRCH) => {}
             Err(error) => return Err(error.into()),
         }
         child.wait()?;
         self.child.take();
         #[cfg(target_os = "linux")]
-        reap_adopted()?;
+        reap_adopted(group)?;
         Ok(())
     }
 }
@@ -172,11 +173,11 @@ fn observe_exit(pid: Pid) -> io::Result<()> {
     }
 }
 
-/// Reap every descendant adopted by this dedicated guardian after group termination.
+/// Reap adopted members of the killed group without waiting for escaped daemons.
 #[cfg(target_os = "linux")]
-fn reap_adopted() -> io::Result<()> {
+fn reap_adopted(group: Pid) -> io::Result<()> {
     loop {
-        match rustix::process::wait(rustix::process::WaitOptions::empty()) {
+        match waitid(WaitId::Pgid(Some(group)), WaitIdOptions::EXITED) {
             Ok(_) | Err(rustix::io::Errno::INTR) => {}
             Err(rustix::io::Errno::CHILD) => return Ok(()),
             Err(error) => return Err(error.into()),

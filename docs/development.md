@@ -1696,8 +1696,9 @@ the guardian does not wait for the test to finish.
 
 Fixtures must keep descendants in the command's group: disable nested watcher
 groups rather than detaching them. A descendant that leaves the group can survive
-its termination. This owner is Unix-only; it does not add Windows process-tree
-cleanup.
+its termination. The Linux guardian waits only for the killed group, so an adopted
+daemon outside that group does not block cleanup. This owner is Unix-only; it does
+not add Windows process-tree cleanup.
 
 ### Browser author build
 

@@ -124,6 +124,30 @@ fn an_exited_watch_stops_its_descendants_before_the_guard_is_dropped() {
 }
 
 #[test]
+fn stopping_a_watch_does_not_wait_for_a_detached_descendant() {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let mut command = guarded_watch();
+    command
+        .env(
+            "MAESTRO_TEST_TREE_PORT",
+            listener.local_addr().unwrap().port().to_string(),
+        )
+        .env("MAESTRO_TEST_TREE_DETACH", "1")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let mut group = ProcessGroup::spawn(command).unwrap();
+    let mut peers = ready_peers(&listener);
+
+    group.stop().unwrap();
+
+    for (peer, _) in &mut peers {
+        // Release the detached descendant only after stop has returned.
+        peer.shutdown(std::net::Shutdown::Write).unwrap();
+        peer.read_to_end(&mut Vec::new()).unwrap();
+    }
+}
+
+#[test]
 fn killing_the_test_stops_its_watch_tree() {
     assert_tree_stops("kill");
 }
@@ -190,5 +214,8 @@ fn watch() {
 #[test]
 #[ignore = "runs only inside a controlled child"]
 fn watch_descendant() {
+    if std::env::var_os("MAESTRO_TEST_TREE_DETACH").is_some() {
+        rustix::process::setsid().unwrap();
+    }
     hold_connection(b'd');
 }
