@@ -5,6 +5,12 @@ use std::{ffi::OsStr, process::Command};
 /// Strips runner instrumentation and selects the recorded build toolchain when present.
 pub fn command(program: impl AsRef<OsStr>) -> Command {
     let mut command = Command::new(program);
+    configure(&mut command);
+    command
+}
+
+/// Apply the recorded toolchain without replacing a command's executable or arguments.
+pub fn configure(command: &mut Command) {
     if std::env::var_os("__CARGO_LLVM_COV_RUSTC_WRAPPER").is_some() {
         if let Some(wrapper) = std::env::var_os("__CARGO_LLVM_COV_RUSTC_WRAPPER_PRE_EXISTING") {
             command.env("RUSTC_WRAPPER", wrapper);
@@ -34,7 +40,6 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
     if let Some(channel) = channel() {
         command.env("RUSTUP_TOOLCHAIN", channel);
     }
-    command
 }
 
 /// The private Cargo home of a fixture rooted at `root`.
@@ -60,23 +65,37 @@ pub fn fixture_command(
     root: &std::path::Path,
     sources: Option<&std::path::Path>,
 ) -> std::io::Result<Command> {
+    let mut command = Command::new(program);
+    configure_fixture(&mut command, root, sources)?;
+    Ok(command)
+}
+
+/// Apply private compiler state to an already prepared command.
+///
+/// # Errors
+/// Returns failures creating the home, copying its configuration or installing the wrapper.
+pub fn configure_fixture(
+    command: &mut Command,
+    root: &std::path::Path,
+    sources: Option<&std::path::Path>,
+) -> std::io::Result<()> {
+    configure(command);
     let home = home(root);
     std::fs::create_dir_all(&home)?;
     if let Some(sources) = sources {
         std::fs::copy(sources, home.join("config.toml"))?;
     }
-    let mut command = command(program);
     command.current_dir(root).env("CARGO_HOME", home);
     #[cfg(unix)]
     {
-        let wrapper = replaced_wrapper(&command);
+        let wrapper = replaced_wrapper(command);
         if let Some(wrapper) = wrapper {
             command
                 .env("RUSTC_WRAPPER", cargo_home_hiding_wrapper(root)?)
                 .env(ORIGINAL_RUSTC_WRAPPER, wrapper);
         }
     }
-    Ok(command)
+    Ok(())
 }
 
 /// The compiler wrapper Cargo would run for `command`: `RUSTC_WRAPPER` when set, even to nothing,

@@ -38,6 +38,9 @@ mod trash;
 enum Request {
     /// Copy this artifact to a caller-owned path.
     Install(PathBuf),
+    /// Own a long-running test command until its control pipe closes.
+    #[cfg(unix)]
+    Guard(Vec<OsString>),
     /// Write the isolated Git policy and report its setup environment.
     GitEnvironment(PathBuf),
     /// Report the native launch and exchange raw streams.
@@ -115,6 +118,14 @@ impl Request {
             [operation, destination] if operation == "--maestro-install" => {
                 Ok(Self::Install(destination.into()))
             }
+            #[cfg(unix)]
+            [operation, program, operands @ ..] if operation == "--maestro-guard" => {
+                Ok(Self::Guard(
+                    std::iter::once(program.clone())
+                        .chain(operands.iter().cloned())
+                        .collect(),
+                ))
+            }
             [operation, configuration] if operation == "--maestro-git-environment" => {
                 Ok(Self::GitEnvironment(configuration.into()))
             }
@@ -187,6 +198,8 @@ impl Request {
 pub(super) fn run() -> io::Result<()> {
     match Request::read(std::env::args_os().skip(1).collect())? {
         Request::Install(destination) => install(&destination),
+        #[cfg(unix)]
+        Request::Guard(operands) => maestro_test_harness::run_group_guardian(&operands),
         Request::GitEnvironment(configuration) => {
             let environment = maestro_test_harness::git_command::environment(&configuration)?;
             maestro_test_harness::child::write_stdout(
