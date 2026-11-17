@@ -240,11 +240,18 @@ impl Workspace {
         self.name = path.as_os_str().to_owned();
     }
 
-    /// Keeps build output inside the fixture's configured target directory and Cargo state
-    /// beside the checkout, so the shared package cache is never locked.
+    /// Prepare `program` with the fixture's private build state.
     pub fn toolchain_command(&self, program: impl AsRef<OsStr>) -> Command {
-        let mut command = super::compiler::fixture_command(
-            program,
+        let mut command = Command::new(program);
+        self.configure_toolchain(&mut command);
+        command
+    }
+
+    /// Keep build output inside the fixture's configured target directory and Cargo state
+    /// beside the checkout, so the shared package cache is never locked.
+    fn configure_toolchain(&self, command: &mut Command) {
+        super::compiler::configure_fixture(
+            command,
             self.parent.path(),
             self.sources.get().map(PathBuf::as_path),
         )
@@ -252,11 +259,25 @@ impl Workspace {
         command
             .current_dir(self.path())
             .env_remove("CARGO_TARGET_DIR");
-        command
     }
 
     pub fn command(&self, recipe: &str) -> Command {
         let mut command = self.toolchain_command("just");
+        self.configure_recipe(&mut command, recipe);
+        command
+    }
+
+    /// Prepare a recipe whose entire tree is owned by the native guardian.
+    #[cfg(unix)]
+    pub fn watch_command(&self, recipe: &str) -> Command {
+        let mut command = maestro_test_harness::ProcessGroup::command("just").unwrap();
+        self.configure_toolchain(&mut command);
+        self.configure_recipe(&mut command, recipe);
+        command
+    }
+
+    /// Supply the recipe's literal operands and private observations.
+    fn configure_recipe(&self, command: &mut Command, recipe: &str) {
         command
             .arg(recipe)
             .env("MAESTRO_LOG", self.path().join("log"))
@@ -268,7 +289,6 @@ impl Workspace {
                     .chain(std::env::split_paths(&inherited));
                 std::env::join_paths(entries).unwrap()
             });
-        command
     }
 
     pub fn run(&self, recipe: &str) -> Output {
@@ -276,24 +296,6 @@ impl Workspace {
     }
     pub fn log(&self) -> String {
         fs::read_to_string(self.path().join("log")).unwrap()
-    }
-}
-
-/// Owns the recipe's process group, including watcher commands and their children.
-#[cfg(unix)]
-pub struct ProcessGroup(pub std::process::Child);
-
-#[cfg(unix)]
-impl Drop for ProcessGroup {
-    fn drop(&mut self) {
-        record(format!("phase: terminate group {}", self.0.id()));
-        // The fixture disables nested watcher groups so every child inherits this group.
-        let _ = Command::new("kill")
-            .args(["-KILL", "--", &format!("-{}", self.0.id())])
-            .status();
-        record(format!("phase: child wait {}", self.0.id()));
-        let status = self.0.wait();
-        record(format!("phase: child wait result {status:?}"));
     }
 }
 
@@ -398,24 +400,22 @@ pub fn setup_status(command: &mut Command) -> std::process::ExitStatus {
 pub fn start_output(
     mut command: Command,
 ) -> (
-    ProcessGroup,
+    maestro_test_harness::ProcessGroup,
     std::sync::mpsc::Receiver<String>,
     std::thread::JoinHandle<()>,
 ) {
-    use std::os::unix::process::CommandExt;
     let (reader, writer) = std::os::unix::net::UnixStream::pair().unwrap();
     let stdout: std::os::fd::OwnedFd = writer.try_clone().unwrap().into();
     let stderr: std::os::fd::OwnedFd = writer.into();
-    command.stdout(stdout).stderr(stderr).process_group(0);
+    command.stdout(stdout).stderr(stderr);
     record(format!(
         "phase: spawn {:?} {:?}; cwd {:?}",
         command.get_program(),
         command.get_args().collect::<Vec<_>>(),
         command.get_current_dir()
     ));
-    let child = ProcessGroup(command.spawn().unwrap());
-    record(format!("phase: spawned pid/group {}", child.0.id()));
-    drop(command);
+    let child = maestro_test_harness::ProcessGroup::spawn(command).unwrap();
+    record("phase: guardian started");
     let (send, receive) = std::sync::mpsc::channel();
     let thread = capture_lines(move || reader, send);
     (child, receive, thread)

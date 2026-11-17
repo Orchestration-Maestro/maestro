@@ -38,6 +38,9 @@
 //! A child that only needs to start without a search program gets [`install_stub_search_programs`],
 //! and a [`SearchGuard`] on its command path fails the test when it ran a host copy instead.
 //!
+//! Unix watch, profile and preview fixtures use [`ProcessGroup`]. Its prepared native
+//! guardian stops the group when the ownership pipe closes, even if the test is killed.
+//!
 //! A test that starts a development setup child clears the prepared bundle its run exports
 //! with [`without_prepared_bundles`], so the child runs the setup the test supplies.
 
@@ -58,6 +61,10 @@ pub mod gate;
 pub mod git_command;
 mod prepared_bundles;
 mod process_environment;
+#[cfg(unix)]
+mod process_tree;
+#[cfg(unix)]
+pub use process_tree::{ProcessGroup, run_group_guardian};
 mod proof;
 pub mod rpc_peer;
 mod search_guard;

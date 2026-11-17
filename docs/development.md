@@ -1660,6 +1660,46 @@ A workspace that holds `maestro` builds the executable with Cargo, so the setup
 refuses it instead of exporting a second copy: there, tests use Cargo's own
 executable path.
 
+### Owning long-running test commands
+
+On Unix, start watch, profile and preview fixtures through
+`maestro_test_harness::ProcessGroup`. Keep the returned guard until the test has
+finished using the command:
+
+```rust,no_run
+# #[cfg(unix)] {
+use maestro_test_harness::ProcessGroup;
+
+let mut command = ProcessGroup::command("just")?;
+command.arg("dev").current_dir("fixture-checkout");
+let mut watch = ProcessGroup::spawn(command)?;
+// Read the command's readiness signal before exercising the fixture.
+watch.stop()?;
+# }
+# Ok::<(), std::io::Error>(())
+```
+
+`command` uses the prepared native fixture exported by nextest. Configure its
+arguments, working directory, environment, stdout and stderr before `spawn`.
+The watched command receives null stdin; the guardian reserves its own stdin
+for ownership. Compiler fixtures can apply `compiler::configure` or
+`compiler::configure_fixture` without replacing the guardian executable.
+
+Explicit `stop`, guard drop during normal return or panic, and test-process death
+all close the same ownership pipe. The guardian then kills the command's process
+group and reaps its leader before exiting. On Linux it also adopts and reaps
+every descendant in the group, so guardian-output EOF proves the whole group
+has exited.
+Other Unix systems kill the group and reap its leader; the system reaper collects
+orphaned descendants. A command that exits first triggers the same cleanup, so
+the guardian does not wait for the test to finish.
+
+Fixtures must keep descendants in the command's group: disable nested watcher
+groups rather than detaching them. A descendant that leaves the group can survive
+its termination. The Linux guardian waits only for the killed group, so an adopted
+daemon outside that group does not block cleanup. This owner is Unix-only; it does
+not add Windows process-tree cleanup.
+
 ### Browser author build
 
 A test shard starts with an empty target directory and no compile cache. The

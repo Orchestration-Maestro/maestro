@@ -153,7 +153,21 @@ impl Browser {
 
     pub fn command(&self, recipe: &str) -> Command {
         record(format!("phase: recipe {recipe}"));
-        let mut command = super::compiler::command("just");
+        let command = super::compiler::command("just");
+        self.configure_recipe(command, recipe)
+    }
+
+    /// Prepare a browser recipe whose descendants stop when the test ends.
+    #[cfg(unix)]
+    pub fn watch_command(&self, recipe: &str) -> Command {
+        record(format!("phase: recipe {recipe}"));
+        let mut command = maestro_test_harness::ProcessGroup::command("just").unwrap();
+        super::compiler::configure(&mut command);
+        self.configure_recipe(command, recipe)
+    }
+
+    /// Apply the same browser build environment to finite commands and watches.
+    fn configure_recipe(&self, mut command: Command, recipe: &str) -> Command {
         command.arg(recipe);
         self.configure(&mut command);
         command.env("CARGO_BUILD_JOBS", lane_jobs());

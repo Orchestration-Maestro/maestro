@@ -9,7 +9,7 @@ use std::process::{Command, Output};
 
 use crate::recipe_support;
 #[cfg(unix)]
-use recipe_support::ProcessGroup;
+use maestro_test_harness::ProcessGroup;
 use recipe_support::{Workspace, executable, install_executable, write_input};
 
 /// The development command the `test` recipe runs for its doctest phase.
@@ -690,7 +690,8 @@ fn assert_watch_rebuild(recipe: &str, changed: &str) {
     prepare_watch_workspace(&workspace);
     prepare_tooling_owner(&workspace);
     let binary = workspace.path().join("target/debug/development");
-    let (child, receive, threads) = start_watch(&workspace, workspace.command(recipe), &binary);
+    let (child, receive, threads) =
+        start_watch(&workspace, workspace.watch_command(recipe), &binary);
     let diagnostics = watcher_diagnostics(&workspace.path());
     assert_watch_events(&workspace, changed, &receive, &diagnostics);
     drop(child);
@@ -732,7 +733,7 @@ fn watch_completion_retains_both_output_streams() {
     ).unwrap();
     let (child, receive, threads) = start_watch(
         &workspace,
-        workspace.command("watch-output"),
+        workspace.watch_command("watch-output"),
         Path::new(env!("CARGO_BIN_EXE_development")),
     );
     let mut transcript = String::new();
@@ -759,7 +760,7 @@ fn watch_stops_its_children_on_panic() {
     prepare_watch_workspace(&workspace);
     let (child, receive, threads) = start_watch(
         &workspace,
-        workspace.command("models-dev"),
+        workspace.watch_command("models-dev"),
         Path::new(env!("CARGO_BIN_EXE_development")),
     );
     wait_for_build(
@@ -795,7 +796,7 @@ fn watch_profiles_are_isolated_before_group_start() {
         if scratch.exists() {
             fs::remove_dir_all(&scratch).unwrap();
         }
-        let mut command = Command::new(&binary);
+        let mut command = ProcessGroup::command(&binary).unwrap();
         command.env_remove("LLVM_PROFILE_FILE");
         if let Some(value) = incoming {
             command.env("LLVM_PROFILE_FILE", value);
@@ -824,7 +825,7 @@ fn watch_profiles_are_isolated_before_group_start() {
     fs::remove_dir_all(&scratch).unwrap();
     fs::write(&scratch, "not a directory").unwrap();
     let failure = std::panic::catch_unwind(|| {
-        let mut command = Command::new(&binary);
+        let mut command = ProcessGroup::command(&binary).unwrap();
         command
             .arg("exit")
             .env("LLVM_PROFILE_FILE", merge.join("failure-%p-%m.profraw"));
@@ -842,7 +843,7 @@ fn watch_profile_isolation_survives_panic_cleanup() {
     let binary = prepare_profile_writer(&workspace);
     let merge = workspace.path().join("merge-profiles");
     let control = profile_control(&binary, &merge);
-    let mut command = Command::new(&binary);
+    let mut command = ProcessGroup::command(&binary).unwrap();
     command.env("LLVM_PROFILE_FILE", merge.join("incoming-%p-%m.profraw"));
     let (child, receive, threads) = start_watch(&workspace, command, &binary);
     wait_for_marker(
