@@ -15,7 +15,6 @@ mod git_configuration;
 mod linked_files;
 mod native_aliases;
 mod prepared_bundles;
-mod process_groups;
 mod scoped_subscribers;
 mod search_guard;
 mod search_programs;

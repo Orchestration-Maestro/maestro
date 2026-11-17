@@ -364,7 +364,7 @@ fn browser_example_development_serves_rebuilt_external_assets() {
     let port = listener.local_addr().unwrap().port();
     drop(listener);
     let (pack, pack_target, mark_target) = linked_identity(&browser);
-    let mut command = browser.watch_command("browser-example-dev");
+    let mut command = browser.command("browser-example-dev");
     command.args([pack.to_str().unwrap(), "dark", "--port", &port.to_string()]);
     let (child, receive, thread) = start_output(command);
     wait_for(&receive, "127.0.0.1:");
@@ -413,7 +413,7 @@ fn browser_compile_watch_rebuilds_external_identity() {
     use browser_support::{start_output, wait_for};
     let browser = Browser::new();
     let (pack, pack_target, mark_target) = linked_identity(&browser);
-    let mut command = browser.watch_command("browser-dev-compile");
+    let mut command = browser.command("browser-dev-compile");
     command.args([pack.to_str().unwrap(), "light"]);
     let (child, receive, thread) = start_output(command);
     wait_for(&receive, "✅ success");
@@ -587,7 +587,7 @@ fn browser_preview_serves_without_author_tools() {
         fs::write(dist.join(name), bytes).unwrap();
     }
     let path = preview_tools(&browser);
-    let mut command = browser.watch_command("browser-example-preview");
+    let mut command = browser.command("browser-example-preview");
     command.env("PATH", &path).args(["--port", "0"]);
     let (child, receive, thread) = start_output(command);
     let startup = wait_for(&receive, "http://127.0.0.1:");
@@ -1390,7 +1390,7 @@ fn assert_authored_watch_routes(
         ("browser-dev-compile", "library"),
         ("browser-example-dev", "example"),
     ] {
-        let mut command = browser.watch_command(recipe);
+        let mut command = browser.command(recipe);
         command.args([
             pack.to_str().unwrap(),
             "dark",
@@ -1616,7 +1616,7 @@ fn assert_stale_lock_rejected(recipe: &str) -> Browser {
     fs::write(&lock, "version = 4\n").unwrap();
     let before = browser_support::authored(&browser);
     if ["browser-dev", "browser-dev-compile"].contains(&recipe) {
-        let mut command = browser.watch_command(recipe);
+        let mut command = browser.command(recipe);
         if recipe == "browser-dev" {
             command.args([
                 browser.path("assets/brand/brand.json").to_str().unwrap(),
