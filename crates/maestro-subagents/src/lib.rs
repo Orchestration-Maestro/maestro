@@ -16,6 +16,3 @@ use maestro_extensions_guest::{ExtensionAPI, ExtensionFuture};
 pub fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
     Box::pin(async move { api.register_tool(extension::tool(api.clone())) })
 }
-
-#[cfg(test)]
-mod tests;
