@@ -240,11 +240,18 @@ impl Workspace {
         self.name = path.as_os_str().to_owned();
     }
 
-    /// Keeps build output inside the fixture's configured target directory and Cargo state
-    /// beside the checkout, so the shared package cache is never locked.
+    /// Prepare `program` with the fixture's private build state.
     pub fn toolchain_command(&self, program: impl AsRef<OsStr>) -> Command {
-        let mut command = super::compiler::fixture_command(
-            program,
+        let mut command = Command::new(program);
+        self.configure_toolchain(&mut command);
+        command
+    }
+
+    /// Keep build output inside the fixture's configured target directory and Cargo state
+    /// beside the checkout, so the shared package cache is never locked.
+    fn configure_toolchain(&self, command: &mut Command) {
+        super::compiler::configure_fixture(
+            command,
             self.parent.path(),
             self.sources.get().map(PathBuf::as_path),
         )
@@ -252,7 +259,6 @@ impl Workspace {
         command
             .current_dir(self.path())
             .env_remove("CARGO_TARGET_DIR");
-        command
     }
 
     pub fn command(&self, recipe: &str) -> Command {
@@ -265,15 +271,7 @@ impl Workspace {
     #[cfg(unix)]
     pub fn watch_command(&self, recipe: &str) -> Command {
         let mut command = maestro_test_harness::ProcessGroup::command("just").unwrap();
-        super::compiler::configure_fixture(
-            &mut command,
-            self.parent.path(),
-            self.sources.get().map(PathBuf::as_path),
-        )
-        .unwrap();
-        command
-            .current_dir(self.path())
-            .env_remove("CARGO_TARGET_DIR");
+        self.configure_toolchain(&mut command);
         self.configure_recipe(&mut command, recipe);
         command
     }

@@ -89,7 +89,7 @@ struct Tree {
 }
 
 impl Tree {
-    /// Kill the group once, reap its leader and collect Linux-adopted descendants.
+    /// Kill the group once, reap its leader and collect adopted members of the killed group.
     fn stop(&mut self) -> io::Result<()> {
         let Some(child) = self.child.as_mut() else {
             return Ok(());

@@ -160,6 +160,7 @@ impl Browser {
     /// Prepare a browser recipe whose descendants stop when the test ends.
     #[cfg(unix)]
     pub fn watch_command(&self, recipe: &str) -> Command {
+        record(format!("phase: recipe {recipe}"));
         let mut command = maestro_test_harness::ProcessGroup::command("just").unwrap();
         super::compiler::configure(&mut command);
         self.configure_recipe(command, recipe)

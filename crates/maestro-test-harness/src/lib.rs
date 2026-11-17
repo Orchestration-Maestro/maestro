@@ -38,7 +38,7 @@
 //! A child that only needs to start without a search program gets [`install_stub_search_programs`],
 //! and a [`SearchGuard`] on its command path fails the test when it ran a host copy instead.
 //!
-//! Unix watch, profile and preview fixtures use `ProcessGroup`. Its prepared native
+//! Unix watch, profile and preview fixtures use [`ProcessGroup`]. Its prepared native
 //! guardian stops the group when the ownership pipe closes, even if the test is killed.
 //!
 //! A test that starts a development setup child clears the prepared bundle its run exports
